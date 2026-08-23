@@ -168,7 +168,7 @@ Rows below are the halt-type index — orchestrate-flow schema validation reject
 - `deep_scan_subagent_failed` — scan-codebase: a deep-scan slice subagent (auth/authz/ui-ux/libs/reuse) failed once. So… **[Soft halt — auto-retried, warn-only]**
 - `deep_scan_cache_corrupt` — scan-codebase: starterkit-context.yaml exists but fails YAML parse. Soft halt: cache au…
 - `deep_scan_subagent_all_failed` — scan-codebase: ALL 5 deep-scan slice subagents failed (likely API outage). ALWAYS STOP:…
-- `dep_missing` — scan-codebase: a FORCED engine's binary not found (tree-sitter under --engine=tree-sitt… *(also emitted by execute-bolts — test runner absent (preflight 3.5) or ast-grep absent under v2 grammar — and the emit lane)*
+- `dep_missing` — scan-codebase: a FORCED engine's binary not found (ast-grep under --engine=ast-grep… *(also emitted by execute-bolts — test runner absent (preflight 3.5) or ast-grep absent under v2 grammar — and the emit lane)*
 
 **bind** (`halt-families/bind.md`):
 

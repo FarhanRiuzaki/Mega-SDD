@@ -82,7 +82,7 @@ In the Claude Code session, type:
 
 You should see an autocomplete list with `/mega-sdd` at the top plus its companion verbs (`/mega-sdd:sync`, `/mega-sdd:emit`). If nothing appears, restart Claude Code once more, then run `/plugin marketplace update mega-sdd`.
 
-Optional (recommended later, skippable now): `/mega-sdd:install-deps` installs native helper tools (`tree-sitter`, `ast-grep`, `ripgrep`, …) for higher precision. Mega-sdd works fine without them — every tool has a graceful fallback.
+Optional (recommended later, skippable now): `/mega-sdd:install-deps` installs native helper tools (`ast-grep`, `ripgrep`, …) for higher precision. Mega-sdd works fine without them — every tool has a graceful fallback.
 
 ## Step 5 — Your first run
 

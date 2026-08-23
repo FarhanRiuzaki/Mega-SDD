@@ -30,9 +30,9 @@ Loaded by `scan-codebase` for failure handling, flag resolution, and chain integ
 scan-codebase is **non-interactive on every path**: every condition below resolves to a named blocker carrying its exact re-run command, emitted with `status: halted`, and the run STOPS. None of them is a question, and none of them waits. The ONE lane-dependent condition is the Step 5 spawn budget — see its bullet.
 
 - **Repo > 100k files AND no `--force-large`:** emit `scan_repo_too_large` (re-run with `--force-large` to accept the cost, or `--include=<glob>` to narrow). Proceed silently when `--force-large` was passed.
-- **Estimated extraction time > 60 s** (Step 5 spawn-cost gate) — **LANE-DEPENDENT, the only such condition**. Lane 1, an explicit `--engine=` or `--include=`, already IS the caller's precision-vs-latency decision → proceed, log the estimate, no blocker. Lane 2, **undecided STANDALONE** (a direct user invocation carrying none of lane 3's signals): emit `scan_spawn_budget_exceeded` before extracting, carrying `N_total` (= `N_hash` + `N_extract`), the estimate, the OS, and the re-run commands (`--engine=ast-grep` / `--engine=regex` / `--engine=tree-sitter` / `--include=<glob>`). Lane 3, **UNATTENDED** — `--auto`, a forked body, or an orchestrator-dispatched phase (how the Mode-D `--changed-only` sync hop arrives); `--auto` alone is NOT the discriminator, since no routing row renders it on the scan hop: **neither halt nor stall** — downgrade to the highest OOM-safe tier: `ast-grep` when the Step-0 digest carries `astgrep_version` (extraction ~ONE spawn, `precision_tier` STAYS `ast`), else `regex`; record it in the map frontmatter (`precision_downgrade_reason`, plus `precision_tier: regex` only on the regex fall), one chat line, and the handoff `next_action.rationale` with the AST-recovery command; `status: completed`, no `blockers[]` entry. A blocker on that lane would halt phase 1 of nearly every brownfield chain, and no routing row pre-resolves `--engine`/`--include`. This gate fires FAR earlier than the 100k halt on Windows — at ~220 ms/spawn a 100k-file repo is 6.1 hours (and the gate trips at ~272 files), so the file-count halt is a POSIX-era guard that never gets reached there. Lane rationale + the record shape: `references/scan-procedure.md §Spawn-cost gate`.
+- **Estimated extraction time > 60 s** (Step 5 spawn-cost gate) — **LANE-DEPENDENT, the only such condition**. Lane 1, an explicit `--engine=` or `--include=`, already IS the caller's precision-vs-latency decision → proceed, log the estimate, no blocker. Lane 2, **undecided STANDALONE** (a direct user invocation carrying none of lane 3's signals): emit `scan_spawn_budget_exceeded` before extracting, carrying `N_total` (= `N_hash` + `N_extract`), the estimate, the OS, and the re-run commands (`--engine=ast-grep` / `--engine=regex` / `--include=<glob>`). Lane 3, **UNATTENDED** — `--auto`, a forked body, or an orchestrator-dispatched phase (how the Mode-D `--changed-only` sync hop arrives); `--auto` alone is NOT the discriminator, since no routing row renders it on the scan hop: **neither halt nor stall** — downgrade to the highest OOM-safe tier: `ast-grep` when the Step-0 digest carries `astgrep_version` (extraction ~ONE spawn, `precision_tier` STAYS `ast`), else `regex`; record it in the map frontmatter (`precision_downgrade_reason`, plus `precision_tier: regex` only on the regex fall), one chat line, and the handoff `next_action.rationale` with the AST-recovery command; `status: completed`, no `blockers[]` entry. A blocker on that lane would halt phase 1 of nearly every brownfield chain, and no routing row pre-resolves `--engine`/`--include`. This gate fires FAR earlier than the 100k halt on Windows — at ~220 ms/spawn a 100k-file repo is 6.1 hours (and the gate trips at ~272 files), so the file-count halt is a POSIX-era guard that never gets reached there. Lane rationale + the record shape: `references/scan-procedure.md §Spawn-cost gate`.
 - **Monorepo primary-app unresolvable** (≥2 app-root manifests, no explicit `--include`, no root manifest that owns them — Step 2 precedence exhausted): emit `scan_primary_app_ambiguous` listing the candidate app roots. See `references/scan-procedure.md §Step 2`.
-- **A forced `--engine=tree-sitter|ast-grep` whose binary is not on PATH:** halt `dep_missing` naming the forced binary — never a silent fall-through (install guidance is in the tree-sitter integration reference).
+- **A forced `--engine=ast-grep` whose binary is not on PATH:** halt `dep_missing` naming the forced binary — never a silent fall-through (install: `brew install ast-grep` / `scoop install ast-grep` / `/mega-sdd:install-deps`).
 - **Map-write deriver failures (Step 10):** `derive-codebase-map.sh` exit 2 → emit **`codebase_map_derive_failed`** (`details`: the stderr line + the delta dir; remedy = fix the named delta gap and re-run the same scan). Exit 4 → emit **`codebase_map_invalid`** (`details`: `rejected_path` + the validator verdict; NOTHING was renamed — the prior map is intact; remedy = inspect `<out>.rejected`, correct the delta, re-run) — and route any `secret_findings` from the deriver's stdout to `SECRET-FINDINGS.md` BEFORE emitting the blocker. Exit 3 is a **recorded recovery, not a halt**: re-run the scan as FULL (`status: completed` on the re-run; on the sync lane it takes the step-2 full-scan-fallback branch). Both blockers use the standard envelope (`type` + `source_skill: scan-codebase` + `details` + the re-run command); no bespoke YAML shape is needed.
 - **Detection produces 0 public interfaces — NOT a halt, by decision.** A repo can legitimately expose nothing, and the alternative reading (a misconfigured `--include`) is fixed by re-running, not by waiting. Record the suggested re-run command (`--include=<glob>`) in the scan summary AND in the handoff `next_action.rationale`, emit `status: completed`, and finish. Do not add it to the halted trigger list below.
 
@@ -53,7 +53,7 @@ hand it back to. → `references/scan-procedure.md §Spawn-cost gate`.
 type: scan_spawn_budget_exceeded
 source_skill: scan-codebase
 details:
-  engine: tree-sitter
+  engine: ast-grep
   os: <"windows-bash" | "posix">
   n_hash: <int>                      # invalidation-gate spawns (0 without --shallow-scan)
   n_extract: <int>                   # files that would actually be extracted
@@ -61,10 +61,30 @@ details:
   per_spawn_sec: <0.22 on windows-bash, else 0.02>
   estimate_sec: <int>
   budget_sec: 60
-next_action: "Re-run with ONE of — (a) `--engine=ast-grep` (tier-1 D2): SATU proses untuk seluruh set (grammar embedded, tanpa kompilasi clang), presisi TETAP tier `ast`; (b) `--engine=regex`: satu panggilan per bahasa, selesai dalam detik, presisi turun ke tier `regex` dan peta mencatatnya di `precision_tier`; (c) `--engine=tree-sitter` (lane opt-in): presisi AST penuh dengan biaya SATU proses per FILE — jauh di atas estimasi ini di mesin ber-EDR; (d) `--include=<glob>`: persempit himpunan file sehingga n_extract turun. Presisi adalah properti yang DILAPORKAN peta, jadi pilihannya milik pengguna — skill tidak menurunkan engine diam-diam."
+next_action: "Re-run with ONE of — (a) `--engine=ast-grep` (tier-1 D2): SATU proses untuk seluruh set (grammar embedded, tanpa kompilasi), presisi TETAP tier `ast`; (b) `--engine=regex`: satu panggilan per bahasa, selesai dalam detik, presisi turun ke tier `regex` dan peta mencatatnya di `precision_tier`; (c) `--include=<glob>`: persempit himpunan file sehingga n_extract turun. Presisi adalah properti yang DILAPORKAN peta, jadi pilihannya milik pengguna — skill tidak menurunkan engine diam-diam."
 ```
 
-Recovery: caller re-runs with one of the four flags. An explicit `--engine=`/`--include=` suppresses this gate, so the remedy always terminates. The `--auto` lane's recovery command (`--engine=tree-sitter` / `--include=<glob>`) terminates for the same reason.
+Recovery: caller re-runs with one of the three flags. An explicit `--engine=`/`--include=` suppresses this gate, so the remedy always terminates.
+
+### `dep_missing` — STOP (forced engine binary absent)
+
+Emitted when a forced `--engine=ast-grep` names a binary that is not on PATH — never a
+silent fall-through (the caller chose the engine). The probe prints the digest with
+`halt` populated; emit the blocker verbatim:
+
+```yaml
+type: dep_missing
+emitted_at: <ISO8601>
+emitted_by: scan-codebase
+details:
+  required_binary: ast-grep
+  install_commands:
+    macos: "brew install ast-grep"
+    linux: "cargo install ast-grep"
+    windows: "scoop install ast-grep"
+    universal: "npm install -g @ast-grep/cli"
+next_action: "Install ast-grep then re-run, OR use --engine=regex for fallback (lower precision) — or run /mega-sdd:install-deps"
+```
 
 ### `scan_repo_too_large` — STOP
 
@@ -144,7 +164,7 @@ scan-codebase has **no interactive mode**, so this table describes the *only* be
 
 | Site | Deterministic behavior (never prompts, never waits) |
 |---|---|
-| Step 0 (engine) | Run `scripts/probe-scan-engine.sh` — ONE spawn: D2 ladder digest (AUTO `ast-grep → regex`, tree-sitter never invoked; `--engine=tree-sitter` opt-in runs the serial bounded smoke tests); ast-grep absent → `engine: regex` with a chat note. A forced `--engine=` whose binary is absent → `dep_missing` |
+| Step 0 (engine) | Run `scripts/probe-scan-engine.sh` — ONE spawn: D2 ladder digest (`ast-grep → regex`; the tree-sitter lane was removed v7.4.0); ast-grep absent → `engine: regex` with a chat note. A forced `--engine=` whose binary is absent → `dep_missing` |
 | Step 2 (monorepo primary app) | Precedence: explicit `--include` > owning root manifest > single app-root manifest; residual ambiguity → `scan_primary_app_ambiguous` |
 | Step 4 (repo > 100k files) | `--force-large` passed → proceed; else → `scan_repo_too_large` |
 | Step 5 (spawn-cost gate, `estimate` > 60 s) — **the one lane-dependent row** | **Lane 1** explicit `--engine=`/`--include=` → proceed, log the estimate. **Lane 2** undecided STANDALONE (a direct user invocation) → `scan_spawn_budget_exceeded`, STOP. **Lane 3** UNATTENDED (`--auto` / forked / orchestrator-dispatched — ties go here) → downgrade to the highest OOM-safe tier (ast-grep when the Step-0 digest has `astgrep_version` — `precision_tier` stays `ast`; else regex) and RECORD it (map `precision_downgrade_reason`, `precision_tier: regex` only on the regex fall, one chat line, AST-recovery command in `next_action.rationale`), `status: completed`. **Never** an UNRECORDED downgrade — `precision_tier` is a property the map reports, so lane 2 keeps the choice with the caller and lane 3 keeps the map honest about the tier it delivered |
@@ -167,7 +187,7 @@ scan-codebase has **no interactive mode**, so this table describes the *only* be
   - User explicit `--out=<path>` always respected
 - `--auto`: **selects the CHAIN LANE — it is not semantically empty.** There are no prompts left to skip (§Deterministic behavior above is the only behavior), but the flag still carries meaning: it declares that nobody is on the other end (an `orchestrate-flow` / `/mega-sdd` / `sync` hop, or a forked body), which is what lets the Step 5 spawn-cost gate take the RECORDED downgrade (ast-grep when present, else regex) instead of halting phase 1 of the chain. Without it the run is STANDALONE and that gate emits `scan_spawn_budget_exceeded` instead. Every other outcome is identical either way, and its absence never suppresses the handoff
 - `--force-large`: accept the cost on >100k file repos (without it, that condition emits `scan_repo_too_large`)
-- `--engine=tree-sitter|ast-grep|regex`: force a lane; default auto = `ast-grep → regex` via `scripts/probe-scan-engine.sh` (tree-sitter is reachable ONLY through this flag)
+- `--engine=ast-grep|regex`: force a lane; default = `ast-grep → regex` via `scripts/probe-scan-engine.sh` (the tree-sitter value was removed v7.4.0 — the probe rejects it with a usage error)
 - `--shallow-scan`: two coupled fast-path semantics — (a) skip the Step 10.5 deep-scan stage (emit only the surface codebase-map.md), and (b) enable the Step 5 per-file invalidation gate (reuse prior §2 rows whose `Last_Scanned_Sha256` matches the file's current hash; only changed files re-extract — per `references/scan-procedure.md` §Step 5)
 - `--force-deep`: force deep-scan even when framework confidence is LOW (override Step 10.5.0 trigger check)
 - `--no-cache`: invalidate deep-scan cache; re-run all 5 slice subagents even if lock files unchanged
@@ -213,8 +233,8 @@ handoff:
     # APPEND to `rationale` when the Step 5 `--auto` lane downgraded the engine (map carries
     # precision_downgrade_reason; precision_tier: regex only when the fall went ALL the way to
     # regex — an ast-grep fall keeps tier ast): the estimate / N_total / OS / budget, the
-    # AST-recovery path (install ast-grep + re-scan — the D2 tier-1; `--engine=tree-sitter`
-    # remains the opt-in alternative — or `--include=<glob>` to narrow), and the consequence — ONLY at regex tier does
+    # AST-recovery path (install ast-grep + re-scan — the D2 tier-1 — or
+    # `--include=<glob>` to narrow), and the consequence — ONLY at regex tier does
     # bind-codebase Step 2.5 implementation-state fall back to BINARY. This is the handoff
     # third of that lane's record (the other two: the map frontmatter and one chat line).
     # Status stays `completed`.

@@ -14,7 +14,7 @@
 # in-process hashlib fallback), byte-copy carry-forward, vanished-file drops, schema
 # shape, the staleness stamp, secret-scan chaining, atomic rename, validator
 # refresh. The model REMAINS the extraction-output parser and the author of
-# §5/§6/§7 — parsing tree-sitter captures in-script is deliberately out of
+# §5/§6/§7 — parsing AST captures in-script is deliberately out of
 # scope (unverifiable on a box with no compiled grammars; see scan-procedure
 # §Step 5's identical refusal).
 #
@@ -513,7 +513,7 @@ if mode == "full":
 FM_ORDER = ["generated_by", "generated_at", "repo_root", "scan_depth",
             "scan_includes", "scan_excludes", "languages_detected",
             "package_managers", "test_frameworks", "engine", "precision_tier",
-            "precision_downgrade_reason", "tree_sitter_version",
+            "precision_downgrade_reason", "tree_sitter_version",  # tree_sitter_version/grammars_used = legacy pass-through (pre-7.4 maps)
             "astgrep_version", "grammars_used", "last_scanned_commit",
             "truncated_sections"]
 SCRIPT_OWNED = {"generated_by", "generated_at", "repo_root", "last_scanned_commit"}

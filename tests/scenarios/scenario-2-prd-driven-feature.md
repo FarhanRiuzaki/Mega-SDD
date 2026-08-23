@@ -9,7 +9,7 @@ You'll use the [sample clinic PRD](sample-prd-clinic.md) on an existing Next.js 
 
 - Mega-sdd installed ([install check](README.md#before-you-start--install-check))
 - Existing Next.js project (or similar — mega-sdd works with PHP, TypeScript, Python, Go, Rust)
-- Recommended: `tree-sitter` + `ast-grep` installed for AST precision
+- Recommended: `ast-grep` installed for AST precision
 
 ## Step 1 — Setup
 

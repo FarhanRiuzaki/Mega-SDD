@@ -7,11 +7,11 @@
 
 - Mega-sdd v6+
 - Existing PHP/Laravel project with at least one model + endpoint
-- `tree-sitter` + `ast-grep` installed (required for field-level diff; otherwise falls back to binary state)
+- `ast-grep` installed (required for field-level diff; otherwise falls back to binary state)
 
 ```bash
-brew install tree-sitter-cli ast-grep
-command -v tree-sitter && command -v ast-grep && echo "✓ ready"
+brew install ast-grep
+command -v ast-grep && echo "✓ ready"
 ```
 
 ## Setup — minimal example
@@ -291,14 +291,14 @@ Check `codebase-map.md` frontmatter:
 head -10 .mega-sdd/codebase/codebase-map.md
 ```
 
-Need `precision_tier: ast` (tree-sitter engine). If `precision_tier: regex`, field-level analysis disabled; falls back to v1.6 binary (IMPLEMENTED or NEW).
+Need `precision_tier: ast` (ast-grep engine). If `precision_tier: regex`, field-level analysis disabled; falls back to v1.6 binary (IMPLEMENTED or NEW).
 
-Install tree-sitter, then re-run the scan → bind → units hops (typed skill commands were removed at 6.0.0 — use phrases, or `/mega-sdd --resume` to let the chain re-propose):
+Install ast-grep, then re-run the scan → bind → units hops (typed skill commands were removed at 6.0.0 — use phrases, or `/mega-sdd --resume` to let the chain re-propose):
 
 ```bash
-brew install tree-sitter-cli
+brew install ast-grep
 # in Claude Code, in order:
-#   "scan codebase ini --engine=tree-sitter"
+#   "scan codebase ini"
 #   "bind vault to code"
 #   "generate units --refresh"
 ```

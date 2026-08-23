@@ -7,7 +7,7 @@
 - Step 2 — Detect package manager / language
 - Step 3 — Detect test framework
 - Step 4 — Build tree (depth-limited) + persist the enumeration (`.scan/files.z`)
-- Step 5 — Extract public interfaces (per-file invalidation gate; tree-sitter; ast-grep; regex/ripgrep)
+- Step 5 — Extract public interfaces (per-file invalidation gate; ast-grep; regex/ripgrep)
 - Step 6 — Extract routes
 - Step 7 — Extract data models
 - Step 8 — Detect naming conventions
@@ -15,7 +15,7 @@
 - Step 9 — Detect pattern signatures
 - Step 10 — Write codebase-map.md
 
-Loaded by `scan-codebase` for the surface scan. These steps produce `codebase-map.md` (whose section schema is the codebase-map schema). The deep-scan stage (Step 10.5.x), the default exclusion list, and the tree-sitter engine/precision detail are separate references the SKILL.md router links to.
+Loaded by `scan-codebase` for the surface scan. These steps produce `codebase-map.md` (whose section schema is the codebase-map schema). The deep-scan stage (Step 10.5.x) and the default exclusion list are separate references the SKILL.md router links to.
 
 ## Incremental mode (`--changed-only`)
 
@@ -53,63 +53,47 @@ Apply the default exclusion globs to the union (a journaled `node_modules/` writ
 
 ## Step 0 — Engine detection (ONE probe-script spawn, never prose-driven probes)
 
-Run the deterministic resolver — **one spawn resolves the D2 ladder** (AUTO:
-`ast-grep → regex`; tree-sitter = explicit `--engine=tree-sitter` opt-in;
-`references/tree-sitter-integration.md §The ladder` is the owner):
+Run the deterministic resolver — **one spawn resolves the D2 ladder** (`ast-grep → regex`; the tree-sitter opt-in lane was removed in v7.4.0 — no grammar compile step exists anywhere, so the clang-OOM class is structurally unreachable):
 
 ```bash
 # <plugin-root> = the mega-sdd plugin directory (resolve it the same way every
 # other scripts/ invocation in this skill does)
 <plugin-root>/scripts/probe-scan-engine.sh \
-  [--engine=tree-sitter|ast-grep|regex] [--timeout=30] \
+  [--engine=ast-grep|regex] \
   --lang=<lang>:<one-real-source-file> ... [--lang=<scaffold-only-lang>]
 ```
 
 Pass every Step-2-detected language with ONE real source file (`--lang=php:app/Models/User.php`);
 a language with zero source files yet (scaffold-only repo — a first-class scan-first mode) is
-passed WITHOUT a file and recorded as SKIPPED, not failed. The script probes both tree-sitter
-binary names (`tree-sitter` — brew/cargo; `tree-sitter-cli` — npm), probes `ast-grep` and resolves
-the D2 ladder (AUTO never invokes tree-sitter); under `--engine=tree-sitter` it runs the
-per-language **grammar smoke tests SERIALLY with a hard per-probe timeout** (binary presence ≠ working grammars — a default install ships ZERO grammars configured; the smoke test is also a clang
-compile step — parallel probes have OOM-killed clang: `killed: 9`,
-which is WHY detection is a script and not prose). Either way it prints ONE compact
-JSON digest:
+passed WITHOUT a file and recorded as SKIPPED, not failed. The script probes `ast-grep`,
+derives per-language pack availability from `queries/astgrep/*.yml` filenames, and prints ONE
+compact JSON digest:
 
 ```json
-{"engine": "...", "precision_tier": "...", "binary_name": "...",
- "tree_sitter_version": "...", "astgrep_version": "...",
- "grammars_used": ["<opt-in tree-sitter langs>"], "astgrep_langs": ["<auto primary langs>"],
+{"engine": "...", "precision_tier": "...", "astgrep_version": "...",
+ "astgrep_langs": ["<primary langs>"],
  "fallbacks": [{"lang": "...", "tier": "...", "reason": "..."}], "halt": null}
 ```
 
-Resolution (computed by the script; the skill CONSUMES the digest, it never re-probes —
-D2 ladder: AUTO = ast-grep → regex, tree-sitter is an EXPLICIT opt-in lane):
-- AUTO, `astgrep_langs` non-empty → `engine: ast-grep`, `precision_tier: ast` — the
-  primary route (zero-compilation: grammars are EMBEDDED in the static binary, the
-  clang-OOM class is structurally unreachable, and tree-sitter is never invoked).
+Resolution (computed by the script; the skill CONSUMES the digest, it never re-probes):
+- `astgrep_langs` non-empty → `engine: ast-grep`, `precision_tier: ast` — the
+  primary route (zero-compilation: grammars are EMBEDDED in the static binary).
   Unpacked languages appear in `fallbacks[]` as `no_astgrep_pack` → regex rows.
-- AUTO, ast-grep absent → `engine: regex`, `precision_tier: regex`; emit the loud
+- ast-grep absent → `engine: regex`, `precision_tier: regex`; emit the loud
   warning: "⚠️ ast-grep not installed; using regex engine (lower precision). Install:
   brew install ast-grep / scoop install ast-grep — or run `/mega-sdd:install-deps`"
   (`astgrep_absent` rows).
-- `--engine=tree-sitter` (opt-in) → the T1 smoke-test lane, unchanged: `grammars_used`
-  non-empty → `engine: tree-sitter`, `precision_tier: ast`; failing languages fall to
-  regex with named reasons (`grammar_compile_killed` = retryable OOM, NOT an install
-  problem; `grammar_missing` = install problem → `queries/VERSIONS.md §Installation`) —
-  never a silent detour to ast-grep (the caller chose tree-sitter). `binary_name`
-  is the stashed binary for opt-in Step-5 invocations — do not re-probe.
-- `halt` non-null (exit 3) → a forced `--engine=` names a binary that is absent → emit the
-  `dep_missing` blocker verbatim (`references/tree-sitter-integration.md` owns the YAML shape;
+- `halt` non-null (exit 3) → a forced `--engine=ast-grep` names a binary that is absent → emit the
+  `dep_missing` blocker verbatim (`references/halts-flags-handoff.md` owns the YAML shape;
   `required_binary` comes from the digest). Never fall through silently on a forced engine.
-- Scaffold-only repo (no testable language, an AST binary present) → the script keeps the
-  AST engine claim per binary presence (`ast-grep` in auto; `tree-sitter` under the opt-in)
-  with nothing extracted either way.
+- Scaffold-only repo (no testable language, ast-grep present) → the script keeps the
+  AST engine claim per binary presence (nothing extracted either way).
 - **Durable record:** any non-empty `fallbacks[]` (skips excluded) is ALSO stamped into the
   map's `precision_downgrade_reason` — one line joining `lang:reason` pairs, e.g.
-  `step-0 ladder: fortran:no_astgrep_pack -> regex` (or, opt-in lane, `python:grammar_compile_killed -> regex`) —
+  `step-0 ladder: fortran:no_astgrep_pack -> regex` —
   so the chat line is the ephemeral half and the map carries the durable half (same rail as
   the Step-5 spawn-gate record).
-- Override via `--engine=tree-sitter|ast-grep|regex` (passed through to the script).
+- Override via `--engine=ast-grep|regex` (passed through to the script).
 
 ## Step 1 — Detect repo root
 
@@ -180,7 +164,7 @@ find . \( -type d \( -name .git -o -name .mega-sdd -o -name node_modules \
 
 `$SCAN_TMP` lives under `.mega-sdd/**`, which the walk already prunes, so `files.z` can never re-enter a later enumeration. Both it and `hashes.txt` (Step 5) are scratch: overwritten every run, safe to delete.
 
-**Symlink rail:** do NOT follow symlinked directories (loop risk: `./link → ../ → ./link` hangs the walk). Note encountered dir symlinks in one log line; a user who needs them traversed passes explicit `--include` for the TARGET path. Files >10 MB skip tree-sitter (regex fallback or skip; log in the scan summary) — a single minified bundle must not stall extraction.
+**Symlink rail:** do NOT follow symlinked directories (loop risk: `./link → ../ → ./link` hangs the walk). Note encountered dir symlinks in one log line; a user who needs them traversed passes explicit `--include` for the TARGET path. Files >10 MB skip AST extraction (regex fallback or skip; log in the scan summary) — a single minified bundle must not stall extraction.
 
 ## Step 5 — Extract public interfaces
 
@@ -189,13 +173,13 @@ find . \( -type d \( -name .git -o -name .mega-sdd -o -name node_modules \
 1. **Enumerate** source files ONCE — Step 4's walk with `--include` / `--exclude` + the default exclusion list already applied — persisted NUL-delimited to `.mega-sdd/codebase/.scan/files.z` by **§Step 4 itself** (the command is there, in Step 4, not here) → `N_files`. Every later step READS that file; nothing re-walks the tree.
 2. **Per-file invalidation gate** — ONE batched hash over that persisted list (`N_hash` = 1 spawn, see below) → resolves the REUSE set → `N_extract`.
 3. **Spawn-cost gate** — budgets `N_hash + N_extract`, i.e. the TOTAL spawn bill including step 2, not just extraction.
-4. **Extraction** (tree-sitter / regex) over the non-REUSE set.
+4. **Extraction** (ast-grep / regex) over the non-REUSE set.
 
 Step 2 sits before step 3 only because BATCHED hashing costs ONE spawn and is unconditionally under budget. **If you cannot batch** (no `xargs`, or a per-file fallback for any reason), then `N_hash = N_files` and the spawn-cost gate MUST be evaluated BEFORE hashing with that value — an unbatched invalidation gate is exactly the runaway this gate exists to catch.
 
 ### Per-file invalidation gate (per FILE decision — ONE batched hash process, never one per file)
 
-This gate runs BEFORE tree-sitter / regex extraction below. When `--shallow-scan` flag is set AND a prior `codebase-map.md` exists in the project, the gate compares the enumerated source files' current sha256 against the `Last_Scanned_Sha256` column in prior `codebase-map.md` §2.
+This gate runs BEFORE ast-grep / regex extraction below. When `--shallow-scan` flag is set AND a prior `codebase-map.md` exists in the project, the gate compares the enumerated source files' current sha256 against the `Last_Scanned_Sha256` column in prior `codebase-map.md` §2.
 
 **Hash the whole enumeration in ONE BATCHED invocation.** The decision is per file; the hashing is not. A hasher accepts many paths and emits one `<digest>  <path>` line each from a single process — do NOT loop the hasher one path at a time, and do NOT hash inside the per-file extraction loop. Measured on this repo's dev box (501 files, macOS): one-path-at-a-time = 501 spawns / 13,085 ms; batched via `xargs -0` = 1 hasher process / 448 ms — **29x**, and the ratio grows with N. On `OS=windows-bash` each of those spawns costs ~220 ms instead of ~26 ms, so the same loop is the difference between a sub-second gate and a multi-minute one.
 
@@ -237,33 +221,36 @@ xargs -0 $HASH < "$SCAN_TMP/files.z" > "$SCAN_TMP/hashes.txt"   # ← the gate's
 ```
 
 Then read `$SCAN_TMP/hashes.txt` (one `<digest>  <path>` line per file) and diff it against prior §2 in-model — that comparison is pure text work, zero further spawns:
-- File current sha256 == prior `Last_Scanned_Sha256` → REUSE prior §2 entries for this file; SKIP tree-sitter/regex re-extraction for it (the deriver carries the rows byte-identical — do NOT restate them in the delta).
-- File current sha256 != prior → re-extract symbols via tree-sitter/regex (logic below); emit its rows to the delta's `s2.rows` **WITHOUT a sha column** and list the file in `s2.files` — the deriver joins the fresh sha itself (a sha written into `s2.rows` would be double-appended and shear the table).
+- File current sha256 == prior `Last_Scanned_Sha256` → REUSE prior §2 entries for this file; SKIP ast-grep/regex re-extraction for it (the deriver carries the rows byte-identical — do NOT restate them in the delta).
+- File current sha256 != prior → re-extract symbols via ast-grep/regex (logic below); emit its rows to the delta's `s2.rows` **WITHOUT a sha column** and list the file in `s2.files` — the deriver joins the fresh sha itself (a sha written into `s2.rows` would be double-appended and shear the table).
 - File not in prior map → re-extract + emit to `s2.rows` (+ `s2.files`) the same way.
 - File in prior map but not in current repo enumeration → NO delta action; the deriver drops vanished-file rows itself and counts them on stdout (rail 3).
 
 For a default scan (no `--shallow-scan`) OR `--no-cache` → SKIP gate entirely; `N_hash = 0`; full re-extract for every file (correctness guarantee preserved for full scans). The gate runs BEFORE per-file extraction so it actually short-circuits the expensive per-file invocations.
 
 **Honest `OS=windows-bash` note — which regime you are in decides the advice.**
-- *Unbatched* (one hasher spawn per file — the shape this section forbids): `--shallow-scan` is **net-negative** on Windows. On a 2,000-file repo with 10 changed it burns 2,000 hash spawns (~440 s) to avoid 1,990 extraction spawns (~438 s), because under an endpoint-security agent a sha256 spawn costs the same ~220 ms as a tree-sitter spawn. The "fast path" becomes the slowest step in the scan. It only pays at a very small changed fraction, and even then barely.
+- *Unbatched* (one hasher spawn per file — the shape this section forbids): `--shallow-scan` is **net-negative** on Windows. On a 2,000-file repo with 10 changed it burns 2,000 hash spawns (~440 s) to avoid 1,990 extraction spawns (~438 s), because under an endpoint-security agent a sha256 spawn costs the same ~220 ms as any other spawn. The "fast path" becomes the slowest step in the scan. It only pays at a very small changed fraction, and even then barely.
 - *Batched* (the mandated shape above): `N_hash` = 1 (2 if Step 4's `files.z` is missing and the walk has to be redone), so `--shallow-scan` pays at any changed fraction below ~100% and should be recommended on Windows. The residual cost is one process reading every file's bytes — EDR on-access file scanning, **not measured here** and not spawn tax; do not attach a number to it.
 
 ### Spawn-cost gate (MANDATORY before extraction, both engines)
 
-The two engines differ by **three orders of magnitude in process spawns**, and that
+Engines differ by **orders of magnitude in process spawns**, and that
 difference — not file count — is what decides whether a scan finishes:
 
 | engine | invocations |
 |---|---|
-| `tree-sitter` | **one per FILE** |
 | `ast-grep` | **ONE total** — inline rules are language-tagged (+~1 per 20k paths if argv re-splits) |
 | `regex` (ripgrep) | **one per LANGUAGE** |
 
+(The per-FILE engine class — the removed tree-sitter lane — cost one spawn per
+file; that bill is what killed it, v7.4.0.)
+
 On POSIX a spawn costs ~18 ms and the difference is invisible. On a Windows box with
 an endpoint-security agent it is **~220 ms** (measured, `windows-team-environment`),
-so a perfectly ordinary 2,000-file repo costs ~7.3 minutes of pure spawn tax under
-tree-sitter and under a second under regex. This is a real field hang, not a
-hypothetical.
+so a perfectly ordinary 2,000-file repo cost ~7.3 minutes of pure spawn tax under
+the removed per-file engine and runs under a second under regex. That was a real
+field hang, not a hypothetical — and it is why UNBATCHED HASHING (the other
+per-file bill) is what this gate still polices.
 
 Before Step 5 extraction, compute the **TOTAL** spawn bill — the invalidation gate's
 own hashing included. Budgeting only post-invalidation extraction is how a
@@ -284,10 +271,10 @@ N_hash    = spawns the invalidation gate itself costs:
                 gate exists to catch; see §Order of operations
 N_total   = N_hash + N_extract
 per_spawn = 0.22s on OS=windows-bash, else 0.02s
-estimate  = N_total × per_spawn  # the per-file bill exists ONLY on the opt-in
-                                 # tree-sitter lane; auto ast-grep is ~1 spawn
-                                 # and regex ~n_languages, but N_hash still
-                                 # counts on every engine
+estimate  = N_total × per_spawn  # ast-grep is ~1 spawn and regex
+                                 # ~n_languages (no per-file engine exists
+                                 # since v7.4.0), but N_hash still counts
+                                 # on every engine
 ```
 
 - `estimate` ≤ 60 s → proceed silently.
@@ -326,7 +313,6 @@ the caller executes**, each with its keterangan (→
 same keterangan a prompt did; the obligation did not leave with the prompt).
 They are remedies, NOT options awaiting a reply:
   - **`--engine=regex`** — satu panggilan per bahasa, bukan per file; selesai dalam hitungan detik. Presisi turun ke tier `regex` (bukan `ast`), dan peta mencatatnya jujur di `precision_tier`.
-  - **`--engine=tree-sitter`** — lanjut dengan presisi AST penuh dan bayar biayanya (kira-kira sebesar estimasi). Masuk akal di disk cepat / POSIX, atau saat presisi lebih penting daripada latensi.
   - **`--include=<glob>`** — mempersempit himpunan file, memotong `N_extract` (dan `N_files` bersamanya). Pilih ini kalau hanya satu app/paket yang relevan.
 
 **Lane 3 in detail — what "RECORD it loudly" means (all three surfaces, not one):**
@@ -343,8 +329,8 @@ They are remedies, NOT options awaiting a reply:
 
 2. **One chat line**, same four facts plus the recovery command.
 3. **The handoff.** `next_action.rationale` carries the exact re-run command that recovers AST
-   precision — `scan-codebase --engine=tree-sitter` (pay the estimate in full) or
-   `scan-codebase --include=<glob>` (narrow the set so tree-sitter fits the budget).
+   precision — install ast-grep (`/mega-sdd:install-deps`) and re-run, or
+   `scan-codebase --include=<glob>` (narrow the set so the hash bill fits the budget).
    `status: completed`, `blockers: []` — this is a finished scan at a stated tier, not a halt.
 
    Name the downstream consequence in BOTH the chat line and the rationale: at
@@ -357,8 +343,8 @@ They are remedies, NOT options awaiting a reply:
 
 *(a) The house rule is that `--auto` takes the SAFEST option* — `--auto` runs with nobody
 watching, exactly where a multi-hour stall strands someone. Unattended, "safest" is neither
-of the alternatives. A full tree-sitter pass is a multi-hour stall (100k files × 0.22 s ≈
-6.1 h on Windows). A blocker is a **phase-1 chain halt**: `scan-codebase` is phase 1 of
+of the alternatives. A full per-file AST pass was a multi-hour stall (100k files × 0.22 s ≈
+6.1 h on Windows — the class that got the tree-sitter lane removed in v7.4.0). A blocker is a **phase-1 chain halt**: `scan-codebase` is phase 1 of
 nearly every brownfield row in `orchestrate-flow/references/routing-rules.md`, and **ZERO**
 routing rows carry `--engine`/`--include`/`--force-large`, so a chain cannot pre-resolve this
 gate the way it pre-resolves `bind-codebase <vault>` — the blocker would strand the whole
@@ -393,20 +379,6 @@ already 44 s there.
 The existing `>100k files` halt stays, but note it is a POSIX-era guard: at 220 ms a
 100k-file repo is **6.1 hours**, so on Windows this gate fires long before that halt
 is ever reached.
-
-### If `engine: tree-sitter` (the `--engine=tree-sitter` OPT-IN lane — never auto)
-
-- For each detected language, locate `queries/tags-<lang>.scm` in the plugin dir.
-- For each source file: IF the per-file invalidation gate above marked it REUSE → skip; else continue.
-- Invoke: `tree-sitter query queries/tags-<lang>.scm <file> --captures` per source file.
-  **This is one process per file** — see the spawn-cost gate above. (Batching multiple
-  paths into a single `tree-sitter query` call is the structural fix and would collapse
-  N spawns to ~1 per language; it is NOT adopted here because the batched capture
-  output format could not be verified — the dev machine's tree-sitter ships no compiled
-  grammars. Verify on a box with working grammars before changing the invocation.)
-- Parse capture output (line + col + capture name + symbol text) into the interface table.
-- Capture names map: `name.definition.<kind>` → §2 (public interfaces). `name.reference.<kind>` captures are NOT persisted by scan-codebase (the map has no channel for them; their only former consumer — the generate-units PageRank pass — was removed, so nothing downstream needs them).
-- Languages without a `.scm` file, or whose grammar failed the opt-in smoke test → fall to REGEX with the named reason — never a silent ast-grep detour (the caller chose tree-sitter; D2).
 
 ### If `engine: ast-grep` (TIER 1 — zero-compilation AST, the auto default)
 
@@ -533,7 +505,7 @@ Per ORM/persistence-pattern signatures — covering every ecosystem in the detec
 
 No ORM signature match for a detected ecosystem (same parity rail as Step 6) → grep generic persistence markers (entity/model class + field blocks near persistence imports) best-effort; mark §4 confidence low.
 
-Field extraction per entity follows the same per-language tree-sitter/regex ladder as Step 5.
+Field extraction per entity follows the same per-language ast-grep/regex ladder as Step 5.
 
 ## Step 8 — Detect naming conventions
 

@@ -1,7 +1,7 @@
 ---
 name: install-deps
-version: 1.10.0
-description: Detect OS + package manager and install missing optional native deps (tree-sitter, ast-grep, ripgrep, jd, pandoc, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
+version: 1.11.0
+description: Detect OS + package manager and install missing optional native deps (ast-grep, ripgrep, jd, pandoc, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
 # Install-Deps — OS-Aware Dependency Installer
@@ -129,7 +129,7 @@ Manual install required (sudo / no auto):
 
 - **`Install all (<N> tools)`** **(recommended — jalankan semua `install_cmd` di plan ini sekarang lewat `<pkg_mgr>`; semua dep opsional terpasang, mega-sdd jalan full-precision)**
 - `Pick subset` — secondary `AskUserQuestion` (`multiSelect=true`) listing each tool with size + cmd; tool yang TIDAK dipilih tetap `missing` dan jalan di `fallback_behavior`-nya masing-masing (lihat baris audit Step 2) sampai diinstall lain kali.
-- `Cancel` — batal total, tidak ada yang diinstall; setiap tool `missing` tetap pada `fallback_behavior`-nya (mis. regex engine bukan tree-sitter AST, output PDF turun ke markdown-only); jalankan lagi `/mega-sdd:install-deps` kapan saja untuk retry.
+- `Cancel` — batal total, tidak ada yang diinstall; setiap tool `missing` tetap pada `fallback_behavior`-nya (mis. regex engine bukan AST ast-grep, output PDF turun ke markdown-only); jalankan lagi `/mega-sdd:install-deps` kapan saja untuk retry.
 
 ### Step 5: Execute install (only for auto-executable tools — never sudo-required)
 

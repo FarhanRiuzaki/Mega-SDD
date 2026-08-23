@@ -12,12 +12,12 @@ This is mega-sdd's biggest scenario. Real-world example: legacy PHP trade-financ
 - Mega-sdd v6+ (the public surface is 4 verbs; typed forms like `/mega-sdd:auto` were removed at 6.0.0 — the front door `/mega-sdd` replaces them)
 - Legacy codebase available (at least 50-100 files; ideally 500+ for meaningful extraction)
 - New target project directory ready
-- `tree-sitter` + `ast-grep` recommended for both legacy scan + new build
+- `ast-grep` recommended for both legacy scan + new build
 - Patience — extract-intelligence is the longest phase (~3 hours for 500-file legacy)
 
 ```bash
-brew install tree-sitter-cli ast-grep ripgrep jd
-command -v tree-sitter && command -v ast-grep && echo "✓ ready"
+brew install ast-grep ripgrep jd
+command -v ast-grep && echo "✓ ready"
 ```
 
 ## Setup

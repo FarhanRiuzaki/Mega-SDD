@@ -18,7 +18,7 @@ For solo developers or single-team: skip this scenario. Use default squad mode (
 
 - Mega-sdd v6+
 - Existing project OR new project
-- Recommended: tree-sitter + ast-grep installed
+- Recommended: ast-grep installed
 - Clear understanding of team partition (which team owns what)
 
 ## Setup — declare squads

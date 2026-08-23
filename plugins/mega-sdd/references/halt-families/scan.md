@@ -20,4 +20,4 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### dep_missing
 
-- `dep_missing` — scan-codebase: a FORCED engine's binary not found (tree-sitter under --engine=tree-sitter, ast-grep under --engine=ast-grep). ALWAYS STOP.
+- `dep_missing` — scan-codebase: a FORCED engine's binary not found (ast-grep under --engine=ast-grep; the tree-sitter lane was removed v7.4.0). ALWAYS STOP.

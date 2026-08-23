@@ -25,7 +25,7 @@
 #     a  — every parsed tools[] entry has id/used_by/purpose/
 #          fallback_behavior/matrix (dict-shaped: catches missing keys,
 #          NOT the duplicate-key merge — that is raw check g/a's job)
-#     b  — tool count == 10 AND id set == union(defaults.* groups)
+#     b  — tool count == 9 AND id set == union(defaults.* groups)
 #     c  — every matrix row has os/pkg_mgr/install_cmd/verify_cmd/size_mb
 #     f  — every defaults group ⊆ tool ids
 #
@@ -154,11 +154,11 @@ def main():
         g_pass = False
         g_msgs.append("orphaned key(s) at 4-space indent outside any active '- id:' entry: " +
                        ", ".join(f"line {ln} '{k}:'" for ln, k in orphans))
-    if not (n_id == c_purpose == c_fallback == c_matrix == 10):
+    if not (n_id == c_purpose == c_fallback == c_matrix == 9):
         g_pass = False
         g_msgs.append(f"line-count mismatch: id={n_id} purpose={c_purpose} "
-                       f"fallback_behavior={c_fallback} matrix={c_matrix} (all must ==10)")
-    msg = ("g: id/purpose/fallback_behavior/matrix line counts all ==10, no orphaned keys"
+                       f"fallback_behavior={c_fallback} matrix={c_matrix} (all must ==9)")
+    msg = ("g: id/purpose/fallback_behavior/matrix line counts all ==9, no orphaned keys"
            if g_pass else "; ".join(g_msgs))
     print(f"RESULT|G|{'PASS' if g_pass else 'FAIL'}|{msg}")
 
@@ -253,17 +253,17 @@ def main():
            if a_pass else "; ".join(a_msgs))
     print(f"RESULT|A_YAML|{'PASS' if a_pass else 'FAIL'}|{msg}")
 
-    # ── b: tool count == 10 AND id set == union(defaults.* groups) ──
+    # ── b: tool count == 9 AND id set == union(defaults.* groups) ──
     ids = [t.get('id') for t in tools if isinstance(t, dict)]
     id_set = set(ids)
     group_names = ['required_tools', 'recommended_minimum', 'fsd_extension', 'code_gates', 'full_stack']
     union = set()
     for g in group_names:
         union |= set(defaults.get(g) or [])
-    count_ok = len(ids) == 10 and len(id_set) == 10
+    count_ok = len(ids) == 9 and len(id_set) == 9
     union_ok = union == id_set
     b_pass = count_ok and union_ok
-    msg = (f"b: tool count={len(ids)} unique={len(id_set)} (want 10); "
+    msg = (f"b: tool count={len(ids)} unique={len(id_set)} (want 9); "
            f"union(defaults groups)==tool-id-set: {union_ok} "
            f"(union={sorted(union)} ids={sorted(id_set)})")
     print(f"RESULT|B|{'PASS' if b_pass else 'FAIL'}|{msg}")
@@ -388,7 +388,7 @@ python3 - "$WORK/probe-orphan-first.yaml" <<'PY'
 import sys
 p = sys.argv[1]
 lines = open(p, encoding='utf-8').read().splitlines(keepends=True)
-out = [l for l in lines if l.strip() != '- id: tree-sitter']
+out = [l for l in lines if l.strip() != '- id: ast-grep']
 assert len(out) == len(lines) - 1, "expected to drop exactly one line"
 open(p, 'w', encoding='utf-8').writelines(out)
 PY
@@ -416,9 +416,9 @@ python3 - "$WORK/probe-sudo.yaml" <<'PY'
 import sys
 p = sys.argv[1]
 t = open(p, encoding='utf-8').read()
-old = ('        install_cmd: "sudo apt install -y tree-sitter-cli"\n'
+old = ('        install_cmd: "sudo apt install -y ripgrep"\n'
        '        requires_sudo: true\n')
-new = '        install_cmd: "sudo apt install -y tree-sitter-cli"\n'
+new = '        install_cmd: "sudo apt install -y ripgrep"\n'
 assert old in t, "fixture line not found — tool-matrix.yaml shape changed"
 open(p, 'w', encoding='utf-8').write(t.replace(old, new, 1))
 PY
@@ -432,8 +432,8 @@ python3 - "$WORK/probe-usedby.yaml" <<'PY'
 import sys
 p = sys.argv[1]
 lines = open(p, encoding='utf-8').read().splitlines(keepends=True)
-# remove only the FIRST 'used_by: [scan-codebase]' occurrence (tree-sitter's row) —
-# the same value repeats verbatim on other entries (e.g. ripgrep), so an
+# remove only the FIRST 'used_by:' occurrence matching the ast-grep entry's value —
+# the same value can repeat verbatim on other entries, so an
 # unqualified strip would drop more than one line.
 removed = False
 result = []
@@ -446,7 +446,7 @@ assert removed, "fixture line 'used_by: [scan-codebase]' not found"
 open(p, 'w', encoding='utf-8').writelines(result)
 PY
 OUT="$(run_raw "$WORK/probe-usedby.yaml")"
-expect_fail "$OUT" "A_RAW" "probe(a): dropped 'used_by:' line from tree-sitter entry (id/purpose/fallback/matrix counts stay ==9, only a(raw) catches it)"
+expect_fail "$OUT" "A_RAW" "probe(a): dropped a 'used_by:' line (id/purpose/fallback/matrix counts stay ==9, only a(raw) catches it)"
 if [ -n "$PYBIN" ]; then
   YOUT="$(run_yaml "$WORK/probe-usedby.yaml")"
   expect_fail "$YOUT" "A_YAML" "probe(a): same mutation, yaml-based required-key check"
@@ -459,7 +459,7 @@ if [ -n "$PYBIN" ]; then
 import sys
 p = sys.argv[1]
 lines = open(p, encoding='utf-8').read().splitlines(keepends=True)
-# remove only the FIRST 'size_mb: 5' occurrence (tree-sitter/macos row)
+# remove only the FIRST 'size_mb:' occurrence (an arbitrary matrix row)
 removed = False
 result = []
 for l in lines:
@@ -471,7 +471,7 @@ assert removed, "fixture line 'size_mb: 5' not found"
 open(p, 'w', encoding='utf-8').writelines(result)
 PY
   YOUT="$(run_yaml "$WORK/probe-sizemb.yaml")"
-  expect_fail "$YOUT" "C" "probe(c): dropped 'size_mb:' from tree-sitter/macos matrix row"
+  expect_fail "$YOUT" "C" "probe(c): dropped a 'size_mb:' row"
 fi
 
 # Probe 6 (b/f) — inject a bogus id into a defaults group that no tool

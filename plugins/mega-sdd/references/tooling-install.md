@@ -46,7 +46,6 @@ Bundling these binaries in the plugin is impractical (50MB+ multi-platform bloat
 
 | Tool | Used by | Fallback if absent | Install |
 |---|---|---|---|
-| `tree-sitter` (or `tree-sitter-cli`) | scan-codebase OPT-IN lane only (`--engine=tree-sitter` — never auto) | auto uses ast-grep (precision stays `ast`), else regex | macOS: `brew install tree-sitter-cli` · Linux/win: `cargo install tree-sitter-cli` · Node: `npm install -g tree-sitter-cli` |
 | `ast-grep` (alias `sg`) | scan-codebase (TIER-1 AST extraction — zero-compilation, one spawn), execute-bolts, generate-units, detect-drift (Hard Rule v2 grammar) | scan falls to regex tier; v1-authored rules run natively; units carrying v2 rules need it installed | macOS: `brew install ast-grep` · Linux/win: `cargo install ast-grep` · Node: `npm install -g @ast-grep/cli` |
 | `ripgrep` (`rg`) | scan-codebase (structured JSON grep) | GNU grep (slower; no structured JSON) | macOS: `brew install ripgrep` · Linux/win: `cargo install ripgrep` · apt: `apt install ripgrep` |
 | `jd` | diff-vault (canonical JSON/YAML diff with patches) | Manual diff via Read+compare | macOS: `brew install jd` · Linux/win: `go install github.com/josephburnett/jd/v2/jd@latest` |
@@ -65,14 +64,13 @@ If you have **Homebrew** (macOS / Linux):
 
 ```bash
 brew install ast-grep ripgrep jd
-brew install tree-sitter-cli   # optional — only for the --engine=tree-sitter opt-in lane
 npm install -g markdownlint-cli2     # optional; vault prose lint
 ```
 
 If you have **cargo** (cross-platform Rust):
 
 ```bash
-cargo install ast-grep ripgrep   # add tree-sitter-cli only for the opt-in lane
+cargo install ast-grep ripgrep
 go install github.com/josephburnett/jd/v2/jd@latest
 npm install -g markdownlint-cli2
 ```
@@ -80,28 +78,28 @@ npm install -g markdownlint-cli2
 If you have **npm** only:
 
 ```bash
-npm install -g tree-sitter-cli @ast-grep/cli markdownlint-cli2
+npm install -g @ast-grep/cli markdownlint-cli2
 # ripgrep + jd: install via system package manager (apt/brew/scoop/etc)
 ```
 
 If you are on **Windows** (git-bash / MSYS2):
 
-`tree-sitter`, `ast-grep`, `jd`, `ripgrep`, and `pandoc` all have both winget and Scoop packages. Note `jd` lives in the Scoop **`extras`** bucket (not Main), so add that bucket first.
+`ast-grep`, `jd`, `ripgrep`, and `pandoc` all have both winget and Scoop packages. Note `jd` lives in the Scoop **`extras`** bucket (not Main), so add that bucket first.
 
 ```powershell
 # Scoop (jd is in the 'extras' bucket, not Main):
-scoop install ast-grep ripgrep pandoc   # add tree-sitter only for the opt-in lane
+scoop install ast-grep ripgrep pandoc
 scoop bucket add extras && scoop install jd
 npm install -g @mermaid-js/mermaid-cli    # mermaid render for the PDF lane
 npm install -g markdownlint-cli2          # optional; vault prose lint
 
 # winget (covers all five native tools):
 winget install BurntSushi.ripgrep.MSVC JohnMacFarlane.Pandoc
-winget install ast-grep.ast-grep josephburnett.jd   # add tree-sitter.tree-sitter-cli only for the opt-in lane
+winget install ast-grep.ast-grep josephburnett.jd
 
 # or the cross-platform runtime fallbacks:
-cargo install tree-sitter-cli ast-grep   # if Rust present
-npm install -g tree-sitter-cli @ast-grep/cli      # if Node present
+cargo install ast-grep                   # if Rust present
+npm install -g @ast-grep/cli             # if Node present
 go install github.com/josephburnett/jd/v2/jd@latest   # if Go present
 ```
 
@@ -110,7 +108,6 @@ go install github.com/josephburnett/jd/v2/jd@latest   # if Go present
 ## Verify install
 
 ```bash
-command -v tree-sitter || command -v tree-sitter-cli && echo "✓ tree-sitter ready"
 command -v ast-grep && echo "✓ ast-grep ready"
 command -v rg && echo "✓ ripgrep ready"
 command -v jd && echo "✓ jd ready"
@@ -129,7 +126,7 @@ Mega-sdd works WITHOUT any of these. You get:
 - diff-vault: skill-internal compare
 - lint-units: internal heuristic checks
 
-For first-time exploration or one-off projects, minimal setup is fine. For sustained brownfield work or multi-project use, recommend installing at least **`ast-grep` + `ripgrep`** — ast-grep IS the auto AST tier (zero-compilation, one spawn); add `tree-sitter` only if you intend to use the `--engine=tree-sitter` opt-in lane (it additionally needs manually configured grammars).
+For first-time exploration or one-off projects, minimal setup is fine. For sustained brownfield work or multi-project use, recommend installing at least **`ast-grep` + `ripgrep`** — ast-grep IS the AST tier (zero-compilation, one spawn; the tree-sitter opt-in lane was removed in v7.4.0).
 
 ## License notes
 
@@ -137,13 +134,13 @@ All recommended tools are MIT or Apache-2.0 licensed. Mega-sdd does NOT redistri
 
 ## Troubleshooting
 
-### "tree-sitter command not found" after brew install
+### "command not found" right after an install
 
 macOS may have stale shell PATH. Try:
 
 ```bash
 hash -r          # clear shell command cache
-which tree-sitter   # verify path
+which ast-grep   # verify path
 # Or restart shell session
 ```
 
@@ -158,13 +155,13 @@ If you have `ast-grep` AND `sg` aliases conflicting (sg is the short form), mega
 ### Updating tools
 
 ```bash
-brew upgrade tree-sitter-cli ast-grep ripgrep jd pandoc semgrep gitleaks
+brew upgrade ast-grep ripgrep jd pandoc semgrep gitleaks
 npm update -g @mermaid-js/mermaid-cli markdownlint-cli2
 ```
 
-Mega-sdd is tested against versions pinned in `plugins/mega-sdd/skills/scan-codebase/queries/VERSIONS.md` (tree-sitter grammars). Major version drift may produce warnings; minor versions typically compatible.
+Mega-sdd is tested against versions pinned in `plugins/mega-sdd/skills/scan-codebase/queries/VERSIONS.md` (ast-grep rule-pack glossary). Major version drift may produce warnings; minor versions typically compatible.
 
 ## References
 
-- `plugins/mega-sdd/skills/scan-codebase/queries/VERSIONS.md` — tree-sitter grammar version matrix
+- `plugins/mega-sdd/skills/scan-codebase/queries/VERSIONS.md` — ast-grep rule-pack registry (the tree-sitter grammar matrix died with its lane, v7.4.0)
 - Tool-adoption history and rationale: `CHANGELOG.md` + git log

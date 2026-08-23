@@ -87,7 +87,7 @@ if grep -qF 'follows its taxonomy class' "$OF/convergence-loops.md" \
 else fail "A2b: convergence-loops class deference or mode_migrate carve-out missing"; fi
 
 # ── A6 — scan trio ──
-grep -qF '(file, range.start.line, ruleId)' "$P/skills/scan-codebase/references/tree-sitter-integration.md" \
+grep -qF '(file, range.start.line, ruleId)' "$P/skills/scan-codebase/references/scan-procedure.md" \
   && pass "A6: dedupe key aligned to the owner (3-tuple)" \
   || fail "A6: dedupe key still the definition-dropping 2-tuple"
 grep -qF 'five subagent prompt templates' "$P/skills/scan-codebase/references/deep-scan-gate.md" \

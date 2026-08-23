@@ -7,7 +7,7 @@ End-to-end integration test validating all 5 Iter 6 swaps working together in a 
 **Repo state**: Brownfield Laravel project at `./fixtures/e2e-iter6-fixture/`:
 - Existing User model + UserController (matches Iter 1 e2e fixture)
 - PRD `prd-extend-user.md` adds new audit-log feature
-- Pre-installed: tree-sitter CLI + ast-grep CLI
+- Pre-installed: ast-grep CLI
 
 ## Test steps
 

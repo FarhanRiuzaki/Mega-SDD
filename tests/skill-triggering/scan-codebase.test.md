@@ -179,6 +179,6 @@ All triggers fire. Output exists, schema-compliant, no hallucinations. Increment
 
 **Verify:**
 - Grep `references/predictive-checks.md` for `## scan-codebase preflight checks` section
-- Confirm `check_id: ast_engine_present` entry present (fires only when tree-sitter AND ast-grep are BOTH absent; ts-absent-with-ast-grep-present is the NORMAL D2 state — no warning at all)
+- Confirm `check_id: ast_engine_present` entry present (fires only when ast-grep is absent — v7.4.0: the tree-sitter lane is gone)
 - Confirm command, expected, on_fail, fatal=no, predicts_halt=dep_missing
 - Confirm catalog entry matches behavior in scan-codebase SKILL.md Step 0 engine detection (consistent message + install hint)

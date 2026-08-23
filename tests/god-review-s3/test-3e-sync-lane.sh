@@ -25,12 +25,11 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 SP="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/scan-procedure.md"
 SK="${ROOT}/plugins/mega-sdd/skills/scan-codebase/SKILL.md"
 HFH="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/halts-flags-handoff.md"
-TSI="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/tree-sitter-integration.md"
 SY="${ROOT}/plugins/mega-sdd/commands/sync.md"
 HC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md"
 RR="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md"
 SPEC="${ROOT}/docs/superpowers/specs/2026-06-10-living-vault-continuous-sync-design.md"
-for f in "$SP" "$SK" "$HFH" "$TSI" "$SY" "$HC" "$RR" "$SPEC"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+for f in "$SP" "$SK" "$HFH" "$SY" "$HC" "$RR" "$SPEC"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
@@ -67,12 +66,12 @@ fi
 if grep -qF 'RG_OPTS' "$SP"; then fail "SP-6: broken RG_OPTS block survives"; else ok "SP-6: RG_OPTS block removed"; fi
 if grep -qF -- "--type-add" "$SP"; then fail "SP-6: needless --type-add survives"; else ok "SP-6: no --type-add (rg types are built-in)"; fi
 
-# ── SP-7 ──
-grep -qF 'grammar smoke test' "$SP" && ok "SP-7: Step 0 carries the grammar smoke test" || fail "SP-7: smoke test missing from Step 0"
-grep -qF 'grammar smoke test' "$SK" && ok "SP-7: SKILL.md skeleton names the smoke test" || fail "SP-7: SKILL.md skeleton stale"
-grep -qF 'binary presence ≠ working grammars' "$SP" && ok "SP-7: rationale states binary ≠ grammars" || fail "SP-7: rationale missing"
-grep -qF 'verified' "$TSI" && grep -qF 'never from binary presence alone' "$TSI" \
-  && ok "SP-7: integration ref — precision_tier ast is a verified claim" || fail "SP-7: integration ref not updated"
+# ── SP-7 (v7.4.0 form): the grammar-smoke-test lane stays removed ──
+if grep -qF 'grammar smoke test' "$SP" || grep -qF 'grammar smoke test' "$SK"; then
+  fail "SP-7: grammar smoke test prose is back (the tree-sitter lane was removed v7.4.0)"
+else
+  ok "SP-7: no grammar-smoke-test prose (tree-sitter lane stays removed)"
+fi
 
 # ── SP-8 ──
 SP8_BAD=0

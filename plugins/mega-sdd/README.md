@@ -118,7 +118,7 @@ Mega-sdd's reason for existing is that it **won't let an agent invent what isn't
 4. **Implementation state** — IMPLEMENTED / NEW / PARTIAL_FIELDS_MISSING / UNKNOWN per claim
 5. **Unit grounding** — `target_files` whitelist + acceptance_test + cited Anchors
 6. **Hard Rules pre/post-flight** — ast-grep validates constraints at bolt time
-7. **AST-precise extraction** — ast-grep (zero-compilation, one spawn; tree-sitter as an explicit opt-in lane — no regex guessing of structure)
+7. **AST-precise extraction** — ast-grep (zero-compilation, one spawn — no regex guessing of structure; the tree-sitter opt-in lane was removed in v7.4.0)
 8. **Reuse-first write loop** — a script-built full-repo symbol index feeds every bolt dispatch an "Existing symbols — REUSE, don't recreate" slice at write time, and a post-write duplication sweep (exact / camel-snake / same-suffix-root / verb-synonym matching) hands mechanical evidence rows to the code-quality review lens
 10. **Drift detection** — committed code reconciled against the vault
 11. **Interface lock** — cross-squad consumed interfaces must be locked
@@ -152,7 +152,6 @@ Mega-sdd adopts stable native binaries instead of reinventing them — all optio
 
 | Tool | Used by | Fallback |
 |---|---|---|
-| `tree-sitter` | scan-codebase OPT-IN lane (`--engine=tree-sitter`; auto uses ast-grep) | auto is unaffected — ast-grep serves tier `ast` |
 | `ast-grep` | scan-codebase (the auto AST engine) / execute-bolts + generate-units (Hard Rules v2) / the reuse symbol index + duplication sweep | scan falls to regex tier; rules fall to the v1 5-type grammar |
 | `ripgrep` (`rg`) | scan-codebase (structured JSON grep) | GNU grep |
 | `jd` | diff-vault (canonical JSON/YAML patches) | manual Read+compare |
@@ -170,7 +169,7 @@ Full per-platform install matrix + **platform support table** (macOS/Linux/WSL =
 **v7.0.0** — *Weighted routing (MAJOR, Fase 1 of the v7 diet):* every task is weighed **S/M/L** and the default when unsure is **S — answer inline, zero pipeline, zero mega-sdd scripts**; `.mega-sdd/` presence is a status signal, never an invoke trigger; hooks arm only when a chain actually runs this session (`chain_engaged` marker; subagent context always armed, fail-closed); anti-forge guards stay always-on; the mandatory-routing slim block is deleted (the bare governance marker survives). Measured: tier-S Edit = 0 hook forks (was ~7), non-SDD Stop = 0 spawns. Override: `--weight=S|M|L`. Spec: `2026-08-21-v7-weighted-routing-design.md`.
 **v6.0.0** — *The surface cull (MAJOR):* the 24 5.x deprecation aliases are removed (policy-ladder complete: demoted 5.0.0 → telemetry review → removed); the surface is exactly 3 verbs + 4 one-timers, everything else by phrase; all operative alias content relocated into skill references; the on-demand doc pack now derives fully from the modern vault generation (flows/constraints/vault.json sources). Migration: `docs/mega-sdd/upgrade-from-old-version.md`.
 **v5.34.0–v5.36.0** — *The Express Spine:* GROUND (script, seconds) → claim-scoped express bind (ledger + symbol index, zero map load) → batched blocking-OQ prompt + recorded auto-defers → deterministic risk-tiered review; the express spine is the DEFAULT (`--classic` restores scan-first).
-**v5.31.x** — *ast-grep is the auto AST engine:* the scan ladder is `ast-grep → regex` (one spawn, zero compilation — the clang grammar-compile OOM class is structurally unreachable unattended); `--engine=tree-sitter` stays as a fully supported explicit opt-in lane. Install guidance follows (`recommended_minimum: ast-grep + ripgrep`).
+**v5.31.x** — *ast-grep is the auto AST engine:* the scan ladder is `ast-grep → regex` (one spawn, zero compilation — the clang grammar-compile OOM class is structurally unreachable unattended); `--engine=tree-sitter` stayed as an explicit opt-in lane until its removal in v7.4.0. Install guidance follows (`recommended_minimum: ast-grep + ripgrep`).
 **v5.30.0** — *Duplication sweep with teeth:* newly-added symbols matched against the FULL symbol index (exact / camel-snake / same-suffix-root / verb-synonym), capped evidence rows handed to the code-quality review lens — advisory by doctrine, never a hook.
 **v5.29.0** — *PageRank targeting removed* (−832 lines): file-level, advisory-only, dead on real machines; replaced at the right layer by the write-time symbol slice. `--skip-pagerank` stays an accepted no-op through 5.x.
 **v5.28.0** — *Reuse-first symbol index:* `build-symbol-index.sh` (script-built, byte-deterministic, zero model tokens) + every bolt dispatch carries "Existing symbols — REUSE, don't recreate" (target-file rows first, capped 40, provenance-stamped).

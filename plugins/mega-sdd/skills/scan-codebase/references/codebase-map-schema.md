@@ -16,20 +16,18 @@ languages_detected: ["typescript", "php", "javascript"]
 package_managers: ["npm", "composer"]
 test_frameworks: ["jest", "phpunit"]
 # engine + precision metadata
-engine: tree-sitter | ast-grep | regex
+engine: ast-grep | regex        # legacy maps may carry `tree-sitter` (pre-7.4 producer) — consumers treat it like ast-grep (tier `ast`)
 precision_tier: ast | regex                    # BOTH AST engines stamp `ast`
 # downgrade record — present when ANY ladder fall happened: (a) Step-0 per-language falls
 # (`lang:reason -> tier` pairs from the probe digest — auto: no_astgrep_pack/astgrep_absent;
-# opt-in tree-sitter lane: grammar_compile_killed etc.; references/scan-procedure.md §Step 0),
+# references/scan-procedure.md §Step 0),
 # and/or (b) the Step 5 spawn-cost gate's UNATTENDED lane falling to a cheaper tier
 # (lane 3 — with estimate, N_total, OS, budget). Its ABSENCE means every language extracted
 # at the tier the invocation selected (the auto ast-grep primary route is NOT a fall);
 # its PRESENCE says exactly what fell and why — the durable half of the "record, not the
 # action" rail.
-precision_downgrade_reason: "step-5 spawn budget: N_total=2000 (N_hash=0 + N_extract=2000) x 0.22s/spawn (os=windows-bash) = ~440s > 60s budget; --auto lane downgraded tree-sitter -> regex"
-tree_sitter_version: <version-string>          # provenance (version-probed even in auto)
+precision_downgrade_reason: "step-5 spawn budget: N_total=2000 (N_hash=0 + N_extract=2000) x 0.22s/spawn (os=windows-bash) = ~440s > 60s budget; unattended lane downgraded to regex"
 astgrep_version: <version-string>               # only when the D2 tier-1 binary was found
-grammars_used: ["typescript", "php"]            # OPT-IN lane outcome only (--engine=tree-sitter)
 # staleness stamp — verified git HEAD at scan time (omit when the repo has no .git OR
 # `git rev-parse --verify 'HEAD^{commit}'` fails, e.g. a fresh zero-commit repo; consumers
 # treat a stamp equal to the literal string "HEAD" as missing)
@@ -104,7 +102,7 @@ For each vault claim referencing code (endpoint, field, file path), `bind-codeba
 
 ## Detection precision
 
-The scan is **heuristic** (AST captures when `engine: tree-sitter` or `engine: ast-grep`, regex + file traversal otherwise). Either engine will miss:
+The scan is **heuristic** (AST captures when `engine: ast-grep`, regex + file traversal otherwise). Either engine will miss:
 - Dynamic routes generated at runtime
 - Magic methods / metaprogramming
 - Out-of-tree dependencies
