@@ -256,10 +256,13 @@ grep -q '"FAIL"\|missing_mermaid\|prose' "$T/vf.json" \
   && pass "B6: Mermaid mandate fires on layout-2 flows.md (prose flow flagged)" \
   || fail "B6: mandate did not fire on flows.md ($(head -c 150 "$T/vf.json"))"
 
-# B7 — structural pins: hook case glob + validate-kb basename accept flows.md
-grep -q '\*04-flows.md|\*/flows.md)' "$P/hooks/post-tool-use" \
-  && pass "B7: post-tool-use case dispatches */flows.md" \
-  || fail "B7: hook case glob missing flows.md"
+# B7 (repinned v7.5.0 №D) — the hook fan-out is deleted; the layout-2 flows
+# glob's surviving dispatcher is run-analyze (FULL family run + the
+# aggregate-only _has existence probe). Pin BOTH sites.
+grep -q 'flows.md' "$P/scripts/run-analyze.sh" \
+  && grep -q '"04-flows.md" -o -name "flows.md"' "$P/scripts/run-analyze.sh" \
+  && pass "B7: run-analyze dispatches/probes both 04-flows.md and flows.md" \
+  || fail "B7: run-analyze lost the layout-2 flows glob"
 grep -q '== "flows.md"' "$P/scripts/validate-kb.sh" \
   && pass "B7: validate-kb basename accepts flows.md" \
   || fail "B7: validate-kb basename missing flows.md"

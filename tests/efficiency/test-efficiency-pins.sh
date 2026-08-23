@@ -15,12 +15,14 @@ cfg_line=$(grep -nF 'telemetry:' "$P/hooks/pre-tool-use" | head -1 | cut -d: -f1
   && pass "E1: .mega-sdd guard before config grep ($mega_line < $cfg_line)" \
   || fail "E1: guard ordering wrong (mega=$mega_line cfg=$cfg_line)"
 
-# E2 — post-tool-use: unit-write validators parallelized + wait
-# (v7 group 9: the FOP invocation now carries the --fanout-parity mode flag.)
-grep -q '( bash "$VALIDATOR_FC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &' "$P/hooks/post-tool-use" \
-  && grep -B2 -A8 'VALIDATOR_FOP" --fanout-parity --cwd' "$P/hooks/post-tool-use" | grep -q 'wait' \
-  && pass "E2: unit-write validators parallel + wait" \
-  || fail "E2: parallel validator pattern missing"
+# E2 (repinned v7.5.0 №D) — the unit-write validator fan-out is DELETED from
+# post-tool-use (gate-time recompute + analyze FULL re-run own the coverage).
+# Negative pin: no validator dispatch may grow back into this hook.
+if grep -qE 'VALIDATOR_[A-Z]+=|run_validator_and_emit' "$P/hooks/post-tool-use"; then
+  fail "E2: a validator dispatch grew back into post-tool-use (№D deleted the fan-out)"
+else
+  pass "E2: post-tool-use carries no validator dispatch (fan-out stays dead)"
+fi
 
 # E3 — code-quality-reviewer aligned with catalog (opus)
 grep -q '^model: opus' "$P/agents/code-quality-reviewer.md" \

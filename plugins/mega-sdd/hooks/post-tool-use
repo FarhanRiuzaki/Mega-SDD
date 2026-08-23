@@ -69,45 +69,23 @@ if [ -n "$SC_CWD" ]; then
       # ── v7 tier-S fast path (spec 2026-08-21-v7-weighted-routing-design.md §3.3) ──
       # Size cap (review R-6): oversized stdin takes the classic python path.
       if [ "${#STDIN_JSON}" -le 262144 ]; then
-      # A mega-sdd project WITHOUT an active chain this session: the validator
-      # fan-out below is CHAIN-SCOPED (the PreToolUse gate aggregator re-derives
-      # every gate state at gate time, so the fan-out is early-warning, not the
-      # moat — audit 2026-08-21 §3.3). Here we settle the common case in pure
-      # shell: not armed → journal a Write|Edit (≤2 forks: date + wc) and exit;
-      # every other tool exits clean. FAIL-CLOSED: subagent sentinels, Plan
-      # mode, extraction doubt, or armed/unknown state fall through to the
-      # authoritative python path (which re-checks armed before any validator).
+      # Settle the common case in pure shell: journal a Write|Edit (≤2 forks:
+      # date + wc) and exit. Extraction doubt / escaped (Windows) paths /
+      # oversized stdin fall through to the authoritative python leg.
+      # №D (v7.5.0): the ARMED probe left this fast path — the validator fan-out
+      # is DELETED (every gate-read state recomputes at its gate, run-analyze
+      # FULL re-runs the 4 advisories since №C), so armed and un-armed sessions
+      # take the SAME pure-shell journal path. Subagent/Plan sentinels left with
+      # it: they existed to force the fan-out, which no longer exists; the
+      # journal row is identical either way. Extraction doubt still falls
+      # through to the authoritative python leg below.
       SC_V7_DONE=0
-      case "$STDIN_JSON" in *'"agent_id"'*|*'"parent_tool_use_id"'*|*agent_transcript_path*) SC_V7_DONE=1 ;; esac
-      [ -f "${SC_ROOT}/.mega-sdd/.plan-pending" ] && SC_V7_DONE=1
-      if [ "$SC_V7_DONE" -eq 0 ]; then
-        SC_SID=""
-        SC_R="$STDIN_JSON"
-        while [[ "$SC_R" =~ \"session_id\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"(.*) ]]; do
-          SC_SID="${BASH_REMATCH[1]}"; SC_R="${BASH_REMATCH[2]}"
-        done
-        SC_ARMED=unknown
-        if [ -n "$SC_SID" ]; then
-          SC_GG="${SC_ROOT}/.mega-sdd/.gateguard-state.json"
-          if [ ! -f "$SC_GG" ]; then
-            SC_ARMED=no
-          else
-            SC_GG_C=""
-            { SC_GG_C="$(<"$SC_GG")"; } 2>/dev/null || SC_GG_C=""
-            if [ -n "$SC_GG_C" ]; then
-              case "$SC_GG_C" in
-                *"\"$SC_SID\": true"*|*"\"$SC_SID\":true"*) SC_ARMED=yes ;;  # engaged_sessions map
-                *"\"session_id\": \"$SC_SID\""*|*"\"session_id\":\"$SC_SID\""*)
-                  case "$SC_GG_C" in
-                    *'"chain_engaged": true'*|*'"chain_engaged":true'*) SC_ARMED=yes ;;
-                    *) SC_ARMED=no ;;
-                  esac ;;
-                *) SC_ARMED=no ;;
-              esac
-            fi
-          fi
-        fi
-        if [ "$SC_ARMED" = "no" ]; then
+      SC_SID=""
+      SC_R="$STDIN_JSON"
+      while [[ "$SC_R" =~ \"session_id\"[[:space:]]*:[[:space:]]*\"([^\"]*)\"(.*) ]]; do
+        SC_SID="${BASH_REMATCH[1]}"; SC_R="${BASH_REMATCH[2]}"
+      done
+      if true; then
           # tool_name via FIRST-match (top-level key precedes tool_input in the
           # harness payload; a spoofed occurrence inside content comes later).
           SC_TOOL=""
@@ -165,44 +143,18 @@ if [ -n "$SC_CWD" ]; then
               [ "$SC_V7_DONE" -eq 2 ] && exit 0
               ;;
             "") : ;;                              # unextractable → python leg
-            *) exit 0 ;;                          # Read/Bash/Skill/Agent, not armed → nothing to do
+            *) exit 0 ;;                          # non-Write|Edit cannot arrive via the matcher (№C) — nothing to do
           esac
-        fi
       fi
       fi  # size cap
     fi
   fi
 fi
 
-# ─── v7 chain-armed probe (spec §3.1 — same contract as pre-tool-use) ────────
-# armed ⇔ .gateguard-state.json carries chain_engaged for THIS session. Called
-# by the Write|Edit branch below AFTER the dirty-journal append: not
-# armed → skip the validator fan-out (the PreToolUse gate-time re-derivation is
-# the moat; this fan-out is early-warning). Fail-CLOSED like its sibling.
-v7_chain_armed() {
-  local sid="${SESSION_ID:-}" gg="${PROJECT_ROOT}/.mega-sdd/.gateguard-state.json" c=""
-  case "$STDIN_JSON" in *'"agent_id"'*|*'"parent_tool_use_id"'*|*agent_transcript_path*) return 0 ;; esac
-  [ -f "${PROJECT_ROOT}/.mega-sdd/.plan-pending" ] && return 0
-  # absent-session normalization: this hook's parse defaults to "unknown-session",
-  # the pre-tool-use writer normalizes to "no-session" — map both to the writer's form.
-  case "$sid" in ""|unknown-session|unknown) sid="no-session" ;; esac
-  [ -f "$gg" ] || return 1
-  { c="$(<"$gg")"; } 2>/dev/null || return 0
-  [ -n "$c" ] || return 0
-  # v7 review R-2 (shared worktree): armed if MY sid is in the engaged_sessions
-  # map — a concurrent session re-stamping the top-level record never un-arms me.
-  case "$c" in
-    *"\"$sid\": true"*|*"\"$sid\":true"*) return 0 ;;
-  esac
-  case "$c" in
-    *"\"session_id\": \"$sid\""*|*"\"session_id\":\"$sid\""*) : ;;
-    *) return 1 ;;
-  esac
-  case "$c" in
-    *'"chain_engaged": true'*|*'"chain_engaged":true'*) return 0 ;;
-    *) return 1 ;;
-  esac
-}
+# ─── v7 chain-armed probe: DELETED (№D) ──────────────────────────────────────
+# Its only caller was the validator fan-out below, which is gone — the
+# PreToolUse gate aggregator re-derives every gate-read state at gate time
+# (S4/S5/S6), and run-analyze FULL re-runs the advisory set (№C).
 
 # Parse stdin via python3. EVERY value is shell-quoted with shlex.quote() because
 # the consumer below is `eval` — a bare `KEY=value` line is re-parsed by the shell,
@@ -315,13 +267,11 @@ case "${TOOL_NAME:-}" in
   #    written fresh by run-analyze FULL (№C twin change), so the per-Bash-call
   #    hook firing bought nothing the analyze lane does not already cover.
   Write|Edit)
-    # Iter 67.6 [HOOK-VALIDATE] + Phase B B.2: on Write|Edit of mega-sdd-relevant
-    # paths, run validators. Multiple validators may fire per path.
-    # State files are OVERWRITE-NOT-APPEND (current truth); WIP spam self-clears.
+    # №D: this authoritative leg is the JOURNAL fallback for payloads the
+    # pure-shell fast path declined (escaped Windows paths, oversized stdin,
+    # extraction doubt). No validators run here anymore.
     FILE_PATH="${FILE_PATH:-}"
     [ -z "$FILE_PATH" ] && exit 0
-
-    SCRIPT_DIR="$(cd "$(dirname "$HOOK_SELF")" && pwd)"
 
     # ── Living-vault dirty-paths journal (advisory; spec 2026-06-10-living-vault) ──
     # Source-file writes in a GROUNDED repo are journaled so /mega-sdd:sync +
@@ -356,392 +306,28 @@ case "${TOOL_NAME:-}" in
         ;;
     esac
 
-    # ── v7: everything below this line is VALIDATOR FAN-OUT — chain-scoped ──
-    # (spec §3.3; gate-0 decision). The journal above stays always-on; the
-    # validators run only in an armed session. Moat unaffected: the PreToolUse
-    # aggregator re-derives every one of these states at the execute-bolts gate.
-    v7_chain_armed || exit 0
-
-    # ── Validator 1 (Iter 67.6 slice 1): binding→units handoff (OQ-ID propagation) ──
-    # Fires when a unit file is saved. Re-validates entire handoff (current-truth state).
-    case "$FILE_PATH" in
-      *-bound/units/U-*.md|*-bound/units/_index.md|*.mega-sdd/vaults/*-bound/units/*.md|*.mega-sdd/vaults/*/units/U-*.md|*.mega-sdd/vaults/*/units/_index.md)
-        VALIDATOR_BU="${SCRIPT_DIR}/../scripts/validate-handoff-binding-units.sh"
-        if [ -x "$VALIDATOR_BU" ]; then
-          ( bash "$VALIDATOR_BU" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
-        fi
-        # Constitution clause propagation (same boundary, same trigger)
-        VALIDATOR_CP="${SCRIPT_DIR}/../scripts/validate-constitution-propagation.sh"
-        if [ -x "$VALIDATOR_CP" ]; then
-          ( bash "$VALIDATOR_CP" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
-        fi
-        # Starterkit conformance — units must match starterkit-context.yaml §patterns
-        VALIDATOR_SKC="${SCRIPT_DIR}/../scripts/validate-starterkit-conformance.sh"
-        if [ -x "$VALIDATOR_SKC" ]; then
-          ( bash "$VALIDATOR_SKC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
-        fi
-        # Flow-coverage (code-delivery slice A): flow-step -> artifact derivation +
-        # scaffold-filter. SKIPs gracefully if the active pack declares no
-        # `## Flow-artifact derivation` section. Writes .flow-coverage-state.json;
-        # PreToolUse Branch 5 reads its status to gate execute-bolts.
-        VALIDATOR_FC="${SCRIPT_DIR}/../scripts/validate-flow-coverage.sh"
-        if [ -x "$VALIDATOR_FC" ]; then
-          ( bash "$VALIDATOR_FC" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
-        fi
-        # Sibling-consistency (code-delivery slice B): cross-cutting concern coherence
-        # + FK relation derivation across sibling units. SKIPs when the active pack
-        # declares no `## Cross-cutting concerns`/`## Relation derivation`. Writes
-        # .sibling-consistency-state.json; PreToolUse Branch 7 reads it to gate execute-bolts.
-        VALIDATOR_SIB="${SCRIPT_DIR}/../scripts/validate-sibling-consistency.sh"
-        if [ -x "$VALIDATOR_SIB" ]; then
-          ( bash "$VALIDATOR_SIB" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
-        fi
-        # Fan-out parity (Iter-79 A2): presence-parity of deliverable obligations
-        # (UI contract, render test) across VIEW-BEARING siblings — catches "LC is
-        # always the survivor". SKIPs when the pack declares no view_glob. Writes
-        # .fanout-parity-state.json. ADVISORY ONLY — surfaced via analyze;
-        # the PreToolUse aggregator does NOT read this state file (no blocking gate).
-        # (Per CLAUDE.md: fan-out-parity is advisory, not a hard block.)
-        VALIDATOR_FOP="${SCRIPT_DIR}/../scripts/validate-sibling-consistency.sh"
-        if [ -x "$VALIDATOR_FOP" ]; then
-          ( bash "$VALIDATOR_FOP" --fanout-parity --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
-        fi
-        # The 6 validators above are INDEPENDENT (each writes its own state file;
-        # PreToolUse is the consumer) — run in parallel, then wait so all state
-        # files are written before this async hook exits. Was: 6 sequential spawns.
-        wait
-        ;;
-    esac
-
-    # ─── Factory Line: validate the checkpoint ledger on write ────────────────
-    case "$FILE_PATH" in
-      */.mega-sdd/factory-ledger.json)
-        VALIDATOR_FL="${SCRIPT_DIR}/../scripts/validate-factory-ledger.sh"
-        if [ -x "$VALIDATOR_FL" ]; then
-          bash "$VALIDATOR_FL" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        fi
-        ;;
-    esac
-
-    # ── Code-delivery slice E: UI scaffold-tells quality gate ───────────────
-    # Style-A dispatch on Write|Edit of a VIEW file (generated UI source — NOT a
-    # mega-sdd artifact). The trigger glob is deliberately GENEROUS (common view
-    # locations across stacks: resources/views, templates, components, .blade/.vue/
-    # .jsx/.tsx/.html); validate-ui-quality.sh re-resolves the active pack and re-scans
-    # by the pack-declared view_glob, self-SKIPping when the pack omits the
-    # `## UI quality signatures` section. Writes .ui-quality-blockers.json; PreToolUse
-    # Branch 8 reads its status to gate execute-bolts. Scan is project-wide / current-truth.
-    case "$FILE_PATH" in
-      *resources/views/*|*/templates/*|*/components/*|*.blade.php|*.vue|*.jsx|*.tsx)
-        VALIDATOR_UIQ="${SCRIPT_DIR}/../scripts/validate-ui-quality.sh"
-        if [ -x "$VALIDATOR_UIQ" ]; then
-          bash "$VALIDATOR_UIQ" --cwd="$PROJECT_ROOT" --file-path="$FILE_PATH" --quiet >/dev/null 2>&1 || true
-        fi
-        ;;
-    esac
-
-    # ── Code-delivery slice C: cross-cutting registration scan ──────────────
-    # Style-A dispatch on Write|Edit of a backend model/source file. The trigger glob is
-    # GENEROUS (common model dirs across stacks: app/Models, Models, models, app/Entities,
-    # domain, src/models); the --cross-cutting mode re-resolves the active pack
-    # and re-scans the pack-declared registration_target_glob (current-truth, project-wide),
-    # self-SKIPping when no concern declares a registration_signature + target glob. Writes
-    # .cross-cutting-state.json; PreToolUse Branch 11 reads its status to gate execute-bolts.
-    case "$FILE_PATH" in
-      */app/Models/*|*/Models/*|*/models/*|*/app/Entities/*|*/domain/*|*/src/models/*)
-        VALIDATOR_CC="${SCRIPT_DIR}/../scripts/validate-sibling-consistency.sh"
-        if [ -x "$VALIDATOR_CC" ]; then
-          bash "$VALIDATOR_CC" --cross-cutting --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        fi
-        ;;
-    esac
-
-    # ── Code-delivery slice F: UI dispatch-prompt enrichment check ──────────
-    # Style-A dispatch on Write|Edit of an emitted bolt dispatch prompt
-    # (<vault>/bolts/U-XXX/dispatch-prompt.md — written by execute-bolts). The
-    # validator asserts a ui_ux unit's prompt actually carries injected design tokens
-    # + a view/component exemplar; it self-SKIPs when the pack omits `## UI quality
-    # signatures` (no view_glob) or no ui_ux prompt exists. Writes
-    # .dispatch-prompt-state.json. ADVISORY (S6 EB-HONEST-3): nothing in PreToolUse
-    # reads this state — it is surfaced via analyze, per the demotion list.
-    # NOTE: the shipped writer is now scripts/build-dispatch-prompt.sh, which writes
-    # from Python and fires no Write event — see the Bash-leg twin of this dispatch
-    # in the Bash) branch above. This leg stays for hand/agent edits of an emitted
-    # prompt and for any future Write-based writer; both legs run the same validator
-    # with the same project-wide scan, so a double fire is idempotent (the state file
-    # is OVERWRITE-not-append, current truth).
-    case "$FILE_PATH" in
-      *.mega-sdd/vaults/*/bolts/*/dispatch-prompt.md)
-        VALIDATOR_DP="${SCRIPT_DIR}/../scripts/validate-dispatch-prompt.sh"
-        if [ -x "$VALIDATOR_DP" ]; then
-          bash "$VALIDATOR_DP" --cwd="$PROJECT_ROOT" --file-path="$FILE_PATH" --quiet >/dev/null 2>&1 || true
-        fi
-        ;;
-    esac
-
-    # ── Iter 68 path-scoped dispatch: codebase-map.md write ─────────────────
-    # Triggers validate-codebase-map (frontmatter + 7-section schema integrity).
-    # S3 V7: also fires for the legacy <project-root>/codebase-map.md location —
-    # bind-codebase probes and binds against it, so it must be validated too.
-    case "$FILE_PATH" in
-      *.mega-sdd/codebase/codebase-map.md)
-        VALIDATOR_CM="${SCRIPT_DIR}/../scripts/validate-codebase-map.sh"
-        if [ -x "$VALIDATOR_CM" ]; then
-          bash "$VALIDATOR_CM" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        fi
-        ;;
-      */codebase-map.md|codebase-map.md)
-        if [ "$FILE_PATH" = "${PROJECT_ROOT}/codebase-map.md" ] || [ "$FILE_PATH" = "codebase-map.md" ]; then
-          VALIDATOR_CM="${SCRIPT_DIR}/../scripts/validate-codebase-map.sh"
-          if [ -x "$VALIDATOR_CM" ]; then
-            bash "$VALIDATOR_CM" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-          fi
-        fi
-        ;;
-    esac
-
-    # ── Iter 68 path-scoped dispatch: starterkit-context.yaml write ─────────
-    # Triggers validate-starterkit-conformance against current units (if any).
-    # (№C: validate-starterkit-metrics — the old Skill-matcher cross-check —
-    # was deleted with the Skill leg; its state file had zero readers.)
-    case "$FILE_PATH" in
-      *.mega-sdd/codebase/starterkit-context.yaml)
-        VALIDATOR_SKC2="${SCRIPT_DIR}/../scripts/validate-starterkit-conformance.sh"
-        if [ -x "$VALIDATOR_SKC2" ]; then
-          bash "$VALIDATOR_SKC2" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        fi
-        ;;
-    esac
-
-    # ── Iter 68 path-scoped dispatch: binding*.md write ─────────────────────
-    # Constitution clause propagation re-runs when binding clauses change
-    # (mirror of the unit-write trigger above, but at producer side).
-    case "$FILE_PATH" in
-      *-bound/binding*.md|*.mega-sdd/vaults/*-bound/binding*.md|*.mega-sdd/vaults/*/binding-*.md|*/binding.md)
-        VALIDATOR_CP2="${SCRIPT_DIR}/../scripts/validate-constitution-propagation.sh"
-        if [ -x "$VALIDATOR_CP2" ]; then
-          bash "$VALIDATOR_CP2" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        fi
-        # (v7 Fase 2: the vault-binding-coverage + conflict-classification
-        # advisory rungs died with their validators — DELETE batch.)
-        # S4 BC-GATE-1: refresh the MOAT state on the PRODUCER side too. The
-        # moat-state writer (validate-handoff-binding-units.sh) was keyed to
-        # unit writes only, so a re-bind/sync writing binding.md with fresh
-        # active CONFLICTs left .validation-blockers.json at a stale PASS and
-        # execute-bolts sailed through an unresolved CONFLICT (invariant #2).
-        # Binding writes now re-derive the moat state; the PreToolUse gate also
-        # self-heals lazily (mtime), so BOTH write paths converge on current truth.
-        VALIDATOR_BU2="${SCRIPT_DIR}/../scripts/validate-handoff-binding-units.sh"
-        if [ -x "$VALIDATOR_BU2" ]; then
-          bash "$VALIDATOR_BU2" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        fi
-        ;;
-    esac
-
-    # Helper: run a validator script; its STATE FILE is the record (analyze +
-    # the PreToolUse aggregator read states — v7.3.0: no telemetry breadcrumb).
-    run_validator_and_emit() {
-      local validator="$1"        # absolute path to script
-      local state_file="$2"        # kept for call-site compatibility (unused)
-      local script_label="$3"      # kept for call-site compatibility (unused)
-      local extra="${4:-}"         # optional single mode flag (e.g. --deferral)
-      [ -x "$validator" ] || return 0
-      # shellcheck disable=SC2086
-      bash "$validator" $extra --cwd="$PROJECT_ROOT" --file-path="$FILE_PATH" --quiet >/dev/null 2>&1 || true
-    }
-
-    # ── Input-keyed debounce for the 4 unconditional PROJECT-WIDE scanners ──
-    # (spec §4e, tranche 4-second): bolt-artifacts, ui-deferral,
-    # vault-binding-coverage, vault-flow-staging re-scan the project on EVERY
-    # Write|Edit — including a 50-file source-code bolt run where none of their
-    # inputs moved. Same architecture as the Stop hook's §4c turn-gate: skip
-    # ONLY when (stamp exists) AND (HEAD == stamped sha) AND (the written file
-    # is not itself under a mega-sdd tree) AND (nothing under
-    # .mega-sdd / docs/mega-sdd / legacy *-bound is newer than the stamp,
-    # rc-checked — a failed probe is DOUBT and must scan). Why a skip can never
-    # lie to a gate: NONE of the four states is read by PreToolUse (ui-deferral
-    # + vault-flow-staging are demoted-advisory; the other two appear at zero
-    # of the gate aggregator's L() sites) and every gate-read state is
-    # re-derived at the gate itself (S4/S5/S6); analyze re-runs the
-    # validators fresh. Probe prunes = derived OUTPUTS only (state files, both
-    # scan stamps, memory/, .cache/, analyze reports, and .dirty-paths.jsonl —
-    # the journal THIS hook appends on every source write in a mapped repo;
-    # without that prune the debounce would be vacuous exactly there). The
-    # three file-scoped unconditional validators (unit-spec, vault-oqs,
-    # fsd-slots) are NOT debounced — they key on the written file.
-    # Known blind spot, shared with the Stop probe's -mindepth 1 (deliberate):
-    # a DEPTH-1 deletion directly under a probe root (rm -rf .mega-sdd/vaults)
-    # only bumps the root's mtime, which -mindepth 1 excludes — the skip
-    # persists until HEAD moves or any mega-sdd-tree Write fires. Stale side is
-    # advisory-only (none of the 4 states is gate-read; analyze re-runs fresh).
-    PTU_SCAN_STAMP="${PROJECT_ROOT}/.mega-sdd/.ptu-scan-stamp"
-    NEED_PTU_SCAN=1
-    CUR_HEAD_PTU=$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || printf '')
-    if [ -f "$PTU_SCAN_STAMP" ] && [ -n "$CUR_HEAD_PTU" ]; then
-      case "$FILE_PATH" in
-        *.mega-sdd/*|*docs/mega-sdd/*|*-bound/*)
-          : ;;  # written INTO a mega-sdd tree — its scanners must see it: scan
-        *)
-          LAST_HEAD_PTU=""
-          IFS= read -r LAST_HEAD_PTU < "$PTU_SCAN_STAMP" 2>/dev/null || LAST_HEAD_PTU=""
-          if [ "$CUR_HEAD_PTU" = "$LAST_HEAD_PTU" ]; then
-            # Legacy trees probed when present: docs/mega-sdd plus root-level
-            # *-bound vault dirs (the vault_layouts.py discovery globs).
-            PTU_PROBE_DIRS=("${PROJECT_ROOT}/.mega-sdd")
-            [ -d "${PROJECT_ROOT}/docs/mega-sdd" ] && PTU_PROBE_DIRS+=("${PROJECT_ROOT}/docs/mega-sdd")
-            for _bd in "${PROJECT_ROOT}"/*-bound "${PROJECT_ROOT}"/*/*-bound; do
-              [ -d "$_bd" ] && PTU_PROBE_DIRS+=("$_bd")
-            done
-            CHANGED_PTU=$(find "${PTU_PROBE_DIRS[@]}" -mindepth 1 \
-              \( -name memory -o -name .cache \) -prune -o \
-              \( -name .analyze-state.json -o -name CONSISTENCY-REPORT.md \
-                 -o -name .analyze-freshness.json \
-                 -o -name claims-ledger.json \
-                 -o -name '.*-state.json' -o -name .validation-blockers.json \
-                 -o -name .ui-quality-blockers.json -o -name .stop-scan-stamp \
-                 -o -name .ptu-scan-stamp -o -name .dirty-paths.jsonl \
-                 -o -name state.json -o -name graph.json \
-                 -o -name .locked-files-index.json \
-                 \) -prune -o \
-              -newer "$PTU_SCAN_STAMP" -print 2>/dev/null)
-            FIND_RC_PTU=$?
-            [ "$FIND_RC_PTU" -eq 0 ] && [ -z "$CHANGED_PTU" ] && NEED_PTU_SCAN=0
-          fi
-          ;;
-      esac
-    fi
-
-    # ── Validator 2 (Phase B slice B.2): bolt artifacts ─────────────────────
-    if [ "$NEED_PTU_SCAN" = "1" ]; then
-    run_validator_and_emit \
-      "${SCRIPT_DIR}/../scripts/validate-bolt-artifacts.sh" \
-      "${PROJECT_ROOT}/.mega-sdd/.bolt-artifacts-state.json" \
-      "PostToolUse-Write-validate-bolt-artifacts"
-    fi
-
-    # ── UI-deferral (Iter-79 B1): bolt-report defers a `## UI contract` to a future
-    # unit ("scaffold kept; polish deferred"). Project-wide scan; self-SKIPs when no
-    # bolt-reports / no pack UI signatures. ADVISORY (S6 EB-HONEST-2): nothing in
-    # PreToolUse reads .ui-deferral-state.json — it is surfaced via analyze.
-    if [ "$NEED_PTU_SCAN" = "1" ]; then
-    run_validator_and_emit \
-      "${SCRIPT_DIR}/../scripts/validate-ui-quality.sh" \
-      "${PROJECT_ROOT}/.mega-sdd/.ui-deferral-state.json" \
-      "PostToolUse-Write-validate-ui-deferral" \
-      "--deferral"
-    fi
-
-    # ── Validator 3 (Phase B slice B.3): unit spec ──────────────────────────
-    run_validator_and_emit \
-      "${SCRIPT_DIR}/../scripts/validate-unit-spec.sh" \
-      "${PROJECT_ROOT}/.mega-sdd/.unit-spec-state.json" \
-      "PostToolUse-Write-validate-unit-spec"
-
-    # ── Validator 4 (Phase B slice B.4): vault OQ citations ─────────────────
-    run_validator_and_emit \
-      "${SCRIPT_DIR}/../scripts/validate-vault-oqs.sh" \
-      "${PROJECT_ROOT}/.mega-sdd/.vault-oqs-state.json" \
-      "PostToolUse-Write-validate-vault-oqs"
-
-    # ── Validator 5 (Phase B slice B.5): FSD template slots ─────────────────
-    run_validator_and_emit \
-      "${SCRIPT_DIR}/../scripts/validate-fsd-slots.sh" \
-      "${PROJECT_ROOT}/.mega-sdd/.fsd-slots-state.json" \
-      "PostToolUse-Write-validate-fsd-slots"
-
-    # (v7 Fase 2: Validator 6 — vault-binding-coverage — removed with its script.)
-
-    # ── Validator 6b (semantic-depth): staged-input non-loss KB→vault ──────
-    # Follows each 04-flows.md flow's `_kb_source` back-reference; FAILs with
-    # vault_flow_staging_drop when the cited KB workflow has a `stages:` block but
-    # the vault flow dropped it. Project-wide scan; self-skips when no KB / no
-    # `_kb_source` (backward-compatible).
-    #
-    # ADVISORY — surfaced via analyze, NOT a blocking gate. This comment
-    # previously claimed "PreToolUse Branch 14 gates execute-bolts on its
-    # status==FAIL", which was false in both directions: `pre-tool-use:405` lists
-    # vault-flow-staging among the states DEMOTED to advisory, and the gate's state
-    # loader never reads `.vault-flow-staging-state.json` at all (verified against
-    # the 11 `L(".…")` sites, 2026-07-29). CLAUDE.md's enforced/advisory table was
-    # already correct; only this comment had drifted. A comment that overstates
-    # enforcement is not cosmetic — it is what makes the next person scoping a
-    # change here treat an advisory validator as load-bearing.
-    if [ "$NEED_PTU_SCAN" = "1" ]; then
-    run_validator_and_emit \
-      "${SCRIPT_DIR}/../scripts/validate-vault-flow-staging.sh" \
-      "${PROJECT_ROOT}/.mega-sdd/.vault-flow-staging-state.json" \
-      "PostToolUse-Write-validate-vault-flow-staging"
-
-    # Stamp ONLY after all four project-wide scans completed this firing, only
-    # when HEAD resolved, and only in an ADOPTED project (the stamp must never
-    # MINT .mega-sdd/ — the 4a cache/EB-GATE-6 lesson). A crash before this
-    # line re-scans on the next firing — fail toward scanning.
-    if [ -n "$CUR_HEAD_PTU" ] && [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
-      printf '%s\n' "$CUR_HEAD_PTU" > "$PTU_SCAN_STAMP" 2>/dev/null || true
-    fi
-    fi
-
-    # ── Validator 6c: vault flow Mermaid mandate (Mermaid-flows hard rule) ──
-    # Fires on a vault 04-flows.md write. Each F-<prefix>-NNN flow body must be a
-    # Mermaid diagram (not a prose Steps list); reuses the shared
-    # _lib/mermaid_syntax.py tokenizer. Advisory (detection-only at hook layer).
-    # See docs/superpowers/specs/2026-07-01-mermaid-flows-hard-rule.md.
-    # v7 Fase 3 dual layout: `*/flows.md` is the layout-2 vault flows doc
-    # (slash-anchored so e.g. `workflows.md` cannot false-trigger).
-    case "$FILE_PATH" in
-      *04-flows.md|*/flows.md)
-        run_validator_and_emit \
-          "${SCRIPT_DIR}/../scripts/validate-kb.sh" \
-          "${PROJECT_ROOT}/.mega-sdd/.vault-flows-state.json" \
-          "PostToolUse-Write-validate-vault-flows" \
-          "--surface=vault-flows"
-        ;;
-    esac
-
-    # ── Validator 7 (R2): KB output validation ────────────────────────────
-    # Fires when KB domain/workflow/business-rules files are saved.
-    case "$FILE_PATH" in
-      *.mega-sdd/knowledge-base/10-domains/*.md|*.mega-sdd/knowledge-base/20-workflows/*.md|*.mega-sdd/knowledge-base/40-business-rules/*.md|*.mega-sdd/knowledge-base/50-integrations/*.md|*.mega-sdd/knowledge-base/99-rebuild-architecture/*.md)
-        run_validator_and_emit \
-          "${SCRIPT_DIR}/../scripts/validate-kb.sh" \
-          "${PROJECT_ROOT}/.mega-sdd/.kb-output-state.json" \
-          "PostToolUse-Write-validate-kb-output" \
-          "--surface=output"
-        # (v7 Fase 2: the kb-reengineering rung died with its validator.)
-        # Track 1: marker-accuracy validation (every [VERIFIED] must have citation)
-        run_validator_and_emit \
-          "${SCRIPT_DIR}/../scripts/validate-kb.sh" \
-          "${PROJECT_ROOT}/.mega-sdd/.kb-markers-state.json" \
-          "PostToolUse-Write-validate-kb-markers" \
-          "--surface=markers"
-        # Mermaid-consistency for flow sections
-        run_validator_and_emit \
-          "${SCRIPT_DIR}/../scripts/validate-kb.sh" \
-          "${PROJECT_ROOT}/.mega-sdd/.kb-flows-state.json" \
-          "PostToolUse-Write-validate-kb-flows" \
-          "--surface=flows"
-        # Iter 68: KB §11 citation resolution (auto-detects legacy root)
-        run_validator_and_emit \
-          "${SCRIPT_DIR}/../scripts/validate-kb.sh" \
-          "${PROJECT_ROOT}/.mega-sdd/.kb-citations-state.json" \
-          "PostToolUse-Write-validate-kb-citations" \
-          "--surface=citations"
-        ;;
-    esac
-
-    # ── Auto-analyze at phase boundary (aggregate-only) ────────────────────
-    # When a major phase artifact is written, produce an updated consistency
-    # report from existing state files. Cheap (no re-run), gives inter-phase
-    # visibility. Fires on binding.md, vault.json, _index.md (unit index),
-    # FSD.md, DRIFT-REPORT.md writes.
-    case "$FILE_PATH" in
-      */binding*.md|*/vault.json|*-bound/units/_index.md|*/fsd/FSD.md|*/DRIFT-REPORT*.md)
-        ANALYZE_SCRIPT="${SCRIPT_DIR}/../scripts/run-analyze.sh"
-        if [ -x "$ANALYZE_SCRIPT" ]; then
-          bash "$ANALYZE_SCRIPT" --cwd="$PROJECT_ROOT" --aggregate-only --quiet >/dev/null 2>&1 || true
-        fi
-        ;;
-    esac
+    # ── VALIDATOR FAN-OUT: DELETED (v7.5.0 №D, Fase-7 audit §5) ──────────────
+    # This branch used to dispatch up to 12 validators per armed Write|Edit
+    # (measured 93 external procs ≈ 17.6 s of background CPU per unit write on
+    # Windows+Falcon). Why deleting it loses nothing:
+    #  · every GATE-READ state is re-derived at its gate — the PreToolUse
+    #    execute-bolts aggregator re-runs handoff-binding-units, unit-spec,
+    #    flow-coverage, sibling-consistency (both modes), bolt-artifacts
+    #    (5 scans, B1 --recompute), ui-quality, factory-ledger before reading
+    #    a single state (S4 BC-GATE-1 / S5 GU-HOOK-1 / S6 EB-GATE-1), and the
+    #    bind gate lazily re-validates the codebase map (INT-1);
+    #  · the Stop hook still runs the bolt-artifact detection scans per turn;
+    #  · run-analyze FULL re-runs the whole validator set — including the four
+    #    advisories whose only writer used to be this fan-out (№C, V13–V16) —
+    #    so the analyze lane stays loss-free;
+    #  · the KB/vault-flows surfaces (incl. the Mermaid mandate) are re-run by
+    #    analyze FULL per file — the hook-time firing was early-warning only.
+    # What changed, honestly: per-write early warning is gone — a bad unit
+    # shows up at the NEXT gate dispatch or analyze run instead of seconds
+    # after the write. That is the documented v7 doctrine (fan-out =
+    # early-warning, not the moat; gate-0 decision).
+    # The .ptu-scan-stamp debounce died with the scans it debounced (the file
+    # stays in the anti-forge guard + probe prune lists as a legacy name).
     ;;
 
   *)

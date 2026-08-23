@@ -113,15 +113,22 @@ run_hook stop "{\"session_id\":\"x\",\"cwd\":\"$PLAIN\",\"transcript_path\":\"/n
 [ "$(total)" -eq 0 ] && ok "S10 Stop non-SDD project: ZERO forks (was 1-2 python/turn)" \
   || bad "S10 Stop non-SDD forked: $(total)"
 
-# ── S12: ARMED unit write → validator fan-out restored (mutation proof) ──────
+# ── S12 (repinned v7.5.0 №D): ARMED unit write → the fan-out STAYS DEAD ──────
+# Pre-№D this arm proved arming RESTORED the 12-validator fan-out (python≥5 +
+# moat state). The fan-out is deleted: every gate-read state re-derives at the
+# execute-bolts gate (S4/S5/S6 — proven live by spawn-ceilings C8, which
+# asserts the gate dispatch WRITES .validation-blockers.json), and run-analyze
+# FULL re-runs the advisory set. The mutation-proof now points the other way:
+# an armed unit write must journal with ZERO python — a python spawn here means
+# the fan-out (or a successor) grew back without a spec.
 mkdir -p "$FIX/.mega-sdd/vaults/v1/units"
 echo "unit" > "$FIX/.mega-sdd/vaults/v1/units/U-001.md"
 reset_counts
 run_hook post-tool-use "{\"session_id\":\"$SID\",\"cwd\":\"$FIX\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$FIX/.mega-sdd/vaults/v1/units/U-001.md\"}}" >/dev/null
 sleep 1
-[ "$(count python3)" -ge 5 ] && [ -f "$FIX/.mega-sdd/.validation-blockers.json" ] \
-  && ok "S12 ARMED unit write: validator fan-out fires (python=$(count python3), moat state written)" \
-  || bad "S12 ARMED unit write: fan-out dead (python=$(count python3)) — arming does not restore validators"
+[ "$(count python3)" -eq 0 ] && [ "$(total)" -le 2 ] \
+  && ok "S12 ARMED unit write: fan-out stays dead (python=0, forks=$(total)); moat = gate-time (C8)" \
+  || bad "S12 ARMED unit write grew a fan-out back: python=$(count python3) forks=$(total)"
 
 # ── S13: subagent sentinel forces the full path even un-armed (R2 rail) ──────
 reset_counts

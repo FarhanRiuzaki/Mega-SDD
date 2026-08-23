@@ -151,13 +151,15 @@ run_ev PreToolUse "{\"session_id\":\"$SID\",\"cwd\":\"$FIXB\",\"tool_name\":\"Ed
   && ok "C6 PRE Edit armed: ≤8 spawns ($(total), python=$(count python3))" \
   || bad "C6 PRE Edit armed: spawns=$(total)"
 
-# ── C7: PostToolUse ARMED unit write — validator fan-out era ceiling ─────────
+# ── C7: PostToolUse ARMED unit write — the fan-out STAYS DEAD (№D) ───────────
+# Was 93 spawns / 20 python (validator fan-out). The moat lives at the gate:
+# C8 below proves the execute-bolts dispatch re-derives .validation-blockers.
 reset_counts
 run_ev PostToolUse "{\"session_id\":\"$SID\",\"cwd\":\"$FIXB\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$FIXB/.mega-sdd/vaults/v1/units/U-001.md\"}}" >/dev/null
 sleep 2
-[ "$(total)" -le 100 ] \
-  && ok "C7 POST unit write armed: ≤100 spawns ($(total), python=$(count python3))" \
-  || bad "C7 POST unit write armed: spawns=$(total)"
+[ "$(total)" -le 2 ] && [ "$(count python3)" -eq 0 ] \
+  && ok "C7 POST unit write armed: fan-out stays dead (≤2 spawns, 0 python; was 93/20)" \
+  || bad "C7 POST unit write armed: fan-out came back? spawns=$(total) python=$(count python3)"
 
 # ── C8: PreToolUse Skill execute-bolts — gate aggregator budget + moat proof ─
 reset_counts

@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
-# test-mermaid-flow-hook-fire.sh — pins the PostToolUse WIRING for the Mermaid-flows
-# gates, not just the validator bodies. A typo'd/non-matching case-glob would make a
+# test-mermaid-flow-hook-fire.sh — pins the DISPATCH WIRING for the Mermaid-flows
+# gates, not just the validator bodies. A typo'd/non-matching glob would make a
 # validator silently never fire while every other suite stays green (invisible
-# no-fire). This synthesizes real PostToolUse Write events and asserts the
-# corresponding state file is written with the expected status.
+# no-fire).
+#
+# v7.5.0 №D repin: the PostToolUse fan-out is DELETED — the surviving
+# dispatcher for these surfaces is run-analyze FULL (its per-file family runs
+# re-execute validate-kb --surface=vault-flows / flows). This test drives
+# run-analyze on the same fixtures and asserts the same state files + statuses,
+# plus a negative pin that the hook write-path stays quiet.
 #
 # Run: bash tests/hooks/test-mermaid-flow-hook-fire.sh
 set -uo pipefail
@@ -11,23 +16,23 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 HOOK="${ROOT}/plugins/mega-sdd/hooks/post-tool-use"
+ANALYZE="${ROOT}/plugins/mega-sdd/scripts/run-analyze.sh"
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
 ok()   { printf '  \xe2\x9c\x93 %s\n' "$*"; }
 fail() { printf '  \xe2\x9c\x97 FAIL: %s\n' "$*"; FAILED=1; }
 [ -f "$HOOK" ] || { fail "missing hook: $HOOK"; exit 1; }
+[ -x "$ANALYZE" ] || { fail "missing run-analyze.sh"; exit 1; }
 
 WORK="$(mktemp -d 2>/dev/null || mktemp -d -t mflowhook)"
 trap 'rm -rf "$WORK"' EXIT
-mkdir -p "$WORK/.mega-sdd/memory"   # so telemetry append doesn't noise
-# v7: arm the chain (spec 2026-08-21 §3.1) — the fan-out below is chain-scoped;
-# this test pins VALIDATOR/telemetry behavior, so the fixture session is armed.
-printf '{"session_id": "no-session", "chain_engaged": true, "entries": {}}' > "$WORK/.mega-sdd/.gateguard-state.json"
+mkdir -p "$WORK/.mega-sdd"
 
-fire() {  # $1 = file path written
+fire() {  # $1 = file path written (kept: fires the hook, then the surviving analyze dispatcher)
   python3 -c "import json,sys; print(json.dumps({'cwd':sys.argv[1],'tool_name':'Write','tool_input':{'file_path':sys.argv[2]}}))" "$WORK" "$1" \
     | bash "$HOOK" >/dev/null 2>&1 || true
+  bash "$ANALYZE" --cwd="$WORK" --quiet >/dev/null 2>&1 || true
 }
 statusof() { python3 -c "
 import json,sys

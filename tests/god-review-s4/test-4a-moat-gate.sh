@@ -105,11 +105,24 @@ rm -f "$ST"
 OUT=$(drive_hook "$PRE" "$F1" "Skill" '{"skill": "mega-sdd:execute-bolts"}')
 echo "$OUT" | grep -q '"permissionDecision": "deny"' && ok "BC-GATE-1: ABSENT state + active CONFLICT → still denied (absent≠allow when bindings exist)" || fail "BC-GATE-1: absent-state bypass survives"
 
-# ── BC-GATE-1 (PostToolUse producer dispatch) ──
+# ── BC-GATE-1 (v7.5.0 №D repin: the PostToolUse producer dispatch is DELETED) ──
+# The binding-write early-warning leg died with the fan-out. The MOAT is the
+# gate-time re-derive — already proven by the two arms above (stale-PASS
+# self-heal + absent-state deny at the execute-bolts dispatch). Negative pin:
+# a binding write must now be a pure journal event (no moat state minted).
 rm -f "$ST"
 drive_hook "$POST" "$F1" "Write" "{\"file_path\": \"$F1/.mega-sdd/vaults/v1/binding.md\"}" >/dev/null
-sleep 1  # unit-write validators run backgrounded; binding-write moat dispatch is sync, but be safe
-[ -f "$ST" ] && grep -q '"status": "FAIL"' "$ST" && ok "BC-GATE-1: binding write dispatches the moat-state writer (PostToolUse)" || fail "BC-GATE-1: post-tool-use binding dispatch missing"
+sleep 1
+if [ -f "$ST" ]; then
+  fail "BC-GATE-1: a PostToolUse binding write minted moat state — the fan-out grew back (№D)"
+else
+  ok "BC-GATE-1: binding write is journal-only; the moat re-derives at the gate (arms above)"
+fi
+# and the gate still recovers it immediately after:
+OUT=$(drive_hook "$PRE" "$F1" "Skill" '{"skill": "mega-sdd:execute-bolts"}')
+echo "$OUT" | grep -q '"permissionDecision": "deny"' && [ -f "$ST" ] \
+  && ok "BC-GATE-1: next execute-bolts dispatch re-derives the moat state and denies" \
+  || fail "BC-GATE-1: gate-time re-derive lost after the binding write"
 
 # ── recovery: structural resolution re-opens the gate ──
 python3 - "$F1" <<'PY'
