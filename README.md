@@ -6,7 +6,7 @@
 
 ### Spec-driven AI development pipeline. One command. Working code.
 
-*PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, persistent memory across sessions, and AST-precise grounding.*
+*PRD or idea → vault → atomic units → tested commits. With anti-hallucination at every handoff, weighted S/M/L routing, and AST-precise grounding.*
 
 **Plugin:** `mega-sdd` · **Version:** [`plugin.json`](plugins/mega-sdd/.claude-plugin/plugin.json) (single source of truth) · **License:** MIT
 
@@ -73,7 +73,7 @@ That's genuinely all the Claude Code knowledge mega-sdd assumes. For a hand-held
 
 This is the canonical install reference — other docs link here.
 
-> **Bundled MCPs (6.8.0/6.9.0):** installing mega-sdd auto-registers TWO MCP servers — **Playwright** (`@playwright/mcp`, pinned, headless + isolated; Node ≥18) for browser render checks, and **Context7** (`@upstash/context7-mcp`, pinned, keyless free tier; Node ≥20.18.1) for current library docs during implementation. First browser use offers `npx playwright install chromium` (~130MB — via `/mega-sdd:install-deps`, never auto-run). Disable either per-server via `/mcp` without uninstalling the plugin (also the fix if you already run a standalone context7 plugin and don't want two processes — they're namespaced, no conflict). Neither server is ever load-bearing: every consumer degrades gracefully without it.
+> **Bundled MCPs:** installing mega-sdd auto-registers TWO MCP servers — **Playwright** (`@playwright/mcp`, pinned, headless + isolated; Node ≥18) for browser render checks, and **Context7** (`@upstash/context7-mcp`, pinned, keyless free tier; Node ≥20.18.1) for current library docs during implementation. First browser use offers `npx playwright install chromium` (~130MB — via `/mega-sdd:install-deps`, never auto-run). Disable either per-server via `/mcp` without uninstalling the plugin (also the fix if you already run a standalone context7 plugin and don't want two processes — they're namespaced, no conflict). Neither server is ever load-bearing: every consumer degrades gracefully without it.
 
 ```bash
 # In Claude Code:
@@ -232,7 +232,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 
 ## Commands
 
-`/mega-sdd` is the only command most users type. `/mega-sdd:sync` reconciles after any out-of-pipeline change. `/mega-sdd:emit <prd|fsd|sit|uat>` emits the four team documents. Three maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`) stay as typed commands; the pre-v5 stage commands were removed in 6.0.0 — a typed legacy form still routes as plain text to its skill.
+`/mega-sdd` is the only command most users type. `/mega-sdd:sync` reconciles after any out-of-pipeline change. `/mega-sdd:emit <prd|fsd|sit|uat>` emits the four team documents. Three maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`) stay as typed commands; everything else routes by natural language — a typed legacy (pre-v7) form still routes as plain text to its skill.
 
 **Full per-command reference: [plugin README — Commands](plugins/mega-sdd/README.md#commands-youll-actually-use).** Task → command quick lookup:
 
@@ -264,7 +264,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 | PRD revision arrived | `/mega-sdd ./new-prd.md` (routes to diff-vault) — or say "PRD revisi" |
 | Code drift periodic check | say "cek code vs vault" / "drift detect" |
 
-> **6.0.0:** the 5.x typed aliases (`/mega-sdd:generate-intent`, `:analyze`, …) were removed — every row above is reachable through the public verbs (3 since v7.4.0) + natural language. A typed legacy form still routes as plain text. Migration map: [plugin README](plugins/mega-sdd/README.md#commands-youll-actually-use) · [upgrade guide](docs/mega-sdd/upgrade-from-old-version.md).
+> Every row above is reachable through the 3 public verbs + natural language. A typed legacy (pre-v7) form still routes as plain text. Upgrading from an older version: [upgrade guide](docs/mega-sdd/upgrade-from-old-version.md).
 
 </details>
 
@@ -277,7 +277,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **19 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, resolution-verifier, domain-extractor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat>`) plus 3 maintenance one-timers; the 5.x deprecation aliases were removed in 6.0.0 (typed legacy forms route as plain text). |
+| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **19 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, resolution-verifier, domain-extractor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat>`) plus 3 maintenance one-timers (typed legacy forms route as plain text). |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs consolidated under `<project>/.mega-sdd/`. User defaults at `~/.mega-sdd/config.yaml`. Project source unchanged. |
@@ -299,7 +299,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 │   │   └── .internal/ # checkpoints
 │   ├── knowledge-base/                      # legacy KB (extract-intelligence)
 │   ├── codebase/codebase-map.md             # scan output
-│   ├── codebase/symbol-index.json    # script-built reuse substrate (v5.28.0+)
+│   ├── codebase/symbol-index.json    # script-built reuse substrate
 │   └── exports/                             # future tool-agnostic exports
 ├── AGENTS.md                                 # tool-agnostic interop (root)
 ├── CLAUDE.md                                 # project AI context (optional)
@@ -367,7 +367,7 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 │   ├── README.md                           # per-command reference + plugin internals
 │   ├── skills/                             # skills (lean routers + progressive disclosure)
 │   ├── agents/                             # 8 first-class subagents (incl. the blind review panel)
-│   ├── commands/                           # exactly 6: 3 public verbs + 3 maintenance one-timers (slice removed v7.4.0, memory removed v7.3.0; the 24 5.x aliases were removed in 6.0.0)
+│   ├── commands/                           # exactly 6: 3 public verbs + 3 maintenance one-timers
 │   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (25 packs)
 │   ├── hooks/                              # 6 events, direct dispatch: SessionStart · PreToolUse gate · PostToolUse journal · Stop · UserPromptExpansion/Submit
 │   ├── scripts/                            # the /analyze engine (run-analyze.sh) + migrations + deterministic validators

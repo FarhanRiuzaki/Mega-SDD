@@ -16,7 +16,7 @@ Canonical install, update, and uninstall instructions live in the **[root README
 /mega-sdd ./prd.md
 ```
 
-> **Bundled MCPs (6.8.0/6.9.0):** installing mega-sdd auto-registers TWO MCP servers — **Playwright** (`@playwright/mcp`, pinned, headless + isolated; Node ≥18) for browser render checks, and **Context7** (`@upstash/context7-mcp`, pinned, keyless free tier; Node ≥20.18.1) for current library docs during implementation. First browser use offers `npx playwright install chromium` (~130MB — via `/mega-sdd:install-deps`, never auto-run). Disable either per-server via `/mcp` without uninstalling the plugin (also the fix if you already run a standalone context7 plugin and don't want two processes — they're namespaced, no conflict). Neither server is ever load-bearing: every consumer degrades gracefully without it.
+> **Bundled MCPs:** installing mega-sdd auto-registers TWO MCP servers — **Playwright** (`@playwright/mcp`, pinned, headless + isolated; Node ≥18) for browser render checks, and **Context7** (`@upstash/context7-mcp`, pinned, keyless free tier; Node ≥20.18.1) for current library docs during implementation. First browser use offers `npx playwright install chromium` (~130MB — via `/mega-sdd:install-deps`, never auto-run). Disable either per-server via `/mcp` without uninstalling the plugin (also the fix if you already run a standalone context7 plugin and don't want two processes — they're namespaced, no conflict). Neither server is ever load-bearing: every consumer degrades gracefully without it.
 
 Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../../tests/scenarios/scenario-0-zero-to-first-run.md).
 
@@ -25,30 +25,18 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 
 > **How the bare verb works**: Claude Code registers plugin commands only as `/mega-sdd:<command>`, so `/mega-sdd` itself is a user-level wrapper (`~/.claude/commands/mega-sdd.md`) that the SessionStart hook auto-installs on your first session and keeps current across plugin updates (`scripts/install-front-door.sh`, version-marker idempotent — a hand-edited wrapper without the marker is never touched). Before that first session, use `/mega-sdd:mega-sdd`.
 
-`/mega-sdd` is the headline — it runs the whole pipeline autonomously with one upfront confirmation (no arg = status view + proposed next chain). `/mega-sdd:sync` reconciles after out-of-pipeline changes; `/mega-sdd:emit <prd|fsd|sit|uat>` emits the four team documents. **6.0.0 removed the 5.x deprecation aliases** — everything below the kept table is reachable by natural-language phrase through the front door (a typed legacy form still arrives as plain text and routes to its skill).
+`/mega-sdd` is the headline — it runs the whole pipeline autonomously with one upfront confirmation (no arg = status view + proposed next chain). `/mega-sdd:sync` reconciles after out-of-pipeline changes; `/mega-sdd:emit <prd|fsd|sit|uat>` emits the four team documents. Everything else is reachable by natural-language phrase through the front door; a typed legacy (pre-v7) form still arrives as plain text and routes to its skill — the full old→new map: [`docs/mega-sdd/upgrade-from-old-version.md`](../../docs/mega-sdd/upgrade-from-old-version.md).
 
 | Command | What it does |
 |---|---|
 | `/mega-sdd <input>` | **The one command** — routes a PRD / idea / legacy path through the full pipeline end-to-end. Task weight is auto-judged S/M/L (default S = answer inline, zero pipeline); override with `--weight=S\|M\|L`; `--classic` restores the scan-first spine |
 | `/mega-sdd:sync` | **The other one** — after ANY out-of-pipeline change (manual edit, AI edit, hotfix, `git pull`): incremental re-scan → drift → re-bind → unit reconcile. `--auto` = one confirmation, zero mid-chain questions |
-| `/mega-sdd:emit <prd\|fsd\|sit\|uat>` | The four team documents (PRD / Confluence FSD / SIT / UAT) emitted from vault/units/bolts state; no arg lists them with maturity. The uat lane (6.10.0) also generates Playwright e2e skeletons + OFFERS an automated evidence run (§5 annex — human execution surfaces untouched) |
+| `/mega-sdd:emit <prd\|fsd\|sit\|uat>` | The four team documents (PRD / Confluence FSD / SIT / UAT) emitted from vault/units/bolts state; no arg lists them with maturity. The uat lane also generates Playwright e2e skeletons + OFFERS an automated evidence run (§5 annex — human execution surfaces untouched) |
 | `/mega-sdd:migrate-paths` | One-time move of pre-v3.4 scattered outputs into the canonical `.mega-sdd/` layout; `--vault-layout` migrates a legacy 7-file vault to the 4-file layout-2 (dry-run default; `--apply` executes, then a full re-bind is mandatory) |
 | `/mega-sdd:install-deps` | OS-aware install of the optional native tools |
 | `/mega-sdd:update-plugin` | Pull the latest plugin version (then `/plugin marketplace update mega-sdd` + `/reload-plugins` to activate) |
-| **Migration table — the 5.x typed forms → how to do it in 6.0.0** | |
-| ~~`/mega-sdd:generate-intent <prd>`~~ | `/mega-sdd ./prd.md` — or say "pecah PRD ini" |
-| ~~`/mega-sdd:scan-codebase`~~ | on-demand: ask "scan codebase ini" (the express spine needs no map) |
-| ~~`/mega-sdd:bind-codebase`~~ | in-chain by default; standalone: "bind vault ini ke code" |
-| ~~`/mega-sdd:generate-units`~~ | in-chain by default; standalone: "generate units" |
-| ~~`/mega-sdd:execute-bolts --all`~~ | in-chain by default; standalone: "eksekusi bolt" |
-| ~~`/mega-sdd:resolve-oq`~~ | "walk open questions" / "resolve OQ" |
-| ~~`/mega-sdd:detect-drift`~~ | "cek drift" |
-| ~~`/mega-sdd:analyze`~~ | "cek konsistensi" |
-| ~~`/mega-sdd:extract-intelligence <dir>`~~ | `/mega-sdd <legacy-dir>` — or "pecah legacy ini" |
-| ~~`/mega-sdd:emit-fsd`~~ (and prd/sit) | `/mega-sdd:emit <fsd\|prd\|sit\|uat>` |
-| ~~`/mega-sdd:lint-units`, `:list-modules`, `:graph`, …~~ | ask by phrase ("lint units", "status module", "blast radius") |
 
-Full surface: **3 public verbs + 3 maintenance one-timers** — exactly the 6 files in [`commands/`](./commands/) (`/mega-sdd:slice` was removed in v7.4.0 by owner decision; the `memory` one-timer died with the v7.3.0 observability removal). The 24 5.x deprecation aliases were removed in 6.0.0 (per policy: demoted at 5.0.0, removed the following major after a usage review). Typing an old form still works as plain text — it routes to the same skill; only the registered slash command is gone. Details: [`docs/mega-sdd/upgrade-from-old-version.md`](../../docs/mega-sdd/upgrade-from-old-version.md).
+Full surface: **3 public verbs + 3 maintenance one-timers** — exactly the 6 files in [`commands/`](./commands/). Typing an old (pre-v7) form still works as plain text — it routes to the same skill; only the registered slash command is gone. Upgrading from an older version: [`docs/mega-sdd/upgrade-from-old-version.md`](../../docs/mega-sdd/upgrade-from-old-version.md).
 
 
 ## First time? Start with a scenario
@@ -184,20 +172,6 @@ Full per-platform install matrix + **platform support table** (macOS/Linux/WSL =
 **v7.3.0** — *Observability removed (pipeline-only):* the whole memory/telemetry/advisor lane is gone — no `/mega-sdd:memory`, no token-cost report, no compaction advisor; cost/session accounting is the AI gateway's job, keyed on the `mega-sdd-trace:turn` tag (contract: `docs/gateway-contract.md`).
 **v7.1.0** — *Per-unit model routing:* `resolve-review-tier.sh` emits `implementer_model`/`effort` from the same six risk signals; `model_tiers.bolt_implementer: auto` + a 2-fail-up cascade + `parallel_max`; default stays `inherit` (zero regression until you flip it).
 **v7.0.0** — *Weighted routing (MAJOR, Fase 1 of the v7 diet):* every task is weighed **S/M/L** and the default when unsure is **S — answer inline, zero pipeline, zero mega-sdd scripts**; `.mega-sdd/` presence is a status signal, never an invoke trigger; hooks arm only when a chain actually runs this session (`chain_engaged` marker; subagent context always armed, fail-closed); anti-forge guards stay always-on; the mandatory-routing slim block is deleted (the bare governance marker survives). Measured: tier-S Edit = 0 hook forks (was ~7), non-SDD Stop = 0 spawns. Override: `--weight=S|M|L`. Spec: `2026-08-21-v7-weighted-routing-design.md`.
-**v6.0.0** — *The surface cull (MAJOR):* the 24 5.x deprecation aliases are removed (policy-ladder complete: demoted 5.0.0 → telemetry review → removed); the surface is exactly 3 verbs + 3 one-timers, everything else by phrase; all operative alias content relocated into skill references; the on-demand doc pack now derives fully from the modern vault generation (flows/constraints/vault.json sources). Migration: `docs/mega-sdd/upgrade-from-old-version.md`.
-**v5.34.0–v5.36.0** — *The Express Spine:* GROUND (script, seconds) → claim-scoped express bind (ledger + symbol index, zero map load) → batched blocking-OQ prompt + recorded auto-defers → deterministic risk-tiered review; the express spine is the DEFAULT (`--classic` restores scan-first).
-**v5.31.x** — *ast-grep is the auto AST engine:* the scan ladder is `ast-grep → regex` (one spawn, zero compilation — the clang grammar-compile OOM class is structurally unreachable unattended); `--engine=tree-sitter` stayed as an explicit opt-in lane until its removal in v7.4.0. Install guidance follows (`recommended_minimum: ast-grep + ripgrep`).
-**v5.30.0** — *Duplication sweep with teeth:* newly-added symbols matched against the FULL symbol index (exact / camel-snake / same-suffix-root / verb-synonym), capped evidence rows handed to the code-quality review lens — advisory by doctrine, never a hook.
-**v5.29.0** — *PageRank targeting removed* (−832 lines): file-level, advisory-only, dead on real machines; replaced at the right layer by the write-time symbol slice. `--skip-pagerank` stays an accepted no-op through 5.x.
-**v5.28.0** — *Reuse-first symbol index:* `build-symbol-index.sh` (script-built, byte-deterministic, zero model tokens) + every bolt dispatch carries "Existing symbols — REUSE, don't recreate" (target-file rows first, capped 40, provenance-stamped).
-**v5.26.0** — *`--lean` profile:* opt-in configuration over existing levers — advisory legs + diagnostics skipped, every gate untouched (census-pinned); a lean run names itself in the digest and chain summary.
-**v5.3.0** — *UAT doc-pack + doc versioning:* `emit uat` (4th doc, SEOJK berita acara, zero-dep xlsx) + human-only `--bump/--approve` versioning sidecar with Riwayat Revisi.
-**v5.2.6** — *Mandatory routing by default:* installing the plugin made mega-sdd the default dev workflow in EVERY session via a slim SessionStart routing rule. **Superseded in v7.0.0** — the slim block and both opt-out levers (`~/.claude/.mega-sdd-routing-off`, `MEGA_SDD_ROUTING=off`) were deleted; a no-signal CWD exits silently again and routing is decided by the S/M/L weight table.
-**v5.2.5** — *The bare `/mega-sdd` verb actually registers:* Claude Code namespaces plugin commands (`/mega-sdd:<command>`), so the advertised bare front door never resolved. The SessionStart hook now auto-installs a thin user-level wrapper (`~/.claude/commands/mega-sdd.md` via `scripts/install-front-door.sh`, version-marker idempotent, user-authored files respected) that forwards verbatim to the plugin's front-door command.
-**v5.2.3** — *Native GitHub/VS Code PDF render:* the emit lanes (`emit-fsd`/`emit-prd`/`emit-sit`) render PDFs via the shipped `scripts/md2pdf.sh` (pandoc HTML + `github.css` + Chrome print, mermaid → SVG) — **never pandoc+LaTeX**. Bordered tables, inline diagrams, one-page-fit. Moat-safe (transforms on a throwaway copy — the citation-stamped source `.md` is untouched); Chrome-absent → GitHub-styled HTML fallback (CI-safe). Dependency shift: `tectonic` retired, `mmdc` added, Chrome detect-only.
-**v5.2.1** — *Hook recovery + fork headless caveat:* an interrupted run's hook-driven recovery now routes to `/mega-sdd --resume` (the front door); the `context: fork` headless caveat is documented — under `claude -p` a forked skill silently runs inline (no token win, telemetry dark), while PreToolUse gates + SessionStart still fire, so scripted/CI usage stays gate-safe.
-**v5.2.0** — *Dependency authorization:* execute-bolts code gate 6 — a bolt that adds a dependency the unit's `allowed_new_deps` did not sanction is flagged `dep_unauthorized` (advisory-first, deterministic).
-**v5.0.0** — *Surface collapse:* the public surface became three verbs (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit`); the 24 former stage commands became deprecation aliases that keep resolving through the whole 5.x cycle.
 
 Everything older → [`../../CHANGELOG.md`](../../CHANGELOG.md) (the single source of release history).
 
