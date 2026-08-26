@@ -4,6 +4,8 @@
 
 **Rambu tetap (tidak bisa dinego):** tidak ada gate anti-halu yang dilonggarkan. XS memangkas *muatan* (byte yang dimuat), bukan *bukti* (acceptance test tetap wajib dieksekusi; binding refs tetap disitir; citation discipline utuh). Doktrin "unknown never lowers a tier" (P3/A5) berlaku di semua field baru.
 
+**Objective owner (2026-08-26, mengikat desain ini): tidak overkill, tidak overengineer.** Field evidence kedua: run brownfield di project MTConvert kantor (1 file kode hidup, 1.225 file log, tumpukan backup manual) — pipeline penuh jalan dengan fixed cost yang sama seperti project 200-unit, lambat di mesin CrowdStrike dan menghasilkan emisi yang tidak dibutuhkan. Konsekuensi desain: §2 dipangkas ke dua nilai skala saja, dan dapat lengan brownfield.
+
 ## 1. `unit_tier: xs` — router + konsekuensi mekanis di dispatch prompt
 
 ### 1a. Derivasi (di `resolve-review-tier.sh`, field output baru)
@@ -47,15 +49,21 @@ Caller (execute-bolts Step 2) sudah memegang verdict JSON router — diteruskan 
 
 **Target terukur (kriteria terima implementasi):** replay fixture kelas U-005 (rekonstruksi unit 22-baris serupa; idealnya minta file spec asli tim) → rasio token-prompt : baris-kode-implementasi turun dari 17.9:1 ke **≤5:1**, dibuktikan di harness dispatch-parity (v6.7.1) yang dapat arm XS baru (golden per tier — kelas counter length-sensitive sudah ada pin-nya).
 
-## 2. `project_scale: xs|s|m|l` — skala project di generate-intent
+## 2. `project_scale: xs|standard` — skala project (greenfield + brownfield)
 
-- **Sinyal ukuran**: jumlah screen/flow/entity yang diparse dari PRD (hitungan deterministik atas struktur dokumen — heading/tabel — bukan judgment; ambang: xs ≤3 screen & ≤2 entity, l ≥ ~15 screen; angka final ditera saat implementasi terhadap korpus PRD yang ada).
+**Dipangkas dari `xs|s|m|l` ke DUA nilai** (amendemen 2026-08-26, objective tidak-overkill): hanya `xs` yang punya konsekuensi mekanis — tiga label sisanya beban schema tanpa fungsi. Ekspansi tier nanti hanya kalau ada bukti kebutuhan.
+
+- **Sinyal ukuran — greenfield (generate-intent)**: jumlah screen/flow/entity yang diparse dari PRD (hitungan deterministik atas struktur dokumen — heading/tabel — bukan judgment; ambang: xs ≤3 screen & ≤2 entity; angka final ditera saat implementasi terhadap korpus PRD yang ada).
+- **Sinyal ukuran — brownfield (intake/extract)**: jumlah file kode yang lolos filter enumerasi GROUND yang SUDAH ada (ekstensi + exclusions) — nol script baru; ambang: xs ≤3 file kode. Log, data, dan file non-kode tidak dihitung by construction (filter existing).
+- **Advisory brownfield XS (satu pertanyaan, di awal, human-decided)**: bila xs terdeteksi saat intake, SEBELUM pipeline jalan tanyakan satu OQ dengan keterangan Indonesia (standing rule): *"Project ini terdeteksi N file kode — extraction penuh kemungkinan overkill."* Opsi: **minimal** (vault ringkas, bagian opsional tidak diemisi — aturan emisi XS di bawah), **penuh** (lanjut seperti sekarang), **batal** (project sekecil ini sering lebih efektif dibaca langsung tanpa plugin — jujur soal itu). Tidak ada auto-skip; manusia yang memutuskan, konsisten doktrin OQ.
 - **Penyimpanan**: scalar `project_scale` di frontmatter vault (kelas lock-scalar per keputusan Fase 3 — frontmatter = skalar saja, section tetap md) + mirror di `vault.json` untuk konsumen script.
 - **Konsekuensi XS**:
   - Bagian vault OPSIONAL **tidak diemisi** (bukan diisi placeholder — konsisten doktrin "omit, never fabricate"); inventaris bagian-opsional diambil dari template layout-2 saat implementasi.
   - **OQ tech**: ambang auto-resolve naik — di XS, tech/scan OQ yang hari ini `medium` confidence masuk **defer-by-default** (tercatat di Auto-Classification Review, TIDAK ditanyakan interaktif), bukan auto-resolve tanpa bukti: auto-resolve tetap mensyaratkan citation probe nyata seperti sekarang (`high` + single unambiguous match). Yang berubah = ASK vs DEFER, bukan standar bukti.
   - **OQ business**: tidak berubah — tetap human-decided (rail anti-halu; keterangan Indonesia per standing rule).
-- Target: skenario kelas "3 screen statis" tidak lagi menghasilkan 28 pertanyaan interaktif; angka tim jadi baseline pembanding.
+- Target: skenario kelas "3 screen statis" tidak lagi menghasilkan 28 pertanyaan interaktif; angka tim jadi baseline pembanding. Brownfield: kelas MTConvert (1–2 file kode) selesai lewat jalur minimal atau batal-jujur, bukan pipeline penuh.
+
+**Yang sengaja TIDAK didesain (ditolak sebagai overkill/gimmick):** heuristik deteksi file backup (`*.bak`, `index - Copy.php`, dsb.) — rapuh dan menambah surface; jalur XS yang menyusutkan seluruh muatan sudah menyelesaikan gejalanya. Tier skala >2 nilai — tanpa konsumen. Ramp kecepatan khusus CrowdStrike — fixed cost turun sendiri saat muatan XS menyusut (lebih sedikit fase = lebih sedikit spawn).
 
 ## 3. Validator SKIP-by-construction di pack universal → tidak di-dispatch
 
@@ -73,6 +81,6 @@ Panel review + implementer_model routing (v7.1), 6 sinyal risiko, semua 7 gate b
 1. Router field `unit_tier` + test (fixture xs/s + doktrin unknown→bukan-xs).
 2. `--unit-tier=` di builder + tabel emisi §1b + arm XS di harness dispatch-parity + replay fixture U-005-class → ukur rasio (angka masuk balasan tim sebagai follow-up).
 3. `.pack-skip-list.json` (§3) + perluasan aggregate-parity test.
-4. `project_scale` (§2) — paling akhir karena menyentuh generate-intent (surface terbesar); spec emisi vault-nya diamandemen di vault-core.md dulu.
+4. `project_scale` (§2) — paling akhir karena menyentuh generate-intent + intake (surface terbesar); spec emisi vault-nya diamandemen di vault-core.md dulu. Catatan prioritas: lengan brownfield (advisory XS) adalah yang paling langsung menjawab keluhan lapangan MTConvert — owner boleh menariknya maju bila mau.
 
 Tiap langkah: satu commit, suite dua tree, CI hijau, moat tidak disentuh.
