@@ -229,7 +229,7 @@ In `--deep` mode, append to the final summary:
     predictive_halts_count: <int>        # count of fatal predictive halts (always ≤1 since fatal halts STOP)
   ```
 - **Phase context** (appended when vault.json has a `phase` field):
-  - IF `vault.phase < vault.phase_total`: "Phase <N> of <M> complete. To start Phase <N+1>: see `.mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>` OR run `generate-intent --kb=<KB> --phase=<N+1>`."
+  - IF `vault.phase < vault.phase_total` (legacy numbered-tree KB only — PRD-kontrak KBs are single-phase, module = phasing unit): "Phase <N> of <M> complete. To start Phase <N+1>: see `.mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>` OR run `generate-intent --kb=<KB> --phase=<N+1>`."
   - IF `vault.phase == vault.phase_total`: "Phase <N> of <M> complete. All phases finished."
   - IF `phase` field absent (single-phase project OR pre-phasing vault): omit the phase context section.
 

@@ -46,7 +46,7 @@ Pick the LEAST powerful model that can handle the task. Each tier has clear crit
 - Deep code review (cross-cutting concerns, security, performance)
 - Cross-cutting pattern detection across a codebase
 
-**Examples:** extract-intelligence wave-5 synthesis; intelligence-audit deep dimension analysis; code-quality-reviewer; pipeline-audit consolidator.
+**Examples:** intelligence-audit deep dimension analysis; code-quality-reviewer; pipeline-audit consolidator.
 
 ### inherit — the operator-tiered escape hatch (deliberate, not "unpinned")
 
@@ -73,11 +73,7 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 | 3 | `ui-ux-extractor` | sonnet | Multi-domain (JS+CSS+notification+icon+datatable+idioms); empirically-grounded idiom inference needs reasoning (scan-codebase Iter 32) |
 | 4 | `libs-extractor` | sonnet | Manifest parsing + category mapping + usage-hint grep across many libs (scan-codebase Iter 32) |
 | 5 | `reuse-extractor` | sonnet | First-party source trawl (helpers/model_api/services/commands); multi-file pattern recognition; outputs reuse-index.yaml (scan-codebase reuse-awareness) |
-| 6 | `extract-intelligence-wave-1` | sonnet | Artifact extraction; bounded artifact-set per agent (extract-intelligence) |
-| 7 | `extract-intelligence-wave-2` | sonnet | Domain extraction; pattern recognition + multi-source synthesis |
-| 8 | `extract-intelligence-wave-3` | sonnet | Cross-reference resolution across domain docs |
-| 9 | `extract-intelligence-wave-4` | sonnet | Mutability tier classification (LOCKED/INTENT/ARTIFACT) with criteria |
-| 10 | `extract-intelligence-wave-5` | **opus** | Holistic synthesis across all prior waves; main-thread; needs broadest context |
+| 6 | `extract-intelligence-module` | sonnet | Per-module PRD-kontrak extraction; bounded file-set per agent, disciplines ride the agent body (extract-intelligence). Synthesis (README roll-up + data-mutation-policy) runs on the MAIN thread — no dispatched role |
 | 11 | `pipeline-audit-per-skill` | sonnet | Forensic audit across 10 dimensions per skill; bounded scope per skill (Iter 31 style) |
 | 12 | `pipeline-audit-consolidator` | **opus** | Cross-skill pattern detection; consolidates 13 YAML inputs; broad reasoning (Iter 31 style) |
 | 13 | `intelligence-audit-deep` | sonnet | 6-dimension audit on orchestrate-flow + handoff-contract; bounded (Iter 33 Phase B) |
@@ -92,14 +88,14 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 | 21b | `resolution-verifier` | sonnet | Fix-round verification: per-finding resolved/unresolved against new-head evidence + delta review of the fix range — bounded judgment against an explicit finding ledger, known output schema (review-panel §Attempt rounds) |
 | 22 | `bolt-implementer` | **inherit → v7.1 per-unit routed** | AMENDED v7.1 (spec 2026-08-22-per-unit-model-routing-design.md): config `model_tiers.bolt_implementer:` default `inherit` keeps the operator-tier behavior below verbatim; `auto` routes per unit from the SAME deterministic risk signals as the review-panel tier (opus←full, haiku←verify-only, sonnet←else) + a one-step evidence-gated cascade — NOT the hard pin the old rationale rejected (the pin follows per-unit evidence, both directions of the old cost argument are answered). Ship default stays `inherit` until the clinic A/B passes (≥25% token saving, panel quality equal — user gate). ORIGINAL rationale (still governs `inherit`): Deliberately operator-tiered, not unpinned: the implementer writes the code the LOCKED "akurasi code WAJIB" mandate is about, so it tracks the tier the operator chose for the session — a session run on a stronger model gets a stronger implementer with no plugin edit. A hard pin would also cut the wrong way in both directions: pinning down risks paying more via panel rejections + re-dispatches than the per-token saving, pinning up taxes every routine bolt. `inherit` is an EXPLICIT frontmatter value (`agents/bolt-implementer.md`), and any catalog↔frontmatter parity check must accept it as such (spec `2026-07-30-token-and-latency-optimization.md` §Phase 1a, amended) |
 
-**Distribution:** 4 opus + 16 sonnet + 2 haiku + 1 inherit (23 rows). Sonnet-dominant by design; the sole `inherit` is the bolt implementer, whose tier is an operator choice.
+**Distribution:** 3 opus + 13 sonnet + 2 haiku + 1 inherit (19 rows). Sonnet-dominant by design; the sole `inherit` is the bolt implementer, whose tier is an operator choice.
 
 ---
 
 ## Override syntax
 
 > **Scope (S7-PANEL-3):** the `model_tiers:` override chain applies to SKILL-LEVEL
-> model picks (extraction waves, audit probes, consolidators). It does NOT apply to
+> model picks (module extraction, audit probes, consolidators). It does NOT apply to
 > the execute-bolts review-panel lenses (`*-reviewer`) — those are pinned in each
 > plugin agent's frontmatter, which the runtime reads directly; a
 > `model_tiers: {security-reviewer: …}` entry is silently ignored at panel dispatch
@@ -122,7 +118,7 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 `<project>/.mega-sdd/config.yaml`:
 ```yaml
 model_tiers:
-  extract-intelligence-wave-5: sonnet  # cost-sensitive extraction on this project
+  extract-intelligence-module: sonnet  # cost-sensitive extraction on this project
   intelligence-audit-probe: sonnet  # bump from haiku to sonnet for higher signal
 ```
 

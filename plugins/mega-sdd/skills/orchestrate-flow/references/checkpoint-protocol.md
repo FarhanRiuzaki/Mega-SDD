@@ -48,7 +48,7 @@ Each long-running skill MUST emit checkpoints at appropriate granularity:
 
 | Skill | Checkpoint granularity |
 |---|---|
-| `extract-intelligence` | Per wave (5 waves total) |
+| `extract-intelligence` | Per module PRD written |
 | `scan-codebase` | Per major step (detect / tree / extract / write) |
 | `bind-codebase` | Per claim (most granular; can be 100s per vault) |
 | `generate-units` | Per unit candidate generated |

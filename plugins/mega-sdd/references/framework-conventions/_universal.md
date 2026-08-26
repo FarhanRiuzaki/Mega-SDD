@@ -37,7 +37,7 @@ Universal pack does NOT prescribe paths — they're framework-specific. Defer to
 
 ## ERD Quality Rails
 
-Every `suggested-erd.md` produced by `extract-intelligence` MUST satisfy:
+Every rebuild ERD produced by `extract-intelligence` (the README `## ERD` in the PRD-kontrak grammar; `suggested-erd.md` in legacy numbered-tree KBs) MUST satisfy:
 
 ### Normalization checklist
 

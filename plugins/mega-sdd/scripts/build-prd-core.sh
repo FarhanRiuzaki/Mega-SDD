@@ -103,6 +103,14 @@ if mode == "reverse":
     if not kb_root:
         print("ERROR: reverse mode but no knowledge-base root found", file=sys.stderr)
         sys.exit(2)
+    if os.path.isfile(os.path.join(kb_root, "census.json")):
+        # PRD-kontrak grammar (v7.6): the extraction output IS PRD-shaped —
+        # reverse mode would re-derive what already exists. Point, don't churn.
+        print("ERROR: this knowledge base uses the PRD-kontrak grammar — it is "
+              "already PRD-shaped. Read %s/modules/*.prd.md (+ README.md) "
+              "directly; reverse mode only serves legacy numbered-tree KBs."
+              % kb_root, file=sys.stderr)
+        sys.exit(2)
 else:
     kb_root = None
     if not vault or not os.path.isdir(vault):

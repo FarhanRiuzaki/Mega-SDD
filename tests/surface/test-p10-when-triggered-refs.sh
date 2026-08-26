@@ -92,11 +92,10 @@ grep -q '^## Incremental mode' "$P/skills/scan-codebase/references/scan-procedur
   && pass "D5b: §Incremental mode stays at its original location (no file split)" \
   || fail "D5b: section moved or a split file appeared (spec says no split)"
 
-# ── D6 — extract wave split ──
-grep -qF 'read AT Wave 5, not before' "$P/skills/extract-intelligence/SKILL.md" \
-  && grep -qF '§ERD Quality Rails' "$P/skills/extract-intelligence/SKILL.md" \
-  && pass "D6: kb-schema read split by wave (file unchanged)" \
-  || fail "D6: wave-split read instruction missing"
+# ── D6 — extract grammar-reference read scoping (wave split's successor) ──
+grep -qF '§README roll-up + §data-mutation-policy at synthesis' "$P/skills/extract-intelligence/SKILL.md" \
+  && pass "D6: grammar-reference read scoped (dispatch sections up front, synthesis sections at synthesis)" \
+  || fail "D6: grammar-reference read scoping missing"
 
 # ── Moat reads stay unconditional ──
 grep -qF 'per `references/unit-schema.md`' "$GU" \
@@ -105,9 +104,9 @@ grep -qF 'per `references/unit-schema.md`' "$GU" \
 grep -qF 'replaced by `references/express-bind.md`' "$P/skills/bind-codebase/SKILL.md" \
   && pass "M2: express-bind procedure still commanded under --express" \
   || fail "M2: express-bind command lost"
-grep -qF 'READ FIRST: <kb-dir>/.dispatch-static.md' "$P/skills/extract-intelligence/references/wave-dispatch-templates.md" \
-  && pass "M3: dispatch-static READ-FIRST untouched" \
-  || fail "M3: dispatch-static read weakened"
+grep -qF 'READ FIRST: <plugin-root>/skills/extract-intelligence/references/prd-kontrak-template.md' "$P/skills/extract-intelligence/references/prd-kontrak-template.md" \
+  && pass "M3: grammar-reference READ-FIRST in the dispatch core untouched" \
+  || fail "M3: grammar-reference read weakened"
 if ! grep -q 'regardless of classifier' "$P/commands/mega-sdd.md" \
    && grep -qF 'the automatic iter classifier is PARKED' "$P/commands/mega-sdd.md"; then
   pass "M4: front-door flag texts stop claiming the parked classifier runs (round fold)"

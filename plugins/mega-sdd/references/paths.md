@@ -66,7 +66,7 @@ Every writer skill resolves output paths via this protocol:
 │   │   │   └── bolt-outcomes.json                 # per-unit completion — read by query-graph --modules
 │   │   └── .internal/                             # Vault-internal state
 │   │       ├── checkpoints/<timestamp>-<skill>-<step>.jsonl   # resumable checkpoints
-│   ├── knowledge-base/                            # Legacy KB extraction (extract-intelligence)
+│   ├── knowledge-base/                            # Legacy extraction (extract-intelligence): census.json + modules/*.prd.md + README (PRD-kontrak; pre-v7.6 numbered tree still readable)
 │   │   ├── README.md
 │   │   ├── 00-overview/, 10-domains/, etc.
 │   │   └── .scan-meta.json
@@ -128,7 +128,7 @@ The `## Overview` / `## Architecture` / `## Decisions` anchors are a HARD-HEADER
 
 | Skill | Artifact | Default canonical path | Legacy path |
 |---|---|---|---|
-| `extract-intelligence` | knowledge-base/ | `.mega-sdd/knowledge-base/` | `docs/knowledge-base/` or `<out>/knowledge-base/` |
+| `extract-intelligence` | knowledge-base/ (census.json + modules/*.prd.md + README.md) | `.mega-sdd/knowledge-base/` | `docs/knowledge-base/` or `<out>/knowledge-base/` |
 | `scan-codebase` | codebase-map.md | `.mega-sdd/codebase/codebase-map.md` | `<repo-root>/codebase-map.md` |
 | `scan-codebase` | starterkit-context | `.mega-sdd/codebase/starterkit-context.yaml` | `docs/codebase/starterkit-context.yaml` (legacy back-compat probe only) |
 | `build-symbol-index.sh` (script) | symbol-index | `.mega-sdd/codebase/symbol-index.json` | — (new artifact, no legacy location) |

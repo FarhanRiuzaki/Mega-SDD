@@ -1,334 +1,179 @@
 ---
 name: extract-intelligence
-version: 1.19.0
-description: Tech-agnostic domain extractor for legacy codebases targeted for rebuild — wave-based extraction produces .mega-sdd/knowledge-base/ with [VERIFIED]/[INFERRED]/[OPEN] + [LOCKED]/[INTENT]/[ARTIFACT] markers, consumed by generate-intent --kb and bind-codebase. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "rebuild di stack baru", "legacy intelligence", or paraphrases.
+version: 2.0.0
+description: Tech-agnostic legacy extractor for rebuild/revamp — census-contracted extraction composes the system's logic into one PRD-kontrak per module (inline file:line citations, [LOCKED]/[INTENT]/[ARTIFACT] mutability tiers), consumed by generate-intent --kb and bind-codebase. Cost scales with the census, not a fixed pipeline — a 1-file engine yields 1 PRD. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "revamp project ini ke stack baru", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
-# Extract-Intelligence — Legacy Domain Knowledge Extractor
+# Extract-Intelligence — Legacy → PRD-kontrak
 
-Tech-agnostic domain extractor for legacy codebases. Produces a multi-file knowledge base organized by **business domain**, not by code structure. Output describes WHAT the system does in tech-agnostic terms, not HOW the legacy stack implements it. Source-of-truth for rebuild planning on a different stack.
+The extraction's job is to compose the legacy system's logic in human
+language; the composition IS the PRD — one per module, tech-agnostic,
+citation-anchored. Completeness is contracted to the CENSUS (every code file
+claimed + cited, or an honest Open Question), never to artifact volume: a
+1-file engine fully covered by 1 PRD is 100% complete.
 
 **Announce at start:** "I'm using the extract-intelligence skill to extract domain knowledge from the legacy codebase. `mega-sdd-trace:extract-intelligence`"
 
-> **Skill instruction language:** this skill reasons in English; KB content stays tech-agnostic per the `[VERIFIED]`/`[INFERRED]`/`[OPEN]` schema. Narrate (the announce, wave progress, summaries) in **Indonesian + English technical terms by default**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 structural tokens (markers, citations, `sha256:`) stay English (→ `plugins/mega-sdd/references/output-language.md`).
+> **Skill instruction language:** this skill reasons in English; PRD-kontrak
+> content stays tech-agnostic per `references/prd-kontrak-template.md`.
+> Narrate (the announce, per-module progress, summaries) in **Indonesian + English technical terms by default**;
+> precedence = explicit request > the language the user writes in > Indonesian
+> for short/ambiguous input. Tier-1 structural tokens (markers, citations,
+> `sha256:`, section headings) stay English
+> (→ `plugins/mega-sdd/references/output-language.md`).
 
-**Core principle:** Domain-first, not code-first. Tech-agnostic vocabulary. Citation-disciplined extraction. Wave-based parallel agents to manage token budget. Ambiguous → `[OPEN]`, never silent default.
+**Core principle:** domain-first, not code-first. Tech-agnostic vocabulary.
+Citation-disciplined. Ambiguous → `[OPEN]` → Open Questions, never a silent
+default. Depth proportional to the census — small legacy runs on the main
+thread with zero subagents.
 
 ## When to use
 
-- Legacy codebase needs full rebuild on a different stack (not in-place migration).
+- Legacy codebase needs a rebuild/revamp on a different stack (not an in-place migration).
 - High-stakes domain (financial, regulatory, healthcare) — missing edges cost money.
-- Architect needs "what does this system actually do" without reading 600+ source files.
-- After `mega-sdd:scan-codebase` when rebuild is in scope — KB is richer than codebase-map for rebuild planning.
-- User says variations of: "extract domain knowledge", "reverse engineer this", "pecah legacy code", "source of truth dari legacy code", "rebuild di stack baru".
+- Architect needs "what does this system actually do" without reading the source.
+- User says variations of: "extract domain knowledge", "reverse engineer this", "pecah legacy code", "revamp project A ke B", "rebuild di stack baru".
 
 **When NOT to use:**
-- Direct code port to a newer version of the same stack → use migration tooling.
-- Small codebases (<50 files) → just read them.
+- Direct code port to a newer version of the same stack → migration tooling.
 - Greenfield projects (no legacy).
-- "What files are in this repo" → use `mega-sdd:scan-codebase` (lighter, faster, code-organized).
+- "What files are in this repo" → `mega-sdd:scan-codebase` (code-organized catalog).
 
 ## Relationship to other mega-sdd skills
 
 | Need | Skill | Why |
 |---|---|---|
 | Map files/modules in a brownfield repo | `mega-sdd:scan-codebase` | Heuristic catalog organized by code structure |
-| Validate an SDD vault claim against existing code | `mega-sdd:bind-codebase` | Primary ground truth = codebase-map; KB consulted as secondary |
-| Extract domain knowledge to rebuild elsewhere | **this skill** | Tech-agnostic, domain-organized, marker-disciplined |
-| Convert brief/KB → intent vault | `mega-sdd:generate-intent` | Consumes this skill's KB via `--kb=<path>` |
+| Validate an SDD vault claim against existing code | `mega-sdd:bind-codebase` | Primary ground truth = codebase-map; PRD-kontrak consulted as secondary |
+| Extract legacy logic into a rebuild contract | **this skill** | Tech-agnostic, module-organized, census-gated |
+| Convert brief/PRD-kontrak → intent vault | `mega-sdd:generate-intent` | Consumes this skill's output via `--kb=<path>` |
 
-**Typical chain:**
+**Typical chain (the revamp lane):**
 `extract-intelligence` → `generate-intent --kb=<kb>` → `generate-units` → `execute-bolts`
-
-Naming: this is the mega-sdd-flavored take on the legacy reverse-engineering pattern (no equivalently-named superpowers skill ships today — do not Skill-invoke one). The mega-sdd version produces a structured `.mega-sdd/knowledge-base/` that downstream mega-sdd skills explicitly consume. Use this version when the next step is mega-sdd unit/bolt generation.
 
 ## Inputs
 
 - Legacy codebase path (positional, required)
-- `--out=<path>` (OUTPUT_ROOT / parent dir; default `.mega-sdd/` per `plugins/mega-sdd/references/paths.md` — the KB is written to `<out>/knowledge-base/`)
+- `--out=<path>` (OUTPUT_ROOT / parent dir; default `.mega-sdd/` per `plugins/mega-sdd/references/paths.md` — output written to `<out>/knowledge-base/`)
 - `--seed=<path>` (optional pre-existing forensic dump; moved to `_source/`)
-- `--max-parallel=N` (subagent cap per wave; **default 5** — the dispatch is a compact variable core + a Read-first static file, so coordination overhead no longer caps the fleet below the platform's comfort zone; soft warn at >5; hard cap 8 — see orchestrate-flow/references/predictive-checks.md `subagent_capacity_reasonable`)
-- `--auto` (skip per-wave confirmation prompts; quality-gate failures still halt)
+- `--max-parallel=N` (module-extractor cap per batch; **default 5**; soft warn at >5; hard cap 8)
+- `--auto` (skip confirmation prompts; quality-gate failures still halt)
 
 ## Output
 
-**Secret-scan gate (mirrors scan-codebase Step 10a):** before EACH KB file is written, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/secret-scan.sh" --redact <assembled-file>` — legacy code routinely hardcodes credentials, and KB citations would otherwise carry them verbatim. Findings → value replaced with `[REDACTED-SECRET]` in the KB artifact (the legacy SOURCE is never edited) + one chat warning citing source file:line.
-
-Per `references/knowledge-base-schema.md` — **before any wave dispatch read §Directory layout + §Per-domain file frontmatter + §Per-domain 11-section template (incl. §3a) + §Marker conventions + §Anti-hallucination invariants; the Wave-5-only sections (§ERD Quality Rails, §`data-mutation-policy.md` template + its sub-sections, §README roll-up structure, §99-rebuild-architecture templates) are read AT Wave 5, not before** — see its **§Directory layout** for the full `{out}/` tree: the optional `_source/` seed, the `knowledge-base/` numbered tree (`00-overview` … `99-rebuild-architecture`) with each directory's sub-files, the `50-integrations` external-contract (conceptual, not protocol) convention, and the legacy `--out` probe order.
-
-Every domain file has YAML frontmatter (`generated_by: mega-sdd:extract-intelligence`, classification, criticality, verified/inferred/open counts, citation count). Consumed by `bind-codebase` as secondary ground truth.
-
-## Wave-based execution
-
-6 sequential waves (Wave 0–5) with parallel subagents inside each wave — each wave subagent is the first-class **`mega-sdd:domain-extractor`** agent (dispatched via the Agent tool), given its domain assignment + legacy paths + the KB schema as its task; the extraction contract itself (depth, deep disciplines, REPORT BACK) rides the agent's own body, and the mechanical injections (stack-idiom slice + glossary index) ride the script-built `<kb>/.dispatch-static.md` the agent Reads first — the controller types only the small variable core per dispatch. The builder is run twice: **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-extract-static.sh" --kb-dir=<kb> --plugin-root="${CLAUDE_PLUGIN_ROOT}"` — with `--no-glossary` at Wave 0 (idiom slice only; keeps a prior run's glossary from leaking in as a stale index) and WITHOUT it after the Wave 1 gate passes (adds the glossary index) — never dispatch a wave subagent without the file. Read `references/wave-dispatch-templates.md` for the per-wave dispatch prompts and quality-gate grep commands.
-
-| Wave | Output | Subagents | Why |
-|---|---|---|---|
-| **0 — Prep** | Skeleton dirs; move existing forensic dump to `_source/` | Main thread | Foundation |
-| **1 — Foundation** | overview, glossary, classification, data-model, workflows | 3 parallel | Anchors for waves 2-4 |
-| **2 — Masters** | Master entities, reference data, regulatory rules | 4 parallel | Low write volume; anchors workflows |
-| **3 — Workflows** | Transactional workflows, ops rules, hidden gotchas | 5 parallel | Heaviest extraction wave |
-| **4 — Integrations** | External system contracts, reporting/monitoring | 3 parallel | Wraps domain coverage |
-| **5 — Synthesis** | ERD, system-flow, dependency-graph, phasing, README | Main thread | Needs holistic view across all wave outputs |
-
-**Model tier per wave:** resolved per role from `references/model-tiers.md` — waves 1–4 default sonnet, wave 5 defaults opus (synthesis needs holistic context). The per-wave catalog lives in `references/wave-dispatch-templates.md` §Model tier per wave; override via handoff `metadata.model_tiers` when invoked through orchestrate-flow.
-
-**Why wave-based:**
-- Token budget control — never more than `--max-parallel` subagents in flight.
-- Later waves cross-reference earlier outputs (glossary anchors every domain file).
-- Quality gate between waves catches template / citation drift early.
-- Wave 5 on main thread avoids subagent context loss — synthesis needs the whole map.
-
-**Common timeout pitfall:** subagents reading >40 KB single files hit stream timeout. Mitigation: tighten Read scope with line ranges, prefer `Grep` for targeted patterns, fall back to synthesis-from-siblings (read other KB files instead of legacy source) for late waves.
-
-**Glossary pre-parse + reference offset hints:** after the Wave 1 gate passes, `scripts/build-extract-static.sh` parses `glossary.md` ONCE — deterministically, not by the model — into a compact `glossary_index` (term → 1-line def + line range) inside `<kb>/.dispatch-static.md`, and wave-output citations carry `§section:line-range` hints so downstream readers spot-read instead of full-document read. Full procedure: `references/wave-dispatch-templates.md` §The dispatch-static file + §Reference offset hints; the subagent-facing usage instruction lives in `agents/domain-extractor.md`.
-
-## Extraction discipline (non-negotiable)
-
-Every non-trivial claim carries TWO orthogonal axes — **confidence** (epistemic: how sure are we?) + **mutability** (decisional: how much freedom does rebuild have?). Both axes are mandatory.
-
-### Axis 1 — Confidence markers (existing convention, also used by `bind-codebase`)
-
-- `[VERIFIED]` — confirmed by multiple code paths OR an explicit doc.
-- `[INFERRED]` — single source code path; needs confirmation.
-- `[OPEN]` — unknown from code; needs domain expert. Propagates to vault as OQ when KB is consumed by `generate-intent`.
-
-### Axis 2 — Mutability tiers
-
-Per user directive "code dan ERD bisa berubah, tapi goals reengineering nya terpenuhi, jika tidak ada ketentuan erd harus 1:1" — every claim is tagged with the freedom rebuild has to change it:
-
-- `[LOCKED]` — **MUST be preserved 1:1 in rebuild**. Triggered by:
-  - Regulatory citation (BI/OJK/SOX/HIPAA/PCI/GDPR specific field, calculation, retention rule)
-  - Contractual integration spec (SWIFT MT format, partner API contract, audit-trail compliance)
-  - Migration cost prohibitive (live production data with sensitive constraints — column rename breaks downstream)
-  - Hard external dependency (FK referenced by external system out of scope)
-- `[INTENT]` — **Business OUTCOME matters, implementation is FREE**. Default tier for most domain rules. Rebuild may redesign schema, refactor flow, swap algorithms — as long as the outcome (state transition, calculated value, business rule effect) is preserved.
-- `[ARTIFACT]` — **Coincidental legacy implementation detail — free to DISCARD**. Triggered by:
-  - Implementation accidents (e.g., field exists because legacy framework required it; not used by any business rule)
-  - Workarounds for legacy stack limitations (denormalization for performance; flag columns for missing JOIN support; column-based polymorphism)
-  - Dead code paths (referenced by zero callers; defunct workflow branches)
-
-### Combined notation
-
-Markers stack: `[VERIFIED][LOCKED]`, `[VERIFIED][INTENT]`, `[INFERRED][LOCKED]`, etc. Confidence comes first (epistemic) then mutability (decisional). When `[OPEN]`, mutability is `[?]` until the question is answered: `[OPEN][?]`.
-
-Example claims:
-
-> Customer NIP field is 8 numeric digits, validated by checksum algorithm `<spec link>`. `[VERIFIED][LOCKED]` — `(see §11.3)` — required by BI Regulation 23/2/2021 §4.
-
-> Loan amount is denormalized into `application` and `disbursement` tables for read-performance. `[VERIFIED][ARTIFACT]` — `(see §11.7)` — rebuild may normalize via JOIN or projection.
-
-> Approver matrix uses 7 hierarchy levels keyed by `approval_code`. `[VERIFIED][INTENT]` — `(see §11.4)` — outcome (correct authority routing) matters; representation (matrix vs role-based) is rebuild's choice.
-
-### Default tier when uncertain
-
-If a wave-2/3/4 agent can't classify with high confidence, default to `[INTENT]` (middle-ground, safest). Wave 5 synthesis re-reviews tier distribution and surfaces likely mis-classifications. Never default to `[LOCKED]` (would over-constrain rebuild) or `[ARTIFACT]` (would risk discarding business rule).
-
-### Why this matters — KB role re-positioned
-
-KB is no longer a "preserve-legacy spec". KB is an **analysis input** that produces a vault containing:
-1. Business goals (immutable across rebuild)
-2. Hard constraints (`[LOCKED]` rules from KB)
-3. Recommended new shape (`99-rebuild-architecture/*` proposals — schema, flows, modules)
-4. Discarded legacy detail (`[ARTIFACT]` items — listed but flagged as discardable)
-
-The rebuild's job is to satisfy goals + locked constraints, not to mirror legacy verbatim.
-
-**Citation required:** every non-trivial claim has a `file:line` reference in the file's `## 11. Source References` section. Inline claims may use a short `(see §11)` pointer if the citation is shared.
-
-**Tech-agnostic vocabulary:** no language / framework / DB names in domain files except `## 11. Source References` and `50-integrations/`.
-- ✓ "Customer entity (persisted in legacy as table `cifmast`)"
-- ✗ "MySQL `cifmast` table"
-
-**`.bak` / dated-file handling:** compare with live version, document discrepancies in `## 9. Edge Cases & Gotchas`. Don't assume `.bak` is older — sometimes it contains logic removed due to a regression.
-
-**No fabrication:** ambiguous → `[OPEN]`. Never guess regulatory citations, never invent business rules from a single source.
-
-### Staged-input detection (multi-step workflows)
-
-A workflow that collects its inputs across MORE THAN ONE step / page / role is **staged** — a wizard, a maker→checker hand-off, a multi-page form. If you transcribe it as one flat "Inputs: A,B,C,D,E,F" list, the rebuild loses the staging and a bolt builds ONE form where the legacy had a multi-step wizard (the captured trade-finance regression). For every `classification: workflow` domain, actively look for staging and, when found, author the `## 3a. Staged inputs` `stages:` block (schema: `references/knowledge-base-schema.md §3a`).
-
-**Signals the source is staged (any ONE is enough to author §3a):**
-- **Multi-page form / wizard** — a `step` / `stage` / `page` request param or hidden state field that switches which fields render (`<input type="hidden" name="step">`, `?page=2`, `wizard_step`).
-- **Conditional rendering keyed to a stage** — `if (stage == 'review') { … }`, `switch ($step)`, view partials selected by a phase variable.
-- **State-machine transitions that gate inputs** — a `status` / `state` field whose value (`draft → pending → approved`) decides which fields are accepted or shown next.
-- **Role-gated visibility** — a maker form vs a checker form; different roles supply different fields in sequence (maker enters A,B,C; checker then enters D,E,F).
-
-**Discipline:**
-- One `stages:` entry per step. Allocate each input field to the stage that actually collects it (`input_fields`), in source order.
-- **Anchor MANDATORY per stage** — each stage's `_source` cites the `file:line` proving that stage exists. A stage you cannot anchor is an `[OPEN]`, not an invented step.
-- Name the `actor_role` per stage and the `transitions` (trigger + guard `conditions`) that advance it. Reference each `stage_id` in the §8 state-machine transition labels.
-- If staging is genuinely ambiguous (sequential flows exist but no explicit stage concept in code), still author §3a with `[INFERRED]` stages + an `[OPEN]` note — do NOT silently flatten.
-- **Progressive-disclosure deltas (OPTIONAL / best-effort):** when a stage's form clearly differs from the prior stage, capture the delta in §3a — which fields are NEW here (`new_fields_vs_prior`), which were shown earlier but are gone (`hidden_fields_vs_prior`), which were promoted to mutable (`promoted_to_mutable_vs_prior`, e.g. display-only → dual-key re-entry), and any within-stage show/hide (`dynamic_disclosures`). Use the enriched object form of `input_fields` (`{name, mutability, visibility, conditional}`) when you can read per-field mutability/visibility; bare strings remain valid. Schema: `references/knowledge-base-schema.md §3a`. This deepens the staging capture (the user's "fields A,B,C at maker; D,E,F appear at the next stage" case) — but it is NOT validator-blocking; absence never fails a gate.
-
-> Walking-skeleton scope: only the staged-input dimension is required this iter. the kb flows surface (`validate-kb.sh --surface=flows`) raises an advisory `kb_flow_staging_missing` (non-blocking) when a workflow looks multi-step but has no `stages:` block; `enrich-semantics` retro-fits staging on an existing KB without a full re-extract.
-
-### Deep extraction disciplines (P1–P4 + P6)
-
-Six extraction principles make the wave subagents reason deeper and catch the cases a write-side-only read misses. **The authoritative, agent-facing copy lives in `agents/domain-extractor.md` §Deep disciplines** — the subagent's own system prompt, so the deeper reasoning fires *automatically* on every dispatch by construction, and a hurried controller cannot truncate it the way a typed prompt block could be (a discipline that lived only here in SKILL.md would never reach the extraction subagents). This subsection is the design vocabulary; do not let the two drift.
-
-**Tech-agnostic by construction (per user directive 2026-06-15 — "EI ini harus support tech agnostic ga hanya PHP… php just example"):** the principles are stack-NEUTRAL. The master **STACK IDIOM TABLE** (PHP / JS-TS / Python / C#-.NET / Java / Go / Ruby / Rust, one authoritative copy in `references/wave-dispatch-templates.md` §Stack-idiom slicing) maps each principle to the concrete idiom per stack; `scripts/build-extract-static.sh` SLICES it into the dispatch-static file every run — UNION of every language in the Wave 0 enumeration (a PHP+JS legacy gets both columns), FULL-table fallback when detection is empty/unmapped — so the reasoning fires on whatever the legacy is written in, without shipping 7 dead columns to every subagent. Never read "not present" from "I didn't see the idiom"; reason by analogy from the closest emitted row.
-
-- **P1 — State & data provenance.** For every state *writer*, locate the *reader*; for every clone copy (bulk row-copy, snapshot, object/struct copy — per the idiom table), trace the implicitly-inherited fields and who reads them downstream. Writer with no reader → `write-only / vestigial`; reader with no in-scope writer → `inherited / cross-domain seam`. Anti-halu: an unpaired side is `[OPEN]`, never invented.
-- **P2 — Enumerate ALL sites of a rule or flow.** Document every site of a repeated rule (diff them, mark `[OPEN]` on disagreement — never average); treat each entry-point dispatcher branch (action/mode/HTTP-verb/route discriminator) as a distinct flow with its own initial state.
-- **P3 — Behaviour-as-EXECUTED.** Unconditional halts / hard-exits (per the idiom table) as `[ARTIFACT: debug-code-as-feature]`; full transaction-rollback policy; hardcoded test flags; silent-success paths — what an operator OBSERVES.
-- **P4 — Classify files by structure, not naming.** Role from template-ratio / form-tags / early-return gates (view / action_handler / dual_purpose / dispatcher / service); document filename-vs-structure mismatches in §9.
-- **P6 — Dynamic dispatch & runtime wiring.** For every *dynamic seam* — a call site whose concrete target is resolved at RUNTIME, not lexically (DI-container resolution, reflection / `dynamic` / duck-typing, attribute/annotation/convention routing & validation, interface → implementation dispatch, event/delegate/middleware wiring — per the idiom table) — locate the real target(s) and document the observed behaviour, citing BOTH the seam and each target. The inverse of P2 (one call site, N runtime targets); the dominant silent-miss on DI/reflection-heavy stacks (C#/.NET, Java/Spring, Go, modern TS). Anti-halu: an unresolvable seam is `[OPEN]`, never an invented target.
-
-**Framing (per user directive 2026-06-02):** the KB captures **business intent + flow**; the rebuild owns **implementation cleanliness**. So P1 captures coupling as a *business outcome* ("the amendment must still trigger downstream dispatch + facility re-balance"), NOT the legacy implementation accident, and **status-naming drift between legacy and rebuild is NOT a gap** (a legacy status flag normalizing to a clean `workflow_state` is a cleanup, not drift). The disciplines surface coupling and distinct operating models so the rebuild can preserve the *outcome* while redesigning the *encoding*.
-
-These five are reasoning disciplines (P5 FE-completeness is covered by the staged-input mechanism above; its progressive-disclosure delta enrichment lives in `references/knowledge-base-schema.md §3a`). Completeness across the six principles is summarized end-of-extraction by an **Extraction Completeness Contract** scorecard.
-
-## Quality gates between waves
-
-After each wave, run the grep checks from `references/wave-dispatch-templates.md` §gate-checks:
-
-- `^## 3\. Flow` exists in every new domain file
-- `^## 10\. Open Questions` exists in every new domain file
-- `^## 11\. Source References` exists in every new domain file
-- Forbidden patterns (language/DB names, SQL strings) absent outside allowed sections — run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/kb-leak-scan.sh" --kb-dir=<kb> --stack=all` (unions every stack's tokens — a tech-agnostic KB must be neutral to BOTH the legacy AND the target stack, so `all` beats auto-detecting only the legacy language; detects C#/Java/Go/Rust leaks the old PHP/SQL grep missed; advisory)
-- Frontmatter present with required keys
-- **Mermaid emission rules** (`plugins/mega-sdd/references/mermaid-emission-rules.md`) — §3 Flow + §8 State Machine blocks MUST follow the 6-rule contract (quote node text, `<br/>` for newlines, escape special chars, paraphrase raw code expressions). the kb flows surface (`validate-kb.sh --surface=flows`) enforces a heuristic subset; producers are responsible for parser-valid syntax even when the heuristic doesn't flag the specific pattern
-- **Staged inputs** — a multi-step `classification: workflow` file SHOULD carry `## 3a. Staged inputs` with a `stages:` block. the kb flows surface (`validate-kb.sh --surface=flows`) raises an advisory `kb_flow_staging_missing` (non-blocking — does NOT fail the wave) when a workflow looks multi-step but has none; re-dispatch the agent with the §3a discipline above, or retro-fit later via `enrich-semantics`
-- **P1 provenance** — a workflow agent reporting `provenance_anomalies > 0` (per `agents/domain-extractor.md` §Report back) MUST carry a matching `write-only` / `inherited / cross-domain seam` note with an `[OPEN]` marker per anomaly. The Wave 3 gate surfaces a **non-blocking** advisory `provenance_read_side_thin` (a MANUAL between-wave grep nudge — NOT a validator-emitted state signal, unlike `kb_flow_staging_missing`) when a workflow file documents transitions but never references the read-side; re-dispatch with the P1 discipline. Never fails the wave (mirrors staged-input) — genuinely unpaired states are legitimate `[OPEN]`s
-
-If failures → re-dispatch the failing agent with specific feedback. Don't proceed to the next wave with broken outputs — they're inputs to the next wave's cross-references.
-
-**Per-wave confirmation (skipped under `--auto`)** — rendered per the keterangan contract: show the wave summary (domains covered, marker counts `[VERIFIED]/[INFERRED]/[OPEN]`, gate results), then options: `Lanjut wave N+1` **(recommended when all gates green)** — dispatch wave berikutnya; `Review output dulu` — pause, KB file paths ditampilkan untuk dibaca; `Stop` — KB partial tersimpan, bisa dilanjut nanti.
-
-If the same gate fails twice for the same agent → halt, SHOW the gate output (the actual failing checks, not just the gate name), and ask with per-option consequences: `Re-scope` — persempit domain assignment agent-nya, dispatch ulang; `Re-prompt` — dispatch ulang dengan feedback spesifik dari gate output; `Abort` — KB partial disimpan di disk (file per wave yang sudah lolos gate); tidak ada auto-resume — re-run mengulang wave-nya.
-
-## Synthesis wave (main thread only)
-
-Wave 5 MUST be main thread, not a subagent — it needs holistic context across every wave's output:
-
-The six synthesis outputs, in order — `suggested-erd.md`, `suggested-system-flow.md`, `module-dependency-graph.md`, `suggested-phasing.md`, `data-mutation-policy.md`, and the `README.md` roll-up — are specified with their per-output schema (ERD Quality Rails; the `data-mutation-policy.md` `[LOCKED]/[INTENT]/[ARTIFACT]` table that drives `generate-intent --kb` freedom; README reengineering-opportunities-first ordering) in `references/wave-dispatch-templates.md` §Wave 5 — Synthesis and `references/knowledge-base-schema.md` §99-rebuild-architecture templates.
-
-## Step 5.5 — Emit extracted-kb shared snapshot
-
-After the Synthesis wave (Wave 5) completes and `README.md` roll-up is written, emit a shared-snapshot file per `plugins/mega-sdd/references/shared-snapshot-schema.md §extract-intelligence (extracted-kb snapshot)`. Enables downstream `generate-intent --kb` to verify KB freshness against source codebase without re-extracting.
-
-```
-1. Collect every source file enumerated during waves 1-4 extraction (from each subagent's _source: citations + main thread's file enumeration in wave 1).
-2. Compute current sha256 for each source file.
-3. Build source_files_sha256_map:
-   { "<repo-relative-path>": "<sha256-hex>", ... }
-4. Write atomically to <kb-dir>/.shared-snapshots/extracted-kb.snapshot.json (every `<...>` is a fill-in; `<skill-version>` = this SKILL.md frontmatter `version:`):
-   {
-     "snapshot_schema_version": "1.1",
-     "snapshot_type": "extracted-kb",
-     "generated_by": "extract-intelligence@<skill-version>",
-     "generated_at": "<ISO8601 at extraction completion>",
-     "scope": null,
-     "files": [],
-     "source_files_sha256_map": { ... }
-   }
-5. Use temp-file + rename for atomicity.
-```
-
-If write fails: log warning + continue (snapshot is freshness check optimization; KB itself remains the consumable output).
-
-## Step 5.6 — Emit Extraction Completeness Contract scorecard
-
-The contract makes extraction *falsifiable*: it summarizes how well each of the six Deep extraction disciplines (P1–P4 above + P5 staged inputs + P6 dynamic dispatch) was satisfied, so downstream stages can see what is solid vs `[OPEN]` before building on it. After Wave 5's README roll-up, the main thread emits two files into the KB dir:
-
-- `.extraction-scorecard.json` (machine-readable — validated by `scripts/validate-extraction-scorecard.sh`)
-- `EXTRACTION-SCORECARD.md` (human-readable companion)
-
-**Deriving each principle's status** (from the Wave REPORT BACK self-checks + a holistic KB scan):
-
-| Principle | COVERED when | PARTIAL / MISSING when |
-|---|---|---|
-| `P1_state_provenance` | every documented state writer has a located reader (or an explicit `write-only` / `inherited / cross-domain seam` `[OPEN]` note) | `provenance_anomalies` reported but not all carry an `[OPEN]`/seam note |
-| `P2_rule_enumeration` | repeated rules documented at every site; entry-point branches captured as distinct initial states | a rule documented at only one site when grep shows more; disagreeing sites not marked `[OPEN]`/conflict |
-| `P3_behavior_executed` | unconditional halts / rollback policy / test flags / silent-success paths documented as observed | a transaction wrapper in scope with no documented rollback policy |
-| `P4_structural_classification` | in-scope files classified by structure; filename-vs-structure mismatches noted | files left role-ambiguous with no `[OPEN]` |
-| `P5_staged_inputs` | every multi-step `classification: workflow` carries a `## 3a` `stages:` block | a multi-step workflow with no stages block (see `kb_flow_staging_missing`) |
-| `P6_dynamic_dispatch` | every dynamic seam found (`dynamic_seams_found`) is resolved to ≥1 cited target OR carries an `[OPEN]` (`dynamic_seams_resolved + dynamic_seams_open == dynamic_seams_found`) | a seam found but neither resolved nor marked `[OPEN]` (a hidden runtime path) |
-
-**`overall_status`:** `PASS` = all six COVERED · `PARTIAL` = ≥1 PARTIAL but every PARTIAL/MISSING principle has corresponding `[OPEN]` markers in the KB · `FAIL` = a PARTIAL/MISSING principle with NO `[OPEN]` markers (a hidden gap — the silent-drift failure mode this contract exists to catch).
-
-**Anti-halu rail:** never up-rank a principle to COVERED to make the scorecard green. An honest `PARTIAL` with `[OPEN]` markers is the correct, passing state; a green scorecard hiding a gap is the failure. (In the JSON below every `<...>` is a fill-in; `<skill-version>` = this SKILL.md frontmatter `version:`.)
-
-```json
-{
-  "version": "1.1",
-  "extracted_at": "<ISO8601>",
-  "extractor_version": "extract-intelligence@<skill-version>",
-  "scope": { "legacy_root": "<path>", "files_in_scope": 0, "files_read_fully": 0 },
-  "principles": {
-    "P1_state_provenance":        { "status": "COVERED|PARTIAL|MISSING", "anomalies_count": 0, "anomalies": [] },
-    "P2_rule_enumeration":        { "status": "COVERED|PARTIAL|MISSING", "rules_documented": 0, "conflicts_open": 0 },
-    "P3_behavior_executed":       { "status": "COVERED|PARTIAL|MISSING", "artifact_markers": 0 },
-    "P4_structural_classification":{ "status": "COVERED|PARTIAL|MISSING", "files_classified": 0, "naming_structure_drift_count": 0 },
-    "P5_staged_inputs":           { "status": "COVERED|PARTIAL|MISSING", "workflows_audited": 0, "workflows_with_stages": 0 },
-    "P6_dynamic_dispatch":        { "status": "COVERED|PARTIAL|MISSING", "seams_found": 0, "seams_resolved": 0, "seams_open": 0 }
-  },
-  "overall_status": "PASS|PARTIAL|FAIL",
-  "open_markers_present": true
-}
-```
-
-**Validation + downstream consumption:** `scripts/validate-extraction-scorecard.sh --cwd=<project>` checks the scorecard's internal consistency + the `[OPEN]`-correspondence rule (SKIP when absent — back-compat; FAIL only on inconsistency or a hidden gap). `bind-codebase` consults it as a **preflight advisory** (surfaces FAIL/absent; non-blocking this iter). If write fails: log warning + continue (the KB itself remains the consumable output).
-
-## Bridge to rebuild + mega-sdd pipeline
-
-After extraction, suggest one of:
-
-1. **Manual rebuild planning** — use `99-rebuild-architecture/suggested-phasing.md` as the phase plan.
-2. **Continue in mega-sdd pipeline** — run `generate-intent --kb=<knowledge-base-path>` to bootstrap a per-phase vault from the KB README + relevant domain files. From there: `generate-units` → `execute-bolts`.
-
-If the rebuild lives in a different directory: copy `knowledge-base/` to the new project under `old-reference/`. Mark the distinction in the new project's CLAUDE.md:
-- `old-reference/knowledge-base/` → REFERENCE liberally
-- `old-reference/_source/` → legacy code dump, DON'T pattern-match
+Per `references/prd-kontrak-template.md` — read **§Output layout +
+§Module PRD frontmatter + §Module PRD template + §Markers & mutability tiers**
+before any dispatch; §README roll-up + §data-mutation-policy at synthesis.
+
+**Secret-scan gate:** before EACH output file is written, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/secret-scan.sh" --redact <assembled-file>` — legacy code routinely hardcodes credentials, and inline citations would otherwise carry them verbatim. Findings → value replaced with `[REDACTED-SECRET]` in the artifact (the legacy SOURCE is never edited) + one chat warning citing source file:line.
+
+## Execution — census → confirm → extract → synthesize → gate
+
+### Step 1 — Census (main thread)
+
+1. Validate the legacy path exists and is non-empty (else halt).
+2. If `--seed=<path>`: copy the seed to `{out}/_source/` (read-only cross-reference).
+3. **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/derive-extract-census.sh" --legacy=<legacy> --kb-dir={out}/knowledge-base` — writes `census.json`: code files (+sha256, logs/backups/data excluded by construction), stacks, entry points, a deterministic module proposal. The census IS the completeness contract.
+
+### Step 2 — Module confirmation (human, only when >1 module proposed)
+
+`census.json` proposes >1 module → ONE AskUserQuestion with keterangan
+(Indonesian): show the proposed split (name, file count, lines per module) and
+the entry-point hints; options **Pakai pecahan ini** (recommended) / **Ubah**
+(user reshapes: merge/split/rename — re-present once) / **Stop**. The split the
+human confirms is what gets dispatched — the ground truth of the mapping ends
+up in each PRD's own `source_files:` frontmatter, and the census gate
+recomputes coverage from those artifacts (never from this conversation).
+Exactly 1 proposed module → no question; proceed.
+
+### Step 3 — Per-module extraction
+
+- **1 module (xs):** extract on the MAIN THREAD — no subagent, no dispatch
+  overhead. Read the files, compose the PRD per the template, write it through
+  the secret-scan gate.
+- **>1 module:** dispatch the first-class **`mega-sdd:domain-extractor`**
+  agent per module (Agent tool), ≤ `--max-parallel` in flight. The controller
+  types ONLY the variable core per `references/prd-kontrak-template.md`
+  §Dispatch core (disciplines + REPORT BACK ride the agent body — never
+  re-type them). Model tier per role `extract-intelligence-module` from
+  `plugins/mega-sdd/references/model-tiers.md`; override via handoff
+  `metadata.model_tiers` when invoked through orchestrate-flow.
+
+**Per-module quality gate** (main thread, after each PRD lands): the grep
+battery in `references/prd-kontrak-template.md` §Per-module quality gate
+(frontmatter, 6 sections, ≥3 gotchas for workflow modules, Mermaid fence,
+advisory `kb-leak-scan.sh`). FAIL → re-dispatch that module once with the gate
+output as feedback.
+
+**Per-batch confirmation** (multi-module runs only; skipped under `--auto`):
+after a batch's gates pass, ONE AskUserQuestion with keterangan per option —
+**Lanjut batch berikutnya** (recommended saat semua gate hijau — module tersisa
+N dari M) / **Review output dulu** (buka PRD yang baru ditulis; extraction
+menunggu) / **Stop** (KB partial disimpan — PRD yang sudah lolos tetap di
+disk).
+
+The SAME module failing its gate twice → **halt** `quality_gate_failed`
+(subtype `module_quality_threshold_unmet`), surface the gate output VERBATIM,
+ask with keterangan per option: **Re-scope module** (pecah/gabung ulang module
+ini lalu re-dispatch) / **Re-prompt** (re-dispatch sekali lagi dengan arahan
+tambahan lo) / **Abort** (berhenti; KB partial disimpan di disk — module PRD
+yang sudah lolos tetap ada; tidak ada auto-resume — run berikutnya mulai lagi
+dari census, idempotent).
+
+Under `--auto`: batch confirmations are skipped; quality-gate failures still
+halt.
+
+### Step 4 — Synthesis (main thread ONLY)
+
+1. `README.md` roll-up per template §README roll-up (multi-module: + `## ERD`
+   + `## System Flow` Mermaid; module quick-reference carries the recommended
+   rebuild ORDER from `depends_on` — module is the phasing unit).
+2. `data-mutation-policy.md` at the KB root ONLY when ≥1 `[LOCKED]` claim
+   exists across modules (template §data-mutation-policy; omit otherwise —
+   never pad).
+
+### Step 5 — Completeness gate + hand-off
+
+**Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-extract-census.sh" --kb-dir={out}/knowledge-base` — recomputes coverage from census + the PRD artifacts: unclaimed / double-claimed / phantom / uncited files, missing OQ sections, non-Mermaid flows. FAIL → fix (re-dispatch the owning module) or honestly record the gap as `[OPEN]`/OQ in the owning PRD, then re-run. Never hand off on FAIL.
+
+**Hand-off announce:** "PRD-kontrak written to `<out>/knowledge-base/` — N module(s), census: N files fully claimed. Critical findings: N. Open questions: N (P1: …, P2: …, P3: …). Next: review `<out>/knowledge-base/README.md`, then `generate-intent --kb=<out>/knowledge-base/` to continue the revamp lane."
 
 ## Halt conditions
 
-- Legacy codebase path missing or empty → halt; ask user for correct path.
-- `--max-parallel` > 8 → halt; warn token budget collapse risk.
-- Same wave's quality gate fails twice for the same agent → halt; surface the gate output verbatim.
-- Wave 5 dispatched as a subagent → halt; config error, must be main thread.
+- Legacy path missing/empty → halt with the exact path probed.
+- `--max-parallel` > 8 → halt (token budget collapse).
+- Same module's quality gate fails twice → halt `quality_gate_failed` (subtype `module_quality_threshold_unmet`), gate output verbatim (per `plugins/mega-sdd/references/halt-families/extract.md`).
+- `validate-extract-census.sh` FAIL at hand-off → never hand off; fix or record `[OPEN]` honestly.
 
 ## Path resolution
 
-Per `plugins/mega-sdd/references/paths.md`. **No-excuse rule: ALL output defaults to `.mega-sdd/`** — back-compat to legacy `docs/knowledge-base/` triggers ONLY when legacy paths already exist on disk.
+No-excuse default: `.mega-sdd/`. Resolution order for `{out}`:
+1. `--out=<path>` if provided.
+2. `.mega-sdd/config.yaml` `output_root:` if set.
+3. `docs/knowledge-base/` ONLY if it already exists (legacy back-compat write path).
+4. Otherwise `.mega-sdd/` → output at `.mega-sdd/knowledge-base/`.
 
-Resolution algorithm:
-
-1. **User explicit `--out=<path>`** → always respected, overrides everything.
-2. **Project config**: `<project-root>/.mega-sdd/config.yaml` → if `output_root: <path>` set, resolve `<out>` = `<output_root>/knowledge-base/`.
-3. **Legacy back-compat detection**: ONLY if `<project-root>/docs/knowledge-base/` already exists with prior extraction (has `README.md` or any `00-overview/` content) → continue writing there to avoid split-brain.
-4. **Default (new + fresh projects)**: `<project-root>/.mega-sdd/knowledge-base/`. Create the parent `.mega-sdd/` directory if absent. This is the path for ALL fresh extractions — chicken-and-egg detection from v1.2 is REMOVED.
-
-**Read-side back-compat**: downstream `generate-intent --kb`, `bind-codebase --kb`, `orchestrate-flow` all probe in priority order — `.mega-sdd/knowledge-base/` first, then `docs/knowledge-base/`, then `docs/mega-sdd/knowledge-base/`, then `old-reference/knowledge-base/`. First hit wins.
-
-## Hand-off
-
-On completion, announce:
-
-> "Knowledge base written to `<out>/knowledge-base/`. Critical findings: N. Open questions: N total (P1: …, P2: …, P3: …). Source citations: N. Next: review `<out>/knowledge-base/README.md`, then `generate-intent --kb=<out>/knowledge-base/` to bootstrap a vault."
+Read-side probe order for downstream consumers: `.mega-sdd/knowledge-base/` →
+`docs/knowledge-base/` → `docs/mega-sdd/knowledge-base/` →
+`old-reference/knowledge-base/` (first hit wins).
 
 ## Handoff emission
 
-When invoked with `--auto` flag (typically by `orchestrate-flow --deep` or `/mega-sdd`), emit a handoff YAML record at the end of skill output per your local template in `references/handoff.md` — the OPERATIVE emission spec (`orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index). The orchestrator parses this to decide auto-continue.
-
-The canonical `extract-intelligence` handoff record — full schema including the `scope:` and `mutability:` blocks (extract-intelligence is the PRIMARY mutability-tier producer: `tier_distribution`, `locked_claims_touched`, `artifact_discards_proposed`) — lives in `references/handoff.md`. Emit it verbatim with runtime values filled in (artifacts, metrics, scope, tier distribution).
-
-Status `halted` when quality gate fails twice (per `references/wave-dispatch-templates.md` §gate-checks). Required ONLY under `--auto`; standalone invocations may emit informationally.
-
-## Real-world validation
-
-Validated on the Bank Mega Trade Finance legacy rebuild (~600 PHP files; MySQL + MSSQL + LDAP + SWIFT FTP). Full metrics — forensic-seed size, MD/KB/domain counts, findings beyond seed (gotchas, OQs, do-not-replicate bugs, hidden UDF, OFAC gap), wall-clock and dispatch counts — in `docs/superpowers/specs/2026-05-20-extract-intelligence-skill-design.md` §13.
+Under `--auto`, emit the handoff YAML per `references/handoff.md` (operative
+spec; `orchestrate-flow/references/handoff-contract.md` owns the base schema):
+`status: completed | halted` (halted when a module gate fails twice, ≥1
+blocker entry), `artifacts` = KB dir + README path, `next_action` →
+`mega-sdd:generate-intent --kb=<kb> --auto`, `metrics.items_processed` =
+module PRDs written, and the `mutability` block (this skill is the PRIMARY
+mutability-tier producer: `tier_distribution`, `locked_claims_touched`,
+`artifact_discards_proposed`). Standalone invocations may emit informationally.
 
 ## Cross-references
 
-- `references/knowledge-base-schema.md` — output directory structure + per-domain 11-section template + frontmatter contract
-- `references/wave-dispatch-templates.md` — per-wave subagent prompts + quality-gate grep commands
-- `references/handoff.md` — the operative `--auto` handoff YAML template (scope + mutability blocks)
-- `mega-sdd:generate-intent` — consumes KB via `--kb=<path>` as Mode B brief
-- `mega-sdd:bind-codebase` — consults KB as secondary ground truth when codebase-map is silent
-- `superpowers:subagent-driven-development` — pattern for the parallel agent dispatch this skill uses
-- `superpowers:verification-before-completion` — pattern for the quality-gate grep checks
-- `docs/superpowers/specs/2026-05-20-extract-intelligence-skill-design.md` — design spec this skill implements
-- `docs/superpowers/specs/2026-06-15-extract-intelligence-tech-agnostic.md` — tech-agnostic hardening (concept-first disciplines + STACK IDIOM TABLE + P6 dynamic dispatch + per-stack `kb-leak-scan.sh`)
-- `plugins/mega-sdd/scripts/kb-leak-scan.sh` — per-stack KB tech-leak detector (replaces the hardcoded PHP/SQL grep)
+- `references/prd-kontrak-template.md` — the output grammar (layout, template, markers, dispatch core, gates, README, data-mutation-policy).
+- `references/handoff.md` — the `--auto` handoff record.
+- `mega-sdd:generate-intent` — consumes the output via `--kb=<path>`.
+- `mega-sdd:bind-codebase` — consults the output as secondary ground truth.
+- `scripts/derive-extract-census.sh` / `scripts/validate-extract-census.sh` — census + completeness gate.
+- `scripts/kb-leak-scan.sh` — tech-agnostic vocabulary advisory.
+- Design specs: `docs/superpowers/specs/2026-08-26-extract-revamp-contract-design.md` (current), `docs/superpowers/specs/2026-06-15-extract-intelligence-tech-agnostic.md` (historical, wave era).

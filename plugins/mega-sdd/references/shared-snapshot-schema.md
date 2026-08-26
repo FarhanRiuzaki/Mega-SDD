@@ -109,6 +109,8 @@ Write to `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.j
 
 ### extract-intelligence (extracted-kb snapshot — v1.6+, Iter 46)
 
+> **Producer retired (v7.6):** the PRD-kontrak grammar carries freshness inside `census.json` (per-file `sha256`), so new extractions emit NO snapshot; `generate-intent --kb` checks census freshness directly. The consumer contract below still applies to pre-v7.6 numbered-tree KBs that carry a snapshot on disk.
+
 Write to `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json` after wave-4 consolidation completes:
 
 - `snapshot_type: "extracted-kb"`

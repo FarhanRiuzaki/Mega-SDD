@@ -48,14 +48,15 @@ else bad "anchor: no pointer to plugins/mega-sdd/references/output-language.md";
 [ -f "$REF" ] || { echo "FAIL reference missing: $REF"; exit 1; }
 # Each token is a machine-parsed Tier-1 literal that MUST stay English. If one
 # falls out of the census it loses its do-not-translate protection.
+# (COVERED/MISSING/PARTIAL retired with the extraction scorecard, v7.6 —
+# the census gate speaks PASS|FAIL|SKIP.)
 TIER1=(
   "CONFIRMED" "CONFLICT" "OQ"
   "IMPLEMENTED" "NEW" "UNKNOWN"
   "create|extend|verify"
   "[VERIFIED]" "[INFERRED]" "[OPEN]"
   "KEEP_VAULT" "KEEP_CODE" "DEFER" "SPLIT"
-  "PASS" "FAIL"
-  "COVERED" "MISSING" "PARTIAL"
+  "PASS" "FAIL" "SKIP"
   "[LOCKED]" "[INTENT]" "[ARTIFACT]"
   "sha256:"
 )

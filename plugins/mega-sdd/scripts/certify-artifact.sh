@@ -302,6 +302,27 @@ fi
 # ── kb — validate-kb.sh output/markers surfaces over run-analyze's selection ─
 if [ "$RUNG" = "kb" ]; then
   [ -d "$APATH" ] || { echo "certify-artifact: --rung=kb needs a directory, got a file: $APATH" >&2; exit 2; }
+  # PRD-kontrak grammar (census.json + modules/*.prd.md): the census gate IS
+  # the certification — it recomputes coverage + sections + Mermaid from the
+  # artifacts themselves (validate-kb's numbered-tree surfaces do not apply).
+  if [ -f "$APATH/census.json" ]; then
+    if bash "${SCRIPT_DIR}/validate-extract-census.sh" --kb-dir="$APATH" --quiet </dev/null; then
+      MODN=$(find "$APATH/modules" -name "*.prd.md" 2>/dev/null | grep -c . || true)
+      emit "CERTIFIED" 0 <<EOF
+KB ber-grammar PRD-kontrak: census gate PASS — semua file census ter-claim +
+tersitasi lintas ${MODN} module PRD. Siap dikonsumsi \`generate-intent --kb=...\`
+dan \`bind-codebase\` (ground truth sekunder).
+EOF
+    else
+      emit "DEMOTE" 3 <<EOF
+KB ber-grammar PRD-kontrak tapi census gate FAIL — lihat
+\`$APATH/.extract-census-state.json\` (unclaimed / uncited / phantom /
+seksi hilang / flow non-Mermaid). Selanjutnya: re-run
+\`extract-intelligence\` untuk module pemilik temuan, atau catat gap sebagai
+[OPEN]/OQ di PRD module lalu jalankan ulang gate.
+EOF
+    fi
+  fi
   KB_FILES="$SCRATCH/kb-files.txt"
   : > "$KB_FILES"
   for sub in 10-domains 20-workflows 40-business-rules; do

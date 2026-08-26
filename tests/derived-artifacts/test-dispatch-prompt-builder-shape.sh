@@ -2250,7 +2250,7 @@ PY
 #
 # The fix is positional: in markdown the alignment row is the SECOND row of the
 # table, never any later one (and the KB schema puts exactly one table per
-# section — extract-intelligence/references/knowledge-base-schema.md
+# section — extract-intelligence/references/prd-kontrak-template.md
 # §`data-mutation-policy.md` template). A dash-only row anywhere below is filler,
 # dropped and RECORDED.
 P_FIL="$(mkproj proj-dmp-filler)"

@@ -161,7 +161,7 @@ Rows below are the halt-type index — orchestrate-flow schema validation reject
 
 **extract** (`halt-families/extract.md`):
 
-- `quality_gate_failed` — extract-intelligence: a wave's quality-gate threshold (citation density / hallucination…
+- `quality_gate_failed` — extract-intelligence: a module's per-module quality gate failed twice for the same module (frontmatter / sections / gotcha floor / Mermaid flow / citation discipline). ALWAYS STOP; gate output verbatim. → `halt-families/extract.md`
 
 **scan** (`halt-families/scan.md`):
 
@@ -259,9 +259,9 @@ Rows below are the halt-type index — orchestrate-flow schema validation reject
 
 The `quality_gate_failed` halt carries a `subtype:` discriminator. Canonical subtype enum — these are emitted as `type: quality_gate_failed` + `details.subtype: <name>`, **NOT** as standalone halt types:
 
-*(omitted / `wave_quality_threshold_unmet`)* · `starterkit_metrics_inconsistent` · `pdf_render_failed` · `template_slot_unfilled` · `citation_unresolvable` · `signoff_fabricated` · `execution_fabricated` · `marker_stripped`
+*(omitted / `module_quality_threshold_unmet`)* · `starterkit_metrics_inconsistent` · `pdf_render_failed` · `template_slot_unfilled` · `citation_unresolvable` · `signoff_fabricated` · `execution_fabricated` · `marker_stripped`
 
-Consumer dispatch logic MUST branch on `details.subtype` field. If `subtype` is absent OR empty, treat as the original `wave_quality_threshold_unmet` semantic (extract-intelligence). Full guidance per subtype lives in the family files the index routes to (emit-lane subtypes → `halt-families/emit.md`; starterkit/budget guards → `halt-families/flow.md`; the wave default → `halt-families/extract.md`).
+Consumer dispatch logic MUST branch on `details.subtype` field. If `subtype` is absent OR empty, treat as the `module_quality_threshold_unmet` semantic (extract-intelligence; pre-v7.6 records may carry the historical label `wave_quality_threshold_unmet` — same semantic). Full guidance per subtype lives in the family files the index routes to (emit-lane subtypes → `halt-families/emit.md`; starterkit/budget guards → `halt-families/flow.md`; the extract default → `halt-families/extract.md`).
 
 ### Multiple blockers in one run
 

@@ -79,7 +79,7 @@ handoff:
     artifact_discards_proposed: <N>
   phase:                                  # phase fields for KB sub-mode phased rebuild
     phase: 1                              # which phase this vault represents (default 1)
-    phase_total: 1                        # total phases planned per suggested-phasing.md (default 1)
+    phase_total: 1                        # total phases planned (legacy KB suggested-phasing.md; PRD-kontrak KB always 1)
 ```
 
 Status `paused` when P1 business OQs are produced (downstream still works; the user should triage). Status `halted` on `oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query`. Required ONLY under `--auto`; standalone invocations may emit informationally.

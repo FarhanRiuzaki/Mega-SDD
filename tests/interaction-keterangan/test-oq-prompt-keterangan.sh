@@ -84,7 +84,7 @@ has "$TT" "never a default" && ok "surplus review: destructive branch never defa
 # memory-review surface remains to carry keterangan.)
 [ ! -f "$P/skills/memory/references/learning-rules.md" ] && ok "memory review surface removed (v7.3.0)" || fail "memory review surface still present"
 EI="$P/skills/extract-intelligence/SKILL.md"
-has "$EI" "Lanjut wave N+1" && ok "extract per-wave confirm: shape defined" || fail "extract: per-wave confirm undefined"
+has "$EI" "Lanjut batch berikutnya" && ok "extract per-batch confirm: shape defined (waves retired v7.6)" || fail "extract: per-batch confirm undefined"
 has "$EI" "Re-scope" && has "$EI" "KB partial disimpan" && ok "extract twice-failed gate: glossed menu" || fail "extract: gate menu undefined"
 
 # ── review-round fixes (2 reviewers, 17 findings) ──

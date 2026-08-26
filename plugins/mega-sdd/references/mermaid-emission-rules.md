@@ -1,6 +1,6 @@
 # Mermaid Emission Rules — every generated flow / state diagram
 
-> Anti-hallucination + parser-safety contract for **every** skill that emits a process/flow or state diagram. Under the Mermaid-flows hard rule, any generated flow IS a Mermaid diagram (never a prose step list or ASCII arrows), and that diagram must actually render. Surfaces: `extract-intelligence` KB §3 Flow + §8 State Machine; `generate-intent` vault `flows.md` flows; any flow `detect-drift` / `diff-vault` write into a vault; and any future flow-emitting skill.
+> Anti-hallucination + parser-safety contract for **every** skill that emits a process/flow or state diagram. Under the Mermaid-flows hard rule, any generated flow IS a Mermaid diagram (never a prose step list or ASCII arrows), and that diagram must actually render. Surfaces: `extract-intelligence` module PRD §3 Flow (+ legacy KB §3/§8); `generate-intent` vault `flows.md` flows; any flow `detect-drift` / `diff-vault` write into a vault; and any future flow-emitting skill.
 >
 > A model writing a diagram from natural-language node text (often verbatim from legacy code) tends to leave an unquoted comma / parenthesis / colon inside a shape, or omit the diagram-type header — producing a fenced ` ```mermaid ` block that LOOKS valid but renders as an error. These rules prevent that at the producer side.
 
@@ -176,11 +176,11 @@ Tier classification: **C2** (producer must fix). NOT C1 — auto-rewriting Merma
 
 ## Cross-references
 
-- Producer skills: `plugins/mega-sdd/skills/extract-intelligence/SKILL.md` §3 Flow + §8 State Machine emission steps
+- Producer skills: `plugins/mega-sdd/skills/extract-intelligence/SKILL.md` (module PRD §3 Flow emission; legacy KB §3/§8)
 - Producer skills: `plugins/mega-sdd/skills/generate-intent/SKILL.md` (vault `flows.md` flow emission)
 - Shared tokenizer: `plugins/mega-sdd/scripts/_lib/mermaid_syntax.py` (Rule 0 + Rule 1-3 heuristics)
 - Heuristic gates (always-on hook): the kb flows surface (`validate-kb.sh --surface=flows`) (KB §3/§8), the vault-flows surface (`validate-kb.sh --surface=vault-flows`) (vault flows)
-- KB schema: `plugins/mega-sdd/skills/extract-intelligence/references/knowledge-base-schema.md` §3 Flow + §8 State Machine
+- PRD-kontrak grammar: `plugins/mega-sdd/skills/extract-intelligence/references/prd-kontrak-template.md` §Module PRD template (§3 Flow; enforced by `validate-extract-census.sh` via the shared `_lib/mermaid_syntax` tokenizer)
 - Spec: `docs/superpowers/specs/2026-07-01-mermaid-flows-hard-rule.md`
 
 ## Not done (candidates)
