@@ -51,7 +51,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
    4. Reuse the codebase-map shared snapshot as a freshness attestation — `snapshot-verified` requires BOTH the sha256 match AND the map's `last_scanned_commit` == current HEAD (the sha256 alone proves the map file is unchanged, not that the code hasn't moved); a HEAD mismatch → `snapshot-stale` + a warning to run `/mega-sdd:sync` first.
    5. **External-map provenance check:** also read `.mega-sdd/.codebase-map-state.json` (written by `validate-codebase-map.sh`); if it records `status: FAIL` or a `codebase_map_fm_missing` issue (an externally-authored map without writer-provenance frontmatter), the bind PROCEEDS but WARN with keterangan: "peta codebase ini ditulis di luar mega-sdd (frontmatter provenance hilang/invalid) — presisi binding turun ke klasifikasi biner; jalankan scan-codebase untuk map ber-provenance" and record `binding_metadata.codebase_map_provenance: "unverified-external"` — NEVER `"snapshot-verified"` for such a map.
    6. Propagate `scope_metadata` when the vault is scoped.
-   7. When a KB is present (legacy-rebuild lane), run the advisory **extraction-scorecard preflight** before processing KB claims so binding builds on extraction whose gaps are visible.
+   7. When a KB is present (legacy-rebuild lane), run the advisory **extract-census preflight** (`validate-extract-census.sh`) before processing KB claims so binding builds on extraction whose gaps are visible (legacy numbered-tree KBs SKIP — nothing to gate).
    8. Detail for snapshot reuse, scope propagation, and the scorecard preflight → `references/auto-memory-handoff.md`.
 
 **2. Per claim, produce a verdict** (per `references/binding-contract.md`). **This is the moat:**
@@ -153,7 +153,7 @@ Clean binding → `generate-units <vault>/` (the bound-vault is the nested `<vau
 - `references/hard-rules-and-packs.md` — Steps 2.8 / 2.9 (framework packs + Suggested Unit Hard Rules emission).
 - `references/constitution-and-oq.md` — Step 2.10 constitution-aware conflicts + `bind_conflict_constitution_violation` halt YAML.
 - `references/binding-md-template.md` — the full `binding.md` output template.
-- `references/auto-memory-handoff.md` — extraction-scorecard preflight, snapshot reuse, scope propagation, handoff YAML.
+- `references/auto-memory-handoff.md` — extract-census preflight, snapshot reuse, scope propagation, handoff YAML.
 - `references/conflict-resolution.md` — per-conflict-type recovery + the bind ↔ resolve-oq interaction.
 - `references/express-bind.md` — the `--express` claim-scoped retrieval lane (ledger + index + targeted Reads, zero map load, fail-closed ladder, honest fallback).
 - `references/handoff-validation.md` — the manual binding→units handoff-integrity surface (`validate-handoff-binding-units.sh`): drop types + per-type resolution; relocated from `commands/validate-handoff.md` in the surface cull.

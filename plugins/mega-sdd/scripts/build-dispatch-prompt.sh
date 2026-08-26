@@ -1390,13 +1390,20 @@ anti = []
 # absent omits the line.
 _locked_entries = []                                 # [(path, source-label)]
 
-# (a) data-mutation-policy.md — a real artifact: extract-intelligence Wave 5
-# writes it, generate-intent reads it, and the dispatch prompt carries it
-# forward. KB root candidates mirror the bind-codebase KB probe order.
+# (a) data-mutation-policy.md — a real artifact: extract-intelligence
+# synthesis writes it (KB ROOT in the PRD-kontrak grammar; the legacy
+# numbered tree kept it under 99-rebuild-architecture/), generate-intent
+# reads it, and the dispatch prompt carries it forward. KB root candidates
+# mirror the bind-codebase KB probe order; per root, the PRD-kontrak home is
+# probed first.
 DMP_PATH = None
+_dmp_cands = []
 for _kb in (".mega-sdd/knowledge-base", "docs/knowledge-base", "old-reference/knowledge-base"):
-    _cand = os.path.join(CWD, _kb.replace("/", os.sep), "99-rebuild-architecture",
-                         "data-mutation-policy.md")
+    _root = os.path.join(CWD, _kb.replace("/", os.sep))
+    _dmp_cands.append(os.path.join(_root, "data-mutation-policy.md"))
+    _dmp_cands.append(os.path.join(_root, "99-rebuild-architecture",
+                                   "data-mutation-policy.md"))
+for _cand in _dmp_cands:
     if os.path.isfile(_cand):
         DMP_PATH = _cand
         break
@@ -1432,7 +1439,7 @@ if DMP_PATH:
         In markdown an alignment row is the SECOND row of ITS OWN table, never
         any later one — so the test is per-table `[1]` and nothing else. The
         artifact's schema promises ONE TABLE PER SECTION
-        (extract-intelligence/references/knowledge-base-schema.md
+        (extract-intelligence/references/prd-kontrak-template.md
         §`data-mutation-policy.md` template: `## Entity-level summary`,
         `## Per-locked-field policy` and `## Discardable artifacts` each carry
         exactly one) — but that is a PROMPT-LEVEL guarantee about an LLM-written
@@ -1536,7 +1543,7 @@ if DMP_PATH:
         return out
 
     # THE TWO TABLES ARE READ DIFFERENTLY, and this is the whole point
-    # (knowledge-base-schema.md §data-mutation-policy.md template):
+    # (prd-kontrak-template.md §data-mutation-policy.md template):
     #
     #   ## Per-locked-field policy
     #     | customers.nip | cifmast.cifNip | BI Reg 23/2/2021 §4 | ... |

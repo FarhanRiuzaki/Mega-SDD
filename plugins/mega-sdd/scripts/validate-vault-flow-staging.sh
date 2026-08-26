@@ -79,7 +79,7 @@ def has_stages_block(text):
     return bool(re.search(r"^\s*stages:\s*$", text, re.MULTILINE)) and ("stage_id:" in text)
 
 
-# ── Resolve the KB root (first existing, per knowledge-base-schema.md probe order) ──
+# ── Resolve the KB root (first existing, per references/paths.md probe order) ──
 KB_PROBE = [
     os.path.join(cwd, ".mega-sdd", "knowledge-base"),
     os.path.join(cwd, "docs", "knowledge-base"),

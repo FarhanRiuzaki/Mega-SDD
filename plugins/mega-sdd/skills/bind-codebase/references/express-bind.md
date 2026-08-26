@@ -86,7 +86,7 @@ fixes for twice).
    `scope_metadata`, constrain claim validation to the scope's sections and
    propagate `scope_metadata` into the `binding.md` header + the handoff `scope:`
    block exactly as the standard Step 1 does (`auto-memory-handoff.md`). A KB
-   present (legacy-rebuild lane) still gets the advisory extraction-scorecard
+   present (legacy-rebuild lane) still gets the advisory extract-census
    preflight — express replaces retrieval, not those rails.
 4. Do NOT read `codebase-map.md` at all.
 

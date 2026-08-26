@@ -138,7 +138,7 @@ export MSDD_PLUGIN_ROOT="$PLUGIN_ROOT"
 export MSDD_QUIET="$QUIET"
 
 # NOT `exec`: the wrapper stays alive to map a broken-interpreter rc onto the
-# documented exit 2 (see build-extract-static.sh — same rationale).
+# documented exit 2 (master-table parse failures fail closed — nothing renamed).
 # shellcheck disable=SC2086
 $MEGA_SDD_PY - <<'PY'
 import datetime, hashlib, json, os, re, shutil, subprocess, sys, tempfile

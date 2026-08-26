@@ -14,7 +14,7 @@ layout: new                # new = canonical .mega-sdd/ layout (what /mega-sdd:m
                            #   legacy → outputs at pre-migration scattered paths (see plugins/mega-sdd/references/paths.md)
                            #   (reserved — written by migrate-paths' scaffold; no reader today: layout
                            #   selection is dual-layout probing in `_lib/vault_layouts.py`)
-output_root: .mega-sdd/    # read by `extract-intelligence` only (KB output root); hooks and scripts
+output_root: .mega-sdd/    # read by `extract-intelligence` only (extraction output root — census + module PRDs land at `<root>/knowledge-base/`); hooks and scripts
                            #   hard-code `.mega-sdd/`
 spine: express      # P2 — express (default) | classic; classic restores scan-first chains + the Stop-hook analyze aggregate
 # profile:          # P3 — ABSENT is the default: diagnostics lean-by-default on the express spine (Stop-hook analyze aggregate OFF). Set `full` to re-enable the aggregate; `lean` additionally cuts the advisory chain diagnostics (opt-in)

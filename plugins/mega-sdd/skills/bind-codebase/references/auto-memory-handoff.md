@@ -21,14 +21,14 @@ RESOLVER="$(ls -1 ~/.claude/plugins/cache/mega-sdd/mega-sdd/*/scripts/resolve-pl
 PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIVED")"
 [ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
 
-bash "$PLUGIN_ROOT/scripts/validate-extraction-scorecard.sh" --cwd="<project>" --kb-dir="<kb-dir>" --quiet
-# M-05: branch on the exit code; read .mega-sdd/.extraction-scorecard-state.json ONLY on non-zero
+bash "$PLUGIN_ROOT/scripts/validate-extract-census.sh" --kb-dir="<kb-dir>" --quiet
+# M-05: branch on the exit code; read <kb-dir>/.extract-census-state.json ONLY on non-zero
 ```
 
-Interpret the verdict (per `extract-intelligence/SKILL.md §Step 5.6`):
-- **SKIP** (no scorecard — older KB, or none emitted) → proceed normally; absence is not a blocker.
-- **PASS** → proceed. If the scorecard self-reports `overall_status: PARTIAL` with `[OPEN]` markers, carry those `[OPEN]`s through to `binding.md` as OQ candidates (honest gaps, not errors).
-- **FAIL** (scorecard internally inconsistent, OR a PARTIAL/MISSING principle with NO `[OPEN]` markers — a hidden gap) → surface prominently in `binding.md` under `## Extraction quality (advisory)` and recommend re-running `extract-intelligence` for the failing principle. Advisory — does NOT hard-block binding.
+Interpret the verdict (per `extract-intelligence/SKILL.md §Step 5`):
+- **SKIP** (no `census.json` — a legacy numbered-tree KB) → proceed normally; absence is not a blocker.
+- **PASS** → proceed. Carry the KB's `[OPEN]` items through to `binding.md` as OQ candidates (honest gaps, not errors).
+- **FAIL** (unclaimed / uncited / phantom census files, missing sections, non-Mermaid flows) → surface prominently in `binding.md` under `## Extraction quality (advisory)` and recommend re-running `extract-intelligence` for the owning module. Advisory — does NOT hard-block binding.
 
 > A blocking enforcement gate must be a deterministic validator wired to a hook — prose that says "HALT" enforces nothing. Do not add prose claiming to HALT here without a backing validator.
 

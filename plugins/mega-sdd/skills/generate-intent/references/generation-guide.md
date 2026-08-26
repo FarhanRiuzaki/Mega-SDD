@@ -189,10 +189,10 @@ Body sections, **in this order** (the three anchors are EXACT strings — hard-h
 
 **Phase:** <N> of <M>
 
-**This vault covers:** <1-line summary from suggested-phasing.md §Phase N "scope" or "deliverables" — first sentence wins>
+**This vault covers:** <1-line summary from suggested-phasing.md §Phase N "scope" or "deliverables" — first sentence wins; legacy numbered-tree KB only (PRD-kontrak KBs are single-phase)>
 ```
 
-When `phase_total > 1` AND `N < phase_total`, additionally emit the upcoming-phases list + the next-phase command (`generate-intent --kb=<KB-path> --phase=<N+1>`) + the pointer to `.mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md`. When `phase_total == 1`: `**Phase:** 1 of 1` + `**Project type:** single-phase`.
+When `phase_total > 1` AND `N < phase_total` (legacy numbered-tree KB only), additionally emit the upcoming-phases list + the next-phase command (`generate-intent --kb=<KB-path> --phase=<N+1>`) + the pointer to `.mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md`. When `phase_total == 1`: `**Phase:** 1 of 1` + `**Project type:** single-phase`.
 
 2. **`## Overview`** — what the 01 doc used to carry: Product (2–3 sentences) · Target users/personas (PRD-named only) · Problem · Success criteria (PRD-sourced, else an OQ in constraints.md). Section tail: `### Sources` + `### Out of Scope` (H3 — the H2 tails belong to the standalone files).
 3. **`## Architecture`** — what the 02 doc used to carry: System overview (1 paragraph + text diagram) · per-layer sub-sections derived from `PROJECT_SHAPE` (each role deep-links `vault.md#<layer-anchor>`) · conditional `#### UI components & patterns` (`HAS_UI_COMPONENTS=true` only) · API contracts (`compact`: table per group; `full`: JSON per endpoint) · Tech stack per layer. Tail: `### Sources` + `### Out of Scope`.

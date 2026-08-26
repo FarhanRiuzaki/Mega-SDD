@@ -125,12 +125,14 @@ if ! grep -rq '~/.mega-sdd/config.yaml' "$P/skills/memory/"; then
   pass "A9: memory-layer config path unified at ~/.mega-sdd/memory/config.yaml"
 else fail "A9: a stray ~/.mega-sdd/config.yaml citation survives in the memory skill"; fi
 
-# ── A10 — extract generator-version placeholders ──
+# ── A10 — no hardcoded generator versions in the extract skill ──
+# (the two emit-verbatim blocks that carried @<skill-version> placeholders —
+# snapshot + scorecard — retired with the wave era, v7.6; the surviving
+# guarantee is the anti-archaeology rule itself)
 EX="$P/skills/extract-intelligence/SKILL.md"
-n=$(grep -cF 'extract-intelligence@<skill-version>' "$EX")
-if [ "$n" -eq 2 ] && ! grep -q 'extract-intelligence@1\.' "$EX"; then
-  pass "A10: both emit-verbatim blocks carry the version placeholder"
-else fail "A10: hardcoded generator versions survive (placeholders found: $n)"; fi
+if ! grep -Eq 'extract-intelligence@[0-9]' "$EX"; then
+  pass "A10: no hardcoded generator version in the extract skill"
+else fail "A10: hardcoded generator version survives in SKILL.md"; fi
 
 # ── A11 — bump grammar, ordinal, design vocabulary ──
 DP="$P/skills/diff-vault/references/diff-procedure.md"
@@ -162,8 +164,8 @@ done | wc -l | tr -d ' ')
 [ "$n_untagged" -eq 0 ] \
   && pass "C1b: zero announce templates without the gateway tag (completion holds)" \
   || fail "C1b: $n_untagged announce template(s) untagged"
-grep -qF 'mega-sdd-trace:extract-intelligence' "$P/skills/extract-intelligence/references/wave-dispatch-templates.md" \
-  && pass "C2: wave dispatch template carries the tag" || fail "C2: wave dispatch tag missing"
+grep -qF 'mega-sdd-trace:extract-intelligence' "$P/skills/extract-intelligence/references/prd-kontrak-template.md" \
+  && pass "C2: module dispatch core carries the tag" || fail "C2: module dispatch tag missing"
 grep -qF 'mega-sdd-trace:scan-codebase' "$P/skills/scan-codebase/references/deep-scan-prompts.md" \
   && pass "C3: deep-scan dispatch contract mandates the tag" || fail "C3: deep-scan tag rule missing"
 grep -qF 'mega-sdd-trace:execute-bolts' "$P/skills/execute-bolts/references/review-panel.md" \

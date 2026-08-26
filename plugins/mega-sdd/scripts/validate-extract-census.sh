@@ -6,8 +6,10 @@
 # complete when EVERY file row in census.json is (a) claimed by exactly one
 # module PRD (frontmatter `source_files:`), (b) that PRD exists under
 # <kb-dir>/modules/*.prd.md with sane frontmatter, (c) the file is cited
-# (path:line) at least once in its PRD body, and (d) every PRD carries an
-# `## Open Questions` section (explicit absence beats silent omission).
+# (path:line) at least once in its PRD body, (d) every PRD carries all 6
+# template sections incl. `## Open Questions` (explicit absence beats silent
+# omission), and (e) every substantive Flow section carries a Mermaid fence
+# that passes the shared _lib/mermaid_syntax tokenizer (user-mandated rule).
 # Everything is recomputed from census.json + the PRD artifacts on every run
 # (B1-recompute pattern) — there is no trusted intermediate state.
 #
@@ -27,10 +29,15 @@ for arg in "$@"; do
   esac
 done
 [ -n "$KB_DIR" ] && [ -d "$KB_DIR" ] || { echo "validate-extract-census.sh: --kb-dir missing or not a directory: '$KB_DIR'" >&2; exit 2; }
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 
 KB_DIR="$KB_DIR" QUIET="$QUIET" python3 <<'PYEOF'
 import json, os, re, sys
 from datetime import datetime, timezone
+
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import mermaid_syntax              # noqa: E402  the ONE Mermaid Rule 0-3 tokenizer (never fork per surface)
 
 kb_dir = os.environ["KB_DIR"]
 quiet = os.environ["QUIET"] == "1"
@@ -72,7 +79,8 @@ if os.path.isdir(modules_dir):
                        for n in os.listdir(modules_dir) if n.endswith(".prd.md"))
 
 findings = {"unclaimed": [], "double_claimed": [], "phantom_claims": [],
-            "uncited": [], "bad_frontmatter": [], "missing_oq_section": []}
+            "uncited": [], "bad_frontmatter": [], "missing_oq_section": [],
+            "missing_sections": [], "flow_not_mermaid": [], "mermaid_syntax": []}
 
 if not prd_paths:
     findings["no_module_prds"] = ("census present (%d files) but no modules/*.prd.md — extraction not started or wrote elsewhere"
@@ -136,6 +144,25 @@ for p in prd_paths:
                 findings["uncited"].append({"prd": rel, "path": f})
     if not re.search(r"^##+\s+.*Open Questions", body, re.MULTILINE):
         findings["missing_oq_section"].append(rel)
+
+    # Mermaid hard rule (user-mandated) on the new grammar: §3 Flow must carry
+    # a mermaid fence when it describes transitions, and every mermaid block
+    # must pass the shared Rule 0-3 tokenizer (same rules as KB/vault flows).
+    for n in ("1", "2", "3", "4", "5", "6"):
+        if not re.search(r"^##\s*%s\." % n, body, re.MULTILINE):
+            findings["missing_sections"].append({"prd": rel, "section": n})
+    m3 = re.search(r"^##\s*3\..*$", body, re.MULTILINE)
+    if m3:
+        nxt = re.search(r"^##\s*4\.", body[m3.end():], re.MULTILINE)
+        sec3 = body[m3.end(): m3.end() + nxt.start()] if nxt else body[m3.end():]
+        substantive = sec3.strip() and "_Tidak terdeteksi._" not in sec3
+        if substantive and "```mermaid" not in sec3:
+            findings["flow_not_mermaid"].append(rel)
+    blocks = mermaid_syntax.extract_mermaid_blocks(body)
+    for issue in (mermaid_syntax.check_diagram_type(blocks, rel)
+                  + mermaid_syntax.check_mermaid_syntax(blocks, rel)):
+        issue["prd"] = rel
+        findings["mermaid_syntax"].append(issue)
 
 for f in census_files:
     owners = claims.get(f, [])

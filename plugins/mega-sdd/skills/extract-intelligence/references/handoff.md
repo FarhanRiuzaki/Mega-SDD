@@ -31,6 +31,6 @@ handoff:
     artifact_discards_proposed: <N>
 ```
 
-Status `halted` when quality gate fails twice (per `references/wave-dispatch-templates.md` §gate failures) — populate `blockers:` with ≥1 entry per halt-protocol §blocker envelope (a halt with an empty envelope FAILs `invalid_handoff`).
+Status `halted` when a module's quality gate fails twice (per `references/prd-kontrak-template.md` §Per-module quality gate) — populate `blockers:` with ≥1 entry per halt-protocol §blocker envelope (a halt with an empty envelope FAILs `invalid_handoff`).
 
 Required ONLY under `--auto`; standalone invocations may emit informationally. Every path listed in `artifacts:` must exist on disk at emission time (the orchestrator existence-checks them).

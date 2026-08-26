@@ -389,7 +389,12 @@ for c in catalog_candidates:
 if mt_catalog_path:
     try:
         catalog_content = open(mt_catalog_path).read()
-        catalog_roles = set(_re_mt.findall(r"^\|\s*([\w-]+)\s*\|", catalog_content, _re_mt.MULTILINE))
+        # Role names live in the SECOND cell (backticked) — the first cell is
+        # the row number. The old first-cell capture collected row numbers, so
+        # every legitimate override tripped a spurious model_tier_unknown
+        # (2026-08 doc-audit finding, fixed with the v7.6.0 catalog reshape).
+        catalog_roles = set(_re_mt.findall(
+            r"^\|\s*\d+[a-z]?\s*\|\s*`?([\w-]+)`?\s*\|", catalog_content, _re_mt.MULTILINE))
     except Exception:
         catalog_roles = set()
 

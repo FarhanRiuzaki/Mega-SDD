@@ -90,9 +90,27 @@ source_files:
 ---
 # PRD — Converter
 
-Konversi input jadi uppercase [LOCKED] (index.php:2).
+## 1. Purpose
+Konversi input jadi uppercase (index.php:2).
 
-## Open Questions
+## 2. Business Rules
+| ID | Rule | Why | Source | Confidence | Mutability |
+|---|---|---|---|---|---|
+| BR-CONVERTER-1 | Input dikonversi ke huruf besar | Format hilir | index.php:2 |  | [LOCKED] |
+
+## 3. Flow
+```mermaid
+flowchart LR
+    A["Input"] --> B["Uppercase"] --> C["Output"]
+```
+
+## 4. Data In/Out
+Teks masuk, teks kapital keluar (index.php:2-3).
+
+## 5. Edge Cases & Gotchas
+_Tidak terdeteksi._
+
+## 6. Open Questions
 _Tidak ada._
 EOF
 
@@ -112,9 +130,22 @@ source_files:
 ---
 # PRD — Util
 
-Helper murni tanpa aturan bisnis.
+## 1. Purpose
+Helper murni.
 
-## Open Questions
+## 2. Business Rules
+_Tidak terdeteksi._
+
+## 3. Flow
+_Tidak terdeteksi._
+
+## 4. Data In/Out
+Fungsi murni tanpa persistensi.
+
+## 5. Edge Cases & Gotchas
+_Tidak terdeteksi._
+
+## 6. Open Questions
 _Tidak ada._
 EOF
 gout=$(bash "$GATE" --kb-dir="$KB" </dev/null 2>&1); grc=$?
@@ -133,9 +164,22 @@ source_files:
 ---
 # PRD — Util
 
-Helper murni (lib/util.php:2), tanpa aturan bisnis.
+## 1. Purpose
+Helper murni (lib/util.php:2).
 
-## Open Questions
+## 2. Business Rules
+_Tidak terdeteksi._
+
+## 3. Flow
+_Tidak terdeteksi._
+
+## 4. Data In/Out
+Fungsi murni tanpa persistensi (lib/util.php:2).
+
+## 5. Edge Cases & Gotchas
+_Tidak terdeteksi._
+
+## 6. Open Questions
 _Tidak ada._
 EOF
 gout=$(bash "$GATE" --kb-dir="$KB" </dev/null 2>&1); grc=$?
@@ -153,11 +197,24 @@ classification: reference
 source_files:
   - imaginary.php
 ---
-# PRD — Ghost
+# PRD — ghost
 
-Klaim tanpa dasar (imaginary.php:1).
+## 1. Purpose
+Klaim (imaginary.php:1).
 
-## Open Questions
+## 2. Business Rules
+_Tidak terdeteksi._
+
+## 3. Flow
+_Tidak terdeteksi._
+
+## 4. Data In/Out
+_Tidak terdeteksi._
+
+## 5. Edge Cases & Gotchas
+_Tidak terdeteksi._
+
+## 6. Open Questions
 _Tidak ada._
 EOF
 gout=$(bash "$GATE" --kb-dir="$KB" </dev/null 2>&1); grc=$?
@@ -175,11 +232,24 @@ classification: reference
 source_files:
   - index.php
 ---
-# PRD — Dupe
+# PRD — dupe
 
-Klaim ganda (index.php:1).
+## 1. Purpose
+Klaim (index.php:1).
 
-## Open Questions
+## 2. Business Rules
+_Tidak terdeteksi._
+
+## 3. Flow
+_Tidak terdeteksi._
+
+## 4. Data In/Out
+_Tidak terdeteksi._
+
+## 5. Edge Cases & Gotchas
+_Tidak terdeteksi._
+
+## 6. Open Questions
 _Tidak ada._
 EOF
 gout=$(bash "$GATE" --kb-dir="$KB" </dev/null 2>&1); grc=$?
@@ -193,12 +263,90 @@ python3 - "$KB/modules/util.prd.md" <<'EOF'
 import sys
 p = sys.argv[1]
 t = open(p).read()
-open(p, "w").write(t.split("## Open Questions")[0])
+open(p, "w").write(t.split("## 6. Open Questions")[0])
 EOF
 gout=$(bash "$GATE" --kb-dir="$KB" </dev/null 2>&1); grc=$?
 [ "$grc" -eq 1 ] && echo "$gout" | grep -q "missing_oq_section" \
   && pass "PRD without ## Open Questions → FAIL (explicit absence mandated)" \
   || fail "missing OQ section not caught (rc=$grc): $gout"
+
+# ── mermaid hard rule on the new grammar ────────────────────────────────────
+cat > "$KB/modules/util.prd.md" <<'EOF'
+---
+generated_by: mega-sdd:extract-intelligence
+domain: util
+classification: reference
+source_files:
+  - lib/util.php
+---
+# PRD — Util
+
+## 1. Purpose
+Helper murni (lib/util.php:2).
+
+## 2. Business Rules
+_Tidak terdeteksi._
+
+## 3. Flow
+Input lalu proses lalu output tanpa diagram.
+
+## 4. Data In/Out
+_Tidak terdeteksi._
+
+## 5. Edge Cases & Gotchas
+_Tidak terdeteksi._
+
+## 6. Open Questions
+_Tidak ada._
+EOF
+gout=$(bash "$GATE" --kb-dir="$KB" </dev/null 2>&1); grc=$?
+[ "$grc" -eq 1 ] && echo "$gout" | grep -q "flow_not_mermaid" \
+  && pass "substantive Flow section without mermaid fence → FAIL flow_not_mermaid" \
+  || fail "flow_not_mermaid not caught (rc=$grc): $gout"
+
+python3 - "$KB/modules/util.prd.md" <<'EOF'
+import sys
+p = sys.argv[1]
+t = open(p).read()
+fence = chr(96) * 3
+bad = "\n".join([fence + "mermaid", "flowchart LR", "    A[cek saldo (rekening, valid)] --> B[\"ok\"]", fence])
+t = t.replace("Input lalu proses lalu output tanpa diagram.", bad)
+open(p, "w").write(t)
+EOF
+gout=$(bash "$GATE" --kb-dir="$KB" </dev/null 2>&1); grc=$?
+[ "$grc" -eq 1 ] && echo "$gout" | grep -q "mermaid_syntax" \
+  && pass "mermaid block violating Rule 1 (unquoted node) → FAIL via shared tokenizer" \
+  || fail "mermaid_syntax not caught (rc=$grc): $gout"
+
+# restore a fully-valid util PRD so later checks start from PASS state
+cat > "$KB/modules/util.prd.md" <<'EOF'
+---
+generated_by: mega-sdd:extract-intelligence
+domain: util
+classification: reference
+source_files:
+  - lib/util.php
+---
+# PRD — Util
+
+## 1. Purpose
+Helper murni (lib/util.php:2).
+
+## 2. Business Rules
+_Tidak terdeteksi._
+
+## 3. Flow
+_Tidak terdeteksi._
+
+## 4. Data In/Out
+Fungsi murni tanpa persistensi (lib/util.php:2).
+
+## 5. Edge Cases & Gotchas
+_Tidak terdeteksi._
+
+## 6. Open Questions
+_Tidak ada._
+EOF
 
 # ── shared enumeration pin (derive-production, never copy) ──────────────────
 grep -q "import code_enum" plugins/mega-sdd/scripts/build-symbol-index.sh \

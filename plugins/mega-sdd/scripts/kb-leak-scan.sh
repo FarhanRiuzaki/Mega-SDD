@@ -2,7 +2,7 @@
 # kb-leak-scan.sh — [HOOK-VALIDATE] tech-agnostic KB tech-leak detector.
 #
 # Replaces the old hardcoded `grep 'varchar\|int(11)\|MySQL\|MSSQL\|composer'`
-# inline gate in extract-intelligence wave-dispatch-templates.md. That grep only
+# inline gate in the extract-intelligence lane. That grep only
 # knew PHP/SQL tokens, so a C# domain file leaking `DbContext` / `IServiceCollection`
 # / `[HttpGet]`, a Java file leaking `@Entity` / `@Autowired`, a Go file leaking
 # `go.mod` / `gorm`, etc., passed the leak check entirely.
@@ -100,7 +100,22 @@ def detect_stacks():
         if stack_arg in STACKS:
             return [stack_arg], f"forced:{stack_arg}"
         return sorted(set(STACKS)), f"unknown-stack({stack_arg})→all"
-    # auto: read .scan-meta.json
+    # auto: census.json `stacks` first (PRD-kontrak grammar), then the legacy
+    # .scan-meta.json (numbered-tree KBs)
+    census = os.path.join(kb_dir, "census.json")
+    if os.path.isfile(census):
+        try:
+            with open(census, "r", errors="replace") as f:
+                c = json.load(f)
+            found = set()
+            for lang in c.get("stacks", []):
+                key = LANG_MAP.get(str(lang).lower())
+                if key:
+                    found.add(key)
+            if found:
+                return sorted(found), "census"
+        except Exception:
+            pass
     meta = os.path.join(kb_dir, ".scan-meta.json")
     if os.path.isfile(meta):
         try:
@@ -134,9 +149,14 @@ tokens = sorted(set(tokens), key=len, reverse=True)
 # framework names in `## Departures from Legacy` and the legacy PATHS cited in a
 # table's Source / Mandated-by column.
 SCAN_DIRS = ["00-overview", "10-domains", "20-workflows", "30-data-model",
-             "40-business-rules", "99-rebuild-architecture"]
+             "40-business-rules", "99-rebuild-architecture",
+             "modules"]  # PRD-kontrak grammar (v7.6): modules/<domain>.prd.md
 
 _SRC_COL_RE = re.compile(r"\bsource\b|\bmandated by\b|\bcitation\b", re.IGNORECASE)
+# Inline citation tokens — `(path/file.ext:123)` / `path.ext:12-40` — cite legacy
+# paths whose extensions ARE stack tokens (index.php:210 contains "php"); blank
+# them before the leak scan (PRD-kontrak grammar cites inline, no §11).
+_CITE_RE = re.compile(r"[\w./\\-]+\.[A-Za-z]{1,7}:\d+(?:-\d+)?")
 _TABLE_SEP_RE = re.compile(r"^\s*\|?[\s:|-]+\|?\s*$")
 
 def scannable_lines(text):
@@ -171,9 +191,9 @@ def scannable_lines(text):
                 if _SRC_COL_RE.search(h):
                     source_col = ci
                     break
-        scan = line
+        scan = _CITE_RE.sub("(cite)", line)
         if source_col is not None and "|" in line and not _TABLE_SEP_RE.match(line):
-            cells = line.split("|")
+            cells = scan.split("|")
             if source_col < len(cells):
                 cells[source_col] = ""   # blank the Source cell (legacy paths, not leaks)
                 scan = "|".join(cells)
@@ -198,6 +218,10 @@ if os.path.isdir(kb_dir):
                 except Exception:
                     continue
                 rel = os.path.relpath(fp, kb_dir)
+                # PRD-kontrak mirror of the 50-integrations/ exemption: an
+                # integration module legitimately names external-contract tech.
+                if rel.replace(os.sep, "/").startswith("modules/") and                         "classification: integration" in text[:600]:
+                    continue
                 orig = text.splitlines()
                 for i, scan in scannable_lines(text):
                     for tok in tokens:

@@ -691,7 +691,7 @@ else:
 # >5 inputs) but carries no `## 3a` stages: block. NEVER flips status (rides a
 # separate advisories[] channel per the Iter-78.1 invariant). Pairs with the
 # extract-intelligence §3a staged-input detection guidance; points the user to
-# enrich-semantics. See knowledge-base-schema.md §3a.
+# a scoped extract-intelligence re-run. See prd-kontrak-template.md §Staged inputs.
 # ──────────────────────────────────────────────────────────────────────────
 def _frontmatter(text):
     m = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
@@ -748,7 +748,7 @@ if _multistep and not _has_stages_block:
         "detail": ("workflow looks multi-step (" + "; ".join(_reasons) +
                    ") but carries no `## 3a` stages: block — staging may be lost downstream "
                    "(single-form bolt instead of multi-step wizard)"),
-        "suggested_fix": ("author the `## 3a. Staged inputs` stages: block (knowledge-base-schema.md §3a), "
+        "suggested_fix": ("author the staged-inputs stages: block (prd-kontrak-template.md §Staged inputs), "
                           "or retro-fit via `enrich-semantics --vault=<vault> "
                           "--legacy-root=<legacy> --semantic=staged-input`"),
     })
