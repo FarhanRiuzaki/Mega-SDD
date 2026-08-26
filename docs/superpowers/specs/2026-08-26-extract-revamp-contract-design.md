@@ -59,6 +59,17 @@ flowchart LR
 
 PRD kontrak masuk `generate-intent` lewat jalur PRD yang **sudah ada** (format greenfield) — brownfield dan greenfield konvergen ke satu format konsumsi. "Revamp A ke B" = frasa pintu depan yang merantai chain di atas; titik sentuh manusia hanya yang moat wajibkan (konfirmasi module, OQ business, CONFLICT/halt gates).
 
+## Amendemen implementasi (2026-08-26, hasil pemetaan 7-reader atas konsumen nyata)
+
+Pemetaan blast radius sebelum implementasi menemukan empat fakta yang mengoreksi desain — dicatat DI SINI sebelum kode ditulis (pelajaran standing: patch lapangan wajib lewat spec):
+
+1. **Rumah output TETAP `.mega-sdd/knowledge-base/`** — 15+ konsumen infra (resolve-project-root signal, gateway publisher `knowledge-base/**`, migrate-paths, graph builder, analyze fingerprint, preflight writable, komentar hooks) bergantung pada PATH, bukan grammar isi. Yang diganti = ISI: `census.json` + `modules/<module>.prd.md` + `README.md` (+ `00-overview` digantikan overview PRD di README/multi-module) — tree bernomor `00/10/20/30/40/50/99` pensiun. Kolateral turun dari ~30 permukaan test jadi belasan; hasil untuk user identik.
+2. **`--kb` flag SURVIVES** (menunjuk dir extraction yang kini ber-grammar PRD kontrak) — mematikannya merusak chain orchestrate-flow + preseden handoff tanpa keuntungan. Yang pensiun: grammar tree bernomor di kb-submode, dan `--phase=N` (module = unit fase rebuild; urutan direkomendasikan di overview dari dependency antar-module). Baris tabel "deprecate --kb" di bawah DIBATALKAN oleh amendemen ini.
+3. **Axis mutability `[LOCKED]/[INTENT]/[ARTIFACT]` KEPT sebagai tag inline** — dia invariant #4 plugin dan justru inti "kontrak revamp" (preserve 1:1 / outcome bebas / buang): menggerakkan Hard Rules execute-bolts, `data-mutation-policy.md` (tetap diemisi bila ada [LOCKED]; konsumen build-dispatch-prompt tak berubah), dan routing tier generate-intent. Axis confidence yang menyusut: default = verified-by-citation, hanya `[INFERRED]` (satu sumber) dan `[OPEN]` (→ OQ) yang ditandai eksplisit. Baris "marker pensiun" di bawah dibaca dengan koreksi ini.
+4. **Absen eksplisit, bukan omit diam** — seksi kosong ditulis satu baris `_Tidak terdeteksi._` (auditable; gate bisa bedakan "tidak ada" vs "belum diekstrak"), bukan dihilangkan. `census.json` menyerap `.scan-meta.json` (deteksi stack) dan snapshot freshness (`source_files_sha256_map`) — dua file runtime lama pensiun.
+
+Temuan bug tumpangan (difix di seri ini karena file yang sama disentuh): `ground.sh` `catalog_roles` mem-parse sel PERTAMA baris tabel model-tiers (= nomor baris), bukan nama role — guard `model_tier_unknown` salah alarm untuk semua override sah. Fix regex + test menyertai penggantian row wave.
+
 ## Yang PENSIUN (dan migrasinya)
 
 | Pensiun | Pengganti / migrasi |
