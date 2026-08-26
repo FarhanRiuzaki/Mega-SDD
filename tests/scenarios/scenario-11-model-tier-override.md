@@ -2,11 +2,11 @@
 
 **Time:** ~5 minutes
 **When to use:** override default model tiers per subagent role (cost control OR quality boost)
-**Prerequisites:** plugin v7.1+
+**Prerequisites:** plugin v7.6+
 
 ## What you'll learn
 
-- mega-sdd uses a curated catalog (23 named roles × tier) for subagent dispatches
+- mega-sdd uses a curated catalog (19 rows: role × tier) for subagent dispatches
 - 2 ways to override: CLI flag, project config
 - When to escalate (opus) vs. when to drop (haiku)
 
@@ -14,9 +14,10 @@
 
 By default mega-sdd picks tier per role per `plugins/mega-sdd/references/model-tiers.md`:
 
-- 4 roles default **opus**: `extract-intelligence-wave-5` (synthesis), `pipeline-audit-consolidator`, `code-quality-reviewer`, `security-reviewer` (reviewer lenses stay frontmatter-pinned — see the Scope note under Example 1)
-- 16 roles default **sonnet**: deep-scan extractors, early waves, audit-per-skill, implementers, etc.
+- 3 roles default **opus**: `pipeline-audit-consolidator`, `code-quality-reviewer`, `security-reviewer` (reviewer lenses stay frontmatter-pinned — see the Scope note under Example 1)
+- 13 roles default **sonnet**: deep-scan extractors, `extract-intelligence-module` (per-module PRD-kontrak extraction; synthesis runs on the MAIN thread — no dispatched role), audit-per-skill, implementers, etc.
 - 2 roles default **haiku**: `intelligence-audit-probe`, `domain-research`
+- 1 role is **inherit**: `bolt-implementer` (operator-tiered — see Example 5)
 
 Distribution is sonnet-dominant by design (rubric in catalog file).
 
@@ -39,7 +40,7 @@ Multiple overrides allowed:
 ```bash
 /mega-sdd \
   --model-tier=intelligence-audit-probe:sonnet \
-  --model-tier=extract-intelligence-wave-5:sonnet \
+  --model-tier=pipeline-audit-consolidator:sonnet \
   ./prd.md
 ```
 
@@ -54,8 +55,8 @@ You manage a project where the team standardizes on cheaper extraction/audit pas
 ```yaml
 # <project>/.mega-sdd/config.yaml
 model_tiers:
-  intelligence-audit-probe: sonnet
-  extract-intelligence-wave-5: sonnet
+  extract-intelligence-module: sonnet   # pin extraction to sonnet on this project
+  pipeline-audit-consolidator: sonnet   # drop the audit consolidator from opus
 ```
 
 Applies to every mega-sdd run in this project. Doesn't affect other projects.
@@ -133,12 +134,12 @@ If your override is for a probe-style scoring or web fetch → haiku is correct.
 After running with overrides, check chain output. orchestrate-flow logs final tier resolution:
 
 ```
-Model tier overrides applied: code-quality-reviewer=sonnet (cli-flag); extract-intelligence-wave-5=sonnet (cli-flag)
+Model tier overrides applied: code-quality-reviewer=sonnet (cli-flag); pipeline-audit-consolidator=sonnet (cli-flag)
 ```
 
-handoff metadata.model_tiers + model_tier_sources blocks have the provenance trail (source: catalog | user | project | cli per role).
+handoff metadata.model_tiers + model_tier_sources blocks have the provenance trail (source: catalog | project | cli per role).
 
 ## See also
 
-- `plugins/mega-sdd/references/model-tiers.md` — full catalog (23 roles × tier + rationale)
+- `plugins/mega-sdd/references/model-tiers.md` — full catalog (19 rows × tier + rationale)
 - `docs/mega-sdd/reading-map.md` — Stage 7 cross-cutting (where overrides live)

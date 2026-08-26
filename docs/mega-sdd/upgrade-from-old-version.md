@@ -8,6 +8,7 @@
 
 - Upgrading to 7.0.0 (the vault layout-2 major)
 - Upgrading to 7.3–7.5 (observability removal, surface cull, direct dispatch)
+- Upgrading to 7.6 (extraction revamp: census → PRD-kontrak)
 - Upgrading to 6.0.0 (the alias-removal major)
 - TL;DR — two paths
 - Per-iter behavior changes (Iter 36-62, added Iter 62 per F-E-4)
@@ -41,6 +42,12 @@
 
 **What did NOT break:** every artifact and every gate/hook contract. No migration commands needed for 7.3→7.5 — update the plugin and reload.
 
+## Upgrading to 7.6 (extraction revamp: census → PRD-kontrak)
+
+**What changed:** `extract-intelligence` is census-contracted. `derive-extract-census.sh` writes `census.json` (code files + sha256 + stacks + entry points + module proposal), extraction runs per module (1 module = main thread, no subagents; >1 = one extractor agent per module), and the output grammar is `modules/<domain>.prd.md` — ONE 6-section PRD-kontrak per module (Mermaid flow mandatory) — plus `README.md` (module quick-reference = recommended rebuild order) and a conditional `data-mutation-policy.md`, all closed by the `validate-extract-census.sh` completeness gate. Retired for NEW extractions: the numbered tree (`00-overview/ … 99-rebuild-architecture/`), waves, the extraction scorecard, and `--phase=N` (the module is the phasing unit).
+
+**What did NOT break:** pre-existing numbered-tree KBs stay readable everywhere (dual grammar) and keep their `--phase` lane. `generate-intent --kb=<kb>` detects the grammar (census.json present → PRD-kontrak lane; else legacy tree lane); the chain, the output home (`<out>/knowledge-base/`), the mutability tiers, and every downstream gate are unchanged. No migration commands — update the plugin and reload; re-extract only when you want a KB on the new grammar.
+
 ## Upgrading to 6.0.0 (the alias-removal major)
 
 **What broke (the ONLY break):** the 24 `/mega-sdd:<stage>` typed deprecation aliases no longer register as slash commands (`generate-intent`, `scan-codebase`, `bind-codebase`, `generate-units`, `execute-bolts`, `resolve-oq`, `detect-drift`, `diff-vault`, `analyze`, `graph`, `lint-units`, `list-modules`, `replay`, `migrate-rules`, `validate-handoff`, `enrich-semantics`, `analyze-parallelism`, `extract-intelligence`, `orchestrate-flow`, `auto`, `emit-fsd`, `emit-prd`, `emit-sit`, `emit-agents-md`). Removal per policy: demoted at 5.0.0, removable the following major after telemetry review (performed 2026-08-04; honest scope: the telemetry corpus records skill events + ref-loads and has NO channel that logs typed command invocations, so it can attest no alias usage — the review is discharged procedurally, and the field floor is covered by this guide, not by the corpus).
@@ -63,7 +70,7 @@ Keep your original PRD or KB; regenerate vault + binding + units fresh on the ne
 **Path B (preserve existing vault + binding + bolts):**
 Run migrations → expect 1-2 schema halts → recover via halt envelope hints. ~15-30 min.
 
-> **v3.41.0+ Iter 62 update (per F-E-4):** target version refreshed from v3.26.1 (Iter 36 doc baseline) to v3.41.0; the CURRENT target is 7.5.x — see the 7.0.0 and 7.3–7.5 sections above, which apply on top of everything below. Per-iter behavior summary covers Iter 36-62 (table below). Existing migration commands + recovery sections still valid; new sections cover Iter 54+ (emit-fsd), Iter 55+ (install-deps), Iter 60 (F4 bypass tightening).
+> **v3.41.0+ Iter 62 update (per F-E-4):** target version refreshed from v3.26.1 (Iter 36 doc baseline) to v3.41.0; the CURRENT target is 7.6.x — see the 7.0.0 through 7.6 sections above, which apply on top of everything below. Per-iter behavior summary covers Iter 36-62 (table below). Existing migration commands + recovery sections still valid; new sections cover Iter 54+ (emit-fsd), Iter 55+ (install-deps), Iter 60 (F4 bypass tightening).
 
 ## Per-iter behavior changes (Iter 36-62, added Iter 62 per F-E-4)
 
@@ -87,13 +94,13 @@ Run migrations → expect 1-2 schema halts → recover via halt envelope hints. 
 
 ## Recommended upgrade paths
 
-- **v3.0-v3.25 → 7.5.x:** use Path A (regenerate from PRD/KB). Many schema + behavior changes accumulated; regen is faster than migrating each artifact.
-- **v3.26-v3.37 → 7.5.x:** use Path B — no flag needed (`--legacy-type-bypass` was RETIRED in v4.75.0; un-annotated fields are warn-only under the deterministic validator).
-- **v3.38-v3.40 → 7.5.x:** seamless upgrade; existing chains compatible.
+- **v3.0-v3.25 → 7.6.x:** use Path A (regenerate from PRD/KB). Many schema + behavior changes accumulated; regen is faster than migrating each artifact.
+- **v3.26-v3.37 → 7.6.x:** use Path B — no flag needed (`--legacy-type-bypass` was RETIRED in v4.75.0; un-annotated fields are warn-only under the deterministic validator).
+- **v3.38-v3.40 → 7.6.x:** seamless upgrade; existing chains compatible.
 
 ## Compatibility matrix
 
-| Old artifact | Works on 7.5.x? | What to do |
+| Old artifact | Works on 7.6.x? | What to do |
 |---|---|---|
 | `docs/mega-sdd/vaults/<slug>/` legacy path | Read OK (back-compat probe) | Optional: `/mega-sdd:migrate-paths` |
 | `.mega-sdd-memory/` legacy path | Read OK (back-compat probe) | Same |

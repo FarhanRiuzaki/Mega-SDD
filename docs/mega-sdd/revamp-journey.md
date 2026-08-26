@@ -11,12 +11,14 @@ Empat babak. Tiga pertama mengubah legacy jadi aplikasi baru; babak keempat menj
 ```mermaid
 flowchart TD
     subgraph B1["Babak 1 — Ekstraksi (archaeology otomatis)"]
-        L[/"Legacy codebase"/] --> EI["extract-intelligence<br/>(wave-based, parallel subagents)"]
-        EI --> KB["knowledge-base/<br/>[VERIFIED] / [INFERRED] / [OPEN]<br/>[LOCKED] / [INTENT] / [ARTIFACT]"]
-        KB --> PH["99-rebuild-architecture/<br/>suggested-phasing.md"]
+        L[/"Legacy codebase"/] --> CEN["census<br/>(derive-extract-census.sh:<br/>file kode + sha256 + stack + modul)"]
+        CEN --> EI["extract-intelligence<br/>(per modul; 1 modul = main thread,<br/>>1 = agent paralel per modul)"]
+        EI --> KB["knowledge-base/<br/>census.json + modules/*.prd.md<br/>[INFERRED] / [OPEN] eksplisit<br/>[LOCKED] / [INTENT] / [ARTIFACT]"]
+        KB --> GATE["validate-extract-census.sh<br/>(completeness gate)"]
+        GATE --> PH["README.md<br/>module quick-reference<br/>(urutan rebuild)"]
     end
     subgraph B2["Babak 2 — Konstruksi (spec-driven build)"]
-        KB --> GI["generate-intent --kb<br/>(--phase=N bila multi-phase)"]
+        KB --> GI["generate-intent --kb<br/>(deteksi grammar; modul = unit phasing)"]
         GI --> VAULT["vault layout-2 (4 file)<br/>+ OQ di constraints.md"]
         VAULT --> ROQ["resolve-oq<br/>(P1 business — keputusan manusia)"]
         ROQ --> BIND["bind-codebase (express)<br/>CONFIRMED / CONFLICT / OQ"]
@@ -37,14 +39,14 @@ flowchart TD
 
 | Babak | Verb yang dipakai | Output |
 |---|---|---|
-| 1 — Ekstraksi | `/mega-sdd <legacy-dir> --out=<path>` | `knowledge-base/` bermarker + rencana phasing |
+| 1 — Ekstraksi | `/mega-sdd <legacy-dir> --out=<path>` | `census.json` + PRD-kontrak per modul + `README.md` (urutan rebuild) |
 | 2 — Konstruksi | (chain otomatis dari front door) | vault → binding → units → bolts (kode + commit atomik) |
 | 3 — Serah terima | `/mega-sdd:emit <prd\|fsd\|sit\|uat>` | 4 dokumen tim + evidence pack UAT |
 | 4 — Hidup terus | `/mega-sdd:sync`, delta lane | vault/binding/units tetap sinkron dengan kode |
 
 ## Prasyarat
 
-- **mega-sdd v7.4+** — surface publiknya **3 verb**: `/mega-sdd` (front door), `/mega-sdd:sync`, `/mega-sdd:emit` (`/mega-sdd:slice` dihapus di v7.4.0). Typed command lama (`/mega-sdd:auto`, `/mega-sdd:extract-intelligence`, `/mega-sdd:resolve-oq`, dst.) **sudah dihapus di v6.0.0** — frasa natural ("extract domain knowledge", "jawab OQ list") tetap route ke skill-nya.
+- **mega-sdd v7.6+** (ekstraksi census→PRD-kontrak di babak 1) — surface publiknya **3 verb**: `/mega-sdd` (front door), `/mega-sdd:sync`, `/mega-sdd:emit` (`/mega-sdd:slice` dihapus di v7.4.0). Typed command lama (`/mega-sdd:auto`, `/mega-sdd:extract-intelligence`, `/mega-sdd:resolve-oq`, dst.) **sudah dihapus di v6.0.0** — frasa natural ("extract domain knowledge", "jawab OQ list") tetap route ke skill-nya.
 - Legacy codebase yang bisa dibaca (idealnya 100+ file agar ekstraksinya bermakna).
 - Direktori target rebuild yang **terpisah** dari legacy, sudah `git init` + scaffold framework tujuan (starterkit wajib; tanpa manifest framework harus opt-in `--greenfield`).
 - Native deps opsional mempertajam hasil: `/mega-sdd:install-deps` (tree-sitter, ast-grep, dll.) — degradasi tetap jujur bila absen.
@@ -59,25 +61,29 @@ flowchart TD
 
 Front door mendeteksi input = direktori berisi kode tanpa vault → mengusulkan chain yang dimulai dari `extract-intelligence`. `--out` **wajib** untuk lane ini (memisahkan output ekstraksi dari direktori rebuild — KB ditulis ke `<out>/knowledge-base/`). Satu konfirmasi upfront (Run / Edit / Cancel), lalu chain jalan sendiri.
 
-Ekstraksi berjalan **wave-based** (subagent `domain-extractor` paralel per domain, ~jam-an untuk legacy besar — sebagian besar idle). Hasilnya `knowledge-base/` yang tech-agnostic:
+Ekstraksi berjalan **census-contracted**, empat langkah deterministik:
 
-- **Marker kepercayaan** per klaim: `[VERIFIED]` (≥2 sumber), `[INFERRED]` (1 sumber), `[OPEN]` (gap — butuh stakeholder). Tidak ada klaim tanpa sitasi ke file legacy.
+1. **Census dulu** — `derive-extract-census.sh` menulis `census.json`: daftar file kode + sha256 + stack + entry point + usulan pembagian modul (logs/backups/data dikecualikan). Census inilah kontrak coverage — bukan tebakan model.
+2. **Konfirmasi pembagian modul** — OQ module-split muncul HANYA bila census mengusulkan >1 modul.
+3. **Ekstraksi per modul** — 1 modul = dikerjakan di main thread tanpa subagent; >1 modul = subagent `domain-extractor` paralel per modul (cap `--max-parallel` 5, hard cap 8). Tiap modul lewat quality gate sendiri, dan tiap batch berhenti di konfirmasi ber-keterangan (Lanjut / Review / Stop).
+4. **Sintesis + gate kelengkapan** — main thread menulis roll-up `README.md` (termasuk module quick-reference berisi urutan rebuild yang disarankan) + `data-mutation-policy.md` bila ada klaim `[LOCKED]`, lalu `validate-extract-census.sh` menggagalkan hasil yang bolong: file tak ter-claim / double-claim / phantom / klaim tanpa sitasi / section hilang / OQ hilang / flow bukan Mermaid.
+
+Hasilnya `knowledge-base/` yang tech-agnostic:
+
+- **`modules/<domain>.prd.md`** — SATU PRD-kontrak per modul, 6 section: Purpose · Business Rules · Flow (Mermaid wajib; multi-step pakai blok `stages:`) · Data In/Out · Edge Cases & Gotchas · Open Questions. Sitasi inline `path:line` per klaim.
+- **Marker kepercayaan** default-verified: klaim bersitasi TANPA marker = verified; hanya `[INFERRED]` (1 sumber lemah) dan `[OPEN]` (gap — butuh stakeholder) yang ditandai eksplisit. Tidak ada klaim tanpa sitasi ke file legacy.
 - **Tier mutabilitas**: `[LOCKED]` (regulasi/kontrak — wajib dipertahankan), `[INTENT]` (outcome-nya yang penting, cara bebas), `[ARTIFACT]` (kecelakaan implementasi legacy — boleh dibuang).
-- **`99-rebuild-architecture/suggested-phasing.md`** — rencana rebuild bertahap (`## Phase 1..N`), input untuk Babak 2.
+- **`README.md` module quick-reference** — urutan rebuild yang disarankan per modul, input phasing untuk Babak 2.
 
-Inilah jawaban untuk "aplikasi lama tidak ada dokumentasinya": arkeologi domain dikerjakan mesin, dengan disiplin sitasi, bukan ingatan senior developer.
+Inilah jawaban untuk "aplikasi lama tidak ada dokumentasinya": arkeologi domain dikerjakan mesin, dengan disiplin sitasi, bukan ingatan senior developer. (KB lama bergaya numbered-tree `00-…99-*` dari ekstraksi sebelum v7.6 tetap terbaca di semua konsumen.)
 
 ## Babak 2 — Konstruksi: KB jadi aplikasi baru
 
-### Vault per phase
+### Vault per modul
 
-Chain lanjut otomatis ke `generate-intent --kb=<out>/knowledge-base/`. Untuk rebuild besar, kerjakan **per phase** mengikuti `suggested-phasing.md`:
+Chain lanjut otomatis ke `generate-intent --kb=<out>/knowledge-base/` — flag `--kb` mendeteksi grammar KB-nya (ada `census.json` → lane PRD-kontrak; tidak ada → lane numbered-tree legacy). Untuk rebuild besar, **modul adalah unit phasing-nya**: ikuti urutan rebuild di module quick-reference `README.md`, kerjakan satu modul dulu, lalu modul berikutnya. (KB numbered-tree legacy tetap punya lane `--phase=N` mengikuti `suggested-phasing.md`-nya.)
 
-```
-generate-intent --kb=.mega-sdd/knowledge-base/ --phase=1
-```
-
-Setiap phase melahirkan vault sendiri di `.mega-sdd/vaults/<slug>/` dengan §Phase context (apa yang IN scope sekarang, apa yang menunggu). Item `[OPEN]` di KB naik jadi **Open Questions (OQ)** di vault — bukan ditebak.
+Setiap tahap melahirkan vault sendiri di `.mega-sdd/vaults/<slug>/` dengan §Phase context (apa yang IN scope sekarang, apa yang menunggu). Item `[OPEN]` di KB naik jadi **Open Questions (OQ)** di vault — bukan ditebak.
 
 ### Keputusan manusia: resolve-oq
 
@@ -133,7 +139,7 @@ flowchart LR
 
 | Babak | Rel yang menjaga |
 |---|---|
-| Ekstraksi | Sitasi wajib per klaim; marker `[VERIFIED]/[INFERRED]/[OPEN]`; quality gate per wave |
+| Ekstraksi | Sitasi inline wajib per klaim; `[INFERRED]/[OPEN]` eksplisit (tanpa marker = verified); quality gate per modul + completeness gate census |
 | Vault | Gap = OQ, bukan tebakan; OQ business = keputusan manusia, tidak pernah di-auto |
 | Binding | Verdict per klaim dengan anchor; **CONFLICT gate memblokir downstream (hook-enforced)** |
 | Bolts | Hard-rule pre/post-flight; acceptance evidence; review panel blind-lens |
@@ -142,7 +148,7 @@ flowchart LR
 
 ## Pitfalls umum
 
-- **Ekstraksi halt di quality gate** → baca blocker YAML-nya; re-dispatch wave via `/mega-sdd --resume`. Jangan terima gap diam-diam.
+- **Ekstraksi halt di quality gate** (`quality_gate_failed` subtype `module_quality_threshold_unmet` — gate satu modul gagal dua kali) → menu ber-keterangan: Re-scope module / Re-prompt / Abort. KB parsial tetap tersimpan; tidak ada auto-resume. Jangan terima gap diam-diam.
 - **OQ terasa kebanyakan** → itu fitur: P1 business memang harus ke stakeholder; P2 tech kebanyakan terselesaikan otomatis saat bind; P3 bisa ditunda. Lihat [Scenario 4 §pitfalls](../../tests/scenarios/scenario-4-legacy-rebuild.md#common-pitfalls).
 - **Bolt halt `hard_rule_violated`** → biasanya unit mencoba mereplikasi gotcha legacy yang sudah diputuskan dibuang — gate-nya benar; periksa keputusan OQ terkait.
 - **Halt apa pun yang membingungkan** → [Scenario 6 — Recovery from halt](../../tests/scenarios/scenario-6-recovery-from-halt.md).
@@ -155,7 +161,7 @@ flowchart LR
 | Mulai revamp dari legacy | `/mega-sdd <legacy-dir> --out=<path>` |
 | Status posisi + usulan langkah berikut | `/mega-sdd` |
 | Lanjut setelah halt / review | `/mega-sdd --resume` |
-| Phase berikutnya (multi-phase) | `generate-intent --kb=<kb> --phase=N` (diusulkan otomatis di akhir phase) |
+| Modul berikutnya (rebuild besar) | `generate-intent --kb=<kb>` — ikuti urutan module quick-reference di `README.md` (KB numbered-tree legacy: `--phase=N`) |
 | Dokumen tim | `/mega-sdd:emit <prd\|fsd\|sit\|uat>` |
 | Kode berubah setelah "jadi" | `/mega-sdd:sync` |
 | Blast radius sebuah perubahan | tanya "apa yang kena kalau ubah X" (graph lens) |
