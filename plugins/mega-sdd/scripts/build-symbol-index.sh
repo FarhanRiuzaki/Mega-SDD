@@ -38,47 +38,17 @@ command -v ast-grep >/dev/null 2>&1 || {
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PACKS_DIR="${SCRIPT_DIR}/../skills/scan-codebase/queries/astgrep"
 [ -d "$PACKS_DIR" ] || { echo "build-symbol-index.sh: rule packs missing at $PACKS_DIR" >&2; exit 4; }
+export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 
 CWD="$CWD" OUT="$OUT" TIMEOUT="$TIMEOUT" PACKS_DIR="$PACKS_DIR" python3 <<'PYEOF'
 import json, os, re, subprocess, sys
 
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import code_enum                   # noqa: E402  the ONE code-file enumeration (EXTS/exclusions/git-or-walk)
+
 cwd = os.environ["CWD"]; out = os.environ["OUT"]
 timeout_s = max(1, int(os.environ["TIMEOUT"]))
 packs_dir = os.environ["PACKS_DIR"]
-
-# Extensions covered by the shipped packs (membership-only gate for the file
-# enumeration — ast-grep assigns each file's language by its own ext mapping,
-# so the values here are documentation of WHICH pack's lane covers the ext).
-# .jsx maps to javascript (ast-grep's js grammar parses JSX; jsx.yml must
-# never exist — it would double-count every .jsx symbol).
-EXTS = {".ts": "typescript", ".tsx": "tsx", ".js": "javascript",
-        ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
-        ".php": "php", ".py": "python", ".rs": "rust", ".go": "go",
-        ".rb": "ruby", ".java": "java", ".cs": "csharp",
-        ".kt": "kotlin", ".kts": "kotlin", ".swift": "swift",
-        ".scala": "scala", ".c": "c", ".h": "c",
-        ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".hpp": "cpp", ".hh": "cpp",
-        ".dart": "dart", ".ex": "elixir", ".exs": "elixir",
-        ".lua": "lua", ".sh": "bash", ".bash": "bash", ".hs": "haskell"}
-# Committed dirs git ls-files can still admit (exclusions.md is the owner of
-# the full list). Segment-based, so a nested packages/app/node_modules/ is
-# excluded too — matching the list's `**` semantics.
-# any-depth: dependency trees + caches (nested packages/app/node_modules too)
-EXCL_DIR_NAMES = {"node_modules", "vendor", "__pycache__", ".venv", "venv",
-                  ".next", ".nuxt", ".svelte-kit", ".astro", ".turbo", ".git",
-                  ".mega-sdd", "bower_components", ".yarn", ".pnpm-store",
-                  ".gradle", ".cache", ".parcel-cache", ".pytest_cache",
-                  ".mypy_cache", ".ruff_cache", ".tox", "htmlcov",
-                  ".nyc_output", ".bundle"}
-# top-level only: these names are legitimate NESTED source dirs (cargo's
-# src/bin/*.rs multi-binary convention, go cmd trees) — pruning them anywhere
-# drops real tracked source (round-2 finding B9)
-EXCL_TOP = ("bin/", "obj/", "out/", "build/", "target/", "env/", "dist/",
-            "coverage/", "storage/framework/", "bootstrap/cache/",
-            "public/build/", "public/hot/")
-
-def excluded(relpath):
-    return relpath.startswith(EXCL_TOP) or            any(seg in EXCL_DIR_NAMES for seg in relpath.split("/")[:-1])
 
 def run(cmd, tmo, inp=None):
     # bounded child process (repo law: every child gets a hard timeout)
@@ -87,26 +57,8 @@ def run(cmd, tmo, inp=None):
                           stdin=(None if inp is not None else subprocess.DEVNULL))
 
 # ── enumerate: git ls-files (tracked, .gitignore-honoring) or find fallback ──
-files, git_ok = [], False
-try:
-    p = run(["git", "ls-files", "-z"], 30)
-    if p.returncode == 0:
-        git_ok = True  # an EMPTY tracked list is an answer, not a fallback trigger
-        files = [f for f in p.stdout.split("\0") if f]
-except (subprocess.TimeoutExpired, OSError):
-    pass
-if not git_ok:
-    # non-git tree: walk with the same prune prefixes
-    for root, dirs, names in os.walk(cwd):
-        rel = os.path.relpath(root, cwd)
-        rel = "" if rel == "." else rel.replace(os.sep, "/") + "/"
-        dirs[:] = [d for d in dirs
-                   if d not in EXCL_DIR_NAMES and not (rel + d + "/").startswith(EXCL_TOP)]
-        for n in names:
-            files.append(rel + n)
-
-files = sorted(f for f in files
-               if os.path.splitext(f)[1] in EXTS and not excluded(f))
+# (shared with derive-extract-census.sh — census and index count the same set)
+files, _git_ok = code_enum.enumerate_code_files(cwd)
 
 head = None
 try:
