@@ -120,7 +120,7 @@ A sample PRD to match expected outputs exactly: [`sample-prd-clinic.md`](tests/s
 
 ```bash
 /mega-sdd ./prd.md                   # PRD → working code (4 phases, express)
-/mega-sdd ./legacy-php/ --out=./new/ # Legacy KB → vault → code (5 phases, express)
+/mega-sdd ./legacy-php/ --out=./new/ # Legacy → PRD-kontrak KB → vault → code (5 phases, express)
 /mega-sdd "build a clinic system"    # Free-text brief → code (3 phases)
 /mega-sdd                            # no arg → status view, then proposes next chain
 /mega-sdd --resume                   # Continue paused/halted chain
@@ -195,7 +195,7 @@ flowchart TB
     end
 
     subgraph PIPE["⚙️ Pipeline phases"]
-        EXTRACT["extract-intelligence<br/>(legacy → KB)"]:::phase --> INTENT["generate-intent<br/>(vault + OQs)"]:::phase
+        EXTRACT["extract-intelligence<br/>legacy → PRD-kontrak (census)"]:::phase --> INTENT["generate-intent<br/>(vault + OQs)"]:::phase
         INTENT --> GROUND["ground + bind (express)<br/>ast-grep AST · CONFIRMED/CONFLICT/OQ"]:::phase
         GROUND --> UNITS["generate-units<br/>atomic + Anchors + Hard Rules"]:::phase --> BOLTS["execute-bolts<br/>pre/post-flight + L0 gates"]:::phase
     end
@@ -297,7 +297,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 │   │   ├── interfaces/                      # cross-squad contracts
 │   │   ├── .memory/                         # vault-scope pipeline state (bolt-outcomes.json; name is historical)
 │   │   └── .internal/ # checkpoints
-│   ├── knowledge-base/                      # legacy KB (extract-intelligence)
+│   ├── knowledge-base/                      # extract-intelligence: census.json + modules/<domain>.prd.md + README (pre-existing numbered-tree KBs stay readable)
 │   ├── codebase/codebase-map.md             # scan output
 │   ├── codebase/symbol-index.json    # script-built reuse substrate
 │   └── exports/                             # future tool-agnostic exports
@@ -318,7 +318,7 @@ Mega-sdd halts on real issues; never silent failures. Common halt types:
 - `hard_rule_unparseable` — Hard Rule grammar invalid
 - `cross_squad_interface_draft` — consumer waiting for producer to lock interface
 - `module_blocked_by` — prerequisite module incomplete
-- `quality_gate_failed` — extract-intelligence wave failed twice
+- `quality_gate_failed` — an extract-intelligence module's gate failed twice
 - `oq_recommend_underspecified` — recommendation missing required fields
 
 Each halt emits a YAML `blocker` with a `next_action` field. Resume via `/mega-sdd --resume`.

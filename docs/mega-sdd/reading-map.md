@@ -31,16 +31,14 @@ Path root: `<project>/.mega-sdd/knowledge-base/`
 
 | What | Where | Read when |
 |---|---|---|
-| ⭐ Roll-up + critical findings | `README.md` | Start here |
-| Per-domain extraction (11-section template) | `10-domains/<domain>.md` | Understanding what legacy did |
-| Cross-domain flows | `20-workflows/<workflow>.md` | Tracing user journeys |
-| Legacy data model | `30-data-model/conceptual-erd.md` | As-is data shape |
-| Business rules | `40-business-rules/<rule>.md` | Per-rule detail |
-| Integrations | `50-integrations/<integration>.md` | External system contracts |
-| ⭐ **Phased rebuild plan (Phase 1/2/3+)** | `99-rebuild-architecture/suggested-phasing.md` | Planning Phase 2+ work |
-| Proposed new ERD | `99-rebuild-architecture/suggested-erd.md` | Target data shape |
-| What's locked vs free to redesign | `99-rebuild-architecture/data-mutation-policy.md` | ERD freedom decisions |
-| Module dependency graph | `99-rebuild-architecture/module-dependency-graph.md` | Build ordering |
+| ⭐ Roll-up + critical findings + **module quick-reference (recommended rebuild order)** | `README.md` | Start here |
+| Extraction census: code files + sha256 + stacks + entry points + module claims | `census.json` | Verifying coverage / freshness |
+| Per-module PRD-kontrak (6 sections: Purpose · Business Rules · Flow (Mermaid) · Data In/Out · Edge Cases & Gotchas · Open Questions) | `modules/<domain>.prd.md` | Understanding what legacy did |
+| What's locked vs free to redesign | `data-mutation-policy.md` (present only when ≥1 `[LOCKED]` claim exists) | ERD freedom decisions |
+
+Reading order: `README.md` → the module you'll rebuild first (`modules/<domain>.prd.md`) → `data-mutation-policy.md` if present. Citations are inline `path:line`; a cited claim with **no** marker is verified — only `[INFERRED]` / `[OPEN]` are tagged explicitly, and mutability tiers `[LOCKED]/[INTENT]/[ARTIFACT]` ride inline.
+
+> **Pre-existing KBs** on the numbered tree (`00-overview/ … 99-rebuild-architecture/`) stay readable everywhere: start at `README.md`, domains under `10-domains/`, phasing under `99-rebuild-architecture/suggested-phasing.md`.
 
 ## Stage 2 — After generate-intent
 
@@ -113,10 +111,12 @@ Path root: `<project>/.mega-sdd/vaults/<slug>/bolts/`
 
 ## Phase 2+ workflow (after Phase 1 completes)
 
-When Phase 1 vault's bolts complete:
+For PRD-kontrak KBs the **module is the phasing unit**: read `README.md`'s module quick-reference (recommended rebuild order), pick the next module, and run `generate-intent --kb=<KB>` for it — the flag detects the grammar (census.json present → PRD-kontrak lane). Pipeline proceeds as usual: bind-codebase → generate-units → execute-bolts for that module's scope.
+
+Legacy numbered-tree KBs keep the `--phase` lane:
 
 1. Read `<KB>/99-rebuild-architecture/suggested-phasing.md` §Phase 2
-2. Run `generate-intent --kb=<KB> --phase=2` to bootstrap Phase 2 vault (v3.26+)
+2. Run `generate-intent --kb=<KB> --phase=2` to bootstrap Phase 2 vault
 3. Pipeline proceeds: bind-codebase → generate-units → execute-bolts (for Phase 2 scope)
 4. Repeat for Phase 3+
 
@@ -129,5 +129,5 @@ When Phase 1 vault's bolts complete:
 ## See also
 
 - `paths.md` — implementer-facing per-skill write paths (this doc's inverse)
-- `plugins/mega-sdd/skills/extract-intelligence/references/knowledge-base-schema.md` — KB structure spec
+- `plugins/mega-sdd/skills/extract-intelligence/references/prd-kontrak-template.md` — KB grammar authority (PRD-kontrak module template + master stack idiom table + per-module gate)
 - `plugins/mega-sdd/skills/generate-intent/references/vault-core.md` — vault structure spec (§schema/§OQ/§constitution/§id-stability); conditional overlays (§Starterkit-binding/§Multi-scope) in `vault-contract.md`

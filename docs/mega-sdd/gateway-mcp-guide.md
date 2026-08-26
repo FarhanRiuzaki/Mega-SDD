@@ -43,7 +43,7 @@ Aturan wajib:
 | `vaults/<v>/{vault,model,flows,constraints}.md` + `vault.json` | vault layout-2 (4 file): intent+arsitektur+keputusan di vault.md, data model, flows Mermaid, constraints+OQ (`[origin:]`) — vault legacy 7-file `00-…06-*.md` masih mungkin muncul dari project belum-migrasi |
 | `vaults/<v>/binding.md` | verdict per klaim: `CONFIRMED` / `CONFLICT` / `OQ` + anchor `path:line` + Implementation State Map (`NEW/IMPLEMENTED/PARTIAL_*/UNKNOWN`) | **Informasi, bukan gate** — gate hidup di dalam mega-sdd; sajikan apa adanya |
 | `vaults/<v>/units/U-*.md` | unit kerja atomik: frontmatter (task_type, target_files, depends_on, squad, module), Hard rules, acceptance_test | `status: superseded/stale` bermakna — jangan sajikan stale sebagai current tanpa labelnya |
-| `knowledge-base/` | ekstraksi domain legacy, marker `[VERIFIED]/[INFERRED]/[OPEN]` + tier `[LOCKED]/[INTENT]/[ARTIFACT]` | Marker WAJIB ikut tersaji — `[INFERRED]` yang disajikan tanpa marker = fabrikasi |
+| `knowledge-base/` | ekstraksi domain legacy: PRD-kontrak per modul (census-gated — `census.json` + `modules/<domain>.prd.md`, sitasi inline `path:line`); klaim bersitasi tanpa marker = verified, `[INFERRED]/[OPEN]` eksplisit + tier `[LOCKED]/[INTENT]/[ARTIFACT]` — KB numbered-tree lama masih mungkin muncul dari project belum re-extract | Disiplin marker/tier tidak berubah: marker WAJIB ikut tersaji — `[INFERRED]` yang disajikan tanpa marker = fabrikasi |
 | `codebase/codebase-map.md` | peta kode ber-section (§) dengan kutipan | Berisi potongan source — perlakukan sesuai klasifikasi data internal |
 | symbol index | simbol per file untuk reuse lookup | Bahan tool reuse lintas proyek |
 

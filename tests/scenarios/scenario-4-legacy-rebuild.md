@@ -1,6 +1,6 @@
 # Scenario 4 — Legacy Rebuild
 
-**Time**: ~4 hours wall-clock (mostly idle while extract-intelligence runs in waves)
+**Time**: varies with the census — extraction cost scales with the module count (a single-module legacy extracts on the main thread with zero subagents; a multi-module legacy runs batches of parallel module agents), plus bolt execution (~1-3 min per bolt)
 **Goal**: Extract knowledge from a legacy codebase, then rebuild on a different tech stack with all domain knowledge preserved.
 
 This is mega-sdd's biggest scenario. Real-world example: legacy PHP trade-finance system → modern Laravel rebuild.
@@ -9,11 +9,10 @@ This is mega-sdd's biggest scenario. Real-world example: legacy PHP trade-financ
 
 ## Prerequisites
 
-- Mega-sdd v7.4+ (the public surface is 3 verbs + 3 one-timers; typed forms like `/mega-sdd:auto` were removed at 6.0.0 — the front door `/mega-sdd` replaces them)
-- Legacy codebase available (at least 50-100 files; ideally 500+ for meaningful extraction)
+- Mega-sdd v7.6+ (census-contracted extract-intelligence; the public surface is 3 verbs + 3 one-timers — the front door `/mega-sdd` replaces the old typed stage commands)
+- Legacy codebase available — ANY size works: the census excludes logs/backups/data by construction, and completeness is contracted to the code files it enumerates (a 1-file engine fully covered by 1 PRD is 100% complete)
 - New target project directory ready
 - `ast-grep` recommended for both legacy scan + new build
-- Patience — extract-intelligence is the longest phase (~3 hours for 500-file legacy)
 
 ```bash
 brew install ast-grep ripgrep jd
@@ -55,59 +54,64 @@ Chain proposal (5 phases — the **express spine** is the default, so no separat
 
 ```
 Proposed pipeline (--deep):
-  1. extract-intelligence ~/projects/legacy-system/ --out=~/projects/rebuild-target/.mega-sdd/  ← ~3 hours
+  1. extract-intelligence ~/projects/legacy-system/ --out=~/projects/rebuild-target/.mega-sdd/  ← census-scaled (script census + per-module agents)
   2. generate-intent --kb=~/projects/rebuild-target/.mega-sdd/knowledge-base/                    ← ~30 min
   3. bind-codebase --express                                                                       ← ~15 min
   4. generate-units                                                                                  ← ~20 min
   5. execute-bolts --all --parallel                                                                  ← variable (bolt count × ~1-3 min each)
 
-Total estimated: 4-6 hours
+Total: scales with module count + bolt count
 Halts may re-engage you (extract-intelligence quality gates, bind conflicts, Hard Rule violations).
 
 [Run] [Edit] [Cancel]
 ```
 
-Click **Run**. Walk away for a few hours — Phase 1 will run in the background.
+Click **Run**. Under the chain, extraction runs with `--auto` — per-batch confirmations are skipped; quality-gate failures still halt.
 
-## Step 2 — Phase 1: Extract intelligence (~3 hours, idle)
+## Step 2 — Phase 1: Extract intelligence (census-scaled)
 
-Mega-sdd's extract-intelligence runs 5 waves of parallel-subagent extraction:
+Extract-intelligence is census-contracted: a script derives the completeness contract, then ONE `domain-extractor` agent extracts each module (no fixed pipeline — cost scales with the census):
 
 ```
 ▶ Phase 1 of 5: invoking extract-intelligence
-  Wave 0 (prep): skeleton dirs created
-  Wave 1 (foundation): 3 parallel agents → 00-overview/, 30-data-model/, 20-workflows/cross-cutting
-    ~30 min wall-clock
-  Wave 2 (masters): 4 parallel agents → 10-domains/master entities + reference data + regulatory
-    ~40 min wall-clock
-  Wave 3 (workflows): 5 parallel agents → 10-domains/transactional workflows + 40-business-rules/gotchas
-    ~60 min wall-clock
-  Wave 4 (integrations): 3 parallel agents → 50-integrations/ + reporting/monitoring
-    ~30 min wall-clock
-  Wave 5 (synthesis): main thread → 99-rebuild-architecture/ + README + critical findings
-    ~30 min wall-clock
+  Census (script, main thread): derive-extract-census.sh → census.json
+    code files + sha256 + stacks + entry points + module proposal
+    (logs/backups/data excluded by construction)
+  Module split confirmation (only when >1 module proposed):
+    Proposed: cif-customer · facility-credit · import-lc · swift-messaging ·
+              monitoring · reporting · reference-data
+    [Pakai pecahan ini] [Ubah] [Stop]
+  Per-module extraction: 1 domain-extractor agent per module, ≤5 in flight per batch
+    batch 1 gates pass → [Lanjut batch berikutnya] [Review output dulu] [Stop]  (skipped under --auto)
+    batch 2 gates pass → …
+  Synthesis (main thread): README.md roll-up (+ ## ERD + ## System Flow) +
+    data-mutation-policy.md (≥1 [LOCKED] claim found)
+  Completeness gate: validate-extract-census.sh → PASS
+    (every census file claimed exactly once + cited; 6 sections per PRD; flows Mermaid)
 
-✓ Phase 1 of 5: extract-intelligence → 35 MD files + README + critical findings
-   ~700 OQs identified (categorized: business / tech / scan-resolvable)
-   ~2400 source citations to legacy code
-   Quality gates: 5/5 passed
+✓ Phase 1 of 5: extract-intelligence → 7 module PRDs + README + data-mutation-policy
+   Open Questions rolled up in README (P1 business / P2 tech / P3)
+   Inline path:line citations to legacy code throughout
 ```
 
-What you have now: a comprehensive knowledge base at `~/projects/rebuild-target/.mega-sdd/knowledge-base/`:
+The census itself is a script, not a model pass — the field replay clocked it at 0.13s on a 1,270-file legacy directory (3 live code files; the other 1,267 were logs/backups the census excluded). That single-module case skipped the confirmation AND the subagents entirely: extraction ran on the main thread with **zero dispatches**.
+
+What you have now: a PRD-kontrak knowledge base at `~/projects/rebuild-target/.mega-sdd/knowledge-base/`:
 
 ```
 .mega-sdd/knowledge-base/
-├── README.md                    — master nav + critical findings + OQ roll-up
-├── 00-overview/                 — system-purpose, glossary, classification, actors-and-roles
-├── 10-domains/                  — 1 file per business domain (11-section template)
-├── 20-workflows/                — cross-cutting workflows (state machines)
-├── 30-data-model/               — conceptual ERD + entities
-├── 40-business-rules/           — regulatory + operational + hidden gotchas
-├── 50-integrations/             — external contracts (conceptual)
-└── 99-rebuild-architecture/     — suggested-erd / system-flow / dependency-graph / phasing
+├── census.json                  — script-derived completeness contract (code files + sha256)
+├── README.md                    — roll-up + nav: module quick-reference (recommended rebuild
+│                                  order), ## ERD + ## System Flow (multi-module),
+│                                  ## Critical Findings, OQ roll-up
+├── modules/
+│   └── <domain>.prd.md          — ONE PRD-kontrak per module, 6 sections:
+│                                  1. Purpose / 2. Business Rules / 3. Flow (Mermaid WAJIB) /
+│                                  4. Data In/Out / 5. Edge Cases & Gotchas / 6. Open Questions
+└── data-mutation-policy.md      — ONLY when ≥1 [LOCKED] claim exists
 ```
 
-Each file marker-disciplined: `[VERIFIED]` (cross-referenced ≥2 source files), `[INFERRED]` (single source), `[OPEN]` (gap requiring stakeholder).
+Marker discipline: confidence is **default-verified** — a cited claim with NO marker is verified; only `[INFERRED]` (single source path) and `[OPEN]` (gap requiring stakeholder) are tagged. Orthogonally, mutability tiers `[LOCKED]/[INTENT]/[ARTIFACT]` carry the revamp contract. Citations are inline (`path:line`) right after each claim.
 
 ## Step 3 — Phase 2: Generate intent from KB (~30 min)
 
@@ -115,7 +119,7 @@ Each file marker-disciplined: `[VERIFIED]` (cross-referenced ≥2 source files),
 ▶ Phase 2 of 5: invoking generate-intent --kb=.mega-sdd/knowledge-base/
 ```
 
-Mode B with KB sub-mode. Skill reads KB README + relevant domain files as PRD-equivalent source. Q&A (≤10 questions) extracts project shape, tech preferences, modes.
+Mode B with KB sub-mode. The skill detects the grammar (`census.json` present → PRD-kontrak lane) and reads the KB README (Reengineering Opportunities + Mutability Tier Distribution + module quick-reference) plus every `modules/*.prd.md` as PRD-equivalent source. Q&A (≤10 questions) extracts project shape, tech preferences, modes.
 
 For legacy rebuild, typical answers:
 - Project shape: web-app
@@ -124,7 +128,7 @@ For legacy rebuild, typical answers:
 - Mode-migration: legacy PHP → Laravel
 - Output mode: compact
 
-Vault written to `.mega-sdd/vaults/<slug>/`. Expect ~30 OQs (lots of business + regulatory questions from KB's `[OPEN]` items).
+Vault written to `.mega-sdd/vaults/<slug>/`. Expect ~30 OQs (lots of business + regulatory questions from the module PRDs' `[OPEN]` items).
 
 ```
 ✓ Phase 2 of 5: generate-intent → 30 OQs (12 P1 business, 10 P2 tech, 8 P3)
@@ -143,14 +147,14 @@ The chain halts on P1 business OQs and invokes the resolve-oq skill (or say "jaw
 ```
 OQ-CN-005 [P1] [business / blocking]:
   "Should we preserve legacy CFKDDL typo behavior in customer-update endpoint?
-   (KB §10-domains/10-cif-customer.md §Gotcha 9)"
+   (KB modules/cif-customer.prd.md §5 Edge Cases & Gotchas, entry 9)"
   
   ⚠️ High-stakes business OQ.
   
   Recommendation: NO — fix the typo; correct field is "CFKDHL" (recommended)
-  Rationale: KB marks the typo as [VERIFIED] critical finding. Legacy
-    silently corrupted 3% of customer updates per audit log analysis.
-  Source: .mega-sdd/knowledge-base/10-domains/10-cif-customer.md §Gotcha 9
+  Rationale: the KB records the typo as a cited Critical Finding (do-not-replicate).
+    Legacy silently corrupted 3% of customer updates per audit log analysis.
+  Source: .mega-sdd/knowledge-base/modules/cif-customer.prd.md §5 Edge Cases & Gotchas
   Mutability tier: [LOCKED] (regulatory citation: BI Reg 23/2/2021 §4 — field validation rule)
   → Pack-aware Hard Rule emitted into all customer-update units
   Fallback-if-wrong: If downstream systems depend on bug, add adapter
@@ -186,7 +190,7 @@ The GROUND step already ran as a script (framework pack matched from `composer.j
     e.g., UUID PK enforcement, BaseController extension, DOMContentLoaded JS init, SweetAlert2 dialogs
     IMPLEMENTED: 2 (Laravel's built-in User model + Auth scaffold)
     PARTIAL_FIELDS_MISSING: 0
-  KB consultation: 700+ items consulted (KB markers feed into recommendations)
+  KB consultation: module PRDs consulted as secondary ground truth (mutability tiers feed the recommendations)
 ```
 
 Greenfield-ish — most claims are NEW since target is empty Laravel.
@@ -208,7 +212,7 @@ Modules:
   M-auth-rbac        (2 units)   — Sanctum auth + role middleware (extends Laravel scaffold)
 ```
 
-47 units is substantial but manageable. target_files came from binding citations (which referenced KB sections); at bolt time each dispatch carried its symbol_slice of nearby existing code.
+47 units is substantial but manageable. target_files came from binding citations (which referenced KB module PRDs); at bolt time each dispatch carried its symbol_slice of nearby existing code.
 
 ## Step 7 — Phase 5: Execute bolts (~1-3 hours)
 
@@ -269,33 +273,33 @@ The why and the full hand-off/maintenance acts: [`docs/mega-sdd/revamp-journey.m
 
 ## What you accomplished
 
-- Extracted 35-file knowledge base from legacy (no manual archaeology)
+- Extracted a census-contracted PRD-kontrak knowledge base from legacy (no manual archaeology — every code file claimed + cited, or an honest OQ)
 - Generated forward-looking vault preserving regulatory + domain context
 - Resolved 12 P1 business OQs with KB-derived recommendations
 - Built 47 atomic units with explicit citations to legacy patterns
 - Executed all units in parallel waves
-- Preserved `[VERIFIED]` knowledge; flagged `[INFERRED]` for review; surfaced `[OPEN]` as OQs
+- Kept cited claims verified-by-default; flagged `[INFERRED]` for review; surfaced `[OPEN]` as OQs; carried `[LOCKED]/[INTENT]/[ARTIFACT]` into Hard Rules + ERD freedom
 
-Total wall-clock: ~4-5 hours, of which ~3 hours is idle (extract waves running in background).
+Total wall-clock: dominated by bolt execution + your OQ decisions. Extraction cost tracks the census, not a fixed pipeline — the field replay ran a single-module legacy with zero dispatches; a multi-module legacy costs one agent per module, in batches.
 
 ## Common pitfalls
 
-### Extract-intelligence wave halt
+### Extract-intelligence module gate halt
 
-Quality gate failed twice. Read the wave-N failure message:
+The SAME module's quality gate failed twice. Read the failure message:
 
 ```yaml
 blocker:
   type: quality_gate_failed
+  emitted_by: extract-intelligence
   details:
-    wave: 3
-    failed_check: "Citations < 5 per domain file"
+    module: import-lc
+    module_prd: modules/import-lc.prd.md
+    failed_check: "§5 Edge Cases & Gotchas < 3 entries (workflow-module minimum)"
     retries_attempted: 2
 ```
 
-Options:
-- Re-dispatch wave with `/mega-sdd --resume` (wave checkpoints let it re-run only that wave)
-- Manually inspect the partial output; if good enough, accept the gap manually (loses some rigor)
+(The registry files this under subtype `module_quality_threshold_unmet`.) The halt surfaces the gate output verbatim and asks with keterangan: **Re-scope module** (pecah/gabung ulang module ini lalu re-dispatch) / **Re-prompt** (re-dispatch sekali lagi dengan arahan tambahan) / **Abort** (berhenti; KB partial disimpan — module PRD yang sudah lolos tetap di disk). There is no auto-resume after Abort: the next run starts again from the census (idempotent). Full walkthrough: [Scenario 6](scenario-6-recovery-from-halt.md).
 
 ### Generate-intent --kb produces too many OQs
 
@@ -311,10 +315,10 @@ Likely cause: unit attempted to replicate a legacy gotcha that's in Anti-pattern
 ## What you learned
 
 - Legacy rebuild is mega-sdd's biggest+highest-value scenario
-- extract-intelligence does the archaeology in parallel waves (not 3 hours of manual reading)
-- KB markers (`[VERIFIED]/[INFERRED]/[OPEN]`) carry knowledge into vault systematically
+- extract-intelligence does the archaeology census-first: a script derives the completeness contract, one agent per module extracts (a single-module legacy runs on the main thread, zero subagents), and a deterministic gate proves every code file is claimed + cited
+- Default-verified citations + `[INFERRED]/[OPEN]` markers + `[LOCKED]/[INTENT]/[ARTIFACT]` tiers carry knowledge into the vault systematically
 - Field-level + module + squad layers all work together
-- One command + ~4 hours = legacy domain knowledge → working rebuild
+- One command = legacy domain knowledge → working rebuild, at a cost that scales with the legacy's actual code — not its log folder
 
 ## Next scenario
 

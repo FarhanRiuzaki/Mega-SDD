@@ -49,7 +49,7 @@ A canonical example PRD (the standard frontmatter + `§`-section format) lives a
 
 ```mermaid
 flowchart LR
-    LEG[legacy] --> EXT[extract-intelligence]
+    LEG[legacy] --> EXT["extract-intelligence<br/>census → PRD-kontrak"]
     EXT --> PRD[PRD / idea] --> GI[generate-intent]
     GI --> SB[scan + bind<br/>brownfield] --> GU[generate-units] --> EB[execute-bolts]
     EB --> EMIT[emit-agents-md<br/>+ emit prd / fsd / sit / uat]
@@ -86,7 +86,7 @@ plugins/mega-sdd/
 │   ├── spec-reviewer.md, code-quality-reviewer.md, security-reviewer.md, standards-reviewer.md, design-reviewer.md
 │   │                             #   ↳ the execute-bolts review panel (parallel blind lenses, risk-tiered; design joins for UI-bearing units)
 │   ├── resolution-verifier.md    # resolve-oq verification lens
-│   ├── domain-extractor.md       # extract-intelligence wave worker
+│   ├── domain-extractor.md       # extract-intelligence per-module PRD-kontrak extractor
 ├── commands/                     # exactly 6: 3 public verbs (mega-sdd · sync · emit) + 3 maintenance one-timers (migrate-paths · install-deps · update-plugin)
 ├── references/                   # paths.md (canonical layout), framework-conventions/, tooling-install.md, …
 ├── hooks/                        # 6 events, dispatched direct (no run-hook shim): SessionStart anchor · PreToolUse gate · PostToolUse journal · Stop · UserPromptExpansion · UserPromptSubmit (gateway tag + sync offer)
@@ -167,6 +167,7 @@ Full per-platform install matrix + **platform support table** (macOS/Linux/WSL =
 
 ## What's new
 
+**v7.6.0** — *Census-contracted extraction:* extract-intelligence rebuilt on the PRD-kontrak grammar — `derive-extract-census.sh` maps the legacy repo first (code files + sha256 + stacks + entry points + module proposal), each module gets ONE PRD-kontrak (`modules/<domain>.prd.md`, 6 sections, flows in Mermaid), a single-module legacy runs on the MAIN thread with zero subagents, and `validate-extract-census.sh` is the completeness gate (unclaimed / phantom / uncited / flow-not-mermaid → FAIL). The 6-wave numbered-tree grammar is retired for new extractions; pre-existing numbered-tree KBs stay readable everywhere. Field replay: a 1,270-file legacy → 3-file census in 0.13s, 0 subagent dispatches (baseline 15).
 **v7.5.x** — *Spawn diet + auto-aware tier S:* run-hook.sh dispatcher deleted — all 6 hooks dispatch DIRECT from hooks.json (measured: UPS 4→1 proc, SessionStart 16→2, armed unit-write 93→1 with 0 python); the PostToolUse validator fan-out is deleted (every gate-read state re-derives at its own gate); PostToolUse matcher narrowed to `Write|Edit`; auto-aware notices land (LOCKED-edit context line, "selesai" census → one-line sync OFFER, `auto_verify_on_edit` opt-in); the bare-verb wrapper resolves version-aware (v2 — highest `scope: "user"` version, never a blind `[0]`).
 **v7.4.0** — *The Fase-5 cull:* `/mega-sdd:slice` + slice-design removed (owner decision), phase-advisor removed, the vendored superpowers tree removed, the tree-sitter slice engine removed (`ast-grep → regex` is the ladder); −3,146 lines net.
 **v7.3.0** — *Observability removed (pipeline-only):* the whole memory/telemetry/advisor lane is gone — no `/mega-sdd:memory`, no token-cost report, no compaction advisor; cost/session accounting is the AI gateway's job, keyed on the `mega-sdd-trace:turn` tag (contract: `docs/gateway-contract.md`).

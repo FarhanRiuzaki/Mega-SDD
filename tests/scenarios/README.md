@@ -16,12 +16,12 @@ Each scenario:
 | First time trying mega-sdd; want minimum viable run | [Scenario 1 — Greenfield from idea](scenario-1-greenfield-from-idea.md) | 15 min |
 | Have a PRD; existing project | [Scenario 2 — PRD-driven feature](scenario-2-prd-driven-feature.md) | 30 min |
 | Field-level gap (PRD says X, code has Y) | [Scenario 3 — Field-level extension](scenario-3-field-extension.md) | 20 min |
-| Legacy codebase → modern rebuild (single phase) | [Scenario 4 — Legacy rebuild](scenario-4-legacy-rebuild.md) · concept guide: [Revamp Journey](../../docs/mega-sdd/revamp-journey.md) | 4 hr |
+| Legacy codebase → modern rebuild (one tranche) | [Scenario 4 — Legacy rebuild](scenario-4-legacy-rebuild.md) · concept guide: [Revamp Journey](../../docs/mega-sdd/revamp-journey.md) | varies (census-scaled) |
 | Multi-team coordination | [Scenario 5 — Multi-squad parallel](scenario-5-multi-squad-parallel.md) | 45 min |
 | Something halted; need to recover | [Scenario 6 — Recovery from halt](scenario-6-recovery-from-halt.md) | 15 min |
 | Multi-architect (BE/FE/MW shared PRD) | [Scenario 7 — Multi-architect](scenario-7-multi-architect.md) | 60 min |
 | Starterkit-aware generation (auto-detected stack) | [Scenario 8 — Starterkit-aware generation](scenario-8-starterkit-aware-generation.md) | 30 min |
-| **Legacy rebuild with phased plan (multi-phase)** | **[Scenario 10 — Phased rebuild walkthrough](scenario-10-phased-rebuild-walkthrough.md)** | **~3 hr** |
+| **Legacy rebuild landed module-by-module (phased)** | **[Scenario 10 — Phased rebuild walkthrough](scenario-10-phased-rebuild-walkthrough.md)** | **varies (census-scaled)** |
 | **Model tier override (cost/quality control)** | **[Scenario 11 — Model tier override](scenario-11-model-tier-override.md)** | **~5 min** |
 | **Code changed after "done" — continuous sync** | **[Scenario 12 — Continuous sync](scenario-12-continuous-sync.md)** | **~10 min** |
 | Upgrading from older mega-sdd | (not a scenario) See `docs/mega-sdd/upgrade-from-old-version.md` | — |

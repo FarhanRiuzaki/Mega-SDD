@@ -19,7 +19,7 @@ Halts are mega-sdd's safety net — they fire when anti-hallucination rails dete
 | `cross_squad_interface_draft` | Consumer waiting for producer to lock interface | execute-bolts --per-squad |
 | `module_blocked_by` | Prerequisite module not complete | execute-bolts --module=X |
 | `oq_business_p1_unresolved` | P1 business OQ blocking downstream | bind-codebase (strict mode) |
-| `quality_gate_failed` | extract-intelligence wave failed quality checks twice | extract-intelligence |
+| `quality_gate_failed` | a module's per-module quality gate failed twice | extract-intelligence |
 
 Each halt provides a YAML `blocker` artifact with `next_action` field telling you exactly what to do.
 
@@ -223,7 +223,7 @@ Chain continues from `bind-codebase` (re-runs with conflict resolved).
 
 ## Scenario walkthrough — `quality_gate_failed` (extract-intelligence)
 
-Heavy phase; halt rare but real.
+Heavy phase; halt rare but real. Fires when the SAME module's per-module quality gate (frontmatter contract / 6-section presence / gotcha floor / Mermaid flow / citation discipline) fails twice. The registry files this under subtype `module_quality_threshold_unmet` — the extract default emits with `subtype` absent; the label is the registry's documentation name.
 
 ### The halt
 
@@ -235,34 +235,36 @@ blocker:
   emitted_at: 2026-05-21T13:42:00Z
   emitted_by: extract-intelligence
   details:
-    wave: 3
-    failed_check: "Citations per domain file < 5 (minimum threshold)"
+    module: import-lc
+    module_prd: modules/import-lc.prd.md
+    failed_check: "§5 Edge Cases & Gotchas < 3 entries (workflow-module minimum)"
     retries_attempted: 2
-    failing_files:
-      - 10-domains/05-collateral.md (citations: 2)
-      - 10-domains/12-sublimit.md (citations: 3)
 ```
+
+The halt surfaces the gate output VERBATIM and asks with keterangan per option:
+
+- **Re-scope module** — pecah/gabung ulang module ini, lalu re-dispatch
+- **Re-prompt** — re-dispatch sekali lagi dengan arahan tambahan lo
+- **Abort** — berhenti; KB partial disimpan (module PRD yang sudah lolos gate tetap di disk)
 
 ### Recovery options
 
-Option A: Re-dispatch the wave (one more try):
+Option A: Answer the halt menu (most common) — **Re-prompt** when the extractor just missed depth; **Re-scope** when the module split was wrong (too broad or too thin for one PRD).
 
-```
-/mega-sdd --resume
-```
-
-Wave checkpoints let it re-run only Wave 3 (not start from Wave 1).
-
-Option B: Manually inspect partial output, decide accept/reject:
+Option B: Manually inspect the partial output first, then decide:
 
 ```bash
-ls .mega-sdd/knowledge-base/10-domains/
-# Most files present; the 2 sparse ones flagged
-cat .mega-sdd/knowledge-base/.scan-meta.json
-# See what was scanned
+cat .mega-sdd/knowledge-base/modules/import-lc.prd.md
+# The failing PRD — is the gap real, or is the module mis-scoped?
+cat .mega-sdd/knowledge-base/census.json
+# What the census enumerated + the module proposal (which source_files this module claims)
+cat .mega-sdd/knowledge-base/.extract-census-state.json
+# Completeness-gate state (present once validate-extract-census.sh has run)
 ```
 
-If acceptable: continue chain. If not: investigate why scan didn't find more sources (file naming, encoding, etc.).
+If the PRD is actually good enough: accept with QA notes recorded (loses some rigor). If not: check whether the module's `source_files` actually carry the logic — a mis-split census proposal means **Re-scope**, not another re-prompt.
+
+There is NO auto-resume after Abort: the next `extract-intelligence` run starts again from the census (idempotent — module PRDs that already passed stay on disk, and the completeness gate recomputes coverage from the artifacts, never from the conversation).
 
 ## Universal `--resume` rules
 
@@ -614,9 +616,9 @@ scan-codebase --force-deep
 generate-units --regenerate
 ```
 
-### `subtype: wave_quality_threshold_unmet` or omitted (extract-intelligence)
+### `module_quality_threshold_unmet` or omitted (extract-intelligence)
 
-Existing walkthrough above at §`quality_gate_failed` (extract-intelligence) covers this case.
+The extract default — the envelope emits with `subtype` absent; `module_quality_threshold_unmet` is the registry's documentation label for it. Existing walkthrough above at §`quality_gate_failed` (extract-intelligence) covers this case.
 
 ---
 
