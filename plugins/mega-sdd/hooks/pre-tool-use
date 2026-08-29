@@ -942,6 +942,11 @@ if d:
     g = len([i for i in d.get("issues", []) if i.get("halt_type") == "verify_grounding_untrusted"])
     if g:
         fails.append(("verify-grounding", "unit-spec validator flagged %s verify unit(s) stamped grounding_confidence: HIGH whose acceptance criteria lack a resolvable NON-TEST source anchor (verify_grounding_untrusted). Per criterion, cite a non-test implementation anchor [grounded: path:line], OR downgrade grounding_confidence, OR split verify[built]+create[unbuilt]; then re-save. State: %s/.unit-spec-state.json" % (g, md)))
+    # acceptance-path (spec 2026-08-29 Fase 4 — an unfinishable unit must not reach dispatch)
+    ap = [i for i in d.get("issues", []) if i.get("halt_type") == "acceptance_path_unowned"]
+    if ap:
+        paths = sorted({p for i in ap for p in i.get("unowned_paths", [])})[:6]
+        fails.append(("acceptance-path", "unit-spec validator flagged %s unit(s) whose acceptance_test command runs a path no unit declares in target_files and that does not exist (acceptance_path_unowned): %s. Every branch violates an Iron Rule — committing the file trips the B3 whitelist observer, skipping it fails the acceptance command. Add the path to that unit target_files (operation: create), or point the command at a path a unit owns; then re-save. State: %s/.unit-spec-state.json" % (len(ap), paths, md)))
 
 # sibling-consistency (status==FAIL)
 d = L(".sibling-consistency-state.json")

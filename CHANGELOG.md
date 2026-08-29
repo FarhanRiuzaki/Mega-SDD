@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.7.0] - 2026-08-29 — execute-bolts: sprint lane + the unfinishable-unit gate
+
+**Field-measured on a live 30-unit run (HOST-AS400 / dd9000-gate), spec `docs/superpowers/specs/2026-08-29-execute-bolts-efficiency-and-sprints.md`, research `research/2026-08-29-panel-cost-field-measurement.md`. Measured baseline per bolt: implementer ~70k + panel ~267k + fix round ~70k ≈ 400k tokens / ~25 min. This release ships Fase 2 + Fase 4 of a four-phase plan; Fase 1 (round discipline) and Fase 3 (panel relevance) follow.**
+
+### Added — the sprint lane (Fase 2)
+
+- **`--all` now executes in SPRINTS by default.** The `depends_on` DAG's topological waves ARE the dev stages: the measured dd9000-gate vault is 30 units but only **10 sprints deep** (max parallel width 7, `parallelism_speedup: 3.0`), so sequential execution paid 30 bolt-times for a 10-wave shape. `--sequential` is the explicit opt-out for projects whose test suite is not concurrency-safe.
+- **`--sprint=<n>`** — run exactly one sprint and stop, with a `sprint_blocked_by` halt when an earlier sprint still has incomplete units. **`--sprint-checkpoint`** — hold at every sprint boundary for human review. Together these are the "tahap dev seperti sprint" lane.
+- **`blocks` in `analyze-parallelism.sh --format=json`** — per unit, the size of the TRANSITIVE reverse-`depends_on` closure (how many units cannot start until this one lands). Distinct from `forks[].dependents`, which counts direct dependents only: on the field vault U-001 has 1 direct dependent and **29 transitive**. Reported for sprint summaries and triage ordering.
+
+**No new producer.** `analyze-parallelism.sh` already emitted the wave layering; a `derive-sprint-plan.sh` was specified and then **rejected** rather than duplicate it. `tests/sprint-lane/` pins the single-producer decision so it cannot be re-added silently.
+
+### Fixed — the bolt-implementer whitelist contract (Fase 4, root cause corrected)
+
+`agents/bolt-implementer.md` told the implementer that the B3 observer diffs committed paths against `target_files` — full stop. B3 actually diffs against `target_files` **∪ sanctioned extras**, and those extras explicitly include test files, for the reason written in the observer itself: *"the implementer writes the acceptance test, which units often do not list."*
+
+An implementer reasoning correctly from that incomplete contract rejected every branch of a unit it could in fact have completed — commit the test (it believed this tripped `whitelist_violation`; it does not), skip it (acceptance fails), or write-without-committing (rightly refused as fake evidence) — parked the test outside the repo and halted `scope_creep_detected`. Cost: ~70k tokens and ~10 minutes on a rule that does not exist (field case HOST-AS400 U-001).
+
+The contract now states the sanctioned extras, lists the test-path shapes, directs the implementer to **commit the acceptance test even when the unit does not list it**, and forbids parking a written test outside the repo.
+
+### Added — `acceptance_path_unowned` (narrow remainder)
+
+`scripts/validate-unit-spec.sh` flags a unit whose `acceptance_test` command runs a path that is **not a sanctioned extra**, is declared by no unit in the DAG, and does not exist — an acceptance command that can only ever fail. `hooks/pre-tool-use` carries the matching `acceptance-path` gate leg; that leg is the point, since the aggregator blocks per explicit `halt_type` and a halt without one is recorded and ignored.
+
+`SANCTIONED_RX` is byte-identical to the B3 predicate, and `tests/acceptance-path/` §A3 is the drift tripwire: a gate stricter than the observer it defers to would block the normal convention on every unit. **The first version of this check did exactly that** — it flagged the `sample-project` fixture, which is what forced the reading of B3 that overturned the original premise. Recorded because the lesson generalizes: a new gate that duplicates an old gate's judgment must read that gate's predicate, not guess it.
+
+### Measured, then rejected (recorded so they are not re-proposed)
+
+- **`parallel_max` 4 → 6.** Against the real wave widths `[1,2,3,4,7,3,3,2,4,1]`, cap 4 and cap 6 both produce **11 slices** — identical wall clock, while reopening the fan-out hazard v7.1 closed deliberately. Default stays 4.
+- **A `blocks >= 10` escalation into the review panel.** 9/30 units cleared the threshold but **7 already received the full lens set from real signals** — the escalation added lenses to 2 units, cost 2 percentage points, and its shape was a seventh OR-term forcing `full`: the exact mechanism Fase 3 exists to remove. `blocks` stays reported, never a router term.
+
+### Notes
+
+- The review panel is NOT the waste this release trims. On the field unit it found 2 genuine Criticals in the foundation contract that gates 29 downstream units. What this release removes is sequential execution of a 10-deep DAG and a halt raised over a rule that was never in force.
+- New halt `sprint_blocked_by` + `acceptance_path_unowned` registered in `halt-protocol.md`, `halt-families/bolts.md`, the execute-bolts halt list, and the orchestrate-flow taxonomy.
+
 ## [7.6.0] - 2026-08-26 — extract → PRD-kontrak: census-contracted extraction, waves retired
 
 **Owner-approved redesign (spec `docs/superpowers/specs/2026-08-26-extract-revamp-contract-design.md`, field-triggered by an office run where a 1-file legacy paid the full 6-wave pipeline). Objective: tidak overkill — completeness is contracted to the CENSUS, not to artifact volume.**

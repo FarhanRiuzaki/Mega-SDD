@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # validate-unit-spec.sh — Phase B slice B.3 [PostToolUse-validate].
 #
-# Validates 3 unit-spec integrity halts on Write|Edit of unit files:
+# Validates 4 unit-spec integrity halts on Write|Edit of unit files:
 #   - unit_underspecified         (required frontmatter fields missing)
 #   - hard_rule_unparseable       (Hard Rule v1 grammar line unparseable)
 #   - starterkit_rule_citation_missing (starterkit-derived rule lacks citation)
+#   - acceptance_path_unowned      (acceptance_test runs a path no unit owns and
+#                                   that does not exist — spec 2026-08-29 Fase 4;
+#                                   gated in hooks/pre-tool-use, leg "acceptance-path")
 #
 # Per attestation:
 #   #12 unit_underspecified: target_files re-derive C1; acceptance_test C2 escalate
@@ -103,6 +106,12 @@ ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 # S5 GU-TASKTYPE-ENUM-1: closed enum + normalization. 'Verify', '"verify"' and
 # 'modify' all silently disarmed the A1/per-type rails before.
 VALID_TASK_TYPES = {"create", "verify", "extend"}
+
+# B3 sanctioned-extra path predicate — byte-identical to the whitelist scan in
+# scripts/validate-bolt-artifacts.sh. The implementer writes and commits the
+# acceptance test even when the unit does not list it in target_files; B3
+# sanctions that, so acceptance_path_unowned must not flag it.
+SANCTIONED_RX = r"(?:^|/)(?:tests?|spec|specs|__tests__)/|_test\.go$|Test\.php$|(?:^|/)test_[^/]+\.py$|\.(?:spec|test)\.[jt]sx?$"
 
 
 def _section_body(heading_pat, text):
@@ -205,6 +214,67 @@ def validate_unit(file_path):
             "unit_id": unit_id,
             "task_type": task_type,
             "missing_fields": ["acceptance_test"],
+        })
+
+    # ─── Check: acceptance_path_unowned (spec 2026-08-29 Fase 4) ──────────────
+    # Field defect this closes: a unit whose acceptance_test command runs a file
+    # that is in NO unit's target_files. Every branch then violates an Iron Rule
+    # — committing the file trips B3 whitelist_violation, skipping it fails the
+    # acceptance command — so the unit is unfinishable by construction and the
+    # implementer only discovers it after a full dispatch has burned.
+    #
+    # Conservative by design (this gate BLOCKS): a token is only reported when
+    # it is path-shaped AND declared by no unit AND absent from disk AND not a
+    # B3 sanctioned extra. A path that already exists is pre-existing input; a
+    # path a sibling unit declares is owned by the DAG; a TEST path is written
+    # and committed by the implementer and B3 sanctions it precisely because
+    # "units often do not list it". All three are silent.
+    #
+    # SANCTIONED_RX MUST stay byte-identical to the B3 predicate in
+    # scripts/validate-bolt-artifacts.sh (§whitelist scan) — if this check is
+    # stricter than the observer it gates on, it blocks the normal convention.
+    # That divergence is exactly the 2026-08-29 field defect, from the other
+    # side: the implementer contract omitted these extras and a bolt halted
+    # with scope_creep_detected over a test file B3 would never have flagged.
+    # Pinned by tests/acceptance-path/ (drift tripwire).
+    at_cmds = re.findall(r"(?m)^\s*(?:-\s*)?command:\s*(?:\"([^\"]*)\"|'([^']*)'|(.+?))\s*$", body)
+    unowned = []
+    for tup in at_cmds:
+        cmd = next((x for x in tup if x), "")
+        for tok_raw in cmd.split():
+            tok = tok_raw.strip("\"'`,;()")
+            if "=" in tok and not tok.startswith("/"):
+                tok = tok.split("=", 1)[1].strip("\"'")   # --config=path/to/x.json
+            if not tok or tok.startswith("-") or tok.startswith("@"):
+                continue
+            if "/" not in tok or "://" in tok or tok.startswith("/"):
+                continue
+            if any(ch in tok for ch in "*?[]{}$"):
+                continue                                   # a glob declares nothing
+            if not re.search(r"\.[A-Za-z0-9]{1,6}$", tok):
+                continue                                   # directories are not files
+            norm = tok.lstrip("./")
+            if norm.split("/")[0] in ("node_modules", "vendor", "dist", "build", ".mega-sdd"):
+                continue
+            if norm in OWNED_PATHS:
+                continue
+            if re.search(SANCTIONED_RX, norm):
+                continue                                   # B3 sanctioned extra
+            if os.path.exists(os.path.join(cwd, norm)):
+                continue                                   # pre-existing input
+            unowned.append(norm)
+    if unowned:
+        issues.append({
+            "halt_type": "acceptance_path_unowned",
+            "detail": (f"unit {unit_id} runs acceptance_test command(s) against "
+                       f"{sorted(set(unowned))} — no unit declares these in target_files "
+                       f"and they do not exist. The unit cannot be completed: committing "
+                       f"the file trips the B3 whitelist observer, skipping it fails the "
+                       f"acceptance command. Add the path to this unit's target_files "
+                       f"(operation: create), or point the command at a path a unit owns."),
+            "unit_id": unit_id,
+            "task_type": task_type,
+            "unowned_paths": sorted(set(unowned)),
         })
 
     # ─── Per-task_type section contracts (S5 GU-TTCONTRACT-1: content, not just
@@ -763,11 +833,54 @@ def discover_units():
     return sorted({os.path.realpath(p) for p in got})
 
 
+def _tf_paths(fm_text):
+    """target_files paths from one unit's frontmatter — block-mapping, scalar-list,
+    and inline-flow shapes (same three shapes resolve-review-tier.sh parses)."""
+    out = []
+    m = re.search(r"(?ms)^target_files:\s*\n((?:[ \t]+.*\n?)*)", fm_text)
+    blk = m.group(1) if m else ""
+    for rx in (r"(?m)^[ \t]*-?[ \t]*path:\s*(?:\"([^\"]+)\"|'([^']+)'|([^\s#]+))",
+               r"(?m)^[ \t]*-[ \t]+(?:\"([^\"]+)\"|'([^']+)'|([^\s#:]+))[ \t]*$"):
+        for g in re.findall(rx, blk):
+            v = next((x for x in g if x), "")
+            if v:
+                out.append(v)
+        if out:
+            break
+    if not out:
+        inl = re.search(r"(?m)^target_files:\s*\[([^\]]*)\]", fm_text)
+        if inl:
+            out = [p.strip().strip("\"'") for p in inl.group(1).split(",") if p.strip()]
+    return [p.lstrip("./") for p in out]
+
+
+def build_owned_paths(unit_paths):
+    """Union of every unit's declared target_files — the DAG-wide ownership set.
+    Built once, before per-unit validation, because acceptance_path_unowned is a
+    CROSS-unit question: a path this unit does not declare is fine when a sibling
+    unit creates it, and only a defect when NO unit does."""
+    owned = set()
+    for up in unit_paths:
+        try:
+            t = open(up, encoding="utf-8", errors="replace").read().lstrip("﻿")
+        except OSError:
+            continue
+        if not t.startswith("---"):
+            continue
+        end = t.find("\n---", 3)
+        if end <= 0:
+            continue
+        owned.update(_tf_paths(t[3:end]))
+    return owned
+
+
 all_units = discover_units()
 if focal_path:
     known = {os.path.abspath(p) for p in all_units}
     if os.path.abspath(focal_path) not in known:
         all_units.append(focal_path)  # unusual layout — still validate the focal file
+
+OWNED_PATHS = build_owned_paths(all_units)
 
 merged = []
 checked_files = []

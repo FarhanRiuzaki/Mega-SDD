@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.38.0
+version: 2.39.0
 description: Executes units into code commits (bolts) via the superpowers bridge or vendored fallback, with Hard Rule pre/post-flight scans that HALT on violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -22,7 +22,10 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
 
 - Unit path OR unit ID OR `--all` (positional).
 - **Flags:**
-  - `--parallel` — the main-thread controller dispatches independent units concurrently, each still running the review panel; **wave width is capped at `config.yaml parallel_max:` (default 4)** (v7.1 — CC's 20-subagent default × an ~80-turn implementer is a token/fleet hazard); the flag DEFAULT stays off for standalone invocations. The **Overlap rail** (intersecting `target_files` serialize), depth-1 discipline, wave-plan consumption, and per-unit gate ranges are owned by `references/batch-and-fanout.md §--all` — load it before any parallel dispatch.
+  - `--parallel` — the main-thread controller dispatches independent units concurrently, each still running the review panel; **wave width is capped at `config.yaml parallel_max:` (default 4)** (v7.1 — CC's 20-subagent default × an ~80-turn implementer is a token/fleet hazard). **On `--all` this is the DEFAULT** (spec 2026-08-29 Fase 2 — a 30-unit vault whose DAG is 10 deep costs 30 bolt-times sequentially and 10 wave-times in sprints; measured `parallelism_speedup: 3.0`); the flag DEFAULT stays off for standalone non-`--all` invocations, where it is what forces waves on a multi-unit filter. The **Overlap rail** (intersecting `target_files` serialize), depth-1 discipline, wave-plan consumption, and per-unit gate ranges are owned by `references/batch-and-fanout.md §--all` — load it before any parallel dispatch.
+  - `--sequential` — opt OUT of wave execution on `--all`: one unit at a time in topological order. Use when the project's test suite is not concurrency-safe (shared test DB / fixtures / caches) and `--worktree` is not an option. Mutually exclusive with `--parallel`; passing both is a usage error.
+  - `--sprint=<n>` — execute ONE sprint (one topological wave, 1-indexed) and stop. Prerequisite: every unit in sprints `1..n-1` is complete; otherwise **halt `sprint_blocked_by`**. The sprint numbering is `analyze-parallelism.sh --format=json` `waves[]` — never hand-numbered.
+  - `--sprint-checkpoint` — hold at every sprint boundary for human review instead of rolling into the next wave. Prints the sprint summary (units landed, advisory findings, gate results, elapsed) and waits. Off by default. Under `--auto` (non-interactive by contract) it does NOT wait — it emits the sprint summary into the handoff YAML at each boundary (`sprints[]`) and continues; a checkpoint that silently evaporates would be worse than none.
   - `--worktree` — isolate each bolt in a git worktree.
   - `--max-retries=N` — default 3.
   - `--dry-run` — walk steps, do not commit.
@@ -126,7 +129,7 @@ Every `bolt-report.md` MUST carry a `bolt_self_report` YAML block (numeric `conf
 
 ## Batch + fan-out execution
 
-`--all` (topo-sort by `depends_on`; sequential, or `--parallel` groups independent units; **any failure halts the whole run, no skip-ahead**), `--per-squad`, `--squad=<id>`, and `--module=<id>` each have a procedure: squad fan-out, module gating, the `cross_squad_interface_draft` / `module_blocked_by` halts, and the parallel parent-thread post-flight re-scan → `references/batch-and-fanout.md` — **load it ONLY for a multi-unit invocation** (single-unit runs never need it; the per-bolt drift check + B2 live in `references/halts-and-handoff.md`).
+`--all` (topo-sort by `depends_on` into SPRINTS — wave execution is the default, `--sequential` opts out; **any failure halts the whole run, no skip-ahead**), `--sprint=<n>`, `--per-squad`, `--squad=<id>`, and `--module=<id>` each have a procedure: squad fan-out, module gating, the `cross_squad_interface_draft` / `module_blocked_by` halts, and the parallel parent-thread post-flight re-scan → `references/batch-and-fanout.md` — **load it ONLY for a multi-unit invocation** (single-unit runs never need it; the per-bolt drift check + B2 live in `references/halts-and-handoff.md`).
 
 ### Batch completion — final full-suite gate (the safety net for cross-bolt regressions)
 

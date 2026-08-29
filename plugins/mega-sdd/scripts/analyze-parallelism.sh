@@ -4,8 +4,18 @@
 # This is the DETERMINISTIC core extracted from skills/orchestrate-flow/references/diagnostics-procedures.md section analyze-parallelism
 # (audit batch E / finding F4). The command self-labels its DAG math
 # "DETERMINISTIC" (anti-halu rail) — depth / width / topological-wave layering /
-# critical path / speedup / forks / joins / per-squad + per-module sub-DAGs /
-# cross-edge counts / over-coupling CANDIDATES. All of that lives here.
+# critical path / speedup / forks / joins / transitive `blocks` / per-squad +
+# per-module sub-DAGs / cross-edge counts / over-coupling CANDIDATES. All of
+# that lives here.
+#
+# `blocks` (spec 2026-08-29 Fase 2) — {unit: N} where N is the size of the
+# TRANSITIVE reverse-`depends_on` closure: how many units cannot start until
+# this one lands. Distinct from `forks[].dependents`, which counts DIRECT
+# dependents only (measured on a live 30-unit vault: U-012 direct 5; U-001
+# direct 1, transitive 29). Consumers: the sprint report + triage ordering.
+# It is REPORTED, never a router term — a `blocks`-threshold escalation into
+# the review panel was measured and REJECTED (spec §3: it only re-added lenses
+# to 2 of 30 units and reintroduced the OR-forces-full shape being fixed).
 #
 # What STAYS in the command (human judgment — NOT here):
 #   - The `→ Suggestion:` recommendations (Step 4 over-coupling advice + Step 7
@@ -294,6 +304,24 @@ def dag_metrics(node_ids):
     if len(placed) != len(nodes):
         cyc = sorted(nodes - placed)
         return {"cycle": cyc}
+    # Transitive downstream closure — how many units each unit BLOCKS.
+    # `out_deg` counts DIRECT dependents only; a foundation unit that gates 29
+    # downstream units is a different object from one that gates 2, and the
+    # direct count cannot tell them apart. Computed in DECREASING level order:
+    # every dependent of n sits at a strictly higher level, so its own closure
+    # is already final when n is visited — no recursion, no depth limit.
+    # Reached only past the cycle guard above, so the ordering is total.
+    dependents = {n: [] for n in nodes}
+    for n in nodes:
+        for d in deps[n]:
+            dependents[d].append(n)
+    blocks = {n: set() for n in nodes}
+    for n in sorted(nodes, key=lambda x: (-level[x], x)):
+        acc = set()
+        for c in dependents[n]:
+            acc.add(c)
+            acc |= blocks[c]
+        blocks[n] = acc
     # waves[i] = node ids at level i
     n_waves = (max(level.values()) + 1) if level else 0
     waves = [[] for _ in range(n_waves)]
@@ -337,6 +365,7 @@ def dag_metrics(node_ids):
         "in_degree": in_deg,
         "forks": [{"unit": n, "dependents": out_deg[n]} for n in forks],
         "joins": [{"unit": n, "deps": in_deg[n]} for n in joins],
+        "blocks": {n: len(blocks[n]) for n in sorted(nodes)},
         "critical_path": crit_path,
         "critical_path_len": crit_len,
         "estimated_wallclock_min": depth,
@@ -442,6 +471,7 @@ result = {
     "waves": overall["waves"],
     "forks": overall["forks"],
     "joins": overall["joins"],
+    "blocks": overall["blocks"],
     "critical_path": overall["critical_path"],
     "critical_path_len": overall["critical_path_len"],
     "cross_module_edges": xmod_all,
