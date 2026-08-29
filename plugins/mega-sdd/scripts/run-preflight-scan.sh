@@ -99,6 +99,7 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
 import vault_layouts
 import postflight_rules
+import plugin_meta
 
 cwd = os.environ["CWD"]
 # Comma-separated batch (spec tranche 4d); dedupe preserving order. The single
@@ -371,6 +372,7 @@ for _i, unit_id in enumerate(unit_ids):
         "grammar": grammar,
         "rules": entries,
     }
+    artifact.update(plugin_meta.stamp(os.environ["MEGA_SDD_LIB_DIR"]))
     os.makedirs(bolt_dir, exist_ok=True)
     tmp = target + ".tmp.%d" % os.getpid()
     with open(tmp, "w") as f:

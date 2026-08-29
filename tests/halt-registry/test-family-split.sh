@@ -63,13 +63,15 @@ B=$(wc -c < "$HP" | tr -d ' ')
 # restored 20 live types + 7 schema-only index rows the registry itself
 # mandates (":147 rejects undeclared types") — correctness bytes, not guidance
 # regrowth (z1 still pins that guidance bodies stay out).
-[ "$B" -le 32000 ] && ok "b1 registry $B <= 32000" || fail "b1 registry regrew to $B"
+# 7.11.0: three gate halts registered (panel_evidence_missing / l0_evidence_missing /
+# acceptance_expects_missing, spec 2026-08-30 §3) — cap lifted by their terse entries only.
+[ "$B" -le 32300 ] && ok "b1 registry $B <= 32300" || fail "b1 registry regrew to $B"
 OVER=""
 for f in "$FD"/*.md; do
   FB=$(wc -c < "$f" | tr -d ' ')
-  [ "$FB" -gt 12800 ] && OVER="$OVER $(basename $f):$FB"
+  [ "$FB" -gt 13500 ] && OVER="$OVER $(basename $f):$FB"   # 7.11.0: bolts.md +3 gate halts
 done
-[ -z "$OVER" ] && ok "b2 every family <= 12800 B" || fail "b2 oversized family:$OVER"
+[ -z "$OVER" ] && ok "b2 every family <= 13500 B" || fail "b2 oversized family:$OVER"
 
 echo "── c: anchor + pin survival in the canonical file ──"
 grep -q '^## §halt-protocol' "$HP" && ok "c1 §halt-protocol anchor heads its section" || fail "c1 envelope anchor lost"

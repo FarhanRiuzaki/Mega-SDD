@@ -74,12 +74,14 @@ git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || { echo "ERROR: not a git re
 export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 
 CWD="$CWD" UNIT="$UNIT" TIMEOUT="$TIMEOUT" QUIET="$QUIET" python3 <<'PYEOF'
-import json, os, re, shutil, subprocess, sys
+import json, os, re, shutil, subprocess, sys, time
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
 import vault_layouts
 import postflight_rules
+import plugin_meta
+_T0 = time.time()
 
 cwd = os.environ["CWD"]
 unit_id = os.environ["UNIT"]
@@ -170,6 +172,11 @@ SYNTAX_CMDS = {
 }
 def head_bytes(s, n=500):
     return s.encode("utf-8", errors="replace")[:n].decode("utf-8", errors="replace")
+def tail_bytes(s, n=500):
+    # F-18: the pass/fail summary is the LAST thing a runner prints; on the field
+    # run a 500 B head was eaten by log noise on ≥6 entries and the counts were lost.
+    b = s.encode("utf-8", errors="replace")
+    return b[-n:].decode("utf-8", errors="replace") if len(b) > n else ""
 
 results = []
 syntax_skipped = []
@@ -195,7 +202,7 @@ for p in changed:
         rc, out = 124, "TIMEOUT after %ds" % timeout_s
     results.append({"type": "syntax", "command": cmd_str, "expects": "",
                     "rc": rc, "retried": False, "pass": rc == 0,
-                    "output_head": head_bytes(out)})
+                    "output_head": head_bytes(out), "output_tail": tail_bytes(out)})
 
 # ── Acceptance entries (executable = has a command; else pending_manual) ─────
 def run_once(cmd):
@@ -226,7 +233,7 @@ for e in acc_entries:
         passed = (rc == 0) and ((not expects) or (expects in out))
     results.append({"type": etype, "command": cmd, "expects": expects,
                     "rc": rc, "retried": retried, "pass": passed,
-                    "output_head": head_bytes(out)})
+                    "output_head": head_bytes(out), "output_tail": tail_bytes(out)})
 
 executed = [r for r in results if "pass" in r]
 pending = [r for r in results if r.get("pending_manual")]
@@ -246,7 +253,14 @@ artifact = {
     "written_by": "run-acceptance-tests.sh",
     "timeout_seconds": timeout_s,
     "entries": results,
+    # F-18: how many executed `type: test` entries measured only rc==0 (no
+    # `expects` substring) — 69/69 on the field run. Gated per unit at dispatch
+    # (acceptance_expects_missing); recorded here so the evidence says so.
+    "expects_missing": len([r for r in results if r.get("type") == "test"
+                            and "pass" in r and not (r.get("expects") or "")]),
 }
+artifact.update(plugin_meta.stamp(os.environ["MEGA_SDD_LIB_DIR"],
+                                  duration_ms=(time.time() - _T0) * 1000))
 if syntax_skipped:
     artifact["syntax_skipped"] = syntax_skipped
 os.makedirs(bolt_dir, exist_ok=True)

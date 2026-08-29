@@ -94,7 +94,7 @@
 
 set -uo pipefail
 
-CWD=""; BASE=""; HEAD=""; UNIT=""; PACK=""; NO_CODE_GATES=0
+CWD=""; BASE=""; HEAD=""; UNIT=""; PACK=""; NO_CODE_GATES=0; WRITE=0
 for arg in "$@"; do
   case "$arg" in
     --cwd=*)  CWD="${arg#*=}" ;;
@@ -103,6 +103,7 @@ for arg in "$@"; do
     --unit=*) UNIT="${arg#*=}" ;;
     --pack=*) PACK="${arg#*=}" ;;
     --no-code-gates) NO_CODE_GATES=1 ;;
+    --write) WRITE=1 ;;
     *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
@@ -143,7 +144,7 @@ fi
 
 export RCG_CWD="$CWD" RCG_BASE="$BASE_SHA" RCG_HEAD="$HEAD_SHA" RCG_UNIT="$UNIT" \
        RCG_UNIT_MISSING="$UNIT_MISSING" RCG_PACK="$PACK" \
-       RCG_NO_CODE_GATES="$NO_CODE_GATES" RCG_SCRIPT_DIR="$SCRIPT_DIR"
+       RCG_NO_CODE_GATES="$NO_CODE_GATES" RCG_SCRIPT_DIR="$SCRIPT_DIR" RCG_WRITE="$WRITE"
 
 $MEGA_SDD_PY <<'PYEOF'
 import json, os, re, subprocess, sys
@@ -422,6 +423,43 @@ def main():
             result["skips"].append({"gate": "dep_authorization", "reason": "authorization section missing from validate-new-deps.sh output (advisory gate — recorded, never blocks)"})
             result["gates"]["dep_authorization"] = {"ran": False}
 
+    # F-07/F-26 (spec 2026-08-30 §3): --write persists the merged record as
+    # <vault>/lens-inputs/U-XXX/l0-results.json — the controller used to hand-
+    # write it (7/36 on the field run, one edited by hand), so the L0 record
+    # is now script-written, stamped, and hook-guarded like the other evidence.
+    _write = os.environ.get("RCG_WRITE") == "1"
+    _u = os.environ.get("RCG_UNIT", "")
+    if _write and _u and os.path.isfile(_u):
+        sys.path.insert(0, os.path.join(os.environ["RCG_SCRIPT_DIR"], "_lib"))
+        import plugin_meta
+        ud = os.path.dirname(os.path.abspath(_u))
+        if os.path.basename(ud) == "units":
+            uid = os.path.splitext(os.path.basename(_u))[0]; vault_root = os.path.dirname(ud)
+        else:
+            uid = os.path.basename(ud); vault_root = os.path.dirname(os.path.dirname(ud))
+        try:
+            _fm = open(_u, encoding="utf-8", errors="replace").read()
+            _m = re.search(r"(?m)^unit_id:\s*[\"']?(U-[A-Za-z0-9_-]+)", _fm)
+            if _m:
+                uid = _m.group(1)
+        except OSError:
+            pass
+        rec = dict(result)
+        rec["unit_id"] = uid
+        rec.update(plugin_meta.stamp(os.environ["RCG_SCRIPT_DIR"]))
+        try:
+            ldir = os.path.join(vault_root, "lens-inputs", uid)
+            os.makedirs(ldir, exist_ok=True)
+            tgt = os.path.join(ldir, "l0-results.json")
+            tmp = tgt + ".tmp.%d" % os.getpid()
+            with open(tmp, "w") as fh:
+                json.dump(rec, fh, indent=2)
+            os.replace(tmp, tgt)
+            result["l0_results_path"] = tgt
+        except OSError as e:
+            result["skips"].append({"gate": "l0_results_write", "reason": "could not write l0-results.json: %s" % e})
+    elif _write:
+        result["skips"].append({"gate": "l0_results_write", "reason": "--write needs a resolvable --unit path"})
     print(json.dumps(result, indent=2))
     sys.exit(0)
 

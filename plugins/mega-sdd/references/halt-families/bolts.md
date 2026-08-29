@@ -86,6 +86,18 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 - `postflight_evidence_missing` — execute-bolts: a committed Hard-rule bolt has no passing `postflight.json`; user runs the post-flight scan via `run-postflight-scan.sh`. ALWAYS STOP.
 
+### panel_evidence_missing
+
+- `panel_evidence_missing` — execute-bolts gate (F-07, spec 2026-08-30 §3.1): a bolt dispatched WITH `bolts/U-XXX/review-tier.json` (`resolve-review-tier.sh --write`, the obligation key; earlier bolts advisory) at tier ≠ minimal has no `findings.json` with `written_by: merge-panel-findings.sh`. ALWAYS STOP. Resolution: run the blind panel, merge with the script. Detector `validate-bolt-artifacts.sh --panel-scan`.
+
+### l0_evidence_missing
+
+- `l0_evidence_missing` — execute-bolts gate (F-07): a keyed bolt has no `lens-inputs/U-XXX/l0-results.json` with `written_by: run-code-gates.sh`. ALWAYS STOP. Resolution: `run-code-gates.sh … --unit=<unit.md> --write` over the bolt's range.
+
+### acceptance_expects_missing
+
+- `acceptance_expects_missing` — execute-bolts IN-RUN gate (F-18, spec §3.3): the dispatched unit has a `type: test` acceptance entry with a command and no `expects` (B4 would pass on rc==0 alone). Per unit at its own dispatch, never the run boundary. ALWAYS STOP for that dispatch. Resolution: add `expects: "<output substring>"`, re-dispatch. Detector `validate-unit-spec.sh`.
+
 ### acceptance_evidence_missing
 
 - `acceptance_evidence_missing` — execute-bolts (B4): a **v5-keyed** bolt (its commit carries the `SDD-Acceptance: v5` trailer — commit-keyed so legacy pre-v5 bolts NEVER retro-block) has no fresh readable `acceptance.json` covering its newest bolt commit. ALWAYS STOP. Keterangan: bolt versi v5 wajib punya bukti acceptance yang tereksekusi — jalankan `bash <plugin>/scripts/run-acceptance-tests.sh --cwd=<project-root> --unit=U-XXX` (script itu yang mengeksekusi acceptance_test unit + lantai sintaks L0 dan menulis buktinya sendiri; tulis-tangan ditolak hook). Bolt lama tanpa trailer hanya dapat catatan advisory, tidak pernah diblokir.

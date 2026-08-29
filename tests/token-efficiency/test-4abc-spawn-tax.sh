@@ -100,8 +100,9 @@ grep -q -- '--orphan-scan --batch-suite-gate --postflight-scan --recompute --whi
   && ok "gate call carries all five scans + --recompute (B1 recompute-at-gate preserved)" || fail "gate flags wrong"
 N_STP=$(grep -c 'bash "$VALIDATOR_OS"' "$STP")
 [ "$N_STP" = "1" ] && ok "stop: exactly ONE validator invocation" || fail "stop has $N_STP invocations"
-grep -q -- '--orphan-scan --batch-suite-gate --postflight-scan --whitelist-scan --acceptance-scan --quiet' "$STP" \
-  && ok "stop call carries the five scans WITHOUT --recompute (read-only lane unchanged)" || fail "stop flags wrong"
+# 7.11.0: --panel-scan (F-07) joins both lanes — detection on Stop, gate at PreToolUse.
+grep -q -- '--orphan-scan --batch-suite-gate --postflight-scan --whitelist-scan --acceptance-scan --panel-scan --quiet' "$STP" \
+  && ok "stop call carries the six scans WITHOUT --recompute (read-only lane unchanged)" || fail "stop flags wrong"
 if grep -q -- '--postflight-scan --recompute' "$STP"; then fail "stop gained --recompute (forbidden lane)"; else ok "no recompute on the Stop lane"; fi
 
 note "== 4c. Stop turn-gate: skip/rescan semantics (state-mtime proof) =="

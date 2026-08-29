@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.11.0] - 2026-08-30 — audit-driven hardening, Tranche 3: the catchers become un-skippable; artifacts say who made them
+
+**Spec `docs/superpowers/specs/2026-08-30-audit-driven-hardening.md` §3. Same field basis (HOST-AS400 / dd9000-gate, 36 units): the panel and the L0 gates caught every real high-class defect of the run and were traceable on ≤17/36 and 7/36 units; three finding ledgers were hand-written; 69/69 acceptance entries carried `expects: ""`; no evidence artifact named the plugin version that produced it.**
+
+### Added — panel-evidence gate (F-07) with a dispatch-time obligation key
+
+`resolve-review-tier.sh --write` persists the router's verdict as `<vault>/bolts/U-XXX/review-tier.json` (tier, lenses, signals, `plugin_version`). That file is the **obligation key** — the B4 precedent applied: keyed by a stamp made at dispatch, so every bolt dispatched before 7.11.0 is advisory only and never retro-blocks. A keyed, committed, non-verify bolt then owes a `findings.json` carrying `written_by: merge-panel-findings.sh` (tier ≠ minimal → `panel_evidence_missing`) and a `lens-inputs/U-XXX/l0-results.json` carrying `written_by: run-code-gates.sh` (→ `l0_evidence_missing`). `validate-bolt-artifacts.sh --panel-scan` derives `.bolt-panel-state.json`; the aggregator blocks on it (in-run: the dispatched unit's own pending evidence is dropped); the Stop lane detects.
+
+`run-code-gates.sh --write` now writes the L0 record itself (the controller used to hand-write it). Both ledgers, the L0 record and `review-tier.json` join the anti-self-bypass guard (F-08) — Write/Edit and the Bash tamper verbs are denied; the sanctioned writer invocations never name the files and pass.
+
+### Added — in-run acceptance-expects gate (F-18)
+
+`validate-unit-spec.sh` records `acceptance_expects_missing` for a command-bearing `type: test` entry with no `expects` (manual and render entries exempt). The gate fires **per unit at its own `bolt-implementer` dispatch only** — the hook reads the unit id from the dispatch pointer — never at the `--all`/`--sprint` entry, so a running project is not frozen over its older units. `run-acceptance-tests.sh` records `expects_missing` and an `output_tail` per entry (a 500 B head was eaten by log noise on ≥6 field entries; the pass/fail line is the last thing a runner prints).
+
+### Added — provenance on every writer (F-26)
+
+`scripts/_lib/plugin_meta.py` stamps `plugin_version` + `written_at` (and `duration_ms` where an execution was measured) into `preflight.json`, `postflight.json` (writer and gate recompute), `acceptance.json`, `_batch-suite.json`, `findings.json`, `l0-results.json`, `review-tier.json`, the UAT `result.json` and `.bolt-panel-state.json`. The next field audit can attribute every artifact to the version that produced it without reading `dispatch-prompt.md` stamps by hand.
+
+### Notes
+
+- Halt registry: `panel_evidence_missing`, `l0_evidence_missing`, `acceptance_expects_missing` (enum, families/bolts.md, halts-and-handoff canonical list, halt-taxonomy always-stop class). The registry size tripwires were lifted by the three terse entries only (32000→32300 B, family 12800→13500 B) with the reason stated in the test.
+- `test-4abc-spawn-tax.sh` stop-flags pin repinned to the six-scan lane. New: `tests/audit-hardening/test-t3-panel-evidence.sh`, `test-t3-expects-gate.sh`. Suite green across both trees.
+- Not stamped yet: the per-validator gate STATE files other than `.bolt-panel-state.json` (they are re-derived at every gate; the artifacts were the audit's blind spot).
+
 ## [7.10.0] - 2026-08-30 — audit-driven hardening, Tranche 2: directives leave the gate verdict; dispatch stops pointing at files that do not exist
 
 **Spec `docs/superpowers/specs/2026-08-30-audit-driven-hardening.md` §2. Same field basis as 7.9.0 (HOST-AS400 / dd9000-gate, 36 units).**

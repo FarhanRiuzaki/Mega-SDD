@@ -227,7 +227,7 @@ for TARGET_DIR in "${TARGET_DIRS[@]}"; do
   mkdir -p "$TARGET_DIR" 2>/dev/null || { echo "ERROR: cannot create ${TARGET_DIR}" >&2; exit 2; }
   TARGET_DIR="$TARGET_DIR" STATUS="$STATUS" HEAD_SHA="$HEAD_SHA" RUNNER="$RUNNER" \
   DETECTED="$DETECTED" RUNNER_OVERRIDDEN="$RUNNER_OVERRIDDEN" QUIET="$QUIET" \
-  SUITE_EXIT="$SUITE_EXIT" TAIL_OUT="$TAIL_OUT" python3 - <<'PYEOF' || { echo "ERROR: artifact write failed for ${TARGET_DIR} — result NOT recorded" >&2; exit 2; }
+  SUITE_EXIT="$SUITE_EXIT" TAIL_OUT="$TAIL_OUT" MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib" python3 - <<'PYEOF' || { echo "ERROR: artifact write failed for ${TARGET_DIR} — result NOT recorded" >&2; exit 2; }
 import json, os
 from datetime import datetime, timezone
 target = os.path.join(os.environ["TARGET_DIR"], "_batch-suite.json")
@@ -240,6 +240,13 @@ state = {
     "output_tail": os.environ.get("TAIL_OUT", "")[-2000:],
     "written_by": "run-full-suite.sh",
 }
+try:
+    import sys
+    sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+    import plugin_meta
+    state.update(plugin_meta.stamp(os.environ["MEGA_SDD_LIB_DIR"]))
+except Exception:
+    pass
 if os.environ.get("RUNNER_OVERRIDDEN") == "1":
     state["runner_overridden"] = True
     state["detected_runner"] = os.environ.get("DETECTED", "")

@@ -39,16 +39,23 @@
 set -u
 UNIT=""
 PACK_FILE=""
+WRITE=0
 while [ $# -gt 0 ]; do case "$1" in
+  --write) WRITE=1; shift;;
   --unit) UNIT="$2"; shift 2;;
   --unit=*) UNIT="${1#*=}"; shift;;
   --pack) PACK_FILE="$2"; shift 2;;
   --pack=*) PACK_FILE="${1#*=}"; shift;;
-  *) echo "usage: resolve-review-tier.sh --unit <U-*.md> [--pack <resolved-pack.md>]" >&2; exit 2;;
+  *) echo "usage: resolve-review-tier.sh --unit <U-*.md> [--pack <resolved-pack.md>] [--write]" >&2; exit 2;;
 esac; done
 [ -n "$UNIT" ] && [ -f "$UNIT" ] || { echo "usage: resolve-review-tier.sh --unit <U-*.md> [--pack <pack.md>]" >&2; exit 2; }
 
-V_UNIT="$UNIT" V_PACK="${PACK_FILE:-}" python3 <<'PYEOF'
+# F-26 (spec 2026-08-30 §3.4): --write persists the verdict as
+# <vault>/bolts/U-XXX/review-tier.json — the OBLIGATION KEY of the panel-evidence
+# gate (F-07). Keyed at dispatch, like B4 keys on the commit trailer, so a bolt
+# dispatched before this version never retro-blocks.
+export MEGA_SDD_LIB_DIR="$(cd "$(dirname "$0")" && pwd)/_lib"
+V_UNIT="$UNIT" V_PACK="${PACK_FILE:-}" V_WRITE="$WRITE" python3 <<'PYEOF'
 import fnmatch, json, os, re, sys
 
 unit_path = os.environ["V_UNIT"]
@@ -276,6 +283,35 @@ out = {"tier": tier, "lenses": lenses, "signals_fired": fired,
        "implementer_model": implementer_model, "effort": effort}
 if parse_note:
     out["parse_note"] = parse_note
+if os.environ.get("V_WRITE") == "1":
+    sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+    import plugin_meta
+    ud = os.path.dirname(os.path.abspath(unit_path))
+    # <vault>/units/U-X.md -> <vault>/bolts/U-X ; <vault>/units/U-X/unit.md -> same
+    if os.path.basename(ud) == "units":
+        uid = os.path.splitext(os.path.basename(unit_path))[0]
+        vault_root = os.path.dirname(ud)
+    else:
+        uid = os.path.basename(ud)
+        vault_root = os.path.dirname(os.path.dirname(ud))
+    m_uid = re.search(r"(?m)^unit_id:\s*[\"']?(U-[A-Za-z0-9_-]+)", fm)
+    if m_uid:
+        uid = m_uid.group(1)
+    bolt_dir = os.path.join(vault_root, "bolts", uid)
+    rec = dict(out)
+    rec["unit_id"] = uid
+    rec["written_by"] = "resolve-review-tier.sh"
+    rec.update(plugin_meta.stamp(os.environ["MEGA_SDD_LIB_DIR"]))
+    try:
+        os.makedirs(bolt_dir, exist_ok=True)
+        tgt = os.path.join(bolt_dir, "review-tier.json")
+        tmp = tgt + ".tmp.%d" % os.getpid()
+        with open(tmp, "w") as fh:
+            json.dump(rec, fh, indent=1)
+        os.replace(tmp, tgt)
+        out["review_tier_path"] = tgt
+    except OSError as e:
+        print("WARN: could not write review-tier.json: %s" % e, file=sys.stderr)
 print(json.dumps(out, separators=(",", ":")))
 sys.exit(0)
 PYEOF

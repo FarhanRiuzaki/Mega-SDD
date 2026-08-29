@@ -29,8 +29,10 @@ Run after the implementer reports DONE, in this order (cheap → expensive), eac
 ```
 bash <plugin-root>/scripts/run-code-gates.sh \
   --cwd=<project-root> --base=<bolt-base-sha> --head=<new-head-sha> \
-  --unit=<vault>/units/U-XXX.md [--pack=<active-pack.md>] [--no-code-gates]
+  --unit=<vault>/units/U-XXX.md --write [--pack=<active-pack.md>] [--no-code-gates]
 ```
+
+- **`--write` (7.11.0, F-07/F-08)** — the wrapper itself persists the merged JSON as `<vault>/lens-inputs/U-XXX/l0-results.json` (`written_by: run-code-gates.sh`, `plugin_version`). The controller no longer hand-writes that file (it is hook-guarded like the other evidence); the panel-evidence gate halts `l0_evidence_missing` when a bolt dispatched with `review-tier.json` lacks it.
 
 - **Exit 0** — gates ran, no blocking finding; non-blocking findings + SKIPs ride in the JSON for the panel.
 - **Exit 1** — a BLOCKING finding; the JSON `halt` object carries the type (`secret_in_code` / `sast_critical_finding` / `dep_not_found`) and IS the blocker payload.
