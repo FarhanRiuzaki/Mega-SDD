@@ -263,6 +263,51 @@ def validate_unit(file_path):
             if os.path.exists(os.path.join(cwd, norm)):
                 continue                                   # pre-existing input
             unowned.append(norm)
+    # ─── Check: acceptance_expects_missing (F-18, spec 2026-08-30 §3.3) ──────
+    # `run-acceptance-tests.sh` passes an entry on rc==0 AND (expects empty OR
+    # expects in output) — an empty `expects` makes the second term vacuous, so
+    # B4 measures only the exit code of a test the same model wrote (69/69
+    # entries on the field run; acceptance never observed a failure). A
+    # command-bearing `type: test` entry (or untyped) MUST name the substring the
+    # output proves. Exempt: manual (never executed) and render (route-200 +
+    # display assertion — its command IS the proof). Gated PER UNIT at dispatch
+    # by the in-run aggregator (never at the run boundary — no retro-freeze).
+    try:
+        _ftext = open(file_path, encoding="utf-8", errors="replace").read()
+    except OSError:
+        _ftext = ""
+    _at = re.search(r"^acceptance_test\s*:\s*(.*?)(?=^\S|\Z)", _ftext, re.DOTALL | re.MULTILINE)
+    _vacuous = []
+    if _at:
+        _cur = None; _ents = []
+        for _ln in _at.group(1).splitlines():
+            if re.match(r"^\s*-\s", _ln):
+                if _cur: _ents.append(_cur)
+                _cur = {}; _ln = re.sub(r"^\s*-\s*", "", _ln)
+            if _cur is None: continue
+            _m = re.match(r"^\s*([A-Za-z_]+)\s*:\s*(.*)$", _ln)
+            if _m:
+                _k = _m.group(1).strip().lower(); _v = _m.group(2).strip().strip("'\"")
+                if _k in ("type", "kind", "command", "expects"):
+                    _cur.setdefault("type" if _k == "kind" else _k, _v)
+        if _cur: _ents.append(_cur)
+        for _e in _ents:
+            _t = (_e.get("type") or "test").lower()
+            if _t in ("test",) and _e.get("command") and not _e.get("expects"):
+                _vacuous.append(_e["command"][:120])
+    if _vacuous:
+        issues.append({
+            "halt_type": "acceptance_expects_missing",
+            "detail": (f"unit {unit_id} has {len(_vacuous)} acceptance_test `type: test` "
+                       f"entr{'y' if len(_vacuous)==1 else 'ies'} with a command but NO `expects` — "
+                       f"the B4 gate then measures only rc==0 of a test the implementer wrote "
+                       f"(vacuous). Add `expects: \"<substring the output must contain>\"` "
+                       f"(e.g. the runner's pass line) to each entry, then re-dispatch."),
+            "unit_id": unit_id,
+            "task_type": task_type,
+            "commands": _vacuous,
+        })
+
     if unowned:
         issues.append({
             "halt_type": "acceptance_path_unowned",

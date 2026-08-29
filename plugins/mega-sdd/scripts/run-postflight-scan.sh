@@ -60,6 +60,7 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
 import vault_layouts
 import postflight_rules
+import plugin_meta
 
 cwd = os.environ["CWD"]
 unit_id = os.environ["UNIT"]
@@ -147,6 +148,7 @@ artifact = {
         "unverified": len([r for r in _dir if r.get("verdict") == "directive_unverified"]),
     },
 }
+artifact.update(plugin_meta.stamp(os.environ["MEGA_SDD_LIB_DIR"]))
 os.makedirs(bolt_dir, exist_ok=True)
 target = os.path.join(bolt_dir, "postflight.json")
 tmp = target + ".tmp.%d" % os.getpid()

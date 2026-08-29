@@ -19,6 +19,7 @@
 set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
+export MEGA_SDD_LIB_DIR="$HERE/_lib"
 # shellcheck disable=SC1091
 . "$HERE/_lib/resolve-python.sh" 2>/dev/null || PYBIN=python3
 PY="${PYBIN:-python3}"
@@ -204,6 +205,8 @@ for spec_name in specs:
     spec_path = os.path.join(e2e, spec_name)
     result = {
         "written_by": "uat-run.sh",
+        "plugin_version": __import__("plugin_meta").plugin_version(os.environ.get("MEGA_SDD_LIB_DIR"))
+            if (__import__("sys").path.insert(0, os.environ.get("MEGA_SDD_LIB_DIR", "")) or True) else "unknown",
         "run_ts": os.path.basename(ev_dir),
         "status": counts,
         "spec_sha256": sha256_file(spec_path),

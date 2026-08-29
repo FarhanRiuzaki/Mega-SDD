@@ -57,6 +57,7 @@ case "$UNIT" in U-*) ;; *) echo "ERROR: --unit must look like U-XXX" >&2; exit 2
 [ -n "$LENSES" ] || [ -n "$VERIFIER" ] || { echo "ERROR: pass at least one --lens= or --verifier=" >&2; exit 2; }
 case "$SPEC_VERDICT" in ""|pass|fail) ;; *) echo "ERROR: --spec-verdict must be pass|fail" >&2; exit 2;; esac
 
+export MEGA_SDD_LIB_DIR="$(cd "$(dirname "$0")" && pwd)/_lib"
 V_VAULT="$VAULT" V_UNIT="$UNIT" V_HEAD="$HEAD_SHA" V_ROUND="$ROUND" \
 V_SPEC="$SPEC_VERDICT" V_VERIFIER="$VERIFIER" V_LENSES="$LENSES" python3 <<'PYEOF'
 import json, os, re, sys
@@ -282,7 +283,14 @@ resolved_count = len([f for f in findings if f.get("status") == "resolved"])
 
 ledger = {"schema": 1, "unit": unit, "attempt": rnd, "head": head,
           "spec_verdict": spec_verdict, "findings": findings,
-          "dropped_no_evidence": dropped}
+          "dropped_no_evidence": dropped,
+          # F-07/F-26: the writer stamp IS the evidence key the panel-evidence
+          # gate reads — a hand-written ledger (3/3 on the field run) never
+          # carries it, so "sole writer" is a mechanism, not a sentence.
+          "written_by": "merge-panel-findings.sh"}
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import plugin_meta
+ledger.update(plugin_meta.stamp(os.environ["MEGA_SDD_LIB_DIR"]))
 
 tmp = ledger_path + ".tmp.%d" % os.getpid()
 with open(tmp, "w", encoding="utf-8") as fh:

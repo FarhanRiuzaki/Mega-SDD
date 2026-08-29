@@ -117,6 +117,13 @@ Semua writer artefak (`preflight/postflight/acceptance/findings/l0/_batch-suite`
 
 ---
 
+### 3.5 Hasil Tranche 3 (7.11.0)
+- **F-07 SHIPPED**: kunci obligasi = `review-tier.json` (ditulis `resolve-review-tier.sh --write` saat dispatch — preseden B4, bolt lama = advisory); `validate-bolt-artifacts.sh --panel-scan` → `.bolt-panel-state.json`; halt `panel_evidence_missing` (tier ≠ minimal tanpa ledger ber-`written_by: merge-panel-findings.sh`) + `l0_evidence_missing` (tanpa `l0-results.json` ber-`written_by: run-code-gates.sh`); `run-code-gates.sh --write` menulis rekaman L0 sendiri; aggregator memblokir (in-run: unit in-flight dibuang), Stop lane mendeteksi.
+- **F-08 SHIPPED**: `findings.json`, `l0-results.json`, `review-tier.json` masuk guard Bash + Write/Edit (kedua salinan regex + FP_GUARD); writer resmi lolos karena perintahnya tidak menyebut nama file.
+- **F-18 SHIPPED (per unit, in-run)**: `acceptance_expects_missing` dari `validate-unit-spec.sh`; gate hanya pada dispatch unit itu sendiri (id unit dibaca dari pointer dispatch), tidak pernah di batas run; writer mencatat `expects_missing` + `output_tail`.
+- **F-26 SHIPPED (artefak)**: `_lib/plugin_meta.py`; `plugin_version` + `written_at` (+ `duration_ms` acceptance) di semua artefak bukti + `review-tier.json` + `.bolt-panel-state.json`. Belum: file state validator lain (re-derive tiap gate; bukan blind spot audit).
+- Registry: 3 halt baru (enum, family, canonical list, taxonomy always-stop); tripwire ukuran dinaikkan sebatas entri terse (32300 / 13500 B) dengan alasan di test.
+
 ## 4. Yang ditolak / ditunda (tercatat di riset §2)
 F-01(b) per-rule attestation (×5–11 beban), gate pack-driven (ukur setelah F-14), F-03 (spec sendiri), F-04/F-05 (spec sendiri), F-12 (setelah ledger), backlog r2–r3.
 

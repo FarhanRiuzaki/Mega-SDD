@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.42.0
+version: 2.43.0
 description: Executes units into code commits (bolts) via the superpowers bridge or vendored fallback, with Hard Rule pre/post-flight scans that HALT on violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -78,8 +78,10 @@ Follows `references/superpowers-bridge.md` per-unit flow — the default executo
    ```bash
    bash "${CLAUDE_PLUGIN_ROOT}/scripts/run-code-gates.sh" \
      --cwd=<project-root> --base=<bolt-base-sha> --head=<new-head-sha> \
-     --unit=<vault>/units/U-XXX.md
+     --unit=<vault>/units/U-XXX.md --write
    ```
+
+   `--write` persists the merged record as `<vault>/lens-inputs/U-XXX/l0-results.json` (7.11.0 — script-written, stamped, hook-guarded; never hand-write it). The panel-evidence gate reads it: a bolt dispatched with `review-tier.json` and no script-written L0 record halts `l0_evidence_missing` at the next dispatch.
 
    It sequences the deterministic floor internally (repo-own format/lint/typecheck, secret scan, SAST, new-dep existence, dep-authorization (advisory, per-unit) — order, merged-JSON shape, `--pack=` override, and timeout bounds per `references/code-gates.md`). `<bolt-base-sha>` = the unit's own landed commit's parent and `<new-head-sha>` = that commit — under sequential execution that is simply pre-dispatch HEAD..the bolt commit; **under `--parallel` it is load-bearing**: wave commits interleave, so the range is the unit's OWN commit, never wave-base..wave-head (per `references/batch-and-fanout.md §--all` — a sibling's finding must never be attributed to this unit). **Exit 1** → the stdout JSON's `halt` object IS the blocker payload — the controller wraps it with the unit/commit context per `references/code-gates.md §Halt YAMLs`: `secret_in_code` / `sast_critical_finding` / `dep_not_found` **halt before the panel** (the short-circuit means later gates were never spawned — their `not_run[]` entries are the record). **Exit 2** → environment error: nothing was certified — fix and re-run, never treat as clean. **Exit 0** → Write the stdout JSON ONCE to `<vault>/lens-inputs/U-XXX/l0-results.json` (controller-written lens input; overwrite on a re-round so stale results can never ride forward) and carry that PATH in each lens/verifier prompt; do not paste the JSON per lens, re-run the gates per-script, or re-assemble the JSON by hand.
 4. **Review panel** — ROUND 1: the risk-tiered read-only lenses (spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, + design-reviewer for UI units) dispatched **in parallel and blind**, each prompt carrying the `<vault>/lens-inputs/U-XXX/l0-results.json` path (the controller writes the L0 JSON there ONCE — never pasted per lens) and, for the quality lens, the mechanical reuse-duplication evidence rows (`validate-reuse-duplication.sh --cwd=<root> --range=<base>..<head> --json`), merged by **`scripts/merge-panel-findings.sh`** (the SOLE writer of `bolts/U-XXX/findings.json` — severity→status mapping, evidence-or-drop, dedup, consensus and id stability are mechanical; its stdout `gate` field is the merge verdict, never re-derived) per `references/review-panel.md`; spec ❌ or any Critical → re-dispatch **by pointer** (ledger path + open finding IDs — findings are never inlined into the prompt) within the retry cap — **a re-dispatch re-enters at step 3: the L0 gates re-run against the new head** (a fix commit adding a dep or pasting a credential is scanned like any other commit) — and the fix round is reviewed by ONE **`mega-sdd:resolution-verifier`** dispatch (fix-guided verification of each open finding + delta review of the fix range; full re-panel only via the logged escape hatch) per `references/review-panel.md §Attempt rounds`; cap exhausted with a Critical still open OR spec still ❌ → **halt `review_critical_unresolved`**.
