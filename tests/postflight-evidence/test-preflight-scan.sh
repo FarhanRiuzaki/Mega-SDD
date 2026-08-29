@@ -6,8 +6,10 @@
 # (run-postflight-scan.sh and the gate recompute), and it REFUSES to mint a
 # baseline after bolt commits exist (anti-laundering).
 #   A. schema — snapshot entries per rule type; written_by/grammar/head_sha stamps
-#   B. round-trip parity — the post-flight engine takes the SNAPSHOT branch on
-#      script-captured baselines (honest -> snapshot pass; tamper -> MISMATCH fail)
+#   B. round-trip parity — with a committed bolt the engine judges by the unit's
+#      OWN commit touched-set (7.9.0, spec 2026-08-30 §1.2 / F-06); the snapshot is
+#      a NOTE on the evidence (honest -> "did not touch" pass; tamper -> "touched" fail
+#      carrying the sha-drift note)
 #   C. unparseable line -> exit 3, no artifact, offending line named
 #   D. mixed grammar -> exit 4; --grammar=v1 override -> exit 0
 #   E. no Hard rules -> exit 0, NO artifact created
@@ -15,9 +17,10 @@
 #      commits + existing baseline -> exit 0, byte-identical (immutable)
 #   G. re-capture allowed pre-commit (overwrite; snapshot_at changes)
 #   H. SIGNATURE_RULE on an absent symbol -> exit 5
-#   I. threat pin — a FORGED post-tamper baseline still passes the engine
-#      (residual by design: the write guard + post-hoc refusal are load-bearing;
-#      the engine is unchanged by W4)
+#   I. threat pin (REPINNED 7.9.0) — a FORGED post-tamper baseline no longer
+#      launders a committed DO_NOT_MODIFY violation: the touched-set verdict does
+#      not consult the snapshot. The write guard + post-hoc refusal stay
+#      load-bearing for SIGNATURE rules and the pre-commit working-tree mode.
 #   J. tamper-BEFORE-mint — a dirty DO_NOT_MODIFY target at baseline time ->
 #      exit 8, NO artifact (the baseline would bake the tampered sha in);
 #      same for a dirty SIGNATURE_RULE declaring file; restored tree -> mints
@@ -104,8 +107,8 @@ python3 -c '
 import json, sys
 d = json.load(open(sys.argv[1]))
 ev = [r for r in d["rules"] if r.get("type") == "DO_NOT_MODIFY"][0]["evidence"]
-if ev != "sha256 unchanged (preflight snapshot)":
-    print("B: engine did not take the SNAPSHOT branch: %r" % ev)
+if ev != "bolt commits did not touch src/locked.js":
+    print("B: engine did not take the TOUCHED-SET branch (7.9.0 contract): %r" % ev)
     sys.exit(1)
 ' "$repo/.mega-sdd/vaults/v1/bolts/U-002/postflight.json" </dev/null || err=1
 # tampering sibling: baseline captured, then the bolt commit modifies the locked file
@@ -120,8 +123,8 @@ python3 -c '
 import json, sys
 d = json.load(open(sys.argv[1]))
 ev = [r for r in d["rules"] if r.get("type") == "DO_NOT_MODIFY"][0]["evidence"]
-if not ev.startswith("sha256 MISMATCH — pre:"):
-    print("B: MISMATCH evidence wrong: %r" % ev)
+if not ev.startswith("bolt commit touched src/locked.js") or "note: sha256 differs" not in ev:
+    print("B: touched evidence wrong (must name the touch AND carry the sha-drift note): %r" % ev)
     sys.exit(1)
 ' "$repo/.mega-sdd/vaults/v1/bolts/U-003/postflight.json" </dev/null || err=1
 
@@ -172,10 +175,12 @@ mkunit U-031 'function ghostFn MUST preserve signature: (x) => y'
 out=$(bash "$PABS" --cwd="$repo" --unit=U-031 </dev/null 2>&1); rc=$?
 [ $rc -eq 5 ] || { echo "H: expected exit 5 unanchored, got $rc: $out"; err=1; }
 
-# ── I. threat pin: a FORGED post-tamper baseline passes the engine ──
-# This residual is WHY the write guard + post-hoc refusal are load-bearing:
-# the engine (scan_unit) is unchanged by design, and it prefers a present
-# snapshot over commit evidence.
+# ── I. threat pin (repinned 7.9.0): a FORGED post-tamper baseline does NOT launder ──
+# Pre-7.9.0 the engine preferred a present snapshot over commit evidence, so a
+# baseline minted AFTER the tamper (sha == tampered bytes) passed B1 — the
+# residual that made the write guard + post-hoc refusal load-bearing. F-06
+# flipped the DO_NOT_MODIFY verdict to the unit's own commit touched-set: the
+# forged snapshot is now only a note, and the committed touch FAILS.
 mkunit U-040 'DO NOT modify src/locked.js'
 ( cd "$repo" && echo '// tamper40' >> src/locked.js && git add . && git commit -qm "feat(U-040): bolt
 
@@ -188,7 +193,14 @@ json.dump({"unit_id": "U-040", "rules": [{"type": "DO_NOT_MODIFY", "path": "src/
           open(sys.argv[2], "w"))
 ' "$repo/src/locked.js" "$(pf U-040)" </dev/null
 out=$(bash "$QABS" --cwd="$repo" --unit=U-040 </dev/null 2>&1); rc=$?
-[ $rc -eq 0 ] || { echo "I: threat pin changed — a forged post-tamper baseline no longer passes the engine (rc=$rc). If intentional, update the residual-risk docs (plugin CLAUDE.md inventory + W4 spec risks)"; err=1; }
+[ $rc -eq 1 ] || { echo "I: REGRESSION — a forged post-tamper baseline passes the engine again (rc=$rc); the snapshot has regained precedence over the unit's own commit touched-set (F-06)"; err=1; }
+python3 -c '
+import json, sys
+d = json.load(open(sys.argv[1]))
+ev = [r for r in d["rules"] if r.get("type") == "DO_NOT_MODIFY"][0]["evidence"]
+if not ev.startswith("bolt commit touched src/locked.js"):
+    print("I: forged-baseline verdict must come from the touched-set, got %r" % ev); sys.exit(1)
+' "$repo/.mega-sdd/vaults/v1/bolts/U-040/postflight.json" </dev/null || err=1
 
 # ── J. tamper-BEFORE-mint: dirty protected path -> exit 8, no artifact ──
 # The tamper-then-mint hole: edit the frozen file FIRST (no commit), then run

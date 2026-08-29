@@ -508,14 +508,30 @@ def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, pri
                 for pr in (preflight.get("rules") or []):
                     if pr.get("type") == "DO_NOT_MODIFY" and pr.get("path") == path:
                         snap = pr.get("sha256")
-                if snap is not None:
-                    cur = sha256_of(os.path.join(cwd, path))
-                    ok = (cur == snap) or (snap == "absent" and cur is None)
-                    ev = "sha256 %s (preflight snapshot)" % ("unchanged" if ok else "MISMATCH — pre: %s, post: %s" % (snap, cur))
-                elif unit_commits:
+                # F-06 (spec 2026-08-30 §1.2): the unit's OWN commit touched-set is
+                # the PRIMARY predicate — "did THIS unit modify the locked path?"
+                # The snapshot compare used to take precedence and answered a
+                # different question ("did the path change since baseline, by
+                # anyone?"): on the field run that fired 6 halts, all false
+                # positives (sibling units changing a shared app.ts legitimately),
+                # 0 true positives, and left 15 baselines latently stale. The
+                # snapshot is now a NOTE on the evidence when commits exist, and
+                # the verdict only in the pre-commit working-tree mode. Renames
+                # stay visible (walk_unit_commits records `git mv locked new` as
+                # `D old`); a commit laundered without unit identity is B2's
+                # out-of-band anchor, not this rule's.
+                cur = sha256_of(os.path.join(cwd, path)) if snap is not None else None
+                if unit_commits:
                     ok = path not in touched
                     ev = ("bolt commits did not touch %s" % path) if ok else \
                          ("bolt commit touched %s" % path)
+                    if snap is not None and not ((cur == snap) or (snap == "absent" and cur is None)):
+                        ev += (" (note: sha256 differs from the preflight baseline — pre: %s, now: %s"
+                               " — changed outside this unit's commits; not a violation of THIS unit)"
+                               % (snap, cur))
+                elif snap is not None:
+                    ok = (cur == snap) or (snap == "absent" and cur is None)
+                    ev = "sha256 %s (preflight snapshot, working-tree mode)" % ("unchanged" if ok else "MISMATCH — pre: %s, post: %s" % (snap, cur))
                 else:
                     ok = False
                     ev = "no bolt commit found for %s and no preflight snapshot — cannot verify" % unit_id

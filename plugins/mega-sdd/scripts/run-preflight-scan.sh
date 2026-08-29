@@ -8,10 +8,15 @@
 # pre-bolt twin of run-postflight-scan.sh (the writer pair).
 #
 # W4 (spec 2026-07-19-w-batch-script-derive.md): the pre-flight snapshot used to
-# be model-written on trust — and scan_unit gives a PRESENT sha/signature snapshot
-# PRECEDENCE over git commit evidence (postflight_rules.py DO_NOT_MODIFY /
-# SIGNATURE_RULE branches), so a wrong sha256 at pre-flight made a DO_NOT_MODIFY
-# violation undetectable even at the recompute gate. This script is now the ONLY
+# be model-written on trust — and scan_unit gave a PRESENT sha/signature snapshot
+# PRECEDENCE over git commit evidence, so a wrong sha256 at pre-flight made a
+# DO_NOT_MODIFY violation undetectable even at the recompute gate. Since 7.9.0
+# (spec 2026-08-30 §1.2, F-06) the DO_NOT_MODIFY verdict keys on the unit's OWN
+# commit touched-set first (the snapshot compare fired 6 false positives / 0 true
+# positives on the field run — sibling units legitimately change shared files)
+# and the snapshot is a note on that evidence; SIGNATURE_RULE still keys on the
+# snapshot, and the pre-commit working-tree mode still uses it for DO_NOT_MODIFY,
+# so the baseline remains a guarded artifact. This script is now the ONLY
 # sanctioned write path (the artifact is Write/Edit- and Bash-verb-guarded by the
 # PreToolUse hook, like postflight.json). It imports the SAME
 # scripts/_lib/postflight_rules.py primitives the post-flight engine uses
