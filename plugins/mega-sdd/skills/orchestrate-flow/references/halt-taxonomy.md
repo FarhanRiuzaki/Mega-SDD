@@ -6,7 +6,7 @@ Every blocker a sub-skill can emit falls into one of four classes for the orches
 
 Auto-resolved in `--deep` when the safety condition holds; otherwise escalate. Full action + safety table in convergence-loops.md `§Cycle-eligible halt types`:
 
-- `bind_conflict` · `module_blocked_by` · `cross_squad_interface_draft` · `oq_recommend_underspecified`
+- `bind_conflict` · `module_blocked_by` · `sprint_blocked_by` · `acceptance_path_unowned` · `cross_squad_interface_draft` · `oq_recommend_underspecified`
 - Bolt halts bridged via propose-and-confirm (also in convergence-loops.md): `test_fail`, `hard_rule_violated`, `pbt_property_violated`
 
 ## Always-stop (human required)

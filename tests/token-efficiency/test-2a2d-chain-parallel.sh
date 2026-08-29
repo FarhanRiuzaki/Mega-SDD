@@ -74,9 +74,14 @@ grep -qF 'remediation of started work, not new work' "$BF" && ok "a sibling's fi
 grep -qF 'dispatch no further unit and no further wave' "$BF" && ok "no skip-ahead preserved: never START new work past a failure" || fail "no-further-wave rule missing"
 grep -qF 'On any failure: halt the entire `--all` run (no skip-ahead)' "$BF" && ok "the original halt-entire-run sentence intact" || fail "original halt sentence lost"
 
-note "== 2a: the flag default stays off for standalone runs =="
-grep -qF 'the flag DEFAULT stays off for standalone invocations' "$EB" && ok "execute-bolts SKILL: chain passes the flag; standalone default unchanged" || fail "standalone-default line missing"
-grep -qF 'Execute in order (default sequential)' "$BF" && ok "batch-and-fanout: sequential default sentence intact" || fail "sequential default sentence lost"
+note "== 2a: --all defaults to waves (v7.7); standalone non---all default stays off =="
+grep -qF 'the flag DEFAULT stays off for standalone non-`--all` invocations' "$EB" && ok "execute-bolts SKILL: chain passes the flag; standalone non---all default unchanged" || fail "standalone-default line missing"
+# v7.7 (spec 2026-08-29 Fase 2): --all now defaults to SPRINT/wave execution and
+# --sequential is the explicit opt-out. The old pin asserted the inverse sentence
+# ('Execute in order (default sequential)'); it is updated, not dropped — the
+# contract still has to be stated somewhere deterministic.
+grep -qF 'wave execution is the DEFAULT' "$BF" && ok "batch-and-fanout: --all wave-default sentence present" || fail "wave-default sentence lost"
+grep -qF -- '--sequential' "$BF" && ok "batch-and-fanout: --sequential opt-out documented" || fail "--sequential opt-out missing"
 grep -qF 'Suggested next: `execute-bolts --all` to execute in order' "${ROOT}/plugins/mega-sdd/skills/generate-units/SKILL.md" \
   && ok "generate-units standalone suggestion deliberately stays plain --all" || fail "standalone suggestion drifted"
 

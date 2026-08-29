@@ -224,6 +224,34 @@ bash "$SCRIPT" --cwd="$F" >/dev/null 2>&1; rcF=$?
 [ $rcF -eq 1 ] || { echo "F: no-vault expected exit 1, got $rcF"; err=1; }
 [ $rcF -eq 1 ] && echo "F PASS (no vault → exit 1)"
 
+# ---- Scenario G: transitive `blocks` closure (spec 2026-08-29 Fase 2) ----
+# The discriminating case: U-001's DIRECT dependents are 2 (U-002, U-007) but it
+# transitively blocks 3 (U-008 sits behind U-002). A test that only asserted
+# blocks(U-001)>0 would pass against `out_degree` and prove nothing — this one
+# fails unless the closure is actually transitive.
+errG=0
+printf '%s' "$jsonA" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)
+b=d.get("blocks")
+if not isinstance(b,dict): print("blocks missing or not an object"); sys.exit(1)
+exp={"U-001":3,"U-002":1,"U-007":0,"U-008":0,"U-010":0,"U-020":0,"U-030":0}
+bad={k:(b.get(k),v) for k,v in exp.items() if b.get(k)!=v}
+if bad: print("blocks mismatch (got,expected):",bad); sys.exit(1)
+# transitive, not direct: forks says U-001 has 2 DIRECT dependents, blocks says 3
+direct={f["unit"]:f["dependents"] for f in d["forks"]}
+if direct.get("U-001") != 2: print("fixture drift: direct dependents of U-001 !=2"); sys.exit(1)
+if b["U-001"] == direct["U-001"]: print("blocks equals direct dependents — closure is not transitive"); sys.exit(1)
+sys.exit(0)
+' || errG=1
+# every unit is keyed, leaves included (a missing leaf key would break consumers)
+printf '%s' "$jsonA" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)
+sys.exit(0 if len(d["blocks"])==d["total_units"] else 1)
+' || { echo "G: blocks must key every unit ($(printf '%s' "$jsonA" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["blocks"]))'))"; errG=1; }
+[ $errG -eq 0 ] && echo "G PASS (transitive blocks closure; distinct from out_degree; keys every unit)" || err=1
+
 echo "──────────────────────────────"
 [ $err -eq 0 ] && echo "ALL PASS" || echo "FAILED"
 exit $err

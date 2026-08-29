@@ -42,6 +42,14 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 - `module_blocked_by` — execute-bolts: bolt invocation blocked because prerequisite module hasn't completed yet (module-graph dependency). ALWAYS STOP. Details `{unit_id, blocking_module_id, blocked_status}`. Resolution: user runs prerequisite module first OR adjusts module dependency graph in `vault/_meta/modules.yaml`. Source skill: `execute-bolts`.
 
+### acceptance_path_unowned
+
+- `acceptance_path_unowned` — generate-units/execute-bolts gate: a unit whose `acceptance_test` command runs a path that NO unit declares in `target_files` and that does not exist on disk. ALWAYS STOP. The unit is unfinishable by construction: committing the file trips the B3 whitelist observer (`whitelist_violation`), skipping it fails the acceptance command — the implementer can only discover this after a full dispatch has burned (field case: HOST-AS400 U-001, `scope_creep_detected` after ~70k tokens). Details `{unit_id, unowned_paths[]}`. Resolution: add the path to that unit `target_files` (`operation: create`), or point the command at a path a unit already owns. Source skill: `generate-units` (detected by `scripts/validate-unit-spec.sh`; gated at the execute-bolts PreToolUse re-derive).
+
+### sprint_blocked_by
+
+- `sprint_blocked_by` — execute-bolts: `--sprint=<n>` invoked while an earlier sprint still has incomplete units (topological-wave dependency; the sprint sequence is derived by `analyze-parallelism.sh`, never hand-numbered). ALWAYS STOP. Details `{requested_sprint, incomplete_prerequisites[]}`. Resolution: run the earlier sprint first (`execute-bolts --sprint=<n-1>`) or `--all`, which walks every sprint in order. Source skill: `execute-bolts`.
+
 ### hard_rule_unanchored
 
 - `hard_rule_unanchored` — execute-bolts: a unit's `## Hard Rules` block references an ANCHOR (file path / function signature) that cannot be resolved against the current codebase-map. ALWAYS STOP. Details `{unit_id, rule, missing_anchor}`. Resolution: user fixes anchor reference (rename to current symbol) OR removes obsolete rule. Source skill: `execute-bolts`.
