@@ -718,21 +718,36 @@ assert "map_patterns" not in {o["section"] for o in d["sections_omitted"]}, d["s
 PY
 
 # ══════════════════════════════════════════════════════════════════════════════
-note "== G. the T1 UNCONDITIONAL reuse-index rail =="
+note "== G. the T1 reuse-index rail ships iff the index EXISTS (F-30, spec 2026-08-30 §2.1) =="
 # ══════════════════════════════════════════════════════════════════════════════
+# Pre-7.10 the line was UNCONDITIONAL: on the field run 36/36 dispatches told the
+# implementer to Read/Grep a file the builder had itself recorded absent. A
+# pointer to a file that does not exist is a false instruction, not a rail.
 RAIL='Reuse index: .mega-sdd/codebase/reuse-index.yaml'
 [ ! -f "$P_BARE/.mega-sdd/codebase/reuse-index.yaml" ] \
   && ok "G1: precondition — the bare fixture has no reuse-index.yaml and no reuse_candidates" \
   || fail "G1: fixture is not bare"
-[ "$(cntF "$RAIL" "$PR_BARE")" = "1" ] \
-  && ok "G2: the reuse-index path line SHIPS anyway (Iron Rule 4 rail is unconditional)" \
-  || fail "G2: rail missing with zero candidates + no index on disk"
+[ "$(cntF "$RAIL" "$PR_BARE")" = "0" ] \
+  && ok "G2: with NO index on disk the pointer line is NOT emitted (no instruction to read a missing file)" \
+  || fail "G2: the reuse-index pointer shipped for a file that does not exist"
+$PY - "$WORK/bare.json" <<'PY' && ok "G2b: ...and the omission is RECORDED (t1.reuse_index_line, names scan-codebase)" || fail "G2b: pointer omission not recorded"
+import json, sys
+d = json.load(open(sys.argv[1]))
+om = {o["section"]: o["reason"] for o in d["sections_omitted"]}
+assert "t1.reuse_index_line" in om, sorted(om)
+assert "scan-codebase" in om["t1.reuse_index_line"], om["t1.reuse_index_line"]
+PY
 [ "$(cntF '## Reuse candidates' "$PR_BARE")" = "0" ] \
   && ok "G3: ...while the 'Reuse candidates' HINT block stays absent (nothing invented)" \
   || fail "G3: a reuse-candidates hint block was fabricated"
-[ "$(cntF "$RAIL" "$PR_UI")" = "1" ] \
-  && ok "G4: the same rail ships on the enriched ui_ux prompt (unconditional means always)" \
-  || fail "G4: rail missing on the enriched prompt"
+mkdir -p "$P_BARE/.mega-sdd/codebase"
+printf 'entries: []\n' > "$P_BARE/.mega-sdd/codebase/reuse-index.yaml"
+build "$WORK/bare-idx.json" "$P_BARE" U-010
+PR_IDX="$(promptof "$P_BARE" U-010)"
+[ "$(cntF "$RAIL" "$PR_IDX")" = "1" ] \
+  && ok "G4: with the index ON DISK the three-line Iron Rule 4 pointer ships verbatim (even with zero candidates)" \
+  || fail "G4: rail missing although reuse-index.yaml exists"
+rm -f "$P_BARE/.mega-sdd/codebase/reuse-index.yaml"
 
 # ══════════════════════════════════════════════════════════════════════════════
 note "== H. idempotence + determinism (the artifact must stay diffable) =="

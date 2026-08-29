@@ -69,7 +69,12 @@ else
   fail "M-05a: pass-path output wrong (rc=$RC lines=$N_LINES): $(echo "$OUT" | head -2)"
 fi
 [ -f "$F1/.mega-sdd/vaults/v1/bolts/U-001/postflight.json" ] && ok "M-05a: artifact still written on pass" || fail "M-05a: artifact missing"
-# fail path: unattested directive → directive_unverified (non-pass)
+# fail path: a MACHINE rule that fails (F-01a 7.10.0: an unattested directive is
+# advisory and no longer a fail path — provoke B1 with a FILE_PRESENCE rule instead)
+cat >> "$F1/.mega-sdd/vaults/v1/units/U-001.md" <<'MD'
+- file src/never-written.txt MUST exist after bolt
+MD
+( cd "$F1" && git add -A && git commit -qm "spec: U-001 presence rule" )
 OUT=$(cd "$F1" && bash "$PF" --cwd="$F1" --unit=U-001 2>/dev/null); RC=$?
 if [ "$RC" -ne 0 ] && echo "$OUT" | grep -q '"rules"'; then
   ok "M-05a: FAIL still prints the full artifact (rules[] visible) + non-zero exit"

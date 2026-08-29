@@ -79,6 +79,12 @@ s = re.sub(r"(\"t1_bytes\":\s*)\d+", r"\1@N@", s)
 s = re.sub(r"(\"total_bytes\":\s*)\d+", r"\1@N@", s)
 s = re.sub(r"(consumed_t1:\s*)\d+", r"\1@N@", s)
 s = re.sub(r"(consumed_total:\s*)\d+", r"\1@N@", s)
+# 7.10.0 catch (same class, third flavor): the tracker line is `total: N bytes`
+# — the `consumed_total:` pattern above matched NOTHING after the tracker
+# rename, so the version-LENGTH sensitivity came back at 7.9.0 -> 7.10.0
+# (one more digit, +1 byte, corpus red). Tokenize the line as it is actually
+# rendered; the determinism arm still pins intra-version byte-identity.
+s = re.sub(r"(?m)^(total:\s*)\d+", r"\1@N@", s)
 try:
     ver = json.load(open(os.path.join(plug, ".claude-plugin", "plugin.json")))["version"]
     s = s.replace("mega-sdd v%s" % ver, "mega-sdd v@VER@")

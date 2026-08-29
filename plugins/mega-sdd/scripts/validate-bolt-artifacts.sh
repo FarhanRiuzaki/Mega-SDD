@@ -691,7 +691,10 @@ def postflight_ok(uid):
         v = str((rule or {}).get("verdict", "")).lower()
         if v in ("pass", "passed", "ok"):
             continue
-        if v == "attested" and str((rule or {}).get("type", "")).lower() in ("directive", "directive_prose"):
+        # F-01(a) 7.10.0: a directive-typed rule is ADVISORY — attested,
+        # carried or unverified, it never forms the B1 verdict (spec
+        # 2026-08-30 §2.2; 256/278 field rules, 0 could fail).
+        if str((rule or {}).get("type", "")).lower() in ("directive", "directive_prose"):
             continue
         return (True, False)
     return (True, True)

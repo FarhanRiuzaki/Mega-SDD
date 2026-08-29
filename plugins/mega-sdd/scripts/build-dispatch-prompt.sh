@@ -385,19 +385,28 @@ import vault_layouts               # noqa: E402  every accepted vault layout
 
 
 _OMIT_SEEN = set()
+# F-30 (spec 2026-08-30 §2.1): omissions about inputs that can NEVER exist in
+# any project (a phantom join key, a lane deleted in v7.3.0) stay in the stdout
+# audit trail — the cascade accounting is unchanged — but are NOT rendered into
+# the prompt's PROVENANCE appendix: the implementer read the same two boilerplate
+# lines in 36/36 field dispatches and they tell it nothing about THIS project.
+_OMIT_NOT_IN_PROMPT = set()
 
 
-def omit(section, reason):
+def omit(section, reason, prompt=True):
     """Record an omission ONCE. Deduped on (section, reason) because several
     renderers are called repeatedly by design: `_render_starterkit` runs once per
     rung of its 7-step ladder to MEASURE each candidate, so an absent
     `libs[].version` was being recorded seven times. The audit trail is a set of
-    facts about the inputs, not a log of how many times the builder looked."""
+    facts about the inputs, not a log of how many times the builder looked.
+    prompt=False keeps the record on stdout only (structural omissions, F-30)."""
     key = (section, reason)
     if key in _OMIT_SEEN:
         return
     _OMIT_SEEN.add(key)
     SECTIONS_OMITTED.append({"section": section, "reason": reason})
+    if not prompt:
+        _OMIT_NOT_IN_PROMPT.add(section)
 
 
 def die(msg, code=2):
@@ -1353,11 +1362,23 @@ else:
     omit("t1.acceptance_test_note",
          "_authored_by=%s has strong provenance — NOTE omitted per bolt-dispatch-prompt.md:96-97" % _ab_val)
 
-# ── Reuse index T1 line (UNCONDITIONAL — even when the index does not exist) ──
-t1.append("")
-t1.append("Reuse index: .mega-sdd/codebase/reuse-index.yaml — your PRIMARY reuse lookup")
-t1.append("surface (Iron Rule 4): scan the FULL index with Read/Grep before writing any")
-t1.append("new capability; reuse_candidates below is only a hint.")
+# ── Reuse index T1 line — ONLY when the index exists (F-30, spec 2026-08-30 §2.1) ──
+# It used to ship unconditionally: on the field run 36/36 dispatches told the
+# implementer to "scan the FULL index with Read/Grep" for a file the builder
+# itself recorded absent, and 21+ bolt-reports paid a `not_applicable` line for
+# it. A pointer to a file that does not exist is not a rail; it is a false
+# instruction. When the index is present the three lines are verbatim as before.
+_REUSE_T1_PATH = os.path.join(CWD, ".mega-sdd", "codebase", "reuse-index.yaml")
+if os.path.isfile(_REUSE_T1_PATH):
+    t1.append("")
+    t1.append("Reuse index: .mega-sdd/codebase/reuse-index.yaml — your PRIMARY reuse lookup")
+    t1.append("surface (Iron Rule 4): scan the FULL index with Read/Grep before writing any")
+    t1.append("new capability; reuse_candidates below is only a hint.")
+else:
+    omit("t1.reuse_index_line",
+         "reuse-index.yaml absent at ./.mega-sdd/codebase/reuse-index.yaml — the Iron Rule 4 "
+         "pointer line is NOT emitted for a file that does not exist (run scan-codebase to "
+         "produce the index)")
 if reuse_candidates:
     t1.append("")
     t1.append("## Reuse candidates (fast-path hint — NOT the boundary)")
@@ -1609,6 +1630,13 @@ for r in HARD_RULE_LINES:
         if "." in obj or "/" in obj:                 # path-shaped => mechanical
             _locked_entries.append((obj, "%s `## Hard rules`" % os.path.basename(UNIT_PATH)))
 if _locked_entries:
+    # F-30: the source is cited ONCE per group, not repeated on every entry —
+    # on the field run the same 60-byte label rode 25 consecutive lines
+    # (~1.5 KB of a 3.8 KB block). Every entry still sits under its source;
+    # entries are emitted in first-seen source order, insertion order within.
+    # (F-30 considered and REJECTED a grouped "(source:) once per group" form:
+    # ~1.2 KB/dispatch against the per-entry label rail — every entry carries
+    # its own source so no line can be read under another source's label.)
     anti.append("DO NOT MODIFY:")
     for _obj, _src in _locked_entries:
         anti.append("  - %s  (source: %s)" % (_obj, _src))
@@ -2109,7 +2137,8 @@ else:
 omit("kb_anti_patterns",
      "the join key 'domain tags' (context-enrichment.md:76) is a phantom field — no unit "
      "schema, validator or writer defines it; substituting module:/vault_source would be a "
-     "fabricated inclusion. Section omitted until the spec designates a join key.")
+     "fabricated inclusion. Section omitted until the spec designates a join key.",
+     prompt=False)
 
 
 # ── Priority 2 — historical memory: REMOVED (v7.3.0 observability cut) ──
@@ -2118,7 +2147,7 @@ omit("kb_anti_patterns",
 # recorded as an omission so the cascade accounting stays honest.
 omit("historical_memory",
      "the memory lane was removed in v7.3.0 (pipeline-only mandate) — no "
-     "historical-memory section exists to emit")
+     "historical-memory section exists to emit", prompt=False)
 
 
 # ── Priority 3 — reuse slice ─────────────────────────────────────────────────
@@ -2215,7 +2244,7 @@ if reuse_entries:
         _rl.append("hint line only — never fully dropped (drop floor)")
     add_section("reuse_slice", 3, _lv, _rl)
 elif _rt is None:
-    omit("reuse_slice", "reuse-index.yaml absent at %s (the UNCONDITIONAL T1 path line still ships)" % REUSE_PATH)
+    omit("reuse_slice", "reuse-index.yaml absent at %s (the T1 pointer line is omitted too)" % REUSE_PATH)
 else:
     omit("reuse_slice", "no reuse-index entry overlaps target_files or reuse_candidates")
 
@@ -3187,16 +3216,10 @@ def render_tracker(file_total):
                "consumed_t2: %d bytes (cap %d, hard %d)" % (consumed_t2, CAP_T2, CAP_HARD),
                "total: %d bytes  # T1 + T2 ONLY — the budgeted, truncatable content"
                % (consumed_t1 + consumed_t2),
-               "file_total: %-8d bytes  # THIS WHOLE FILE. The difference from `total` is"
+               "file_total: %-8d bytes  # THIS WHOLE FILE; the gap from `total` is the four"
                % file_total,
-               "                            # exactly four blocks plus the blank lines joining",
-               "                            # them: the TIER 2 banner, this tracker block, the",
-               "                            # TIER 3 pointer list and the PROVENANCE appendix.",
-               "                            # The title banner and the TIER 1 banner are NOT in",
-               "                            # that gap — they are already inside consumed_t1.",
-               "                            # None of the four is budgeted and none is ever",
-               "                            # truncated. Reason about truncation from the list",
-               "                            # below, not from either number.",
+               "                            # un-budgeted, never-truncated blocks (TIER 2 banner,",
+               "                            # this tracker, TIER 3 list, PROVENANCE appendix).",
                "truncations_applied:"]
     if TRUNCATIONS:
         for w in TRUNCATIONS:
@@ -3205,21 +3228,33 @@ def render_tracker(file_total):
     else:
         tracker.append("  - (none)")
     tracker += ["instruction_to_subagent:",
-                "  If your self-assessment references information that came from a truncated",
-                "  section (listed above), mark its confidence as MEDIUM (not HIGH) and note",
-                "  the truncation explicitly in your bolt-report.md self-assessment section.",
-                "  Truncation is NOT a failure — it's transparency.", "```"]
+                "  If your self-assessment relies on a truncated section listed above, mark its",
+                "  confidence MEDIUM (not HIGH) and note the truncation in bolt-report.md.",
+                "  Truncation is transparency, not failure.", "```"]
     return "\n".join(tracker)
 
-t3_text = "\n".join([
+# F-30 / F-29: the KB pointer names the KB root that EXISTS (the PRD-kontrak
+# grammar has no `10-domains/`; the fixed path was dead in 36/36 field
+# dispatches). No root → no line, and the absence is recorded.
+_KB_ROOT_REL = None
+for _kb in (".mega-sdd/knowledge-base", "docs/knowledge-base", "old-reference/knowledge-base"):
+    if os.path.isdir(os.path.join(CWD, _kb.replace("/", os.sep))):
+        _KB_ROOT_REL = _kb
+        break
+_t3_lines = [
     "═══════════════════════════════════════════",
     "TIER 3 — Reference-on-demand (NOT embedded; use Read tool)",
     "═══════════════════════════════════════════", "",
     "- Full upstream bolt-reports: `%s/bolts/U-XXX/bolt-report.md`" % VAULT,
     "- Full constitution: `%s/constitution.md`" % VAULT,
-    "- Full KB domain files: `.mega-sdd/knowledge-base/10-domains/`",
-    "- Full framework pack: `%s/references/framework-conventions/<pack>.md`" % PLUGIN_ROOT,
-])
+]
+if _KB_ROOT_REL:
+    _t3_lines.append("- Full KB (PRD-kontrak per module): `%s/`" % _KB_ROOT_REL)
+else:
+    omit("t3.kb_pointer", "no knowledge-base root under .mega-sdd/, docs/ or old-reference/ — "
+                          "the TIER 3 KB pointer is omitted rather than naming a dead path")
+_t3_lines.append("- Full framework pack: `%s/references/framework-conventions/<pack>.md`" % PLUGIN_ROOT)
+t3_text = "\n".join(_t3_lines)
 
 t2_header = "\n".join(["═══════════════════════════════════════════",
                        "TIER 2 — Conditional context (target ≤10KB total)",
@@ -3349,10 +3384,16 @@ prov_lines = ["═════════════════════�
               "═══════════════════════════════════════════", "",
               "Every absent or unresolvable input is recorded here rather than invented "
               "(invariant #5).", ""]
-if SECTIONS_OMITTED:
-    for _o in SECTIONS_OMITTED:
-        prov_lines.append("- %s: %s" % (_o["section"], _o["reason"]))
-else:
+_prov_rows = [_o for _o in SECTIONS_OMITTED if _o["section"] not in _OMIT_NOT_IN_PROMPT]
+_prov_structural = sorted({_o["section"] for _o in SECTIONS_OMITTED if _o["section"] in _OMIT_NOT_IN_PROMPT})
+for _o in _prov_rows:
+    prov_lines.append("- %s: %s" % (_o["section"], _o["reason"]))
+if _prov_structural:
+    # Named, not hidden: the sections that can never exist in ANY project are
+    # listed on one line; their reasons live on stdout `sections_omitted`.
+    prov_lines.append("- (structural, every project — %s; reasons on stdout sections_omitted)"
+                      % ", ".join(_prov_structural))
+if not _prov_rows and not _prov_structural:
     prov_lines.append("- (none — every specified input resolved)")
 prov_text = "\n".join(prov_lines)
 

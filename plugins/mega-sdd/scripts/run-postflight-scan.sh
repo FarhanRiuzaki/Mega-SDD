@@ -132,6 +132,7 @@ results, ok_all = postflight_rules.scan_unit(
     cwd, git, unit_id, text, unit_commits, preflight, attest, prior_artifact=None)
 
 head_sha = git("rev-parse", "HEAD").stdout.strip()
+_dir = [r for r in results if r.get("type") == "directive"]
 artifact = {
     "unit_id": unit_id,
     "scanned_at": ts,
@@ -139,6 +140,12 @@ artifact = {
     "head_sha": head_sha,
     "written_by": "run-postflight-scan.sh",
     "rules": results,
+    # F-01(a): directives are ADVISORY — summarised here, never in `status`.
+    "directives": {
+        "total": len(_dir),
+        "attested": len([r for r in _dir if r.get("verdict") == "attested"]),
+        "unverified": len([r for r in _dir if r.get("verdict") == "directive_unverified"]),
+    },
 }
 os.makedirs(bolt_dir, exist_ok=True)
 target = os.path.join(bolt_dir, "postflight.json")
@@ -152,7 +159,9 @@ if not quiet:
     # per-unit run was pure chat cost. One line on pass; full artifact on fail.
     if ok_all:
         n_att = len([r for r in results if r.get("verdict") == "attested"])
-        print("postflight %s: pass (%d rules, %d attested) -> %s" % (unit_id, len(results), n_att, target))
+        n_unv = len([r for r in results if r.get("verdict") == "directive_unverified"])
+        print("postflight %s: pass (%d rules, %d attested, %d directive advisory) -> %s"
+              % (unit_id, len(results), n_att, n_unv, target))
     else:
         print(json.dumps(artifact, indent=1))
 sys.exit(0 if ok_all else 1)

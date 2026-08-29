@@ -28,6 +28,10 @@
       "reason": "vault.json absent or unreadable at @PROJ@/.mega-sdd/vaults/v1/vault.json \u2014 value OMITTED, never placeholder-filled"
     },
     {
+      "section": "t1.reuse_index_line",
+      "reason": "reuse-index.yaml absent at ./.mega-sdd/codebase/reuse-index.yaml \u2014 the Iron Rule 4 pointer line is NOT emitted for a file that does not exist (run scan-codebase to produce the index)"
+    },
+    {
       "section": "t1.anti_context.do_not_modify.data_mutation_policy",
       "reason": "no <kb>/99-rebuild-architecture/data-mutation-policy.md under @PROJ@ (searched .mega-sdd/, docs/, old-reference/ knowledge-base roots) \u2014 this source contributes nothing; the unit `## Hard rules` half is NOT relabelled to stand in for it"
     },
@@ -53,7 +57,7 @@
     },
     {
       "section": "reuse_slice",
-      "reason": "reuse-index.yaml absent at @PROJ@/.mega-sdd/codebase/reuse-index.yaml (the UNCONDITIONAL T1 path line still ships)"
+      "reason": "reuse-index.yaml absent at @PROJ@/.mega-sdd/codebase/reuse-index.yaml (the T1 pointer line is omitted too)"
     },
     {
       "section": "symbol_slice",
@@ -74,6 +78,10 @@
     {
       "section": "confidence_labels",
       "reason": "unit has no binding_refs (greenfield / standalone generate-units)"
+    },
+    {
+      "section": "t3.kb_pointer",
+      "reason": "no knowledge-base root under .mega-sdd/, docs/ or old-reference/ \u2014 the TIER 3 KB pointer is omitted rather than naming a dead path"
     },
     {
       "section": "design_slice_path",

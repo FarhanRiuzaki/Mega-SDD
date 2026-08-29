@@ -386,7 +386,17 @@ def _attested_directives(prior_artifact):
             continue
         if (str(r.get("verdict", "")).lower() == "attested"
                 and str(r.get("type", "")).lower() in ("directive", "directive_prose")):
-            out[r.get("rule", "")] = r.get("evidence", "")
+            ev = str(r.get("evidence", ""))
+            # Idempotent carry: strip every prior "attested (carried …): " /
+            # "attested: " prefix so a recompute never stacks them (the field
+            # artifacts carried a depth-2 "attested (carried from prior scan):
+            # attested (carried from prior scan): attested: …").
+            while True:
+                m = re.match(r"^attested(?: \(carried from prior scan\))?:\s*", ev)
+                if not m:
+                    break
+                ev = ev[m.end():]
+            out[r.get("rule", "")] = ev
     return out
 
 
@@ -726,5 +736,13 @@ def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, pri
         results.append({"type": "none", "rule": "(no Hard rules found)", "verdict": "pass",
                         "evidence": "## Hard rules section empty or absent — nothing to post-validate"})
 
-    ok_all = all(r["verdict"] in ("pass", "attested") for r in results)
+    # F-01(a) (spec 2026-08-30 §2.2): the verdict is formed by MACHINE rules only.
+    # A `directive` (generic MUST/DO NOT prose) is recorded — attested, carried,
+    # or directive_unverified — but never gates: on the field run 256 of 278
+    # postflight rules were directives, every one "attested" by a single
+    # free-text paragraph per unit, 0 could ever fail, and the counterfactual
+    # (directives advisory) lost zero detections. A tier that cannot fail is
+    # a permission valve, not a detector; the panel reviews prose rules.
+    ok_all = all(r["verdict"] in ("pass", "attested")
+                 for r in results if r.get("type") != "directive")
     return results, ok_all

@@ -90,10 +90,14 @@ Yang TIDAK dibangun: worktree per bolt sebagai default (`--worktree` sudah ada s
 - Counterfactual terukur: 0 deteksi hilang (256 directive, 0 fail sepanjang run).
 - Generate-units: advisory `hard_rules_directive_ratio` bila directive > 80% — mendorong rule ke produksi v1/v2. Bukan gate.
 
-### 2.3 F-31 — artefak tanpa konsumen
-- `units/_index.md`: derive-on-demand (analyze/handoff), tidak ditulis generate-units.
-- `_meta/ai-consumer-guide.md`, `_meta/modules.yaml.auto`, `scaffold/`: hapus writer-nya (relocate-then-delete per kebijakan).
-- 6 validator SKIP-struktural di aggregator: tetap (sub-detik, paralel) — audit menandai "GUGUR" untuk sebagian; tidak dipangkas tanpa angka spawn.
+### 2.3 F-31 — artefak tanpa konsumen → **DITOLAK untuk tranche ini (diukur 2026-08-30)**
+Sensus di plugin: `_index.md` dirujuk 13 file (analyze, orchestrate-flow, generate-intent/units), `ai-consumer-guide.md` punya pembaca (generate-intent self-check) + 3 pin test (sudah di-diet di spec boilerplate-diet), `modules.yaml.auto` dibaca `query-graph.sh` + pin 5d. "Tanpa konsumen" benar di RUN lapangan (tidak ada skrip yang membacanya di run itu), tidak benar di plugin. Implementer tidak pernah membaca ketiganya → biaya token per bolt **nol**. Menghapus = sweep prosa 3 skill + 5 pin untuk hemat byte vault yang tidak dibaca siapa pun di jalur panas. Tidak dibangun. 6 validator SKIP-struktural di aggregator: tetap (sub-detik, paralel).
+
+### 2.4 Hasil Tranche 2 (7.10.0)
+- **F-01(a) SHIPPED**: `ok_all` dari rule mesin saja; `_looks_pass` melewati rule directive; writer mencatat `directives:{total,attested,unverified}` dan exit 0 pada directive tak-teratestasi; carry-forward idempoten; `hard_rules_directive_advisory` di `.unit-spec-state.json` (>80%, ≥5 rule). Pin lama (D0, M-05a, r1-4, r2-2) di-repin ke kontrak baru.
+- **F-30 SHIPPED sebagian**: reuse-index T1 line kondisional (36/36 lapangan menunjuk file absen), pointer KB T3 = root yang ada (path `10-domains/` mati 36/36), 2 omission struktural keluar dari appendix prompt (tetap di stdout), tracker dipadatkan. Golden corpus di-regen.
+- **DITOLAK dengan angka**: grouping `(source:)` per grup di Anti-context — ~1,2 KB/dispatch vs rail label-per-entri (7 pin + 2 parser). Pemangkasan `design_slice` (−6 KB unit UI) BUKAN item diet: salinan lens-input sengaja teks terpotong yang sama (satu kontrak implementer↔reviewer) → milik F-15.
+- **Koreksi klaim audit**: cascade T2 dipicu `cap_t2` atas konsumsi T2 saja — T1 tidak pernah dipotong dan tidak mendorong cascade; memadatkan Anti-context (T1) = diet token murni, bukan lever akurasi.
 
 ---
 

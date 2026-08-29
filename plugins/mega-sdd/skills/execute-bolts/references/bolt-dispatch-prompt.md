@@ -304,15 +304,9 @@ T2 BUDGET TRACKER (informational)
 consumed_t1: <X> bytes (cap 12288)
 consumed_t2: <Y> bytes (cap 10240, hard 12288)
 total: <X+Y> bytes  # T1 + T2 ONLY — the budgeted, truncatable content
-file_total: <N> bytes  # THIS WHOLE FILE. The difference from `total` is
-                            # exactly four blocks plus the blank lines joining
-                            # them: the TIER 2 banner, this tracker block, the
-                            # TIER 3 pointer list and the PROVENANCE appendix.
-                            # The title banner and the TIER 1 banner are NOT in
-                            # that gap — they are already inside consumed_t1.
-                            # None of the four is budgeted and none is ever
-                            # truncated. Reason about truncation from the list
-                            # below, not from either number.
+file_total: <N> bytes  # THIS WHOLE FILE; the gap from `total` is the four
+                            # un-budgeted, never-truncated blocks (TIER 2 banner,
+                            # this tracker, TIER 3 list, PROVENANCE appendix).
 truncations_applied:
   <if any T2 section was truncated below default contents:>
   - <section_name>: <rule_applied> (saved <Z> bytes)
@@ -320,10 +314,9 @@ truncations_applied:
   <else:>
   - (none)
 instruction_to_subagent:
-  If your self-assessment references information that came from a truncated
-  section (listed above), mark its confidence as MEDIUM (not HIGH) and note
-  the truncation explicitly in your bolt-report.md self-assessment section.
-  Truncation is NOT a failure — it's transparency.
+  If your self-assessment relies on a truncated section listed above, mark its
+  confidence MEDIUM (not HIGH) and note the truncation in bolt-report.md.
+  Truncation is transparency, not failure.
 ```
 
 ═══════════════════════════════════════════
@@ -332,7 +325,7 @@ TIER 3 — Reference-on-demand (NOT embedded; use Read tool)
 
 - Full upstream bolt-reports: `<vault>/bolts/U-XXX/bolt-report.md`
 - Full constitution: `<vault>/constitution.md`
-- Full KB domain files: `.mega-sdd/knowledge-base/10-domains/`
+- Full KB (PRD-kontrak per module): `<the KB root that exists: .mega-sdd/knowledge-base/ | docs/knowledge-base/ | old-reference/knowledge-base/>` — line omitted (and recorded as `t3.kb_pointer`) when no root exists; never a dead path
 - Full framework pack: `plugins/mega-sdd/references/framework-conventions/<pack>.md`
 ```
 

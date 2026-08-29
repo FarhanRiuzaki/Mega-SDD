@@ -69,10 +69,6 @@ Provenance values:
 >   - Propose 1-2 additional assertions you'd add to strengthen coverage
 >   - Mark `confidence` no higher than MEDIUM for behaviors not directly tested
 
-Reuse index: .mega-sdd/codebase/reuse-index.yaml — your PRIMARY reuse lookup
-surface (Iron Rule 4): scan the FULL index with Read/Grep before writing any
-new capability; reuse_candidates below is only a hint.
-
 ## Anti-context (negative space = freedom + protection)
 
 DO NOT MODIFY:
@@ -195,23 +191,16 @@ T2 BUDGET TRACKER (informational)
 ### T2 budget tracker
 consumed_t1: @N@ bytes (cap 12288)
 consumed_t2: 5427 bytes (cap 10240, hard 12288)
-total: 9254 bytes  # T1 + T2 ONLY — the budgeted, truncatable content
-file_total: @N@    bytes  # THIS WHOLE FILE. The difference from `total` is
-                            # exactly four blocks plus the blank lines joining
-                            # them: the TIER 2 banner, this tracker block, the
-                            # TIER 3 pointer list and the PROVENANCE appendix.
-                            # The title banner and the TIER 1 banner are NOT in
-                            # that gap — they are already inside consumed_t1.
-                            # None of the four is budgeted and none is ever
-                            # truncated. Reason about truncation from the list
-                            # below, not from either number.
+total: @N@ bytes  # T1 + T2 ONLY — the budgeted, truncatable content
+file_total: @N@    bytes  # THIS WHOLE FILE; the gap from `total` is the four
+                            # un-budgeted, never-truncated blocks (TIER 2 banner,
+                            # this tracker, TIER 3 list, PROVENANCE appendix).
 truncations_applied:
   - (none)
 instruction_to_subagent:
-  If your self-assessment references information that came from a truncated
-  section (listed above), mark its confidence as MEDIUM (not HIGH) and note
-  the truncation explicitly in your bolt-report.md self-assessment section.
-  Truncation is NOT a failure — it's transparency.
+  If your self-assessment relies on a truncated section listed above, mark its
+  confidence MEDIUM (not HIGH) and note the truncation in bolt-report.md.
+  Truncation is transparency, not failure.
 ```
 
 ═══════════════════════════════════════════
@@ -220,7 +209,6 @@ TIER 3 — Reference-on-demand (NOT embedded; use Read tool)
 
 - Full upstream bolt-reports: `@PROJ@/.mega-sdd/vaults/v1/bolts/U-XXX/bolt-report.md`
 - Full constitution: `@PROJ@/.mega-sdd/vaults/v1/constitution.md`
-- Full KB domain files: `.mega-sdd/knowledge-base/10-domains/`
 - Full framework pack: `@PLUGIN@/references/framework-conventions/<pack>.md`
 
 ═══════════════════════════════════════════
@@ -229,13 +217,14 @@ PROVENANCE — omissions (audit trail; NOT part of the T1/T2 byte accounting)
 
 Every absent or unresolvable input is recorded here rather than invented (invariant #5).
 
+- t1.reuse_index_line: reuse-index.yaml absent at ./.mega-sdd/codebase/reuse-index.yaml — the Iron Rule 4 pointer line is NOT emitted for a file that does not exist (run scan-codebase to produce the index)
 - t1.anti_context.do_not_modify.data_mutation_policy: no <kb>/99-rebuild-architecture/data-mutation-policy.md under @PROJ@ (searched .mega-sdd/, docs/, old-reference/ knowledge-base roots) — this source contributes nothing; the unit `## Hard rules` half is NOT relabelled to stand in for it
 - depends_on_summaries: unit has no depends_on entries
 - framework_pack_rules: no pack rule path_glob matched this unit's target_files (chain: _universal.md) — the 'keep top 1' floor is vacuous on an empty set, no rule invented
 - constitution_clauses: no constitution.md in @PROJ@/.mega-sdd/vaults/v1 (absence IS the --no-constitution opt-out)
-- kb_anti_patterns: the join key 'domain tags' (context-enrichment.md:76) is a phantom field — no unit schema, validator or writer defines it; substituting module:/vault_source would be a fabricated inclusion. Section omitted until the spec designates a join key.
-- historical_memory: the memory lane was removed in v7.3.0 (pipeline-only mandate) — no historical-memory section exists to emit
-- reuse_slice: reuse-index.yaml absent at @PROJ@/.mega-sdd/codebase/reuse-index.yaml (the UNCONDITIONAL T1 path line still ships)
+- reuse_slice: reuse-index.yaml absent at @PROJ@/.mega-sdd/codebase/reuse-index.yaml (the T1 pointer line is omitted too)
 - symbol_slice: symbol-index.json absent at @PROJ@/.mega-sdd/codebase/symbol-index.json (run scripts/build-symbol-index.sh; exit 3 there = ast-grep not installed)
 - design_slice: starterkit ui_ux slice already built — template is AUTHORITATIVE
 - confidence_labels: unit has no binding_refs (greenfield / standalone generate-units)
+- t3.kb_pointer: no knowledge-base root under .mega-sdd/, docs/ or old-reference/ — the TIER 3 KB pointer is omitted rather than naming a dead path
+- (structural, every project — historical_memory, kb_anti_patterns; reasons on stdout sections_omitted)

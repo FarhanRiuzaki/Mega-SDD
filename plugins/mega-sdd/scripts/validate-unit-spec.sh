@@ -900,6 +900,18 @@ state = {
     "issues_count": len(merged),
     "hard_rules_machine_checkable": hr_counts[0],
     "hard_rules_directive_prose": hr_counts[1],
+    # F-01(a) advisory (never gating): a prose-heavy rule set is a generate-units
+    # smell — those rules are reviewed by the panel, not verified by B1. Field
+    # run: 256/278 (92%) directives, 0 machine-verifiable outcomes from them.
+    "hard_rules_directive_advisory": (
+        "%d of %d Hard rules (%d%%) are prose directives — B1 verifies none of them; "
+        "express rules as v1 productions (DO NOT modify <path>, DO NOT add new <manifest> "
+        "dependencies, <glob> MUST follow <case>, function <name> MUST preserve signature, "
+        "file <path> MUST exist after bolt) or v2 ast-grep so they can FAIL"
+        % (hr_counts[1], hr_counts[0] + hr_counts[1],
+           round(100.0 * hr_counts[1] / (hr_counts[0] + hr_counts[1])))
+        if (hr_counts[0] + hr_counts[1]) >= 5
+           and hr_counts[1] > 0.8 * (hr_counts[0] + hr_counts[1]) else None),
     "issues": merged,
     "next_action": (
         "Unit spec passes integrity checks."
