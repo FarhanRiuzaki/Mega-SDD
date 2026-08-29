@@ -10,6 +10,13 @@
 #   2. Anti-self-bypass: agent attempts to delete/truncate/overwrite guard state
 #      files (.validation-blockers.json, .plan-pending, .replan-budget,
 #      .iter-classifier.json).
+#   3. (spec 2026-08-30 §1.1, F-09) an `Agent` dispatch of `bolt-implementer`
+#      is gated AS execute-bolts with in-run semantics — B2 stays a run-boundary
+#      gate; B1/B4/orphan issues of units legitimately in flight are dropped.
+#      Every other Agent call exits in the 0-fork fast path.
+#   4. (spec 2026-08-30 §1.3, F-16) the wave commit rail: sweeping git verbs
+#      (`add -A/.`, `commit -a/--amend`, `stash`, `reset --hard`) are denied
+#      while any bolt is in flight on the shared working tree.
 #
 # Honest design constraint: the human user (Farhan) is not the adversary — they
 # are on the same side as the guard. The agent (Claude) is what we constrain.
@@ -98,6 +105,13 @@ if [ -n "$SC_CWD" ]; then
       SC_TOOL="${BASH_REMATCH[1]}"; SC_REST2="${BASH_REMATCH[2]}"
     done
     case "$SC_TOOL" in
+      Agent)
+        # F-09 (spec 2026-08-30 §1.1): the ONLY Agent call this hook gates is a
+        # bolt-implementer dispatch (it is gated as execute-bolts, in-run
+        # semantics). Every other Agent call in every project exits here with
+        # ZERO forks — a substring probe on the raw payload, no parse.
+        case "$STDIN_JSON" in *bolt-implementer*) : ;; *) exit 0 ;; esac
+        ;;
       Edit|Write|Bash)
         # Protected-substring pre-filter — ONE union list for ALL tools. The
         # fragments are a SUPERSET of every basename/path the FP_GUARD + Bash
@@ -112,6 +126,12 @@ if [ -n "$SC_CWD" ]; then
         SC_PROT=0
         case "$STDIN_JSON" in
           *mega-sdd*|*-bound*|*validation-blockers*|*plan-pending*|*replan-budget*|*iter-classifier*|*-state.json*|*ui-quality-blockers*|*bolts/*|*uat/evidence*|*scan-stamp*|*pack-resolver*|*binding*) SC_PROT=1 ;;
+          # Wave commit rail fragments (F-16, spec 2026-08-30 §1.3): the sweeping
+          # git shapes take the python path even UN-ARMED — the field case is a
+          # second, un-armed session on the same worktree sweeping a sibling's
+          # half-written bolt into an unrelated commit. One python pass, only on
+          # these shapes; `git status`/`log`/pathspec adds stay 0-fork.
+          *--amend*|*" -A"*|*--all*|*stash*|*--hard*|*"commit -a"*|*"add ."*) SC_PROT=1 ;;
         esac
         if [ "$SC_PROT" -eq 0 ]; then
           # Subagent fail-closed rail (R2, gate-1): subagent-context tool calls
@@ -276,9 +296,37 @@ if tool_name == "Skill":
     emit("SKILL_NAME", tool_input.get("skill", ""))
     args = tool_input.get("args", "") or ""
     emit("SKILL_ARGS_B64", base64.b64encode(str(args).encode()).decode())
+elif tool_name == "Agent":
+    # F-09 (spec 2026-08-30 §1.1): a bolt-implementer dispatch is gated as
+    # execute-bolts (in-run). The shell maps it below; here we only extract.
+    emit("SUBAGENT_TYPE", str(tool_input.get("subagent_type", "") or ""))
 elif tool_name == "Bash":
     cmd = tool_input.get("command", "")
     emit("BASH_CMD_B64", base64.b64encode(cmd.encode()).decode())
+    # Wave commit rail (F-16, spec 2026-08-30 §1.3): classify the SWEEPING git
+    # shapes here, in the interpreter that already runs — zero extra spawn.
+    # Quoted strings are blanked and heredoc bodies cut first so a commit
+    # MESSAGE saying "add . files" or "-a" never trips the rail; each
+    # `;`/`&&`/`||`/newline segment is judged on its own.
+    def _wave_hazard(c):
+        c = c.split("<<", 1)[0]
+        c = re.sub(r"\"[^\"]*\"|'"'"'[^'"'"']*'"'"'", " QUOTED ", c)
+        opt = r"(?:-[-\w=./]+\s+)*"
+        rx = re.compile(
+            r"\bgit\s+" + opt + r"(?:"
+            r"add\s+(?:[^\s]+\s+)*(?:-A|--all|\.)(?=\s|$)"
+            r"|commit\s+(?:[^\s]+\s+)*(?:-a|-am|-[a-zA-Z]*a[a-zA-Z]*|--all|--amend)(?=\s|$)"
+            r"|stash(?:\s*$|\s+(?:push|save)\b|\s+-)"
+            r"|reset\s+(?:[^\s]+\s+)*--hard(?=\s|$)"
+            r")")
+        for seg in re.split(r"\n|;|&&|\|\|", c):
+            if rx.search(seg):
+                return True
+        return False
+    try:
+        emit("WAVE_HAZARD", "1" if _wave_hazard(cmd) else "0")
+    except Exception:
+        emit("WAVE_HAZARD", "0")
     if sc_root:
         # GUARD_SKIP fold — the prot regex below is a byte-copy of the
         # dedicated interpreter'"'"'s (kept in lockstep by the parity pin).
@@ -456,6 +504,32 @@ EOF
 }
 
 # ─── BRANCH 1: Skill invocation gate ─────────────────────────────────────────
+# ─── F-09: a bolt-implementer Agent dispatch IS an execute-bolts dispatch ─────
+# Spec 2026-08-30 §1.1. The matcher used to exclude `Agent` on the assumption
+# "gated phases are Skill-dispatched, never Agent-offloaded" — prose. The field
+# run (HOST-AS400, 117 commits) drove every sprint through hand dispatch and the
+# whole aggregator below evaluated ONCE. Map the dispatch onto the Skill branch
+# so it runs IDENTICALLY (arming, predictive preflight, handoff, factory ledger,
+# aggregator) with in-run semantics: B2 is a RUN-boundary gate and stays on the
+# Skill entry; B1/B4/orphan issues for units whose pipeline is legitimately in
+# flight are dropped (vault_layouts.inflight_units — one definition, shared
+# with the wave commit rail). Any other Agent call exits (the fast path already
+# did, 0-fork; this is the authoritative-path twin).
+GATE_MODE="run"
+GATE_SUBJECT="mega-sdd:execute-bolts"
+if [ "${TOOL_NAME:-}" = "Agent" ]; then
+  case "${SUBAGENT_TYPE:-}" in
+    mega-sdd:bolt-implementer|bolt-implementer)
+      TOOL_NAME="Skill"
+      SKILL_NAME="mega-sdd:execute-bolts"
+      SKILL_ARGS_B64=""
+      GATE_MODE="in-run"
+      GATE_SUBJECT="bolt-implementer dispatch (gated as mega-sdd:execute-bolts, in-run)"
+      ;;
+    *) exit 0 ;;
+  esac
+fi
+
 case "${TOOL_NAME:-}" in
   Skill)
     # ── v7 chain-engaged marker writer (spec §3.1) ──────────────────────────
@@ -823,8 +897,8 @@ except Exception as e:
         ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-factory-ledger.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         wait  # settle all nine state files before the aggregator reads
       fi
-      GATE_REASON=$(PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
-import json, os
+      GATE_REASON=$(PROJECT_ROOT="$PROJECT_ROOT" GATE_MODE="${GATE_MODE:-run}" GATE_SUBJECT="${GATE_SUBJECT:-mega-sdd:execute-bolts}" MEGA_SDD_LIB_DIR="${SCRIPT_DIR_RPR}/../scripts/_lib" python3 -c '
+import json, os, sys
 md = os.path.join(os.environ["PROJECT_ROOT"], ".mega-sdd")
 def L(fn):
     try:
@@ -832,6 +906,26 @@ def L(fn):
     except Exception:
         return None
 fails = []
+# F-09 in-run semantics (spec 2026-08-30 §1.1): on a bolt-implementer dispatch,
+# units whose pipeline is legitimately in flight have their B1/B4/orphan
+# evidence PENDING, not missing — drop those issues before the verdict. B2 is
+# a run-boundary gate and is skipped here. Fail-CLOSED on a helper failure:
+# an unreadable helper leaves inflight empty, i.e. the full run-gate verdict.
+IN_RUN = os.environ.get("GATE_MODE", "run") == "in-run"
+inflight = set()
+if IN_RUN:
+    try:
+        sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+        import vault_layouts
+        inflight = set(vault_layouts.inflight_units(os.environ["PROJECT_ROOT"]))
+    except Exception:
+        inflight = set()
+def live_issues(d):
+    """The issues that still gate under the current mode."""
+    iss = (d or {}).get("issues", []) or []
+    if not inflight:
+        return iss
+    return [i for i in iss if i.get("unit_id") not in inflight]
 
 # MOAT GATE — binding->units: unresolved drops/CONFLICT block unit->bolt.
 # Fail-CLOSED on a corrupt moat state (AUDIT L4): a present-but-unparseable
@@ -866,9 +960,9 @@ if os.path.exists(moat_path):
 # turn end; blocking the NEXT execute-bolts is what makes the audit trail
 # un-skippable without --auto.
 d = L(".bolt-orphans-state.json")
-if d and d.get("status") == "FAIL":
-    n = d.get("issues_count", len(d.get("issues", [])))
-    units = ", ".join(i.get("unit_id", "?") for i in d.get("issues", [])[:8])
+if d and d.get("status") == "FAIL" and live_issues(d):
+    n = len(live_issues(d))
+    units = ", ".join(i.get("unit_id", "?") for i in live_issues(d)[:8])
     fails.append(("bolt-orphans", "orphan-bolt scan found %s bolt commit(s) with NO <vault>/bolts/U-XXX/bolt-report.md (%s%s). Backfill a bolt-report (retroactive: true) for each listed unit, or re-run those units. State: %s/.bolt-orphans-state.json" % (n, units, ", …" if n > 8 else "", md)))
 
 # batch-suite-gate (status==FAIL) — B2: a code-bearing bolt run must leave a green
@@ -878,7 +972,7 @@ if d and d.get("status") == "FAIL":
 # per-bolt tests cannot catch a later bolt or an out-of-band edit breaking an earlier
 # bolt contract — the freshness anchor is the newest code commit, not the newest bolt).
 d = L(".batch-suite-gate-state.json")
-if d and d.get("status") == "FAIL":
+if d and d.get("status") == "FAIL" and not IN_RUN:
     ht = d.get("halt_type", "batch_suite_gate_missing")
     if ht == "batch_suite_red":
         fails.append(("batch-suite-gate", "recorded full-suite result is RED (%s). Fix the failing tests, then run `bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root>` — it re-runs the FULL suite and records <vault>/bolts/_batch-suite.json itself (the artifact is hook-guarded; direct writes are denied). State: %s/.batch-suite-gate-state.json" % (d.get("detail", ""), md)))
@@ -890,9 +984,9 @@ if d and d.get("status") == "FAIL":
 # bolt with no passing <vault>/bolts/U-XXX/postflight.json. The post-flight Hard-rule
 # scan was prose-only; blocking the NEXT execute-bolts makes the safety net real.
 d = L(".bolt-postflight-state.json")
-if d and d.get("status") == "FAIL":
-    n = d.get("issues_count", len(d.get("issues", [])))
-    units = ", ".join(i.get("unit_id", "?") for i in d.get("issues", [])[:8])
+if d and d.get("status") == "FAIL" and live_issues(d):
+    n = len(live_issues(d))
+    units = ", ".join(i.get("unit_id", "?") for i in live_issues(d)[:8])
     fails.append(("postflight-evidence", "post-flight scan found %s Hard-rule bolt(s) committed with no passing postflight.json (%s%s). Run `bash <plugin>/scripts/run-postflight-scan.sh --cwd=<project-root> --unit=U-XXX` for each listed unit — it executes that unit Hard rules against real git/filesystem state and records the evidence itself (the artifact is hook-guarded; direct writes are denied). A recorded VIOLATION means the committed code must be fixed first. State: %s/.bolt-postflight-state.json" % (n, units, ", …" if n > 8 else "", md)))
 
 # whitelist-observer (status==FAIL) — B3 (S6 EB-GATE-11): bolt commits must stay
@@ -910,8 +1004,8 @@ if d and d.get("status") == "FAIL":
 # block here (commit-keyed migration guarantee — the validator records them as
 # advisory only and keeps status PASS).
 d = L(".bolt-acceptance-state.json")
-if d and d.get("status") == "FAIL":
-    iss = d.get("issues", [])
+if d and d.get("status") == "FAIL" and live_issues(d):
+    iss = live_issues(d)
     miss = [i for i in iss if i.get("halt_type") == "acceptance_evidence_missing"]
     red = [i for i in iss if i.get("halt_type") == "acceptance_red"]
     broken = [i for i in iss if i.get("halt_type") == "build_broken"]
@@ -986,9 +1080,9 @@ if fails:
         body = " ||| ".join("(%s) %s" % (n, m) for n, m in fails)
         if len(body) > 2500:
             body = body[:2500] + "… [truncated — run the analyze skill (\"cek konsistensi\") for the full list]"
-        print("mega-sdd:execute-bolts is blocked — " + prefix + body)
+        print(os.environ.get("GATE_SUBJECT", "mega-sdd:execute-bolts") + " is blocked — " + prefix + body)
     else:
-        print("mega-sdd:execute-bolts is blocked — " + fails[0][1])
+        print(os.environ.get("GATE_SUBJECT", "mega-sdd:execute-bolts") + " is blocked — " + fails[0][1])
 ' 2>/dev/null)
       if [ -n "$GATE_REASON" ]; then emit_block "$GATE_REASON"; fi
     fi
@@ -1328,6 +1422,28 @@ PYGG
     BASH_CMD_B64="${BASH_CMD_B64:-}"
     [ -z "$BASH_CMD_B64" ] && exit 0
 
+    # ─── Wave commit rail (F-16, spec 2026-08-30 §1.3) ─────────────────────
+    # Concurrent bolts share ONE working tree (the wave default since 7.7.0).
+    # A sweeping git verb — `add -A/--all/.`, `commit -a/--amend`, `stash`,
+    # `reset --hard` — carries a sibling's half-written files into an
+    # unrelated commit (field: a BLOCKER commit swept 1,031 lines of two
+    # siblings' tests; `--amend` ×11). The shape was classified by the parse
+    # interpreter (WAVE_HAZARD, zero extra spawn); only a hazardous shape pays
+    # ONE python here to read the in-flight set from disk. Deny while ANY unit
+    # is in flight; the remediation is the pathspec form. Plugin-dev mode and
+    # test/fixture trees are exempt like every other guard.
+    if [ "${WAVE_HAZARD:-0}" = "1" ] && [ ! -d "${CWD}/plugins/mega-sdd/hooks" ]; then
+      WAVE_UNITS=$(PROJECT_ROOT="$PROJECT_ROOT" MEGA_SDD_LIB_DIR="${SCRIPT_DIR_RPR}/../scripts/_lib" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import vault_layouts
+print(",".join(vault_layouts.inflight_units(os.environ["PROJECT_ROOT"])))
+' 2>/dev/null)
+      if [ -n "$WAVE_UNITS" ]; then
+        emit_block "Blocked: sweeping git verb while bolt(s) are IN FLIGHT (${WAVE_UNITS}) — \`git add -A/--all/.\`, \`git commit -a/--amend\`, \`git stash\`, \`git reset --hard\` would carry a sibling bolt's half-written files into this commit (or erase them). Stage by EXPLICIT pathspec: \`git add <path> [<path>…]\` for the files YOU changed (the unit target_files + the test files you created), then \`git commit -m …\` without -a; never --amend, stash, or reset --hard while a bolt is running. In-flight = <vault>/bolts/U-XXX/dispatch-prompt.md newer than its postflight.json. Keterangan: ada bolt lain yang sedang berjalan di working tree yang sama; commit menyapu (-A / -a / --amend / stash / reset --hard) akan membawa atau menghapus file setengah-jadi milik unit lain — stage file secara eksplisit per path."
+      fi
+    fi
+
     # №E: the parse interpreter already computed the GUARD_SKIP decision on the
     # armed common path — an innocent command exits here with ZERO further
     # python. A protected-reference command (skip=0) still decodes for the
@@ -1429,8 +1545,15 @@ else:
       BYPASS_DETECTED="shell redirect (>) overwriting protected state file"
     elif echo "$BASH_CMD" | grep -qE "\bsed\s+(-[^[:space:]]*i[^[:space:]]*)\s+[^|;&]*($PROTECTED)"; then
       BYPASS_DETECTED="sed -i modifying protected state file"
-    elif echo "$BASH_CMD" | grep -qE "\b(mv|cp)\s+[^|;&]*\s+[^|;&]*($PROTECTED)"; then
-      BYPASS_DETECTED="mv/cp replacing protected state file"
+    # F-06 (spec 2026-08-30 §1.2): `mv` matches the protected path in ANY
+    # argument position — the old destination-only shape let
+    # `mv preflight.json preflight.stale.json` remove a baseline (field
+    # recovery path ×6). `cp` stays destination-only: copying an artifact OUT
+    # is a read.
+    elif echo "$BASH_CMD" | grep -qE "\bmv\s+[^|;&]*($PROTECTED)"; then
+      BYPASS_DETECTED="mv of protected state file (source or destination)"
+    elif echo "$BASH_CMD" | grep -qE "\bcp\s+[^|;&]*\s+[^|;&]*($PROTECTED)"; then
+      BYPASS_DETECTED="cp replacing protected state file"
     elif echo "$BASH_CMD" | grep -qE "\btee\s+[^|;&]*($PROTECTED)"; then
       BYPASS_DETECTED="tee overwriting protected state file"
     fi

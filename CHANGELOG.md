@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.9.0] - 2026-08-30 — audit-driven hardening, Tranche 1: the gate fires per bolt, DO_NOT_MODIFY stops lying, waves get a rail
+
+**Source: a read-only audit of the full HOST-AS400 / dd9000-gate run (36 units, 117 commits, 1,148 anchored facts — `research/2026-08-30-field-audit-triage.md`), spec `docs/superpowers/specs/2026-08-30-audit-driven-hardening.md` §1. The audit's headline is not "verification is expensive" — it is that the tiers that CANNOT fail (postflight directives 278→0 fail, acceptance 69→0 fail, `DO_NOT_MODIFY` 6 FP / 0 TP) were paid for on every unit while the mechanisms that caught every real defect (the panel, the agent halts, the aggregator) ran once or by discipline. Tranche 1 costs nothing in tokens and buys accuracy.**
+
+### Changed — a `bolt-implementer` Agent dispatch is gated AS execute-bolts (F-09)
+
+The PreToolUse matcher was `Skill|Bash|Edit|Write` — `Agent` deliberately excluded on the assumption "gated phases are Skill-dispatched, never Agent-offloaded". That assumption was prose. The field run drove every sprint through hand dispatch and the whole gate aggregator evaluated **once** in 117 commits; the one time it fired it forced 11 units' evidence to be backfilled, caught an under-declared whitelist and an orphan bolt.
+
+The matcher now carries `Agent`; a `subagent_type: mega-sdd:bolt-implementer` dispatch maps onto the Skill branch and runs it identically (arming, predictive preflight, handoff verdict, factory ledger, the nine re-derives + aggregator) with **in-run semantics**: B2 (full suite) stays a run-boundary gate checked at `--all`/`--sprint` entry; B1/B4/orphan issues for units whose pipeline is legitimately **in flight** — `dispatch-prompt.md` newer than `postflight.json`, `vault_layouts.inflight_units()` — are pending, not missing, so a wave's second unit or a fix round is never false-denied. A hand-dispatched unit (no dispatch-prompt) is never in flight and is evaluated in full. Every other Agent call exits in the 0-fork fast path.
+
+### Changed — `DO_NOT_MODIFY` keys on the unit's OWN commits (F-06)
+
+`scan_unit` gave the pre-flight sha snapshot precedence over the commit touched-set. That answers "did the path change since baseline, by anyone?" — not "did THIS unit modify it?". On the field run: 6 halts, all false positives (sibling units changing a shared `app.ts` legitimately), 0 true positives, and the sanctioned recovery was renaming the baseline away. **Replayed read-only on the field vault today: the old predicate would now fail 21/21 rules; the new one fails 0/21 — no unit's own commit touched the locked path.** The snapshot is now a note on the evidence (`note: sha256 differs from the preflight baseline — changed outside this unit's commits`) and the verdict only in the pre-commit working-tree mode; `SIGNATURE_RULE` still keys on the snapshot. Side effect, pinned: a forged post-tamper baseline no longer launders a committed violation (W4's residual is closed for this rule; the write guard and the exit-7/exit-8 refusals stay for SIGNATURE + working-tree mode).
+
+The anti-self-bypass `mv` guard now matches the protected path in ANY argument position — `mv preflight.json preflight.stale.json` was the field's recovery path ×6 and sailed through a destination-only regex.
+
+### Added — wave commit rail (F-16)
+
+7.7.0 made wave execution the `--all` default on one shared working tree — without a rail. The field run's BLOCKER commit swept 1,031 lines of two siblings' half-written tests; `git commit --amend` was used 11× (once sweeping 8 files). While any unit is in flight, the hook now DENIES `git add -A/--all/.`, `git commit -a/-am/--amend`, `git stash [push|save]`, `git reset --hard` — naming the units and the remedy (stage by explicit pathspec). The shape is classified in the parse interpreter that already runs (zero extra spawn); only a hazardous shape pays one python to read the in-flight set. Quoted commit messages never trip it; `stash pop/list`, `reset --soft`, pathspec adds pass. The rail also fires for an un-armed second session on the same tree (fragment path). `bolt-implementer` step 6 and `batch-and-fanout.md` carry the pathspec contract; plugin-dev trees are exempt.
+
+### Notes
+
+- Two pins that asserted the old snapshot-precedence contract (`test-preflight-scan.sh` §B, §I) were **repinned to the new contract, not dropped** — §I now asserts the stronger property. New: `tests/hooks/agent-dispatch-gate.test.sh`, `tests/wave-rail/test-wave-commit-rail.sh`, `tests/postflight-evidence/test-do-not-modify-touched-set.sh`; `test-preflight-guard.sh` gained the `mv`-source case.
+- Suite 226/226 green across both trees.
+- Tranche 2 (dispatch residue, directives out of the gate status, consumer-less artifacts) and Tranche 3 (panel-evidence gate, `findings.json` guard, mandatory `expects`, provenance stamps) are specified in the same document and follow.
+
 ## [7.8.0] - 2026-08-29 — execute-bolts: round discipline + per-lens routing
 
 **Fase 1 + Fase 3 of `docs/superpowers/specs/2026-08-29-execute-bolts-efficiency-and-sprints.md`, completing the four-phase plan begun in 7.7.0. Both are measured against the live HOST-AS400 / dd9000-gate vault.**

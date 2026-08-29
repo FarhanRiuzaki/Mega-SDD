@@ -64,6 +64,14 @@ OUT=$(drive "$F" "Bash" "{\"command\":\"echo '{}' > .mega-sdd/vaults/app/bolts/U
 printf '%s' "$OUT" | grep -q '"deny"' && ok "Bash redirect into preflight.json denied" || fail "Bash redirect into preflight.json allowed"
 OUT=$(drive "$F" "Bash" "{\"command\":\"rm .mega-sdd/vaults/app/bolts/U-001/preflight.json\"}")
 printf '%s' "$OUT" | grep -q '"deny"' && ok "rm of preflight.json denied" || fail "rm of preflight.json allowed"
+# F-06 (spec 2026-08-30 §1.2): the field recovery path renamed the baseline AWAY
+# (`mv preflight.json preflight.stale.json`) and sailed through because the old
+# regex only matched the protected name in the DESTINATION argument.
+OUT=$(drive "$F" "Bash" "{\"command\":\"mv .mega-sdd/vaults/app/bolts/U-001/preflight.json .mega-sdd/vaults/app/bolts/U-001/preflight.stale.json\"}")
+printf '%s' "$OUT" | grep -q '"deny"' && ok "mv of preflight.json to a non-protected name denied (source position)" \
+  || fail "mv preflight.json -> preflight.stale.json ALLOWED — the field recovery path still removes a baseline"
+OUT=$(drive "$F" "Bash" "{\"command\":\"cp .mega-sdd/vaults/app/bolts/U-001/preflight.json /tmp/pf-backup.json\"}")
+[ -z "$OUT" ] && ok "cp of preflight.json OUT (a read) still allowed" || fail "cp preflight.json out false-blocked: $(printf '%s' "$OUT" | head -c 160)"
 OUT=$(drive "$F" "Bash" "{\"command\":\"python3 -c 'import json; json.dump({\\\"rules\\\":[]}, open(\\\".mega-sdd/vaults/app/bolts/U-001/preflight.json\\\",\\\"w\\\"))'\"}")
 printf '%s' "$OUT" | grep -q "open-for-write" && ok "python open-for-write targeting preflight.json denied" || fail "python open-for-write allowed"
 
