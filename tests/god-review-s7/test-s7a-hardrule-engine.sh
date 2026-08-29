@@ -99,12 +99,17 @@ grep -q 'PROVISIONAL' "$W/.err" && ok "HR-9: writer warns PROVISIONAL on tree-vs
 unit U-107 '- MUST NOT modify existing API response contracts'
 ( cd "$W" && echo "u7" > src/u7.txt && git add -A && git commit -qm "feat(U-107): bolt" )
 run --unit=U-107; RC=$?
-if [ "$RC" -ne 0 ] && grep -q 'directive_unverified' "$W/.mega-sdd/vaults/v1/bolts/U-107/postflight.json"; then
+# F-01(a) 7.10.0: the prose-object modal is still classified a DIRECTIVE (never a
+# vacuous mechanical pass) — recorded directive_unverified — but directives are
+# advisory, so the writer exits 0 either way; attesting flips the record only.
+if grep -q '"type": "directive"' "$W/.mega-sdd/vaults/v1/bolts/U-107/postflight.json" \
+   && grep -q 'directive_unverified' "$W/.mega-sdd/vaults/v1/bolts/U-107/postflight.json" && [ "$RC" -eq 0 ]; then
   run --unit=U-107 --attest-directives="panel reviewed"; RC2=$?
-  [ "$RC2" -eq 0 ] && ok "r2-2: prose-object modal stays directive (unverified w/o attest, attested with)" \
-    || fail "r2-2: attest no longer clears the prose directive (rc=$RC2)"
+  [ "$RC2" -eq 0 ] && grep -q '"verdict": "attested"' "$W/.mega-sdd/vaults/v1/bolts/U-107/postflight.json" \
+    && ok "r2-2: prose-object modal stays a directive (recorded unverified w/o attest, attested with; advisory either way)" \
+    || fail "r2-2: attestation not recorded (rc=$RC2)"
 else
-  fail "r2-2: prose modal auto-greened as mechanical (rc=$RC): $(grep -o '"verdict[^,]*' "$W/.mega-sdd/vaults/v1/bolts/U-107/postflight.json" | head -1)"
+  fail "r2-2: prose modal auto-greened as mechanical or gated as a failure (rc=$RC): $(grep -o '"verdict[^,]*' "$W/.mega-sdd/vaults/v1/bolts/U-107/postflight.json" | head -1)"
 fi
 
 # HR-5 true-positive: a dep added by the unit's OWN bolt commit must still FAIL
@@ -144,9 +149,15 @@ fi
 unit U-111 'NEVER commit secrets to the repo'
 ( cd "$W" && echo "u11" > src/u11.txt && git add -A && git commit -qm "feat(U-111): bolt" )
 run --unit=U-111; RC=$?
-[ "$RC" -ne 0 ] && grep -q 'directive_unverified' "$W/.mega-sdd/vaults/v1/bolts/U-111/postflight.json" \
-  && ok "r1-4: keyword-leading non-bullet line still lexes (bullet-evasion net intact)" \
-  || fail "r1-4: bullet-evasion line silently dropped (rc=$RC)"
+# F-01(a) 7.10.0: the line must still LEX (never silently dropped) and land in the
+# directive tier — recorded directive_unverified, counted in `directives.total`;
+# directives are advisory, so the writer exits 0.
+if grep -q 'directive_unverified' "$W/.mega-sdd/vaults/v1/bolts/U-111/postflight.json" \
+   && grep -q '"total": 1' "$W/.mega-sdd/vaults/v1/bolts/U-111/postflight.json" && [ "$RC" -eq 0 ]; then
+  ok "r1-4: keyword-leading non-bullet line still lexes into the directive tier (bullet-evasion net intact, advisory)"
+else
+  fail "r1-4: bullet-evasion line silently dropped or gated (rc=$RC)"
+fi
 
 # r2-1: monorepo subproject — cwd-relative manifest reads; a dep added by the
 # unit's own commit in the PROJECT manifest must fail even when the repo ROOT

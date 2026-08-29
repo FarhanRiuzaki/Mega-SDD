@@ -81,7 +81,11 @@ mkunit U-004 'MUST log all access to the audit trail'
 
 Unit: U-004" >/dev/null )
 out=$(bash "$VABS" --cwd="$repo" --postflight-scan --recompute); rc=$?
-echo "$out" | grep -q '"unit_id": "U-004"' || { echo "D0: un-attested directive U-004 should be flagged"; err=1; }
+# F-01(a) 7.10.0: an un-attested directive is ADVISORY — it is recorded as
+# directive_unverified but never forms the B1 verdict (256/278 field rules were
+# directives; none could fail). The unit must NOT be flagged.
+echo "$out" | grep -q '"unit_id": "U-004"' && { echo "D0: un-attested directive U-004 flagged — directives gate again (F-01a regression)"; err=1; }
+grep -q 'directive_unverified' "$repo/.mega-sdd/vaults/v1/bolts/U-004/postflight.json" || { echo "D0: directive_unverified no longer RECORDED for U-004"; err=1; }
 
 # ── D. obligation stickiness: blank the unit's Hard rules in the working tree, forge pass ──
 mkunit U-005 'DO NOT modify src/core.js'

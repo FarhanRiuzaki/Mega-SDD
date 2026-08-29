@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.10.0] - 2026-08-30 — audit-driven hardening, Tranche 2: directives leave the gate verdict; dispatch stops pointing at files that do not exist
+
+**Spec `docs/superpowers/specs/2026-08-30-audit-driven-hardening.md` §2. Same field basis as 7.9.0 (HOST-AS400 / dd9000-gate, 36 units).**
+
+### Changed — directive Hard rules are ADVISORY; the B1 verdict is formed by machine rules only (F-01a)
+
+Measured: 256 of 278 postflight rules on the field run were prose directives (`MUST …` / `DO NOT …` lines with no path, glob, signature or manifest object). Every one carried verdict `attested` from ONE free-text paragraph per unit copied onto all of its directives (10 units attested inside a 4-second window); none could ever produce `fail`; and the counterfactual "directives advisory" loses **zero** detections — every real defect of the run was caught by the panel, an agent halt, a drift test or e2e. A tier that cannot fail is a permission valve, not a detector.
+
+`scan_unit` now forms `ok_all` from non-directive rules; `_looks_pass` (the B1 gate) skips directive-typed rules; `run-postflight-scan.sh` keeps recording `attested` / `directive_unverified` per rule, adds a `directives: {total, attested, unverified}` summary, and exits 0 on an unattested directive. `--attest-directives` still records the review. Carry-forward is now idempotent (the field artifacts had stacked `attested (carried from prior scan): attested (carried from prior scan): …` to depth 2). `validate-unit-spec.sh` states `hard_rules_directive_advisory` when > 80 % of a project's Hard rules are prose — a generate-units smell, never a gate. Prose rules are the panel's to review; mechanical rules are B1's to verify — the docs now say exactly that.
+
+### Changed — dispatch prompt: no pointer to a file that does not exist (F-30, partial)
+
+- The T1 `Reuse index: .mega-sdd/codebase/reuse-index.yaml — scan the FULL index with Read/Grep` block ships **only when the index exists**. On the field run 36/36 dispatches carried it for a file the builder had itself recorded absent, and 21+ bolt-reports paid a `not_applicable` line for it. The absence is recorded as `t1.reuse_index_line`.
+- The TIER 3 KB pointer names the KB root that exists (`.mega-sdd/knowledge-base/` etc.) or is omitted (`t3.kb_pointer`) — the fixed `knowledge-base/10-domains/` path was dead in 36/36 dispatches (the PRD-kontrak grammar has no such dir).
+- The two omissions about inputs that can never exist in ANY project (`kb_anti_patterns` — a phantom join key; `historical_memory` — a lane deleted in v7.3.0) stay on the stdout audit trail but are no longer rendered as two boilerplate paragraphs in every prompt's PROVENANCE appendix; the appendix names them on one line.
+- The `### T2 budget tracker` drops its nine-line accounting essay; `file_total` keeps its fixed-width line (the two-pass fixed point and its pin are unchanged).
+
+**Considered and REJECTED, with numbers:** grouping the Anti-context `DO NOT MODIFY` entries under one `(source:)` header per group — ~1.2 KB/dispatch against the per-entry source-label rail (every entry carries its own source so no line can be read under another source's label; 7 pins + 2 parsers). The design-slice truncation (−6 KB on UI units) is NOT a dispatch-diet item: the lens-input copy is deliberately the same truncated text (one contract for implementer and reviewer); it belongs to the design-lens work (F-15). **F-31 (consumer-less vault artifacts) REJECTED for this tranche:** `_index.md` / `ai-consumer-guide.md` / `modules.yaml.auto` have readers inside the plugin (`query-graph.sh`, generate-intent self-check, analyze) and pins in 3 skills; the implementer never reads them, so their token cost per bolt is zero — a 3-skill prose sweep buys nothing measurable.
+
+### Notes
+
+- Golden corpus `tests/dispatch-parity/golden/` regenerated (f2-ui, f3-hardrules) — the output legitimately changed by the four F-30 items above; builder logic otherwise byte-identical.
+- Pins repinned to the new contract, not dropped: `test-postflight-recompute.sh` D0, `test-b2-quiet-gates.sh` M-05a fail path (now provoked by a FILE_PRESENCE rule), `test-s7a-hardrule-engine.sh` r1-4 / r2-2, `test-dispatch-prompt-builder-shape.sh` §G. New: `tests/postflight-evidence/test-directive-advisory.sh`.
+
 ## [7.9.0] - 2026-08-30 — audit-driven hardening, Tranche 1: the gate fires per bolt, DO_NOT_MODIFY stops lying, waves get a rail
 
 **Source: a read-only audit of the full HOST-AS400 / dd9000-gate run (36 units, 117 commits, 1,148 anchored facts — `research/2026-08-30-field-audit-triage.md`), spec `docs/superpowers/specs/2026-08-30-audit-driven-hardening.md` §1. The audit's headline is not "verification is expensive" — it is that the tiers that CANNOT fail (postflight directives 278→0 fail, acceptance 69→0 fail, `DO_NOT_MODIFY` 6 FP / 0 TP) were paid for on every unit while the mechanisms that caught every real defect (the panel, the agent halts, the aggregator) ran once or by discipline. Tranche 1 costs nothing in tokens and buys accuracy.**
