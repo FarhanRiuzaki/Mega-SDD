@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.8.0] - 2026-08-29 — execute-bolts: round discipline + per-lens routing
+
+**Fase 1 + Fase 3 of `docs/superpowers/specs/2026-08-29-execute-bolts-efficiency-and-sprints.md`, completing the four-phase plan begun in 7.7.0. Both are measured against the live HOST-AS400 / dd9000-gate vault.**
+
+### Added — `merge-panel-findings.sh`, the SOLE writer of the finding ledger (Fase 1)
+
+The severity→status mapping in `review-panel.md` §Attempt rounds was PROSE, applied by whatever model drove the controller. Measured on the field unit (panel complete, `spec_verdict: pass`): 2 `critical` + 7 `important` + 4 `minor`, and **all thirteen were stamped `status: open`** — though the contract says Important/Minor enter as `advisory`, "recorded, surfaced, never gating". The fix round therefore carried 13 findings where 2 were required: the implementer's fix scope and the resolution-verifier's workload both scaled 6.5×.
+
+`scripts/merge-panel-findings.sh` now applies, mechanically: the severity→status mapping (on EVERY round, so a hand-edited status cannot survive a merge), evidence-or-drop, dedup within ±3 lines on the same issue class, consensus marking, id stability across rounds, and evidence-gated resolution — a verifier's `resolved` with no `file:line` does NOT close a finding. Its stdout `gate` field (`re-dispatch` | `clear`) IS the merge verdict; the controller reads it rather than re-deriving it.
+
+Replayed against the real 13-finding field ledger: **2 open, 11 advisory.**
+
+### Changed — the review panel routes per LENS, not per tier (Fase 3)
+
+`resolve-review-tier.sh` used `if fired: tier = "full"` — an OR over six predicates measuring different things. `file_count >= 4` is a SIZE fact, not a risk fact, and it fired 22/30. With six loose OR-ed predicates P(at least one fires) → 1 on any real project: measured **full 30/30, minimal 0/30**, while the script's own header claimed the P3 rewrite had made `minimal` reachable.
+
+Each signal now buys the lens it justifies — `spec` always; `standards` always above minimal; `quality` on `file_count ≥ 3` or `risk: high|critical`; `security` on `auth_globs` ∪ `manifest` ∪ `constitution_b` ∪ `vocabulary` ∪ `risk: critical`. The router emits `lenses[]`; `tier` is retained as that set's label for the flag, the config key, the bolt-report and the v7.1 model routing.
+
+**Signal 4 (`vocabulary`) is scoped to the unit's CONTRACT sections** (`## Hard rules`, `## Acceptance criteria`, `## Requirements`, `## UI contract`) — never `## Goal` / `## Context` / `## Implementation steps`. The unscoped body match fired 18/30 by hitting orientation narrative (Context 9×, Goal 8×, Implementation steps 17×); a bank CIF app says "peran"/"akses" wherever it explains itself, which is not evidence of a security surface. Scoped: 13/30.
+
+Re-measured on the same (now 31-unit) vault: **full 17, standard 13, minimal 1** — the tier is reachable again — lens dispatches 124 → 108, and because the v7.1 implementer routing keys on the same verdict, opus dispatches drop **31 → 17**. `risk: high` alone no longer forces `full` (on a PII/regulated domain the producer rubric stamps it on nearly every unit — honest for the domain, never costed); `risk: critical` still does.
+
+### Notes
+
+- Both existing pins that asserted the old contract (`>=4 files -> full`, `risk: high alone -> full`) were **updated, not dropped**, and the vocabulary fixtures gained a counter-case: the same words in `## Context` must NOT buy the security lens.
+- Suite 222/222 green across both trees.
+
 ## [7.7.0] - 2026-08-29 — execute-bolts: sprint lane + the unfinishable-unit gate
 
 **Field-measured on a live 30-unit run (HOST-AS400 / dd9000-gate), spec `docs/superpowers/specs/2026-08-29-execute-bolts-efficiency-and-sprints.md`, research `research/2026-08-29-panel-cost-field-measurement.md`. Measured baseline per bolt: implementer ~70k + panel ~267k + fix round ~70k ≈ 400k tokens / ~25 min. This release ships Fase 2 + Fase 4 of a four-phase plan; Fase 1 (round discipline) and Fase 3 (panel relevance) follow.**

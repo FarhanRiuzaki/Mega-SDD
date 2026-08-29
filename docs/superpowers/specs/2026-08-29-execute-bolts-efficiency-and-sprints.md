@@ -111,6 +111,8 @@ Klaim awal: `generate-units` mengeluarkan U-001 yang tidak dapat diselesaikan ca
 
 ## 6. Ringkasan dampak
 
+**STATUS: SEMUA FASE SELESAI.** Ship 2 → 4 (v7.7.0, commit 707f343) lalu 1 → 3 (v7.8.0). Suite 222/222.
+
 **Urutan ship: 2 → 4 → 1 → 3.** Fase 2 adalah prioritas yang user nyatakan, mekanismenya sudah ada dan terverifikasi atas vault hidup. Fase 4 risiko nol dan menutup defect yang membakar dispatch nyata. Fase 1 butuh skrip merge baru. Fase 3 menyentuh router — terakhir.
 
 | Fase | Token | Wall-clock | Risiko |

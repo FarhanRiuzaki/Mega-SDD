@@ -31,11 +31,27 @@ Panel lens models are pinned in each agent's frontmatter (`agents/*-reviewer.md`
 
 Resolve the tier BEFORE dispatch, once per unit:
 
-| Tier | Lenses | Selected when |
+**Per-lens routing (v7.8, spec 2026-08-29 Fase 3).** Each signal buys the lens it JUSTIFIES — it does not buy the whole panel:
+
+| Lens | Fires when |
+|---|---|
+| `spec` | ALWAYS — the moat lens, never skipped |
+| `standards` | always above `minimal` (sonnet, cheap; judges conventions on any new code) |
+| `quality` | `file_count ≥ 3` OR `risk: high\|critical` — surface area to judge |
+| `security` | `auth_globs` ∪ `manifest` ∪ `constitution_b` ∪ `vocabulary`\* ∪ `risk: critical` — evidence of a security surface |
+| `design` | UI-bearing (below; added by the controller, not the router script) |
+
+\* **`vocabulary` is SCOPED to the unit's contract sections** (`## Hard rules`, `## Acceptance criteria`, `## Requirements`, `## UI contract`) — never `## Goal` / `## Context` / `## Implementation steps`. Measured on a live vault the unscoped body match fired 18/30, hitting orientation NARRATIVE (Context 9×, Goal 8×, Implementation steps 17×); a bank CIF app says "peran"/"akses" wherever it explains itself, which is not evidence of a security surface. In `## Hard rules` the same word is a binding claim. Scoped: 13/30.
+
+`tier` is retained as the LABEL of the resulting set — the `--review-panel=` flag, the `review_panel:` config key, the bolt-report and the v7.1 model routing all still speak in tiers:
+
+| Tier | Lens set | Means |
 |---|---|---|
-| `minimal` | spec | (`task_type: verify` with zero signals — signals outrank verify) OR (1–2 declared target files AND zero risk signals; zero DECLARED files on a non-verify unit is unknown scope → `standard`, never minimal) — P3 predicate: the old `no operation: create` clause made this tier near-unreachable; its protection is carried by the six signals + the executed acceptance test + the L0 gates, which run under EVERY tier (the 1 lens sits ON TOP of executed evidence, never instead of it) |
-| `standard` | spec + quality | default — anything neither minimal nor full |
-| `full` | spec + quality + security + standards | ANY risk signal fires |
+| `minimal` | spec | `task_type: verify` with zero signals, OR 1–2 declared target files with zero signals. Zero DECLARED files on a non-verify unit is unknown scope → `standard`, never minimal. The 1 lens sits ON TOP of the executed acceptance test + the L0 gates, which run under EVERY tier — never instead of them |
+| `standard` | spec + standards (+ quality) | no security signal |
+| `full` | spec + standards + quality + security | a security signal is in play |
+
+**Why this replaced `if ANY signal: full`.** That predicate was an OR over six facts measuring different things — `file_count ≥ 4` is a SIZE fact, not a risk fact, and it fired 22/30 on a live vault. With six loose OR-ed predicates, P(at least one fires) → 1 on any real project: measured `full` **30/30**, `minimal` **0/30**, while the script's own header claimed the P3 rewrite had made `minimal` reachable. The tier table's stated cost control ("routine bolts pay for one lens, risky bolts pay for four") controlled nothing. Re-measured after the change on the same vault: full 17, standard 13, **minimal 1** — and the implementer model routing, which keys on the same verdict, drops from 31/31 opus to 17.
 
 **The router is a SCRIPT (P3, rail A5 — deterministic evidence, never model self-assessment).** **Run** `bash <plugin>/scripts/resolve-review-tier.sh --unit <vault>/units/U-XXX.md --pack <resolved-pack-path>` — it evaluates the six signals below mechanically and prints `{"tier", "signals_fired": [...], "signals_evaluated": [...], "implementer_model", "effort"}` — the two v7.1 fields feed the implementer model routing (SKILL Step 2), derived from the SAME verdict; the panel tier logic here is unchanged. The controller applies the override chain on top (flag > config > the script's auto verdict); exit ≠ 0 → fall back to `standard` (unknown rc is never a LOW tier). The signal LIST is copied verbatim from this file (plus derived-form stems — authentication/authorization/oauth/menyetujui — the morphology the model era handled implicitly); case-folded glob matching; a frontmatter parse-miss lands `standard` with a `parse_note`, never minimal.
 
@@ -63,7 +79,7 @@ Resolve the tier BEFORE dispatch, once per unit:
 3. `target_files` count ≥ 4.
 4. The unit body mentions auth, session, token, crypto, password, payment, upload — or the authorization class: role, permission, access, admin, acl, approv- (approve/approval) — or the Indonesian equivalents the plugin's ID/EN surface already carries: kata sandi, sandi, pembayaran, unggah, hak akses, peran, izin, otorisasi, autentikasi, persetujuan (all case-insensitive, matched as WHOLE words — `approv-` is the sole deliberate prefix match; a substring inside a longer word never fires: "perancangan"/"perangkat" do not match peran, "accessibility" does not match access — otherwise every a11y-discussing UI unit would pay the full panel). S7-TIER-5: the old EN-only list had NO authz vocabulary and none of the plugin's second language — "Hanya manajer yang bisa menyetujui pengajuan" selected a tier with no security lens.
 5. `binding_refs` cite a constitution §B (Security) clause.
-6. The unit frontmatter carries `risk: high` or `risk: critical` (the producer-stamped field per `generate-units/references/unit-schema.md`) — this signal ALONE forces `full`; when it disagrees with signals 1–5 (e.g. `risk: critical` on a unit no other signal fires for), log the disagreement in the bolt-report.
+6. The unit frontmatter carries `risk: high` or `risk: critical` (the producer-stamped field per `generate-units/references/unit-schema.md`) — `high` buys the quality lens, `critical` buys quality AND security (i.e. `critical` alone still forces `full`; v7.8 — `high` alone no longer does, because on a PII/regulated domain the producer rubric stamps `high` on nearly every unit: 18/30 measured, which is honest for the domain but was never costed); when it disagrees with signals 1–5 (e.g. `risk: critical` on a unit no other signal fires for), log the disagreement in the bolt-report.
 
 **Override chain:** `--review-panel=minimal|standard|full|auto` CLI flag > `.mega-sdd/config.yaml` `review_panel:` > `auto` (the table above). A forced tier is logged in the bolt-report; the `## Review panel` section MUST record `signals_fired[]` beside the tier (the audit trail that makes a low-tier verdict defensible) — plus, when v7.1 model routing is active, the routed model and `escalated_from: <model>` on a cascade attempt (controller-written; the implementer separately self-reports `model_used` verbatim from its own system prompt); forcing `minimal` on a unit with risk signals adds a one-line warning (never silent).
 
@@ -97,7 +113,14 @@ The deterministic post-flight Hard-rule scan still runs AFTER the panel passes (
 
 Design: `docs/superpowers/specs/2026-08-06-v6.1-bolt-loop-efficiency.md`. The measured churn this replaces: full lens re-panel per attempt (4–6 dispatches/unit, findings re-inlined into growing prompts) — while the industry-consensus round shape is "verify prior findings resolved + delta-review the fix", with the deterministic gates as the full-head regression net.
 
-**The finding ledger** — `<vault>/bolts/U-XXX/findings.json`, controller-written (Write tool) working state (NOT hook-guarded; gate evidence artifacts are unchanged and separate). Created at the round-1 merge, updated every round:
+**The finding ledger** — `<vault>/bolts/U-XXX/findings.json`, written by **`scripts/merge-panel-findings.sh`** and by nothing else (v7.8, spec 2026-08-29 Fase 1). The controller writes each lens's returned block to a file and runs:
+
+```
+bash <plugin>/scripts/merge-panel-findings.sh --vault=<vault> --unit=U-XXX --head=<sha> --round=N \
+  --spec-verdict=pass|fail --lens=spec:<file> --lens=quality:<file> [...]
+```
+
+On a verifier round it passes `--verifier=<file>` instead of the lens set. The script applies the severity→status mapping, evidence-or-drop, dedup, consensus, id stability and evidence-gated resolution MECHANICALLY, and prints a one-line summary whose `gate` field (`re-dispatch` | `clear`) IS the §Merge gate verdict — the controller reads it, never re-derives it. **Do not hand-write this file.** The mapping was prose until v7.8 and a field panel stamped all 13 findings `open` where the contract allowed 2; a model applying a rule it merely read is not a mechanism (*gates > rules > hooks*). NOT hook-guarded; gate evidence artifacts are unchanged and separate. Created at the round-1 merge, updated every round:
 
 ```json
 {"schema": 1, "unit": "U-003", "attempt": 2,
@@ -110,7 +133,7 @@ Design: `docs/superpowers/specs/2026-08-06-v6.1-bolt-loop-efficiency.md`. The me
 ```
 
 Ledger rules:
-- IDs stable across rounds (never renumbered). **Round-1 status mapping:** Critical findings and the findings behind a spec-❌ verdict enter as `open` (these are what fix rounds must close — "the open finding IDs"); Important/Minor findings enter as `advisory` (recorded, surfaced, never gating — matching the §Merge gate's own severity semantics; the verifier is never asked to verify advisories).
+- IDs stable across rounds (never renumbered) — enforced by `merge-panel-findings.sh`, which reuses the prior ledger's ids. **Round-1 status mapping (applied by the script on EVERY round, so a hand-edited status cannot survive a merge):** Critical findings and the findings behind a spec-❌ verdict enter as `open` (these are what fix rounds must close — "the open finding IDs"); Important/Minor findings enter as `advisory` (recorded, surfaced, never gating — matching the §Merge gate's own severity semantics; the verifier is never asked to verify advisories).
 - `status: resolved` is written from a **resolution-verifier** `resolved` verdict carrying new-head `file:line` evidence — never from the implementer's report (evidence-gated resolution, the B1-recompute doctrine applied to judgment).
 - **Escape-hatch rounds close findings too** (the deadlock guard): when a full re-panel runs instead of the verifier, the CONTROLLER updates the ledger from the fresh merged results — an open finding whose issue no longer appears in the re-panel's merged findings (same file + issue class) is marked `resolved` with `verified_by: "re-panel round N"` and the round's head SHA as evidence; a re-reported issue keeps its ORIGINAL id and stays `open` (never gets a duplicate new id); genuinely new findings get new ids with round-1 status mapping. A clean escape-hatch re-panel therefore closes the round exactly like a clean verifier round.
 - `status: advisory` = recorded, surfaced in the bolt-report, does not gate. The ledger-derived `## Review panel` section is written into `bolt-report.md` at unit completion AND on any halt (`review_critical_unresolved` must carry the unresolved finding — the halt path derives the section too, never skips it).

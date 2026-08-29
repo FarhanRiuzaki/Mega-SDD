@@ -8,16 +8,26 @@
 #   4. body vocabulary (auth/session/token/crypto/password/payment/upload/
 #      role/permission/access/admin/acl/approv- + Indonesian equivalents)
 #   5. binding_refs cite a constitution §B (Security) clause (B-NNN)
-#   6. unit frontmatter risk: high|critical (alone forces full)
-# Tier predicate (P3 rewrite — makes `minimal` reachable):
-#   minimal  = task_type verify OR (<=2 target files AND zero signals)
-#   full     = ANY signal fired
-#   standard = everything else
-# Output: one JSON line {"tier","signals_fired":[],"signals_evaluated":[],
+#   6. unit frontmatter risk: high|critical
+#
+# PER-LENS ROUTING (v7.8, spec 2026-08-29 Fase 3). The predicate was
+# `if fired: tier = "full"` — an OR over six predicates measuring different
+# things. Measured on a live 30-unit vault: full 30/30, minimal 0/30, because
+# `file_count>=4` (a SIZE fact) fired 22/30. Each signal now buys the lens it
+# justifies:
+#   spec      = always (the moat lens)
+#   standards = always above minimal (cheap; conventions on any new code)
+#   quality   = file_count>=3 OR risk: high|critical      (surface area)
+#   security  = auth_globs|manifest|constitution_b|vocabulary OR risk: critical
+#   design    = added by the CONTROLLER for UI-bearing units, not here
+# `tier` is kept as the LABEL of that set (flags/config/bolt-report speak
+# tiers): full = security lens in play; minimal = spec only; else standard.
+# Signal 4 (vocabulary) is SCOPED to the unit contract sections — see below.
+# Output: one JSON line {"tier","lenses":[],"signals_fired":[],"signals_evaluated":[],
 # "target_files":N,"task_type":...,"implementer_model","effort"}. The two
 # v7.1 fields are DERIVED from the SAME signals (per-unit model routing spec
 # 2026-08-22 — rail A5: deterministic evidence, never model self-assessment):
-#   implementer_model: opus  <- tier full (any risk signal)
+#   implementer_model: opus  <- tier full (a SECURITY signal, v7.8)
 #                      haiku <- tier minimal AND task_type verify ONLY
 #                      sonnet<- everything else (unknown never lowers a tier)
 #   effort:            low for haiku, high otherwise (recorded in the bolt-report;
@@ -153,7 +163,38 @@ def _word_hit(w):
     pat = r"\s+".join(re.escape(part) for part in w.split())
     return re.search(r"(?<![a-z0-9_])%s(?:e?s)?(?![a-z0-9_])" % pat, body_l)
 
-hit = any(_word_hit(w) for w in VOCAB) or any(st in body_l for st in STEMS)
+# v7.8 (spec 2026-08-29 Fase 3): the match is SCOPED to the unit's CONTRACT
+# sections. Measured on a live 30-unit vault, the unscoped body match fired
+# 18/30 — hitting `## Context (read first)` 9x, `## Goal` 8x and
+# `## Implementation steps` 17x, i.e. orientation NARRATIVE. A bank CIF app
+# says "peran"/"akses" everywhere it explains itself; that is not evidence of a
+# security surface. In `## Hard rules` the same word is a binding claim.
+# Scoped: 13/30 on the same vault.
+CONTRACT_SECTIONS = ("hard rules", "acceptance criteria", "requirements",
+                     "ui contract")
+
+
+def _contract_text(b):
+    parts = re.split(r"(?m)^(##\s+.*)$", b)
+    out = []
+    for i in range(1, len(parts), 2):
+        head = parts[i].lstrip("#").strip().lower()
+        head = re.sub(r"\s*\(.*\)\s*$", "", head)   # `## Hard rules (from binding)`
+        if head in CONTRACT_SECTIONS:
+            out.append(parts[i + 1] if i + 1 < len(parts) else "")
+    return "\n".join(out)
+
+
+contract_l = _contract_text(body).lower()
+
+
+def _word_hit_in(w, hay):
+    pat = r"\s+".join(re.escape(part) for part in w.split())
+    return re.search(r"(?<![a-z0-9_])%s(?:e?s)?(?![a-z0-9_])" % pat, hay)
+
+
+hit = (any(_word_hit_in(w, contract_l) for w in VOCAB)
+       or any(st in contract_l for st in STEMS))
 if hit:
     fired.append("vocabulary")
 
@@ -167,22 +208,55 @@ if brefs and re.search(r"(?m)^[ \t]*-[ \t]+[\"']?B-\d{3}\b", brefs.group(1)):
 if risk in ("high", "critical"):
     fired.append("risk_field")
 
-if fired:
+# ── Per-lens routing (v7.8, spec 2026-08-29 Fase 3) ─────────────────────────
+# The pre-v7.8 predicate was `if fired: tier = "full"` — an OR over six
+# predicates that measure completely different things. Measured on a live
+# 30-unit vault it produced full 30/30 and minimal 0/30, because `file_count>=4`
+# (a SIZE fact, not a risk fact) fired 22/30. With six loose OR-ed predicates,
+# P(at least one fires) -> 1 on any real project, so the tier table's stated
+# cost control ("routine bolts pay for one lens") controlled nothing.
+#
+# Each signal now buys the lens it actually JUSTIFIES:
+#   file_count / risk        -> surface area to judge   -> quality
+#   auth_globs / manifest /
+#   constitution_b /
+#   vocabulary / risk:critical -> a security surface    -> security
+# spec is unconditional (the moat lens); standards is unconditional above
+# minimal (sonnet, cheap, judges conventions on any new code). design is added
+# by the CONTROLLER for UI-bearing units — this script never sees target_files
+# content, only paths, and the design slice is resolved elsewhere.
+SECURITY_SIGNALS = {"auth_globs", "manifest", "constitution_b", "vocabulary"}
+security = bool(SECURITY_SIGNALS & set(fired)) or risk == "critical"
+quality = n_files >= 3 or risk in ("high", "critical")
+
+minimal_ok = (not fired) and (task_type == "verify"
+                              or (1 <= n_files <= 2 and task_type != ""))
+if parse_note or task_type == "":
+    minimal_ok = False
+
+if minimal_ok:
+    lenses = ["spec"]
+else:
+    lenses = ["spec", "standards"]
+    if quality:
+        lenses.insert(1, "quality")
+    if security:
+        lenses.insert(2 if quality else 1, "security")
+
+# `tier` is retained as the LABEL of that set — the --review-panel= flag, the
+# config key and the bolt-report all still speak in tiers, and the model
+# routing below keys on it. full = the security lens is in play.
+if security and not minimal_ok:
     tier = "full"
-elif parse_note:
-    # a parse-miss is UNKNOWN, and unknown is never a LOW tier (doctrine) —
-    # zero-parsed target_files on a non-verify unit lands standard, marked
-    tier = "standard"
-elif task_type == "verify" or (1 <= n_files <= 2 and task_type != ""):
-    # zero DECLARED files on a non-verify unit is unknown scope, not a small
-    # unit (round code-2) — only verify may be minimal file-less
+elif minimal_ok:
     tier = "minimal"
-elif task_type == "":
-    # unparseable frontmatter (no task_type at all) — same unknown rule
-    tier = "standard"
-    parse_note = parse_note or "frontmatter_unparsed"
 else:
     tier = "standard"
+
+if task_type == "" and not parse_note:
+    # unparseable frontmatter (no task_type at all) — UNKNOWN, and unknown is
+    # never a LOW tier (doctrine). minimal_ok already excluded it above.
+    parse_note = "frontmatter_unparsed"
 
 # v7.1 per-unit model routing — derived from the SAME verdict, no new inputs.
 # haiku is verify-only (the catalog's own haiku rubric almost never fits
@@ -196,7 +270,7 @@ else:
     implementer_model = "sonnet"
 effort = "low" if implementer_model == "haiku" else "high"
 
-out = {"tier": tier, "signals_fired": fired,
+out = {"tier": tier, "lenses": lenses, "signals_fired": fired,
        "signals_evaluated": signals_evaluated,
        "target_files": n_files, "task_type": task_type,
        "implementer_model": implementer_model, "effort": effort}
