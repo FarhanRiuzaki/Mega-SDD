@@ -19,14 +19,17 @@ fail() { echo "  FAIL: $1"; fails=$((fails + 1)); }
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-mkunit() {  # $1=file $2=task_type $3=risk(optional) $4=paths(space-sep) $5=body
-  local f="$1" tt="$2" risk="$3" paths="$4" body="$5"
+mkunit() {  # $1=file $2=task_type $3=risk(optional) $4=paths(space-sep) $5=body [$6=section]
+  # v7.8: signal-4 vocabulary is scoped to the unit CONTRACT sections, so the
+  # body must land in one for the signal to be reachable. $6 overrides the
+  # section — used to prove narrative-only vocabulary does NOT fire.
+  local f="$1" tt="$2" risk="$3" paths="$4" body="$5" sect="${6:-Hard rules}"
   {
     printf -- '---\nunit_id: U-001\ntask_type: %s\n' "$tt"
     [ -n "$risk" ] && printf 'risk: %s\n' "$risk"
     printf 'target_files:\n'
     for pth in $paths; do printf '  - path: %s\n    operation: create\n' "$pth"; done
-    printf 'binding_refs:\n  - C-001\n---\n\n# Unit\n%s\n' "$body"
+    printf 'binding_refs:\n  - C-001\n---\n\n# Unit\n\n## %s\n%s\n' "$sect" "$body"
   } > "$f"
 }
 
@@ -45,13 +48,23 @@ T=$(bash "$RT" --unit "$WORK/u-3file.md" | python3 -c "import json,sys;print(jso
 
 mkunit "$WORK/u-many.md" create "" "a/1.php a/2.php a/3.php a/4.php" "Empat file."
 OUT=$(bash "$RT" --unit "$WORK/u-many.md")
-echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and 'file_count' in d['signals_fired']" \
-  && pass ">=4 files -> full (file_count fired)" || fail "many: $OUT"
+# v7.8 (spec 2026-08-29 Fase 3): file_count is a SIZE fact, not a risk fact —
+# it buys quality+standards, never security, so the tier LABEL is standard.
+# The pre-v7.8 pin asserted full; it is updated, not dropped.
+echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='standard' and 'file_count' in d['signals_fired'] and d['lenses']==['spec','quality','standards'], d" \
+  && pass ">=4 files -> standard + quality lens (size is not risk)" || fail "many: $OUT"
 
 mkunit "$WORK/u-vocab.md" create "" "app/Services/Pay.php" "Handle payment settlement via token."
 OUT=$(bash "$RT" --unit "$WORK/u-vocab.md")
-echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and 'vocabulary' in d['signals_fired']" \
-  && pass "payment/token vocabulary -> full" || fail "vocab: $OUT"
+echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and 'vocabulary' in d['signals_fired'] and 'security' in d['lenses'], d" \
+  && pass "payment/token vocabulary in Hard rules -> full + security lens" || fail "vocab: $OUT"
+
+# v7.8 the other side of the scope: the SAME words in orientation narrative are
+# not evidence of a security surface and must NOT buy the security lens.
+mkunit "$WORK/u-vocab-narrative.md" create "" "app/Services/Pay.php" "Handle payment settlement via token." "Context (read first)"
+OUT=$(bash "$RT" --unit "$WORK/u-vocab-narrative.md")
+echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert 'vocabulary' not in d['signals_fired'] and 'security' not in d['lenses'], d" \
+  && pass "same vocabulary in ## Context only -> no security lens (scope holds)" || fail "narrative-vocab: $OUT"
 
 mkunit "$WORK/u-manifest.md" extend "" "composer.json app/Support/Helper.php" "Tambah dependency util."
 OUT=$(bash "$RT" --unit "$WORK/u-manifest.md")
@@ -67,12 +80,13 @@ M=$(MODEL_OF "$WORK/u-small.md")
 M=$(MODEL_OF "$WORK/u-3file.md")
 [ "$M" = "sonnet high" ] && pass "standard -> sonnet high" || fail "3file model=$M"
 M=$(MODEL_OF "$WORK/u-vocab.md")
-[ "$M" = "opus high" ] && pass "full (signal fired) -> opus high" || fail "vocab model=$M"
+[ "$M" = "opus high" ] && pass "full (security signal) -> opus high" || fail "vocab model=$M"
 
 mkunit "$WORK/u-risk.md" create high "app/Anything.php" "Netral."
 OUT=$(bash "$RT" --unit "$WORK/u-risk.md")
-echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and 'risk_field' in d['signals_fired']" \
-  && pass "risk: high alone -> full" || fail "risk: $OUT"
+# v7.8: risk: high buys the quality lens; only risk: critical also buys security.
+echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='standard' and 'risk_field' in d['signals_fired'] and 'security' not in d['lenses'], d" \
+  && pass "risk: high alone -> standard + quality (critical still forces full)" || fail "risk: $OUT"
 
 cat > "$WORK/u-b.md" <<'EOF'
 ---
