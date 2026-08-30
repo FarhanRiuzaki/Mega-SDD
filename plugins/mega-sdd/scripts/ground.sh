@@ -217,6 +217,7 @@ for up in unit_paths_vw:
 #   - Build inheritance graph; detect cycles
 #   - Detect references in binding/starterkit-context.yaml pointing to missing packs
 pack_dir_candidates = [
+    os.path.join(cwd, ".mega-sdd", "packs"),   # F-14: the canonical project pack root
     os.path.join(cwd, ".mega-sdd", "codebase", "framework-conventions"),
     os.path.join(cwd, ".mega-sdd", "codebase", "packs"),
 ]

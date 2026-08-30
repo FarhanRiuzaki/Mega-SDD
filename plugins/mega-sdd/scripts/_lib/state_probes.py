@@ -305,6 +305,34 @@ def probe_git(cwd):
     return {"is_repo": is_repo, "head": head}
 
 
+# F-14 (spec 2026-08-30 §6): one-level workspace dirs whose manifests the pack
+# matcher ALSO reads. The field monorepo carried its only `elysia` dependency
+# in apps/api/package.json; the root-only probe saw nothing and every dispatch
+# fell to _universal. Root manifests stay first (they win ties); nested ones
+# are reported as RELATIVE paths and are consumed ONLY by probe_framework_pack
+# — probe_manifests() itself stays root-only for its other consumers.
+WORKSPACE_DIRS = ("apps", "packages", "services", "libs")
+
+
+def probe_workspace_manifests(cwd):
+    """Relative paths of manifests one level under WORKSPACE_DIRS (sorted)."""
+    found = []
+    for wd in WORKSPACE_DIRS:
+        base = os.path.join(cwd, wd)
+        try:
+            subs = sorted(os.listdir(base))
+        except OSError:
+            continue
+        for sub in subs:
+            d = os.path.join(base, sub)
+            if not os.path.isdir(d):
+                continue
+            for m in MANIFEST_SIGNALS:
+                if os.path.isfile(os.path.join(d, m)):
+                    found.append("%s/%s/%s" % (wd, sub, m))
+    return found
+
+
 def probe_manifests(cwd):
     """Probe 6b — package/framework manifests present at root (fixed names +
     root-only globs; glob hits report the REAL filenames)."""
@@ -352,20 +380,36 @@ def _fm_scalar(raw):
     return raw.split(" #", 1)[0].strip()
 
 
-def _read_pack_signatures():
+def project_pack_dir(cwd):
+    """The project-local pack root (F-14): <root>/.mega-sdd/packs/. A pack the
+    project authors for its own stack lives HERE — the plugin tree is read-only
+    on the office machines, and the field run had written elysia.md exactly here
+    with nothing reading it. Project packs win over a same-named plugin pack."""
+    return os.path.join(cwd, ".mega-sdd", "packs")
+
+
+def _read_pack_signatures(cwd=None):
     """[{framework, package_manifest, markers[], priority}] from every pack
-    frontmatter carrying a detection_signature. Read-only; parse failures
-    skip the pack (never fabricate a match)."""
+    frontmatter carrying a detection_signature — project packs FIRST (default
+    priority 50, so a project pack beats a plugin pack on the same manifest),
+    then the plugin packs. Read-only; parse failures skip the pack (never
+    fabricate a match)."""
     sigs = []
-    try:
-        names = sorted(os.listdir(_PACK_DIR))
-    except OSError:
-        return sigs
-    for fn in names:
+    roots = []
+    if cwd:
+        roots.append((project_pack_dir(cwd), 50))
+    roots.append((_PACK_DIR, 100))
+    seen_fw = set()
+    for pack_dir, default_priority in roots:
+      try:
+        names = sorted(os.listdir(pack_dir))
+      except OSError:
+        continue
+      for fn in names:
         if not fn.endswith(".md") or fn.startswith("_") or fn == "README.md":
             continue
         try:
-            with open(os.path.join(_PACK_DIR, fn), encoding="utf-8",
+            with open(os.path.join(pack_dir, fn), encoding="utf-8",
                       errors="replace") as f:
                 head = f.read(4096)
         except OSError:
@@ -384,11 +428,14 @@ def _read_pack_signatures():
         markers = [vals[k] for k in
                    ("dependency_marker", "fallback_dependency_marker")
                    if vals.get(k)]
+        if vals["framework"] in seen_fw:
+            continue  # a project pack already declared this framework — it wins
+        seen_fw.add(vals["framework"])
         sigs.append({
             "framework": vals["framework"],
             "package_manifest": vals["package_manifest"],
             "markers": markers,
-            "priority": int(vals.get("detection_priority") or 100),
+            "priority": int(vals.get("detection_priority") or default_priority),
         })
     return sigs
 
@@ -404,9 +451,13 @@ def probe_framework_pack(cwd, manifests):
     """
     import fnmatch
     out = {"pack": "_universal", "manifest": None, "candidates": []}
-    if not manifests:
+    # F-14: nested workspace manifests join the search AFTER the root ones
+    # (root wins ties); a signature's `package_manifest` matches a nested path
+    # by BASENAME (apps/api/package.json ~ package.json).
+    mset = list(manifests or []) + [m for m in probe_workspace_manifests(cwd)
+                                    if m not in (manifests or [])]
+    if not mset:
         return out
-    mset = list(manifests)
     content_cache = {}
 
     def _content(fn):
@@ -433,15 +484,20 @@ def probe_framework_pack(cwd, manifests):
 
     matches = []
     truncated = []
-    for sig in _read_pack_signatures():
+    def _base(m):
+        return m.rsplit("/", 1)[-1]
+
+    for sig in _read_pack_signatures(cwd):
         pat = sig["package_manifest"]
         if any(ch in pat for ch in "*?["):
-            files = [m for m in mset if fnmatch.fnmatch(m, pat)]
+            files = [m for m in mset if fnmatch.fnmatch(_base(m), pat)]
         else:
             # canonical first, then alternates — ALSO when the canonical file
-            # exists but carries no marker (round F7).
-            files = ([pat] if pat in mset else []) + [
-                alt for alt in MANIFEST_ALTERNATES.get(pat, ()) if alt in mset
+            # exists but carries no marker (round F7). Root paths precede
+            # nested ones in mset, so the root manifest still wins ties.
+            files = [m for m in mset if _base(m) == pat] + [
+                m for m in mset
+                if _base(m) in MANIFEST_ALTERNATES.get(pat, ()) and _base(m) != pat
             ]
         for fn in files:
             content = _content(fn)
