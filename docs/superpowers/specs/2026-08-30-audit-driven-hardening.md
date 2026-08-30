@@ -127,6 +127,14 @@ Semua writer artefak (`preflight/postflight/acceptance/findings/l0/_batch-suite`
 ## 4. Yang ditolak / ditunda (tercatat di riset §2)
 F-01(b) per-rule attestation (×5–11 beban), gate pack-driven (ukur setelah F-14), F-03 (spec sendiri), F-04/F-05 (spec sendiri), F-12 (setelah ledger), backlog r2–r3.
 
+## 6. F-14 — pack proyek yang benar-benar resolve (rilis 7.12.0, SHIPPED)
+
+**Terukur**: run lapangan menulis `.mega-sdd/packs/elysia.md`; tidak ada satu pun konsumen yang membacanya. Resolver hanya melihat root plugin; matcher GROUND hanya membaca manifest root (dependency `elysia` ada di `apps/api/package.json`); `state.json` ditulis pra-git dan tidak pernah diregenerasi; `ground.sh` mencari di dua direktori lain. Akibat: 36/36 dispatch `_universal`, 5 gate pack-driven SKIP sepanjang run → **tidak bisa dinilai** (bukan "tidak berguna").
+
+**Mekanisme**: root pack proyek kanonis `<root>/.mega-sdd/packs/`; resolver membaca root proyek dulu (shadowing nama sama, `extends:` lintas root) dan menjalankan matcher **live** (implementasi yang sama dengan step 3, bukan sniff kedua) bila tidak ada sumber nama; input cache = dir pack proyek + file-nya + manifest root & workspace satu tingkat. `state_probes`: pack proyek dibaca dulu (prioritas 50), `probe_workspace_manifests()` (`apps/* packages/* services/* libs/*`) hanya untuk matcher. `ground.sh` ikut. Test: `tests/audit-hardening/test-f14-project-pack.sh`.
+
+**Yang dibuka**: pengukuran 5 gate pack-driven di run berikutnya. Keputusan hapus/pertahankan tetap menunggu angka.
+
 ## 5. Pengukuran setelah tranche
 - T1: jumlah evaluasi gate per run (target: ≥1 per dispatch bolt); FP `DO_NOT_MODIFY` (target 0 pada replay 36 unit); commit sapu (target 0).
 - T2: byte T1 per dispatch; jumlah `status: fail` postflight yang berasal dari rule mesin vs directive (target: directive 0 dari verdict).

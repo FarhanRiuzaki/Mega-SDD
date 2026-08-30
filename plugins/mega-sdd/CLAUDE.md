@@ -60,7 +60,7 @@ These are the rules v4 was built to. They are **derived from Anthropic's publish
 
 **Paths** — canonical nested layout per `references/paths.md`: `<vault>/{bound,units,bolts}/` + `<vault>/binding.md`, never the legacy `<vault>-bound/` sibling.
 
-**Tech-agnosticism** — the pipeline must work for ANY supported stack, not just PHP/JS. Low-level extraction (manifests, lock digests, route/model signatures, test-framework probes) enumerates EVERY ecosystem in the §8.5 framework table; framework-specific knowledge lives in packs (`framework-conventions/`, `lib-patterns/`), never hardcoded in skill bodies. When adding a capability, ask "does this work for a Rails/Gin/Axum repo too?" before shipping.
+**Tech-agnosticism** — the pipeline must work for ANY supported stack, not just PHP/JS. Low-level extraction (manifests, lock digests, route/model signatures, test-framework probes) enumerates EVERY ecosystem in the §8.5 framework table; framework-specific knowledge lives in packs (`framework-conventions/`, `lib-patterns/`), never hardcoded in skill bodies — and a project may author its own pack at `<root>/.mega-sdd/packs/<framework>.md` (7.12.0, F-14: read by the resolver, the GROUND matcher and ground.sh; project pack beats a same-named plugin pack; one-level workspace manifests are matched too). When adding a capability, ask "does this work for a Rails/Gin/Axum repo too?" before shipping.
 
 **Capability-adoption decisions (evaluated, with rationale — do not re-adopt blindly)**
 - `disable-model-invocation: true` — REJECTED for pipeline skills: it removes the skill from Claude's context entirely, which breaks natural-language routing ("scan codebase ini", "pasang tools"); mega-sdd's ID/EN trigger phrases are a core feature.

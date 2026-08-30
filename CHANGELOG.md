@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.12.0] - 2026-08-30 — project-local framework packs actually resolve (F-14)
+
+**Spec `docs/superpowers/specs/2026-08-30-audit-driven-hardening.md` §6. Field defect: the run authored `.mega-sdd/packs/elysia.md` for its stack and NOTHING read it — the resolver knew only the plugin pack root, the GROUND matcher read only root manifests (the `elysia` dependency lived in `apps/api/package.json`), `state.json` was minted pre-git and never regenerated, and `ground.sh` looked in two other directories. 36/36 dispatches got `_universal`; every pack-driven gate (ui-quality, flow-coverage, cross-cutting, sibling, render-test) SKIPped for the whole run — which is why none of them could be judged.**
+
+### Added — `<root>/.mega-sdd/packs/<framework>.md` is the canonical project pack root
+- `resolve-framework-pack.sh`: `pack_path()` reads the project root first, then the plugin root (a project pack shadows a same-named plugin pack; `extends:` may cross roots). Step 3b: when no name source resolves, the **live** GROUND matcher runs (the same `state_probes.probe_framework_pack`, one implementation) instead of trusting a write-once `state.json`. The project pack dir, its files, and root + one-level workspace manifests are cache inputs (a new pack or a new dependency re-resolves cold, never a stale answer).
+- `state_probes.py`: `_read_pack_signatures(cwd)` reads project packs first (default priority 50 < plugin 100); `probe_workspace_manifests()` adds `apps/* packages/* services/* libs/*` manifests, matched by basename, root first — consumed only by the pack matcher (`probe_manifests()` stays root-only for its other consumers).
+- `ground.sh`: `.mega-sdd/packs` joins its pack-chain candidates first. README documents the root; lint with `validate-pack.sh <path>`.
+
+### Notes
+- New: `tests/audit-hardening/test-f14-project-pack.sh` (auto-resolve from a workspace manifest, section merge order, cache bust on pack edit and on dependency add, shadowing, plugin regression, matcher). Existing fixture harness + P2 ground pins unchanged.
+- What this unblocks: the five pack-driven gates can now be MEASURED on the next run — until then they stay "belum bisa diputus", not "delete".
+
 ## [7.11.0] - 2026-08-30 — audit-driven hardening, Tranche 3: the catchers become un-skippable; artifacts say who made them
 
 **Spec `docs/superpowers/specs/2026-08-30-audit-driven-hardening.md` §3. Same field basis (HOST-AS400 / dd9000-gate, 36 units): the panel and the L0 gates caught every real high-class defect of the run and were traceable on ≤17/36 and 7/36 units; three finding ledgers were hand-written; 69/69 acceptance entries carried `expects: ""`; no evidence artifact named the plugin version that produced it.**

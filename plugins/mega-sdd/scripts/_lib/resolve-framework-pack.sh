@@ -122,6 +122,12 @@ _ST_FILE="${CWD}/.mega-sdd/state.json"
 _SK_F=0; [ -f "$_SK_FILE" ] && _SK_F=1
 _CM_F=0; [ -f "$_CM_FILE" ] && _CM_F=1
 _ST_F=0; [ -f "$_ST_FILE" ] && _ST_F=1
+# F-14 (spec 2026-08-30 §6): the PROJECT pack root. A project-authored pack
+# (`<root>/.mega-sdd/packs/<name>.md`) resolves BEFORE the plugin pack of the
+# same name; its `extends:` may point at a plugin pack. The field run wrote
+# elysia.md here and nothing read it — 36/36 dispatches fell to _universal and
+# every pack-driven gate SKIPped.
+_PROJ_PACK_DIR="${CWD}/.mega-sdd/packs"
 _SEC_KEY="${SECTION:-_chain}"
 _SEC_KEY_SAFE=""
 while [ -n "$_SEC_KEY" ]; do
@@ -151,12 +157,24 @@ if [ -n "$_CACHE_FILE" ] && [ -f "$_CACHE_FILE" ]; then
       # a resolver-CODE change must bust the cache too (F5): $0 is an input
       [ "$_CACHE_FILE" -nt "$0" ] || _VALID=0
       [ "$_CACHE_FILE" -nt "$PACK_ROOT" ] || _VALID=0
+      # F-14: the project pack dir and the manifests the live matcher reads are
+      # cache inputs too — a new project pack or a dependency added to a
+      # (root or one-level workspace) manifest must re-resolve cold.
+      if [ -d "$_PROJ_PACK_DIR" ] && ! [ "$_CACHE_FILE" -nt "$_PROJ_PACK_DIR" ]; then _VALID=0; fi
+      for _MF in "$CWD"/package.json "$CWD"/composer.json "$CWD"/go.mod "$CWD"/Cargo.toml \
+                 "$CWD"/pyproject.toml "$CWD"/requirements.txt "$CWD"/Gemfile "$CWD"/pom.xml \
+                 "$CWD"/apps/*/package.json "$CWD"/packages/*/package.json "$CWD"/services/*/package.json \
+                 "$CWD"/apps/*/composer.json "$CWD"/apps/*/go.mod "$CWD"/apps/*/pyproject.toml; do
+        if [ -f "$_MF" ] && ! [ "$_CACHE_FILE" -nt "$_MF" ]; then _VALID=0; break; fi
+      done
       if [ "$_SK_F" = "1" ] && ! [ "$_CACHE_FILE" -nt "$_SK_FILE" ]; then _VALID=0; fi
       if [ "$_CM_F" = "1" ] && ! [ "$_CACHE_FILE" -nt "$_CM_FILE" ]; then _VALID=0; fi
       if [ "$_ST_F" = "1" ] && ! [ "$_CACHE_FILE" -nt "$_ST_FILE" ]; then _VALID=0; fi
       if [ "$_VALID" = "1" ] && [ -n "$_CHAIN_PART" ]; then
         for _PK in $_CHAIN_PART; do
-          _PK_PATH="${PACK_ROOT}/${_PK}"
+          # project root first (F-14), then the plugin root — same order as pack_path()
+          _PK_PATH="${_PROJ_PACK_DIR}/${_PK}"
+          [ -f "$_PK_PATH" ] || _PK_PATH="${PACK_ROOT}/${_PK}"
           if [ ! -f "$_PK_PATH" ] || ! [ "$_CACHE_FILE" -nt "$_PK_PATH" ]; then _VALID=0; break; fi
         done
       fi
@@ -195,7 +213,7 @@ if [ -z "${MEGA_SDD_PY:-}" ]; then
   fi
 fi
 
-CWD="$CWD" SECTION="$SECTION" QUIET="$QUIET" PACK_ROOT="$PACK_ROOT" \
+CWD="$CWD" SECTION="$SECTION" QUIET="$QUIET" PACK_ROOT="$PACK_ROOT" PROJ_PACK_DIR="$_PROJ_PACK_DIR" PACKRES_LIB="$_RFP_SELF_DIR" \
 PACKRES_CACHE="$_CACHE_FILE" PACKRES_SK="$_SK_F" PACKRES_CM="$_CM_F" PACKRES_ST="$_ST_F" $MEGA_SDD_PY <<'PYEOF'
 import os
 import re
@@ -205,6 +223,7 @@ cwd = os.environ["CWD"]
 section = os.environ.get("SECTION", "")
 quiet = os.environ.get("QUIET", "0") == "1"
 pack_root = os.environ["PACK_ROOT"]
+proj_pack_dir = os.environ.get("PROJ_PACK_DIR") or os.path.join(cwd, ".mega-sdd", "packs")
 
 chain = []  # populated below; the cache writer reads it for the meta line
 
@@ -298,6 +317,21 @@ def detect_pack_name():
         if m and m.group(1) not in ("", "_universal"):
             return m.group(1), "state.json derived.framework_pack (GROUND matcher)"
 
+    # 3b. LIVE GROUND matcher (F-14) — the SAME matcher as step 3 (one
+    # implementation, state_probes.probe_framework_pack), run now instead of
+    # trusting a write-once state.json: on the field run state.json was minted
+    # pre-git and never regenerated, so it never learned the project's pack.
+    # It also reads project packs (.mega-sdd/packs) and one-level workspace
+    # manifests (apps/*/package.json). Cache inputs cover both.
+    try:
+        sys.path.insert(0, os.environ.get("PACKRES_LIB", os.path.dirname(os.path.abspath(__file__))))
+        import state_probes
+        live = state_probes.probe_framework_pack(cwd, state_probes.probe_manifests(cwd))
+        if live.get("pack") and live["pack"] != "_universal":
+            return live["pack"], "live GROUND matcher (manifest %s)" % live.get("manifest")
+    except Exception as e:  # never let the matcher break resolution
+        warn("# live matcher unavailable: %r" % (e,))
+
     # 4. fallback
     return "_universal", "fallback (no manifest)"
 
@@ -312,6 +346,10 @@ EXTENDS_RE = re.compile(r"^extends:\s*(.+?)\s*$", re.MULTILINE)
 
 
 def pack_path(name):
+    """Project pack root first (F-14), then the plugin root."""
+    p = os.path.join(proj_pack_dir, f"{name}.md")
+    if os.path.isfile(p):
+        return p
     return os.path.join(pack_root, f"{name}.md")
 
 

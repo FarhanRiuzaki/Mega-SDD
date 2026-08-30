@@ -31,6 +31,10 @@ Fallback when no framework match → `_universal.md` (universal good practices t
 |---|---|
 | `../../scripts/validate-pack.sh` | Pack linter — validates one pack or all packs against the `_lint.md` contract |
 
+## Project-local packs (`<root>/.mega-sdd/packs/`)
+
+A stack the plugin does not ship a pack for (or a house variant of one it does) gets its pack **inside the project**: `<root>/.mega-sdd/packs/<framework>.md`, authored from `_template.md` with a real `detection_signature:` and `extends: _universal` (or any plugin pack). Since 7.12.0 (F-14, spec `2026-08-30-audit-driven-hardening.md` §6) that root is read by every consumer — the resolver (`resolve-framework-pack.sh`: project pack first, then the plugin pack of the same name), the GROUND matcher (`state_probes.probe_framework_pack`, which also reads one-level workspace manifests such as `apps/api/package.json`), and `ground.sh`'s pack-chain checks — and its files are cache inputs. Lint it like a plugin pack: `scripts/validate-pack.sh <root>/.mega-sdd/packs/<framework>.md`. Field origin: a run that authored `elysia.md` there and had 36/36 dispatches fall to `_universal` because nothing read it.
+
 ## Opt-out
 
 - `bind-codebase --no-framework-pack` — skip pack loading entirely
