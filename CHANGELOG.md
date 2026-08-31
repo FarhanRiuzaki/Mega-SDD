@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.16.0] - 2026-08-31 — render-html: any md becomes one shareable, diagram-first HTML file
+
+**Spec `docs/superpowers/specs/2026-08-31-render-html.md`, grounded in `research/2026-08-31-render-html-standard.md` (Diátaxis per-doc-type lens, arc42 compartments, C4-via-flowchart, numeric mermaid budgets, natural mixed-language strings). Owner mandate: the dev team should understand mega-sdd output through an HTML artifact they can open offline and share with people who have no Claude — standar, rapi, konsisten, sesuai domain, diagram-first.**
+
+### Added — `scripts/render-html.sh` + `assets/render-html/` (0 model tokens, md stays the only ground truth)
+- Deterministic wrapper: the RAW md is embedded into `template.html` and renders itself client-side via vendored pinned **marked 15.0.12** + **mermaid 11.9.0** (sha256 pins in the spec — review at every version bump, same class as the `.mcp.json` pins). One self-contained ~2.6MB file: zero external requests, system fonts, opens offline on any laptop. Mermaid diagrams render LIVE — every flow this plugin mandates into Mermaid finally draws itself.
+- **Per-doc-type lens** (path-detected, fail-open to generic): kb-module / binding / units / drift / adr / vault / index — each gets its badge, an "Untuk siapa" audience line, and a summary strip (tier counts, CONFIRMED/CONFLICT, unique OQ/U ids, diagrams, sections; an uncountable tile is omitted, never wrong).
+- **Fixed page anatomy** (chrome bar → audience → diagram-first nav → strip → body → provenance footer with source relpath + sha256 + plugin_version), diagram cards titled by their nearest heading, tier tokens rendered as badges, dark/light themes.
+- **Diagram budget stays advisory**: >20 edges or >7 sequence participants → a natural-language nudge ("kegedean, mending dipecah") in the JSON + a page warnbar; exit stays 0 — ground truth is never blocked.
+- Modes: single file (`<parent>/html/<stem>.html`), directory bundle `--index` (navigable index.html), `--assets-dir` (shared assets folder for big KB bundles). `</script>` in md cannot break out of the embed; frontmatter is stripped from display only.
+- Deliberately NOT done, on record: model-authored HTML (the parallel-doc drift class №C rejected), auto-folding arbitrary md prose (the renderer never guesses structure — authored `<details>` renders folded), mermaid C4 syntax (GitHub can't render it — md↔HTML consistency wins).
+
+### Notes
+- Verified live in Chrome (flowchart + stateDiagram rendered, kb-module lens correct, console clean) + marked v15 API pinned via node. New: `tests/render-html/test-render-html.sh` (22 pins).
+- No new command — the surface stays 3 verbs + 3 one-timers; invoke by phrase ("render html KB-nya") or directly.
+
 ## [7.15.0] - 2026-08-31 — update-plugin sweeps the dormant cache (confirm-first)
 
 **Spec `docs/superpowers/specs/2026-08-31-update-plugin-cache-sweep.md`. Owner ask: cache cleanup on update so the running version is reliably the latest. Measured on the owner's own machine: 8 cached version dirs, `installed_plugins.json` referencing exactly one — 7 dormant dirs, the same accumulation class that once resolved the field wrapper to a 6.6.0 dormant install.**
