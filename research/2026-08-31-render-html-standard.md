@@ -55,6 +55,10 @@ Konsistensi ditegakkan secara mekanis: SATU template, token design tetap, lensa 
 - Sintaks C4 mermaid TIDAK dipakai (kompatibilitas GitHub) — C4 digambar flowchart+subgraph.
 - Secret-scan sudah jalan di md sumber; renderer tidak menambah exposure, footer klasifikasi menandai peredaran.
 
+## 6. Bahasa template (mandat user 2026-08-31, menyusul riset)
+
+Semua string yang template TULIS SENDIRI (label chrome bar, baris "Untuk siapa", summary strip, teguran budget, footer) = **natural mix Indonesia-English, tidak kaku** — istilah teknis tetap English, kalimat mengalir seperti ngobrol kerja, bukan bahasa dokumen resmi. Contoh: ✅ "flow utama — dari simulasi sampai PO terbit" · ❌ "diagram alir proses utama daripada simulasi hingga penerbitan pesanan pembelian". Isi md tidak disentuh (ground truth); Tier-1 token (verdict, enum, ID, path) tetap English verbatim. Di-pin test bersama anatomi §3.
+
 ## Sumber
 
 - https://diataxis.fr/ + https://diataxis.fr/start-here/ (mode-baca 4 tipe; relevansi retrieval AI)
