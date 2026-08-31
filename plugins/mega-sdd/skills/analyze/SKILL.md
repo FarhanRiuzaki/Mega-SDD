@@ -1,6 +1,6 @@
 ---
 name: analyze
-version: 2.4.0
+version: 2.4.1
 description: Unified cross-artifact consistency analysis — semantic-scoped validator re-runs (unchanged files reuse their ledgered verdict) + vault checks; produces CONSISTENCY-REPORT.md. Triggers — "analyze", "consistency check", "check consistency", "consistency report", "run all validators", "cek konsistensi", or paraphrases.
 ---
 
@@ -14,7 +14,7 @@ User mentions "analyze consistency", "run all validators", "cek konsistensi", "c
 
 ## Two modes
 
-**Auto mode (hook-driven — no user action needed).** Fires automatically via the **Stop hook** (end of agent turn, when the spine/profile opts in — `spine: classic` or `profile: full`): aggregates existing `.*-state.json` files written by PostToolUse validators during the session → produces `CONSISTENCY-REPORT.md`. Cheap (no validator re-run — reads state files only). Also on **PostToolUse Write** at phase-boundary artifacts (`binding.md`, `vault.json`, `_index.md`, `FSD.md`, `DRIFT-REPORT.md`) — same aggregate-only mode, inter-phase visibility. The report updates silently in `.mega-sdd/CONSISTENCY-REPORT.md`.
+**Auto mode (hook-driven — no user action needed).** Fires automatically via the **Stop hook** only (end of agent turn, when the spine/profile opts in — `spine: classic` or `profile: full`): aggregates existing `.*-state.json` files written during the session → produces `CONSISTENCY-REPORT.md`. Cheap (no validator re-run — reads state files only). The report updates silently in `.mega-sdd/CONSISTENCY-REPORT.md`. (The old PostToolUse phase-boundary trigger died with the v7.5.0 fan-out removal — the Stop-hook aggregate is the single auto surface.)
 
 **Manual mode (user-invoked — semantic-scoped re-run).** The procedure below: re-runs the validator suite + vault internal consistency checks, and surfaces every code-delivery gate read-only from its state file. **Scoped by default** (spec 2026-08-03-semantic-scoped-validation.md); `--fresh` forces a ground-up re-run. Use when: starting a new session (stale state files) · after resolving CONFLICTs/OQs (verify propagation) · before execute-bolts (comprehensive pre-flight) · periodic health check.
 
@@ -116,7 +116,7 @@ Plus: vault internal consistency checks (entities/OQs/flows count sync, file com
 
 ### Code-delivery gates (surfaced read-only)
 
-Beyond the core set, the report surfaces every code-delivery gate's last status read-only from its PostToolUse state file (`NOT_RUN` until a chain writes it), so analyze is a true pre-flight of what will block `execute-bolts`:
+Beyond the core set, the report surfaces every code-delivery gate's last status read-only from its state file (`NOT_RUN` until a chain writes it), so analyze is a true pre-flight of what will block `execute-bolts`:
 
 - **KEPT hard-blocks** — block `execute-bolts` at the PreToolUse gate; a FAIL here flips the report to FAIL: `flow-coverage`, `render-test` (via unit-spec), `sibling-consistency`, `ui-quality`, `cross-cutting-registration`. (Plus the core invariants enforced at the hook: binding→units handoff, preflight, scope-flag, anti-self-bypass.)
 - **DEMOTED to advisory** (v4 Hybrid — surfaced but NEVER block; an advisory FAIL shows as overall WARN): `dispatch-prompt`, `operator-UX` (vault-oqs), `fanout-parity`, `ui-deferral`, `vault-flow-staging`.

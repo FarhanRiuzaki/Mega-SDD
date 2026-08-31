@@ -28,7 +28,7 @@ Pick the LEAST powerful model that can handle the task. Each tier has clear crit
 - No architectural reasoning required
 - Speed/cost dominates quality requirement
 
-**Examples:** per-skill intelligence probe scoring (0-3 scale); manifest-only lib detection; catalog lookup.
+**Examples:** manifest-only lib detection; catalog lookup; `verify`-only bolt routing (the `haiku ← tier minimal AND task_type verify` rung in `resolve-review-tier.sh`).
 
 ### sonnet — pick when ANY of these hold (default)
 - Pattern recognition across multiple documents
@@ -37,7 +37,7 @@ Pick the LEAST powerful model that can handle the task. Each tier has clear crit
 - Bounded reasoning depth (≤5 reasoning steps)
 - Mid-range cost/quality tradeoff
 
-**Examples:** deep-scan extractors (auth/authz/ui-ux/libs/reuse); pipeline-audit per-skill; spec-reviewer; implementer for typical tasks.
+**Examples:** deep-scan extractors (auth/authz/ui-ux/libs/reuse); spec-reviewer; implementer for typical tasks.
 
 ### opus — pick when ANY of these hold
 - Open-ended reasoning (no fixed output schema)
@@ -46,7 +46,7 @@ Pick the LEAST powerful model that can handle the task. Each tier has clear crit
 - Deep code review (cross-cutting concerns, security, performance)
 - Cross-cutting pattern detection across a codebase
 
-**Examples:** intelligence-audit deep dimension analysis; code-quality-reviewer; pipeline-audit consolidator.
+**Examples:** code-quality-reviewer; security-reviewer (the review-panel opus criteria); implementer overridden up for a complex rebuild.
 
 ### inherit — the operator-tiered escape hatch (deliberate, not "unpinned")
 
@@ -66,6 +66,11 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 
 ## Catalog
 
+Row numbers are stable history, so gaps are deliberate: 7–10 retired with the wave
+pipeline (v7.6.0), 11–14 + 18 removed 7.13.0 (zero dispatch sites anywhere in the
+plugin — a `model_tiers:` override naming them now gets an honest `model_tier_unknown`
+notice instead of validating silently and doing nothing).
+
 | # | Role | Tier | Rationale |
 |---|---|---|---|
 | 1 | `auth-extractor` | sonnet | Fuzzy detection across 5 auth libs + version + features; multi-file evidence (scan-codebase Iter 32) |
@@ -74,14 +79,9 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 | 4 | `libs-extractor` | sonnet | Manifest parsing + category mapping + usage-hint grep across many libs (scan-codebase Iter 32) |
 | 5 | `reuse-extractor` | sonnet | First-party source trawl (helpers/model_api/services/commands); multi-file pattern recognition; outputs reuse-index.yaml (scan-codebase reuse-awareness) |
 | 6 | `extract-intelligence-module` | sonnet | Per-module PRD-kontrak extraction; bounded file-set per agent, disciplines ride the agent body (extract-intelligence). Synthesis (README roll-up + data-mutation-policy) runs on the MAIN thread — no dispatched role |
-| 11 | `pipeline-audit-per-skill` | sonnet | Forensic audit across 10 dimensions per skill; bounded scope per skill (Iter 31 style) |
-| 12 | `pipeline-audit-consolidator` | **opus** | Cross-skill pattern detection; consolidates 13 YAML inputs; broad reasoning (Iter 31 style) |
-| 13 | `intelligence-audit-deep` | sonnet | 6-dimension audit on orchestrate-flow + handoff-contract; bounded (Iter 33 Phase B) |
-| 14 | `intelligence-audit-probe` | **haiku** | Per-skill 0-3 scoring + 1-sentence justification; narrow decision space (Iter 33 Phase B) |
 | 15 | `implementer` | sonnet | Typical implementation task (subagent-driven-development pattern); user can override to opus for complex tasks |
 | 16 | `spec-reviewer` | sonnet | Compliance verification against spec (subagent-driven-development pattern) |
 | 17 | `code-quality-reviewer` | **opus** | Deep code review; cross-cutting concerns; security/performance (subagent-driven-development pattern) |
-| 18 | `domain-research` | **haiku** | Web fetches + structured extraction; low reasoning depth |
 | 19 | `security-reviewer` | **opus** | Semantic authz-vs-spec + architectural-drift reasoning; deep code review per the opus criteria (review-panel security lens) |
 | 20 | `standards-reviewer` | sonnet | Pattern recognition vs pack rules + sibling files; bounded judgment with known output schema (review-panel standards lens) |
 | 21 | `design-reviewer` | sonnet | Code-evidence checks against an explicit design contract (tokens/states/a11y rubric); pattern recognition, not open-ended taste (review-panel design lens) |
@@ -108,9 +108,9 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 /mega-sdd --model-tier=sonnet ./prd.md     # inherit | auto | haiku | sonnet | opus
 
 # orchestrate-flow-scoped grammar — <role>:<tier> per catalog role:
-/mega-sdd --model-tier=intelligence-audit-probe:sonnet ./prd.md
+/mega-sdd --model-tier=implementer:opus ./prd.md
 # multiple overrides allowed:
-/mega-sdd --model-tier=pipeline-audit-consolidator:opus --model-tier=intelligence-audit-probe:sonnet
+/mega-sdd --model-tier=implementer:opus --model-tier=libs-extractor:haiku
 ```
 
 ### Per-project config
@@ -119,7 +119,7 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 ```yaml
 model_tiers:
   extract-intelligence-module: sonnet  # cost-sensitive extraction on this project
-  intelligence-audit-probe: sonnet  # bump from haiku to sonnet for higher signal
+  implementer: opus  # complex rebuild — the row-15 rationale names this exact override
 ```
 
 ### Override chain precedence
