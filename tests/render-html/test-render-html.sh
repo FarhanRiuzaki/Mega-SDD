@@ -109,4 +109,39 @@ for s in extract-intelligence generate-intent generate-units execute-bolts; do
   fi
 done
 
+echo "── J: back ke index (7.19.0) ──"
+mkdir -p "$WORK/kb3/modules"
+printf '# Roll-up KB\n\nRingkasan grounded emitter.\n' > "$WORK/kb3/README.md"
+printf '# Mod A\n\n## Aturan denda\n\nDenda harian.\n' > "$WORK/kb3/modules/a.prd.md"
+bash "$R" "$WORK/kb3" --index --cwd="$WORK" >/dev/null 2>&1
+grep -q 'class="idx-link" href="../index.html"' "$WORK/kb3/html/modules/a.prd.html" \
+  && ok "J1 nested page links back to index (relative)" || bad "J1 index link missing/wrong"
+grep -q 'class="idx-link" href' "$H" && bad "J2 single-file page has an index link (there is no index)" || ok "J2 single-file mode stays linkless"
+
+echo "── K: cross-bundle search ──"
+[ -f "$WORK/kb3/html/search-index.js" ] && ok "K1 search-index.js written" || bad "K1 search index missing"
+python3 - "$WORK/kb3/html/search-index.js" <<'EOF' && ok "K2 entries carry headings with nav-matching slugs + plain text" || bad "K2 search index shape wrong"
+import json, re, sys
+t = open(sys.argv[1]).read()
+d = json.loads(re.sub(r"^window.MEGA_SEARCH=|;\s*$", "", t.strip()).replace("<\\/", "</"))
+a = [e for e in d if "modules/a.prd.html" == e["h"]][0]
+assert ["aturan-denda", "Aturan denda"] in a["hd"], a["hd"]   # slug == template nav slug
+assert "Denda harian" in a["x"], a["x"]
+EOF
+grep -q 'id="q"' "$WORK/kb3/html/index.html" && grep -q "search-index.js" "$WORK/kb3/html/index.html" \
+  && ok "K3 index page carries the search box + include" || bad "K3 search UI missing on index"
+grep -q 'id="q"' "$WORK/kb3/html/modules/a.prd.html" && bad "K4 search UI leaked onto a content page" || ok "K4 search lives on the index only"
+
+echo "── L: README as the index face ──"
+grep -q "Ringkasan grounded emitter" "$WORK/kb3/html/index.html" && grep -q "Semua dokumen" "$WORK/kb3/html/index.html" \
+  && ok "L1 index face = README roll-up + the full listing" || bad "L1 README face missing"
+
+echo "── M: the emit summary lane ──"
+EMIT="$ROOT/plugins/mega-sdd/commands/emit.md"
+grep -q "emit summary" "$EMIT" && grep -q "rangkuman eksekutif" "$EMIT" && ok "M1 trigger phrases in the always-loaded description" || bad "M1 summary triggers missing"
+grep -q "angka TIDAK PERNAH dikarang" "$EMIT" && grep -q "belum ada datanya" "$EMIT" \
+  && ok "M2 anti-fabrication rail (cite every number; honest gaps)" || bad "M2 citation rail missing"
+grep -q "takeaway tebal" "$EMIT" && grep -q "status JUJUR" "$EMIT" && ok "M3 DD9000 pattern pinned (takeaway + honest status)" || bad "M3 pattern points missing"
+grep -q 'render-html.sh" <target>/summary/SUMMARY.md' "$EMIT" && ok "M4 summary auto-renders after authoring" || bad "M4 auto-render step missing"
+
 echo; [ $err -eq 0 ] && { echo "test-render-html: ALL PASS"; exit 0; } || { echo "test-render-html: FAILED"; exit 1; }

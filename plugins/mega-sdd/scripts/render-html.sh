@@ -106,7 +106,64 @@ def budget_warnings(md):
             warns.append(f"diagram #{i}: {parts} participant di sequence — di atas budget 7, pecah per interaksi")
     return warns
 
-def render_one(src, out_path, assets_html):
+# ── cross-bundle search UI (7.19.0) — substring AND-match, tanpa library;
+# hasil = halaman + heading yang match (deep link ke #anchor) + snippet ber-mark.
+SEARCH_JS = r'''(function(){
+  var q=document.getElementById('q'), out=document.getElementById('sr');
+  if(!q||!out) return;
+  var esc=function(s){return s.replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})};
+  q.addEventListener('input',function(){
+    var v=q.value.trim().toLowerCase(); out.innerHTML='';
+    if(v.length<2) return;
+    var terms=v.split(/\s+/).filter(Boolean), hits=0;
+    for(var i=0;i<(window.MEGA_SEARCH||[]).length;i++){
+      var p=window.MEGA_SEARCH[i];
+      var hay=(p.t+' '+p.hd.map(function(h){return h[1]}).join(' ')+' '+p.x).toLowerCase();
+      if(!terms.every(function(t){return hay.indexOf(t)>=0})) continue;
+      if(++hits>20) break;
+      var div=document.createElement('div'); div.className='sr-page';
+      var hds=p.hd.filter(function(h){return terms.some(function(t){return h[1].toLowerCase().indexOf(t)>=0})}).slice(0,4);
+      var snip='', ix=p.x.toLowerCase().indexOf(terms[0]);
+      if(ix>=0){
+        var a=Math.max(0,ix-60), b=Math.min(p.x.length,ix+90);
+        var rx=new RegExp('('+terms.map(function(t){return t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}).join('|')+')','gi');
+        snip='…'+esc(p.x.slice(a,b)).replace(rx,'<mark>$1</mark>')+'…';
+      }
+      div.innerHTML='<a href="'+p.h+'">'+esc(p.t)+'</a><span class="sr-lens">'+esc(p.l)+'</span>'
+        +(hds.length?'<div class="sr-hd">'+hds.map(function(h){return '<a href="'+p.h+'#'+h[0]+'">'+esc(h[1])+'</a>'}).join('')+'</div>':'')
+        +(snip?'<div class="sr-snip">'+snip+'</div>':'');
+      out.appendChild(div);
+    }
+    if(!hits) out.innerHTML='<div class="sr-none">tidak ketemu — coba kata lain</div>';
+  });
+})();'''
+
+# ── slug h2/h3 — REPLIKA PERSIS algoritma nav di template.html (7.19.0):
+# lowercase → non-word jadi '-' → strip → dedup counter. Search deep-link
+# lompat ke #anchor yang sama dengan yang nav bangun; kalau dua algoritma ini
+# berbeda satu karakter saja, semua hasil search nyasar.
+def page_headings(display_md):
+    seen = {}
+    out = []
+    for m in re.finditer(r"(?m)^(#{2,3})\s+(.+?)\s*$", display_md):
+        text = re.sub(r"[*`_\[\]]", "", m.group(2)).strip()
+        base = re.sub(r"[^\wÀ-￿]+", "-", text.lower()).strip("-") or "sec"
+        if base in seen:
+            seen[base] += 1
+            sid = f"{base}-{seen[base]}"
+        else:
+            seen[base] = 0
+            sid = base
+        out.append((sid, text))
+    return out
+
+def plain_text(display_md):
+    t = re.sub(r"```.*?```", " ", display_md, flags=re.DOTALL)
+    t = re.sub(r"<[^>]+>", " ", t)
+    t = re.sub(r"[#*`|>\[\]()]", " ", t)
+    return re.sub(r"\s+", " ", t).strip()
+
+def render_one(src, out_path, assets_html, index_href=None, search_html=""):
     md = open(src, encoding="utf-8", errors="replace").read()
     lens = detect_lens(src)
     # frontmatter = metadata mesin, bukan bacaan — jangan ikut render
@@ -120,7 +177,12 @@ def render_one(src, out_path, assets_html):
     warns = budget_warnings(md)
     warn_html = "" if not warns else ('<div class="warnbar"><b>Budget diagram:</b> ' +
                                       " · ".join(html.escape(w) for w in warns) + "</div>")
+    idx_html = ""
+    if index_href:
+        idx_html = f'<a class="idx-link" href="{html.escape(index_href)}">&larr; index</a>'
     page = (TEMPLATE
+            .replace("@@INDEXLINK@@", idx_html)
+            .replace("@@SEARCH@@", search_html)
             .replace("@@TITLE@@", html.escape(title))
             .replace("@@BADGE@@", html.escape(badge))
             .replace("@@AUDIENCE@@", html.escape(audience))
@@ -165,23 +227,50 @@ else:
     if not files:
         print("render-html: tidak ada .md di " + IN, file=sys.stderr); sys.exit(2)
     ah = assets_for(out_dir)
-    rows, rendered, all_warns = [], [], []
+    rows, rendered, all_warns, search_entries = [], [], [], []
     for p in files:
         rel_out = os.path.splitext(os.path.relpath(p, IN))[0] + ".html"
-        title, lens, warns = render_one(p, os.path.join(out_dir, rel_out), ah)
-        rows.append((title, lens, rel_out.replace(os.sep, "/")))
-        rendered.append(rel_out.replace(os.sep, "/")); all_warns += warns
+        href = rel_out.replace(os.sep, "/")
+        # link balik ke index — relatif dari FOLDER halaman ini (7.19.0)
+        idx_href = os.path.relpath(os.path.join(out_dir, "index.html"),
+                                   os.path.dirname(os.path.join(out_dir, rel_out))).replace(os.sep, "/") if INDEX else None
+        title, lens, warns = render_one(p, os.path.join(out_dir, rel_out), ah, index_href=idx_href)
+        rows.append((title, lens, href))
+        rendered.append(href); all_warns += warns
+        raw = open(p, encoding="utf-8", errors="replace").read()
+        disp = re.sub(r"\A---\n.*?\n---\n", "", raw, count=1, flags=re.DOTALL)
+        search_entries.append({"h": href, "t": title, "l": LENSES[lens][0],
+                               "hd": page_headings(disp), "x": plain_text(disp)})
     if INDEX:
-        lines = ["# " + PROJECT + " — dokumen render", "",
-                 "Semua dokumen di bundle ini, satu klik per halaman:", ""]
+        # search-index.js — dibangun render-time, dibaca client-side (offline)
+        os.makedirs(out_dir, exist_ok=True)
+        with open(os.path.join(out_dir, "search-index.js"), "w", encoding="utf-8") as f:
+            f.write("window.MEGA_SEARCH=" + json.dumps(search_entries, ensure_ascii=False).replace("</", "<\\/") + ";\n")
+        # muka index = README roll-up bila ada (ringkasan grounded yang sudah
+        # ditulis emitter — akhirnya tampil), + daftar semua dokumen
+        readme = os.path.join(IN, "README.md")
+        lines = []
+        if os.path.isfile(readme):
+            rme = open(readme, encoding="utf-8", errors="replace").read()
+            lines.append(re.sub(r"\A---\n.*?\n---\n", "", rme, count=1, flags=re.DOTALL).rstrip())
+            lines.append("")
+        else:
+            lines.append("# " + PROJECT + " — dokumen render")
+            lines.append("")
+        lines.append("## Semua dokumen")
+        lines.append("")
         for title, lens, href in rows:
             lines.append(f"- [{title}]({href}) — `{LENSES[lens][0]}`")
         idx_md = "\n".join(lines) + "\n"
-        tmp = os.path.join(out_dir, ".index-src.md")
-        os.makedirs(out_dir, exist_ok=True)
+        tmp = os.path.join(out_dir, "index.md")
         open(tmp, "w", encoding="utf-8").write(idx_md)
-        render_one(tmp, os.path.join(out_dir, "index.html"), ah)
-        os.remove(tmp); rendered.append("index.html")
+        search_html = ('<div class="searchbox"><input id="q" type="search" '
+                       'placeholder="Cari di semua dokumen bundle ini… (min. 2 huruf)" '
+                       'autocomplete="off"><div class="sr" id="sr"></div></div>\n'
+                       '<script src="search-index.js"></script>\n<script>\n'
+                       + SEARCH_JS + "\n</script>")
+        render_one(tmp, os.path.join(out_dir, "index.html"), ah, search_html=search_html)
+        os.remove(tmp); rendered.append("index.html"); rendered.append("search-index.js")
     print(json.dumps({"rendered": rendered, "out_dir": os.path.relpath(out_dir, CWD) if out_dir.startswith(CWD) else out_dir,
                       "budget_warnings": all_warns, **STAMP}))
 PYEOF
