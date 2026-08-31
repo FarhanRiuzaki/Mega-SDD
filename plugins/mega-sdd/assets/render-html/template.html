@@ -146,12 +146,32 @@ pre.mermaid{margin:0;display:flex;justify-content:center;background:none;border:
 
 footer{border-top:1px solid var(--line);margin-top:46px;padding-top:16px;
   font-family:var(--font-data);font-size:11px;color:var(--ink-3);line-height:1.9}
+
+/* ── back ke index + cross-bundle search (7.19.0) ── */
+.idx-link{font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:600;
+  padding:2px 8px;border-radius:5px;white-space:nowrap}
+.idx-link:hover{background:var(--accent-bg)}
+.searchbox{margin:0 0 18px}
+.searchbox input{width:100%;box-sizing:border-box;font:inherit;font-size:14px;
+  padding:10px 14px;border:1px solid var(--line-2);border-radius:var(--r);
+  background:var(--surface);color:var(--ink)}
+.searchbox input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.sr{margin:10px 0 0}
+.sr-page{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:10px 14px;margin:8px 0;box-shadow:var(--e)}
+.sr-page > a{font-weight:600;text-decoration:none;font-size:14px}
+.sr-page .sr-lens{font-family:var(--font-data);font-size:10px;color:var(--ink-3);margin-left:8px}
+.sr-hd a{display:inline-block;font-size:12px;color:var(--accent);text-decoration:none;
+  background:var(--accent-bg);border-radius:4px;padding:1px 8px;margin:5px 6px 0 0}
+.sr-snip{font-size:12.5px;color:var(--ink-2);margin-top:5px}
+.sr-snip mark{background:var(--warn-bg);color:var(--ink);border-radius:2px;padding:0 1px}
+.sr-none{font-size:13px;color:var(--ink-3);padding:8px 2px}
 </style>
 </head>
 <body>
 
 <div class="chrome">
-  <span class="fname">@@SRC_PATH@@</span>
+  @@INDEXLINK@@<span class="fname">@@SRC_PATH@@</span>
   <span class="badge mod">@@BADGE@@</span>
   <span class="sp"></span>
   <span class="badge ver">mega-sdd @@PLUGIN_VER@@ · render @@RENDERED_AT@@</span>
@@ -166,6 +186,7 @@ footer{border-top:1px solid var(--line);margin-top:46px;padding-top:16px;
 </nav>
 <main><div class="doc">
   <div class="audience"><b>Untuk siapa:</b> @@AUDIENCE@@</div>
+  @@SEARCH@@
   @@STRIP@@
   <div id="doc-body"><p style="color:var(--ink-3)">Merender dokumen… (butuh JavaScript aktif)</p></div>
   <footer>

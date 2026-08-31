@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.19.0] - 2026-08-31 — the bundle grows navigation, search, and an executive-summary lane
+
+**Spec `docs/superpowers/specs/2026-08-31-render-nav-search-summary.md`. Owner discussion → three decisions: back-to-index, CROSS-bundle search, and AI summaries — with the line drawn where it belongs: AI summarizes ONCE at emit time into a cited md artifact; the renderer never authors a word.**
+
+### Added — renderer (mechanical, 0 tokens, offline intact)
+- **Back to index:** every bundle page carries a relative `← index` link in the chrome bar (works from any nesting, offline); single-file pages stay linkless.
+- **Cross-bundle search:** `--index` also writes `search-index.js` (title + h2/h3 headings + plain text per page — heading slugs REPLICATE the template nav algorithm exactly, so results deep-link to `page#anchor`); the index page gets a search box — substring AND-match, matched-heading chips, `<mark>`-highlighted snippets, no library (~40 hand-written lines). Verified live in Chrome ("denda" → page + `#aturan-denda` chip + highlighted snippet).
+- **The index face means something now:** with a `<dir>/README.md` present, the index page renders the roll-up (the grounded summary the emitter already wrote) above the full listing — no longer a bare link list.
+
+### Added — `/mega-sdd:emit summary` (the sixth emit lane; AI in the MD layer, never at render)
+- Authors `<target>/summary/SUMMARY.md` in the DD9000 presentation pattern the owner picked as taste reference (research §7): stat strip first → Mermaid pipeline flow with two-sided edge labels → module map → findings → HONEST status (waiting/needs-business-decision rows included) → one bold takeaway per section. Anti-fabrication rails in the procedure: every number cites a real artifact (census/vault.json/binding/_summary/ledger); a missing source reads "belum ada datanya", never an invented number; §Register language; then auto-`render-html`. Rejected on record: summarizing at render time (kills offline, pays tokens per render, unreviewed drift).
+
+### Notes
+- `tests/render-html/test-render-html.sh` → 38 pins (J: index links both ways; K: search index shape + slug parity + index-only UI; L: README face; M: summary lane rails).
+
 ## [7.18.0] - 2026-08-31 — render-html becomes reachable AND automatic
 
 **Spec 2026-08-31-render-html.md §Amendemen 7.18.0. Day-one field test caught the classic reachability miss (the F-09/F-14 class): the owner typed "render html nya project ini" in another session and NOTHING routed the phrase — 7.16.0's "invoke by phrase" was empty prose. Plus the owner's follow-up ask: every pipeline phase should emit its report automatically ("setiap domain ada laporannya — emit artefact lebih tepatnya").**
