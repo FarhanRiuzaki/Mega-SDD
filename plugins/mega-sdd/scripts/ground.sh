@@ -40,7 +40,7 @@ CONFIG_FILE="${CWD}/.mega-sdd/config.yaml"
 if [ -d "${CWD}/.mega-sdd" ]; then
     # Run C1 self-resolve guards via python (deterministic detection + fix).
   # Iter 67.7.1: mode_migrate.  Iter 67.7.2 (v3.51.1+): adds partial_state_corrupt.
-  SELF_RESOLVE_NOTICES=$(CWD="$CWD" PLUGIN_ROOT_HINT="$SCRIPT_DIR/.." python3 <<'PYEOF' 2>/dev/null
+  SELF_RESOLVE_NOTICES=$(CWD="$CWD" PLUGIN_ROOT_HINT="$SCRIPT_DIR/.." MEGA_SDD_LIB_DIR="$SCRIPT_DIR/_lib" python3 <<'PYEOF' 2>/dev/null
 import json
 import os
 import sys
@@ -56,6 +56,22 @@ def emit_event(halt_type, fix_applied, **payload_extras):
     # v7.3.0: telemetry removed — the chat notice (appended by each guard) is
     # the only record. Kept as a no-op so guard call sites stay unchanged.
     return
+
+# 7.13.0 (doc-audit finding 3): the battery scans EVERY vault layout via the
+# shared vault_layouts helpers, not just the legacy `*-bound/` sibling — the
+# canonical `.mega-sdd/vaults/<name>/` tree was invisible to Guards 2 + 4.
+# Import failure (broken install) falls back to the pre-7.13 coverage so a
+# missing _lib can never kill the whole battery (this heredoc runs 2>/dev/null).
+sys.path.insert(0, os.environ.get("MEGA_SDD_LIB_DIR", ""))
+try:
+    from vault_layouts import vault_prefixes as _vl_prefixes, unit_files as _vl_unit_files
+except Exception:
+    def _vl_prefixes(c):
+        return (os.path.join(c, ".mega-sdd", "vaults", "*-bound"),)
+    def _vl_unit_files(c):
+        got = (glob.glob(os.path.join(c, ".mega-sdd", "vaults", "*-bound", "units", "U-*.md")) +
+               glob.glob(os.path.join(c, ".mega-sdd", "vaults", "*-bound", "units", "U-*", "unit.md")))
+        return sorted(dict.fromkeys(os.path.realpath(p) for p in got))
 
 # ─── Guard 1: mode_migrate (vault.json mode vs CWD signals) ─────────────────
 signals = [
@@ -100,12 +116,16 @@ for vj in vault_jsons:
     notices.append(f"[self-resolved] mode_migrate: {scope_name} mode {old_mode_repr} → {expected_mode}")
 
 # ─── Guard 2: partial_state_corrupt (Iter 67.7.2 — v3.51.1+) ───────────────
-# Scan <cwd>/.mega-sdd/vaults/*-bound/bolts/U-*/partial-state.json
+# Scan every vault layout's bolts/U-*/partial-state.json (vault_prefixes —
+# 7.13.0 widened from the legacy `*-bound/`-only glob; realpath-deduped).
 # If file fails JSON parse → rename to partial-state.json.corrupt-<ISO8601>
 # (forensics preserved; --resume restarts fresh per plugins/mega-sdd/references/halt-protocol.md).
 # NEVER halts. Honors same opt-out as mode_migrate (handled by GUARD_ENABLED above).
 ts_fname = ts.replace(":", "-").replace(".", "-")  # filename-safe ISO8601
-for f in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "bolts", "U-*", "partial-state.json"))):
+_ps_files = []
+for _pre in _vl_prefixes(cwd):
+    _ps_files.extend(glob.glob(os.path.join(_pre, "bolts", "U-*", "partial-state.json")))
+for f in sorted(dict.fromkeys(os.path.realpath(p) for p in _ps_files)):
     if "/.archived/" in f or "/.archived\\" in f:
         continue
     try:
@@ -142,16 +162,12 @@ for f in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "b
 # bad spec for human review). Dispatch-time auto-clear is execute-bolts's job
 # (separate concern).
 #
-# Two layouts (per Iter 67.6.1 validator pattern):
-#   Layout A (phase-2):  <vault>/*-bound/units/U-*.md
-#   Layout B (phase-1):  <vault>/*-bound/units/U-*/unit.md
+# Every vault layout + both unit shapes (U-*.md and U-*/unit.md) via the shared
+# vault_layouts.unit_files contract (7.13.0 — was the `*-bound/`-only pair).
 import re as _re
 
 FRONTMATTER_RE_VW = _re.compile(r"^---\n(.*?)\n---", _re.DOTALL)
-unit_paths_vw = sorted(
-    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "units", "U-*.md")) +
-    glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "units", "U-*", "unit.md"))
-)
+unit_paths_vw = _vl_unit_files(cwd)
 for up in unit_paths_vw:
     if "/.archived/" in up or "/.archived\\" in up:
         continue
@@ -450,6 +466,49 @@ fi
 # Surface the notices as GROUND output (the model relays them at M/L entry).
 if [ -n "$SELF_RESOLVE_NOTICES" ]; then
   printf '%s\n' "$SELF_RESOLVE_NOTICES"
+fi
+
+# ─── L0 toolchain-vacuous advisory (7.13.0, spec 2026-08-31 §1) ──────────────
+# Field class (DD9000 #11): a typecheck-only repo makes gate-L0 format/lint SKIP
+# on every bolt — each skip is recorded honestly, but 36 honest skips never
+# became a HUMAN decision. Run-boundary ADVISORY, never a gate: silent once a
+# decision is recorded (.mega-sdd/l0-toolchain-decision.json) or a project pack
+# carries `## Toolchain` (the F-14 override path). Detection is fail-open — a
+# failed/unparseable detect run emits nothing and writes no probe.
+if [ -d "${CWD}/.mega-sdd" ] && [ ! -f "${CWD}/.mega-sdd/l0-toolchain-decision.json" ]; then
+  if ! grep -qs '^## Toolchain' "${CWD}/.mega-sdd/packs/"*.md 2>/dev/null; then
+    TL_JSON="$(bash "$SCRIPT_DIR/detect-toolchain.sh" --cwd="$CWD" 2>/dev/null || true)"
+    if [ -n "$TL_JSON" ]; then
+      TL_JSON="$TL_JSON" CWD="$CWD" MEGA_SDD_LIB_DIR="$SCRIPT_DIR/_lib" SCRIPT_DIR="$SCRIPT_DIR" python3 - <<'PYEOF' 2>/dev/null
+import json, os, sys
+try:
+    tc = json.loads(os.environ["TL_JSON"])
+except Exception:
+    sys.exit(0)  # unparseable detection -> no advisory, no probe (fail open)
+cwd = os.environ["CWD"]
+nf = len(tc.get("formatters") or []); nl = len(tc.get("linters") or []); nt = len(tc.get("typecheckers") or [])
+# Typecheck ALONE does not silence the advisory — that is the field case.
+probe = {"formatters": nf, "linters": nl, "typecheckers": nt, "advisory": (nf == 0 and nl == 0)}
+try:
+    sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+    import plugin_meta
+    probe.update(plugin_meta.stamp(os.environ.get("SCRIPT_DIR")))
+except Exception:
+    pass  # stamp is provenance, never a reason to drop the probe
+try:
+    with open(os.path.join(cwd, ".mega-sdd", ".l0-toolchain-probe.json"), "w") as f:
+        json.dump(probe, f, indent=2)
+except OSError:
+    sys.exit(0)
+if probe["advisory"]:
+    print("[advisory] l0_toolchain_vacuous: 0 formatter + 0 linter terdeteksi "
+          "(typechecker: %d) — gate L0 format/lint akan SKIP di semua bolt run ini. "
+          "Opsi: pasang linter/formatter di repo · isi '## Toolchain' di pack proyek "
+          "(.mega-sdd/packs/) · atau catat keputusan N/A ke "
+          ".mega-sdd/l0-toolchain-decision.json (execute-bolts akan menanyakan SEKALI)." % nt)
+PYEOF
+    fi
+  fi
 fi
 
 bash "$SCRIPT_DIR/derive-state.sh" --cwd="$CWD"

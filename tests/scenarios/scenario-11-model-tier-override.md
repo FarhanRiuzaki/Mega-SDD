@@ -14,9 +14,9 @@
 
 By default mega-sdd picks tier per role per `plugins/mega-sdd/references/model-tiers.md`:
 
-- 3 roles default **opus**: `pipeline-audit-consolidator`, `code-quality-reviewer`, `security-reviewer` (reviewer lenses stay frontmatter-pinned — see the Scope note under Example 1)
-- 13 roles default **sonnet**: deep-scan extractors, `extract-intelligence-module` (per-module PRD-kontrak extraction; synthesis runs on the MAIN thread — no dispatched role), audit-per-skill, implementers, etc.
-- 2 roles default **haiku**: `intelligence-audit-probe`, `domain-research`
+- 2 roles default **opus**: `code-quality-reviewer`, `security-reviewer` (reviewer lenses stay frontmatter-pinned — see the Scope note under Example 1)
+- 11 roles default **sonnet**: deep-scan extractors, `extract-intelligence-module` (per-module PRD-kontrak extraction; synthesis runs on the MAIN thread — no dispatched role), `implementer`, `spec-reviewer`, the remaining panel lenses, etc.
+- 0 roles default **haiku** — the haiku rung lives in per-unit routing (`bolt-implementer` on a verify-only unit), not in the catalog (the 7.13.0 cull removed the dead haiku rows)
 - 1 role is **inherit**: `bolt-implementer` (operator-tiered — see Example 5)
 
 Distribution is sonnet-dominant by design (rubric in catalog file).
@@ -39,8 +39,8 @@ Multiple overrides allowed:
 
 ```bash
 /mega-sdd \
-  --model-tier=intelligence-audit-probe:sonnet \
-  --model-tier=pipeline-audit-consolidator:sonnet \
+  --model-tier=implementer:opus \
+  --model-tier=libs-extractor:haiku \
   ./prd.md
 ```
 
@@ -56,7 +56,7 @@ You manage a project where the team standardizes on cheaper extraction/audit pas
 # <project>/.mega-sdd/config.yaml
 model_tiers:
   extract-intelligence-module: sonnet   # pin extraction to sonnet on this project
-  pipeline-audit-consolidator: sonnet   # drop the audit consolidator from opus
+  libs-extractor: haiku                 # manifest-only pass — cheap is fine here
 ```
 
 Applies to every mega-sdd run in this project. Doesn't affect other projects.
@@ -65,12 +65,12 @@ Applies to every mega-sdd run in this project. Doesn't affect other projects.
 
 The user-scope model-tier rung was removed in v7.3.0 — the override surface is the per-project `.mega-sdd/config.yaml` (single source) + the CLI flag. A persistent boost therefore lives in the project config.
 
-The real use case: bumping intelligence-audit-probe from haiku to sonnet because you want more thorough scoring:
+The real use case: bumping `implementer` from sonnet to opus on a complex rebuild — the catalog's own row-15 rationale names exactly this override:
 
 ```yaml
 # <project>/.mega-sdd/config.yaml
 model_tiers:
-  intelligence-audit-probe: sonnet  # default haiku is fine, but I prefer higher signal
+  implementer: opus  # complex rebuild — default sonnet is for typical tasks
 ```
 
 ## Example 4 — Unknown role tolerance
@@ -127,19 +127,19 @@ Per the catalog rubric:
 - No architectural reasoning
 - Speed/cost dominates quality
 
-If your override is for a probe-style scoring or web fetch → haiku is correct.
+If your override is for a manifest-only pass with an enum-like output (e.g. `libs-extractor` on a small repo) → haiku is correct.
 
 ## Verify override applied
 
 After running with overrides, check chain output. orchestrate-flow logs final tier resolution:
 
 ```
-Model tier overrides applied: code-quality-reviewer=sonnet (cli-flag); pipeline-audit-consolidator=sonnet (cli-flag)
+Model tier overrides applied: implementer=opus (cli-flag); libs-extractor=haiku (cli-flag)
 ```
 
 handoff metadata.model_tiers + model_tier_sources blocks have the provenance trail (source: catalog | project | cli per role).
 
 ## See also
 
-- `plugins/mega-sdd/references/model-tiers.md` — full catalog (19 rows × tier + rationale)
+- `plugins/mega-sdd/references/model-tiers.md` — full catalog (14 rows × tier + rationale; numbering gaps are retired rows)
 - `docs/mega-sdd/reading-map.md` — Stage 7 cross-cutting (where overrides live)

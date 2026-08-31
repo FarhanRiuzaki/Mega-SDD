@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.13.0] - 2026-08-31 — the vacuous L0 becomes a human decision; the doc-audit code ledger closes
+
+**Spec `docs/superpowers/specs/2026-08-31-l0-advisory-docaudit-close.md`. Two sources: the team's 11-artifact `/docs` standard (triage №C — verdict: 7 items already covered in enforced form, the one real plugin-side gap is escalation of a lint-less repo) and the 2026-08 doc-audit's five OPEN code findings, re-verified against today's HEAD (three had already closed in 7.6.0–7.12.0; two were still live).**
+
+### Added — `l0_toolchain_vacuous` advisory (run boundary, NEVER a gate)
+- Field class (DD9000 #11): a typecheck-only repo makes gate-L0 format/lint SKIP on every bolt — each skip was recorded honestly in l0-results, and 36 honest skips never became a human decision. `ground.sh` now runs `detect-toolchain.sh` once per GROUND: 0 formatters + 0 linters (typecheck alone does NOT silence — that is the field case) → one `[advisory]` notice naming the three options (add a linter/formatter · `## Toolchain` in a project pack, the F-14 override path · record N/A) + `.mega-sdd/.l0-toolchain-probe.json` (plugin_meta-stamped, written on both outcomes). Silent forever once `.mega-sdd/l0-toolchain-decision.json` exists or a project pack carries `## Toolchain`; fail-open on detection failure; nothing minted pre-init (phantom-root doctrine).
+- execute-bolts pre-flight **3.8**: probe says `advisory:true` + no decision file → `AskUserQuestion` ONCE (keterangan per option, Bahasa Indonesia), answer recorded to the decision file. Proceeds whatever the answer — the per-bolt SKIPs in l0-results stay the enforcement-side record. (SKILL 2.44.0)
+
+### Fixed — the two doc-audit findings still live at HEAD
+- **C1 battery saw only `*-bound/`**: ground.sh Guards 2 (`partial_state_corrupt`) + 4 (`verify_unit_writable`) now discover vaults via `vault_layouts.vault_prefixes()`/`unit_files()` — the canonical `.mega-sdd/vaults/<name>/` tree (every field vault since layout-2) was invisible to both guards; a corrupt partial-state there was never repaired and a writable verify-unit never flagged. Import failure falls back to the pre-7.13 coverage (a broken `_lib` can't kill the battery).
+- **model-tiers dead rows runtime-parsed**: rows 11–14 + 18 (`pipeline-audit-*`, `intelligence-audit-*`, `domain-research`) had ZERO dispatch sites anywhere in the plugin yet were parsed into `catalog_roles`, so overrides naming them validated silently and did nothing. Removed (catalog = 14 live rows; numbering gaps are stable history); such an override now gets an honest `model_tier_unknown` notice. Teaching fixtures re-keyed to live roles (`libs-extractor`, the row-15 `implementer: opus` override) — OF-MT2/MT3 + scenario-11; the S7-PANEL-3 panel-pinned scope note kept.
+- **analyze SKILL claimed a dead trigger**: the "PostToolUse Write at phase-boundary artifacts" auto-mode sentence described a path deleted with the v7.5.0 fan-out (post-tool-use carries no such leg) — auto mode is Stop-hook-only and now says so. (SKILL 2.4.1)
+
+### Notes
+- Closed on record, no change needed: build-prd-core OQ slot (ADV-009 vault.json fallback already ships), seed-playground vs the suite filter (discovery is `test-*.sh`/`*.test.sh` — no match possible), the stale SIX→SEVEN hook comments (gone in the 7.9.0 rewrite), and the F-26 "remaining state-file stamps" backlog entry (spec 2026-08-30 §3.4 had already ruled validator state files out — re-derived at every gate, not an audit blind spot).
+- Team reply shipped: `docs/mega-sdd/feedback-response-2026-08-31.md` (11-artifact verdict map + the scoring-engine review: 5 design bugs handed back, retry-escalation taken as a measure-first candidate).
+- New: `tests/audit-hardening/test-l0-vacuous-advisory.sh` (advisory pins A–E + canonical-layout Guard 2/4 pins F–G).
+
 ## [7.12.0] - 2026-08-30 — project-local framework packs actually resolve (F-14)
 
 **Spec `docs/superpowers/specs/2026-08-30-audit-driven-hardening.md` §6. Field defect: the run authored `.mega-sdd/packs/elysia.md` for its stack and NOTHING read it — the resolver knew only the plugin pack root, the GROUND matcher read only root manifests (the `elysia` dependency lived in `apps/api/package.json`), `state.json` was minted pre-git and never regenerated, and `ground.sh` looked in two other directories. 36/36 dispatches got `_universal`; every pack-driven gate (ui-quality, flow-coverage, cross-cutting, sibling, render-test) SKIPped for the whole run — which is why none of them could be judged.**
