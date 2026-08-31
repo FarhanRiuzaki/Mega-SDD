@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.15.0] - 2026-08-31 — update-plugin sweeps the dormant cache (confirm-first)
+
+**Spec `docs/superpowers/specs/2026-08-31-update-plugin-cache-sweep.md`. Owner ask: cache cleanup on update so the running version is reliably the latest. Measured on the owner's own machine: 8 cached version dirs, `installed_plugins.json` referencing exactly one — 7 dormant dirs, the same accumulation class that once resolved the field wrapper to a 6.6.0 dormant install.**
+
+### Added — Step 5.5 in `commands/update-plugin.md`
+- Derives the REFERENCED set from `installed_plugins.json` across ANY scope (never entry `[0]` — the wrapper-bug lesson, pinned in the procedure), lists the dormant cache dirs + size, and asks ONCE (`AskUserQuestion`, keterangan, with the explicit parallel-session warning — a long-lived session may still hold a dormant path). On yes: per-dir removal under an exact `cache/mega-sdd/mega-sdd/<version>` prefix guard; a referenced version is NEVER in the list. Convergence: the old active dir becomes dormant only after `/plugin marketplace update` + `/reload-plugins`, so the NEXT update sweeps it — two consecutive updates converge the cache to one version.
+- Honesty clause relayed verbatim: the sweep is hygiene (drift-bug surface + disk); the latest-version GUARANTEE remains `/plugin marketplace update` + `/reload-plugins`.
+
+### Notes
+- New: `tests/surface/test-update-plugin-sweep.sh` (referenced-set rule, confirm-first + warning, prefix guard, honesty clause).
+
 ## [7.14.0] - 2026-08-31 — architecture advisor: the consultant seat between extraction and intent
 
 **Spec `docs/superpowers/specs/2026-08-31-architecture-advisor.md`. Origin: the owner's multifinance-core revamp brainstorm — the pipeline answers "what does this system DO" but had no disciplined home for "what should the TARGET architecture be", which matters most exactly when the user does not know the legacy's details. Deliberately shipped in MINIMAL form (one reference + two-sentence wiring, no new skill, no routing keyword, zero gate/hook change) — promotion waits on field usage evidence.**
