@@ -59,6 +59,15 @@ Konsistensi ditegakkan secara mekanis: SATU template, token design tetap, lensa 
 
 Semua string yang template TULIS SENDIRI (label chrome bar, baris "Untuk siapa", summary strip, teguran budget, footer) = **natural mix Indonesia-English, tidak kaku** — istilah teknis tetap English, kalimat mengalir seperti ngobrol kerja, bukan bahasa dokumen resmi. Contoh: ✅ "flow utama — dari simulasi sampai PO terbit" · ❌ "diagram alir proses utama daripada simulasi hingga penerbitan pesanan pembelian". Isi md tidak disentuh (ground truth); Tier-1 token (verdict, enum, ID, path) tetap English verbatim. Di-pin test bersama anatomi §3.
 
+## 7. Referensi selera user (2026-08-31, menyusul ship 7.16.0–7.18.0)
+
+Artifact "DD9000 — Green Screen ke Web" (0b1b24fd) ditunjuk user sebagai contoh hasil yang disukai. Yang bisa diserap MEKANIS (tanpa model mengarang — batas drift renderer tetap):
+
+- **Strip angka berwarna-makna di depan** — renderer sudah punya summary strip; tambah warna semantik per tile (ok/warn/stop) = kandidat minor renderer.
+- **Anotasi dua-sisi panah** (atas = aksi, bawah = jaminan/sitasi) dan **kalimat takeaway tebal penutup section** = KONVENSI EMITTER saat menulis md (mermaid edge label `-->|aksi|` + baris `**takeaway.**` setelah diagram) — masuk template/teacher emitter saat disentuh, BUKAN tugas renderer.
+- **Status jujur** (baris "menunggu"/"butuh keputusan bisnis" di tabel status) — sudah sejalan doktrin N/A-tercatat.
+- Yang TIDAK diserap: figcaption yang di-author renderer dari md orang (model-authored = drift; kalau md-nya sendiri menulis takeaway, ter-render indah dengan sendirinya).
+
 ## Sumber
 
 - https://diataxis.fr/ + https://diataxis.fr/start-here/ (mode-baca 4 tipe; relevansi retrieval AI)
