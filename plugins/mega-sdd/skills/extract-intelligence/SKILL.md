@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 2.1.0
+version: 2.2.0
 description: Tech-agnostic legacy extractor for rebuild/revamp — census-contracted extraction composes the system's logic into one PRD-kontrak per module (inline file:line citations, [LOCKED]/[INTENT]/[ARTIFACT] mutability tiers), consumed by generate-intent --kb and bind-codebase. Cost scales with the census, not a fixed pipeline — a 1-file engine yields 1 PRD. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "revamp project ini ke stack baru", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -137,6 +137,8 @@ halt.
 **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-extract-census.sh" --kb-dir={out}/knowledge-base` — recomputes coverage from census + the PRD artifacts: unclaimed / double-claimed / phantom / uncited files, missing OQ sections, non-Mermaid flows. FAIL → fix (re-dispatch the owning module) or honestly record the gap as `[OPEN]`/OQ in the owning PRD, then re-run. Never hand off on FAIL.
 
 **Hand-off announce:** "PRD-kontrak written to `<out>/knowledge-base/` — N module(s), census: N files fully claimed. Critical findings: N. Open questions: N (P1: …, P2: …, P3: …). Next: review `<out>/knowledge-base/README.md`, then `generate-intent --kb=<out>/knowledge-base/` to continue the revamp lane."
+
+**Auto-render HTML (7.18.0, 0 model tokens):** after the gate passes, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-html.sh" <out>/knowledge-base --index` and name `<kb>/html/index.html` in the announce — the shareable per-domain report (opens offline, no Claude needed). Fail-open: a render failure is ONE warning line, never a halt; skip when `.mega-sdd/config.yaml` has `render_html: off`.
 
 **Advisor offer (when the target architecture is undecided):** append one line to the announce — "Arsitektur target belum diputuskan? Gue bisa jalanin konsultasi advisor dulu (evidence digest dari KB + census constraint + 2–3 opsi + ADR)." On yes, load `plugins/mega-sdd/references/architecture-advisor.md` and follow it — an OFFER, never auto; the resulting `decisions/ADR-*.md` (accepted) is consumed by `generate-intent --kb`.
 

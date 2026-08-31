@@ -20,6 +20,13 @@
    - **Escape breakout**: md dibawa sebagai JSON dengan `</` → `<\/` (md berisi `</script>` tidak bisa menutup tag pembungkus).
 3. **Template JS** (client-side, ~100 baris hand-written): marked v15 renderer (fence `mermaid` → `pre.mermaid`; heading ber-id slug; tabel dibungkus `.tw` scroll sendiri), tier token jadi badge (kosmetik, teks tetap), tiap diagram dibungkus kartu berjudul heading terdekat, nav dibangun dari DOM (diagram dulu), mermaid theme ikut dark/light, `securityLevel: strict`.
 
+## Amendemen 7.18.0 — reachability + auto-emission (field-test hari pertama)
+
+Test lapangan pertama ("render html nya project ini" di sesi lain) MISS — frasa tidak ter-route ke script mana pun; sesi itu menjawab tier-S dengan benar berdasarkan yang dia tahu. Kelas reachability yang sama dengan F-09/F-14: fitur diam karena tidak ada yang menunjuk ke sana, "invoke by phrase" ternyata prosa kosong. Fix:
+
+1. **`/mega-sdd:emit html <file|dir>`** — lane kelima di emit (script, bukan skill; description command membawa trigger "render html"/"html-kan"/"bikin html dari"); dir → `--index` default; target ambigu → tanya, jangan tebak. Router side-lane using-mega-sdd menunjuk lane ini.
+2. **Auto-emission per fase (permintaan user — "setiap domain ada laporannya"):** empat hand-off menjalankan renderer otomatis — extract-intelligence (`<kb> --index`), generate-intent (`<vault-dir> --index`), generate-units (`units/_index.md`), execute-bolts (`bolts/_summary.md`) — 0 token model, **fail-open** (render gagal = satu baris warning, tidak pernah halt), opt-out `config.yaml render_html: off`. Path html disebut di announce hand-off masing-masing.
+
 ## Rail & keputusan
 
 - Zero perubahan gate/hook/command — script dipanggil by phrase ("render html …") atau `--html` menyusul di emit KALAU dipakai (deferred, konsumen dulu).
