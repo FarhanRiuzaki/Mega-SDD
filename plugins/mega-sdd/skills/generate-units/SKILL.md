@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.23.0
+version: 2.24.0
 description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task_type per binding Implementation State Map, OQ-IDs carried, Anchors mandatory when evidence exists, dependency DAG (cycles rejected). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -143,6 +143,8 @@ Full blocker YAML for every type → `references/halt-protocol.md`.
 ## Hand-off
 
 "Generated N units. Suggested next: `execute-bolts --all` to execute in order, or `execute-bolts U-001` to start with the first."
+
+**Auto-render HTML (7.18.0, 0 model tokens):** run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-html.sh" <vault>/units/_index.md` and name the html path in the hand-off — the work-order DAG as a shareable offline page. Fail-open (one warning line, never a halt); skip when `.mega-sdd/config.yaml` has `render_html: off`.
 
 Under `--auto` (typically from `orchestrate-flow --deep` or `/mega-sdd`), emit the handoff YAML record per your local template in `references/auto-and-memory.md` (operative; `../orchestrate-flow/references/handoff-contract.md` owns only the base schema + routing index) — status `halted` on any of the halts above. The `scope:` block is included when vault.json has a `scope` field. Full handoff schema: `references/auto-and-memory.md` (its §Scope propagation and §_index.md sections are every-run reads at Steps 10–11).
 

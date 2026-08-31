@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 4.2.0
+version: 4.2.1
 description: Session-start router for spec-driven development — weighs every task S/M/L and routes only M/L through a mega-sdd skill; S answers inline. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, revamp, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang.
 ---
 
@@ -60,7 +60,7 @@ extract-intelligence → generate-intent --kb=<kb> → (canonical pipeline)
 
 Side lanes (as needed): `resolve-oq` (OQ walk), `detect-drift` (code vs vault), `diff-vault` (new PRD revision), `orchestrate-flow` (auto-route by CWD state).
 
-Diagnostic & output lanes compress to the front-door rule — any M/L lane phrase routes to `/mega-sdd`; the side-lane skills (`analyze` "check consistency", `graph` "impact / blast radius", `emit-fsd`/`emit-prd`/`emit-sit`/`emit-uat` (`UAT`, `test script`, `skrip uji`, `berita acara UAT`) via `/mega-sdd:emit`, `emit-agents-md`, `install-deps`) each carry their own trigger census in their always-loaded description and may be invoked directly.
+Diagnostic & output lanes compress to the front-door rule — any M/L lane phrase routes to `/mega-sdd`; the side-lane skills (`analyze` "check consistency", `graph` "impact / blast radius", `emit-fsd`/`emit-prd`/`emit-sit`/`emit-uat` (`UAT`, `test script`, `skrip uji`, `berita acara UAT`) via `/mega-sdd:emit`, `emit-agents-md`, `install-deps`) each carry their own trigger census in their always-loaded description and may be invoked directly. "render html" / "html-kan" / "share dokumen ke tim tanpa Claude" → `/mega-sdd:emit html <file|dir>` (the render-html script lane — tier S-sized, but the emit command owns the procedure).
 
 Maintenance lane (never-ending development): when the code moved outside the pipeline (manual edit, AI-prompted edit, hotfix, git pull), `/mega-sdd:sync` (→ `orchestrate-flow --sync`) reconciles: incremental re-scan → drift triage → re-bind → unit reconcile. Sync is OFFERED at the next M/L entry — the front door surfaces the change signal there; it is never a mandatory follow-up to an inline tier-S fix, and the session-start staleness notice is informational only.
 

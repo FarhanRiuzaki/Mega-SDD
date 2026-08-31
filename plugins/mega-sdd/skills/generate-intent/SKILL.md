@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 2.19.0
+version: 2.20.0
 description: Spec-driven intent generation — a PRD/BRD (+ Figma), a free-text brief (--from-prompt), or a KB (--kb) becomes a 4-file anti-hallucination vault (layout-2); Mode A/B auto-detected; --scope selects one scope of a multi-scope PRD; every OQ tagged category + resolution_mode. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
 ---
 
@@ -154,6 +154,8 @@ All halts emit the unified `blocker` envelope (`plugins/mega-sdd/references/halt
 ## Quality bar
 
 Grounded (every non-trivial claim cites a source) · honest about gaps (OQs over guesses) · simple (except flows) · human-readable (reviewable by architect, PM, business owner, QA — not just AI consumers) · predictable structure · language match (output follows input language; code-level terms stay English).
+
+**Auto-render HTML (7.18.0, 0 model tokens):** after Step 5 delivery, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-html.sh" <vault-dir> --index` and name `<vault>/html/index.html` in the closing summary — the vault as a shareable offline page set. Fail-open (one warning line, never a halt); skip when `.mega-sdd/config.yaml` has `render_html: off`.
 
 ## Specialist references (load on demand)
 

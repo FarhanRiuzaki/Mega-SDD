@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.18.0] - 2026-08-31 — render-html becomes reachable AND automatic
+
+**Spec 2026-08-31-render-html.md §Amendemen 7.18.0. Day-one field test caught the classic reachability miss (the F-09/F-14 class): the owner typed "render html nya project ini" in another session and NOTHING routed the phrase — 7.16.0's "invoke by phrase" was empty prose. Plus the owner's follow-up ask: every pipeline phase should emit its report automatically ("setiap domain ada laporannya — emit artefact lebih tepatnya").**
+
+### Added — `/mega-sdd:emit html <file|dir>` (the fifth emit lane)
+- A script lane, not a skill: the emit command dispatches `render-html.sh` directly; trigger phrases live in the ALWAYS-LOADED command description ("render html", "html-kan", "bikin html dari", "share ke tim tanpa Claude"). A directory gets `--index` by default; an ambiguous target ("project ini") → ask, never guess. The using-mega-sdd side-lane names the route.
+
+### Added — auto-render at every pipeline hand-off (0 model tokens)
+- extract-intelligence (2.2.0): KB → `<kb>/html/index.html` at the census-gate hand-off. generate-intent (2.20.0): vault dir → `<vault>/html/` after delivery. generate-units (2.24.0): the work-order DAG page from `units/_index.md`. execute-bolts (2.45.0): the batch report from `bolts/_summary.md`. Each hand-off names its html path; every leg is **fail-open** (a render failure is one warning line, never a halt) and skippable via `config.yaml render_html: off`. Every domain now ships its own offline shareable report the moment its phase completes.
+
+### Notes
+- `tests/render-html/test-render-html.sh` +8 pins (H: reachability — description triggers, script dispatch, no-guess rail, router pointer; I: all four hand-offs carry the fail-open auto-render line). using-mega-sdd 4.2.1.
+
 ## [7.17.0] - 2026-08-31 — generated Indonesian stops sounding like a government form
 
 **Spec `docs/superpowers/specs/2026-08-31-natural-register.md`. Team feedback (№C-3) via the owner: everything mega-sdd generates reads "terlalu kaku dan baku" — they want natural, flawless, mixed Indo-English prose across every generated domain/pipeline artifact. Diagnosis: a REGISTER problem, not a language-choice problem — the language contract (`references/output-language.md`, routed to by 12 skills) already decides WHEN Indonesian is used; it never said HOW to write it.**

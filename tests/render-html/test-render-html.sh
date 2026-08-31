@@ -92,4 +92,21 @@ echo "── G: language + usage ──"
 grep -q "Untuk siapa" "$H" && grep -q "md = ground truth" "$H" && ok "G1 natural mixed-language template strings" || bad "G1 template strings missing"
 bash "$R" "$WORK/does-not-exist.md" >/dev/null 2>&1; [ $? -eq 2 ] && ok "G2 missing input → exit 2" || bad "G2 usage exit wrong"
 
+echo "── H: reachability — the emit html lane (7.18.0, field-test miss on day 1) ──"
+EMIT="$ROOT/plugins/mega-sdd/commands/emit.md"
+grep -q "render html" "$EMIT" && grep -q "html-kan" "$EMIT" && ok "H1 trigger phrases live in the always-loaded description" || bad "H1 trigger phrases missing from emit description"
+grep -q "render-html.sh" "$EMIT" && ok "H2 emit html dispatches the script" || bad "H2 script dispatch missing"
+grep -q "jangan menebak" "$EMIT" && ok "H3 ambiguous target → ask, never guess" || bad "H3 no-guess rail missing"
+grep -q "emit html" "$ROOT/plugins/mega-sdd/skills/using-mega-sdd/SKILL.md" && ok "H4 router side-lane names the html lane" || bad "H4 router pointer missing"
+
+echo "── I: auto-render at every pipeline hand-off (7.18.0) ──"
+for s in extract-intelligence generate-intent generate-units execute-bolts; do
+  SK="$ROOT/plugins/mega-sdd/skills/$s/SKILL.md"
+  if grep -q "render-html.sh" "$SK" && grep -q "Fail-open" "$SK" && grep -q "render_html: off" "$SK"; then
+    ok "I1 $s hand-off auto-renders (fail-open + config opt-out)"
+  else
+    bad "I1 $s missing the auto-render hand-off line"
+  fi
+done
+
 echo; [ $err -eq 0 ] && { echo "test-render-html: ALL PASS"; exit 0; } || { echo "test-render-html: FAILED"; exit 1; }
