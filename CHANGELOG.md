@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.14.0] - 2026-08-31 — architecture advisor: the consultant seat between extraction and intent
+
+**Spec `docs/superpowers/specs/2026-08-31-architecture-advisor.md`. Origin: the owner's multifinance-core revamp brainstorm — the pipeline answers "what does this system DO" but had no disciplined home for "what should the TARGET architecture be", which matters most exactly when the user does not know the legacy's details. Deliberately shipped in MINIMAL form (one reference + two-sentence wiring, no new skill, no routing keyword, zero gate/hook change) — promotion waits on field usage evidence.**
+
+### Added — `references/architecture-advisor.md` (plugin-root, loaded on demand)
+- Four-step consultation on top of a finished KB: **evidence digest** (constraints VISIBLE in the code, every bullet cited — coupling, volume, batch windows, integrations, regulatory + `[LOCKED]` density), **constraint census** (the half the code CANNOT tell you: team, ops maturity, hosting/regulator, budget, coexistence, NFR — AskUserQuestion with keterangan; unanswered → deferred OQ, never assumed), **2–3 options** (Mermaid topology mandatory, fit table scored against every digest finding AND census answer, recommendation marked as recommendation), **decision → ADR** at `<kb>/decisions/ADR-NNN-<slug>.md` (accepted vs proposed; rejected options recorded with cited reasons; a `## Claims` block in `[INTENT]` grammar).
+- The rail, stated first: the advisor proposes, the human decides — always; every recommendation claim cites a KB artifact or a census answer; the advisor never auto-writes an accepted ADR.
+
+### Wired
+- extract-intelligence (2.1.0): the Step-5 hand-off OFFERS the consultation when the target architecture is undecided — an offer, never auto.
+- generate-intent (2.19.0) + kb-submode consumption item 7: `decisions/ADR-*.md` with `Status: accepted` is a legitimate input document (a recorded human decision — same source class as a PRD); its claims enter the vault citing the ADR; `proposed` surfaces as an OQ, never a decision. No fabrication-moat change: the ADR is human-approved input, and unknowns stay OQs.
+
+### Notes
+- New: `tests/architecture-advisor/test-advisor-wired.sh` (rails, ADR template, both wiring directions, one-level-rule route).
+- Deferred on record (spec §Ditunda): dedicated routing keywords, promotion to a full skill, mandatory live-research step — all wait for evidence from the first field consultation.
+
 ## [7.13.0] - 2026-08-31 — the vacuous L0 becomes a human decision; the doc-audit code ledger closes
 
 **Spec `docs/superpowers/specs/2026-08-31-l0-advisory-docaudit-close.md`. Two sources: the team's 11-artifact `/docs` standard (triage №C — verdict: 7 items already covered in enforced form, the one real plugin-side gap is escalation of a lint-less repo) and the 2026-08 doc-audit's five OPEN code findings, re-verified against today's HEAD (three had already closed in 7.6.0–7.12.0; two were still live).**
