@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 2.0.0
+version: 2.1.0
 description: Tech-agnostic legacy extractor for rebuild/revamp — census-contracted extraction composes the system's logic into one PRD-kontrak per module (inline file:line citations, [LOCKED]/[INTENT]/[ARTIFACT] mutability tiers), consumed by generate-intent --kb and bind-codebase. Cost scales with the census, not a fixed pipeline — a 1-file engine yields 1 PRD. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "revamp project ini ke stack baru", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -138,6 +138,8 @@ halt.
 
 **Hand-off announce:** "PRD-kontrak written to `<out>/knowledge-base/` — N module(s), census: N files fully claimed. Critical findings: N. Open questions: N (P1: …, P2: …, P3: …). Next: review `<out>/knowledge-base/README.md`, then `generate-intent --kb=<out>/knowledge-base/` to continue the revamp lane."
 
+**Advisor offer (when the target architecture is undecided):** append one line to the announce — "Arsitektur target belum diputuskan? Gue bisa jalanin konsultasi advisor dulu (evidence digest dari KB + census constraint + 2–3 opsi + ADR)." On yes, load `plugins/mega-sdd/references/architecture-advisor.md` and follow it — an OFFER, never auto; the resulting `decisions/ADR-*.md` (accepted) is consumed by `generate-intent --kb`.
+
 ## Halt conditions
 
 - Legacy path missing/empty → halt with the exact path probed.
@@ -172,7 +174,8 @@ mutability-tier producer: `tier_distribution`, `locked_claims_touched`,
 
 - `references/prd-kontrak-template.md` — the output grammar (layout, template, markers, dispatch core, gates, README, data-mutation-policy).
 - `references/handoff.md` — the `--auto` handoff record.
-- `mega-sdd:generate-intent` — consumes the output via `--kb=<path>`.
+- `plugins/mega-sdd/references/architecture-advisor.md` — the optional target-architecture consultation on top of the finished KB (offered at hand-off).
+- `mega-sdd:generate-intent` — consumes the output via `--kb=<path>` (incl. `decisions/ADR-*.md` accepted by the advisor).
 - `mega-sdd:bind-codebase` — consults the output as secondary ground truth.
 - `scripts/derive-extract-census.sh` / `scripts/validate-extract-census.sh` — census + completeness gate.
 - `scripts/kb-leak-scan.sh` — tech-agnostic vocabulary advisory.

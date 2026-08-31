@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 2.18.0
+version: 2.19.0
 description: Spec-driven intent generation — a PRD/BRD (+ Figma), a free-text brief (--from-prompt), or a KB (--kb) becomes a 4-file anti-hallucination vault (layout-2); Mode A/B auto-detected; --scope selects one scope of a multi-scope PRD; every OQ tagged category + resolution_mode. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
 ---
 
@@ -45,7 +45,7 @@ Do NOT use to validate a vault against live code (`bind-codebase` / `detect-drif
 
 - **Mode A — structured input (PRD / BRD / Figma).** `generate-intent ./prd.md`. Parse + decompose directly per `references/vault-core.md` **§schema + §OQ-conventions + §id-stability** (the drafting core — §constitution ONLY at Step 3.4, concurrency detail ONLY on lock contention; `vault-contract.md` is the conditional overlay: §Starterkit-binding ONLY under `--scan`, §Multi-scope ONLY when the PRD carries a `scopes:` block or `--scope` is passed). No Q&A unless the source is critically incomplete.
 - **Mode B — free-text brief.** `generate-intent --from-prompt "<brief>"` (or detected when no structured path is given). Runs adaptive Q&A (≤10 questions) to fill gaps, then produces a seed-PRD + vault in one pass. Procedure → `references/from-prompt-mode.md`.
-- **Mode B (KB sub-mode) — `--kb=<path>`.** `generate-intent --kb=.mega-sdd/knowledge-base/`. Consumes an `extract-intelligence` knowledge base as a legacy-rebuild brief. KB is ANALYSIS INPUT, not a 1:1 spec: vault emphasizes reengineering goals + business intent; legacy detail surfaces only where the `[LOCKED]` tier requires 1:1 preservation. Full procedure (freshness preflight, tier-aware routing, ERD freedom, Q&A loop) → `references/kb-submode.md`.
+- **Mode B (KB sub-mode) — `--kb=<path>`.** `generate-intent --kb=.mega-sdd/knowledge-base/`. Consumes an `extract-intelligence` knowledge base as a legacy-rebuild brief. KB is ANALYSIS INPUT, not a 1:1 spec: vault emphasizes reengineering goals + business intent; legacy detail surfaces only where the `[LOCKED]` tier requires 1:1 preservation. A `<kb>/decisions/ADR-*.md` with `Status: accepted` (the architecture-advisor record — `plugins/mega-sdd/references/architecture-advisor.md`) is a legitimate input document: its claims enter the vault citing the ADR; `proposed` surfaces as an OQ, never a decision. Full procedure (freshness preflight, tier-aware routing, ERD freedom, Q&A loop) → `references/kb-submode.md`.
 
 All three modes share the SAME vault contract (`references/vault-core.md` + `references/vault-contract.md`); only input parsing differs.
 

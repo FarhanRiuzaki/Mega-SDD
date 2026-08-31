@@ -79,6 +79,14 @@ KB consumption correctness is unchanged whether the check confirms/warns/skips.
 6. **README `## ERD` / `## System Flow`** (multi-module) seed
    `02-architecture.md` boundaries + `flows.md` skeletons — the rebuild shape,
    with legacy shape as reference only.
+7. **`<kb>/decisions/ADR-*.md` with `Status: accepted`** (7.14.0, architecture
+   advisor — `plugins/mega-sdd/references/architecture-advisor.md`): a recorded
+   human decision is a legitimate input document (same source class as a PRD) —
+   its `## Claims` block flows into the vault with the ADR as the citation, and
+   its topology seeds the target-architecture side of `02-architecture.md`.
+   `Status: proposed` is NEVER consumed as a decision — surface it as an OQ
+   ("arsitektur target belum diputuskan — ADR-NNN masih proposed"). No
+   `decisions/` dir = nothing to do (the advisor is optional).
 
 ## Consumption — legacy numbered-tree grammar
 
