@@ -126,6 +126,21 @@ for s in detect-drift bind-codebase resolve-oq diff-vault; do
   fi
 done
 
+# ---- §Register (7.17.0, spec 2026-08-31-natural-register.md): natural, bukan baku ----
+REF="$ROOT/plugins/mega-sdd/references/output-language.md"
+if grep -q "^## Register — natural, bukan baku" "$REF"; then
+  ok "output-language.md carries §Register"
+else
+  bad "§Register missing from output-language.md"
+fi
+pairs=$(grep -c "^| ❌\|^| melakukan\|^| dipergunakan\|^| adapun\|^| sehubungan\|^| apabila" "$REF")
+if [ "$pairs" -ge 4 ]; then ok "§Register teaches by ❌→✅ pairs ($pairs rows)"; else bad "❌→✅ teacher table too thin ($pairs rows, want >=4)"; fi
+grep -q "Flawless ≠ gaul" "$REF" && ok "flawless-bukan-gaul rail present" || bad "flawless rail missing"
+grep -q "Carve-out regulator" "$REF" && grep -q "berita acara SEOJK" "$REF" \
+  && ok "regulator carve-out (berita acara stays baku)" || bad "regulator carve-out missing"
+grep -q "natural Indonesian-English mix — tidak kaku" "$SKILLS/using-mega-sdd/SKILL.md" \
+  && ok "anchor narrate line carries the register" || bad "anchor line not updated"
+
 echo
 if [ "$fail" -eq 0 ]; then echo "PASS output-language pins"; exit 0
 else echo "output-language pins FAILED"; exit 1; fi

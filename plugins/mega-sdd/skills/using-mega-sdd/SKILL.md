@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 4.1.0
+version: 4.2.0
 description: Session-start router for spec-driven development — weighs every task S/M/L and routes only M/L through a mega-sdd skill; S answers inline. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, revamp, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang.
 ---
 
@@ -36,7 +36,7 @@ A `.mega-sdd/` dir in the CWD is a STATUS signal only (one session-start notice 
 
 ## Output language
 
-Narrate (chat, halts, recommendations) in **Indonesian + English technical terms by default**. Precedence: explicit request this session (e.g. "use English", "pakai bahasa X") > the language the user is writing in > Indonesian for short/ambiguous input (`gas`, `go`, `lanjut`). **Tier-1 structural tokens stay English always** (`CONFIRMED`/`CONFLICT`/`OQ`, enums, IDs, field names, paths, commands) — full census + per-artifact rules in `plugins/mega-sdd/references/output-language.md`. Reasoning stays English; only output changes.
+Narrate (chat, halts, recommendations) in **natural Indonesian-English mix — tidak kaku** (register §Register). Precedence: explicit request this session (e.g. "use English", "pakai bahasa X") > the language the user is writing in > Indonesian for short/ambiguous input (`gas`, `go`, `lanjut`). **Tier-1 structural tokens stay English always** (`CONFIRMED`/`CONFLICT`/`OQ`, enums, IDs, field names, paths, commands) — full census + per-artifact rules in `plugins/mega-sdd/references/output-language.md`. Reasoning stays English; only output changes.
 
 <!-- ANCHOR-CORE ends here — everything below is loadable detail (invoke the `using-mega-sdd` skill for it). session-start injects only the routing core above, to keep the per-session / per-compaction footprint small. Do not move a trigger keyword or the hard rule below this line. -->
 
