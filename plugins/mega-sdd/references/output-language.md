@@ -60,6 +60,23 @@ A human-facing question the human cannot answer from the prompt alone is a defec
 
 Descriptions follow the standing Tier-2 language precedence (Indonesian-mix by default). This contract binds the halt displayer (`plugins/mega-sdd/references/halt-protocol.md §Consumer dispatch` renders a keterangan block BEFORE the envelope YAML) and every skill prompt template; pinned by `tests/interaction-keterangan/`.
 
+## Register — natural, bukan baku (mandat user + tim, 2026-08-31)
+
+Semua prosa Indonesia yang plugin HASILKAN (Tier-2 narasi + Tier-3 artefak — vault, KB, binding, laporan, keterangan, emissions) ditulis sebagai **bahasa kerja engineer yang natural**, bukan bahasa dokumen resmi atau terjemahan harfiah. Istilah teknis English dipakai apa adanya; kalimat aktif dan langsung; kata upacara dibuang.
+
+| ❌ Kaku (jangan) | ✅ Natural (tulis begini) |
+|---|---|
+| melakukan proses validasi terhadap input | memvalidasi input |
+| dipergunakan untuk keperluan autentikasi | dipakai buat autentikasi |
+| adapun titik akhir yang digelar adalah | endpoint yang di-deploy: |
+| sehubungan dengan hal tersebut di atas | (hapus — langsung ke isinya) |
+| apabila pengguna tidak terautentikasi maka sistem akan menolak | user belum login → request ditolak 401 |
+
+Rambu:
+- **Flawless ≠ gaul.** Tetap gramatikal + profesional — "lo/gue" adalah register chat, bukan artefak tim; jangan bawa ke dokumen.
+- **Carve-out regulator:** bagian dokumen yang menghadap regulator (emit-uat berita acara SEOJK — bagian formalnya) TETAP baku; regulator memang mengharapkan register itu. Di luar carve-out ini, natural.
+- Tier-1 tak tersentuh (enum, verdict, ID, path — English verbatim); "vault ikut bahasa input" tak berubah — register ini berlaku SAAT prosa ditulis dalam Indonesia.
+
 ## Switching & extensibility
 
 - Default `id` (carried by the anchor + the greenfield entry-point directives). The user says "use English" / "pakai bahasa Inggris" / "pakai bahasa Jawa" → the model mirrors.

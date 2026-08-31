@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.17.0] - 2026-08-31 — generated Indonesian stops sounding like a government form
+
+**Spec `docs/superpowers/specs/2026-08-31-natural-register.md`. Team feedback (№C-3) via the owner: everything mega-sdd generates reads "terlalu kaku dan baku" — they want natural, flawless, mixed Indo-English prose across every generated domain/pipeline artifact. Diagnosis: a REGISTER problem, not a language-choice problem — the language contract (`references/output-language.md`, routed to by 12 skills) already decides WHEN Indonesian is used; it never said HOW to write it.**
+
+### Added — `output-language.md §Register` (the canonical one-door fix)
+- All plugin-generated Indonesian prose (Tier-2 narration + Tier-3 artifacts — vault, KB, binding, reports, keterangan, emissions) = **bahasa kerja engineer yang natural**: English tech terms as-is, active direct sentences, ceremony words dropped. Taught by a ❌→✅ pair table ("melakukan proses validasi terhadap input" → "memvalidasi input"), because examples teach harder than rules.
+- Rails: **flawless ≠ gaul** (grammatical + professional — "lo/gue" is the user's chat register, never a team artifact); **regulator carve-out** (emit-uat berita acara SEOJK formal sections stay baku — the regulator expects that register); Tier-1 tokens and the vault-follows-input-language rule untouched.
+- The session anchor's narrate line now carries the register from turn one ("natural Indonesian-English mix — tidak kaku") — edited net-negative in size, the anchor-core cap survives (using-mega-sdd 4.2.0).
+
+### Notes
+- `tests/output-language/test-output-language.sh` +5 register pins (section, ≥4 teacher pairs, flawless rail, carve-out, anchor line).
+- Deferred on record: sweeping stiff example prose inside individual templates/teachers — the canonical §Register binds their output first; the acquisition field run measures whether the sweep is still needed.
+
 ## [7.16.0] - 2026-08-31 — render-html: any md becomes one shareable, diagram-first HTML file
 
 **Spec `docs/superpowers/specs/2026-08-31-render-html.md`, grounded in `research/2026-08-31-render-html-standard.md` (Diátaxis per-doc-type lens, arc42 compartments, C4-via-flowchart, numeric mermaid budgets, natural mixed-language strings). Owner mandate: the dev team should understand mega-sdd output through an HTML artifact they can open offline and share with people who have no Claude — standar, rapi, konsisten, sesuai domain, diagram-first.**
