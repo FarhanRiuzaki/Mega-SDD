@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.20.0] - 2026-09-01 — unit granularity coarsening + cohesion advisory (the sprint-subagent answer)
+
+**Spec `docs/superpowers/specs/2026-09-01-unit-granularity-coarsening.md` · research `research/2026-09-01-sprint-subagent-granularity.md`. Team ask (v7.6 field): "1 subagent per sprint of 5 related units". Verdict: the SUBAGENT half is REJECTED on the record — depth-1 runtime limit (a sprint subagent cannot dispatch `bolt-implementer` or the review panel; the identical topology was already rejected in `squad-subagent.md`), ~80-turn/unit context decay, and ≈0 savings since dispatch is pointer-based. The legitimate half — "3 small related units should be 1" — ships UPSTREAM, where merging is safe: the unit is the contract, so 1 fatter unit = 1 subagent = 1 commit = 1 panel with every gate intact.**
+
+### Added
+- **`generate-units --max-complexity=large`** (enum extension, no new plumbing): Step-3 single-unit threshold rises 300→600 LOC / 5→8 files ("story-sized") — opt-in; `medium` (300/5) stays the default. Config `unit_granularity: fine|coarse` in `.mega-sdd/config.yaml`; precedence flag > config > default (the `--model-tier` pattern). The threshold stays an authoring judgment — advisory, no validator (unit-schema §Atomicity class unchanged; whitelist/task_type/Hard-rule/per-unit-review rails declared granularity-independent).
+- **lint-units merge-candidate advisory (cohesion):** flags a LINEAR `depends_on` chain of ≥2 units that are same-module, `create|extend` only, ≤2 target_files each, no Hard rules, no PBT, and self-contained in the DAG (no outside dependent on a middle unit) → `merge_candidate: U-00X..U-00Z` with the remedy line. ADVISORY forever — never a halt, never an auto-merge (propose-first). Merge wins ONLY on chains (sequential anyway); independent same-wave units already run parallel since 7.7.0 and merging would serialize them — the heuristic targets chains by construction.
+
+### Notes
+- New pin suite `tests/unit-granularity/test-unit-granularity.sh` (A–F incl. the precedent guard: `squad-subagent.md`'s depth-1 rejection must stay on the record). Root-cause note for the field report: the team was on 7.6 — one release below the 7.7.0 wave default they were asking for; sprint SCHEDULING needed no change.
+
 ## [7.19.0] - 2026-08-31 — the bundle grows navigation, search, and an executive-summary lane
 
 **Spec `docs/superpowers/specs/2026-08-31-render-nav-search-summary.md`. Owner discussion → three decisions: back-to-index, CROSS-bundle search, and AI summaries — with the line drawn where it belongs: AI summarizes ONCE at emit time into a cited md artifact; the renderer never authors a word.**
