@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.24.0
+version: 2.25.0
 description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task_type per binding Implementation State Map, OQ-IDs carried, Anchors mandatory when evidence exists, dependency DAG (cycles rejected). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -21,7 +21,8 @@ Do NOT use when the vault has unresolved CONFLICT entries in `binding.md` — th
 ## Inputs & flags
 
 - Vault path (positional, required) — the vault dir; brownfield runs carry `<vault>/binding.md` + `<vault>/bound/` (units are written to `<vault>/units/`, beside `bound/` and `bolts/`)
-- `--refresh` (re-number IDs from scratch) · `--max-complexity=small|medium` (split anything bigger) · `--auto`
+- `--refresh` (re-number IDs from scratch) · `--max-complexity=small|medium|large` (split anything bigger; `large` = story-sized units, threshold naik ke <600 LOC / ≤8 files — buat tim yang review-nya per story, 7.20.0) · `--auto`
+- Granularity resolve (sekali, sebelum Step 3): **flag > config > default** — `--max-complexity` menang; tanpa flag baca `.mega-sdd/config.yaml` `unit_granularity: fine|coarse` (fine→small, coarse→large); absen keduanya → `medium` (default 300 LOC / 5 files, tidak berubah)
 - `--adversarial-subagent` — Step 9.5 dispatches a SEPARATE subagent per unit for adversarial test review (stronger blind-spot coverage; auto-set for any unit with `risk: high`/`critical` — the `risk:` frontmatter field is WRITTEN by Step 2.5 per the risk signals in `references/adversarial-test-prompt.md`, defined in `references/unit-schema.md`; absent = low)
 - `--no-adversarial-review` — SKIP Step 9.5; sets every unit's `acceptance_test._authored_by: same-pass`. DISCOURAGED (re-opens the D4-006 blind-spot risk); debug/regression only
 - `--regenerate` — rewrite existing unit files; PRESERVES units with `acceptance_test._authored_by: human`; others rewritten per Step 9 + 9.5
@@ -63,7 +64,7 @@ The step skeleton is below with every gate/rail inline, and **the inline skeleto
 
    `verify` units carry empty/`none` target_files, a MANDATORY `## Anchors` entry citing the binding `anchor`, a one-line Implementation-steps body, and assertions that prove existing code still works. A `verify` unit whose binding `anchor` is empty → halt (binding gap); never silently downgrade. Full state matrix, `extend` Migration-notes population, and `verify`/target_files mechanics: `references/task-typing.md`.
 
-**3. Group + atomize.** < 300 LOC and ≤ 5 files → single unit; larger → split into N units with an explicit `depends_on` chain. A unit needing an OQ resolved → mark "TBD: <OQ-ID>" in body + add to acceptance criteria.
+**3. Group + atomize.** < 300 LOC and ≤ 5 files → single unit; larger → split into N units with an explicit `depends_on` chain. Under resolved granularity `large` the single-unit threshold rises to < 600 LOC and ≤ 8 files (story-sized; semua rail lain tidak berubah — unit tetap atomic, 1 unit = 1 bolt = 1 review panel). A unit needing an OQ resolved → mark "TBD: <OQ-ID>" in body + add to acceptance criteria.
 
 **4. Resolve dependency graph (strict by default — maximize parallelism).** Emit `depends_on: U-X` ONLY with concrete evidence of coupling: file overlap, symbol cross-reference, Migration-notes reference, an explicit vault ordering declaration, or module-level `blocked_by`. Do NOT emit for same-section/same-module conceptual sequencing without target_files evidence. Then build the DAG and:
    - **Reject cycles** → halt `cycle_detected`; user restructures vault sections so deps form a DAG.
