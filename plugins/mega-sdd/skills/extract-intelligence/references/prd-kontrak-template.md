@@ -109,7 +109,11 @@ empty-collection, boundary, race, timezone, silent-error-swallow,
 
 ## 6. Open Questions
 <OQ-<DOMAIN>-<NN> [P1|P2|P3] + apa yang di-resolve. Ambigu di kode = entri di
-sini, TIDAK PERNAH dikarang. `_Tidak ada._` bila kosong.>
+sini, TIDAK PERNAH dikarang. `_Tidak ada._` bila kosong. Badan pertanyaan WAJIB
+human-first — pertanyaan utuh yang bisa dijawab orang bisnis tanpa buka kode
+(konteks 1 kalimat → pertanyaan → detail teknis sebagai keterangan; jargon tidak
+boleh jadi subjek kalimat) — kontrak + contoh ❌/✅ di
+`plugins/mega-sdd/references/output-language.md §OQ authoring`.>
 ```
 
 Citations are INLINE: `(path:line)` or `(path:line-line)` immediately after

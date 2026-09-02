@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.21.0] - 2026-09-02 — resolve-oq reaches the KB + the human-first OQ language contract
+
+**Spec `docs/superpowers/specs/2026-09-02-kb-oq-resolution-and-human-language.md`. Two field reports, one release (same OQ surface): the owner's "hasil generate KB ga bisa di-resolve-oq, harusnya bisa" (the designed KB→vault hop was a dead end at KB stage — and the revamp-consultant lane genuinely needs legacy questions answered right after extract, while the expert is warm) + the team's "bahasa OQ seperti alien" (§Register 7.17.0 governs register, not comprehensibility — the §6 template let jargon be the question body).**
+
+### Added
+- **resolve-oq KB mode:** Step 0 finding no vault but a KB (the kb-submode 4-path priority) offers walking the PRD-kontrak `§6 Open Questions` directly — same canonical per-OQ prompt, same no-invention rail. KB differences explicit: no derive-vault-json (markdown is the only state), no lock/version machinery, round logged to `<kb>/README.md ## Resolution rounds`; landing markers carry stakeholder provenance (`[x] → Resolved (stakeholder, <date>): …`). **Honesty rail:** claim rows STAY `[OPEN]` — a stakeholder answer is not a code citation; resolution lives in §6 only. Vault always wins when both exist.
+- **`generate-intent --kb` routing row:** a `[x]`-resolved §6 entry lands in the vault as an OQ born pre-resolved (tag + answer + provenance verbatim; deriver maps `[x]`→`resolved` for free); `[~]` carries as out-of-scope; unresolved entries keep the old path untouched.
+- **Reachability (the F-14 lesson):** extract-intelligence's hand-off now OFFERS answering the OQs on the spot when count > 0 (offer only, never auto-invoke); resolve-oq's description gains the KB triggers ("jawab OQ hasil extract", "resolve oq kb").
+- **`output-language.md §OQ authoring — human-first`:** every OQ written into any artifact is a complete question a business reader can answer WITHOUT opening code — one context sentence → the question (jargon may clarify in parentheses, never as the sentence subject) → technical detail as keterangan; a pinned ❌/✅ pair (`grace_period NULL fallback semantics` → "denda mulai dihitung dari hari ke berapa?"). Tier-1 tokens untouched. The extract §6 template and vault-core OQ rules point at the ONE contract home — no restatement (the doc-audit cross-quote lesson).
+
+### Notes
+- New pin suite `tests/resolve-oq-kb/test-resolve-oq-kb.sh` (A–F). Field context: the team is still on 7.6 and has never seen §Register — the update remains step one; this release closes the layer §Register could not.
+
 ## [7.20.0] - 2026-09-01 — unit granularity coarsening + cohesion advisory (the sprint-subagent answer)
 
 **Spec `docs/superpowers/specs/2026-09-01-unit-granularity-coarsening.md` · research `research/2026-09-01-sprint-subagent-granularity.md`. Team ask (v7.6 field): "1 subagent per sprint of 5 related units". Verdict: the SUBAGENT half is REJECTED on the record — depth-1 runtime limit (a sprint subagent cannot dispatch `bolt-implementer` or the review panel; the identical topology was already rejected in `squad-subagent.md`), ~80-turn/unit context decay, and ≈0 savings since dispatch is pointer-based. The legitimate half — "3 small related units should be 1" — ships UPSTREAM, where merging is safe: the unit is the contract, so 1 fatter unit = 1 subagent = 1 commit = 1 panel with every gate intact.**

@@ -119,6 +119,7 @@ KB consumption correctness is unchanged whether the check confirms/warns/skips.
 | `[INFERRED][INTENT]` | Vault body with note "INFERRED — confirm in dev"; outcome already captured | `flows.md` with `[INFERRED]` annotation |
 | `[INFERRED][ARTIFACT]` | Skip the vault entry entirely; log to `_diagnostics/kb-skipped-artifacts.md` | Diagnostic only |
 | `[OPEN][?]` | Vault `Open Question` — answering resolves both axes | `constraints.md ## Open Questions` |
+| §6 entry already `[x]`-resolved (KB-stage resolution via resolve-oq KB mode, 7.21.0) | Vault OQ born PRE-RESOLVED — the tag, the stakeholder answer, and its `Resolved (stakeholder, <date>)` provenance carried verbatim; the deriver maps `[x]` → `resolved` automatically | `constraints.md ## Open Questions` as `[x]`; a §6 `[~]` carries over as out-of-scope |
 
 ## ERD freedom
 

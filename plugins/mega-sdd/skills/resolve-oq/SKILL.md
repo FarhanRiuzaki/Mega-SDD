@@ -1,7 +1,7 @@
 ---
 name: resolve-oq
-version: 2.11.1
-description: Interactive resolver for Open Questions — walks the OQ roll-up by priority, lands stakeholder answers in the vault, bumps version; --binding resolves CONFLICT entries from binding.md. Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", or paraphrases.
+version: 2.12.0
+description: Interactive resolver for Open Questions — walks the OQ roll-up by priority, lands stakeholder answers in the vault, bumps version; --binding resolves CONFLICT entries from binding.md; with no vault but an extract-intelligence KB present, KB mode walks the PRD-kontrak §6 OQs so legacy questions get answered right after extraction. Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", "jawab OQ hasil extract", "resolve oq kb", "jawab open question kb", or paraphrases.
 ---
 
 # Resolve Open Questions
@@ -44,7 +44,7 @@ The 4-option cap is **per question, not per call** — one `AskUserQuestion` tak
 
 Echo `VAULT_DIR=<resolved-absolute-path>` after Step 0 and re-echo at the start of each major step. Full per-step procedure, display formats, templates, and the self-check list are in **`references/interactive-walk.md`** — load it before running the walk.
 
-**Step 0 — Vault location & integrity (MANDATORY).** Get the vault path (`AskUserQuestion`: use auto-detected / specify / cancel). Auto-detect = the CWD directory containing `vault.md` (layout-2) or the legacy `00-index.md` set. Verify integrity: the layout's files exist (4 or 7); the authored OQ surface exists (`constraints.md ## Open Questions`; legacy: the 00-index roll-up); ≥1 `[ ]` OQ exists. Any failure → **STOP**, surface the issue, suggest `generate-intent`. **Lock check:** parse the lock home (vault.md frontmatter; legacy: `00-index.md` Vault Lock Status) — if `🔒 LOCKED`, ask to unlock (record unlock in this round's Changelog; user re-locks after); if `⚠️ DRAFT`, continue. Never proceed without a verified vault and lock-state acknowledged.
+**Step 0 — Vault location & integrity (MANDATORY).** Get the vault path (`AskUserQuestion`: use auto-detected / specify / cancel). Auto-detect = the CWD directory containing `vault.md` (layout-2) or the legacy `00-index.md` set. **No vault found but a KB is (7.21.0):** probe the KB paths in `generate-intent/references/kb-submode.md §KB auto-detection` priority order (`.mega-sdd/knowledge-base/README.md` → `docs/knowledge-base/` → `docs/mega-sdd/knowledge-base/` → `old-reference/knowledge-base/`) — a hit offers **KB mode** via AskUserQuestion (keterangan: OQ §6 PRD-kontrak dijawab langsung di KB; jawaban ikut ke vault nanti saat `generate-intent --kb`); accept → §KB mode below. A vault always wins when both exist; KB is the fallback only. Verify integrity: the layout's files exist (4 or 7); the authored OQ surface exists (`constraints.md ## Open Questions`; legacy: the 00-index roll-up); ≥1 `[ ]` OQ exists. Any failure → **STOP**, surface the issue, suggest `generate-intent`. **Lock check:** parse the lock home (vault.md frontmatter; legacy: `00-index.md` Vault Lock Status) — if `🔒 LOCKED`, ask to unlock (record unlock in this round's Changelog; user re-locks after); if `⚠️ DRAFT`, continue. Never proceed without a verified vault and lock-state acknowledged.
 
 **Step 0.5 — Resume detection (MANDATORY).** Parse the vault Changelog (`vault.md ## Changelog`; legacy: `00-index.md`) for prior `resolve-oq` rounds. If found → show current version + last-round stats, ask continue / fresh / cancel. If none → first pass.
 
@@ -72,6 +72,15 @@ Echo `VAULT_DIR=<resolved-absolute-path>` after Step 0 and re-echo at the start 
 **Step 4 — Self-check before exit.** Every resolved OQ `[x]` with a `→ Resolved v{X.Y}` pointer in BOTH origin doc and roll-up; every OOS `[~]` present in the target Out of Scope section; every Deferred `[ ]` with a defer note; no OQ silently dropped; version bumped; Changelog accurate; `Last updated` set; promoted entries exist (grep the cross-reference); no invented answers; `vault.json` summary + per-OQ `status` match the markdown. Full checklist in `references/interactive-walk.md`.
 
 **Step 5 — Present summary.** Stats (`{R} resolved · {O} OOS · {D} deferred · {S} skipped · {N} unreached (Esc ended the walk before them — name the resume tag) · {U} untouched`); new `v{X.Y}`; absolute `VAULT_DIR`; top 3 remaining P1 blockers if any; next step (re-run after stakeholder follow-up; lock manually for sprint). If any OQs deferred to binding → suggest `scan-codebase && bind-codebase` (brownfield) or warn there is no resolution path (greenfield). No "I have resolved…" preamble.
+
+## KB mode (7.21.0 — spec 2026-09-02-kb-oq-resolution-and-human-language.md)
+
+Entered ONLY from Step 0's no-vault-but-KB offer. Walks the `## 6. Open Questions` section of every `<kb>/modules/*.prd.md` — the tag convention (`OQ-<DOMAIN>-<NN> [P1|P2|P3]`) is already vault-identical, and the per-OQ prompt keeps the canonical shape (4 slots + Other + Esc, keterangan rules, no-invention). Differences vs the vault walk, exhaustive:
+
+- **NO derive-vault-json run** — the KB has no `vault.json`; the §6 markdown is the only state. No lock check, no vault version bump. The round is recorded by appending ONE line to `<kb>/README.md` under `## Resolution rounds` (create the section when absent): `- <YYYY-MM-DD>: {R} resolved · {O} OOS · {D} deferred · {S} skipped`.
+- **Landing per outcome:** Resolve → `[x] → Resolved (stakeholder, <YYYY-MM-DD>): <answer>` · Defer → `[ ]` + `**Deferred**: <reason>` · Out of scope → `[~] → Out of scope: <reason>`.
+- **Honesty rail:** the claim row in its home §-table STAYS `[OPEN]` — the resolution lives in §6 with stakeholder provenance, which is NOT a code citation. NEVER flip a claim's marker to `[VERIFIED]`/`[INFERRED]` off a stakeholder answer; `generate-intent --kb` consumes the resolved §6 entries (its routing table carries them into the vault as pre-resolved OQs).
+- Steps 0.5/0.6 apply with the KB substituted for the vault (resume = the `## Resolution rounds` lines; scope options unchanged); Steps 3–4's vault-metadata work is replaced by the round line above.
 
 ## Hard rules (the rails)
 
