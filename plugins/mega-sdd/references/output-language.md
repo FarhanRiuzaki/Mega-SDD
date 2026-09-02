@@ -77,6 +77,21 @@ Rambu:
 - **Carve-out regulator:** bagian dokumen yang menghadap regulator (emit-uat berita acara SEOJK — bagian formalnya) TETAP baku; regulator memang mengharapkan register itu. Di luar carve-out ini, natural.
 - Tier-1 tak tersentuh (enum, verdict, ID, path — English verbatim); "vault ikut bahasa input" tak berubah — register ini berlaku SAAT prosa ditulis dalam Indonesia.
 
+## OQ authoring — human-first (mandat tim, 2026-09-02)
+
+§Register mengatur register (kaku vs natural); section ini mengatur **komprehensibilitas** — keluhan lapangan: "bahasa OQ seperti alien". Berlaku untuk SEMUA teks OQ yang DITULIS ke artifact (KB PRD-kontrak §6, vault `constraints.md ## Open Questions`, propagasi binding):
+
+Setiap OQ = **pertanyaan utuh yang bisa dijawab orang bisnis TANPA buka kode**, tiga bagian berurutan:
+1. Satu kalimat konteks situasi dalam bahasa manusia (kapan/di mana masalah ini muncul).
+2. Pertanyaannya sendiri — jargon internal (nama SP, kolom, simbol, config key) BOLEH sebagai penjelas dalam kurung, **TIDAK BOLEH jadi subjek kalimat**.
+3. Detail teknis (sitasi `file:line`, marker) menyusul sebagai keterangan.
+
+| ❌ Alien (jangan) | ✅ Manusiawi (tulis begini) |
+|---|---|
+| `OQ-ACQ-03 [P1] grace_period NULL fallback semantics SP_CALC_DENDA?` | `OQ-ACQ-03 [P1] Kalau jatuh tempo lewat tapi masa tenggang belum diisi (kolom grace_period kosong — SP_CALC_DENDA:120), denda mulai dihitung dari hari ke berapa? [OPEN][?]` |
+
+Tag/ID/marker tetap Tier-1 (English verbatim, tak berubah) — yang diatur section ini hanya BADAN teks pertanyaannya. Aturan yang sama berlaku untuk teks jawaban/hasil yang direkam (resolution answers, rationale): tulis buat pembaca bisnis dulu, detail teknis menyusul.
+
 ## Switching & extensibility
 
 - Default `id` (carried by the anchor + the greenfield entry-point directives). The user says "use English" / "pakai bahasa Inggris" / "pakai bahasa Jawa" → the model mirrors.

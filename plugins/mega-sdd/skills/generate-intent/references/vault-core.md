@@ -98,6 +98,7 @@ phase_total: <int>    # total phases planned (legacy numbered-tree KB only — p
 - `open_questions[].status` mirrors the markdown checkbox: `[ ]` → `open`, `[x]` → `resolved`, `[~]` → `out_of_scope`. A `[ ]` with a `**Deferred**:` annotation maps to `deferred`.
 - `open_questions[].category` is **bracket-first**: the `[tech / scan]` / `[business]` marker on the OQ line wins (`tech` / `business`); the legacy 00-index roll-up category header is the fallback on 7-file vaults only (startswith-tolerant); layout-2 has no roll-up — the bracket is mandatory there.
 - `open_questions[].resolver_owner` is best-effort — extracted from the OQ entry's `— resolve: ...` hint when present; otherwise `null`.
+- **OQ question-text bodies are human-first** — a complete question a business reader can answer without opening code (jargon never the sentence subject); the single contract + ❌/✅ pair lives in `plugins/mega-sdd/references/output-language.md §OQ authoring` — do not restate it here.
 - `mode_migrate_after` is informational metadata for `mode=new` vaults only. For `mode=existing`, use `null`.
 - Re-run `scripts/derive-vault-json.sh` after every markdown round (regeneration / `diff-vault` / `resolve-oq`). The markdown is canonical; `vault.json` is a derived index — never hand-synced.
 
