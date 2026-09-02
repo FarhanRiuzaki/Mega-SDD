@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.21.3] - 2026-09-02 — review-lens polish: ownership seams + the Knuth symmetry
+
+**Spec `docs/superpowers/specs/2026-09-02-review-lens-polish.md` · research `research/2026-09-02-code-taste-standards-audit.md`. The owner asked whether the code-taste stack (rules → judgment → floor) is over-built; the decision ON RECORD is keep all 3 — it is one cheapest-first funnel, not three parallel systems (rules are prompt text at ~zero cost; the judgment bullets ride lenses that already run; the floor is the project's own linter), and the measured evidence stands: prose-only rails were bulldozed in 1/4 runs. What shipped instead is seam polish — no new layer, no new surface.**
+
+### Changed
+- **Ownership seams (one defect, one owner):** `spec-reviewer` now explicitly owns SCOPE (whole features/behaviors beyond the spec) and routes form away; `code-quality-reviewer` owns FORM (how in-scope work is built — the delete/stdlib/native/yagni/shrink taxonomy) and routes scope away. Kills the double-report class without touching panel blindness.
+- **Knuth symmetry** in the quality lens's performance bullet: obvious waste (N+1s, hot-path work) stays a finding, and now so does the mirror image — speculative optimization nobody asked for and nothing measured (caching, micro-tuning, exotic structures on cold paths) → `yagni:`. Both halves of the 1974 quote operative.
+- Canon map (Knuth · Beck · Fowler · Metz · Pike · Kernighan · Ousterhout · McKinley → where each lives in mega-sdd) recorded in the research doc — deliberately NOT in agent bodies (tokens per dispatch with zero behavior change).
+
+### Notes
+- New pin suite `tests/review-lens-seam/` (A–D incl. the keep-3-layers decision + its evidence).
+
+## [7.21.2] - 2026-09-02 — §Register ronde 2: bookish-halus juga kaku
+
+**Spec: §Amendemen of `2026-08-31-natural-register.md`. The owner flagged stiff language a FOURTH time — on a page whose copy already followed §Register v1. Finding: round 1 caught the bureaucratic register ("melakukan proses validasi terhadap") but not the bookish-refined class — grammatical, polished sentences that still read like a document (*hanyalah, menyebut, menimbang, meninggalkan, menemui*).**
+
+### Changed
+- §Register table +3 ronde-2 rows ("setiap klaim menyebut sumbernya" → "tiap klaim ada sumbernya"; "hanyalah otomasi…" → "cuma otomasi…"; "memahami tanpa mengarang" → "paham dulu, jangan ngarang") + a new rail with the practical test: **bacakan kalimatnya ke rekan kerja — kalau lo ga akan ngomong begitu, tulis ulang.** Flawless ≠ gaul, the regulator carve-out, and Tier-1 all stay untouched.
+- Pins: `tests/output-language` +3 (ronde-2 rail, calibration rows, the say-it-out-loud test).
+
 ## [7.21.1] - 2026-09-02 — human framing at the walk DISPLAY layer (same-day field patch)
 
 **Spec: §Amendemen of `2026-09-02-kb-oq-resolution-and-human-language.md` (field patches require a spec — the 6.0.1/6.1.1 precedent). The owner pasted a REAL walk (OQ-INTAKE-CAS-02..05) and could not parse the context — yet answered instantly once it was reframed ("FE untuk roda 2, SP untuk roda 4, no race"). The failure was framing, not knowledge: 7.21.0's authoring contract only binds NEW OQs; old artifacts stay jargon and the walk displayed them verbatim, with probe narration as citation dumps.**
