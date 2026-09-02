@@ -78,6 +78,29 @@ resolved-§6 di kb-submode; D offer line di hand-off extract; E §OQ authoring d
 output-language (konteks-1-kalimat + larangan jargon-sebagai-subjek + pasangan ❌/✅);
 F pointer di template §6 + vault-core, tanpa duplikasi isi.
 
+## Amendemen 7.21.1 — human framing di lapisan DISPLAY walk (field evidence hari yang sama)
+
+Owner memaste walk nyata (OQ-INTAKE-CAS-02..05) dan gagal paham konteksnya — padahal begitu
+paham, jawabannya langsung keluar ("FE untuk roda 2, SP untuk roda 4, no race"). Diagnosis:
+kontrak §OQ authoring hanya mengikat PENULISAN OQ baru; artifact lama tetap jargon dan display
+walk boleh quote-verbatim tanpa framing; narasi probe evidence-first. Yang gagal = framing,
+bukan pengetahuan user.
+
+Fix (translate di display, artifact tak pernah di-rewrite diam-diam):
+1. **interactive-walk Step 2a**: tiap OQ WAJIB dibuka `Konteks:` (1–2 kalimat common ID/EN,
+   situasi bisnis) + `Maksudnya:` (apa yang SEBENARNYA diminta dari user), baru blok
+   `── detail teknis ──` (doc, `Teks asli:` verbatim, hint). Berlaku untuk semua OQ, artifact
+   lama termasuk. Framing derive HANYA dari teks OQ + sitasi/probe — yang tak terderivasi
+   ditulis jujur "belum ketahuan dari kode" (no-invention berlaku juga di framing).
+2. **Narasi probe/rekomendasi meaning-first** (recommendation-context invariant 7): arti
+   bisnis dulu, evidence `file:line` dalam kurung — bukan citation dump sebagai badan kalimat.
+3. **Keterangan contract rule 1 diperluas** (output-language): verbatim itu perlu tapi TIDAK
+   cukup — framing manusiawi mendahului kutipan saat teksnya jargon-heavy.
+4. Label opsi utuh + keterangan — tidak boleh terpotong/garbled.
+
+KB mode ikut otomatis (shape prompt kanonik di interactive-walk). resolve-oq 2.12.0→2.13.0,
+plugin 7.21.0→7.21.1 (field patch ber-spec, preseden 6.0.1/6.1.1).
+
 ## Versions
 
 resolve-oq 2.11.1→2.12.0 · generate-intent 2.20.0→2.21.0 · extract-intelligence

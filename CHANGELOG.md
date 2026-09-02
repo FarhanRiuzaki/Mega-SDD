@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.21.1] - 2026-09-02 — human framing at the walk DISPLAY layer (same-day field patch)
+
+**Spec: §Amendemen of `2026-09-02-kb-oq-resolution-and-human-language.md` (field patches require a spec — the 6.0.1/6.1.1 precedent). The owner pasted a REAL walk (OQ-INTAKE-CAS-02..05) and could not parse the context — yet answered instantly once it was reframed ("FE untuk roda 2, SP untuk roda 4, no race"). The failure was framing, not knowledge: 7.21.0's authoring contract only binds NEW OQs; old artifacts stay jargon and the walk displayed them verbatim, with probe narration as citation dumps.**
+
+### Changed
+- **interactive-walk Step 2a:** every OQ display now OPENS with `Konteks:` (1–2 kalimat common ID/EN — the business situation) + `Maksudnya:` (what is ACTUALLY being asked of the user), then a demoted `── detail teknis ──` block quoting the stored text verbatim. Applies to every OQ regardless of artifact age — the framing is a display TRANSLATION (artifact never silently rewritten) derived only from the OQ + citations (no-invention holds for framing too; the honest gap stays "belum ketahuan dari kode"). KB mode inherits automatically (the prompt shape is canonical there).
+- **recommendation-context invariant 7:** probe/rationale narration is meaning-first — the business meaning leads, `file:line`/SP evidence follows in parentheses, never a bare citation dump as the sentence body.
+- **keterangan contract rule 1 extended** (output-language): quoting verbatim is necessary but NOT sufficient — human framing precedes jargon-heavy quotes. Option labels must be full words (never truncated/garbled).
+
+### Notes
+- Pin suite extended: `tests/resolve-oq-kb/` §G (8 pins). resolve-oq 2.12.0→2.13.0.
+
 ## [7.21.0] - 2026-09-02 — resolve-oq reaches the KB + the human-first OQ language contract
 
 **Spec `docs/superpowers/specs/2026-09-02-kb-oq-resolution-and-human-language.md`. Two field reports, one release (same OQ surface): the owner's "hasil generate KB ga bisa di-resolve-oq, harusnya bisa" (the designed KB→vault hop was a dead end at KB stage — and the revamp-consultant lane genuinely needs legacy questions answered right after extract, while the expert is warm) + the team's "bahasa OQ seperti alien" (§Register 7.17.0 governs register, not comprehensibility — the §6 template let jargon be the question body).**

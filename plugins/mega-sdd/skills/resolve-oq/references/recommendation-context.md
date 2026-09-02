@@ -24,6 +24,7 @@ Mirror the recommend-mode discipline:
 4. **User confirms ALWAYS.** Recommendation is `(recommended)` label on default option; user can pick "Other" or override freely.
 5. **No fabrication.** If context sources don't yield a confident recommendation → omit recommendation; no pre-fill.
 6. **High-stakes warning.** Business-OQ recommendations carry a "review carefully — high-stakes domain" prefix in description (regulatory / finance / edge case markers).
+7. **Meaning-first narration (7.21.1).** When rationale / probe findings are surfaced to the user, lead with the business meaning in common ID/EN ("hasilnya dipakai modul credit analysis buat hitung skor"); the `file:line` / SP-name evidence follows in parentheses — never a bare citation dump as the sentence body (display rules: `interactive-walk.md` Step 2a).
 
 ## Context sources (priority order)
 
