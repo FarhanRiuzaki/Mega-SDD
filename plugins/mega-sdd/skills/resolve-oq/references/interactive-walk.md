@@ -82,14 +82,23 @@ For each OQ in the queue:
 
 ### Step 2a — Display
 
-Show the user:
+Show the user (**human framing FIRST, technical detail demoted — 7.21.1**, spec 2026-09-02 §Amendemen; field evidence: the owner failed to parse a verbatim jargon OQ they themselves knew the answer to):
 
 ```
 [{i}/{N}] {OQ tag}  {priority}  {category}
+  Konteks: {1–2 kalimat bahasa manusia common ID/EN — situasi bisnisnya; jargon tidak boleh jadi subjek kalimat}
+  Maksudnya: {apa yang SEBENARNYA diminta dari user — keputusan/aturan/informasi apa; satu kalimat}
+  ── detail teknis ──
   Doc: {doc filename} → {section anchor if available}
-  Question: {full question text}
+  Teks asli: {full question text verbatim — never silently rewritten}
   Hint: {resolution-path hint from generator, if present}
 ```
+
+Framing rules (mandatory, every OQ, regardless of how the stored text was written — old artifacts included):
+- **Translate, never rewrite:** the `Konteks`/`Maksudnya` lines are a DISPLAY-layer translation into common Indonesian/English; the stored OQ text is quoted verbatim under `Teks asli` and the artifact is never edited by displaying it.
+- **No invented facts:** the framing derives ONLY from the OQ text + its citations/probe findings. Anything not derivable stays honest — "belum ketahuan dari kode" — never filled in from general knowledge (the no-invention rail applies to framing too).
+- **Meaning-first evidence:** when probe/recommendation findings are narrated, lead with the business meaning ("hasilnya dipakai modul credit analysis buat hitung skor"), the `file:line` evidence follows in parentheses — never a bare citation dump.
+- Option labels are full words with keterangan — never truncated/garbled labels.
 
 When `vault.json` has a `scope` field, prepend scope context to the panel (and to each `AskUserQuestion`):
 

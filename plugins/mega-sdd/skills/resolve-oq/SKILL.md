@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 2.12.0
+version: 2.13.0
 description: Interactive resolver for Open Questions — walks the OQ roll-up by priority, lands stakeholder answers in the vault, bumps version; --binding resolves CONFLICT entries from binding.md; with no vault but an extract-intelligence KB present, KB mode walks the PRD-kontrak §6 OQs so legacy questions get answered right after extraction. Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", "jawab OQ hasil extract", "resolve oq kb", "jawab open question kb", or paraphrases.
 ---
 
@@ -58,7 +58,7 @@ Echo `VAULT_DIR=<resolved-absolute-path>` after Step 0 and re-echo at the start 
 **Step 1 — Parse OQ list.** Layout-2: read `constraints.md ## Open Questions` (every OQ lives there; `[origin: <file>#<anchor>]` is the locality). Legacy: read the 7 files' per-doc OQ sections + cross-reference the 00-index roll-up for **category** (layout-2 category = the mandatory bracket). Extract still-`[ ]` entries (skip `[x]` / `[~]`); per OQ capture tag, priority, origin, question text, generator resolution hint. Build the work queue per `RESOLUTION_SCOPE`. Empty queue → skip to Step 5 with summary.
 
 **Step 2 — Loop per OQ.**
-- Display the OQ (tag, priority, category, doc → section, question, hint; prepend scope context when `vault.json` has `scope`).
+- Display the OQ **human-framed first (7.21.1)**: `Konteks` (1–2 kalimat common ID/EN — situasi bisnisnya) + `Maksudnya` (apa yang sebenarnya diminta dari user), THEN the technical detail block (doc → section, verbatim question text, hint) — the framing is a display translation, never a rewrite of the stored text, and derives only from the OQ + citations (no invented facts). Prepend scope context when `vault.json` has `scope`. Shape + rules: `references/interactive-walk.md` Step 2a.
 - Present **ONE `AskUserQuestion`** — 4 slots (`[1]` recommended answer, `[2]` Skip, `[3]` Defer, `[4]` Out of scope) + "Other" (the free-text answer + destination override, whose `→ <file>.md` target is VALIDATED pre-write against the vault's 7 document filenames — a miss is not an override, is narrated, and never lands an answer outside those seven) + Esc (end the walk).
 - The considered alternatives are listed as prose in the question text, each with its source or an explicit `tanpa sumber` marker — never invented.
 - The answer option's description carries its keterangan AND discloses where the answer lands (target doc, inline vs promoted, cross-cutting cross-refs), so the choice IS the destination confirmation — **do NOT ask for the answer or the destination in separate prompts.** Only Defer and Out of scope spend a second prompt (Defer = ONE call carrying two questions, sub-target + reason; OOS = the rationale).

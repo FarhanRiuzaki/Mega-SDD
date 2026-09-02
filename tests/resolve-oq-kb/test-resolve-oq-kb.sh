@@ -60,4 +60,21 @@ grep -q "output-language.md §OQ authoring" "$PT" && ok "F1 template §6 points 
 grep -q "output-language.md §OQ authoring" "$VC" && grep -q "do not restate it here" "$VC" \
   && ok "F2 vault-core points, does not restate" || bad "F2 vault-core pointer missing"
 
+echo "── G: human framing at the walk DISPLAY layer (7.21.1 amendment) ──"
+IW="$ROOT/plugins/mega-sdd/skills/resolve-oq/references/interactive-walk.md"
+RC="$ROOT/plugins/mega-sdd/skills/resolve-oq/references/recommendation-context.md"
+grep -q "Konteks: {1–2 kalimat" "$IW" && grep -q "Maksudnya: {apa yang SEBENARNYA diminta" "$IW" \
+  && ok "G1 Step 2a opens with Konteks + Maksudnya" || bad "G1 framing lines missing"
+grep -q "detail teknis" "$IW" && grep -q "Teks asli: {full question text verbatim" "$IW" \
+  && ok "G2 technical block demoted, stored text quoted verbatim" || bad "G2 technical demotion missing"
+grep -q "Translate, never rewrite" "$IW" && ok "G3 display translates, artifact never silently rewritten" || bad "G3 translate-not-rewrite rule missing"
+grep -q "No invented facts" "$IW" && grep -q "belum ketahuan dari kode" "$IW" \
+  && ok "G4 framing bound by the no-invention rail" || bad "G4 no-invention framing rule missing"
+grep -q "Meaning-first narration (7.21.1)" "$RC" && grep -q "never a bare citation dump" "$RC" \
+  && ok "G5 probe/rationale narration is meaning-first" || bad "G5 meaning-first invariant missing"
+grep -q "Verbatim is necessary but NOT sufficient (7.21.1)" "$OL" \
+  && ok "G6 keterangan contract rule 1 extended" || bad "G6 keterangan extension missing"
+grep -q "human-framed first (7.21.1)" "$RO" && ok "G7 SKILL Step 2 routes the framing" || bad "G7 SKILL routing missing"
+grep -q "never truncated/garbled labels" "$IW" && ok "G8 full option labels pinned" || bad "G8 label rule missing"
+
 echo; [ $err -eq 0 ] && { echo "test-resolve-oq-kb: ALL PASS"; exit 0; } || { echo "test-resolve-oq-kb: FAILED"; exit 1; }
