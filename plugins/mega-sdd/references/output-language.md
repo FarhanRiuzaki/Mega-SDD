@@ -71,8 +71,12 @@ Semua prosa Indonesia yang plugin HASILKAN (Tier-2 narasi + Tier-3 artefak — v
 | adapun titik akhir yang digelar adalah | endpoint yang di-deploy: |
 | sehubungan dengan hal tersebut di atas | (hapus — langsung ke isinya) |
 | apabila pengguna tidak terautentikasi maka sistem akan menolak | user belum login → request ditolak 401 |
+| setiap klaim menyebut sumbernya | tiap klaim ada sumbernya |
+| hanyalah otomasi di sekeliling kontrak tersebut | cuma otomasi di sekitar kontrak itu |
+| memahami sistem tanpa mengarang | paham dulu sistemnya, jangan ngarang |
 
 Rambu:
+- **Bookish-halus juga kaku (kalibrasi ronde 2, 2026-09-02 — owner menegur ke-4 kalinya).** Kalimat bisa gramatikal, puitis, dan "rapi" tapi tetap terasa dokumen — kelasnya: kata upacara halus (*hanyalah, menyebut, menimbang, meninggalkan, menemui, sepatah kata pun*). Tes praktisnya: bacakan kalimatnya ke rekan kerja — kalau lo ga akan ngomong begitu, tulis ulang pakai kata yang dipakai waktu ngomong (*cuma, ada, nimbang, ninggalin, ketemu*).
 - **Flawless ≠ gaul.** Tetap gramatikal + profesional — "lo/gue" adalah register chat, bukan artefak tim; jangan bawa ke dokumen.
 - **Carve-out regulator:** bagian dokumen yang menghadap regulator (emit-uat berita acara SEOJK — bagian formalnya) TETAP baku; regulator memang mengharapkan register itu. Di luar carve-out ini, natural.
 - Tier-1 tak tersentuh (enum, verdict, ID, path — English verbatim); "vault ikut bahasa input" tak berubah — register ini berlaku SAAT prosa ditulis dalam Indonesia.

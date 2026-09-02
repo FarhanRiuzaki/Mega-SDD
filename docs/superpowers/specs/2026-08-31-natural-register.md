@@ -19,3 +19,22 @@ Ini masalah **register** (gaya), bukan pilihan bahasa — kontrak bahasa (`refer
 ## Ditunda tercatat
 
 Sweep contoh-contoh prosa kaku di template/teacher individual (vault templates, prd-kontrak-template) — dilakukan bertahap saat template tersebut tersentuh; §Register kanonik sudah mengikat outputnya lebih dulu, dan run lapangan revamp acquisition jadi ukuran apakah sweep teacher masih perlu.
+
+## Amendemen 7.21.2 — kalibrasi ronde 2: bookish-halus juga kaku (2026-09-02)
+
+Owner menegur ke-4 kalinya, kali ini di artefak platform map yang copy-nya SUDAH mengikuti
+§Register versi awal: "bahasa yang lo kasih terlalu kaku, tidak natural ini gue mention
+berkali2". Temuan: §Register ronde 1 nangkep register birokrasi ("melakukan proses validasi
+terhadap") tapi TIDAK nangkep kelas bookish-halus — kalimat gramatikal + puitis yang tetap
+terasa dokumen: *hanyalah, menyebut, menimbang, meninggalkan, menemui, sepatah kata pun*.
+
+Fix (satu pintu tetap output-language.md):
+1. Tabel §Register +3 baris ronde 2 ("setiap klaim menyebut sumbernya" → "tiap klaim ada
+   sumbernya"; "hanyalah otomasi…" → "cuma otomasi…"; "memahami tanpa mengarang" → "paham
+   dulu, jangan ngarang").
+2. Rambu baru **bookish-halus juga kaku** + tes praktis: bacakan ke rekan kerja — kalau lo
+   ga akan ngomong begitu, tulis ulang.
+3. Rail lama utuh: Flawless ≠ gaul (lo/gue tetap register chat), carve-out regulator tetap,
+   Tier-1 tak tersentuh.
+
+Pin: tests/output-language ≥6 pasang + rambu ronde 2. plugin 7.21.1→7.21.2.

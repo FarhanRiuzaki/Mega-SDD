@@ -136,6 +136,11 @@ fi
 pairs=$(grep -c "^| ❌\|^| melakukan\|^| dipergunakan\|^| adapun\|^| sehubungan\|^| apabila" "$REF")
 if [ "$pairs" -ge 4 ]; then ok "§Register teaches by ❌→✅ pairs ($pairs rows)"; else bad "❌→✅ teacher table too thin ($pairs rows, want >=4)"; fi
 grep -q "Flawless ≠ gaul" "$REF" && ok "flawless-bukan-gaul rail present" || bad "flawless rail missing"
+# ---- ronde 2 (7.21.2): bookish-halus juga kaku ----
+grep -q "Bookish-halus juga kaku" "$REF" && ok "ronde-2 rail: bookish-halus flagged as stiff" || bad "bookish-halus rail missing"
+grep -q "tiap klaim ada sumbernya" "$REF" && grep -q "cuma otomasi di sekitar" "$REF" \
+  && ok "ronde-2 calibration rows present" || bad "ronde-2 rows missing"
+grep -q "bacakan kalimatnya ke rekan kerja" "$REF" && ok "the say-it-out-loud practical test pinned" || bad "practical test missing"
 grep -q "Carve-out regulator" "$REF" && grep -q "berita acara SEOJK" "$REF" \
   && ok "regulator carve-out (berita acara stays baku)" || bad "regulator carve-out missing"
 grep -q "natural Indonesian-English mix — tidak kaku" "$SKILLS/using-mega-sdd/SKILL.md" \
