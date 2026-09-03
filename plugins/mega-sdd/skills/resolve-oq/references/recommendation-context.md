@@ -25,6 +25,7 @@ Mirror the recommend-mode discipline:
 5. **No fabrication.** If context sources don't yield a confident recommendation → omit recommendation; no pre-fill.
 6. **High-stakes warning.** Business-OQ recommendations carry a "review carefully — high-stakes domain" prefix in description (regulatory / finance / edge case markers).
 7. **Meaning-first narration (7.21.1).** When rationale / probe findings are surfaced to the user, lead with the business meaning in common ID/EN ("hasilnya dipakai modul credit analysis buat hitung skor"); the `file:line` / SP-name evidence follows in parentheses — never a bare citation dump as the sentence body (display rules: `interactive-walk.md` Step 2a).
+8. **Keterangan shape — 4 bagian, urutan dipaku (7.22.0).** The slot-`[1]` description reads, in plain everyday language: `<jawaban singkat> — dasar: <bukti meaning-first (citation)>. Kalau dipilih: <apa yang berubah / di mana jawaban landing>. Kalau ternyata salah: <fallback 1 kalimat>.` This is the mandated FORM of invariants 1–3 plus the SKILL's destination disclosure — not new obligations; a recommendation whose description is a bare answer or a citation dump violates this shape.
 
 ## Context sources (priority order)
 

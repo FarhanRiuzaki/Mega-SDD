@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.22.0] - 2026-09-03 — OQ context slots + recommendation keterangan
+
+**Spec `docs/superpowers/specs/2026-09-03-oq-context-slots.md`. Owner's round-2 field review of the 7.21.1 framing: "udah oke cuma masih kurang konteksnya" + the recommended answer needs clear context too. All four proposed slots approved.**
+
+### Changed
+- **Step 2a framing: 2 slots → 6** (canonical home unchanged — every mode inherits): `Konteks` (now incl. flow/step/actor position) → `Yang udah ketahuan` / `Yang belum` (code facts vs the precise gap) → `Kenapa penting` (the P-level explained as impact — what blocks or mis-computes if unanswered) → `Contoh` (ONE concrete NEUTRAL scenario) → `Maksudnya`. Rails: the example illustrates the question and never implies an answer, must be derivable from flows/code (skip honestly otherwise — a fabricated scenario is worse than none); framing stays ≤ ~7 lines, dataless slots skipped, never padded.
+- **Recommendation keterangan shape (invariant 8):** the slot-[1] description is now a fixed 4-part plain-language form — `<jawaban singkat> — dasar: <bukti meaning-first (citation)>. Kalau dipilih: <yang berubah / landing>. Kalau ternyata salah: <fallback>.` The mandated FORM of existing invariants 1–3 + destination disclosure, not new obligations.
+
+### Notes
+- Pins: `tests/resolve-oq-kb/` §H (9 new) + G7 repinned to the extended marker. resolve-oq 2.13.0→2.14.0.
+
 ## [7.21.3] - 2026-09-02 — review-lens polish: ownership seams + the Knuth symmetry
 
 **Spec `docs/superpowers/specs/2026-09-02-review-lens-polish.md` · research `research/2026-09-02-code-taste-standards-audit.md`. The owner asked whether the code-taste stack (rules → judgment → floor) is over-built; the decision ON RECORD is keep all 3 — it is one cheapest-first funnel, not three parallel systems (rules are prompt text at ~zero cost; the judgment bullets ride lenses that already run; the floor is the project's own linter), and the measured evidence stands: prose-only rails were bulldozed in 1/4 runs. What shipped instead is seam polish — no new layer, no new surface.**
