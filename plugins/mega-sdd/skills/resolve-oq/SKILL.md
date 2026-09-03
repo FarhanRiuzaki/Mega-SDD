@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 2.14.0
+version: 2.14.1
 description: Interactive resolver for Open Questions — walks the OQ roll-up by priority, lands stakeholder answers in the vault, bumps version; --binding resolves CONFLICT entries from binding.md; with no vault but an extract-intelligence KB present, KB mode walks the PRD-kontrak §6 OQs so legacy questions get answered right after extraction. Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", "jawab OQ hasil extract", "resolve oq kb", "jawab open question kb", or paraphrases.
 ---
 
@@ -80,6 +80,7 @@ Entered ONLY from Step 0's no-vault-but-KB offer. Walks the `## 6. Open Question
 - **NO derive-vault-json run** — the KB has no `vault.json`; the §6 markdown is the only state. No lock check, no vault version bump. The round is recorded by appending ONE line to `<kb>/README.md` under `## Resolution rounds` (create the section when absent): `- <YYYY-MM-DD>: {R} resolved · {O} OOS · {D} deferred · {S} skipped`.
 - **Landing per outcome:** Resolve → `[x] → Resolved (stakeholder, <YYYY-MM-DD>): <answer>` · Defer → `[ ]` + `**Deferred**: <reason>` · Out of scope → `[~] → Out of scope: <reason>`.
 - **Honesty rail:** the claim row in its home §-table STAYS `[OPEN]` — the resolution lives in §6 with stakeholder provenance, which is NOT a code citation. NEVER flip a claim's marker to `[VERIFIED]`/`[INFERRED]` off a stakeholder answer; `generate-intent --kb` consumes the resolved §6 entries (its routing table carries them into the vault as pre-resolved OQs).
+- **Display context comes from the HOME MODULE (7.22.1):** the Step 2a context slots MUST be derived from the OQ's own module PRD-kontrak (lede, claim rows + citations, §2/§3 mermaid flows) — never skipped wholesale just because the §6 line itself carries no citation/hint. Rail + slot-by-slot sources: `references/interactive-walk.md` Step 2a "KB-mode slot sources". Same for the recommendation lane: the home module is probed FIRST (`references/recommendation-context.md` source 1, modern grammar).
 - Steps 0.5/0.6 apply with the KB substituted for the vault (resume = the `## Resolution rounds` lines; scope options unchanged); Steps 3–4's vault-metadata work is replaced by the round line above.
 
 ## Hard rules (the rails)

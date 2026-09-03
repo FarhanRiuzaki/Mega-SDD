@@ -90,4 +90,14 @@ grep -q "Keterangan shape — 4 bagian" "$RC" && grep -q "Kalau dipilih:" "$RC" 
   && ok "H5 recommendation keterangan: jawaban + dasar + konsekuensi + fallback" || bad "H5 recommendation shape missing"
 grep -q "extended 7.22.0" "$RO" && ok "H6 SKILL Step 2 routes the extended shape" || bad "H6 SKILL routing missing"
 
+echo "── I: KB-mode slot sources (7.22.1 — field: CAS walk displayed bare) ──"
+RC="$ROOT/plugins/mega-sdd/skills/resolve-oq/references/recommendation-context.md"
+grep -q "KB-mode slot sources (7.22.1)" "$IW" && grep -q "HOME MODULE PRD-kontrak" "$IW" \
+  && ok "I1 walk rail: KB slots derive from the OQ's home module" || bad "I1 KB slot-source rail missing"
+grep -q 'stays "belum ketahuan dari kode"' "$IW" && ok "I2 honesty bound: module-absent facts stay unknown" || bad "I2 honesty bound missing"
+grep -q "Display context comes from the HOME MODULE (7.22.1)" "$RO" \
+  && ok "I3 SKILL §KB mode carries the display bullet" || bad "I3 KB-mode display bullet missing"
+grep -qF '<kb>/modules/*.prd.md' "$RC" && grep -q "HOME MODULE is probed first" "$RC" \
+  && ok "I4 recommendation source 1 knows the modern KB grammar" || bad "I4 modern-grammar probe missing"
+
 echo; [ $err -eq 0 ] && { echo "test-resolve-oq-kb: ALL PASS"; exit 0; } || { echo "test-resolve-oq-kb: FAILED"; exit 1; }
