@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.22.1] - 2026-09-03 — KB mode: context slots derive from the home module
+
+**Spec: §Amendemen (7.22.1) appended to `docs/superpowers/specs/2026-09-03-oq-context-slots.md`. Owner field finding on the acquisition/CAS KB walk: vault OQs display with full context, KB OQs display bare ("contextnya ga kebawa").**
+
+### Fixed
+
+- **`resolve-oq` (2.14.1) — KB-stage OQs lost every context slot.** Root cause: the Step 2a no-invention rail limited slot derivation to "the OQ text + its citations/probe findings" — a §6 KB OQ is one checkbox line with none of those, so all six 7.22.0 slots skipped "honestly" and the display went bare, while the module PRD-kontrak holding that OQ is context-rich and cited. Fix, display-layer only (no-invention NOT loosened — the home module is cited extract output, not general knowledge):
+  - `references/interactive-walk.md` Step 2a — new rail **KB-mode slot sources**: in KB mode the derivation source is the OQ text + its HOME MODULE PRD-kontrak (lede → `Konteks`; claim rows/citations naming the same subject → `Yang udah ketahuan`; §2/§3 mermaid → flow position + `Contoh`); module-absent facts stay "belum ketahuan dari kode".
+  - `SKILL.md §KB mode` — the exhaustive difference list now carries the display bullet (slots MUST derive from the home module, never skipped wholesale).
+  - `references/recommendation-context.md` source 1 — **modern KB grammar added**: `<kb>/modules/*.prd.md` claim rows probed (home module FIRST in KB mode); the `10-domains/*` path stays as legacy back-compat. Bonus rot fix: source 1 previously knew only the pre-7.6.0 waves grammar, so KB-mode recommendations silently downgraded to "no recommendation".
+- Tests: `tests/resolve-oq-kb/` §I (4 pins: walk rail, honesty bound, SKILL bullet, modern-grammar probe).
+
 ## [7.22.0] - 2026-09-03 — OQ context slots + recommendation keterangan
 
 **Spec `docs/superpowers/specs/2026-09-03-oq-context-slots.md`. Owner's round-2 field review of the 7.21.1 framing: "udah oke cuma masih kurang konteksnya" + the recommended answer needs clear context too. All four proposed slots approved.**

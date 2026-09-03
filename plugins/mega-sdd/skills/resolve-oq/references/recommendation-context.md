@@ -35,7 +35,8 @@ When building a recommendation for an OQ, consult these sources in order. First 
 
 If a knowledge-base exists at (priority order, first hit wins) `.mega-sdd/knowledge-base/` (canonical), `docs/knowledge-base/` (legacy), or `old-reference/knowledge-base/`:
 
-- Match OQ tag/text against KB domain files
+- **Modern grammar (7.6.0+, checked FIRST):** per-module PRD-kontrak files at `<kb>/modules/*.prd.md` — match the OQ tag/text against each module's claim rows (§1 scope, §4 rules) and their inline `file:line` citations. **In KB mode the OQ's HOME MODULE is probed first** (the OQ lives in that file's §6); citation: `<kb>/modules/<module>.prd.md §<section>` + the claim's own `file:line`.
+- Legacy grammar (back-compat): match against `10-domains/*` domain files
 - E.g., `OQ-AR-7` (architecture, error envelope) → look in `10-domains/*` for error-related entries
 - `OQ-FL-3` (flows, payment) → look in `10-domains/20-import-lc-payment.md` or similar
 - Extract `[VERIFIED]` items that directly answer the OQ
