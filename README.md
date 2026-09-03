@@ -103,6 +103,15 @@ It detects your OS + package manager and installs `ast-grep` (the AST engine), `
 
 Then run `/reload-plugins` (or restart Claude Code) so new commands + skills register. `/mega-sdd:update-plugin` reports the before→after version, never touches your project, and tells you if you're already current. Your installed version shows in the header above and in `/plugin`.
 
+**Headless (for wrapper scripts / CI — guarantees the NEXT session loads the latest, no session needed):**
+
+```bash
+claude plugin marketplace update mega-sdd          # pull the marketplace clone
+claude plugin update mega-sdd@mega-sdd -s user -y  # rebuild the cache + repoint the active version
+```
+
+`git pull` on the clone alone is NOT enough — Claude Code loads plugins from its cache, and only the second command rebuilds it. The built-in background auto-updater is OFF by default for third-party marketplaces, so don't rely on it.
+
 To uninstall: `/plugin uninstall mega-sdd` (and optionally `/plugin marketplace remove mega-sdd`). Your `.mega-sdd/` outputs stay in your project — delete that folder if you want them gone too.
 
 ### 3. Try a guided scenario
@@ -169,6 +178,8 @@ Most AI-dev tools take a PRD → spit code in one shot. **Mega-sdd inserts struc
 - **Deterministic orchestrator** — the chain is inferred from probed repo state (vault / binding / units / bolts, zero-token scripts) + predictive preflight (catches `dep_missing` *before* the chain starts, not 8 minutes in).
 - **Starterkit-aware** — auto-detects your stack's actual conventions (auth lib, RBAC, UI stack, layouts) and generates units that cite *your* patterns, so bolts match your codebase by default.
 - **Weighted routing (S/M/L)** — every task is weighed before anything runs; the default when unsure is S (answer inline, zero pipeline, hooks quiet). Override with `--weight=S|M|L`.
+- **Sprint execution by default** — `--all` runs bolts in dependency waves (parallel, measured 3.0× vs sequential) with a per-unit risk-tiered review panel; unit size tunable via `unit_granularity: fine|coarse`.
+- **Team-ready outputs** — 4 emission docs (PRD / FSD / SIT / UAT incl. SEOJK berita acara) + `emit html`: any md/KB bundle rendered to self-contained offline interactive HTML (⌘K search, role-colored diagrams + legend, zoom/pan) — deterministic script, zero model tokens, md stays the only ground truth.
 - **Audit-driven evolution** — every major version closes a structured, severity-classified audit; nothing hidden, nothing inflated. Full trail: [`CHANGELOG.md`](CHANGELOG.md) + [`docs/superpowers/audits/`](docs/superpowers/audits/) (incl. the archived 2026 rounds-1-3 record).
 - **A living pipeline, not a one-shot run** — out-of-pipeline changes (manual hotfix, AI edit, `git pull`) are captured ambiently and `/mega-sdd:sync` reconciles only what changed, queuing human-only decisions instead of guessing; since v7.5.0 an inline edit of a `[LOCKED]`-anchored file surfaces a one-line context notice, and a "done/selesai" sentence with journaled changes earns a one-line sync OFFER (never an auto-run). Walkthrough: [scenario 12](tests/scenarios/scenario-12-continuous-sync.md).
 - **Observability lives at the gateway, not in the plugin** — the only trace artifact is the `mega-sdd-trace:*` tag family; token/cost/session accounting is the AI gateway's job ([`docs/gateway-contract.md`](docs/gateway-contract.md)).
@@ -188,7 +199,7 @@ flowchart TB
     classDef moat fill:#fce8e6,stroke:#d93025,color:#a50e0e
     classDef out fill:#188038,color:#fff,stroke:none
 
-    CMD["🎛️ Surface — 3 verbs<br/>/mega-sdd · /mega-sdd:sync · /mega-sdd:emit prd|fsd|sit|uat"]:::surface
+    CMD["🎛️ Surface — 3 verbs<br/>/mega-sdd · /mega-sdd:sync · /mega-sdd:emit prd|fsd|sit|uat|html|summary"]:::surface
 
     subgraph ORCH["🧭 Orchestration layer"]
         OF["orchestrate-flow<br/>state engine · weighted S/M/L routing · predictive preflight · --lean profile"]:::phase
@@ -197,7 +208,7 @@ flowchart TB
     subgraph PIPE["⚙️ Pipeline phases"]
         EXTRACT["extract-intelligence<br/>legacy → PRD-kontrak (census)"]:::phase --> INTENT["generate-intent<br/>(vault + OQs)"]:::phase
         INTENT --> GROUND["ground + bind (express)<br/>ast-grep AST · CONFIRMED/CONFLICT/OQ"]:::phase
-        GROUND --> UNITS["generate-units<br/>atomic + Anchors + Hard Rules"]:::phase --> BOLTS["execute-bolts<br/>pre/post-flight + L0 gates"]:::phase
+        GROUND --> UNITS["generate-units<br/>atomic + Anchors + Hard Rules"]:::phase --> BOLTS["execute-bolts<br/>sprint waves (parallel) · pre/post-flight + L0 gates"]:::phase
     end
 
     subgraph EXEC["🤖 Execution agents"]
@@ -206,7 +217,7 @@ flowchart TB
 
     ART[("📚 Grounded artifacts — .mega-sdd/<br/>vault · binding.md · units · bolts<br/>codebase-map · symbol-index (reuse) · graph.json")]:::art
     MOAT["🛡️ Enforcement — hooks + deterministic validators<br/>CONFLICT gate · B1–B4 evidence gates · quality gates<br/>anti-self-bypass · recompute-at-gate"]:::moat
-    DOCS["📄 Emissions<br/>PRD · FSD · SIT · UAT (SEOJK) · AGENTS.md · PDF"]:::phase
+    DOCS["📄 Emissions<br/>PRD · FSD · SIT · UAT (SEOJK) · summary · AGENTS.md · PDF · HTML offline (interaktif, diagram-first)"]:::phase
     OUT(["✅ tested atomic commits"]):::out
     SYNC["🔁 /mega-sdd:sync — the loop never ends<br/>ambient change capture → scoped re-sync → PENDING queue"]:::phase
 
@@ -232,7 +243,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 
 ## Commands
 
-`/mega-sdd` is the only command most users type. `/mega-sdd:sync` reconciles after any out-of-pipeline change. `/mega-sdd:emit <prd|fsd|sit|uat>` emits the four team documents. Three maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`) stay as typed commands; everything else routes by natural language — a typed legacy (pre-v7) form still routes as plain text to its skill.
+`/mega-sdd` is the only command most users type. `/mega-sdd:sync` reconciles after any out-of-pipeline change. `/mega-sdd:emit <prd|fsd|sit|uat|html|summary>` emits the four team documents plus two presentation lanes — `html` renders any md/KB bundle into self-contained **offline interactive HTML** (3-zone docs layout, ⌘K search, role-colored mermaid + legend, zoom/pan/fullscreen — deterministic script, zero model tokens) and `summary` writes a grounded executive summary. Three maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`) stay as typed commands; everything else routes by natural language — a typed legacy (pre-v7) form still routes as plain text to its skill.
 
 **Full per-command reference: [plugin README — Commands](plugins/mega-sdd/README.md#commands-youll-actually-use).** Task → command quick lookup:
 
@@ -256,6 +267,10 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 | Generate reverse PRD from legacy | `/mega-sdd:emit prd` |
 | Generate SIT test-evidence doc | `/mega-sdd:emit sit` |
 | Generate UAT doc-pack (incl. SEOJK berita acara) | `/mega-sdd:emit uat` |
+| Render md/KB jadi HTML offline interaktif | `/mega-sdd:emit html <dir-atau-file.md>` — or say "render html" / "html-kan" |
+| Generate executive summary (grounded, angka bercitasi) | `/mega-sdd:emit summary` — or say "emit summary" |
+| Jawab OQ hasil extract (KB mode, tanpa vault) | say "resolve oq kb" / "jawab OQ hasil extract" |
+| Unit kekecilan / kebanyakan wave | set `.mega-sdd/config.yaml` `unit_granularity: coarse` (or `--max-complexity=large`) |
 | Install missing native deps (pandoc, mmdc, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr) |
 | Update mega-sdd to the latest version | `/mega-sdd:update-plugin` then `/plugin marketplace update mega-sdd` |
 | Migrate vault layout (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
@@ -277,7 +292,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **19 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, resolution-verifier, domain-extractor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat>`) plus 3 maintenance one-timers (typed legacy forms route as plain text). |
+| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **19 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, resolution-verifier, domain-extractor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat|html|summary>`) plus 3 maintenance one-timers (typed legacy forms route as plain text). |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs consolidated under `<project>/.mega-sdd/`. User defaults at `~/.mega-sdd/config.yaml`. Project source unchanged. |
@@ -368,7 +383,8 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 │   ├── skills/                             # skills (lean routers + progressive disclosure)
 │   ├── agents/                             # 8 first-class subagents (incl. the blind review panel)
 │   ├── commands/                           # exactly 6: 3 public verbs + 3 maintenance one-timers
-│   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (25 packs)
+│   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (30 packs)
+│   ├── assets/render-html/                 # offline HTML template v2 + vendored marked/mermaid/woff2 fonts
 │   ├── hooks/                              # 6 events, direct dispatch: SessionStart · PreToolUse gate · PostToolUse journal · Stop · UserPromptExpansion/Submit
 │   ├── scripts/                            # the /analyze engine (run-analyze.sh) + migrations + deterministic validators
 │   └── CLAUDE.md                           # AI-agent contributor guidelines
