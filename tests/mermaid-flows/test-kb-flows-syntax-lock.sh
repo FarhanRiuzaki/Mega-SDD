@@ -45,8 +45,11 @@ B_RULES=$(echo "$BAD" | python3 -c "import json,sys,re;d=json.load(sys.stdin);pr
 note "  status=$B_STATUS sec3_mermaid_syntax=$B_SEC3SYN syntax_issues=$B_SYNCNT rules=[$B_RULES]"
 [ "$B_STATUS" = "FAIL" ] && ok "overall FAIL" || fail "expected FAIL, got '$B_STATUS'"
 [ "$B_SEC3SYN" = "FAIL" ] && ok "sec3_mermaid_syntax FAIL" || fail "expected sec3 syntax FAIL, got '$B_SEC3SYN'"
-[ "${B_SYNCNT:-0}" = "2" ] && ok "exactly 2 mermaid_syntax_invalid issues" || fail "expected EXACTLY 2 syntax issues, got '$B_SYNCNT'"
-[ "$B_RULES" = "Rule 1,Rule 2" ] && ok "both Rule 1 + Rule 2 detected (per-rule lock)" || fail "expected Rule 1,Rule 2; got '[$B_RULES]'"
+# REPINNED 7.23.2: Rule 7 (state-label second ':') now ALSO fires on the fixture's
+# `(controller:42)` transition label — a TRUE positive the old tokenizer missed
+# (that exact line fails mermaid.parse; same class as the mcf-fincore field failure).
+[ "${B_SYNCNT:-0}" = "3" ] && ok "exactly 3 mermaid_syntax_invalid issues (incl. Rule 7)" || fail "expected EXACTLY 3 syntax issues, got '$B_SYNCNT'"
+[ "$B_RULES" = "Rule 1,Rule 2,Rule 7" ] && ok "Rule 1 + Rule 2 + Rule 7 detected (per-rule lock)" || fail "expected Rule 1,Rule 2,Rule 7; got '[$B_RULES]'"
 
 note ""
 note "=== 02-good-mermaid.md -> PASS, zero issues (tokenizer lock) ==="

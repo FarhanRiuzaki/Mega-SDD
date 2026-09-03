@@ -544,8 +544,13 @@ async function renderMermaid() {
   await document.fonts.ready;
   mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: "base",
     themeVariables: mmVars(),
+    // useMaxWidth false untuk SEMUA tipe — default true bikin svg dipaksa muat
+    // lebar container (diagram lebar → teks semut) dan fit-floor tak pernah jalan
     flowchart: { nodeSpacing: 36, rankSpacing: 40, curve: "basis", useMaxWidth: false },
-    sequence: { useMaxWidth: false, actorMargin: 40, messageMargin: 32 } });
+    sequence: { useMaxWidth: false, actorMargin: 40, messageMargin: 32 },
+    state: { useMaxWidth: false }, er: { useMaxWidth: false }, class: { useMaxWidth: false },
+    journey: { useMaxWidth: false }, gantt: { useMaxWidth: false }, timeline: { useMaxWidth: false },
+    pie: { useMaxWidth: false } });
   // PER DIAGRAM, terisolasi: satu diagram rusak TIDAK BOLEH ngebunuh render
   // diagram lain / warna / legend / auto-fit (kejadian: batch run() throw →
   // semua post-processing mati diam-diam). Error = ditampilkan jujur, bukan blank.
@@ -564,7 +569,10 @@ async function renderMermaid() {
       p.style.display = "none"; // sembunyikan bomb svg mermaid — panel kita yang bicara
       const d = document.createElement("div"); d.className = "dg-err";
       d.innerHTML = '<p class="dg-err-msg"></p><details open><summary>Source diagram (perbaiki di md-nya — HTML ini turunan)</summary><pre class="dg-err-src"></pre></details>';
-      d.querySelector(".dg-err-msg").textContent = "⚠️ Diagram gagal dirender — syntax error di source mermaid: " + msg;
+      let hint = "";
+      if (/^\s*stateDiagram/m.test(dgSrcs[i]) && /-->\s*[\w\[\]*]+\s*:[^\n]*[:;]/.test(dgSrcs[i]))
+        hint = " · Hint: label transisi stateDiagram tidak boleh mengandung ':' atau ';' (mis. 'guard:', 'file.cs:12', '…; klausa lanjut') — ganti '—' / spasi / '·', atau pindahkan detail ke note.";
+      d.querySelector(".dg-err-msg").textContent = "⚠️ Diagram gagal dirender — syntax error di source mermaid: " + msg + hint;
       d.querySelector(".dg-err-src").textContent = dgSrcs[i].trim();
       card.querySelector(".dg-body").appendChild(d);
       const cap = card.querySelector(".cap-t"); if (cap) cap.textContent = "render error — cek source di atas, benerin di file md";

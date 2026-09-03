@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.23.2] - 2026-09-03 — mermaid Rule 7 + state diagram ciut (field run mcf-fincore)
+
+**Spec: §Amendemen 2 di `2026-09-03-render-html-v2-template.md`. Field run 22 blok mermaid KB nyata: state diagram tampil semut + 55 baris transisi gagal parse. Semua diukur via `mermaid.parse()`, bukan ditebak.**
+
+### Fixed
+
+- **State diagram ciut**: `useMaxWidth` default TRUE di tipe selain flowchart/sequence memaksa svg muat lebar container — fit-floor 7.23.1 tak pernah kepanggil. Kini `useMaxWidth:false` untuk SEMUA tipe (state/er/class/journey/gantt/timeline/pie).
+- **Rule 7 (baru, `mermaid-emission-rules.md`)**: label transisi stateDiagram TIDAK BOLEH mengandung `:` kedua atau `;` — quoting tidak menolong dua-duanya (terukur); `"` sendiri legal (tidak di-over-flag). Guard pakai `—`, sitasi `file.cs 112-134`, pemisah klausa `·`, atau `note`. Saran lama "wrap in double-quotes" untuk label state DIKOREKSI; PRD-kontrak §3 (produser stateDiagram) bawa rail yang sama.
+- **Tokenizer** (`_lib/mermaid_syntax.py`): deteksi Rule 7 (additive) + Rule 3 varian quoted (kutip ganda DI DALAM node text ber-quote — celah "sudah quoted, aman"); dua-duanya kelas kegagalan lapangan. Panel error render-html ketambahan hint deterministik untuk pola state-label.
+- Repin `test-kb-flows-syntax-lock` (2→3 issue — fixture bad `(controller:42)` = true positive yang dulu lolos) + fixture good dikoreksi; test baru `tests/mermaid-flows/test-state-label-colon.sh`.
+
 ## [7.23.1] - 2026-09-03 — render-html: diagram gede & error handling jujur
 
 **Spec: §Amendemen (7.23.1) di `2026-09-03-render-html-v2-template.md`. Temuan owner hari rilis: diagram gede "error ga muncul atau jadinya kecil2 sekali" + satu state diagram error tanpa pesan.**

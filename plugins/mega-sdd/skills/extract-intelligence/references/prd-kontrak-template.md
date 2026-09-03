@@ -91,8 +91,10 @@ rule row; implicit conditionals made explicit; error-handling rules count.
 plugins/mega-sdd/references/mermaid-emission-rules.md. Actor/role labels on the
 nodes/lanes. Workflow-classified module: ALSO a stateDiagram-v2 with ALL states
 (error/timeout/cancellation/reversal/partial), each transition = event + guard
-+ citation. Multi-step input collection: the §Staged inputs `stages:` block
-rides HERE, before the diagrams.>
++ citation — BUT the transition label may never contain a second `:` (Rule 7,
+mermaid-emission-rules.md): guards use `—`, citations drop the colon
+(`file.cs 112-134`) or ride a `note` block. Multi-step input collection: the
+§Staged inputs `stages:` block rides HERE, before the diagrams.>
 
 ## 4. Data In/Out
 <Input yang diterima, output/persistensi/efek yang diemisi, entitas yang
