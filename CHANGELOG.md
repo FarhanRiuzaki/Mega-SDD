@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.23.3] - 2026-09-03 — §Register ronde 3: bahasa apa pun (ID/EN/mix)
+
+**Spec: §Amendemen 2 di `2026-08-31-natural-register.md`. Mandat owner ke-5 soal bahasa: "disemua doc result dari mega-sdd harus menggunakan bahasa yg common dan tidak kaku mau bahasa inggris ataupun indonesia or mix".**
+
+### Changed
+
+- **`output-language.md §Register`** — scope diangkat dari "prosa Indonesia" ke **bahasa apa pun** (ID/EN/mix): pilihan bahasa tetap urusan precedence/Tier-3, register mengatur gaya di bahasa terpilih. Kelas kaku EN (spec-legalese: shall / aforementioned / in order to utilize / furthermore) dapat tabel kalibrasi sendiri (5 pasang). Rambu baru: kutipan/sitasi tidak pernah di-rewrite ke register natural (citation discipline menang). Rail lama utuh (Tier-1, carve-out SEOJK, Flawless ≠ gaul).
+- Tests: `tests/output-language/` +3 pin ronde 3.
+
 ## [7.23.2] - 2026-09-03 — mermaid Rule 7 + state diagram ciut (field run mcf-fincore)
 
 **Spec: §Amendemen 2 di `2026-09-03-render-html-v2-template.md`. Field run 22 blok mermaid KB nyata: state diagram tampil semut + 55 baris transisi gagal parse. Semua diukur via `mermaid.parse()`, bukan ditebak.**

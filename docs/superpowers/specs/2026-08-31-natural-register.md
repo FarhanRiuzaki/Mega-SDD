@@ -38,3 +38,23 @@ Fix (satu pintu tetap output-language.md):
    Tier-1 tak tersentuh.
 
 Pin: tests/output-language ≥6 pasang + rambu ronde 2. plugin 7.21.1→7.21.2.
+
+## Amendemen 2 (7.23.3) — ronde 3: register berlaku di BAHASA APA PUN
+
+Mandat owner 2026-09-03 (kali ke-5 tentang bahasa): "disemua doc result dari mega-sdd
+harus menggunakan bahasa yg common dan tidak kaku mau bahasa inggris ataupun indonesia
+or mix."
+
+Gap: §Register lama ter-scope "prosa Indonesia" ("berlaku SAAT prosa ditulis dalam
+Indonesia") — prosa English di dokumen emisi tidak diatur, padahal kelas kaku yang sama
+hidup di EN sebagai spec-legalese (shall / aforementioned / in order to utilize /
+furthermore / upon submission).
+
+Fix (satu pintu tetap output-language.md §Register):
+1. Scope diangkat ke bahasa apa pun — ID, EN, mix; pilihan BAHASA tetap urusan
+   precedence/Tier-3, §Register mengatur GAYA di bahasa terpilih.
+2. Tabel kalibrasi EN baru (5 pasang stiff→natural, kelas spec-legalese).
+3. Rambu baru: kutipan/sitasi TIDAK di-rewrite ke register natural (citation discipline
+   menang); rail lama utuh (Tier-1, carve-out regulator SEOJK, Flawless ≠ gaul).
+
+Pin: tests/output-language + pasang EN + scope line. plugin 7.23.2→7.23.3.

@@ -60,9 +60,19 @@ A human-facing question the human cannot answer from the prompt alone is a defec
 
 Descriptions follow the standing Tier-2 language precedence (Indonesian-mix by default). This contract binds the halt displayer (`plugins/mega-sdd/references/halt-protocol.md §Consumer dispatch` renders a keterangan block BEFORE the envelope YAML) and every skill prompt template; pinned by `tests/interaction-keterangan/`.
 
-## Register — natural, bukan baku (mandat user + tim, 2026-08-31)
+## Register — natural, bukan baku (mandat user + tim, 2026-08-31; ronde 3 2026-09-03: bahasa apa pun)
 
-Semua prosa Indonesia yang plugin HASILKAN (Tier-2 narasi + Tier-3 artefak — vault, KB, binding, laporan, keterangan, emissions) ditulis sebagai **bahasa kerja engineer yang natural**, bukan bahasa dokumen resmi atau terjemahan harfiah. Istilah teknis English dipakai apa adanya; kalimat aktif dan langsung; kata upacara dibuang.
+Semua prosa yang plugin HASILKAN — **bahasa apa pun: Indonesia, English, atau mix** (ronde 3, mandat owner: "disemua doc result… mau bahasa inggris ataupun indonesia or mix") — di Tier-2 narasi + Tier-3 artefak (vault, KB, binding, laporan, keterangan, emissions) ditulis sebagai **bahasa kerja engineer yang natural**, bukan bahasa dokumen resmi atau terjemahan harfiah. Istilah teknis dipakai apa adanya; kalimat aktif dan langsung; kata upacara dibuang — di bahasa mana pun.
+
+Kelas kaku yang sama juga hidup di English — spec-legalese. Kalibrasi EN:
+
+| ❌ Stiff EN (jangan) | ✅ Natural EN (tulis begini) |
+|---|---|
+| the system shall perform validation of the input | the system validates the input |
+| in order to utilize the aforementioned endpoint | to use this endpoint |
+| furthermore, it should be noted that | (hapus — langsung ke isinya) |
+| upon submission of the form by the user | when the user submits the form |
+| said configuration parameter is utilized for | this config is used for |
 
 | ❌ Kaku (jangan) | ✅ Natural (tulis begini) |
 |---|---|
@@ -79,7 +89,8 @@ Rambu:
 - **Bookish-halus juga kaku (kalibrasi ronde 2, 2026-09-02 — owner menegur ke-4 kalinya).** Kalimat bisa gramatikal, puitis, dan "rapi" tapi tetap terasa dokumen — kelasnya: kata upacara halus (*hanyalah, menyebut, menimbang, meninggalkan, menemui, sepatah kata pun*). Tes praktisnya: bacakan kalimatnya ke rekan kerja — kalau lo ga akan ngomong begitu, tulis ulang pakai kata yang dipakai waktu ngomong (*cuma, ada, nimbang, ninggalin, ketemu*).
 - **Flawless ≠ gaul.** Tetap gramatikal + profesional — "lo/gue" adalah register chat, bukan artefak tim; jangan bawa ke dokumen.
 - **Carve-out regulator:** bagian dokumen yang menghadap regulator (emit-uat berita acara SEOJK — bagian formalnya) TETAP baku; regulator memang mengharapkan register itu. Di luar carve-out ini, natural.
-- Tier-1 tak tersentuh (enum, verdict, ID, path — English verbatim); "vault ikut bahasa input" tak berubah — register ini berlaku SAAT prosa ditulis dalam Indonesia.
+- Tier-1 tak tersentuh (enum, verdict, ID, path — English verbatim); "vault ikut bahasa input" tak berubah — pilihan BAHASA tetap diatur precedence/Tier-3, register ini mengatur GAYA di bahasa yang terpilih (ronde 3: ID, EN, dan mix semuanya kena; dulu hanya prosa Indonesia).
+- **Kutipan tetap kutipan:** teks yang dikutip/disitasi dari sumber (PRD excerpt, klausa, jawaban user verbatim) TIDAK di-rewrite ke register natural — citation discipline menang.
 
 ## OQ authoring — human-first (mandat tim, 2026-09-02)
 

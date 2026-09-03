@@ -146,6 +146,15 @@ grep -q "Carve-out regulator" "$REF" && grep -q "berita acara SEOJK" "$REF" \
 grep -q "natural Indonesian-English mix — tidak kaku" "$SKILLS/using-mega-sdd/SKILL.md" \
   && ok "anchor narrate line carries the register" || bad "anchor line not updated"
 
+# ---- ronde 3 (7.23.3): register berlaku di bahasa apa pun (mandat owner ke-5) ----
+grep -q "bahasa apa pun: Indonesia, English, atau mix" "$REF" \
+  && ok "ronde-3 scope: register language-agnostic (ID/EN/mix)" || bad "ronde-3 scope missing"
+grep -q "spec-legalese" "$REF" && grep -q "the system validates the input" "$REF" \
+  && grep -q "when the user submits the form" "$REF" \
+  && ok "EN calibration rows (stiff shall/aforementioned class → natural)" || bad "EN calibration rows missing"
+grep -q "Kutipan tetap kutipan" "$REF" \
+  && ok "quotes/citations never register-rewritten (citation discipline wins)" || bad "quote carve-out missing"
+
 echo
 if [ "$fail" -eq 0 ]; then echo "PASS output-language pins"; exit 0
 else echo "output-language pins FAILED"; exit 1; fi
