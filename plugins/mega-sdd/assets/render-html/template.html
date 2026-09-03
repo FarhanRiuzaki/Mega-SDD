@@ -5,203 +5,368 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>@@TITLE@@</title>
 <style>
-/* mega-sdd render-html — template v1 (spec 2026-08-31 render-html standard)
-   Offline by construction: system fonts only, zero external requests. */
+/* mega-sdd render-html — template v2 "developer platform" (spec 2026-09-03 render-html-v2-template)
+   Offline by construction: font vendored woff2 (fallback system stack), zero external requests.
+   Tokens semantic terpusat; 3-state theme (system default, toggle override). */
+@@FONTS@@
 :root{
-  --ground:#f2f2ef; --surface:#ffffff; --surface-2:#f6f7f5; --surface-3:#ecedea;
-  --line:#e1e2de; --line-2:#cfd1cb;
-  --ink:#1b1d1a; --ink-2:#5b5f58; --ink-3:#8d918a;
-  --accent:#3b6ea5; --accent-bg:#e9f0f8;
-  --locked:#8a5c12; --locked-bg:#f7eeda;
-  --intent:#2f5a8f; --intent-bg:#e6eef8;
-  --artifact:#6b7280; --artifact-bg:#eceef1;
-  --ok:#2f6b47; --ok-bg:#e5f1e9; --stop:#9d332c; --stop-bg:#f8e6e4; --warn-bg:#f7eeda;
-  --r:8px;
-  --e:0 1px 3px rgba(27,29,26,.06), 0 10px 24px -14px rgba(27,29,26,.18);
-  --font-doc:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
-  --font-data:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --bg:#ffffff; --surface:#fafafa; --surface-2:#f4f4f5; --well:#f4f4f5;
+  --border:#e8e8e6; --border-2:#d9d9d6;
+  --text-1:#18181b; --text-2:#52525b; --text-3:#8e8e93;
+  --brand:#0d7d55; --brand-ink:#0a5c40; --brand-soft:#e7f4ee; --brand-line:#b8dfcc;
+  --warn:#9a6a10; --warn-soft:#fbf3e0; --danger:#b3382f; --danger-soft:#faeceb;
+  --locked:#8a5c12; --locked-soft:#f7f0dd; --intent:#3860a8; --intent-soft:#e9eff9;
+  --artifact:#71717a; --artifact-soft:#f0f0f1;
+  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r-sm:5px; --r:7px; --r-lg:10px;
+  --sh:0 1px 2px rgba(0,0,0,.04);
+  --topbar:52px;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --ground:#101210; --surface:#181b18; --surface-2:#1e221e; --surface-3:#262a26;
-    --line:#2b302b; --line-2:#3a403a;
-    --ink:#e6e8e4; --ink-2:#a5a9a1; --ink-3:#787c74;
-    --accent:#7fa9d4; --accent-bg:#1a2634;
-    --locked:#d7a856; --locked-bg:#33280f;
-    --intent:#7fb0e0; --intent-bg:#16283c;
-    --artifact:#9aa1ab; --artifact-bg:#242830;
-    --ok:#7cc79c; --ok-bg:#17301f; --stop:#e08b84; --stop-bg:#3a1e1c; --warn-bg:#33280f;
-    --e:0 1px 3px rgba(0,0,0,.5), 0 10px 24px -14px rgba(0,0,0,.8);
+    --bg:#0b0c0b; --surface:#101110; --surface-2:#181a18; --well:#161816;
+    --border:#232523; --border-2:#333633;
+    --text-1:#f0f0ee; --text-2:#a4a7a2; --text-3:#6e716c;
+    --brand:#3fbf8b; --brand-ink:#6fd3a9; --brand-soft:#12291e; --brand-line:#235c43;
+    --warn:#d7a856; --warn-soft:#2b2310; --danger:#e08b84; --danger-soft:#331b19;
+    --locked:#d7a856; --locked-soft:#2b2310; --intent:#87aede; --intent-soft:#152438;
+    --artifact:#9aa1ab; --artifact-soft:#20231f;
+    --sh:none;
   }
 }
 :root[data-theme="dark"]{
-  --ground:#101210; --surface:#181b18; --surface-2:#1e221e; --surface-3:#262a26;
-  --line:#2b302b; --line-2:#3a403a;
-  --ink:#e6e8e4; --ink-2:#a5a9a1; --ink-3:#787c74;
-  --accent:#7fa9d4; --accent-bg:#1a2634;
-  --locked:#d7a856; --locked-bg:#33280f;
-  --intent:#7fb0e0; --intent-bg:#16283c;
-  --artifact:#9aa1ab; --artifact-bg:#242830;
-  --ok:#7cc79c; --ok-bg:#17301f; --stop:#e08b84; --stop-bg:#3a1e1c; --warn-bg:#33280f;
-  --e:0 1px 3px rgba(0,0,0,.5), 0 10px 24px -14px rgba(0,0,0,.8);
+  --bg:#0b0c0b; --surface:#101110; --surface-2:#181a18; --well:#161816;
+  --border:#232523; --border-2:#333633;
+  --text-1:#f0f0ee; --text-2:#a4a7a2; --text-3:#6e716c;
+  --brand:#3fbf8b; --brand-ink:#6fd3a9; --brand-soft:#12291e; --brand-line:#235c43;
+  --warn:#d7a856; --warn-soft:#2b2310; --danger:#e08b84; --danger-soft:#331b19;
+  --locked:#d7a856; --locked-soft:#2b2310; --intent:#87aede; --intent-soft:#152438;
+  --artifact:#9aa1ab; --artifact-soft:#20231f;
+  --sh:none;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--ground);color:var(--ink);
-  font-family:var(--font-doc);font-size:15px;line-height:1.6;
-  -webkit-font-smoothing:antialiased}
-a{color:var(--accent)}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+html{scroll-behavior:smooth;scroll-padding-top:calc(var(--topbar) + 20px)}
+body{margin:0;background:var(--bg);color:var(--text-1);font-family:var(--sans);
+  font-size:14.5px;line-height:1.65;-webkit-font-smoothing:antialiased;
+  font-feature-settings:"cv05","cv11"}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+::selection{background:var(--brand-soft)}
+button{font-family:var(--sans)}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:3px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}html{scroll-behavior:auto}}
 
-.chrome{background:var(--surface);border-bottom:1px solid var(--line);
-  padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.chrome .fname{font-family:var(--font-data);font-size:12.5px;color:var(--ink)}
-.badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;
-  padding:2px 9px;border-radius:20px;white-space:nowrap;letter-spacing:.02em}
-.badge.mod{background:var(--accent-bg);color:var(--accent)}
-.badge.ver{background:var(--surface-3);color:var(--ink-2);font-family:var(--font-data);font-weight:500}
-.chrome .sp{flex:1}
+/* ── topbar ── */
+.top{position:fixed;inset:0 0 auto;height:var(--topbar);z-index:50;
+  background:var(--bg);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;padding:0 18px}
+.brandmark{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;
+  letter-spacing:-.01em;white-space:nowrap}
+.brandmark .dot{width:20px;height:20px;border-radius:5px;background:var(--brand);
+  color:#fff;display:grid;place-items:center;font-size:11px;font-weight:700;flex-shrink:0}
+.brandmark .docs{color:var(--text-3);font-weight:400}
+.top .fname{font-family:var(--mono);font-size:11.5px;color:var(--text-3);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.searchbtn{flex:0 1 300px;min-width:120px;display:flex;align-items:center;gap:8px;
+  font-size:13px;color:var(--text-3);background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;cursor:pointer;text-align:left}
+.searchbtn:hover{border-color:var(--border-2)}
+.searchbtn kbd{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--text-3);
+  background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+.top .sp{flex:1}
+.lens-chip{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.05em;
+  color:var(--brand-ink);background:var(--brand-soft);border:1px solid var(--brand-line);
+  border-radius:4px;padding:2px 8px;white-space:nowrap}
+.vbadge{font-family:var(--mono);font-size:10.5px;color:var(--text-3);
+  border:1px solid var(--border);border-radius:20px;padding:3px 10px;white-space:nowrap}
+.iconbtn{width:30px;height:30px;flex-shrink:0;display:grid;place-items:center;background:none;
+  border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text-2);cursor:pointer;font-size:13px}
+.iconbtn:hover{border-color:var(--border-2);color:var(--text-1)}
+.idx-link{font-size:12.5px;color:var(--brand);font-weight:600;white-space:nowrap;
+  padding:2px 8px;border-radius:var(--r-sm)}
+.idx-link:hover{background:var(--brand-soft);text-decoration:none}
 
-.warnbar{background:var(--warn-bg);color:var(--ink);font-size:12.5px;
-  padding:7px 20px;border-bottom:1px solid var(--line)}
-.warnbar b{font-weight:600}
+/* ── budget warning callout (class + string dipertahankan — pin D2) ── */
+.warnbar{display:flex;gap:11px;border:1px solid var(--border);border-left:3px solid var(--warn);
+  background:var(--warn-soft);border-radius:var(--r);padding:11px 15px;margin:0 0 16px;
+  font-size:13px;color:var(--text-2)}
+.warnbar b{color:var(--text-1)}
 
-.shell{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1200px;margin:0 auto}
-@media (max-width:860px){.shell{grid-template-columns:1fr}
-  nav.side{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--line)}}
-nav.side{position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto;
-  padding:22px 18px;border-right:1px solid var(--line)}
-.nav-h{font-family:var(--font-data);font-size:10px;letter-spacing:.13em;
-  text-transform:uppercase;color:var(--ink-3);margin:14px 0 7px}
-.nav-h:first-child{margin-top:0}
-nav.side a{display:block;font-size:13px;color:var(--ink-2);text-decoration:none;
-  padding:4px 8px;border-radius:5px;border-left:2px solid transparent}
-nav.side a:hover{background:var(--surface-2);color:var(--ink)}
-nav.side a.dg{border-left-color:var(--accent);font-weight:500}
-nav.side a.h3{padding-left:20px;font-size:12.5px}
+/* ── 3-zone shell ── */
+.shell{display:grid;grid-template-columns:256px minmax(0,1fr) 216px;
+  max-width:1400px;margin:0 auto;padding-top:var(--topbar)}
+body.no-bundle .shell{grid-template-columns:minmax(0,1fr) 216px;max-width:1100px}
+body.no-bundle nav.sidenav{display:none}
+@media (max-width:1180px){.shell{grid-template-columns:256px minmax(0,1fr)}nav.toc{display:none}
+  body.no-bundle .shell{grid-template-columns:1fr}}
+@media (max-width:880px){.shell{grid-template-columns:1fr}nav.sidenav{position:static;height:auto;
+  max-height:40vh;border-right:none;border-bottom:1px solid var(--border)}}
 
-main{padding:26px 30px 80px;min-width:0}
-.doc{max-width:820px}
-.audience{font-size:13px;color:var(--ink-2);background:var(--surface-2);
-  border:1px solid var(--line);border-radius:var(--r);padding:8px 14px;margin:0 0 16px}
-.audience b{color:var(--ink)}
+nav.sidenav{position:sticky;top:var(--topbar);align-self:start;height:calc(100vh - var(--topbar));
+  overflow-y:auto;padding:20px 12px 30px 18px;border-right:1px solid var(--border);
+  background:var(--surface)}
+.g{margin-bottom:4px}
+.g-h{display:flex;align-items:center;width:100%;background:none;border:none;cursor:pointer;
+  font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-3);padding:7px 8px;border-radius:var(--r-sm);text-align:left}
+.g-h .tw{margin-left:auto;font-size:9px}
+.g.closed .tw{transform:rotate(-90deg)}
+.g.closed .g-items{display:none}
+.g-items a{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--text-2);
+  padding:5.5px 8px 5.5px 14px;border-radius:var(--r-sm);border-left:2px solid transparent;margin-left:6px}
+.g-items a:hover{color:var(--text-1);background:var(--surface-2);text-decoration:none}
+.g-items a.on{color:var(--brand-ink);background:var(--brand-soft);border-left-color:var(--brand);font-weight:500}
+.g-items .cnt{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--warn)}
 
-.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:0 0 22px}
-.st{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
-  padding:12px 14px;box-shadow:var(--e)}
-.st-n{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;line-height:1;display:block;
-  font-variant-numeric:tabular-nums}
-.st-l{font-family:var(--font-data);font-size:9.5px;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--ink-3);display:block;margin-top:6px;line-height:1.5}
+main{padding:26px 44px 80px;min-width:0}
+.doc{max-width:880px}
+.crumb{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-3);
+  margin:0 0 14px;flex-wrap:wrap}
+.crumb a{color:var(--text-3)}
+.crumb .sep{opacity:.6}
+.crumb .here{color:var(--text-1);font-weight:500}
 
-/* rendered markdown */
-.doc h1{font-size:1.75rem;font-weight:700;letter-spacing:-.02em;line-height:1.15;margin:6px 0 16px}
-.doc h2{font-size:1.15rem;font-weight:700;margin:34px 0 10px;padding-top:18px;
-  border-top:1px solid var(--line);letter-spacing:-.01em}
-.doc h3{font-size:1rem;font-weight:600;margin:24px 0 8px}
-.doc p{color:var(--ink-2);margin:0 0 12px;max-width:68ch}
-.doc p strong,.doc li strong,.doc td strong{color:var(--ink)}
-.doc ul,.doc ol{margin:0 0 14px;padding-left:20px;color:var(--ink-2);max-width:68ch}
+/* audience callout */
+.audience{display:flex;gap:11px;border:1px solid var(--border);border-left:3px solid var(--brand);
+  background:var(--surface);border-radius:var(--r);padding:11px 15px;margin:0 0 16px;
+  font-size:13.5px;color:var(--text-2)}
+.audience b{color:var(--text-1);font-weight:600}
+
+/* stat band */
+.strip{display:flex;flex-wrap:wrap;border:1px solid var(--border);border-radius:var(--r-lg);
+  background:var(--surface);margin:0 0 22px;overflow:hidden}
+.st{flex:1 1 90px;padding:13px 16px;border-right:1px solid var(--border)}
+.st:last-child{border-right:none}
+.st-n{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1;
+  font-variant-numeric:tabular-nums;display:block}
+.st.warn .st-n{color:var(--danger)}
+.st-l{font-size:11px;color:var(--text-3);display:block;margin-top:5px;font-weight:500}
+
+/* ── rendered markdown ── */
+.doc h1{font-size:34px;font-weight:700;letter-spacing:-.025em;line-height:1.15;margin:2px 0 12px}
+.doc h1:first-child + p{font-size:16px;color:var(--text-2);max-width:64ch;line-height:1.6}
+.doc h2{font-size:22px;font-weight:650;letter-spacing:-.02em;margin:42px 0 12px;
+  padding-top:22px;border-top:1px solid var(--border)}
+.doc h3{font-size:16.5px;font-weight:600;margin:26px 0 8px}
+.doc p{color:var(--text-2);margin:0 0 12px;max-width:70ch}
+.doc p strong,.doc li strong,.doc td strong{color:var(--text-1)}
+.doc ul,.doc ol{margin:0 0 16px;padding-left:20px;color:var(--text-2);max-width:74ch}
 .doc li{margin-bottom:6px}
-.doc code{font-family:var(--font-data);font-size:.85em;background:var(--surface-3);
-  border:1px solid var(--line);border-radius:3px;padding:.06em .3em;color:var(--ink)}
-.doc pre:not(.mermaid){background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--r);padding:12px 14px;overflow-x:auto;font-size:13px}
-.doc pre:not(.mermaid) code{background:none;border:none;padding:0}
-.doc blockquote{margin:0 0 14px;padding:8px 16px;border-left:3px solid var(--line-2);
-  color:var(--ink-2);background:var(--surface-2);border-radius:0 var(--r) var(--r) 0}
+.doc code{font-family:var(--mono);font-size:.84em;background:var(--well);
+  border:1px solid var(--border);border-radius:4px;padding:.08em .32em;color:var(--text-1)}
+.doc blockquote{margin:0 0 14px;padding:9px 16px;border-left:3px solid var(--border-2);
+  color:var(--text-2);background:var(--surface);border-radius:0 var(--r) var(--r) 0}
 .doc blockquote p{margin-bottom:0}
-.doc .tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
-  background:var(--surface);margin:14px 0;box-shadow:var(--e)}
-.doc table{border-collapse:collapse;width:100%;font-size:13px;min-width:560px}
-.doc th,.doc td{text-align:left;padding:8px 13px;border-bottom:1px solid var(--line);vertical-align:top}
-.doc thead th{font-family:var(--font-data);font-size:9.5px;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--ink-3);font-weight:500;background:var(--surface-2);white-space:nowrap}
-.doc tbody tr:last-child td{border-bottom:none}
-.doc td{color:var(--ink-2)}
-.doc details{margin:6px 0 14px;border:1px solid var(--line);border-radius:var(--r);
-  background:var(--surface-2);padding:0 14px}
-.doc details summary{cursor:pointer;padding:9px 0;font-size:12.5px;font-weight:600;color:var(--ink-2)}
-.doc details[open]{padding-bottom:8px}
 .doc img{max-width:100%}
-.doc hr{border:none;border-top:1px solid var(--line);margin:24px 0}
+.doc hr{border:none;border-top:1px solid var(--border);margin:24px 0}
 
-/* diagram card (dibungkus JS di sekitar tiap pre.mermaid) */
-.dg-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
-  box-shadow:var(--e);margin:14px 0;overflow:hidden}
-.dg-bar{display:flex;align-items:center;gap:9px;padding:8px 14px;
-  border-bottom:1px solid var(--line);background:var(--surface-2)}
-.dg-bar .t{font-size:12.5px;font-weight:600}
-.dg-bar .k{font-family:var(--font-data);font-size:10px;color:var(--ink-3);margin-left:auto}
-.dg-body{padding:10px 12px;overflow-x:auto;background:var(--surface)}
-pre.mermaid{margin:0;display:flex;justify-content:center;background:none;border:none}
+/* tier ledger rows: ul yang semua item-nya diawali tier badge dijadikan ledger */
+ul.rules{margin:0 0 16px;padding:0;list-style:none;border:1px solid var(--border);
+  border-radius:var(--r-lg);background:var(--bg);overflow:hidden;max-width:none}
+ul.rules > li{display:block;padding:10px 15px;margin:0;
+  border-bottom:1px solid var(--border);color:var(--text-2);font-size:13.5px}
+ul.rules > li > .tier:first-child{margin-right:8px}
+ul.rules > li:last-child{border-bottom:none}
+ul.rules > li:hover{background:var(--surface)}
+.tier{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.06em;
+  padding:2px 7px;border-radius:4px;flex-shrink:0}
+.tier.locked{background:var(--locked-soft);color:var(--locked)}
+.tier.intent{background:var(--intent-soft);color:var(--intent)}
+.tier.artifact{background:var(--artifact-soft);color:var(--artifact)}
+.tok-ok{color:var(--brand);font-weight:600}.tok-stop{color:var(--danger);font-weight:600}
 
-/* tier tokens yang muncul di teks md */
-.tier{font-family:var(--font-data);font-size:10px;font-weight:600;padding:1.5px 7px;
-  border-radius:4px;letter-spacing:.03em}
-.tier.locked{background:var(--locked-bg);color:var(--locked)}
-.tier.intent{background:var(--intent-bg);color:var(--intent)}
-.tier.artifact{background:var(--artifact-bg);color:var(--artifact)}
-.tok-ok{color:var(--ok);font-weight:600}.tok-stop{color:var(--stop);font-weight:600}
+/* OQ cards (post-process display — md tidak berubah) */
+li.oq{list-style:none;background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:12px 15px;margin:0 0 10px -20px}
+.oq-head{display:flex;align-items:center;gap:9px;margin-bottom:4px;flex-wrap:wrap}
+.oq-tag{font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--text-1)}
+.pchip{font-family:var(--mono);font-size:9.5px;font-weight:700;padding:1.5px 7px;border-radius:4px}
+.pchip.p1{background:var(--danger-soft);color:var(--danger)}
+.pchip.p2{background:var(--warn-soft);color:var(--warn)}
+.pchip.p3{background:var(--surface-2);color:var(--text-2)}
+.oq-st{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--text-3);
+  margin-left:auto;display:flex;align-items:center;gap:5px}
+.oq-st .d{width:7px;height:7px;border-radius:50%;background:var(--warn)}
+.oq-st.done .d{background:var(--brand)}
+.oq-st.oos .d{background:var(--text-3)}
+.oq-body{font-size:13.5px;color:var(--text-2)}
 
-footer{border-top:1px solid var(--line);margin-top:46px;padding-top:16px;
-  font-family:var(--font-data);font-size:11px;color:var(--ink-3);line-height:1.9}
+/* tables */
+.tw{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-lg);
+  background:var(--bg);margin:14px 0;box-shadow:var(--sh)}
+.doc table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
+.doc th,.doc td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+.doc thead th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3);
+  font-weight:600;background:var(--surface);cursor:pointer;user-select:none;white-space:nowrap}
+.doc thead th:hover{color:var(--text-1)}
+.doc tbody tr:last-child td{border-bottom:none}
+.doc tbody tr:hover td{background:var(--surface)}
+.doc td{color:var(--text-2)}
+.doc details{margin:6px 0 14px;border:1px solid var(--border);border-radius:var(--r);
+  background:var(--surface);padding:0 14px}
+.doc details summary{cursor:pointer;padding:9px 0;font-size:12.5px;font-weight:600;color:var(--text-2)}
+.doc details[open]{padding-bottom:8px}
 
-/* ── back ke index + cross-bundle search (7.19.0) ── */
-.idx-link{font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:600;
-  padding:2px 8px;border-radius:5px;white-space:nowrap}
-.idx-link:hover{background:var(--accent-bg)}
-.searchbox{margin:0 0 18px}
-.searchbox input{width:100%;box-sizing:border-box;font:inherit;font-size:14px;
-  padding:10px 14px;border:1px solid var(--line-2);border-radius:var(--r);
-  background:var(--surface);color:var(--ink)}
-.searchbox input:focus{outline:2px solid var(--accent);outline-offset:1px}
-.sr{margin:10px 0 0}
-.sr-page{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
-  padding:10px 14px;margin:8px 0;box-shadow:var(--e)}
-.sr-page > a{font-weight:600;text-decoration:none;font-size:14px}
-.sr-page .sr-lens{font-family:var(--font-data);font-size:10px;color:var(--ink-3);margin-left:8px}
-.sr-hd a{display:inline-block;font-size:12px;color:var(--accent);text-decoration:none;
-  background:var(--accent-bg);border-radius:4px;padding:1px 8px;margin:5px 6px 0 0}
-.sr-snip{font-size:12.5px;color:var(--ink-2);margin-top:5px}
-.sr-snip mark{background:var(--warn-bg);color:var(--ink);border-radius:2px;padding:0 1px}
-.sr-none{font-size:13px;color:var(--ink-3);padding:8px 2px}
+/* code blocks, first-class */
+.cb{position:relative;margin:14px 0;border:1px solid var(--border);border-radius:var(--r-lg);
+  overflow:hidden;background:var(--bg)}
+.cb-bar{display:flex;align-items:center;background:var(--surface);border-bottom:1px solid var(--border)}
+.cb-lang{font-family:var(--mono);font-size:11px;color:var(--text-2);padding:6px 14px;
+  border-bottom:2px solid var(--brand);font-weight:500}
+.cb-bar .cp{margin-left:auto;margin-right:8px;font-family:var(--mono);font-size:10.5px;
+  background:none;border:1px solid var(--border);color:var(--text-2);
+  border-radius:4px;padding:2.5px 9px;cursor:pointer}
+.cb-bar .cp:hover{color:var(--text-1);border-color:var(--border-2)}
+.cb pre{margin:0;padding:12px 15px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.7}
+.cb pre code{background:none;border:none;padding:0;font-size:inherit}
+.hl-k{color:var(--intent);font-weight:500}
+.hl-s{color:var(--brand-ink)}
+.hl-c{color:var(--text-3);font-style:italic}
+.hl-n{color:var(--danger)}
+
+/* diagram card */
+.dg-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);
+  margin:16px 0 20px;overflow:hidden;box-shadow:var(--sh)}
+.dg-bar{display:flex;align-items:center;gap:9px;padding:8px 13px;
+  border-bottom:1px solid var(--border);background:var(--surface)}
+.dg-bar .t{font-size:13px;font-weight:600}
+.dg-bar .k{font-family:var(--mono);font-size:10px;color:var(--text-3)}
+.dg-tools{margin-left:auto;display:flex;gap:4px}
+.dg-tools button{font-family:var(--mono);font-size:12px;line-height:1;min-width:25px;height:23px;
+  background:var(--bg);border:1px solid var(--border);color:var(--text-2);
+  border-radius:var(--r-sm);cursor:pointer}
+.dg-tools button:hover{border-color:var(--border-2);color:var(--text-1)}
+.dg-body{position:relative;overflow:hidden;background:var(--bg);cursor:grab;max-height:520px}
+.dg-body.grabbing{cursor:grabbing}
+.dg-inner{transform-origin:50% 0;padding:16px;display:flex;justify-content:center}
+pre.mermaid{margin:0;background:none;border:none;font-family:var(--mono)}
+pre.mermaid .nodeLabel,pre.mermaid .edgeLabel,pre.mermaid .label{color:var(--text-1)!important}
+pre.mermaid .edgeLabel{background:var(--bg)!important}
+pre.mermaid .edgeLabel rect{fill:var(--bg)!important}
+.dg-cap{font-size:11px;color:var(--text-3);padding:6px 13px;border-top:1px solid var(--border);
+  background:var(--surface);font-family:var(--mono);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.dg-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto}
+.dg-legend .li{display:inline-flex;align-items:center;gap:5px}
+.dg-legend .sw{width:10px;height:10px;border-radius:3px;border:1px solid;display:inline-block}
+.dg-card.max{position:fixed;inset:12px;z-index:70;margin:0;box-shadow:0 24px 80px rgba(0,0,0,.35)}
+.dg-card.max .dg-body{max-height:none;height:calc(100% - 64px)}
+
+/* prev/next */
+.pn{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:44px 0 0}
+.pn a{border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 16px;
+  display:block;background:var(--bg)}
+.pn a:hover{border-color:var(--brand-line);text-decoration:none;background:var(--surface)}
+.pn .lbl{font-size:11px;color:var(--text-3);display:block;margin-bottom:3px}
+.pn .ttl{font-size:13.5px;font-weight:600;color:var(--text-1)}
+.pn a.next{text-align:right}
+.pn .hole{visibility:hidden}
+
+footer{border-top:1px solid var(--border);margin-top:44px;padding-top:14px;
+  font-family:var(--mono);font-size:10.5px;color:var(--text-3);line-height:1.9}
+
+/* right: on this page */
+nav.toc{position:sticky;top:var(--topbar);align-self:start;max-height:calc(100vh - var(--topbar));
+  overflow-y:auto;padding:26px 18px 30px 6px;font-size:12.5px}
+.toc-h{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--text-3);margin:0 0 10px;padding-left:12px}
+nav.toc a{display:block;color:var(--text-3);padding:4px 12px;border-left:2px solid var(--border);line-height:1.45}
+nav.toc a:hover{color:var(--text-1);text-decoration:none}
+nav.toc a.on{color:var(--brand-ink);border-left-color:var(--brand);font-weight:500}
+nav.toc a.h3{padding-left:24px;font-size:11.5px}
+nav.toc .dgl{font-family:var(--mono);font-size:11px}
+
+/* ⌘K modal */
+.kbar{position:fixed;inset:0;z-index:80;background:rgba(10,12,10,.45);display:none;
+  align-items:flex-start;justify-content:center;padding-top:14vh}
+.kbar.open{display:flex}
+.kpanel{width:min(560px,92vw);background:var(--bg);border:1px solid var(--border-2);
+  border-radius:12px;box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden}
+.kpanel input{width:100%;border:none;outline:none;background:none;color:var(--text-1);
+  font:inherit;font-size:15px;padding:15px 18px;border-bottom:1px solid var(--border)}
+.kres{max-height:320px;overflow-y:auto;padding:7px}
+.kres a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);
+  color:var(--text-2);font-size:13.5px}
+.kres a:hover{background:var(--brand-soft);color:var(--brand-ink);text-decoration:none}
+.kres .kind{font-family:var(--mono);font-size:9.5px;color:var(--text-3);margin-left:auto;
+  border:1px solid var(--border);border-radius:4px;padding:1px 6px;white-space:nowrap}
+.kres mark{background:var(--warn-soft);color:var(--text-1);border-radius:2px;padding:0 1px}
+.kres .none{padding:14px;color:var(--text-3);font-size:13px}
+
+@media print{.top,nav.sidenav,nav.toc,.dg-tools,.cp,.pn,.kbar,.searchbtn{display:none!important}
+  .shell{display:block;padding-top:0}.dg-body{max-height:none}body{background:#fff;color:#000}}
 </style>
 </head>
 <body>
 
-<div class="chrome">
-  @@INDEXLINK@@<span class="fname">@@SRC_PATH@@</span>
-  <span class="badge mod">@@BADGE@@</span>
+<div class="top">
+  <span class="brandmark"><span class="dot" id="branddot">M</span>@@PROJECT@@ <span class="docs">docs</span></span>
+  @@INDEXLINK@@
+  <button class="searchbtn" id="ksearch">🔍 Cari…<kbd id="kkbd">⌘K</kbd></button>
   <span class="sp"></span>
-  <span class="badge ver">mega-sdd @@PLUGIN_VER@@ · render @@RENDERED_AT@@</span>
+  <span class="fname">@@SRC_PATH@@</span>
+  <span class="lens-chip">@@BADGE@@</span>
+  <span class="vbadge">mega-sdd @@PLUGIN_VER@@ · @@RENDERED_AT@@</span>
+  <button class="iconbtn" id="theme" title="ganti tema (light/dark/system)">◐</button>
 </div>
-@@WARNINGS@@
+
 <div class="shell">
-<nav class="side" aria-label="Navigasi dokumen">
-  <div class="nav-h">Diagram</div>
-  <div id="nav-dg"><span style="font-size:12px;color:var(--ink-3)">…</span></div>
-  <div class="nav-h">Bagian</div>
-  <div id="nav-sec"></div>
-</nav>
+<nav class="sidenav" aria-label="Navigasi bundle"><div id="nav-bundle"></div></nav>
+
 <main><div class="doc">
-  <div class="audience"><b>Untuk siapa:</b> @@AUDIENCE@@</div>
-  @@SEARCH@@
+  <div class="crumb">@@CRUMB@@</div>
+  <div class="audience"><span>👤</span><p style="margin:0"><b>Untuk siapa:</b> @@AUDIENCE@@</p></div>
+  @@WARNINGS@@
   @@STRIP@@
-  <div id="doc-body"><p style="color:var(--ink-3)">Merender dokumen… (butuh JavaScript aktif)</p></div>
+  <div id="doc-body"><p style="color:var(--text-3)">Merender dokumen… (butuh JavaScript aktif)</p></div>
+  @@PREVNEXT@@
   <footer>
     DOKUMEN INTERNAL — @@PROJECT@@ · digenerate dari <b>@@SRC_PATH@@</b> (sha256 @@SRC_SHA@@)<br>
     mega-sdd render-html · plugin @@PLUGIN_VER@@ · @@RENDERED_AT@@ · md = ground truth, HTML ini turunan — regenerate kapan aja
   </footer>
 </div></main>
+
+<nav class="toc" aria-label="Di halaman ini">
+  <p class="toc-h">Di halaman ini</p>
+  <div id="nav-toc"></div>
+</nav>
 </div>
 
+<div class="kbar" id="kbar"><div class="kpanel">
+  <input id="q" placeholder="Cari… (Esc buat nutup)" autocomplete="off">
+  <div class="kres" id="kres"></div>
+</div></div>
+
+@@NAVDATA@@
 @@ASSETS@@
 <script>
 "use strict";
 const SOURCE_MD = @@MD_JSON@@;
+const root = document.documentElement;
+document.getElementById("branddot").textContent = ("@@PROJECT@@".trim()[0] || "m").toUpperCase();
+if (!window.MEGA_SEARCH) document.body.classList.add("no-bundle");
 
-// ── marked: fence mermaid → pre.mermaid; heading dapat id; escape sisanya ──
+/* ── theme: 3-state (system default, toggle overrides) — persist best-effort ── */
+try { const t = localStorage.getItem("megasdd-theme"); if (t) root.dataset.theme = t; } catch (e) {}
+function isDark(){
+  if (root.dataset.theme === "dark") return true;
+  if (root.dataset.theme === "light") return false;
+  return matchMedia("(prefers-color-scheme: dark)").matches;
+}
+document.getElementById("theme").addEventListener("click", () => {
+  // cycle: system → dark → light → system
+  const cur = root.dataset.theme || "";
+  const next = cur === "" ? "dark" : cur === "dark" ? "light" : "";
+  if (next) root.dataset.theme = next; else delete root.dataset.theme;
+  try { next ? localStorage.setItem("megasdd-theme", next) : localStorage.removeItem("megasdd-theme"); } catch (e) {}
+  renderMermaid();
+});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (!root.dataset.theme) renderMermaid();
+});
+
+/* ── marked: fence mermaid → pre.mermaid; heading id = REPLIKA slug Python (7.19.0 —
+   search deep-link lompat ke anchor yang sama; beda satu karakter = semua hasil nyasar) ── */
 const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 const slug = s => s.toLowerCase().replace(/[^\wÀ-￿]+/g,"-").replace(/^-+|-+$/g,"") || "sec";
 const seen = Object.create(null);
@@ -209,7 +374,7 @@ marked.use({
   renderer: {
     code({ text, lang }) {
       if ((lang || "").trim() === "mermaid") return '<pre class="mermaid">' + esc(text) + "</pre>\n";
-      return "<pre><code>" + esc(text) + "</code></pre>\n";
+      return '<pre data-lang="' + esc((lang || "").trim()) + '"><code>' + esc(text) + "</code></pre>\n";
     },
     heading({ tokens, depth }) {
       const inner = this.parser.parseInline(tokens);
@@ -219,24 +384,86 @@ marked.use({
       return "<h" + depth + ' id="' + id + '">' + inner + "</h" + depth + ">\n";
     },
     table(token) {
-      // bungkus tabel supaya scroll sendiri, halaman tidak pernah scroll samping
       const html = marked.Renderer.prototype.table.call(this, token);
       return '<div class="tw">' + html + "</div>";
     }
   }
 });
 document.getElementById("doc-body").innerHTML = marked.parse(SOURCE_MD);
+const BODY = document.getElementById("doc-body");
 
-// ── token tier & verdict di teks jadi badge (kosmetik murni, teks tetap sama) ──
-for (const el of document.querySelectorAll("#doc-body code")) {
+/* ── tier tokens → badges (kosmetik murni) ── */
+for (const el of BODY.querySelectorAll("code")) {
   const t = el.textContent.trim();
   if (t === "[LOCKED]") el.outerHTML = '<span class="tier locked">LOCKED</span>';
   else if (t === "[INTENT]") el.outerHTML = '<span class="tier intent">INTENT</span>';
   else if (t === "[ARTIFACT]") el.outerHTML = '<span class="tier artifact">ARTIFACT</span>';
 }
+/* ul yang mayoritas itemnya diawali tier badge → ledger rows */
+for (const ul of BODY.querySelectorAll("ul")) {
+  const lis = [...ul.children];
+  if (lis.length && lis.filter(li => li.firstElementChild && li.firstElementChild.classList &&
+      li.firstElementChild.classList.contains("tier")).length >= Math.ceil(lis.length / 2)) {
+    ul.classList.add("rules");
+  }
+}
 
-// ── tiap pre.mermaid dibungkus kartu: judul = heading terdekat di atasnya ──
-const dgs = Array.from(document.querySelectorAll("#doc-body pre.mermaid"));
+/* ── OQ lines → kartu (display only, md tidak berubah) ── */
+for (const li of BODY.querySelectorAll("li")) {
+  const cb = li.querySelector(':scope > input[type="checkbox"]');
+  let txt = li.textContent.trim(), status = null;
+  if (cb) { status = cb.checked ? "done" : "open"; }
+  else {
+    const mm = txt.match(/^\[( |x|~)\]\s*/);
+    if (mm) { status = mm[1] === "x" ? "done" : mm[1] === "~" ? "oos" : "open"; txt = txt.slice(mm[0].length); }
+  }
+  const m = txt.replace(/^\[( |x|~)\]\s*/, "").match(/^\**\s*(OQ-[A-Za-z0-9_-]+)\**\s*(?:\[?(P[123])\]?)?\s*[:.]?\s*([\s\S]*)$/);
+  if (!m || !/^OQ-/.test(m[1])) continue;
+  if (!status) status = "open";
+  const stTxt = status === "done" ? "RESOLVED" : status === "oos" ? "OUT OF SCOPE" : "OPEN";
+  const stCls = status === "done" ? "oq-st done" : status === "oos" ? "oq-st oos" : "oq-st";
+  li.classList.add("oq");
+  li.innerHTML = '<div class="oq-head"><span class="oq-tag"></span>' +
+    (m[2] ? '<span class="pchip ' + m[2].toLowerCase() + '">' + m[2] + "</span>" : "") +
+    '<span class="' + stCls + '"><span class="d"></span>' + stTxt + "</span></div>" +
+    '<div class="oq-body"></div>';
+  li.querySelector(".oq-tag").textContent = m[1];
+  li.querySelector(".oq-body").textContent = m[3];
+}
+
+/* ── code blocks: bar + lang + copy + tokenizer-mini (zero dependency) ── */
+const KW = /\b(function|return|if|else|elseif|elif|for|foreach|while|switch|case|break|continue|class|interface|trait|extends|implements|new|public|private|protected|static|const|let|var|def|fn|func|import|from|export|use|namespace|package|try|catch|finally|throw|async|await|null|true|false|int|string|bool|float|void|this|self|select|insert|update|delete|where|join|create|table)\b/g;
+function highlight(code) {
+  // escape dulu, lalu tandai comment/string dalam satu pass supaya keyword tidak nembus keduanya
+  let s = esc(code);
+  const parts = s.split(/((?:\/\/|#(?!\w)|--\s)[^\n]*|\/\*[\s\S]*?\*\/|&quot;(?:[^&]|&(?!quot;))*?&quot;|&#39;.*?&#39;|'[^'\n]*'|"[^"\n]*"|`[^`]*`)/g);
+  return parts.map((p, i) => {
+    if (i % 2 === 1) {
+      const isC = /^(\/\/|#|--\s|\/\*)/.test(p);
+      return '<span class="' + (isC ? "hl-c" : "hl-s") + '">' + p + "</span>";
+    }
+    return p.replace(KW, '<span class="hl-k">$1</span>')
+            .replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="hl-n">$1</span>');
+  }).join("");
+}
+for (const pre of BODY.querySelectorAll("pre:not(.mermaid)")) {
+  const codeEl = pre.querySelector("code");
+  const lang = pre.dataset.lang || "";
+  const wrap = document.createElement("div"); wrap.className = "cb";
+  wrap.innerHTML = '<div class="cb-bar"><span class="cb-lang"></span><button class="cp">copy</button></div>';
+  wrap.querySelector(".cb-lang").textContent = lang || "code";
+  pre.parentNode.insertBefore(wrap, pre);
+  wrap.appendChild(pre);
+  if (codeEl) codeEl.innerHTML = highlight(codeEl.textContent);
+  wrap.querySelector(".cp").addEventListener("click", async ev => {
+    try { await navigator.clipboard.writeText(codeEl ? codeEl.textContent : pre.textContent); } catch (e) {}
+    ev.target.textContent = "✓ copied"; setTimeout(() => ev.target.textContent = "copy", 1200);
+  });
+}
+
+/* ── diagram cards: judul = heading terdekat; toolbar + caption derivable ── */
+const dgs = Array.from(BODY.querySelectorAll("pre.mermaid"));
+const dgSrcs = dgs.map(p => p.textContent);
 dgs.forEach((pre, i) => {
   let h = null, el = pre;
   while (el && !h) {
@@ -244,37 +471,254 @@ dgs.forEach((pre, i) => {
     while (p) { if (/^H[1-4]$/.test(p.tagName)) { h = p; break } p = p.previousElementSibling; }
     el = el.parentElement && el.parentElement.id !== "doc-body" ? el.parentElement : null;
   }
-  const title = h ? h.textContent : "Diagram " + (i + 1);
-  const kind = (pre.textContent.trim().split(/\s/)[0] || "diagram");
+  const src = dgSrcs[i];
+  const kind = (src.trim().split(/\s/)[0] || "diagram");
+  let capBits = [];
+  if (/^(flowchart|graph)\b/.test(kind)) {
+    const nodes = new Set(); const clean = src.replace(/\[[^\]]*\]|\{[^}]*\}|\([^)]*\)/g, "");
+    let edges = 0;
+    for (const line of clean.split("\n")) {
+      if (!/-->|-\.->|==>/.test(line)) continue;
+      const ids = line.split(/--[^>]*?-->|-->|-\.->|==>/).map(t => t.trim().match(/^(\w+)/)).filter(Boolean).map(m => m[1]);
+      for (let k = 0; k + 1 < ids.length; k++) { edges++; nodes.add(ids[k]); nodes.add(ids[k + 1]); }
+    }
+    capBits = [nodes.size + " node", edges + " edge"];
+  } else if (/^sequenceDiagram/.test(kind)) {
+    const np = [...src.matchAll(/^\s*participant\s+\w+/gm)].length;
+    const nm = [...src.matchAll(/->>|-->>|--\)|-\)/g)].length;
+    capBits = [np + " participant", nm + " pesan"];
+  }
+  capBits.push("scroll = zoom · drag = geser");
   const card = document.createElement("div"); card.className = "dg-card"; card.id = "dg-" + (i + 1);
-  card.innerHTML = '<div class="dg-bar"><span class="t"></span><span class="k"></span></div><div class="dg-body"></div>';
-  card.querySelector(".t").textContent = title;
+  card.innerHTML = '<div class="dg-bar"><span class="t"></span><span class="k"></span>' +
+    '<div class="dg-tools"><button data-z="-1" title="zoom out">−</button><button data-z="1" title="zoom in">+</button>' +
+    '<button data-fit title="fit">⊡</button><button data-max title="fullscreen">⛶</button></div></div>' +
+    '<div class="dg-body"><div class="dg-inner"></div></div><div class="dg-cap"><span class="cap-t"></span></div>';
+  card.querySelector(".t").textContent = h ? h.textContent : "Diagram " + (i + 1);
   card.querySelector(".k").textContent = kind;
+  card.querySelector(".cap-t").textContent = capBits.join(" · ");
   pre.parentNode.insertBefore(card, pre);
-  card.querySelector(".dg-body").appendChild(pre);
+  card.querySelector(".dg-inner").appendChild(pre);
 });
 
-// ── nav: diagram dulu, baru bagian ──
-const navDg = document.getElementById("nav-dg"); navDg.innerHTML = "";
-if (!dgs.length) navDg.innerHTML = '<span style="font-size:12px;color:var(--ink-3)">tidak ada diagram di dokumen ini</span>';
-dgs.forEach((pre, i) => {
-  const card = pre.closest(".dg-card");
-  const a = document.createElement("a"); a.className = "dg"; a.href = "#" + card.id;
-  a.textContent = "D" + (i + 1) + " · " + card.querySelector(".t").textContent;
-  navDg.appendChild(a);
-});
-const navSec = document.getElementById("nav-sec");
-for (const h of document.querySelectorAll("#doc-body h2, #doc-body h3")) {
-  const a = document.createElement("a"); a.href = "#" + h.id;
-  if (h.tagName === "H3") a.className = "h3";
-  a.textContent = h.textContent;
-  navSec.appendChild(a);
+/* zoom / pan / fullscreen per kartu */
+for (const card of document.querySelectorAll(".dg-card")) {
+  const body = card.querySelector(".dg-body"), inner = card.querySelector(".dg-inner");
+  let z = 1, tx = 0, ty = 0;
+  const apply = () => inner.style.transform = `translate(${tx}px,${ty}px) scale(${z})`;
+  card._setZ = v => { z = v; apply() };
+  card._reset = () => { z = 1; tx = 0; ty = 0; apply() };
+  card.querySelectorAll("[data-z]").forEach(b => b.addEventListener("click", () => { z = Math.min(3, Math.max(.3, z + .2 * b.dataset.z)); apply() }));
+  card.querySelector("[data-fit]").addEventListener("click", () => card._reset());
+  card.querySelector("[data-max]").addEventListener("click", () => card.classList.toggle("max"));
+  body.addEventListener("wheel", e => { e.preventDefault(); z = Math.min(3, Math.max(.3, z - (e.deltaY > 0 ? .08 : -.08))); apply() }, { passive: false });
+  let drag = null;
+  body.addEventListener("pointerdown", e => { drag = { x: e.clientX - tx, y: e.clientY - ty }; body.classList.add("grabbing"); body.setPointerCapture(e.pointerId) });
+  body.addEventListener("pointermove", e => { if (!drag) return; tx = e.clientX - drag.x; ty = e.clientY - drag.y; apply() });
+  body.addEventListener("pointerup", () => { drag = null; body.classList.remove("grabbing") });
 }
 
-// ── mermaid render (theme ikut mode gelap/terang) ──
-const dark = matchMedia("(prefers-color-scheme: dark)").matches;
-mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: dark ? "dark" : "default" });
-mermaid.run({ nodes: document.querySelectorAll("pre.mermaid") });
+/* ── mermaid: theme base + tokens; render SETELAH fonts.ready (kalau ngga label kepotong) ── */
+function mmVars() {
+  const s = getComputedStyle(root), v = n => s.getPropertyValue(n).trim();
+  return {
+    darkMode: isDark(),
+    fontFamily: '"Inter",sans-serif', fontSize: "13px",
+    textColor: v("--text-1"), mainBkg: v("--surface-2"), nodeBorder: v("--border-2"),
+    primaryColor: v("--surface-2"), primaryTextColor: v("--text-1"), primaryBorderColor: v("--border-2"),
+    lineColor: v("--text-3"), secondaryColor: v("--brand-soft"), tertiaryColor: v("--surface"),
+    edgeLabelBackground: v("--bg"), clusterBkg: v("--surface"), clusterBorder: v("--border-2"),
+    actorBkg: v("--surface-2"), actorBorder: v("--border-2"), actorTextColor: v("--text-1"),
+    signalColor: v("--text-2"), signalTextColor: v("--text-2"),
+    activationBkgColor: v("--brand-soft"), noteBkgColor: v("--warn-soft"), noteTextColor: v("--text-1")
+  };
+}
+async function renderMermaid() {
+  if (!dgs.length) return;
+  await document.fonts.ready;
+  dgs.forEach((p, i) => { p.removeAttribute("data-processed"); p.innerHTML = esc(dgSrcs[i]); });
+  mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: "base",
+    themeVariables: mmVars(),
+    flowchart: { nodeSpacing: 36, rankSpacing: 40, curve: "basis", useMaxWidth: false },
+    sequence: { useMaxWidth: false, actorMargin: 40, messageMargin: 32 } });
+  await mermaid.run({ nodes: dgs });
+  colorizeDiagrams();
+  document.querySelectorAll(".dg-card").forEach(card => {
+    const body = card.querySelector(".dg-body"), svg = card.querySelector("svg");
+    if (!svg) return;
+    if (card._reset) card._reset(); // ukur di scale 1 — re-render (ganti tema) jangan makin ciut
+    const bb = svg.getBoundingClientRect();
+    const fit = Math.min(1, (body.clientWidth - 32) / bb.width, 488 / bb.height);
+    if (fit < 1 && card._setZ) card._setZ(fit);
+  });
+}
+
+/* ── warna per PERAN (deterministik dari topologi, BUKAN keyword konten) + legend ── */
+function colorizeDiagrams() {
+  const s = getComputedStyle(root), v = n => s.getPropertyValue(n).trim();
+  const ROLE = {
+    start: { fill: v("--brand-soft"), stroke: v("--brand-line") },
+    dec:   { fill: v("--intent-soft"), stroke: v("--intent") },
+    end:   { fill: v("--warn-soft"), stroke: v("--warn") },
+    proc:  { fill: v("--surface-2"), stroke: v("--border-2") }
+  };
+  const PAL = [ROLE.start, ROLE.dec, ROLE.end];
+  dgs.forEach((pre, ci) => {
+    const src = dgSrcs[ci], svg = pre.querySelector("svg"); if (!svg) return;
+    if (/^\s*(flowchart|graph)\b/m.test(src)) {
+      const decisions = new Set([...src.matchAll(/(\w+)\{/g)].map(m => m[1]));
+      const inD = {}, outD = {};
+      const clean = src.replace(/\[[^\]]*\]|\{[^}]*\}|\([^)]*\)/g, "");
+      for (const line of clean.split("\n")) {
+        if (!/-->|-\.->|==>/.test(line)) continue;
+        const ids = line.split(/--[^>]*?-->|-->|-\.->|==>/).map(t => t.trim().match(/^(\w+)/)).filter(Boolean).map(m => m[1]);
+        for (let i = 0; i + 1 < ids.length; i++) { outD[ids[i]] = (outD[ids[i]] || 0) + 1; inD[ids[i + 1]] = (inD[ids[i + 1]] || 0) + 1 }
+      }
+      const used = new Set();
+      svg.querySelectorAll(".node").forEach(node => {
+        const m = (node.id || "").match(/flowchart-(\w+?)-\d+$/); if (!m) return;
+        const id = m[1];
+        const key = decisions.has(id) ? "dec" : !(inD[id]) ? "start" : !(outD[id]) ? "end" : "proc";
+        used.add(key);
+        const role = ROLE[key];
+        node.querySelectorAll("rect,polygon,path").forEach(sh => { sh.style.fill = role.fill; sh.style.stroke = role.stroke });
+      });
+      const NAMA = { start: "start", dec: "keputusan", end: "end-state", proc: "proses" };
+      setLegend(pre, ["start", "dec", "end", "proc"].filter(k => used.has(k)).map(k => ({ label: NAMA[k], c: ROLE[k] })));
+    } else if (/^\s*sequenceDiagram\b/m.test(src)) {
+      const parts = [...src.matchAll(/^\s*participant\s+(\w+)(?:\s+as\s+(.+?))?\s*$/gm)].map(m => m[2] || m[1]);
+      if (!parts.length) return;
+      const rects = [...svg.querySelectorAll("rect.actor, .actor rect, rect.actor-top, rect.actor-bottom")];
+      // warna di-map dari LABEL aktor — urutan render DOM mermaid ≠ urutan participant (terukur)
+      rects.forEach((r, i) => {
+        const label = (r.parentElement && r.parentElement.textContent || "").trim();
+        let ix = parts.indexOf(label); if (ix < 0) ix = i % parts.length;
+        const c = PAL[ix % PAL.length]; r.style.fill = c.fill; r.style.stroke = c.stroke;
+      });
+      setLegend(pre, parts.map((p, i) => ({ label: p, c: PAL[i % PAL.length] })));
+    }
+  });
+}
+function setLegend(pre, items) {
+  const card = pre.closest(".dg-card"); if (!card || !items.length) return;
+  const cap = card.querySelector(".dg-cap");
+  let lg = cap.querySelector(".dg-legend");
+  if (!lg) { lg = document.createElement("span"); lg.className = "dg-legend"; cap.appendChild(lg) }
+  lg.innerHTML = "";
+  for (const it of items) {
+    const li = document.createElement("span"); li.className = "li";
+    const sw = document.createElement("span"); sw.className = "sw";
+    sw.style.background = it.c.fill; sw.style.borderColor = it.c.stroke;
+    li.appendChild(sw); li.appendChild(document.createTextNode(it.label));
+    lg.appendChild(li);
+  }
+}
+renderMermaid();
+
+/* ── kanan: "Di halaman ini" + scrollspy ── */
+const tocEl = document.getElementById("nav-toc");
+const dgByHeading = new Map();
+document.querySelectorAll(".dg-card").forEach((c, i) => {
+  const t = c.querySelector(".t").textContent; if (!dgByHeading.has(t)) dgByHeading.set(t, "D" + (i + 1));
+});
+for (const h of BODY.querySelectorAll("h2, h3")) {
+  const a = document.createElement("a"); a.href = "#" + h.id; a.className = "tl" + (h.tagName === "H3" ? " h3" : "");
+  a.textContent = h.textContent;
+  const d = dgByHeading.get(h.textContent);
+  if (d) { const s = document.createElement("span"); s.className = "dgl"; s.textContent = " · " + d; a.appendChild(s); }
+  tocEl.appendChild(a);
+}
+const tls = [...tocEl.querySelectorAll("a.tl")];
+if (tls.length) {
+  const io = new IntersectionObserver(es => {
+    for (const e of es) if (e.isIntersecting)
+      tls.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id));
+  }, { rootMargin: "-10% 0px -75% 0px" });
+  BODY.querySelectorAll("h2, h3").forEach(h => io.observe(h));
+}
+
+/* ── kiri: nav bundle dari MEGA_SEARCH (grup per lens) ── */
+if (window.MEGA_SEARCH) {
+  const self = window.MEGA_SELF || "";
+  const groups = new Map();
+  for (const p of MEGA_SEARCH) {
+    if (!groups.has(p.l)) groups.set(p.l, []);
+    groups.get(p.l).push(p);
+  }
+  const nav = document.getElementById("nav-bundle");
+  for (const [lens, pages] of groups) {
+    const g = document.createElement("div"); g.className = "g";
+    const btn = document.createElement("button"); btn.className = "g-h";
+    btn.textContent = lens; const tw = document.createElement("span"); tw.className = "tw"; tw.textContent = "▾";
+    btn.appendChild(tw); g.appendChild(btn);
+    const items = document.createElement("div"); items.className = "g-items";
+    for (const p of pages) {
+      const a = document.createElement("a"); a.href = window.MEGA_REL + p.h;
+      a.textContent = p.t;
+      if (p.h === self) a.className = "on";
+      if (p.q) { const c = document.createElement("span"); c.className = "cnt"; c.textContent = p.q + " OQ"; a.appendChild(c); }
+      items.appendChild(a);
+    }
+    g.appendChild(items);
+    btn.addEventListener("click", () => g.classList.toggle("closed"));
+    nav.appendChild(g);
+  }
+}
+
+/* ── table sort (klik header) ── */
+BODY.querySelectorAll("thead th").forEach((th, i) => th.addEventListener("click", () => {
+  const tb = th.closest("table").tBodies[0]; if (!tb) return;
+  const rows = [...tb.rows];
+  const dir = th.dataset.d = th.dataset.d === "a" ? "d" : "a";
+  rows.sort((a, b) => (a.cells[i] ? a.cells[i].textContent : "").localeCompare(b.cells[i] ? b.cells[i].textContent : "") * (dir === "a" ? 1 : -1));
+  rows.forEach(r => tb.appendChild(r));
+}));
+
+/* ── ⌘K / Ctrl-K search: bundle = MEGA_SEARCH (deep-link heading); single-file = heading halaman ini ── */
+const kbar = document.getElementById("kbar"), kin = document.getElementById("q"), kres = document.getElementById("kres");
+if (!/Mac/.test(navigator.platform)) document.getElementById("kkbd").textContent = "Ctrl K";
+const kescape = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+function kEntries() {
+  if (window.MEGA_SEARCH) return MEGA_SEARCH.map(p => ({ ...p, h: window.MEGA_REL + p.h }));
+  return [{ h: "", t: document.title, l: "@@BADGE@@",
+    hd: [...BODY.querySelectorAll("h2,h3")].map(h => [h.id, h.textContent]), x: BODY.textContent.replace(/\s+/g, " ") }];
+}
+function kRender(q) {
+  const v = q.trim().toLowerCase(); kres.innerHTML = "";
+  const terms = v.split(/\s+/).filter(Boolean);
+  let hits = 0;
+  for (const p of kEntries()) {
+    const hay = (p.t + " " + p.hd.map(h => h[1]).join(" ") + " " + p.x).toLowerCase();
+    if (terms.length && !terms.every(t => hay.indexOf(t) >= 0)) continue;
+    if (++hits > 20) break;
+    const hds = terms.length ? p.hd.filter(h => terms.some(t => h[1].toLowerCase().indexOf(t) >= 0)).slice(0, 4) : p.hd.slice(0, 4);
+    const div = document.createElement("div");
+    let snip = "";
+    if (terms.length) {
+      const ix = p.x.toLowerCase().indexOf(terms[0]);
+      if (ix >= 0) {
+        const a = Math.max(0, ix - 60), b = Math.min(p.x.length, ix + 90);
+        const rx = new RegExp("(" + terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")", "gi");
+        snip = "…" + kescape(p.x.slice(a, b)).replace(rx, "<mark>$1</mark>") + "…";
+      }
+    }
+    div.innerHTML = '<a href="' + (p.h || "#") + '">' + kescape(p.t) + '<span class="kind">' + kescape(p.l) + "</span></a>" +
+      hds.map(h => '<a href="' + (p.h || "") + "#" + h[0] + '" style="padding-left:26px;font-size:12.5px">' + kescape(h[1]) + "</a>").join("") +
+      (snip ? '<div class="none" style="padding:2px 12px 8px">' + snip + "</div>" : "");
+    kres.appendChild(div);
+  }
+  if (!hits) kres.innerHTML = '<div class="none">tidak ketemu — coba kata lain</div>';
+  kres.querySelectorAll("a").forEach(a => a.addEventListener("click", kClose));
+}
+function kOpen() { kbar.classList.add("open"); kin.value = ""; kRender(""); kin.focus() }
+function kClose() { kbar.classList.remove("open") }
+document.getElementById("ksearch").addEventListener("click", kOpen);
+kin.addEventListener("input", () => kRender(kin.value));
+kbar.addEventListener("click", e => { if (e.target === kbar) kClose() });
+addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); kOpen() }
+  if (e.key === "Escape") { kClose(); document.querySelectorAll(".dg-card.max").forEach(c => c.classList.remove("max")) }
+});
 </script>
 </body>
 </html>
