@@ -251,6 +251,12 @@ pre.mermaid .edgeLabel rect{fill:var(--bg)!important}
 .dg-legend .sw{width:10px;height:10px;border-radius:3px;border:1px solid;display:inline-block}
 .dg-card.max{position:fixed;inset:12px;z-index:70;margin:0;box-shadow:0 24px 80px rgba(0,0,0,.35)}
 .dg-card.max .dg-body{max-height:none;height:calc(100% - 64px)}
+.dg-err{padding:14px 16px;cursor:default}
+.dg-err-msg{margin:0 0 10px;font-size:13.5px;color:var(--danger);font-weight:500}
+.dg-err details{border:1px solid var(--border);border-radius:var(--r);background:var(--surface);padding:0 12px}
+.dg-err summary{cursor:pointer;padding:8px 0;font-size:12px;font-weight:600;color:var(--text-2)}
+.dg-err-src{margin:0;padding:10px 0 12px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;
+  line-height:1.6;color:var(--text-2);white-space:pre}
 
 /* prev/next */
 .pn{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:44px 0 0}
@@ -510,7 +516,7 @@ for (const card of document.querySelectorAll(".dg-card")) {
   card._reset = () => { z = 1; tx = 0; ty = 0; apply() };
   card.querySelectorAll("[data-z]").forEach(b => b.addEventListener("click", () => { z = Math.min(3, Math.max(.3, z + .2 * b.dataset.z)); apply() }));
   card.querySelector("[data-fit]").addEventListener("click", () => card._reset());
-  card.querySelector("[data-max]").addEventListener("click", () => card.classList.toggle("max"));
+  card.querySelector("[data-max]").addEventListener("click", () => { card.classList.toggle("max"); fitCard(card); });
   body.addEventListener("wheel", e => { e.preventDefault(); z = Math.min(3, Math.max(.3, z - (e.deltaY > 0 ? .08 : -.08))); apply() }, { passive: false });
   let drag = null;
   body.addEventListener("pointerdown", e => { drag = { x: e.clientX - tx, y: e.clientY - ty }; body.classList.add("grabbing"); body.setPointerCapture(e.pointerId) });
@@ -536,21 +542,53 @@ function mmVars() {
 async function renderMermaid() {
   if (!dgs.length) return;
   await document.fonts.ready;
-  dgs.forEach((p, i) => { p.removeAttribute("data-processed"); p.innerHTML = esc(dgSrcs[i]); });
   mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: "base",
     themeVariables: mmVars(),
     flowchart: { nodeSpacing: 36, rankSpacing: 40, curve: "basis", useMaxWidth: false },
     sequence: { useMaxWidth: false, actorMargin: 40, messageMargin: 32 } });
-  await mermaid.run({ nodes: dgs });
+  // PER DIAGRAM, terisolasi: satu diagram rusak TIDAK BOLEH ngebunuh render
+  // diagram lain / warna / legend / auto-fit (kejadian: batch run() throw →
+  // semua post-processing mati diam-diam). Error = ditampilkan jujur, bukan blank.
+  for (let i = 0; i < dgs.length; i++) {
+    const p = dgs[i];
+    p.removeAttribute("data-processed"); p.innerHTML = esc(dgSrcs[i]); p.style.display = "";
+    const card = p.closest(".dg-card");
+    const old = card && card.querySelector(".dg-err"); if (old) old.remove();
+    let failed = false, msg = "";
+    try { await mermaid.run({ nodes: [p] }); } catch (e) {
+      failed = true; msg = e && e.message ? String(e.message).split("\n").slice(0, 3).join(" · ") : "syntax error";
+    }
+    const svg = p.querySelector("svg");
+    if (!failed && !svg) { failed = true; msg = "mermaid tidak menghasilkan diagram"; }
+    if (failed && card) {
+      p.style.display = "none"; // sembunyikan bomb svg mermaid — panel kita yang bicara
+      const d = document.createElement("div"); d.className = "dg-err";
+      d.innerHTML = '<p class="dg-err-msg"></p><details open><summary>Source diagram (perbaiki di md-nya — HTML ini turunan)</summary><pre class="dg-err-src"></pre></details>';
+      d.querySelector(".dg-err-msg").textContent = "⚠️ Diagram gagal dirender — syntax error di source mermaid: " + msg;
+      d.querySelector(".dg-err-src").textContent = dgSrcs[i].trim();
+      card.querySelector(".dg-body").appendChild(d);
+      const cap = card.querySelector(".cap-t"); if (cap) cap.textContent = "render error — cek source di atas, benerin di file md";
+    }
+  }
   colorizeDiagrams();
-  document.querySelectorAll(".dg-card").forEach(card => {
-    const body = card.querySelector(".dg-body"), svg = card.querySelector("svg");
-    if (!svg) return;
-    if (card._reset) card._reset(); // ukur di scale 1 — re-render (ganti tema) jangan makin ciut
-    const bb = svg.getBoundingClientRect();
-    const fit = Math.min(1, (body.clientWidth - 32) / bb.width, 488 / bb.height);
-    if (fit < 1 && card._setZ) card._setZ(fit);
-  });
+  document.querySelectorAll(".dg-card").forEach(fitCard);
+}
+// auto-fit: prioritas KETERBACAAN — floor scale 0.5; diagram yang tetap
+// kegedean di-pan/zoom/fullscreen, bukan dikecilin sampai jadi semut.
+function fitCard(card) {
+  const body = card.querySelector(".dg-body"), svg = card.querySelector("svg");
+  if (!svg || !card._setZ || svg.parentElement.style.display === "none") return;
+  const inner = card.querySelector(".dg-inner");
+  inner.style.justifyContent = ""; inner.style.transformOrigin = "";
+  card._reset(); // ukur di scale 1 — re-render (ganti tema) jangan makin ciut
+  const bb = svg.getBoundingClientRect();
+  const availW = body.clientWidth - 32;
+  const availH = (card.classList.contains("max") ? body.clientHeight : 560) - 32;
+  let fit = Math.min(1, availW / bb.width, availH / bb.height);
+  if (fit < 0.5) fit = 0.5;
+  if (fit < 1) card._setZ(fit);
+  // masih overflow setelah floor → anchor KIRI: initial view = awal alur, sisanya di-pan
+  if (bb.width * fit > availW) { inner.style.justifyContent = "flex-start"; inner.style.transformOrigin = "0 0"; }
 }
 
 /* ── warna per PERAN (deterministik dari topologi, BUKAN keyword konten) + legend ── */
