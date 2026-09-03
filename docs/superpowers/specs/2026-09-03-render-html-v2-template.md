@@ -70,3 +70,24 @@ kosong di single-file, tokenizer-mini ada, strip warn class.
 
 plugin 7.22.1 → 7.23.0 (marketplace match). Script + assets — tidak ada skill version.
 MCP pin review tidak tersentuh (marked/mermaid TIDAK di-bump — hanya template).
+
+## Amendemen (7.23.1) — diagram gede & error handling (temuan owner, hari rilis)
+
+Temuan lapangan: (a) diagram error → "ga muncul" — batch `mermaid.run({nodes: dgs})`
+throw pada SATU diagram rusak dan MEMBUNUH semua post-processing (warna/legend/auto-fit
+tidak jalan; terverifikasi `transform: none` di semua kartu); (b) diagram gede jadi
+"kecil2 sekali" — auto-fit min(lebar, tinggi) tanpa lantai men-scale hingga tak terbaca;
+(c) initial view diagram lebar nampilin TENGAH alur (origin 50%), bukan awalnya.
+
+Fix (template-only):
+1. **Render per diagram, terisolasi** — loop `mermaid.run({nodes:[p]})` + try/catch;
+   gagal → pre disembunyikan (bomb svg mermaid ikut hilang) dan kartu menampilkan
+   **panel error jujur** `.dg-err`: pesan parse mermaid + source diagram (details, open)
+   + caption "render error — benerin di file md". Diagram lain tetap dirender penuh.
+   Sukses tanpa `<svg>` juga dihitung gagal.
+2. **Fit floor 0.5** — auto-fit tidak pernah di bawah 0.5 (keterbacaan > muat-utuh);
+   sisanya urusan pan/wheel-zoom/fullscreen. Fullscreen toggle kini re-fit ke box besar.
+3. **Anchor kiri saat overflow** — masih overflow setelah floor → `justify-content:
+   flex-start` + `transform-origin: 0 0`: initial view = AWAL alur.
+
+Tests: `tests/render-html/` §O (5 pin). Versions: plugin 7.23.0 → 7.23.1.

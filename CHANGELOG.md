@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.23.1] - 2026-09-03 — render-html: diagram gede & error handling jujur
+
+**Spec: §Amendemen (7.23.1) di `2026-09-03-render-html-v2-template.md`. Temuan owner hari rilis: diagram gede "error ga muncul atau jadinya kecil2 sekali" + satu state diagram error tanpa pesan.**
+
+### Fixed
+
+- **Satu diagram rusak membunuh semuanya**: batch `mermaid.run()` throw pada satu diagram → warna/legend/auto-fit SEMUA diagram mati diam-diam (terverifikasi `transform: none`). Kini render per diagram terisolasi (try/catch per node) — diagram lain tetap utuh.
+- **Error jujur, bukan blank**: diagram gagal → panel `.dg-err` di kartunya — pesan parse mermaid + source diagram ditampilkan + instruksi "benerin di file md-nya" (bomb svg mermaid disembunyikan). Sukses tanpa `<svg>` juga dihitung gagal.
+- **Auto-fit floor 0.5**: diagram besar tidak lagi di-scale sampai tak terbaca; sisanya pan/wheel-zoom/fullscreen (fullscreen kini re-fit ke box besar).
+- **Anchor kiri saat overflow**: initial view diagram lebar = AWAL alur, bukan tengahnya.
+- Tests: `tests/render-html/` §O (5 pin).
+
 ## [7.23.0] - 2026-09-03 — render-html template v2 "developer platform"
 
 **Spec `docs/superpowers/specs/2026-09-03-render-html-v2-template.md`, riset `research/2026-09-03-render-html-v2-design.md` (4 ronde owner review + mockup fungsional). Owner: v1 "kuno dan AI slop", brief eksplisit Mintlify × Stripe × Vercel × Linear. Moat fitur utuh: offline by construction, deterministik zero-model-token, md = ground truth.**

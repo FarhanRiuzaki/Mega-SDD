@@ -169,4 +169,14 @@ grep -q 'class="st warn"' "$H" && ok "N8 strip warns on open-questions count" ||
 grep -q "function highlight" "$T" && grep -q "hl-k" "$T" && ok "N9 tokenizer-mini highlighter (zero dependency)" || bad "N9 highlighter missing"
 grep -qE 'src="http|href="http|url\(http' "$T" && bad "N10 template references an external resource" || ok "N10 template itself stays offline"
 
+echo "── O: diagram gede & error handling (7.23.1 — owner field finding day-1) ──"
+grep -qF 'mermaid.run({ nodes: [p] })' "$T" && grep -q "satu diagram rusak TIDAK BOLEH" "$T" \
+  && ok "O1 per-diagram isolated render (one broken diagram can't kill the rest)" || bad "O1 isolation missing"
+grep -q "dg-err-msg" "$T" && grep -q "syntax error di source mermaid" "$T" && grep -q "dg-err-src" "$T" \
+  && ok "O2 honest error panel: parse message + diagram source shown" || bad "O2 error panel missing"
+grep -qF 'if (fit < 0.5) fit = 0.5' "$T" && ok "O3 auto-fit floor 0.5 (readability over fit-whole)" || bad "O3 fit floor missing"
+grep -q "anchor KIRI" "$T" && grep -qF 'justifyContent = "flex-start"' "$T" \
+  && ok "O4 overflow anchors LEFT (initial view = start of the flow)" || bad "O4 left anchor missing"
+grep -qF 'card.classList.toggle("max"); fitCard(card)' "$T" && ok "O5 fullscreen toggle re-fits" || bad "O5 fullscreen refit missing"
+
 echo; [ $err -eq 0 ] && { echo "test-render-html: ALL PASS"; exit 0; } || { echo "test-render-html: FAILED"; exit 1; }
