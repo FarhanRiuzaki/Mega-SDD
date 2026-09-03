@@ -91,3 +91,32 @@ Fix (template-only):
    flex-start` + `transform-origin: 0 0`: initial view = AWAL alur.
 
 Tests: `tests/render-html/` §O (5 pin). Versions: plugin 7.23.0 → 7.23.1.
+
+## Amendemen 2 (7.23.2) — field run mcf-fincore: state diagram ciut + 55 label rusak
+
+Temuan owner (KB mcf-fincore, 22 blok mermaid): (a) stateDiagram tampil semut — `useMaxWidth`
+default TRUE untuk tipe selain flowchart/sequence memaksa svg muat lebar container, fit-floor
+tak pernah kepanggil; (b) 55+ baris transisi state gagal parse.
+
+Ground truth via `mermaid.parse()` (vendored), semua diukur bukan ditebak:
+- Label transisi state TIDAK BOLEH mengandung `:` (kedua) atau `;` (terminator statement) —
+  **quoting tidak menolong dua-duanya**; `"` sendiri LEGAL di label state (jangan over-flag).
+- Node text ber-quote dengan kutip ganda DI DALAM (`J["…GLLink("a,b")…"]`) tetap rusak —
+  celah tokenizer lama (dianggap "sudah quoted, aman").
+
+Fix:
+1. **Template**: `useMaxWidth:false` untuk SEMUA tipe (state/er/class/journey/gantt/timeline/pie);
+   panel error ketambahan hint deterministik saat pola state-label `:`/`;` terdeteksi.
+2. **Tokenizer (`_lib/mermaid_syntax.py`)**: Rule 7 baru — label transisi state dengan `:`/`;`
+   → `mermaid_syntax_invalid` (additive, Rule 1-3 di body state tidak berubah); Rule 3 varian
+   quoted — kutip dalam node text yang sudah ber-quote → flagged.
+3. **Kontrak** (`mermaid-emission-rules.md` Rule 7 + PRD-kontrak §3): guard pakai `—`,
+   sitasi tanpa colon (`file.cs 112-134`), pemisah klausa `·`, atau pindah ke `note`;
+   saran lama "wrap in double-quotes" untuk label state DIKOREKSI (tidak menolong, terukur).
+4. **Repin**: `test-kb-flows-syntax-lock` 2→3 issue (fixture bad `(controller:42)` = true
+   positive yang dulu lolos); fixture good dikoreksi (dulu meng-encode saran lama yang salah).
+5. Field fix: 8 modul KB mcf-fincore (55 baris + quote/semicolon) diperbaiki + re-render —
+   22/22 blok parse OK.
+
+Tests: `tests/mermaid-flows/test-state-label-colon.sh` (A1-A3, B1-B3, C, D, E).
+Versions: plugin 7.23.1 → 7.23.2.

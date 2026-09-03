@@ -47,7 +47,7 @@ Reversed amend record.
 ```mermaid
 stateDiagram-v2
     [*] --> Pending
-    Pending --> Reversed: "amend applied (controller:42)"
+    Pending --> Reversed: amend applied (controller 42)
     Reversed --> [*]
 ```
 

@@ -16,6 +16,7 @@
 - Rule 4 — Edge labels follow the same quoting discipline
 - Rule 5 — Avoid raw code expressions in node text; paraphrase
 - Rule 6 — `classDef` and `style` go at end of block; verify spelling
+- Rule 7 — stateDiagram transition labels: NEVER `:` or `;` (quoting does not help)
 - Reference patterns — known-good examples
 - Anti-pattern catalog (validator-detected)
 - Cross-references
@@ -110,6 +111,28 @@ Common typos:
 | `style A fill:red` (no quotes for color word) | `style A fill:#ff0000` (hex or `style A fill:red` is OK; both valid) |
 | `classDef important: fill:red` (colon after name) | `classDef important fill:red` (no colon between class name and props) |
 
+## Rule 7 — stateDiagram transition labels: NEVER `:` or `;` (quoting does not help)
+
+`State --> State: label` — everything after the first `:` is the label; the mermaid
+grammar rejects any further `:` inside it and treats `;` as a statement terminator
+(the rest of the label becomes parser garbage). **Unlike node text, double-quoting does
+NOT rescue either** — while a plain `"` in a state label is fine (both facts
+ground-truthed against `mermaid.parse()`, 2026-09-03 field failure: 55+ extracted KB
+state-diagram transitions carrying `guard:` prefixes, `file.cs:112-134` citations and
+`…='A'; next` clauses — every such diagram failed to render). Guards use `—`; citations
+drop the colon (`file.cs 112-134`); clause separators use `·` — or move the detail to a
+`note` block.
+
+| ❌ Wrong (parse error) | ✅ Right |
+|---|---|
+| `A --> B: InsertBPKB (guard: not duplicate) / Repo.cs:112` | `A --> B: InsertBPKB (guard — not duplicate) / Repo.cs 112` |
+| `A --> B: CaStatus='A'; PO generated` | `A --> B: CaStatus='A' · PO generated` |
+| `A --> B: "guard: x / file.cs:1"` (quoting does NOT help) | `A --> B: guard — x / file.cs 1` |
+| citation must stay precise? | put it in a `note right of B` block instead |
+
+Detected by the shared tokenizer (`_lib/mermaid_syntax.py`, Rule 7) at the always-on
+flow gates; the render-html error panel carries the same hint at display time.
+
 ---
 
 ## Reference patterns — known-good examples
@@ -137,7 +160,7 @@ stateDiagram-v2
     Rejected --> Draft: "user edits"
 ```
 
-State-machine syntax uses `:` for transition labels — wrap label in double-quotes if it contains commas/parens/special chars.
+State-machine syntax uses `:` for transition labels — and the label may NEVER contain another `:` (Rule 7; quoting does NOT help there, unlike node text). Commas/parens are fine in state labels.
 
 ### Pattern C — Decision with multiple branches
 

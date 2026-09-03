@@ -223,11 +223,39 @@ def check_mermaid_syntax(blocks, section):
             i = span_end
         return results
 
+    # Rule 7 (stateDiagram only): a transition label may NEVER contain ':' or
+    # ';' — quoting does NOT rescue either (ground-truthed against
+    # mermaid.parse(); ';' terminates the statement mid-label). '"' alone is
+    # FINE there (also ground-truthed — do not over-flag it). The field
+    # failure shapes: "guard: ...", a "file.cs:112-134" citation,
+    # "...='A'; next clause". `[*]` endpoints included.
+    _STATE_TRANSITION = re.compile(r"^\s*(\[\*\]|[A-Za-z][\w]*)\s*-->\s*(\[\*\]|[A-Za-z][\w]*)\s*:(.*)$")
+    _STATE_LABEL_KILLERS = set(":;")
+
     for block_start, block_end, body in blocks:
+        _, first_line = _first_meaningful_line(body)
+        is_state = bool(first_line and first_line.split()[0].startswith("stateDiagram"))
         for line_num, line in body:
             stripped = line.strip()
             if not stripped:
                 continue
+            if is_state:
+                tm = _STATE_TRANSITION.match(line)
+                hits = sorted(_STATE_LABEL_KILLERS & set(tm.group(3))) if tm else []
+                if hits:
+                    section_issues.append({
+                        "halt_type": "mermaid_syntax_invalid",
+                        "section": section,
+                        "line_number": line_num,
+                        "rule_violated": "Rule 7 — " + "".join(hits) + " inside a stateDiagram transition label",
+                        "excerpt": stripped[:120],
+                        "suggested_fix": ("a state transition label may not contain ':' or ';' "
+                                          "(use '—'/space/· instead: 'guard — x', 'file.cs 112-134', "
+                                          "'…=A · next') or move the detail into a `note` block; "
+                                          "quoting does NOT fix either"),
+                    })
+                # NO continue — Rule 1-3 node-text checks below keep their
+                # pre-Rule-7 behavior on state bodies (locked by the syntax-lock test)
             if any(stripped.lower().startswith(p.lower()) for p in SKIP_LINE_PREFIXES):
                 continue
 
@@ -250,9 +278,21 @@ def check_mermaid_syntax(blocks, section):
                 content = content_raw
                 if not content.strip():
                     continue
-                # Fully quoted → producer-compliant; skip Rule 1 check
-                # (still check Rule 2 inside the quoted segment loop above)
+                # Fully quoted → producer-compliant for Rule 1 — but INNER
+                # unescaped quotes still break the parse (field: J["...GLLink("a,b")..."]
+                # — the inner '"' ends the text early). Rule 3, quoted variant.
                 if is_quoted_strictly(content):
+                    inner = content.strip()[1:-1]
+                    if re.search(r'(?<!\\)"', inner):
+                        section_issues.append({
+                            "halt_type": "mermaid_syntax_invalid",
+                            "section": section,
+                            "line_number": line_num,
+                            "node_id": node_id,
+                            "rule_violated": "Rule 3 — unescaped \" INSIDE quoted node text",
+                            "excerpt": stripped[:120],
+                            "suggested_fix": "replace inner double quotes with ' or &quot;",
+                        })
                     continue
                 # Simple identifier → Mermaid accepts without quoting (Rule 1
                 # recommends quoting always, but we don't fail on plain words)
