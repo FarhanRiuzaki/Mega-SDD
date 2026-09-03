@@ -86,7 +86,11 @@ Show the user (**human framing FIRST, technical detail demoted — 7.21.1**, spe
 
 ```
 [{i}/{N}] {OQ tag}  {priority}  {category}
-  Konteks: {1–2 kalimat bahasa manusia common ID/EN — situasi bisnisnya; jargon tidak boleh jadi subjek kalimat}
+  Konteks: {1–2 kalimat bahasa manusia common ID/EN — situasi bisnisnya + posisi di alur (flow F-*/step/aktor) bila ada; jargon tidak boleh jadi subjek kalimat}
+  Yang udah ketahuan: {fakta yang kode UDAH kasih tau — meaning-first, citation di kurung}
+  Yang belum: {gap persisnya — "belum ketahuan dari kode: …"}
+  Kenapa penting: {P-level dijelasin sebagai dampak — apa yang ke-blok / kehitung salah kalau ga dijawab}
+  Contoh: {SATU skenario konkret NETRAL yang mengilustrasikan pertanyaannya (7.22.0 — lihat rail contoh di bawah); skip bila tidak derivable}
   Maksudnya: {apa yang SEBENARNYA diminta dari user — keputusan/aturan/informasi apa; satu kalimat}
   ── detail teknis ──
   Doc: {doc filename} → {section anchor if available}
@@ -98,6 +102,8 @@ Framing rules (mandatory, every OQ, regardless of how the stored text was writte
 - **Translate, never rewrite:** the `Konteks`/`Maksudnya` lines are a DISPLAY-layer translation into common Indonesian/English; the stored OQ text is quoted verbatim under `Teks asli` and the artifact is never edited by displaying it.
 - **No invented facts:** the framing derives ONLY from the OQ text + its citations/probe findings. Anything not derivable stays honest — "belum ketahuan dari kode" — never filled in from general knowledge (the no-invention rail applies to framing too).
 - **Meaning-first evidence:** when probe/recommendation findings are narrated, lead with the business meaning ("hasilnya dipakai modul credit analysis buat hitung skor"), the `file:line` evidence follows in parentheses — never a bare citation dump.
+- **Rail contoh (7.22.0):** the `Contoh:` scenario illustrates the QUESTION, never implies an answer — it must be derivable from the flows/code/citations at hand, its entities/numbers clearly hypothetical, and it ends where the question begins ("…scoring baca yang mana?"). Not derivable → SKIP the slot honestly; a fabricated scenario is worse than none.
+- **Bounded:** the framing block stays ≤ ~7 lines; a slot with no data is skipped, never padded — a 20-OQ walk must not read like a novel.
 - Option labels are full words with keterangan — never truncated/garbled labels.
 
 When `vault.json` has a `scope` field, prepend scope context to the panel (and to each `AskUserQuestion`):

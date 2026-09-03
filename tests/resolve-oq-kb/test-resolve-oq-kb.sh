@@ -74,7 +74,20 @@ grep -q "Meaning-first narration (7.21.1)" "$RC" && grep -q "never a bare citati
   && ok "G5 probe/rationale narration is meaning-first" || bad "G5 meaning-first invariant missing"
 grep -q "Verbatim is necessary but NOT sufficient (7.21.1)" "$OL" \
   && ok "G6 keterangan contract rule 1 extended" || bad "G6 keterangan extension missing"
-grep -q "human-framed first (7.21.1)" "$RO" && ok "G7 SKILL Step 2 routes the framing" || bad "G7 SKILL routing missing"
+grep -q "human-framed first (7.21.1, extended 7.22.0)" "$RO" && ok "G7 SKILL Step 2 routes the framing" || bad "G7 SKILL routing missing"
+# (G7 repinned at 7.22.0: the SKILL line deliberately grew the extended-slots marker)
 grep -q "never truncated/garbled labels" "$IW" && ok "G8 full option labels pinned" || bad "G8 label rule missing"
+
+echo "── H: context slots + recommendation keterangan (7.22.0) ──"
+for slot in "Yang udah ketahuan:" "Yang belum:" "Kenapa penting:" "Contoh:"; do
+  grep -qF "$slot" "$IW" && ok "H1 slot present: $slot" || bad "H1 slot missing: $slot"
+done
+grep -q "Rail contoh (7.22.0)" "$IW" && grep -q "never implies an answer" "$IW" \
+  && ok "H2 example-neutrality rail" || bad "H2 neutrality rail missing"
+grep -q "a fabricated scenario is worse than none" "$IW" && ok "H3 skip-honest beats fabricate" || bad "H3 skip-honest rail missing"
+grep -q "must not read like a novel" "$IW" && ok "H4 bounded framing (≤7 lines, no padding)" || bad "H4 bounded rail missing"
+grep -q "Keterangan shape — 4 bagian" "$RC" && grep -q "Kalau dipilih:" "$RC" && grep -q "Kalau ternyata salah:" "$RC" \
+  && ok "H5 recommendation keterangan: jawaban + dasar + konsekuensi + fallback" || bad "H5 recommendation shape missing"
+grep -q "extended 7.22.0" "$RO" && ok "H6 SKILL Step 2 routes the extended shape" || bad "H6 SKILL routing missing"
 
 echo; [ $err -eq 0 ] && { echo "test-resolve-oq-kb: ALL PASS"; exit 0; } || { echo "test-resolve-oq-kb: FAILED"; exit 1; }
