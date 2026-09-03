@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.23.0] - 2026-09-03 — render-html template v2 "developer platform"
+
+**Spec `docs/superpowers/specs/2026-09-03-render-html-v2-template.md`, riset `research/2026-09-03-render-html-v2-design.md` (4 ronde owner review + mockup fungsional). Owner: v1 "kuno dan AI slop", brief eksplisit Mintlify × Stripe × Vercel × Linear. Moat fitur utuh: offline by construction, deterministik zero-model-token, md = ground truth.**
+
+### Changed
+
+- **`assets/render-html/template.html` — rewrite penuh ke arah developer platform:**
+  - Layout 3 zona: nav bundle kiri (grup per lens dari `search-index.js`, active state, badge OQ count, collapsible), konten + breadcrumb + prev/next di tengah, "Di halaman ini" + scrollspy kanan. Single-file mode: kolom kiri di-omit otomatis.
+  - Tipografi Inter + JetBrains Mono **vendored woff2** (`assets/render-html/fonts/`, ~70KB latin — inline mode data-URI, `--assets-dir` mode file relatif; fallback system stack, fail-open kalau font hilang). Tokens semantic 3-state theme (system default + toggle persist localStorage).
+  - Mermaid di-brand: `theme: "base"` + `themeVariables` dari token halaman, spacing rapat, render setelah `document.fonts.ready` (label kepotong kalau tidak), re-render saat ganti tema/skema OS. **Warna per PERAN deterministik** (flowchart: start/keputusan/end-state/proses dari topologi source; sequence: per-participant, warna di-map dari label aktor — urutan DOM mermaid ≠ urutan participant) + **legend derivable** di footer kartu.
+  - Kartu diagram interaktif: zoom ±/fit/fullscreen, wheel-zoom + drag-pan, auto-fit (reset transform sebelum ukur — anti compounding-ciut), caption derivable ("N node · M edge").
+  - Komponen: audience & budget-warning jadi callout, stat band (angka merah saat open questions/conflict > 0), tier rows jadi ledger, OQ line jadi kartu ber-chip P-level + status (display only), code block first-class (language tab + copy + tokenizer-mini highlight zero-dependency), tabel sortable, ⌘K/Ctrl-K search modal di SEMUA halaman (bundle = `search-index.js` 7.19.0 tak berubah; single-file = heading halaman), print CSS, responsive 3→2→1 kolom.
+- **`scripts/render-html.sh`** — pipeline tidak berubah; patch: inject nav data (`MEGA_SELF`/`MEGA_REL` + include `search-index.js`) + prev/next + breadcrumb per halaman bundle; `SEARCH_JS` blob + searchbox pindah ke template; strip `warn` class; lane font di assets; **bug v1 fixed**: halaman nested di mode `--assets-dir` kini pakai prefix relatif yang benar (dulu `assets/` selalu — putus di subfolder).
+- Tests: `tests/render-html/` — pin K4 di-REPIN sadar (⌘K global supersede box-on-index-only) + section N (10 pin v2); seluruh pin offline/self-contained/slug-replica/provenance lama tetap.
+
 ## [7.22.1] - 2026-09-03 — KB mode: context slots derive from the home module
 
 **Spec: §Amendemen (7.22.1) appended to `docs/superpowers/specs/2026-09-03-oq-context-slots.md`. Owner field finding on the acquisition/CAS KB walk: vault OQs display with full context, KB OQs display bare ("contextnya ga kebawa").**

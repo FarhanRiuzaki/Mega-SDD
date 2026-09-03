@@ -42,6 +42,10 @@ flowchart LR
 - `[INTENT]` R-14 notifikasi
 - OQ-A03 pertanyaan terbuka
 - penutup </script> nakal di teks
+
+## 6. Open Questions
+
+- [ ] OQ-A04 [P1] pertanyaan blocking terbuka
 MD
 
 echo "── A: self-contained + offline + frontmatter stripped ──"
@@ -130,7 +134,10 @@ assert "Denda harian" in a["x"], a["x"]
 EOF
 grep -q 'id="q"' "$WORK/kb3/html/index.html" && grep -q "search-index.js" "$WORK/kb3/html/index.html" \
   && ok "K3 index page carries the search box + include" || bad "K3 search UI missing on index"
-grep -q 'id="q"' "$WORK/kb3/html/modules/a.prd.html" && bad "K4 search UI leaked onto a content page" || ok "K4 search lives on the index only"
+# K4 REPINNED at 7.23.0 (spec 2026-09-03 template v2): the box-on-index-only design is
+# superseded by the global ⌘K modal — content pages now carry the search UI + data include.
+grep -q 'id="q"' "$WORK/kb3/html/modules/a.prd.html" && grep -q 'search-index.js"' "$WORK/kb3/html/modules/a.prd.html" \
+  && ok "K4 content pages carry the global ⌘K search (repinned 7.23.0)" || bad "K4 global search missing on content page"
 
 echo "── L: README as the index face ──"
 grep -q "Ringkasan grounded emitter" "$WORK/kb3/html/index.html" && grep -q "Semua dokumen" "$WORK/kb3/html/index.html" \
@@ -143,5 +150,23 @@ grep -q "angka TIDAK PERNAH dikarang" "$EMIT" && grep -q "belum ada datanya" "$E
   && ok "M2 anti-fabrication rail (cite every number; honest gaps)" || bad "M2 citation rail missing"
 grep -q "takeaway tebal" "$EMIT" && grep -q "status JUJUR" "$EMIT" && ok "M3 DD9000 pattern pinned (takeaway + honest status)" || bad "M3 pattern points missing"
 grep -q 'render-html.sh" <target>/summary/SUMMARY.md' "$EMIT" && ok "M4 summary auto-renders after authoring" || bad "M4 auto-render step missing"
+
+echo "── N: template v2 'developer platform' (7.23.0, spec 2026-09-03) ──"
+T="$ROOT/plugins/mega-sdd/assets/render-html/template.html"
+grep -q "data:font/woff2;base64," "$H" && ok "N1 vendored fonts inline as data URIs (offline intact)" || bad "N1 inline fonts missing"
+grep -q 'data-theme="dark"' "$T" && grep -q "prefers-color-scheme" "$T" && grep -qF ':root:not([data-theme="light"])' "$T" \
+  && ok "N2 3-state theme tokens (system default + toggle override)" || bad "N2 theme token pattern missing"
+grep -qF 'theme: "base"' "$T" && grep -q "themeVariables" "$T" && grep -q "document.fonts.ready" "$T" \
+  && ok "N3 mermaid base+tokens, rendered after fonts.ready" || bad "N3 mermaid theming missing"
+grep -q "colorizeDiagrams" "$T" && grep -q "urutan render DOM mermaid" "$T" && grep -q "setLegend" "$T" \
+  && ok "N4 role colors (label-matched actors) + legend" || bad "N4 colorize/legend missing"
+grep -q 'window.MEGA_SELF="' "$WORK/kb3/html/modules/a.prd.html" && grep -qE "Berikutnya|Sebelumnya" "$WORK/kb3/html/modules/a.prd.html" \
+  && ok "N5 bundle pages carry nav data + prev/next" || bad "N5 nav data/prev-next missing"
+grep -q 'window.MEGA_SELF="' "$H" && bad "N6 single-file page carries bundle nav data" || ok "N6 single-file mode stays bundle-less"
+grep -q 'src="../assets/marked.min.js"' "$WORK/kb/html2/modules/acquisition.prd.html" 2>/dev/null \
+  && ok "N7 nested assets-dir page uses the CORRECT relative prefix (v1 bug fixed)" || bad "N7 nested rel-prefix wrong/missing"
+grep -q 'class="st warn"' "$H" && ok "N8 strip warns on open-questions count" || bad "N8 strip warn class missing"
+grep -q "function highlight" "$T" && grep -q "hl-k" "$T" && ok "N9 tokenizer-mini highlighter (zero dependency)" || bad "N9 highlighter missing"
+grep -qE 'src="http|href="http|url\(http' "$T" && bad "N10 template references an external resource" || ok "N10 template itself stays offline"
 
 echo; [ $err -eq 0 ] && { echo "test-render-html: ALL PASS"; exit 0; } || { echo "test-render-html: FAILED"; exit 1; }
