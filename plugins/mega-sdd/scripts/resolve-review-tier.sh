@@ -24,7 +24,19 @@
 # tiers): full = security lens in play; minimal = spec only; else standard.
 # Signal 4 (vocabulary) is SCOPED to the unit contract sections — see below.
 # Output: one JSON line {"tier","lenses":[],"signals_fired":[],"signals_evaluated":[],
-# "target_files":N,"task_type":...,"implementer_model","effort"}. The two
+# "target_files":N,"task_type":...,"implementer_model","effort","unit_tier"}.
+# unit_tier (size-weighted spec 2026-08-23 §1a, A1 option i — approved
+# 2026-09-05) is a PAYLOAD label for the dispatch-prompt builder, never a
+# routing input: panel lenses + implementer_model are untouched by it.
+#   xs    = tier "minimal" AND a small size-proxy from structure this script
+#           already parses: acceptance_test entries 1..2 AND work items 1..3
+#           (numbered `## Implementation steps` — canonical grammar — or
+#           `## Requirements` bullets on legacy units; BOTH must be within
+#           ceiling when both exist). Absent/empty/unparsed structure is
+#           never small — unknown never lowers a tier.
+#   s/m/l = label mapping of the existing verdict (minimal->s, standard->m,
+#           full->l).
+# The two
 # v7.1 fields are DERIVED from the SAME signals (per-unit model routing spec
 # 2026-08-22 — rail A5: deterministic evidence, never model self-assessment):
 #   implementer_model: opus  <- tier full (a SECURITY signal, v7.8)
@@ -86,7 +98,12 @@ risk = (m.group(1).lower() if m else "")
 # (round doc-4): tf_key_present + zero parsed => standard, marked.
 tf_key_present = bool(re.search(r"(?m)^target_files:", fm))
 tf_block = ""
-m = re.search(r"(?ms)^target_files:\s*\n((?:[ \t]+.*\n?)*)", fm)
+# (?m) WITHOUT (?s): under DOTALL `[ \t]+.*` swallowed the REST of the
+# frontmatter, so on scalar-list shaped target_files the plain-dash fallback
+# also counted binding_refs/acceptance items as paths (a 2-file unit measured
+# target_files:5 and false-fired file_count — found 2026-09-05, size-weighted
+# step 1). The block must stop at the next column-0 key.
+m = re.search(r"(?m)^target_files:[ \t]*\n((?:[ \t]+[^\n]*\n?)*)", fm)
 if m:
     tf_block = m.group(1)
 
@@ -207,7 +224,9 @@ if hit:
 
 # 5. constitution §B clause in binding_refs — anchored to a list-item token
 # so a composite claim id (C-B-001) never false-fires (round code-10)
-brefs = re.search(r"(?ms)^binding_refs:\s*\n((?:[ \t]+.*\n?)*)", fm)
+# (?m) without (?s) — same column-0 stop as tf_block above: under DOTALL a
+# B-NNN list item in a LATER frontmatter key could false-fire this signal.
+brefs = re.search(r"(?m)^binding_refs:[ \t]*\n((?:[ \t]+[^\n]*\n?)*)", fm)
 if brefs and re.search(r"(?m)^[ \t]*-[ \t]+[\"']?B-\d{3}\b", brefs.group(1)):
     fired.append("constitution_b")
 
@@ -277,10 +296,48 @@ else:
     implementer_model = "sonnet"
 effort = "low" if implementer_model == "haiku" else "high"
 
+# ── unit_tier (size-weighted spec 2026-08-23 §1a, A1 option i) ───────────────
+# Size-proxy over structure already parsed here — a payload label for the
+# dispatch builder, NEVER a routing input. The proxy can only shrink what a
+# zero-signal unit LOADS, never raise a risk threshold; any absent/empty
+# section or parse_note means no size evidence, and unknown never lowers.
+# (?m) WITHOUT (?s): the block must stop at the next column-0 key —
+# under DOTALL `[ \t]+.*` swallows the rest of the frontmatter and
+# binding_refs items would inflate the count.
+acc_m = re.search(r"(?m)^acceptance_test:[ \t]*\n((?:[ \t]+[^\n]*\n?)*)", fm)
+n_accept = len(re.findall(r"(?m)^[ \t]+-[ \t]", acc_m.group(1))) if acc_m else 0
+
+
+def _section_items(names, item_rx):
+    # returns None when no named section exists; else the item count
+    parts = re.split(r"(?m)^(##\s+.*)$", body)
+    for i in range(1, len(parts), 2):
+        head = parts[i].lstrip("#").strip().lower()
+        head = re.sub(r"\s*\(.*\)\s*$", "", head)
+        if head in names:
+            sect = parts[i + 1] if i + 1 < len(parts) else ""
+            return len(re.findall(item_rx, sect))
+    return None
+
+
+n_steps = _section_items({"implementation steps"}, r"(?m)^\s*\d+[.)]\s")
+n_reqs = _section_items({"requirements"}, r"(?m)^\s*[-*]\s")
+size_small = (1 <= n_accept <= 2
+              and not (n_steps is None and n_reqs is None)
+              and (n_steps is None or 1 <= n_steps <= 3)
+              and (n_reqs is None or 1 <= n_reqs <= 3))
+if tier == "minimal":
+    unit_tier = "xs" if (size_small and not parse_note) else "s"
+elif tier == "standard":
+    unit_tier = "m"
+else:
+    unit_tier = "l"
+
 out = {"tier": tier, "lenses": lenses, "signals_fired": fired,
        "signals_evaluated": signals_evaluated,
        "target_files": n_files, "task_type": task_type,
-       "implementer_model": implementer_model, "effort": effort}
+       "implementer_model": implementer_model, "effort": effort,
+       "unit_tier": unit_tier}
 if parse_note:
     out["parse_note"] = parse_note
 if os.environ.get("V_WRITE") == "1":
