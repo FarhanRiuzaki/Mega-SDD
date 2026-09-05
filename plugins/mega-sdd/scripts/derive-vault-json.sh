@@ -81,7 +81,8 @@ else:
                                          "04-flows.md", "05-decisions.md")
     OQ_DOCS = DOCS[1:]
 LOCK_KEYS = ["vault_version", "project_shape", "implementation_mode",
-             "prd_status", "output_mode", "mode_migrate_after"]
+             "prd_status", "output_mode", "mode_migrate_after",
+             "project_scale"]   # size-weighted §2 (7.29.0) — layout-2 frontmatter scalar
 # Keys the deriver OWNS (the allowlist is of what it owns, NOT of what it
 # preserves — every unknown prior key survives verbatim).
 DERIVED_TOP = set(LOCK_KEYS) | {
@@ -98,7 +99,7 @@ DERIVED_OQ = {
 KEY_ORDER = [
     "vault_version", "vault_layout", "generated_at", "title", "phase", "phase_total",
     "project_shape", "implementation_mode", "mode", "prd_status",
-    "output_mode", "mode_migrate_after", "scope", "scope_metadata",
+    "output_mode", "mode_migrate_after", "project_scale", "scope", "scope_metadata",
     "prd_sha256", "prd_path_at_generation", "constitution_version",
     "constitution_hash", "source_documents", "design_system_flags",
     "design_system", "advisor", "entities", "flows", "adrs",

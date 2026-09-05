@@ -6,6 +6,7 @@
 - `vault.json` machine-readable manifest
 - Reading the templates
 - Step 3.5 — OQ auto-classification + halt YAML
+- Project scale xs (size-weighted §2)
 - Output mode policy
 - Readability standards
 - File-by-file content guide (vault/model/flows/constraints)
@@ -94,6 +95,7 @@ After Step 3 writes the 4 files but BEFORE the Step 4 self-check, run the auto-c
    - `fallback_if_wrong` — what to revisit if this recommendation turns out incorrect (1 sentence).
    - **Anti-halu rail:** NEVER fabricate citations. If no codebase context exists at all, downgrade to `category: business` with note "no codebase context to ground recommendation; needs human decision."
 4. **For `resolution_mode: blocking`** (default for business + low-confidence tech): no additional fields required.
+4b. **`project_scale: xs` defer-by-default (size-weighted §2, 7.29.0).** When the vault frontmatter carries `project_scale: xs`: every **tech** OQ (`scan`/`recommend`) with `classification_confidence: medium` is BORN deferred — annotate the markdown entry with `**Deferred**: project_scale=xs — auto-deferred at generation; resolves at binding, tidak ditanya interaktif` and carry `defer_to: binding` for it in the authored patch. These OQs are listed in §Auto-Classification Review under an `Auto-deferred (project_scale: xs)` sub-heading and are NEVER surfaced in an interactive walk (resolve-oq's priority walk and the chain's batched-P1 walk both skip `deferred`). **The evidence standard is unchanged:** `high`-confidence auto-resolve still requires the same citation probe at bind time; what changes is ASK vs DEFER, never the proof. Business OQs and `low`-confidence tech (conservative-default → business/blocking) are untouched — human-decided as always.
 5. **Write classified OQ data** back to the markdown body (the `[tech / scan]` / `[conf: …]` brackets + resolve hints) and put the JSON-only fields into the authored patch consumed by `derive-vault-json.sh`, per `generate-intent/references/vault-contract.md §Updated OQ schema` — never hand-edit `vault.json`.
 6. **Generate the `vault.md` "## Auto-Classification Review" section.** List every tech-tagged OQ + every flipped/manually-overridden OQ. Only `high`-confidence tech OQs auto-resolve downstream in `bind-codebase`; `medium`/`low` are flagged for user review.
 7. **Validation gate:** before proceeding to Step 4, validate every OQ entry per `generate-intent/references/vault-contract.md §Validation rules`:
@@ -114,6 +116,15 @@ blocker:
     oq_text: "<verbatim from vault>"
   next_action: "Re-run generate-intent OR populate the missing fields in the authored patch and re-run derive-vault-json.sh before bind-codebase."
 ```
+
+## Project scale xs (size-weighted §2)
+
+Set by Step 2 from `scripts/derive-project-scale.sh` (deterministic structure count; greenfield lanes only — KB sub-mode and `--scan` overlays are always `standard`). At `project_scale: xs` exactly TWO things change; nothing else:
+
+1. **`vault.md ## Glossary` is omitted** (no header, no placeholder — the omit-never-fabricate rail) — the parser treats it as optional and `_meta/ai-consumer-guide.md §Standard terms` already carries the generic rows. Every other section keeps its normal rules: the conditional sections (`HAS_*` design blocks, API contracts) are already source-gated, the three hard-header H2 anchors stay mandatory, and `## Changelog`/`## Phase context` stay (they have writers/readers).
+2. **Step 3.5 rule 4b** — medium-confidence tech OQs are born deferred (`defer_to: binding`), recorded in §Auto-Classification Review, never asked interactively.
+
+The target class: a "3 static screens" PRD stops producing a wall of interactive questions — OQ COUNT is unchanged (honesty), the interactive ceremony shrinks. `xs` can only ever come from structural evidence in the source document; absent/unparseable structure means `standard`.
 
 ## Output mode policy
 

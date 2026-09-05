@@ -8,6 +8,7 @@ implementation_mode: <new | existing>
 mode_migration_trigger: <event, e.g. "first prod deploy" — null for mode=existing>
 prd_status: <final | draft>
 output_mode: <compact | full>
+project_scale: <xs | standard>   # script-derived (derive-project-scale.sh) — xs only from structural evidence; absent = standard
 prd_source: "<filename, version, date — FINAL | DRAFT>"
 locked_at: "<YYYY-MM-DD HH:MM (TZ)>"
 locked_by: ["<PM name>", "<Tech Lead name>"]
