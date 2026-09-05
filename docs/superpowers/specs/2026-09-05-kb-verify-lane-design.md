@@ -80,9 +80,16 @@ section kontrak operasional; rail klaim-negatif; flow-br-lint advisory.
    seed under-scoped (locked_checked=0 vs PRD ber-[LOCKED]) DITOLAK gate —
    recompute bekerja.
 3. **Seeded-error live**: fixture inversion kelas TLXGTN yang DITANGKAP model
-   verifier = acceptance item di field extraction berikutnya (suite hanya bisa
-   menguji jalur deterministik; presedennya = fork A/B). Suite menguji: writer
-   contract + 3 halt type + wiring (agent/SKILL/tier row).
+   verifier = acceptance item (suite hanya menguji jalur deterministik). Suite
+   menguji: writer contract + 3 halt type + wiring (agent/SKILL/tier row).
+   **ACCEPTANCE PASSED 2026-09-05 (live, sonnet, blind, body agent verbatim +
+   READ ALSO rpg-as400):** fixture RPG dengan 3 WRONG ditanam (truncation
+   dibilang rounding di [LOCKED]; guard `IFNE` kebalik; matriks negasi ketuker)
+   + 1 rule kontrol benar → verifier menangkap **3/3 WRONG dengan evidence
+   benar, wrong_load_bearing=3, NOL false positive**, plus 2 IMPRECISE sah yang
+   tidak ditanam (input NDAYS terlewat; klaim kadens §7 melampaui bukti).
+   Biaya 84,8k token / ~2 menit (di bawah patokan 150-220k/modul). End-to-end:
+   VERIFY REPORT → write-verify-state (FAIL) → census gate `claim_verify_failed` ✓.
 4. Role model-tier baru: `extract-intelligence-verify` (row 23, sonnet).
 5. xs single-module: verifier TETAP dispatch (penulis tidak memeriksa dirinya).
 
@@ -134,13 +141,20 @@ section kontrak operasional; rail klaim-negatif; flow-br-lint advisory.
 6. Decision-table & register AC: bentuk di template §2; mandat = prosa +
    advisory, bukan FAIL (bentuk prosa yang benar tidak bisa dibedakan mesin).
 
-## Tranche C — cost (measured-first, gate terpisah)
+## Tranche C — cost (RESOLUSI 2026-09-05: C1 VOID by prior decision)
 
-- **C1:** fix `TOKEN-COST-REPORT.md` 0 byte (state JSON terisi, report kosong) + pastikan
-  window mencakup fase extraction (hari ini `by_skill` tidak memuat extract sama sekali).
-- **C2:** dengan breakdown nyata, serang turn gendut (main-thread 4,6M cw / generate-intent
-  4,1M / resolve-oq ~570k per ronde) — tiap lever di-gate owner; moat & recompute-at-gate
-  tidak dioptimasi.
+- **C1 DIBATALKAN** — investigasi menemukan `TOKEN-COST-REPORT.md` 0-byte bukan bug:
+  writer token-cost DIHAPUS SADAR di v7.3.0 (`bfdf996`, amandemen
+  `research/2026-08-22-v7-amend-no-observability.md` + `-no-telemetry.md`, final +
+  retroaktif: "mega-sdd tidak membangun telemetry/monitoring apa pun — domain AI
+  gateway"). Artefak di Host = sisa cache plugin versi lama (obat pencegahnya =
+  resep headless update yang sudah dipegang tim mega-code). Membangun ulang = 
+  reversal keputusan owner — TIDAK dilakukan tanpa keputusan eksplisit baru.
+- **C2 tetap valid sebagai target list** (main-thread turn gendut, generate-intent,
+  ronde resolve-oq) tapi jalur ukurnya = **data AI gateway kantor** (model/token/
+  biaya per request, difilter `mega-sdd-trace:` yang di-restore gate7b) atau tracer
+  maintainer di `benchmarks/` — bukan instrumentation runtime baru. Blocked on
+  ekspor data gateway dari field run; buka gate C2 saat angkanya ada.
 
 ## Standing policy (CLAUDE.md release checklist)
 
