@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.29.0] - 2026-09-06 — Size-weighted spec §2: project_scale — proyek kecil tak lagi bayar seremoni penuh
+
+Menutup spec `2026-08-23-size-weighted-spec-design.md` (SPEC COMPLETE: §1 = 7.28.0, §3 = CLOSED-VOID by census — basis terukurnya dihapus №D v7.5.0, tabel census + kondisi revive di spec, `6535a68`).
+
+### Added
+- **`derive-project-scale.sh`**: sinyal skala deterministik dari STRUKTUR PRD (heading per-screen, item section Surfaces, baris tabel, DBML `Table`, census flow `F-X-NNN`) — `xs` ⇔ 1–3 screen DAN ≤2 entity DAN ≤3 flow; nol bukti struktural → `standard` (unknown mendapat perlakuan penuh, bukan diet); fail-open total (file tak terbaca / tanpa interpreter → standard, exit 0). Tera terhadap korpus: clinic PRD → standard (7/4/6) DIPIN; 12 file korpus nol false-xs; dua amendemen kalibrasi tercatat di spec (guard flows, "views" = kelas verba dibuang).
+- **`project_scale` scalar** di frontmatter vault.md (layout-2 murni; legacy tak tersentuh; absen = standard, tak pernah dikarang) + mirror `vault.json` via deriver (`_FM_LOCK_KEYS`/`LOCK_KEYS` — additive, golden deriver tetap hijau).
+- **Konsekuensi xs (dua, tidak lebih)**: (1) `vault.md ## Glossary` di-omit — satu-satunya section template-opsional bernol konsumen keras (Changelog/Phase-context KEEP: ada penulis/pembaca); conditional sections memang sudah source-gated. (2) generation-guide **rule 4b**: OQ tech ber-confidence `medium` LAHIR deferred (`defer_to: binding`, anotasi `**Deferred**:`, tercatat di §Auto-Classification Review) — tak pernah ditanya interaktif; standar bukti TIDAK berubah (auto-resolve tetap butuh probe sitasi `high`); OQ business tetap human-decided. Target kelas "3 layar statis / 28 pertanyaan": jumlah OQ tetap jujur, seremoni interaktifnya yang menyusut.
+- Suite `tests/size-weighted/test-project-scale.sh` (11 pin, termasuk pin kalibrasi korpus + pin kelas verba + mirror deriver).
+
 ## [7.28.0] - 2026-09-05 — Size-weighted spec §1: unit_tier xs — dispatch payload menyusut −65% di unit kecil
 
 Gate №A APPROVED oleh owner (A1 = proxy deterministik) setelah Efficiency & Anti-Overengineering Audit (`research/2026-09-05-efficiency-antioverengineering-audit.md`). Spec `docs/superpowers/specs/2026-08-23-size-weighted-spec-design.md` §1 (Step 1+2); §3/§2 menyusul.

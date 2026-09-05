@@ -145,6 +145,9 @@ _FM_LOCK_KEYS = {
     "mode_migration_trigger": "mode_migrate_after",
     "prd_status": "prd_status",
     "output_mode": "output_mode",
+    # size-weighted spec §2 (7.29.0) — layout-2 only by construction: legacy
+    # 00-index bullets never carried it, so VAULT_LOCK_KEYS stays untouched.
+    "project_scale": "project_scale",
 }
 
 _FLOW_TYPE_BY_PREFIX = {
