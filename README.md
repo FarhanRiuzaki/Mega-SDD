@@ -154,7 +154,7 @@ Every handoff is contracted and grounded. The seven layers that matter most:
 6. **Drift is reconciled, not guessed** — committed code is compared against the vault; direction calls are queued to `PENDING-SYNC.md` for a human, never auto-decided.
 7. **Reuse before reinvention** — a script-built full-repo symbol index puts existing code in front of the implementer at write time ("Existing symbols — REUSE, don't recreate"), and a post-write duplication sweep hands mechanical evidence to the review panel.
 
-The full defense in depth (20 layers, including the code-delivery quality gates): [plugin README — How it prevents hallucination](plugins/mega-sdd/README.md#how-it-prevents-hallucination).
+The full defense in depth (21 layers, including the code-delivery quality gates): [plugin README — How it prevents hallucination](plugins/mega-sdd/README.md#how-it-prevents-hallucination).
 
 ## Measured: classic vs express spine (P5, 2026-08)
 
@@ -178,7 +178,7 @@ Most AI-dev tools take a PRD → spit code in one shot. **Mega-sdd inserts struc
 - **Deterministic orchestrator** — the chain is inferred from probed repo state (vault / binding / units / bolts, zero-token scripts) + predictive preflight (catches `dep_missing` *before* the chain starts, not 8 minutes in).
 - **Starterkit-aware** — auto-detects your stack's actual conventions (auth lib, RBAC, UI stack, layouts) and generates units that cite *your* patterns, so bolts match your codebase by default.
 - **Weighted routing (S/M/L)** — every task is weighed before anything runs; the default when unsure is S (answer inline, zero pipeline, hooks quiet). Override with `--weight=S|M|L`.
-- **Sprint execution by default** — `--all` runs bolts in dependency waves (parallel, measured 3.0× vs sequential) with a per-unit risk-tiered review panel; unit size tunable via `unit_granularity: fine|coarse`.
+- **Sprint execution by default** — `--all` runs bolts in dependency waves (parallel, measured 3.0× vs sequential) with a per-unit risk-tiered review panel; unit size tunable via `unit_granularity: fine|coarse`, and the dispatch payload is size-weighted per unit (a small `xs` unit loads a −65% prompt — evidence uncut).
 - **Team-ready outputs** — 4 emission docs (PRD / FSD / SIT / UAT incl. SEOJK berita acara) + `emit html`: any md/KB bundle rendered to self-contained offline interactive HTML (⌘K search, role-colored diagrams + legend, zoom/pan) — deterministic script, zero model tokens, md stays the only ground truth.
 - **Audit-driven evolution** — every major version closes a structured, severity-classified audit; nothing hidden, nothing inflated. Full trail: [`CHANGELOG.md`](CHANGELOG.md) + [`docs/superpowers/audits/`](docs/superpowers/audits/) (incl. the archived 2026 rounds-1-3 record).
 - **A living pipeline, not a one-shot run** — out-of-pipeline changes (manual hotfix, AI edit, `git pull`) are captured ambiently and `/mega-sdd:sync` reconciles only what changed, queuing human-only decisions instead of guessing; since v7.5.0 an inline edit of a `[LOCKED]`-anchored file surfaces a one-line context notice, and a "done/selesai" sentence with journaled changes earns a one-line sync OFFER (never an auto-run). Walkthrough: [scenario 12](tests/scenarios/scenario-12-continuous-sync.md).
@@ -292,7 +292,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **19 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **8 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, resolution-verifier, domain-extractor) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat|html|summary>`) plus 3 maintenance one-timers (typed legacy forms route as plain text). |
+| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **19 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **9 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, resolution-verifier, domain-extractor, claim-verifier) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat|html|summary>`) plus 3 maintenance one-timers (typed legacy forms route as plain text). |
 | **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs consolidated under `<project>/.mega-sdd/`. User defaults at `~/.mega-sdd/config.yaml`. Project source unchanged. |
@@ -381,7 +381,7 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 ├── plugins/mega-sdd/                       # the plugin itself
 │   ├── README.md                           # per-command reference + plugin internals
 │   ├── skills/                             # skills (lean routers + progressive disclosure)
-│   ├── agents/                             # 8 first-class subagents (incl. the blind review panel)
+│   ├── agents/                             # 9 first-class subagents (incl. the blind review panel)
 │   ├── commands/                           # exactly 6: 3 public verbs + 3 maintenance one-timers
 │   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (30 packs)
 │   ├── assets/render-html/                 # offline HTML template v2 + vendored marked/mermaid/woff2 fonts
