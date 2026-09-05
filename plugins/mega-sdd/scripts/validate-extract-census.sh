@@ -80,7 +80,9 @@ if os.path.isdir(modules_dir):
 
 findings = {"unclaimed": [], "double_claimed": [], "phantom_claims": [],
             "uncited": [], "bad_frontmatter": [], "missing_oq_section": [],
-            "missing_sections": [], "flow_not_mermaid": [], "mermaid_syntax": []}
+            "missing_sections": [], "flow_not_mermaid": [], "mermaid_syntax": [],
+            "claim_verify_missing": [], "claim_verify_failed": [],
+            "claim_verify_incomplete": []}
 
 if not prd_paths:
     findings["no_module_prds"] = ("census present (%d files) but no modules/*.prd.md — extraction not started or wrote elsewhere"
@@ -163,6 +165,52 @@ for p in prd_paths:
                   + mermaid_syntax.check_mermaid_syntax(blocks, rel)):
         issue["prd"] = rel
         findings["mermaid_syntax"].append(issue)
+
+    # Claim-verify lane gate (7.25.0, spec 2026-09-05-kb-verify-lane-design.md
+    # Fase 3): every module PRD must carry a passing .verify/<domain>.json
+    # written by write-verify-state.sh from the claim-verifier's VERIFY REPORT.
+    # LOCKED coverage + the sample floor are RECOMPUTED from the PRD artifact
+    # here (B1-recompute pattern) — the state supplies the verdict, never the
+    # coverage ground truth, so an under-scoped or forged report cannot pass.
+    domain = fm.get("domain") if isinstance(fm.get("domain"), str) else None
+    locked_in_prd = len(re.findall(r"\[LOCKED\]", body))
+    cite_count = len(re.findall(r"[\w./#-]+:\d+", body))
+    sample_floor = min(8, cite_count)
+    vpath = os.path.join(kb_dir, ".verify", (domain or "") + ".json")
+    if not domain or not os.path.isfile(vpath):
+        findings["claim_verify_missing"].append(
+            {"prd": rel, "expected": ".verify/%s.json" % (domain or "<domain>"),
+             "fix": "dispatch mega-sdd:claim-verifier for this module, then write-verify-state.sh"})
+    else:
+        vdoc = None
+        try:
+            with open(vpath, encoding="utf-8") as vf:
+                vdoc = json.load(vf)
+        except (ValueError, OSError) as e:
+            findings["claim_verify_failed"].append({"prd": rel, "issue": "verify state unreadable: %s" % e})
+        if vdoc is not None:
+            try:
+                wlb = int(vdoc.get("wrong_load_bearing", 1))
+                locked_checked = int(vdoc.get("locked_checked", 0))
+                checked_total = (locked_checked + int(vdoc.get("money_checked", 0))
+                                 + int(vdoc.get("sampled", 0)))
+            except (TypeError, ValueError):
+                findings["claim_verify_failed"].append({"prd": rel, "issue": "verify state fields non-integer"})
+                wlb, locked_checked, checked_total = 1, 0, 0
+            if vdoc.get("status") != "PASS" or wlb > 0:
+                findings["claim_verify_failed"].append(
+                    {"prd": rel, "status": vdoc.get("status"),
+                     "wrong_load_bearing": vdoc.get("wrong_load_bearing"),
+                     "findings": (vdoc.get("findings") or [])[:5]})
+            if locked_checked < locked_in_prd:
+                findings["claim_verify_incomplete"].append(
+                    {"prd": rel, "locked_in_prd": locked_in_prd,
+                     "locked_checked": locked_checked,
+                     "issue": "LOCKED coverage short (recomputed from the PRD body)"})
+            if checked_total < sample_floor:
+                findings["claim_verify_incomplete"].append(
+                    {"prd": rel, "checked_total": checked_total, "sample_floor": sample_floor,
+                     "issue": "checked fewer claims than the recomputed sample floor"})
 
 for f in census_files:
     owners = claims.get(f, [])

@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.25.0] - 2026-09-05 — Claim-verify lane: extraction diperiksa lawan sebelum jadi source of truth
+
+Spec: `2026-09-05-kb-verify-lane-design.md` Fase 3 (+ Amendemen). Basis lapangan:
+audit KB Host-AS400 nemu 8 klaim WRONG (2 arah-uang: TLXGTN & arah float kebalik)
+di KB yang lolos semua gate struktural — extraction single-pass tidak pernah
+dicek mata kedua; disiplin P1-P6 = prosa tanpa verifikasi (doktrin sendiri:
+"prose enforces nothing"). Biaya lane terukur dari audit: ±150-220k token/modul,
+read-only.
+
+### Added
+- **Agent `mega-sdd:claim-verifier`** (read-only: Read/Grep/Glob/Bash, sonnet,
+  blind terhadap extractor): grade sitasi EXACT/IMPRECISE/WRONG; 100% [LOCKED] +
+  100% money-class (amount/rate/rounding-vs-truncation/sign/direction) + N sampel
+  lintas section; craft rails dari pelajaran audit (tokenisasi fixed-format,
+  truth-table untuk guard negatif, as-executed > as-intended, absence-by-grep ≠
+  absence); output = blok `VERIFY REPORT` machine-parsed.
+- **`scripts/write-verify-state.sh`** — satu-satunya writer
+  `<kb>/.verify/<domain>.json`; tolak report inkonsisten (wrong=0 tapi ada
+  finding WRONG, wrong_load_bearing > wrong, field hilang).
+- **Enforcement di `validate-extract-census.sh`** (B1-recompute): LOCKED coverage
+  + sample floor `min(8, jumlah sitasi)` dihitung ulang dari body PRD — report
+  hilang/gagal/under-scoped/forged tidak bisa hand-off
+  (`claim_verify_missing`/`_failed`/`_incomplete`). Terbukti saat menulis test:
+  seed under-scoped DITOLAK gate.
+- **extract-intelligence 2.4.0**: lane dispatch per modul setelah quality gate
+  (xs single-module TETAP dispatch — penulis tidak memeriksa dirinya sendiri);
+  `wrong_load_bearing>0` → re-dispatch extractor 1× dengan findings; dua kali →
+  halt `quality_gate_failed` subtype `claim_verify_failed`. Reference baru
+  `references/claim-verify.md`; model-tier row 23 `extract-intelligence-verify`.
+- Tests: `tests/extract-census/test-claim-verify-gate.sh` (16 pin) +
+  test-extract-census di-update (seed verify state via writer, end-to-end).
+
+### Catatan jujur
+- Suite menguji jalur deterministik; bukti model verifier MENANGKAP inversion
+  kelas TLXGTN = acceptance item di field extraction berikutnya (preseden fork A/B).
+
 ## [7.24.0] - 2026-09-05 — KB validators migrated to the 7.6+ module grammar + SKIP-honesty
 
 Spec: `docs/superpowers/specs/2026-09-05-kb-verify-lane-design.md` (Fase 1+2). Riset:

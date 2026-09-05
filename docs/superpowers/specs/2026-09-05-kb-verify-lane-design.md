@@ -67,6 +67,25 @@ data area, RETRN-stateful, REF/REFFLD chasing, probe encoding non-UTF8).
 `depends_on` → `references`+`rebuild_after`; decision-table mandate; AC layer golden-master;
 section kontrak operasional; rail klaim-negatif; flow-br-lint advisory.
 
+## Amendemen Fase 3 (7.25.0, saat implementasi)
+
+1. **Scope enforcement dipertegas**: yang deterministik di gate = state ada +
+   verdict PASS + LOCKED coverage (recompute dari body) + sample floor
+   `min(8, jumlah sitasi)` (recompute). "Money-class 100%" tidak bisa
+   direcompute → kewajiban prosa di body agent (sekarang ada mata kedua yang
+   memeriksanya — itu perbaikannya vs pra-7.25).
+2. **Writer deterministik** `scripts/write-verify-state.sh` (bukan controller
+   hand-write JSON): parse blok `VERIFY REPORT`, tolak report inkonsisten
+   (wrong=0 tapi ada finding WRONG, dsb.). Terbukti saat menulis test:
+   seed under-scoped (locked_checked=0 vs PRD ber-[LOCKED]) DITOLAK gate —
+   recompute bekerja.
+3. **Seeded-error live**: fixture inversion kelas TLXGTN yang DITANGKAP model
+   verifier = acceptance item di field extraction berikutnya (suite hanya bisa
+   menguji jalur deterministik; presedennya = fork A/B). Suite menguji: writer
+   contract + 3 halt type + wiring (agent/SKILL/tier row).
+4. Role model-tier baru: `extract-intelligence-verify` (row 23, sonnet).
+5. xs single-module: verifier TETAP dispatch (penulis tidak memeriksa dirinya).
+
 ## Tranche C — cost (measured-first, gate terpisah)
 
 - **C1:** fix `TOKEN-COST-REPORT.md` 0 byte (state JSON terisi, report kosong) + pastikan

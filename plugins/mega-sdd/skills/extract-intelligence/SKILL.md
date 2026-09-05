@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 2.3.0
+version: 2.4.0
 description: Tech-agnostic legacy extractor for rebuild/revamp — census-contracted extraction composes the system's logic into one PRD-kontrak per module (inline file:line citations, [LOCKED]/[INTENT]/[ARTIFACT] mutability tiers), consumed by generate-intent --kb and bind-codebase. Cost scales with the census, not a fixed pipeline — a 1-file engine yields 1 PRD. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "revamp project ini ke stack baru", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -105,6 +105,17 @@ battery in `references/prd-kontrak-template.md` §Per-module quality gate
 advisory `kb-leak-scan.sh`). FAIL → re-dispatch that module once with the gate
 output as feedback.
 
+**Claim-verify lane (7.25.0)** — after a module's quality gate passes, dispatch
+the **`mega-sdd:claim-verifier`** agent for that module (read-only, blind,
+adversarial; single-module xs runs DISPATCH TOO — the writer never checks
+itself). Controller types only the dispatch core per `references/claim-verify.md`,
+then writes the returned `VERIFY REPORT` through
+`bash "${CLAUDE_PLUGIN_ROOT}/scripts/write-verify-state.sh" --kb-dir=<kb> --report-file=<tmp>`.
+`wrong_load_bearing > 0` → re-dispatch the extractor once with the findings as
+feedback (then re-gate + re-verify); twice → halt `quality_gate_failed`
+(subtype `claim_verify_failed`). The census gate at Step 5 recomputes coverage
+from the artifacts — a missing/under-scoped verify state cannot hand off.
+
 **Per-batch confirmation** (multi-module runs only; skipped under `--auto`):
 after a batch's gates pass, ONE AskUserQuestion with keterangan per option —
 **Lanjut batch berikutnya** (recommended saat semua gate hijau — module tersisa
@@ -134,7 +145,7 @@ halt.
 
 ### Step 5 — Completeness gate + hand-off
 
-**Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-extract-census.sh" --kb-dir={out}/knowledge-base` — recomputes coverage from census + the PRD artifacts: unclaimed / double-claimed / phantom / uncited files, missing OQ sections, non-Mermaid flows. FAIL → fix (re-dispatch the owning module) or honestly record the gap as `[OPEN]`/OQ in the owning PRD, then re-run. Never hand off on FAIL.
+**Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-extract-census.sh" --kb-dir={out}/knowledge-base` — recomputes coverage from census + the PRD artifacts: unclaimed / double-claimed / phantom / uncited files, missing OQ sections, non-Mermaid flows, AND the claim-verify states (`.verify/<domain>.json` per module: LOCKED coverage + sample floor recomputed from each PRD body — `claim_verify_missing`/`_failed`/`_incomplete`). FAIL → fix (re-dispatch the owning module / run the missing verifier) or honestly record the gap as `[OPEN]`/OQ in the owning PRD, then re-run. Never hand off on FAIL.
 
 **Hand-off announce:** "PRD-kontrak written to `<out>/knowledge-base/` — N module(s), census: N files fully claimed. Critical findings: N. Open questions: N (P1: …, P2: …, P3: …). Next: review `<out>/knowledge-base/README.md`, then `generate-intent --kb=<out>/knowledge-base/` to continue the revamp lane." **When Open questions > 0, ALSO offer answering them now (7.21.0):** "Mau jawab OQ-nya sekarang? (resolve-oq KB mode — jawaban legacy paling akurat selagi konteksnya masih hangat; belum dijawab pun tetap ikut ke vault nanti)" — offer only, never auto-invoke.
 
@@ -147,6 +158,7 @@ halt.
 - Legacy path missing/empty → halt with the exact path probed.
 - `--max-parallel` > 8 → halt (token budget collapse).
 - Same module's quality gate fails twice → halt `quality_gate_failed` (subtype `module_quality_threshold_unmet`), gate output verbatim (per `plugins/mega-sdd/references/halt-families/extract.md`).
+- Same module's claim-verify reports `wrong_load_bearing > 0` twice → halt `quality_gate_failed` (subtype `claim_verify_failed`), verifier findings verbatim.
 - `validate-extract-census.sh` FAIL at hand-off → never hand off; fix or record `[OPEN]` honestly.
 
 ## Path resolution
@@ -175,6 +187,7 @@ mutability-tier producer: `tier_distribution`, `locked_claims_touched`,
 ## Cross-references
 
 - `references/prd-kontrak-template.md` — the output grammar (layout, template, markers, dispatch core, gates, README, data-mutation-policy).
+- `references/claim-verify.md` — the adversarial claim-verify lane (dispatch core, controller actions, enforcement).
 - `references/handoff.md` — the `--auto` handoff record.
 - `plugins/mega-sdd/references/architecture-advisor.md` — the optional target-architecture consultation on top of the finished KB (offered at hand-off).
 - `mega-sdd:generate-intent` — consumes the output via `--kb=<path>` (incl. `decisions/ADR-*.md` accepted by the advisor).
