@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.27.0] - 2026-09-05 — Fase 5: rebuild_after DAG, AC golden-master, §7 Run & Recovery, rail klaim-negatif
+
+Spec: `2026-09-05-kb-verify-lane-design.md` Fase 5 (+ Amendemen Fase 5). Menutup
+seluruh backlog P2 dari skill-gap analysis — grammar PRD-kontrak naik satu
+tingkat dari "peta akurat" ke "kontrak implementable".
+
+### Added
+- **`rebuild_after` frontmatter** (subset acyclic dari `depends_on`) — build order
+  README kini derivable; `depends_on` dipertegas "references, cycle sah" (tidak
+  di-rename — konsumen build-graph/kb_output/bind utuh). Census gate
+  `rebuild_order_invalid`: unknown module / bukan subset / cycle (DFS).
+- **Acceptance criteria untuk [LOCKED]** — tiap BR ber-[LOCKED] wajib ≥1 baris
+  `AC-<BR-id>-n` (given/when/then, oracle golden-master legacy run) atau
+  `blocked-by-OQ-<id>` eksplisit → `ac_missing_for_locked` (Testability 0/7 PASS
+  di audit = gap dimensi terbesar).
+- **§7 Run & Recovery** wajib untuk module `classification: workflow`: trigger/
+  caller, entry parms & window, semantik restart/rerun, state antar panggilan,
+  urutan antar job — tiap butir cited atau `[UNKNOWN]` eksplisit + OQ/probe
+  (kelas "silent re-process saat rerun window" yang cuma ketahuan dari audit).
+- **Decision-table mandate** (rule ≥3 kondisi = tabel, bukan prosa; kelas matriks
+  IBT 4-leg) — prosa di template/agent + advisory `rule_needs_decision_table`.
+- **Rail klaim-negatif** — extractor: negative claim wajib menyebut scope sweep
+  (kelas BR-REF-13 "tidak dikonsultasi" yang salah satu CALL jauh); verifier:
+  uji scope-nya, unscoped negative = IMPRECISE minimal.
+- **3 advisory census** (tidak pernah FAIL): `undeclared_reference` (kelas 5
+  edge tak dideklarasi lane F), `rule_needs_decision_table`,
+  `flow_names_artifact_component` (kelas FNDCUR — flow menggambar komponen mati).
+- extract-intelligence 2.6.0; tests: `tests/extract-census/test-fase5-grammar.sh`
+  (11 pin) + 3 fixture lama di-upgrade ke grammar 7.27.0.
+
 ## [7.26.0] - 2026-09-05 — Fase 4: counts script-derived, rollup recount, site-census, OQ probe, idiom RPG
 
 Spec: `2026-09-05-kb-verify-lane-design.md` Fase 4 (+ Amendemen Fase 4). Semua

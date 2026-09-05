@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 2.5.0
+version: 2.6.0
 description: Tech-agnostic legacy extractor for rebuild/revamp — census-contracted extraction composes the system's logic into one PRD-kontrak per module (inline file:line citations, [LOCKED]/[INTENT]/[ARTIFACT] mutability tiers), consumed by generate-intent --kb and bind-codebase. Cost scales with the census, not a fixed pipeline — a 1-file engine yields 1 PRD. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "revamp project ini ke stack baru", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -103,9 +103,13 @@ Exactly 1 proposed module → no question; proceed.
 
 **Per-module quality gate** (main thread, after each PRD lands): the grep
 battery in `references/prd-kontrak-template.md` §Per-module quality gate
-(frontmatter, 6 sections, ≥3 gotchas for workflow modules, Mermaid fence,
-advisory `kb-leak-scan.sh`). FAIL → re-dispatch that module once with the gate
-output as feedback.
+(frontmatter, 6 sections + §7 Run & Recovery for workflow modules (7.27.0),
+≥3 gotchas for workflow modules, Mermaid fence, advisory `kb-leak-scan.sh`).
+FAIL → re-dispatch that module once with the gate output as feedback. The
+census gate additionally enforces the 7.27.0 grammar: AC per [LOCKED] BR
+(`ac_missing_for_locked`) and an acyclic `rebuild_after`
+(`rebuild_order_invalid`); advisories surface undeclared references,
+decision-table smells, and flow-vs-[ARTIFACT] contradictions.
 
 **Claim-verify lane (7.25.0)** — after a module's quality gate passes, dispatch
 the **`mega-sdd:claim-verifier`** agent for that module (read-only, blind,

@@ -43,7 +43,9 @@ kb_dir = os.environ["KB_DIR"]
 quiet = os.environ["QUIET"] == "1"
 state_path = os.path.join(kb_dir, ".extract-census-state.json")
 
-advisories = {"oq_answerable_from_disk": [], "notes": []}
+advisories = {"oq_answerable_from_disk": [], "notes": [],
+              "undeclared_reference": [], "rule_needs_decision_table": [],
+              "flow_names_artifact_component": []}
 
 def write_state(status, findings):
     doc = {"status": status,
@@ -86,12 +88,24 @@ findings = {"unclaimed": [], "double_claimed": [], "phantom_claims": [],
             "missing_sections": [], "flow_not_mermaid": [], "mermaid_syntax": [],
             "claim_verify_missing": [], "claim_verify_failed": [],
             "claim_verify_incomplete": [],
-            "rollup_mismatch": [], "site_uncovered": []}
+            "rollup_mismatch": [], "site_uncovered": [],
+            "rebuild_order_invalid": [], "ac_missing_for_locked": []}
 
 all_bodies = []          # (rel, body) — consumed by the Fase-4 passes below
 tier_totals = {"locked": 0, "intent": 0, "artifact": 0}
 oq_split = {"P1": 0, "P2": 0, "P3": 0}
 oq_total = 0
+prd_meta = []            # Fase 5: per-PRD {rel, domain, depends_on, rebuild_after, cited_other}
+
+def _fm_list(fm, key):
+    """Normalize a frontmatter field to a list (block list, inline [a,b], or absent)."""
+    v = fm.get(key)
+    if isinstance(v, list):
+        return v
+    if isinstance(v, str):
+        inner = v.strip().strip("[]").strip()
+        return [x.strip().strip("'\"") for x in inner.split(",") if x.strip()] if inner else []
+    return []
 
 if not prd_paths:
     findings["no_module_prds"] = ("census present (%d files) but no modules/*.prd.md — extraction not started or wrote elsewhere"
@@ -182,6 +196,55 @@ for p in prd_paths:
     # here (B1-recompute pattern) — the state supplies the verdict, never the
     # coverage ground truth, so an under-scoped or forged report cannot pass.
     all_bodies.append((rel, body))
+
+    # ── Fase 5 (7.27.0) per-PRD checks ───────────────────────────────────────
+    classification = fm.get("classification", "")
+    # (a) workflow module must carry §7 Run & Recovery (run-level contract:
+    # trigger, window, restart/rerun, state between calls — the class the Host
+    # audit found only OUTSIDE the KB).
+    if classification == "workflow" and not re.search(r"^##\s*7\.", body, re.MULTILINE):
+        findings["missing_sections"].append({"prd": rel, "section": "7 (Run & Recovery — workflow module, 7.27.0)"})
+    # (b) every [LOCKED] BR row needs >=1 AC line (AC-<BR-id>-n; a blocked-by-OQ
+    # AC line satisfies it — honesty beats fabrication, absence beats silence).
+    for br_m in re.finditer(r"^\|\s*(BR-[A-Za-z0-9]+-\d+)\s*\|.*\[LOCKED\]", body, re.MULTILINE):
+        br_id = br_m.group(1)
+        if ("AC-%s-" % br_id) not in body:
+            findings["ac_missing_for_locked"].append(
+                {"prd": rel, "br": br_id,
+                 "fix": "add an AC-%s-n line (golden-master oracle) or an explicit blocked-by-OQ AC line" % br_id})
+    # (c) advisory: a prose rule with >=3 boolean connectors smells like a
+    # decision table that was not written as one.
+    for row_m in re.finditer(r"^\|\s*(BR-[A-Za-z0-9]+-\d+)\s*\|([^|]*)\|", body, re.MULTILINE):
+        conn = len(re.findall(r"\b(?:AND|OR|dan|atau)\b", row_m.group(2), re.IGNORECASE))
+        if conn >= 3:
+            advisories["rule_needs_decision_table"].append(
+                {"prd": rel, "br": row_m.group(1), "connectors": conn})
+    # (d) advisory: §3 flow node naming a component the body marks [ARTIFACT]
+    # (dead) — the FNDCUR class: a flow that contradicts its own BR table.
+    m3a = re.search(r"^##\s*3\.", body, re.MULTILINE)
+    if m3a:
+        nxt3 = re.search(r"^##\s*4\.", body[m3a.end():], re.MULTILINE)
+        sec3_text = body[m3a.end(): m3a.end() + nxt3.start()] if nxt3 else body[m3a.end():]
+        artifact_tokens = set()
+        for line in body.splitlines():
+            if "[ARTIFACT]" in line:
+                artifact_tokens.update(re.findall(r"\b[A-Z][A-Z0-9_#@$]{3,}\b", line))
+        artifact_tokens -= {"ARTIFACT", "LOCKED", "INTENT", "OPEN", "INFERRED", "TIDAK"}
+        hit_tokens = sorted(t for t in artifact_tokens if re.search(r"\b%s\b" % re.escape(t), sec3_text))
+        if hit_tokens:
+            advisories["flow_names_artifact_component"].append(
+                {"prd": rel, "tokens": hit_tokens[:6],
+                 "note": "flow §3 names component(s) the body marks [ARTIFACT]/dead — a flow-only reader will port them"})
+    # (e) collect meta for the post-loop reference/rebuild-order passes.
+    prd_meta.append({
+        "rel": rel,
+        "domain": fm.get("domain") if isinstance(fm.get("domain"), str) else None,
+        "depends_on": _fm_list(fm, "depends_on"),
+        "rebuild_after": _fm_list(fm, "rebuild_after"),
+        "cited_other": [f for f in census_files
+                        if f not in src_list and re.search(re.escape(f) + r":\d", body)],
+    })
+
     tier_totals["locked"] += len(re.findall(r"\[LOCKED\]", body))
     tier_totals["intent"] += len(re.findall(r"\[INTENT\]", body))
     tier_totals["artifact"] += len(re.findall(r"\[ARTIFACT\]", body))
@@ -319,6 +382,65 @@ if os.path.isfile(site_path):
                 break
 else:
     advisories["notes"].append("no .site-census.json — site coverage not checked (run derive-site-census.sh)")
+
+# ── Fase 5 (7.27.0): rebuild_after (acyclic build order) + reference edges ──
+domains = {m["domain"] for m in prd_meta if m["domain"]}
+owner_by_file = {}
+for f, owners in claims.items():
+    if owners:
+        owner_by_file[f] = owners[0]
+domain_by_rel = {m["rel"]: m["domain"] for m in prd_meta}
+graph = {}
+for m in prd_meta:
+    if not m["domain"]:
+        continue
+    ra = m["rebuild_after"]
+    for dep in ra:
+        if dep not in domains:
+            findings["rebuild_order_invalid"].append(
+                {"prd": m["rel"], "issue": "rebuild_after names unknown module '%s'" % dep})
+    not_declared = [d for d in ra if d not in m["depends_on"]]
+    if not_declared:
+        findings["rebuild_order_invalid"].append(
+            {"prd": m["rel"],
+             "issue": "rebuild_after entries missing from depends_on (must be a subset): %s" % ", ".join(not_declared)})
+    graph[m["domain"]] = [d for d in ra if d in domains]
+# cycle detection (iterative DFS, 3-color)
+color = {d: 0 for d in graph}
+def _has_cycle(start):
+    stack = [(start, iter(graph.get(start, [])))]
+    color[start] = 1
+    while stack:
+        node, it = stack[-1]
+        adv = next(it, None)
+        if adv is None:
+            color[node] = 2
+            stack.pop()
+            continue
+        if color.get(adv, 0) == 1:
+            return True
+        if color.get(adv, 0) == 0:
+            color[adv] = 1
+            stack.append((adv, iter(graph.get(adv, []))))
+    return False
+for d in list(graph):
+    if color.get(d, 0) == 0 and _has_cycle(d):
+        findings["rebuild_order_invalid"].append(
+            {"issue": "rebuild_after graph has a cycle involving '%s' — build order must be a DAG" % d})
+        break
+# advisory: PRD cites another module's file but does not declare that module
+# in depends_on (lane-F field finding: 5 undeclared edges).
+for m in prd_meta:
+    hit_domains = {}
+    for f in m["cited_other"]:
+        owner_rel = owner_by_file.get(f)
+        owner_dom = domain_by_rel.get(owner_rel)
+        if owner_dom and owner_dom != m["domain"] and owner_dom not in m["depends_on"]:
+            hit_domains.setdefault(owner_dom, f)
+    for dom, example in sorted(hit_domains.items()):
+        advisories["undeclared_reference"].append(
+            {"prd": m["rel"], "references": dom, "example_file": example,
+             "fix": "declare '%s' in depends_on" % dom})
 
 failed = any(v for v in findings.values())
 status = "FAIL" if failed else "PASS"

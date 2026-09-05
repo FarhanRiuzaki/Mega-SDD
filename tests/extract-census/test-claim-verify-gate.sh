@@ -51,6 +51,9 @@ Rounding engine (lib/money.php:2).
 | BR-M-1 | Round half-up to 2dp | lib/money.php:4 | | [LOCKED] |
 | BR-M-2 | Negative amounts flip sign | lib/money.php:6 | | [INTENT] |
 
+### Acceptance criteria
+- AC-BR-M-1-1 — given 10.005 · when rounding jalan · then 10.01 · oracle: golden-master legacy run
+
 ## 3. Flow
 _Tidak terdeteksi._
 
@@ -62,6 +65,9 @@ Input amounts (lib/money.php:3).
 
 ## 6. Open Questions
 _Tidak ada._
+
+## 7. Run & Recovery
+Dipanggil per-request (lib/money.php:2); stateless [UNKNOWN scheduler — di luar source set].
 EOF
 
 # ── (1) no verify state → claim_verify_missing ────────────────────────────────
