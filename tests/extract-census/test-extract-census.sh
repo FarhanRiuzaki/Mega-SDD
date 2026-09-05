@@ -182,9 +182,33 @@ _Tidak terdeteksi._
 ## 6. Open Questions
 _Tidak ada._
 EOF
+# 7.25.0 claim-verify lane: the census gate now also requires a passing
+# .verify/<domain>.json per module — seed clean verifier reports through the
+# deterministic writer (doubles as a write-verify-state.sh end-to-end check).
+# (the gate RECOMPUTES locked coverage + the sample floor from each PRD body —
+# an under-scoped report fails claim_verify_incomplete, proven while writing
+# this test: seeding locked_checked=0 against a PRD with a [LOCKED] claim FAILs)
+WRITER="plugins/mega-sdd/scripts/write-verify-state.sh"
+for dom in converter util; do
+  bash "$WRITER" --kb-dir="$KB" --quiet <<EOF2 || fail "write-verify-state failed for $dom"
+VERIFY REPORT
+- module: $dom
+- locked_total: 1
+- locked_checked: 1
+- money_checked: 0
+- sampled: 8
+- exact: 9
+- imprecise: 0
+- wrong: 0
+- wrong_load_bearing: 0
+- findings: none
+EOF2
+done
+[ -f "$KB/.verify/util.json" ] && pass "write-verify-state wrote .verify/util.json" \
+  || fail ".verify/util.json not written"
 gout=$(bash "$GATE" --kb-dir="$KB" </dev/null 2>&1); grc=$?
 [ "$grc" -eq 0 ] && echo "$gout" | grep -q "PASS" \
-  && pass "full claim + citation → PASS" || fail "expected PASS (rc=$grc): $gout"
+  && pass "full claim + citation + verify state → PASS" || fail "expected PASS (rc=$grc): $gout"
 python3 -c "import json;assert json.load(open('$KB/.extract-census-state.json'))['status']=='PASS'" \
   && pass "PASS state recorded" || fail "PASS state missing/wrong"
 
