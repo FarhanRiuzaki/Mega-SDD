@@ -182,6 +182,56 @@ ui_ux:
       - Inter
 YAML
       ;;
+    f4-xs)
+      # size-weighted spec 2026-08-23 §1b (approved 2026-09-05): the U-005-class
+      # replay — a 22-line-implementation unit (1 clean target file, 2 steps,
+      # 1 acceptance entry, zero risk signals => resolver unit_tier=xs). Built
+      # WITH --unit-tier=xs; the golden pins the XS payload shape. The Views
+      # path makes it ui_bearing, so the golden also pins the design-slice
+      # FLOOR rung + the symmetric lens-input copy.
+      cat > "$p/.mega-sdd/vaults/v1/units/U-005.md" <<'MD'
+---
+id: U-005
+title: Tambah kolom keterangan di tabel laporan harian
+task_type: create
+scope: S-01
+scope_name: Laporan
+module: laporan
+risk: low
+status: pending
+target_files:
+  - path: app/Views/laporan/harian.php
+    operation: modify
+acceptance_test:
+  - command: "php tests/laporan/harian_keterangan_test.php"
+    expects: "OK"
+    _authored_by: same-pass
+---
+
+## Goal
+
+Tambah kolom `keterangan` di tabel laporan harian.
+
+## Context (read first)
+
+Tabel laporan harian di app/Views/laporan/harian.php menampilkan kolom tanggal,
+nominal, dan status. Kolom keterangan sudah tersedia di query (C-014); hanya
+render yang belum ada. Tidak ada perubahan skema atau query.
+
+## Implementation steps
+
+1. Tambah header kolom `Keterangan` setelah kolom Status.
+2. Render field `keterangan` per baris dengan escape HTML.
+
+## Acceptance criteria
+
+Acceptance criteria are the frontmatter `acceptance_test:` entries (authoritative).
+
+## Out of scope
+
+- Filter/sort berdasarkan keterangan.
+MD
+      ;;
     f3-hardrules)
       cat > "$p/.mega-sdd/vaults/v1/units/U-003.md" <<'MD'
 ---
@@ -226,12 +276,16 @@ run_fixture() {  # run_fixture <name> <unit> -> populates $WORK/out/<name>/
   local name="$1" unit="$2"
   local proj; proj="$(mkfix "$name")"
   local out="$WORK/out/$name"; mkdir -p "$out"
+  # Per-fixture builder flags: f4-xs is the SAME builder under --unit-tier=xs —
+  # the flag is the seam under test, so it lives here, not in a fixture file.
+  local extra=""
+  case "$name" in f4-xs) extra="--unit-tier=xs" ;; esac
   # Full-tree snapshot BEFORE the build — the emitted-paths golden below is the
   # structural sweep (round M2): a curated copy list is blind to strays, so the
   # COMPLETE set of paths the builder created becomes a golden artifact itself.
   ( cd "$proj" && find . -type f | sort ) > "$WORK/pre.$name"
   bash "$BUILD" --cwd="$proj" --vault="$proj/.mega-sdd/vaults/v1" --unit="$unit" \
-       --plugin-root="$PLUGIN_ROOT" --explain >"$out/stdout.raw" 2>"$out/stderr.raw" </dev/null
+       --plugin-root="$PLUGIN_ROOT" --explain $extra >"$out/stdout.raw" 2>"$out/stderr.raw" </dev/null
   local brc=$?
   echo "$brc" > "$out/exit-code"
   ( cd "$proj" && find . -type f | sort ) > "$WORK/post.$name"
@@ -246,7 +300,7 @@ run_fixture() {  # run_fixture <name> <unit> -> populates $WORK/out/<name>/
   return "$brc"
 }
 
-FIXTURES="f1-minimal:U-001 f2-ui:U-002 f3-hardrules:U-003"
+FIXTURES="f1-minimal:U-001 f2-ui:U-002 f3-hardrules:U-003 f4-xs:U-005"
 
 # ── regen mode (manual, never CI) ────────────────────────────────────────────
 # All-or-nothing (round m1): every fixture builds into $WORK first; golden/ is
@@ -324,6 +378,29 @@ if [ -f "$GOLD/f1-minimal/dispatch-prompt.md" ] && [ -f "$WORK/out/f1-minimal/di
     || pass "self-check: comparator catches a 1-byte divergence"
 else
   fail "self-check: inputs missing — cannot prove the comparator (round m3 guard)"
+fi
+
+# ── XS payload-cut arm (size-weighted spec §1b, approved 2026-09-05) ─────────
+# The f4 golden pins the xs BYTES; this arm pins the RELATION: the SAME fixture
+# built WITHOUT --unit-tier must be materially larger — the xs build stays at
+# most 60% of the full build (measured at ship: 35%, 18142 -> 6334 bytes;
+# lines ratio 12.4:1 -> 5.7:1 on the 22-line U-005-class replay). A regression
+# that quietly re-inflates the xs payload reddens here before any golden regen.
+mv "$WORK/f4-xs" "$WORK/f4-xs.used" 2>/dev/null
+FP="$(mkfix f4-xs)"
+bash "$BUILD" --cwd="$FP" --vault="$FP/.mega-sdd/vaults/v1" --unit=U-005 \
+     --plugin-root="$PLUGIN_ROOT" --quiet </dev/null 2>/dev/null
+FULL_P="$FP/.mega-sdd/vaults/v1/bolts/U-005/dispatch-prompt.md"
+XS_P="$WORK/f4-xs.used/.mega-sdd/vaults/v1/bolts/U-005/dispatch-prompt.md"
+if [ -f "$FULL_P" ] && [ -f "$XS_P" ]; then
+  FB=$(wc -c < "$FULL_P"); XB=$(wc -c < "$XS_P")
+  if [ "$((XB * 100))" -le "$((FB * 60))" ]; then
+    pass "xs payload cut holds: xs=$XB bytes <= 60% of full=$FB bytes"
+  else
+    fail "xs payload re-inflated: xs=$XB bytes > 60% of full=$FB bytes"
+  fi
+else
+  fail "xs relation arm: missing prompt(s) — full=$FULL_P xs=$XS_P"
 fi
 
 echo

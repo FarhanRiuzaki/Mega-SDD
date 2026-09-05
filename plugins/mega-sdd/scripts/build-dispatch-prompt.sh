@@ -105,17 +105,24 @@ UNIT=""
 PLUGIN_ROOT=""
 QUIET=0
 EXPLAIN=0
+UNIT_TIER=""
 for arg in "$@"; do
   case "$arg" in
     --cwd=*)         CWD="${arg#*=}" ;;
     --vault=*)       VAULT="${arg#*=}" ;;
     --unit=*)        UNIT="${arg#*=}" ;;
     --plugin-root=*) PLUGIN_ROOT="${arg#*=}" ;;
+    --unit-tier=*)   UNIT_TIER="${arg#*=}" ;;
     --explain)       EXPLAIN=1 ;;
     --quiet)         QUIET=1 ;;
     *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
+# --unit-tier: the resolver's verdict label, PASSED BY THE CALLER (execute-bolts
+# Step 2 already holds the verdict JSON — one source of verdict, this builder
+# never calls the router itself; size-weighted spec 2026-08-23 §1b). Only `xs`
+# changes behavior. An unknown value FAILS OPEN to the full payload — a label
+# must never make a bolt undispatchable.
 # --explain and --quiet are NOT two settings of one verbosity dial
 # (context-enrichment.md §stdout JSON): --explain ADDS the forensic keys back,
 # --quiet removes stdout entirely (and with it `inline_core`, the only reason
@@ -228,6 +235,7 @@ export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 MSDD_CWD="$CWD" MSDD_VAULT="$VAULT" MSDD_UNIT="$UNIT" \
 MSDD_PLUGIN_ROOT="$PLUGIN_ROOT" MSDD_PACK_CHAIN="$PACK_CHAIN" MSDD_QUIET="$QUIET" \
 MSDD_EXPLAIN="$EXPLAIN" MSDD_PACK_RC="$PACK_RC" MSDD_PY="$MEGA_SDD_PY" \
+MSDD_UNIT_TIER="$UNIT_TIER" \
 $MEGA_SDD_PY <<'PYEOF'
 # -*- coding: utf-8 -*-
 """Deterministic bolt-dispatch-prompt assembler.
@@ -264,6 +272,14 @@ QUIET = os.environ.get("MSDD_QUIET", "0") == "1"
 EXPLAIN = os.environ.get("MSDD_EXPLAIN", "0") == "1"
 PACK_RC = int(os.environ.get("MSDD_PACK_RC", "0") or 0)
 PY_USED = os.environ.get("MSDD_PY", "") or "python3"
+# unit_tier label from the caller (size-weighted spec §1b). Fail OPEN: an
+# unrecognized value is recorded and treated as "" (full payload) — the label
+# can only ever SHRINK a payload, never block a dispatch.
+UNIT_TIER = os.environ.get("MSDD_UNIT_TIER", "").strip().lower()
+UNIT_TIER_BAD = ""
+if UNIT_TIER not in ("", "xs", "s", "m", "l"):
+    UNIT_TIER_BAD = UNIT_TIER
+    UNIT_TIER = ""
 
 # ── Canonical budget constants (context-enrichment.md §T2 budget tracker) ──────
 # These four numbers are law and they do FOUR different jobs — conflating any two
@@ -385,6 +401,11 @@ import vault_layouts               # noqa: E402  every accepted vault layout
 
 
 _OMIT_SEEN = set()
+# xs payload-cut records (size-weighted §1b): stdout-only like _OMIT_NOT_IN_PROMPT,
+# but EXCLUDED from the "(structural, every project)" provenance line — an xs cut
+# is a per-dispatch tier decision, not a can-never-exist input, and the aggregated
+# `unit_tier_xs` row is their in-prompt record.
+_OMIT_XS_QUIET = set()
 # F-30 (spec 2026-08-30 §2.1): omissions about inputs that can NEVER exist in
 # any project (a phantom join key, a lane deleted in v7.3.0) stay in the stdout
 # audit trail — the cascade accounting is unchanged — but are NOT rendered into
@@ -1296,9 +1317,10 @@ if not PLUGIN_VERSION:
 t1.append("")
 t1.append("## Provenance values (per-dispatch)")
 t1.append("")
-t1.append("The VALUES the agent fills into the agent-carried trailer shape (its system")
-t1.append("prompt §Provenance trailer) in every modified file:")
-t1.append("")
+if UNIT_TIER != "xs":
+    t1.append("The VALUES the agent fills into the agent-carried trailer shape (its system")
+    t1.append("prompt §Provenance trailer) in every modified file:")
+    t1.append("")
 t1.append("```")
 t1.append("Provenance values:")
 t1.append("  unit_id: %s" % unit_id)
@@ -1347,16 +1369,24 @@ if note_fires:
     t1.append("")
     t1.append("## Acceptance-test provenance NOTE")
     t1.append("")
-    t1.append("> NOTE: This unit's `acceptance_test` has weak blind-spot coverage")
-    t1.append("> (_authored_by: %s). The test was authored by the same LLM pass that" % shown)
-    t1.append("> wrote the unit body — the test may inherit the same blind spots as the spec")
-    t1.append("> and fail to catch behavioral bugs your implementation introduces.")
-    t1.append(">")
-    t1.append("> If your implementation passes this test but feels under-validated:")
-    t1.append(">   - In bolt-report.md self-assessment, set `acceptance_test_concern: <details>`")
-    t1.append(">     explaining what you suspect the test might miss")
-    t1.append(">   - Propose 1-2 additional assertions you'd add to strengthen coverage")
-    t1.append(">   - Mark `confidence` no higher than MEDIUM for behaviors not directly tested")
+    if UNIT_TIER == "xs":
+        # size-weighted §1b: the FACT (same-pass provenance) and the binding
+        # instruction (confidence ceiling) survive; the explanatory narrative is
+        # the payload class xs cuts.
+        t1.append("> NOTE: acceptance_test authored same-pass (_authored_by: %s) — it may share" % shown)
+        t1.append("> the spec's blind spots. Mark `confidence` no higher than MEDIUM for behaviors")
+        t1.append("> not directly tested; record doubts as `acceptance_test_concern` in bolt-report.md.")
+    else:
+        t1.append("> NOTE: This unit's `acceptance_test` has weak blind-spot coverage")
+        t1.append("> (_authored_by: %s). The test was authored by the same LLM pass that" % shown)
+        t1.append("> wrote the unit body — the test may inherit the same blind spots as the spec")
+        t1.append("> and fail to catch behavioral bugs your implementation introduces.")
+        t1.append(">")
+        t1.append("> If your implementation passes this test but feels under-validated:")
+        t1.append(">   - In bolt-report.md self-assessment, set `acceptance_test_concern: <details>`")
+        t1.append(">     explaining what you suspect the test might miss")
+        t1.append(">   - Propose 1-2 additional assertions you'd add to strengthen coverage")
+        t1.append(">   - Mark `confidence` no higher than MEDIUM for behaviors not directly tested")
     SECTIONS_EMITTED.append("t1.acceptance_test_note")
 else:
     omit("t1.acceptance_test_note",
@@ -2291,6 +2321,17 @@ if _symtext is not None:
             elif os.path.dirname(_f) in _tdirs:
                 _b.append(row)
         sym_rows = _a + _b
+        if UNIT_TIER == "xs" and _b:
+            # size-weighted spec §1b P3b: an xs unit gets ONLY the symbols
+            # defined IN its target_files — the same-directory leg is payload,
+            # not contract (claim-scoped, never a sweep). The pointer line at
+            # the floor still names the query script, so nothing is hidden.
+            sym_rows = _a
+            omit("symbol_slice.same_dir_rows",
+                 "unit_tier xs — %d same-directory symbol row(s) omitted (target-file "
+                 "rows kept; query via scripts/query-symbol-index.sh)" % len(_b),
+                 prompt=False)
+            _OMIT_XS_QUIET.add("symbol_slice.same_dir_rows")
 
 SYM_HEAD = "### Existing symbols (REUSE — extend, don't recreate)\n\n"
 
@@ -3077,6 +3118,63 @@ else:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# XS PAYLOAD FILTER (size-weighted spec 2026-08-23 §1b — approved 2026-09-05)
+# ══════════════════════════════════════════════════════════════════════════════
+# xs cuts MUATAN (loaded bytes), never BUKTI (evidence): the unit body stays
+# verbatim, P9 constitution is untouched, every validator/gate still runs at the
+# gate, and each cut is recorded in the provenance appendix. Runs BEFORE the
+# cascade so the budget measures what actually ships.
+if UNIT_TIER_BAD:
+    WARNINGS.append("--unit-tier=%r is not a known tier label — ignored, FULL "
+                    "payload emitted (fail-open)" % UNIT_TIER_BAD)
+if UNIT_TIER == "xs":
+    _xs_cut = []          # section keys cut/reduced — ONE aggregated provenance row
+    _xs_drop = {
+        "validation_hints": "anticipatory guidance — the acceptance_test commands "
+                            "stay in the unit body verbatim and the validators still "
+                            "run at the gate",
+        "confidence_labels": "per-claim labels — binding refs + claim ids stay in "
+                             "T1 Provenance values",
+    }
+    if len(depends_on) <= 1:
+        _xs_drop["depends_on_summaries"] = (
+            "%d upstream dep(s) — chain summary omitted at <=1 hop; the "
+            "depends_on list itself stays in the unit frontmatter" % len(depends_on))
+    if not ui_bearing:
+        _xs_drop["starterkit_slice"] = "scaffolding context on a non-UI xs unit"
+        _xs_drop["map_patterns"] = "scaffolding context on a non-UI xs unit"
+    for _k, _why in _xs_drop.items():
+        if SECTIONS.pop(_k, None) is None:
+            continue
+        if _k in SECTIONS_EMITTED:
+            SECTIONS_EMITTED.remove(_k)
+        omit(_k, "unit_tier xs — payload cut (size-weighted spec §1b): %s" % _why,
+             prompt=False)
+        _OMIT_XS_QUIET.add(_k)
+        _xs_cut.append(_k)
+    # ui_bearing xs: the P8 slices are STEPPED TO THEIR OWN FLOOR, never cut
+    # (amendment 2026-09-05, recorded in the spec). The design lens reads
+    # s.text() AFTER the cascade — the rung that ships — so implementer and
+    # reviewer still hold ONE byte-identical (now floor-level) contract; the
+    # ui-quality gate itself is untouched. Floors are never "" for these
+    # sections, so a design contract line always survives.
+    for _k in ("framework_pack_rules", "design_slice", "starterkit_slice"):
+        _sec = SECTIONS.get(_k)
+        if _sec is not None and len(_sec.levels) > 1 and not _sec.at_floor():
+            _sec.level = len(_sec.levels) - 1
+            omit("%s.xs_floor" % _k,
+                 "unit_tier xs — held at its own drop-floor rung per §1b (Tier 3 "
+                 "still points at the full source)", prompt=False)
+            _OMIT_XS_QUIET.add("%s.xs_floor" % _k)
+            _xs_cut.append("%s->floor" % _k)
+    if _xs_cut:
+        omit("unit_tier_xs",
+             "payload cuts per size-weighted spec §1b (%s) — unit body verbatim, "
+             "constitution + every gate uncut; per-key reasons on stdout "
+             "sections_omitted (--explain)" % ", ".join(sorted(_xs_cut)))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # THE CASCADE
 # ══════════════════════════════════════════════════════════════════════════════
 # REALIZATION CHOICE (the prose describes it three ways — streaming "before
@@ -3215,22 +3313,33 @@ def render_tracker(file_total):
                "consumed_t1: %d bytes (cap %d)" % (consumed_t1, CAP_T1),
                "consumed_t2: %d bytes (cap %d, hard %d)" % (consumed_t2, CAP_T2, CAP_HARD),
                "total: %d bytes  # T1 + T2 ONLY — the budgeted, truncatable content"
-               % (consumed_t1 + consumed_t2),
-               "file_total: %-8d bytes  # THIS WHOLE FILE; the gap from `total` is the four"
-               % file_total,
-               "                            # un-budgeted, never-truncated blocks (TIER 2 banner,",
-               "                            # this tracker, TIER 3 list, PROVENANCE appendix).",
-               "truncations_applied:"]
+               % (consumed_t1 + consumed_t2)]
+    if UNIT_TIER == "xs":
+        # size-weighted §1b "tracker ringkas": same numbers, one-line file_total
+        # (the %-8d fixed-point contract is unchanged), explainer prose dropped.
+        tracker.append("file_total: %-8d bytes  # whole file incl. the un-budgeted blocks"
+                       % file_total)
+    else:
+        tracker += ["file_total: %-8d bytes  # THIS WHOLE FILE; the gap from `total` is the four"
+                    % file_total,
+                    "                            # un-budgeted, never-truncated blocks (TIER 2 banner,",
+                    "                            # this tracker, TIER 3 list, PROVENANCE appendix)."]
+    tracker.append("truncations_applied:")
     if TRUNCATIONS:
         for w in TRUNCATIONS:
             tracker.append("  - %s: %s (saved %d bytes)"
                            % (w["section"], w["rule_applied"], w["bytes_saved"]))
     else:
         tracker.append("  - (none)")
-    tracker += ["instruction_to_subagent:",
-                "  If your self-assessment relies on a truncated section listed above, mark its",
-                "  confidence MEDIUM (not HIGH) and note the truncation in bolt-report.md.",
-                "  Truncation is transparency, not failure.", "```"]
+    if UNIT_TIER == "xs" and not TRUNCATIONS:
+        # the instruction refers to "a truncated section listed above" — with
+        # (none) listed it is vacuous text; dropped on the ringkas tracker only.
+        tracker.append("```")
+    else:
+        tracker += ["instruction_to_subagent:",
+                    "  If your self-assessment relies on a truncated section listed above, mark its",
+                    "  confidence MEDIUM (not HIGH) and note the truncation in bolt-report.md.",
+                    "  Truncation is transparency, not failure.", "```"]
     return "\n".join(tracker)
 
 # F-30 / F-29: the KB pointer names the KB root that EXISTS (the PRD-kontrak
@@ -3385,9 +3494,25 @@ prov_lines = ["═════════════════════�
               "Every absent or unresolvable input is recorded here rather than invented "
               "(invariant #5).", ""]
 _prov_rows = [_o for _o in SECTIONS_OMITTED if _o["section"] not in _OMIT_NOT_IN_PROMPT]
-_prov_structural = sorted({_o["section"] for _o in SECTIONS_OMITTED if _o["section"] in _OMIT_NOT_IN_PROMPT})
-for _o in _prov_rows:
-    prov_lines.append("- %s: %s" % (_o["section"], _o["reason"]))
+# xs payload-cut records are covered by their aggregated `unit_tier_xs` row —
+# NOT "structural, every project" inputs, so they never ride that line.
+_prov_structural = sorted({_o["section"] for _o in SECTIONS_OMITTED
+                           if _o["section"] in _OMIT_NOT_IN_PROMPT
+                           and _o["section"] not in _OMIT_XS_QUIET})
+if UNIT_TIER == "xs":
+    # size-weighted §1b: the appendix stays (invariant #5 — every absence
+    # RECORDED) but RINGKAS: key names only; the full reasons remain on stdout
+    # `sections_omitted` via --explain, nothing is deleted.
+    _agg = next((_o for _o in _prov_rows if _o["section"] == "unit_tier_xs"), None)
+    _keys = sorted(_o["section"] for _o in _prov_rows if _o["section"] != "unit_tier_xs")
+    if _keys:
+        prov_lines.append("- absent inputs (keys only — full reasons on stdout "
+                          "sections_omitted / --explain): %s" % ", ".join(_keys))
+    if _agg is not None:
+        prov_lines.append("- %s: %s" % (_agg["section"], _agg["reason"]))
+else:
+    for _o in _prov_rows:
+        prov_lines.append("- %s: %s" % (_o["section"], _o["reason"]))
 if _prov_structural:
     # Named, not hidden: the sections that can never exist in ANY project are
     # listed on one line; their reasons live on stdout `sections_omitted`.
@@ -3614,6 +3739,9 @@ report = {
 # no rubric and SAYS so, rather than substituting a different section.
 if design_slice_path:
     report["design_slice_path"] = design_slice_path
+# Absent key when no --unit-tier was passed — never invented from the prompt.
+if UNIT_TIER:
+    report["unit_tier"] = UNIT_TIER
 if EXPLAIN:
     report["caps"] = {"cap_hard": CAP_HARD, "cap_target": CAP_TARGET,
                       "cap_t1": CAP_T1, "cap_t2": CAP_T2}

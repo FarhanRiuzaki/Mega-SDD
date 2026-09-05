@@ -342,7 +342,8 @@ Full upstream bolt-reports, full constitution, full KB domain files, full framew
 ```bash
 bash "<plugin-root>/scripts/build-dispatch-prompt.sh" \
   --cwd=<project-root> --vault=<vault> --unit=U-XXX \
-  --plugin-root="<plugin-root>"
+  --plugin-root="<plugin-root>" \
+  --unit-tier=<xs|s|m|l>
 ```
 
 > **`<plugin-root>` is a placeholder here on purpose — do not paste this block into a dispatch.**
@@ -354,6 +355,23 @@ bash "<plugin-root>/scripts/build-dispatch-prompt.sh" \
 > the controller emits, and it is the string measured below.
 
 `--plugin-root` is **REQUIRED of the controller**, not optional. It is already known (the same variable names the script), and passing it skips the `resolve-plugin-root.sh` spawn — measured at 6 process creations per bolt including that helper's own `ls | grep | sort | tail` pipeline, ≈1.3 s/bolt and ≈53 s over a 40-unit run on a CrowdStrike-scanned Windows laptop at ~220 ms/spawn, at **zero behavioral cost**. `--quiet` is FORBIDDEN: stdout is the sole carrier of `inline_core` and `design_slice_path`.
+
+`--unit-tier=` carries the `unit_tier` field of the **same `resolve-review-tier.sh` JSON the controller already holds** for panel/model routing (one source of verdict — the builder never calls the router). An unknown value or an absent flag **fails OPEN** to the full payload, and stdout echoes the label back as `unit_tier` when one was passed.
+
+### XS emission (size-weighted spec 2026-08-23 §1b, approved 2026-09-05)
+
+Only `xs` changes the emission. What holds ALWAYS: unit body **verbatim**, `constitution_clauses` untouched, anti-context intact, every validator/gate unchanged — xs cuts **muatan** (loaded bytes), never **bukti** (evidence), and every cut is recorded (aggregated `unit_tier_xs` provenance row in the file; per-key reasons on stdout `sections_omitted` via `--explain`). The cuts:
+
+| Surface | XS behavior |
+|---|---|
+| `validation_hints` (P1), `confidence_labels` (P5) | dropped (commands stay in the unit body; claim ids stay in T1 Provenance values) |
+| `depends_on_summaries` (P6) | dropped at ≤1 upstream dep; kept beyond |
+| `framework_pack_rules` (P7), `design_slice` / `starterkit_slice` (P8) | **held at their own drop-floor rung** — never fully dropped; the design lens reads the post-cascade text, so implementer and reviewer keep ONE (floor-level) contract |
+| `map_patterns` / `starterkit_slice` on a NON-UI unit | dropped (scaffolding) |
+| `symbol_slice` (P3b) | target-file rows only (same-directory leg dropped) |
+| Acceptance-provenance NOTE, Provenance-values preamble, tracker explainer + vacuous truncation instruction, provenance appendix | compressed (fact + binding instruction survive; appendix lists keys, reasons on stdout) |
+
+Measured at ship on the f4-xs U-005-class replay (22-line implementation): 18,174 → 6,342 bytes (**−65%**), 273 → 125 lines (**12.4:1 → 5.7:1** prompt-lines : impl-lines; the spec's ≤5:1 target was missed by 0.7 — closing it would cut contract/protection blocks, rejected). Pinned by `tests/dispatch-parity/` golden `f4-xs` + the ≤60% relation arm.
 
 *(The invocation string is itself a measured OUTPUT cost — byte-exact figures per expansion form and project-root length: amendment history → the archive spec. Any headline quoting this string must state which expansion form and which root length it assumed.)*
 
