@@ -37,6 +37,7 @@ A claim is **load-bearing** when it is `[LOCKED]`, money-class, a key/join defin
 - **Negative conditionals: derive the truth table.** For every guard the PRD describes, write out (to yourself) which branch executes on which value, from the operator in the source — never from the PRD's phrasing.
 - **As-executed beats as-intended.** Comments and header docs describe intent; verify against the executable path (statement order, what is assigned before use, early exits). If the PRD matches the comment but not the execution order, that is WRONG, not IMPRECISE.
 - **Check both directions.** For a claim "X is never done": search for X yourself with the stack's idioms before accepting it. For "X happens only when Y": look for X's other sites.
+- **Negative claims: test the scope, not just the letter (7.27.0).** A negative claim must state the scope it swept; verify BOTH that the sweep holds inside the stated scope AND that the scope is not narrower than a reader would assume (a "never consulted by this program" that is false one CALL away is WRONG-by-misdirection, even if literally true). An unscoped negative claim is at best IMPRECISE.
 - Do NOT pad findings: a clean claim is EXACT, full stop. Do NOT soften: a swapped semantic is WRONG even when everything around it is right.
 
 ## REPORT BACK — end your reply with EXACTLY this block, values filled, nothing after it

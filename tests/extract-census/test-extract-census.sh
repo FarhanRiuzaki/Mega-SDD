@@ -98,6 +98,9 @@ Konversi input jadi uppercase (index.php:2).
 |---|---|---|---|---|---|
 | BR-CONVERTER-1 | Input dikonversi ke huruf besar | Format hilir | index.php:2 |  | [LOCKED] |
 
+### Acceptance criteria
+- AC-BR-CONVERTER-1-1 — given "abc" · when convert jalan · then output "ABC" · oracle: golden-master legacy run
+
 ## 3. Flow
 ```mermaid
 flowchart LR
@@ -112,6 +115,9 @@ _Tidak terdeteksi._
 
 ## 6. Open Questions
 _Tidak ada._
+
+## 7. Run & Recovery
+Dipanggil manual dari CLI (index.php:3); tanpa window/restart state [UNKNOWN — legacy tanpa scheduler di source set].
 EOF
 
 gout=$(bash "$GATE" --kb-dir="$KB" </dev/null 2>&1); grc=$?

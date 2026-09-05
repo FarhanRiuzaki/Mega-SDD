@@ -112,6 +112,28 @@ section kontrak operasional; rail klaim-negatif; flow-br-lint advisory.
    termasuk #CRTFLT:125/144/182/201 (4 site float lane E) dan tltran:1438 (site
    CFTPNT ke-4). Deteksi audit kini deterministik.
 
+## Amendemen Fase 5 (7.27.0, saat implementasi)
+
+1. **`depends_on` TIDAK di-rename** (konsumen: build-graph, kb_output, bind) —
+   semantiknya dipertegas "references, cycle sah"; field BARU `rebuild_after`
+   (subset acyclic) jadi sumber build order README. Census gate:
+   `rebuild_order_invalid` (unknown module / bukan subset / cycle, DFS 3-warna).
+2. **AC-for-LOCKED = FAIL** (`ac_missing_for_locked`): tiap baris BR ber-[LOCKED]
+   wajib ≥1 `AC-<BR-id>-n` (oracle golden-master) atau `blocked-by-OQ` eksplisit.
+   Deteksi deterministik dari baris tabel; [LOCKED] di luar baris BR tidak
+   membebankan AC.
+3. **§7 Run & Recovery** wajib hanya untuk `classification: workflow`
+   (via `missing_sections`); kb_output tetap cek 1-6 (census yang punya aturan §7).
+4. **3 advisory baru** (tidak pernah FAIL): `undeclared_reference` (sitasi file
+   modul lain tanpa depends_on — kelas 5 edge lane F), `rule_needs_decision_table`
+   (≥3 konektor boolean di sel Rule), `flow_names_artifact_component` (token
+   uppercase di baris [ARTIFACT] muncul di §3 — kelas FNDCUR).
+5. **Rail klaim-negatif** = prosa di extractor ("negative claim menyebut scope
+   sweep-nya") + verifier ("uji scope, bukan cuma huruf; unscoped negative =
+   IMPRECISE minimal") — tidak ada validator (undetectable deterministik).
+6. Decision-table & register AC: bentuk di template §2; mandat = prosa +
+   advisory, bukan FAIL (bentuk prosa yang benar tidak bisa dibedakan mesin).
+
 ## Tranche C — cost (measured-first, gate terpisah)
 
 - **C1:** fix `TOKEN-COST-REPORT.md` 0 byte (state JSON terisi, report kosong) + pastikan

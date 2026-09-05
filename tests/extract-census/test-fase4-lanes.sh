@@ -77,6 +77,9 @@ Order writer (prog.rpg:2). Layout (table.dds:1).
 | BR-C-1 | Write order record | prog.rpg:2 | | [LOCKED] |
 | BR-C-2 | Helper resolves account | prog.rpg:3 | [INFERRED] (dasar: satu call site) | [INTENT] |
 
+### Acceptance criteria
+- AC-BR-C-1-1 — blocked-by-OQ-C-1 (fixture butuh layout EXTRA)
+
 ## 3. Flow
 _Tidak terdeteksi._
 
@@ -88,6 +91,9 @@ Order record ditulis (prog.rpg:2). Call HELPER (prog.rpg:3).
 
 ## 6. Open Questions
 - OQ-C-1 [P1] — Layout file EXTRA hilang; kalau filenya dateng kejawab. (probe-glob: extras/*.dds)
+
+## 7. Run & Recovery
+Batch harian via job stream [UNKNOWN — CL tidak ada di source set]; window RRN via entry parm (prog.rpg:1).
 EOF
 
 # ── counts: check mode flags drift, --write trues up, idempotent ─────────────

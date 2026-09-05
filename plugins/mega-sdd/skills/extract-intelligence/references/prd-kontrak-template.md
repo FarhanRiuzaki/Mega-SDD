@@ -52,7 +52,8 @@ generated_at: <ISO8601>
 domain: <module-name>                # = the module; file is modules/<domain>.prd.md
 classification: master | workflow | reporting | integration | reference
 criticality: high | medium | low
-depends_on: []                       # other module names
+depends_on: []                       # REFERENCES — other modules this PRD cross-cites; cycles are FINE (7.27.0 semantics)
+rebuild_after: []                    # BUILD ORDER (7.27.0) — strict subset of depends_on that must be rebuilt FIRST; must be ACYCLIC (census gate checks) — this is what README's rebuild order derives from (depends_on never was derivable: full of legitimate cycles, field-proven)
 source_files:                        # census paths this module CLAIMS (exactly-once across all PRDs)
   - <path relative to legacy root>
 inferred_count: <int>                # SCRIPT-DERIVED (7.26.0) — the controller runs
@@ -68,7 +69,7 @@ source_files_cited: <int>            # open_count = §6 OQ entries.
 grammar makes it underivable, and an underivable number was pure drift surface
 (kb_output treats a present field as informational, never checks it).
 
-## Module PRD template (6 sections)
+## Module PRD template (6 sections + §7 Run & Recovery untuk workflow)
 
 Headings verbatim (English headings = machine-greppable Tier-1 tokens; body
 narrative follows the output-language rule). A section with nothing to record
@@ -88,6 +89,22 @@ silent omission, never padded content.
 
 Depth: every conditional branch that drives a different business outcome = one
 rule row; implicit conditionals made explicit; error-handling rules count.
+
+<Decision-table mandate (7.27.0): rule yang outcome-nya tergantung ≥3 kondisi
+independen BUKAN prosa — tulis sebagai decision table (kolom = kondisi, baris =
+kombinasi → outcome, tiap baris cited). Field lesson: matriks interbranch 4-leg
+& state machine NDP ditulis prosa dan divonis audit "tidak implementable tanpa
+baca ulang source".>
+
+### Acceptance criteria
+<WAJIB ≥1 baris per BR ber-[LOCKED] (census gate: `ac_missing_for_locked`);
+BR lain opsional. Bentuk per baris:
+- AC-BR-<DOMAIN>-<N>-1 — given <input/fixture> · when <trigger> · then <hasil
+  persis, angka/format eksplisit> · oracle: golden-master legacy run
+- AC-BR-<DOMAIN>-<M>-1 — blocked-by-OQ-<DOMAIN>-<K> (fixture butuh <apa>)
+Oracle default = golden-master (jalankan legacy pada fixture yang sama,
+bandingkan angka/byte). AC yang belum bisa ditulis karena data/artefak belum
+ada → `blocked-by-OQ-<id>` eksplisit, JANGAN dikarang.>
 
 ## 3. Flow
 <Mermaid flowchart WAJIB (Input → Process → Output) per
@@ -124,6 +141,18 @@ source program lain) WAJIB bawa probe di akhir baris: `(probe-glob: <pattern>)`
 — glob relatif ke project root ATAU legacy root; census gate menyurface
 `oq_answerable_from_disk` (advisory) begitu bukti-nya muncul di disk (field
 lesson Host: jawaban 3 OQ P1 nganggur sehari di folder tanpa terdeteksi).>
+
+## 7. Run & Recovery
+<WAJIB untuk module ber-`classification: workflow` (7.27.0; module lain: omit).
+Kontrak level-RUN yang tercecer kalau cuma ditulis per-rule: (a) siapa/apa
+pemicu & pemanggilnya (job stream, scheduler, layar); (b) parameter entry &
+window (range record, tanggal); (c) semantik RESTART/RERUN — apa yang terjadi
+kalau job mati di tengah lalu diulang pada window yang sama (double-posting?);
+(d) state antar panggilan/program (file yang dibuka sekali, buffer yang
+bertahan, siklus open/close); (e) urutan terhadap job lain. Tiap butir cited
+atau `[UNKNOWN]` EKSPLISIT dengan OQ + probe — absence yang dinyatakan ≠
+omission (field lesson: silent re-process saat rerun window cuma ketahuan dari
+audit, bukan dari KB).>
 ```
 
 Citations are INLINE: `(path:line)` or `(path:line-line)` immediately after
@@ -268,6 +297,8 @@ head -1 "$P" | grep -qx -- '---' && grep -q '^generated_by: mega-sdd:extract-int
   && grep -q '^domain:' "$P" && grep -q '^source_files:' "$P" || echo "GATE FAIL: frontmatter"
 # 2. all 6 sections present (explicit absence allowed, omission not)
 for n in 1 2 3 4 5 6; do grep -qE "^## ${n}\." "$P" || echo "GATE FAIL: section $n missing"; done
+# 2b. workflow module: §7 Run & Recovery WAJIB (7.27.0; census gate re-checks)
+grep -q '^classification: workflow' "$P" && { grep -qE '^## 7\.' "$P" || echo "GATE FAIL: workflow module missing section 7 (Run & Recovery)"; }
 # 3. workflow module: ≥3 gotcha entries in §5
 # 4. Mermaid fence in §3 (mermaid-emission-rules 5-rule checklist)
 grep -q '```mermaid' "$P" || echo "GATE FAIL: §3 Flow has no Mermaid fence"
@@ -286,7 +317,7 @@ routing probe for "KB exists"). Required sections in order:
 
 1. **Project header** — name, 1-sentence description, extraction date, legacy source path.
 2. **How to use** — table: reader goal → file.
-3. **Module quick reference** — table of modules: classification + criticality + recommended rebuild order (from `depends_on`; this REPLACES the retired `--phase` machinery — module = the phasing unit).
+3. **Module quick reference** — table of modules: classification + criticality + recommended rebuild order derived from `rebuild_after` (the ACYCLIC field, 7.27.0 — `depends_on` is references-only and legitimately cyclic, never a build order; this REPLACES the retired `--phase` machinery — module = the phasing unit).
 4. **`## Reengineering Opportunities`** — forward-looking design opportunities (heading verbatim — read by `generate-intent --kb`).
 5. **`## Mutability Tier Distribution`** — LOCKED/INTENT/ARTIFACT counts per module (heading verbatim — read by `generate-intent --kb`).
 6. **`## Critical Findings`** — do-not-replicate bugs first; lead with what hurts.
