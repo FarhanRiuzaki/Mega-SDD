@@ -66,6 +66,7 @@ TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown-ts")
 # the ledger and reports scope_mode=aggregate with zero counters.
 SCOPE_MODE="aggregate"; REUSED_FILES=0; RERUN_FILES=0; LEDGER_TS=""
 V3_ST=""; V4_ST=""; V5_ST=""; V7_ST=""; V7M_ST=""; V7F_ST=""; V7VF_ST=""; V7C_ST=""
+KB_MISCONF=0   # SKIP-honesty (7.24.0 Fase 2): 1 = KB md exists but no kb_* validator sees it
 
 if [ "$AGGREGATE_ONLY" -eq 1 ]; then
   # ─── AGGREGATE-ONLY MODE ──────────────────────────────────────────────
@@ -99,19 +100,37 @@ if [ "$AGGREGATE_ONLY" -eq 1 ]; then
     && V3_RC="STATE_FILE" || V3_RC="SKIP"
   _has "${CWD}/.mega-sdd/vaults" -name "FSD.md" -not -path "*/.archived/*" \
     && V5_RC="STATE_FILE" || V5_RC="SKIP"
+  # kb_* discovery covers BOTH grammars: legacy tree (10-domains/20-workflows/
+  # 40-business-rules) AND the 7.6+ census-contracted modules/*.prd.md layout
+  # (7.24.0 — without the modules glob every post-7.6 KB SKIP'd forever while
+  # the aggregate reported PASS; spec 2026-09-05-kb-verify-lane-design.md).
   { _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
     || _has "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*" \
-    || _has "${CWD}/.mega-sdd/knowledge-base/40-business-rules" -name "*.md" -not -path "*/.archived/*"; } \
+    || _has "${CWD}/.mega-sdd/knowledge-base/40-business-rules" -name "*.md" -not -path "*/.archived/*" \
+    || _has "${CWD}/.mega-sdd/knowledge-base/modules" -name "*.prd.md" -not -path "*/.archived/*"; } \
     && V7_RC="STATE_FILE" || V7_RC="SKIP"
-  _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
+  { _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
+    || _has "${CWD}/.mega-sdd/knowledge-base/modules" -name "*.prd.md" -not -path "*/.archived/*"; } \
     && V7M_RC="STATE_FILE" || V7M_RC="SKIP"
   { _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
-    || _has "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*"; } \
+    || _has "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*" \
+    || _has "${CWD}/.mega-sdd/knowledge-base/modules" -name "*.prd.md" -not -path "*/.archived/*"; } \
     && V7F_RC="STATE_FILE" || V7F_RC="SKIP"
   _has "${CWD}/.mega-sdd/vaults" \( -name "04-flows.md" -o -name "flows.md" \) -not -path "*/.archived/*" \
     && V7VF_RC="STATE_FILE" || V7VF_RC="SKIP"
-  _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
+  { _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
+    || _has "${CWD}/.mega-sdd/knowledge-base/modules" -name "*.prd.md" -not -path "*/.archived/*"; } \
     && V7C_RC="STATE_FILE" || V7C_RC="SKIP"
+
+  # SKIP-honesty (7.24.0 Fase 2, spec 2026-09-05-kb-verify-lane-design.md):
+  # KB markdown exists on this tree but NO kb_* validator recognizes the layout
+  # → that is a discovery misconfiguration (the 7.6.0→7.23.x blind spot), never
+  # a quiet SKIP. Broad subject = any KB .md that is not a known non-subject.
+  if [ "$V7_RC" = "SKIP" ] && _has "${CWD}/.mega-sdd/knowledge-base" -name "*.md" \
+       -not -path "*/html/*" -not -path "*/_source/*" -not -path "*/decisions/*" \
+       -not -path "*/.archived/*" -not -name "README.md" -not -name "data-mutation-policy.md"; then
+    KB_MISCONF=1
+  fi
 
   # Advisory checks not re-run in aggregate-only mode
   REUSE_DUP_OUTPUT=""
@@ -146,12 +165,26 @@ fi
 # Per-family candidate lists (globs byte-identical to the pre-S1 loop finds).
 find "${CWD}/.mega-sdd/vaults" \( -name "0[0-6]-*.md" -o -name "vault.md" -o -name "model.md" -o -name "flows.md" -o -name "constraints.md" \) -not -path "*/bound/*" -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.vault_oqs"
 find "${CWD}/.mega-sdd/vaults" -name "FSD.md" -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.fsd_slots"
+# kb_* lists cover BOTH grammars (legacy tree + 7.6+ modules/*.prd.md — 7.24.0).
 { find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; \
   find "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; \
-  find "${CWD}/.mega-sdd/knowledge-base/40-business-rules" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; } > "${TMPD}/files.kb_output"
-find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.kb_markers"
+  find "${CWD}/.mega-sdd/knowledge-base/40-business-rules" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; \
+  find "${CWD}/.mega-sdd/knowledge-base/modules" -name "*.prd.md" -not -path "*/.archived/*" 2>/dev/null; } > "${TMPD}/files.kb_output"
 { find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; \
-  find "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; } > "${TMPD}/files.kb_flows"
+  find "${CWD}/.mega-sdd/knowledge-base/modules" -name "*.prd.md" -not -path "*/.archived/*" 2>/dev/null; } > "${TMPD}/files.kb_markers"
+{ find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; \
+  find "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; \
+  find "${CWD}/.mega-sdd/knowledge-base/modules" -name "*.prd.md" -not -path "*/.archived/*" 2>/dev/null; } > "${TMPD}/files.kb_flows"
+# SKIP-honesty (7.24.0 Fase 2): KB md exists on disk but the kb_output candidate
+# list is EMPTY → the discovery globs are blind to this KB layout — surface a
+# loud kb_discovery FAIL row instead of a quiet family SKIP.
+if [ ! -s "${TMPD}/files.kb_output" ] && \
+   find "${CWD}/.mega-sdd/knowledge-base" -name "*.md" \
+     -not -path "*/html/*" -not -path "*/_source/*" -not -path "*/decisions/*" \
+     -not -path "*/.archived/*" -not -name "README.md" -not -name "data-mutation-policy.md" \
+     2>/dev/null | grep -q .; then
+  KB_MISCONF=1
+fi
 find "${CWD}/.mega-sdd/vaults" \( -name "04-flows.md" -o -name "flows.md" \) -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.vault_flows"
 # unit_baseline drives NO reuse in analyze (unit_spec always re-runs, single
 # invocation below) — it is the changed-set baseline for lint-units --changed-only.
@@ -469,7 +502,8 @@ V7C_HAS_FILES=0
 # Legacy-root detection is DELEGATED to the validator: it carries the richer M4
 # auto-detect (every §8.5 manifest + _source/ / legacy/ probes). Passing an empty
 # --legacy-root lets that run instead of a narrower duplicate here shadowing it.
-for kf in $(find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null); do
+for kf in $(find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; \
+            find "${CWD}/.mega-sdd/knowledge-base/modules" -name "*.prd.md" -not -path "*/.archived/*" 2>/dev/null); do
   V7C_HAS_FILES=1
   rc=$(run_validator "validate-kb.sh" --surface=citations --cwd="$CWD" --file-path="$kf" --legacy-root="" --quiet)
   [ "$rc" = "SKIP" ] && continue
@@ -630,6 +664,7 @@ ANALYZE_OUTPUT=$(CWD="$CWD" TS="$TS" VAULT_CONSISTENCY="$VAULT_CONSISTENCY" REUS
   V3_ST="$V3_ST" V4_ST="$V4_ST" V5_ST="$V5_ST" V7_ST="$V7_ST" V7M_ST="$V7M_ST" V7F_ST="$V7F_ST" V7VF_ST="$V7VF_ST" V7C_ST="$V7C_ST" \
   V13_RC="$V13_RC" V14_RC="$V14_RC" V15_RC="$V15_RC" V16_RC="$V16_RC" \
   SCOPE_MODE="$SCOPE_MODE" REUSED_FILES="$REUSED_FILES" RERUN_FILES="$RERUN_FILES" LEDGER_TS="$LEDGER_TS" \
+  KB_MISCONF="$KB_MISCONF" \
   python3 <<'PYEOF'
 import json
 import os
@@ -749,6 +784,18 @@ for name, vr in validator_results.items():
         detail = f"validator ran (exit={rc}) but no state file written"
 
     boundaries[name] = {"status": status, "state_file": sf, "detail": detail}
+
+# SKIP-honesty (7.24.0 Fase 2, spec 2026-09-05-kb-verify-lane-design.md): KB
+# markdown exists but no kb_* validator recognizes the layout — a discovery
+# misconfiguration must flip overall LOUDLY. "SKIP because there is no subject"
+# and "SKIP because I cannot see the subject" are different verdicts.
+if os.environ.get("KB_MISCONF", "0") == "1":
+    boundaries["kb_discovery"] = {
+        "status": "FAIL", "state_file": "—",
+        "detail": ("MISCONFIGURED: markdown exists under knowledge-base/ but no kb_* "
+                   "validator recognizes the layout — validators are blind to this KB "
+                   "(fix the discovery globs)"),
+    }
 
 # Compute overall. Advisory (v4 Phase 2 Hybrid) boundaries are surfaced in the report
 # but never flip overall to a blocking FAIL — an advisory FAIL contributes WARN at most.

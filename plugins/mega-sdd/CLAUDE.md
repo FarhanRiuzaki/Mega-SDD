@@ -86,6 +86,7 @@ Behavior changes require: a spec amendment (or new spec), updated `<repo-root>/t
 - **Plugin:** SemVer in `plugin.json` (single source of truth; `marketplace.json` must match). Major bump for breaking renames, rails changes, or marketplace incompatibility.
 - **Skills:** per-skill `version:` in frontmatter; bump on content change.
 - **Release:** run trigger tests + fixtures → add a `CHANGELOG.md` entry → bump versions → tag. (The `sync-vendored.sh` release step died with the vendored tree in v7.4.0; the design-intelligence distiller runs standalone when its upstream changes.)
+- **Producer-grammar sweep (7.24.0, field-proven):** any change to a producer's output grammar or layout (KB tree, vault docs, artifact schemas) MUST sweep its consumers before release — validators, `run-analyze.sh` discovery globs, renderers, and downstream readers (`generate-intent --kb`, bind). The 7.6.0 extract revamp moved the KB to `modules/*.prd.md` without migrating the kb_* validators: every post-7.6 KB silently SKIP'd while analyze reported PASS (caught by the 2026-09-05 field audit; `kb_discovery` MISCONFIGURED now backstops the class, but the sweep is the rule).
 - **MCP pins:** `.mcp.json` pins EVERY bundled server (`@playwright/mcp`, `@upstash/context7-mcp`) to an exact version — review each pin (registry-rot check) at each plugin version bump, like the marketplace.json parity check. Never a floating tag. The `@playwright/test` pin in `scripts/build-uat-e2e.sh` (the generated e2e `package.json`) is the same review class.
 
 ## Co-author attribution

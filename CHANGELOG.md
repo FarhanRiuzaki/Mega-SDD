@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.24.0] - 2026-09-05 — KB validators migrated to the 7.6+ module grammar + SKIP-honesty
+
+Spec: `docs/superpowers/specs/2026-09-05-kb-verify-lane-design.md` (Fase 1+2). Riset:
+field audit KB Host-AS400 (`research/2026-09-05-hostas400-kb-audit.md`) + skill-gap
+analysis (`research/2026-09-05-megasdd-skillgap-analysis.md`). Root cause: extract
+revamp 7.6.0 pindah ke `knowledge-base/modules/*.prd.md` (6 section, implicit-verified)
+tapi validator KB tetap di layout/grammar lama → 4 surface SKIP "no applicable files"
+di semua KB baru sementara aggregate lapor PASS (drift beneran lolos di lapangan).
+
+### Fixed
+- **`run-analyze.sh` discovery** (aggregate + FULL + loop citations, 8 site): keluarga
+  kb_* sekarang menemukan `knowledge-base/modules/*.prd.md` di samping tree legacy
+  (10-domains/20-workflows/40-business-rules — dual-grammar back-compat).
+- **`validate-kb.sh` — grammar module per surface** (deteksi by path `modules/*.prd.md`):
+  - `output`: 6 section (`six_sections_present`), counts eksplisit exact-checked
+    ([INFERRED]/[LOCKED]/[ARTIFACT]), `open_count` vs jumlah entri OQ §6; field
+    implicit-default (`verified_count`/`intent_count`) dilaporkan not-recomputable,
+    bukan FAIL palsu; `depends_on` resolution tetap.
+  - `citations`: kontrak census di-recompute analyze-time — tiap entri `source_files`
+    frontmatter wajib tersitasi ≥1× di body (`kb_source_file_uncited`) dan resolve
+    via `census.json` → legacy root → cwd (`kb_source_file_unresolved`).
+  - `markers`: `[VERIFIED]` literal = pelanggaran grammar
+    (`kb_verified_tag_in_module_grammar`); `[INFERRED]` tanpa basis same-line
+    (`(dasar:`/file ref) = `kb_inferred_without_basis`.
+  - `flows`: jalan apa adanya di §3 grammar baru (cukup discovery).
+- Verified di sandbox copy KB Host-AS400: tree yang dulu lapor **PASS** sekarang
+  **Overall: FAIL** — ke-7 modul kena `kb_marker_count_mismatch` persis di drift
+  yang audit temukan; citations/markers/flows PASS jujur.
+
+### Added
+- **SKIP-honesty (`kb_discovery`)**: KB markdown ada di tree tapi tidak ada satu pun
+  validator kb_* yang mengenali layout-nya → row `kb_discovery` **MISCONFIGURED**
+  (FAIL, flip overall) di kedua mode (FULL + `--aggregate-only`) — "SKIP karena tidak
+  ada subjek" ≠ "SKIP karena tidak bisa melihat subjek". Non-subjek (README,
+  data-mutation-policy, `html/`, `_source/`, `decisions/`) tidak memicu.
+- **Standing release rule di `plugins/mega-sdd/CLAUDE.md`**: perubahan grammar/layout
+  producer wajib sweep konsumen (validator, glob discovery, renderer, reader) sebelum rilis.
+- Tests: `tests/kb-validators/test-kb-modules-grammar.sh` (30 pin: clean/drifted/
+  legacy-regression/discovery/live-aggregate/SKIP-honesty).
+
 ## [7.23.3] - 2026-09-03 — §Register ronde 3: bahasa apa pun (ID/EN/mix)
 
 **Spec: §Amendemen 2 di `2026-08-31-natural-register.md`. Mandat owner ke-5 soal bahasa: "disemua doc result dari mega-sdd harus menggunakan bahasa yg common dan tidak kaku mau bahasa inggris ataupun indonesia or mix".**

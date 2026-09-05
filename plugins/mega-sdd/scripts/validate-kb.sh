@@ -117,17 +117,34 @@ for line in fm_text.split("\n"):
             fm[key] = val
 
 # --- Checks 2-5: confidence marker count consistency ---
-marker_checks = [
-    ("verified_count", "[VERIFIED]"),
-    ("inferred_count", "[INFERRED]"),
-    ("open_count", "[OPEN]"),
-    ("locked_count", "[LOCKED]"),
-]
+# Grammar detection (7.24.0, spec 2026-09-05-kb-verify-lane-design.md Fase 1):
+# census-contracted module PRDs (extract revamp 7.6.0) live at
+# knowledge-base/modules/<domain>.prd.md — 6-section body, implicit-verified
+# confidence (a cited claim with NO marker is verified, [INTENT] is the
+# mutability default) — so verified_count/intent_count are NOT recomputable
+# from the body; only the explicit markers are exact-checkable, and
+# open_count is checked against the §6 OQ entry count.
+IS_MODULE_GRAMMAR = bool(re.search(r"[\\/]modules[\\/][^\\/]+\.prd\.md$", file_path))
+
+if IS_MODULE_GRAMMAR:
+    marker_checks = [
+        ("inferred_count", "[INFERRED]"),
+        ("locked_count", "[LOCKED]"),
+        ("artifact_count", "[ARTIFACT]"),
+    ]
+else:
+    marker_checks = [
+        ("verified_count", "[VERIFIED]"),
+        ("inferred_count", "[INFERRED]"),
+        ("open_count", "[OPEN]"),
+        ("locked_count", "[LOCKED]"),
+    ]
 
 for fm_field, marker in marker_checks:
     if fm_field not in fm:
-        # Field absent — not a fail for optional fields (locked_count is v1.4+)
-        if fm_field in ("locked_count",):
+        # Field absent — not a fail for optional fields (locked_count is v1.4+;
+        # artifact_count only exists in the 7.6+ module grammar)
+        if fm_field in ("locked_count", "artifact_count"):
             checks.append({"check": f"{fm_field}_match", "status": "SKIP",
                           "detail": f"frontmatter field '{fm_field}' absent (v1.4+ field, may be pre-v1.4 KB)"})
         else:
@@ -161,20 +178,59 @@ for fm_field, marker in marker_checks:
         checks.append({"check": f"{fm_field}_match", "status": "PASS",
                        "detail": f"fm={expected}, body={actual}"})
 
-# --- Check 6: eleven_sections_present ---
-required_sections = [
-    "## 1. Purpose",
-    "## 2. Actors",
-    "## 3. Flow",
-    "## 4. Entities",
-    "## 5. Fields & Validation",
-    "## 6. Business Rules",
-    "## 7. Integrations",
-    "## 8. Edge Cases",
-    "## 9. Rebuild Recommendations",
-    "## 10. Open Questions",
-    "## 11. Source Files",
-]
+if IS_MODULE_GRAMMAR:
+    # --- module grammar: implicit-default fields + open_count vs §6 OQ entries ---
+    for impl_field in ("verified_count", "intent_count"):
+        checks.append({"check": f"{impl_field}_match", "status": "SKIP",
+                       "detail": "implicit-default field (7.6+ module grammar) — not recomputable from body"})
+    sec6_m = re.search(r"^## 6\.", content, re.MULTILINE)
+    oq_entries = 0
+    if sec6_m:
+        oq_entries = len(re.findall(r"^\s*-\s*(?:\[[ xX]\]\s*)?OQ-", content[sec6_m.start():], re.MULTILINE))
+    expected_open = fm.get("open_count")
+    if isinstance(expected_open, int):
+        if oq_entries != expected_open:
+            issues.append({
+                "halt_type": "kb_marker_count_mismatch",
+                "detail": f"frontmatter open_count={expected_open} but §6 lists {oq_entries} OQ entries (delta={oq_entries - expected_open})",
+                "field": "open_count", "expected": expected_open, "actual": oq_entries,
+            })
+            checks.append({"check": "open_count_match", "status": "FAIL",
+                           "detail": f"fm={expected_open}, sec6={oq_entries}"})
+        else:
+            checks.append({"check": "open_count_match", "status": "PASS",
+                           "detail": f"fm={expected_open}, sec6={oq_entries}"})
+    else:
+        issues.append({"halt_type": "kb_frontmatter_field_missing",
+                       "detail": "required frontmatter field 'open_count' absent"})
+        checks.append({"check": "open_count_match", "status": "FAIL"})
+
+# --- Check 6: required sections (module grammar: 6; legacy: 11) ---
+if IS_MODULE_GRAMMAR:
+    required_sections = [
+        "## 1. Purpose",
+        "## 2. Business Rules",
+        "## 3. Flow",
+        "## 4. Data In/Out",
+        "## 5. Edge Cases & Gotchas",
+        "## 6. Open Questions",
+    ]
+    sections_check_name = "six_sections_present"
+else:
+    required_sections = [
+        "## 1. Purpose",
+        "## 2. Actors",
+        "## 3. Flow",
+        "## 4. Entities",
+        "## 5. Fields & Validation",
+        "## 6. Business Rules",
+        "## 7. Integrations",
+        "## 8. Edge Cases",
+        "## 9. Rebuild Recommendations",
+        "## 10. Open Questions",
+        "## 11. Source Files",
+    ]
+    sections_check_name = "eleven_sections_present"
 
 missing_sections = []
 for sec in required_sections:
@@ -186,14 +242,14 @@ for sec in required_sections:
 if missing_sections:
     issues.append({
         "halt_type": "kb_sections_incomplete",
-        "detail": f"missing {len(missing_sections)} of 11 required sections: {', '.join(missing_sections[:3])}{'...' if len(missing_sections) > 3 else ''}",
+        "detail": f"missing {len(missing_sections)} of {len(required_sections)} required sections: {', '.join(missing_sections[:3])}{'...' if len(missing_sections) > 3 else ''}",
         "missing_sections": missing_sections,
     })
-    checks.append({"check": "eleven_sections_present", "status": "FAIL",
+    checks.append({"check": sections_check_name, "status": "FAIL",
                    "detail": f"missing {len(missing_sections)} sections"})
 else:
-    checks.append({"check": "eleven_sections_present", "status": "PASS",
-                   "detail": "all 11 sections present"})
+    checks.append({"check": sections_check_name, "status": "PASS",
+                   "detail": f"all {len(required_sections)} sections present"})
 
 # --- Check 7: depends_on_valid ---
 depends_on_raw = fm.get("depends_on", "[]")
@@ -364,6 +420,110 @@ try:
     content = open(file_path, encoding="utf-8").read()
 except Exception as e:
     print(json.dumps({"status": "ERROR", "detail": str(e)}))
+    raise SystemExit(0)
+
+# ── 7.6+ module grammar (7.24.0, spec 2026-09-05-kb-verify-lane-design.md) ──
+# knowledge-base/modules/<domain>.prd.md carries NO §11 — its grounding contract
+# is the frontmatter source_files list: every entry must be cited ≥1x in the
+# body (the census gate recomputes this at extract time; this is the analyze-
+# time re-derivation) and must resolve against census.json (fallback: legacy
+# root / cwd on disk). Without this branch a module PRD silently SKIP-greens.
+if re.search(r"[\\/]modules[\\/][^\\/]+\.prd\.md$", file_path):
+    fm_m = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
+    fm_text = fm_m.group(1) if fm_m else ""
+    body = content[fm_m.end():] if fm_m else content
+
+    src_files = []
+    in_sf = False
+    for ln in fm_text.split("\n"):
+        if re.match(r"^source_files:\s*$", ln):
+            in_sf = True
+            continue
+        if in_sf:
+            mm = re.match(r"^\s+-\s+(.+?)\s*$", ln)
+            if mm:
+                src_files.append(mm.group(1).strip().strip("'\""))
+                continue
+            if re.match(r"^\S", ln):
+                in_sf = False
+    if not src_files:
+        mm = re.search(r"^source_files:\s*\[(.*?)\]", fm_text, re.MULTILINE | re.DOTALL)
+        if mm:
+            src_files = [x.strip().strip("'\"") for x in mm.group(1).split(",") if x.strip()]
+
+    if not src_files:
+        print(json.dumps({
+            "status": "FAIL",
+            "checked_file": os.path.relpath(file_path, cwd),
+            "issues": [{"halt_type": "kb_source_files_missing",
+                        "detail": "module PRD frontmatter has no source_files list — grounding contract absent"}],
+            "total_citations": 0, "broken_citations": [],
+            "summary": "no source_files in frontmatter",
+        }))
+        raise SystemExit(0)
+
+    # census.json lives at the KB root (parent of modules/)
+    census_paths = set()
+    census_basenames = set()
+    census_loaded = False
+    census_path = os.path.join(os.path.dirname(os.path.dirname(file_path)), "census.json")
+    try:
+        with open(census_path, encoding="utf-8") as cf:
+            census = json.load(cf)
+        for entry in census.get("files", []):
+            p = entry.get("path", "") if isinstance(entry, dict) else str(entry)
+            if p:
+                census_paths.add(p)
+                census_basenames.add(os.path.basename(p))
+        census_loaded = True
+    except Exception:
+        pass
+
+    uncited = [e for e in src_files if e not in body]
+
+    unresolved = []
+    resolution = "census.json" if census_loaded else ""
+    for e in src_files:
+        base = os.path.basename(e)
+        if census_loaded and (e in census_paths or base in census_basenames):
+            continue
+        if legacy_root and os.path.isfile(os.path.join(legacy_root, e)):
+            resolution = resolution or "legacy_root"
+            continue
+        if os.path.isfile(os.path.join(cwd, e)):
+            resolution = resolution or "cwd"
+            continue
+        if not census_loaded and not legacy_root:
+            resolution = "skipped (no census.json, no legacy root)"
+            unresolved = []
+            break
+        unresolved.append(e)
+
+    issues = []
+    for e in uncited[:15]:
+        issues.append({"halt_type": "kb_source_file_uncited",
+                       "detail": f"source_files entry '{e}' is never cited in the body (census contract: every entry cited >=1x)"})
+    for e in unresolved[:15]:
+        issues.append({"halt_type": "kb_source_file_unresolved",
+                       "detail": f"source_files entry '{e}' resolves to nothing (not in census.json, legacy root, or cwd)"})
+
+    status = "FAIL" if (uncited or unresolved) else "PASS"
+    print(json.dumps({
+        "status": status,
+        "checked_file": os.path.relpath(file_path, cwd),
+        "grammar": "module",
+        "source_files_total": len(src_files),
+        "uncited": len(uncited),
+        "unresolved": len(unresolved),
+        "resolution_via": resolution or "(none)",
+        "issues": issues,
+        "total_citations": len(src_files),
+        "broken_citations": [{"file_ref": e, "raw": e} for e in (uncited + unresolved)[:10]],
+        "summary": (f"{len(src_files) - len(uncited)}/{len(src_files)} source_files cited; "
+                    f"{len(uncited)} uncited, {len(unresolved)} unresolved"
+                    if (uncited or unresolved) else
+                    f"all {len(src_files)} source_files cited in body and resolved ({resolution or 'no resolution source'})"),
+    }))
     raise SystemExit(0)
 
 # Find §11 Source References section
@@ -854,6 +1014,56 @@ except Exception as e:
 # is LETTER-led (M7): a [VERIFIED] line citing ONLY a regulation/version/time token
 # (23.2:2021, 1.5:1, 09.30:00) no longer counts as an inline anchor.
 FILE_REF_RE = PATH_REF_RE   # path.ext[:line] — line not required
+
+# ── 7.6+ module grammar (7.24.0, spec 2026-09-05-kb-verify-lane-design.md) ──
+# Implicit-verified: writing a literal [VERIFIED] tag is a grammar violation
+# ("do not write [VERIFIED] tags" — domain-extractor contract), and every
+# [INFERRED] must say what it is inferred from — a same-line basis
+# parenthetical ("(dasar:" / "(basis" / "(based on") or a same-line file ref.
+if re.search(r"[\\/]modules[\\/][^\\/]+\.prd\.md$", file_path):
+    BT = chr(96)  # backtick — avoid literal backtick inside $() heredoc
+    _defenced = re.sub(BT * 3 + r".*?" + BT * 3, "", content, flags=re.DOTALL)
+    issues = []
+
+    verified_tag_lines = [i for i, ln in enumerate(_defenced.split("\n"), 1)
+                          if "[VERIFIED]" in ln]
+    for ln_no in verified_tag_lines[:10]:
+        issues.append({"halt_type": "kb_verified_tag_in_module_grammar", "line": ln_no,
+                       "detail": "literal [VERIFIED] tag in a 7.6+ module PRD — the grammar is implicit-verified (a cited claim with no marker); remove the tag"})
+
+    _basis_re = re.compile(r"\((?:dasar|basis|based on)", re.IGNORECASE)
+    inferred_total = 0
+    inferred_unbased = []
+    for i, ln in enumerate(_defenced.split("\n"), 1):
+        if "[INFERRED]" not in ln:
+            continue
+        inferred_total += 1
+        if _basis_re.search(ln) or PATH_REF_RE.search(ln):
+            continue
+        claim_text = ln.strip()
+        if len(claim_text) > 120:
+            claim_text = claim_text[:117] + "..."
+        inferred_unbased.append({"line": i, "claim": claim_text[:80]})
+    for u in inferred_unbased[:15]:
+        issues.append({"halt_type": "kb_inferred_without_basis", "line": u["line"],
+                       "detail": f"[INFERRED] with no same-line basis or file ref: {u['claim']}"})
+
+    status = "FAIL" if issues else "PASS"
+    print(json.dumps({
+        "status": status,
+        "checked_file": os.path.relpath(file_path, cwd),
+        "grammar": "module",
+        "inferred_total": inferred_total,
+        "inferred_without_basis": len(inferred_unbased),
+        "verified_tag_violations": len(verified_tag_lines),
+        "issues": issues,
+        "uncited_claims": inferred_unbased[:15],
+        "summary": (f"{len(verified_tag_lines)} [VERIFIED]-tag violation(s); "
+                    f"{len(inferred_unbased)}/{inferred_total} [INFERRED] without a basis"
+                    if issues else
+                    f"module grammar clean: 0 [VERIFIED] tags, all {inferred_total} [INFERRED] carry a basis"),
+    }))
+    raise SystemExit(0)
 
 # Split into body (before §11) and §11 Source References
 sec11_match = re.search(r"^## 11\.\s", content, re.MULTILINE)
