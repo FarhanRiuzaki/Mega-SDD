@@ -35,7 +35,7 @@ the missing file — never proceed on a remembered or guessed template.
 
 - A cited claim with NO marker is **verified-by-citation** — the default; do not write `[VERIFIED]` tags.
 - `[INFERRED]` — a reasonable deduction from a single source path; say what it's inferred from.
-- `[OPEN]` — unknown, ambiguous, or contradictory; capture it in §6 Open Questions.
+- `[OPEN]` — unknown, ambiguous, or contradictory; capture it in §6 Open Questions. An evidence-shaped OQ (a missing DDS/dictionary/program/data export that would answer it) MUST end with `(probe-glob: <pattern>)` — the census gate then flags the OQ as answerable the moment that artifact appears on disk.
 
 ## Mutability tiers (orthogonal to confidence — answers "what must a rebuild preserve?")
 
@@ -68,7 +68,7 @@ The disciplines are stack-neutral; the MASTER STACK IDIOM TABLE in the grammar r
 2. Populate all 6 sections of the PRD-kontrak template — in order. A section with nothing to record carries the ONE explicit line `_Tidak terdeteksi._` — never omit it, never pad it.
 3. Tag each claim with a confidence marker and, where relevant, a mutability tier.
 4. Surface "do-not-replicate" gotchas (silent bugs, typos that became load-bearing, dead code paths) so the rebuild doesn't faithfully reproduce them.
-5. Write your module PRD to the output path, following the grammar exactly (frontmatter counts must match the markers in the body; `source_files` = exactly the census paths you were assigned).
+5. Write your module PRD to the output path, following the grammar exactly (`source_files` = exactly the census paths you were assigned). Do NOT hand-type the frontmatter count fields (`inferred_count`/`open_count`/`locked_count`/`intent_count`/`artifact_count`/`source_files_cited`) — the controller derives them with `derive-prd-counts.sh --write` after your PRD lands (7.26.0; agent-typed counts drifted in every field-audited module). Omit them entirely.
 
 ## Report back
 
@@ -78,13 +78,6 @@ Then end with the machine-parsed REPORT BACK block — the last lines of your re
 
 ```
 - path: <absolute output path>
-- verified: <int>
-- inferred: <int>
-- open: <int>
-- locked: <int>
-- intent: <int>
-- artifact: <int>
-- sources_cited: <int>
 - provenance_pairs_checked: <int>      # P1: state values where BOTH writer + reader were located
 - provenance_anomalies: <int>          # P1: write-only OR read-only-cross-domain values flagged (each MUST carry an [OPEN] or seam annotation)
 - rule_sites_multi: <int>              # P2: rules found in >1 site (each documented separately)

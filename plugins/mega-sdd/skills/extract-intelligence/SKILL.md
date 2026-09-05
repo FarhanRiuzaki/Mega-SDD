@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 2.4.0
+version: 2.5.0
 description: Tech-agnostic legacy extractor for rebuild/revamp — census-contracted extraction composes the system's logic into one PRD-kontrak per module (inline file:line citations, [LOCKED]/[INTENT]/[ARTIFACT] mutability tiers), consumed by generate-intent --kb and bind-codebase. Cost scales with the census, not a fixed pipeline — a 1-file engine yields 1 PRD. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "revamp project ini ke stack baru", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -73,7 +73,9 @@ before any dispatch; §README roll-up + §data-mutation-policy at synthesis.
 
 1. Validate the legacy path exists and is non-empty (else halt).
 2. If `--seed=<path>`: copy the seed to `{out}/_source/` (read-only cross-reference).
-3. **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/derive-extract-census.sh" --legacy=<legacy> --kb-dir={out}/knowledge-base` — writes `census.json`: code files (+sha256, logs/backups/data excluded by construction), stacks, entry points, a deterministic module proposal. The census IS the completeness contract.
+3. **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/derive-extract-census.sh" --legacy=<legacy> --kb-dir={out}/knowledge-base` — writes `census.json`: code files (+sha256, logs/backups/data excluded by construction; non-UTF8 members flagged `encoding: non-utf8` — convert before reading), stacks, entry points, a deterministic module proposal. The census IS the completeness contract.
+4. **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/derive-site-census.sh" --legacy=<legacy> --kb-dir={out}/knowledge-base` — WRITE/CALL site inventory per stack idiom (v1: rpg family; unsupported stacks recorded honestly). The Step-5 gate requires every site cited in the KB (`site_uncovered`).
+5. Census `stacks` include `rpg`/`rpgle`/`rpg-copy`/`dds` → every extractor AND verifier dispatch carries the `READ ALSO: plugins/mega-sdd/references/legacy-idioms/rpg-as400.md` line (template §Dispatch core).
 
 ### Step 2 — Module confirmation (human, only when >1 module proposed)
 
@@ -136,6 +138,7 @@ halt.
 
 ### Step 4 — Synthesis (main thread ONLY)
 
+0. **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/derive-prd-counts.sh" --kb-dir={out}/knowledge-base --write` — script-derives every frontmatter count from the PRD bodies (extractors no longer type them; 7.26.0). The README roll-up composes FROM these trued-up counts, and the Step-5 gate recounts the roll-up (`rollup_mismatch`).
 1. `README.md` roll-up per template §README roll-up (multi-module: + `## ERD`
    + `## System Flow` Mermaid; module quick-reference carries the recommended
    rebuild ORDER from `depends_on` — module is the phasing unit).
@@ -145,7 +148,7 @@ halt.
 
 ### Step 5 — Completeness gate + hand-off
 
-**Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-extract-census.sh" --kb-dir={out}/knowledge-base` — recomputes coverage from census + the PRD artifacts: unclaimed / double-claimed / phantom / uncited files, missing OQ sections, non-Mermaid flows, AND the claim-verify states (`.verify/<domain>.json` per module: LOCKED coverage + sample floor recomputed from each PRD body — `claim_verify_missing`/`_failed`/`_incomplete`). FAIL → fix (re-dispatch the owning module / run the missing verifier) or honestly record the gap as `[OPEN]`/OQ in the owning PRD, then re-run. Never hand off on FAIL.
+**Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-extract-census.sh" --kb-dir={out}/knowledge-base` — recomputes coverage from census + the PRD artifacts: unclaimed / double-claimed / phantom / uncited files, missing OQ sections, non-Mermaid flows, the claim-verify states (`.verify/<domain>.json` per module: LOCKED coverage + sample floor recomputed from each PRD body — `claim_verify_missing`/`_failed`/`_incomplete`), site coverage (`site_uncovered` — every derived WRITE/CALL site cited ±2 or in-range), and the README roll-up recount (`rollup_mismatch`). Advisory (never blocks): `oq_answerable_from_disk` — an OQ whose `probe-glob:` now matches an artifact on disk → offer a delta re-extract for that module. FAIL → fix (re-dispatch the owning module / run the missing verifier / cite the site) or honestly record the gap as `[OPEN]`/OQ in the owning PRD, then re-run. Never hand off on FAIL.
 
 **Hand-off announce:** "PRD-kontrak written to `<out>/knowledge-base/` — N module(s), census: N files fully claimed. Critical findings: N. Open questions: N (P1: …, P2: …, P3: …). Next: review `<out>/knowledge-base/README.md`, then `generate-intent --kb=<out>/knowledge-base/` to continue the revamp lane." **When Open questions > 0, ALSO offer answering them now (7.21.0):** "Mau jawab OQ-nya sekarang? (resolve-oq KB mode — jawaban legacy paling akurat selagi konteksnya masih hangat; belum dijawab pun tetap ikut ke vault nanti)" — offer only, never auto-invoke.
 
@@ -193,5 +196,7 @@ mutability-tier producer: `tier_distribution`, `locked_claims_touched`,
 - `mega-sdd:generate-intent` — consumes the output via `--kb=<path>` (incl. `decisions/ADR-*.md` accepted by the advisor).
 - `mega-sdd:bind-codebase` — consults the output as secondary ground truth.
 - `scripts/derive-extract-census.sh` / `scripts/validate-extract-census.sh` — census + completeness gate.
+- `scripts/derive-site-census.sh` / `scripts/derive-prd-counts.sh` — WRITE/CALL site inventory + script-derived frontmatter counts (7.26.0).
+- `plugins/mega-sdd/references/legacy-idioms/rpg-as400.md` — extraction-side idiom sheet for the rpg/dds stacks (READ ALSO line in dispatches).
 - `scripts/kb-leak-scan.sh` — tech-agnostic vocabulary advisory.
 - Design specs: `docs/superpowers/specs/2026-08-26-extract-revamp-contract-design.md` (current), `docs/superpowers/specs/2026-06-15-extract-intelligence-tech-agnostic.md` (historical, wave era).

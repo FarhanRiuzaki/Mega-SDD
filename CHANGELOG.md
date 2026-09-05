@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.26.0] - 2026-09-05 — Fase 4: counts script-derived, rollup recount, site-census, OQ probe, idiom RPG
+
+Spec: `2026-09-05-kb-verify-lane-design.md` Fase 4 (+ Amendemen Fase 4). Semua
+lever P1 dari skill-gap analysis; tiap check mencerminkan temuan audit lapangan
+Host-AS400. **Live proof di sandbox KB Host: `rollup_mismatch` menangkap persis
+LOCKED 5-vs-4 + split OQ 9/20/11-vs-12/18/10, dan `site_uncovered` (12) menangkap
+4 site float `#CRTFLT` + site CFTPNT ke-4 `tltran:1438` — deteksi yang tadinya
+butuh audit 6-lane sekarang deterministik.**
+
+### Added
+- **`derive-prd-counts.sh`** — frontmatter counts SCRIPT-DERIVED (check/--write,
+  idempotent); extractor tidak lagi mengetik angka (drift 7/7 modul di lapangan);
+  `verified_count` dipensiunkan dari kontrak (underivable); `intent_count` =
+  marker [INTENT] eksplisit (kb_output kini exact-check); REPORT BACK
+  domain-extractor kehilangan semua baris count.
+- **Rollup recount** di census gate: Total row Mutability + split/total OQ
+  di-recompute dari body → `rollup_mismatch`; README format custom → advisory.
+- **`derive-site-census.sh`** — inventori WRITE/UPDAT/EXCPT (opcode-nempel) +
+  CALL literal per idiom stack (v1: keluarga rpg; kolom-7 dead code dikecualikan;
+  stack lain tercatat "no idiom support"). Census gate: tiap site wajib tersitasi
+  (±2 baris / dalam range) → `site_uncovered`; shorthand `:NNN` tanpa path tidak
+  dihitung (tak machine-verifiable).
+- **OQ evidence probe** — `(probe-glob: <pattern>)` di entri §6; census gate
+  advisory `oq_answerable_from_disk` begitu artefak muncul di disk (kelas FILE REF
+  nganggur sehari); kanal `advisories` baru di state (tidak pernah FAIL).
+- **Idiom RPG/AS400** — `references/legacy-idioms/rpg-as400.md` (mekanika
+  fixed-format + jebakan semantik field-proven: IFNE truth-table, RETRN-stateful,
+  data area, half-adjust round-vs-truncate, REF/REFFLD chasing) + kolom RPG di
+  MASTER STACK IDIOM TABLE + READ ALSO line di dispatch extractor & verifier.
+- **`code_enum.py` lane `LEGACY_EXTS`** (rpg/rpgle/sqlrpgle/dds/pf/lf/cl/cobol,
+  case-insensitive) via `include_legacy=True` — dipakai census, TIDAK oleh symbol
+  index (ast-grep tanpa grammar); ekspor AS400 tanpa ekstensi tetap butuh census
+  manual (dicatat jujur). + **Encoding probe** di census: member non-UTF8 di-flag
+  `encoding: non-utf8` (kelas BIFREF).
+- extract-intelligence 2.5.0 (wiring Step 1/4/5) · Tests:
+  `tests/extract-census/test-fase4-lanes.sh` (11 pin) + fixture updates.
+
 ## [7.25.0] - 2026-09-05 — Claim-verify lane: extraction diperiksa lawan sebelum jadi source of truth
 
 Spec: `2026-09-05-kb-verify-lane-design.md` Fase 3 (+ Amendemen). Basis lapangan:

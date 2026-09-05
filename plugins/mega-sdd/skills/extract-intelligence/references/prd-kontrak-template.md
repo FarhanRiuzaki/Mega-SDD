@@ -55,15 +55,18 @@ criticality: high | medium | low
 depends_on: []                       # other module names
 source_files:                        # census paths this module CLAIMS (exactly-once across all PRDs)
   - <path relative to legacy root>
-verified_count: <int>                # unmarked cited claims (default-verified)
-inferred_count: <int>
-open_count: <int>
-locked_count: <int>
-intent_count: <int>
-artifact_count: <int>
-source_files_cited: <int>
+inferred_count: <int>                # SCRIPT-DERIVED (7.26.0) — the controller runs
+open_count: <int>                    # derive-prd-counts.sh --write; extractors never
+locked_count: <int>                  # hand-type these six (field lesson: agent-typed
+intent_count: <int>                  # counts drifted in ALL 7 Host-AS400 modules).
+artifact_count: <int>                # intent_count = explicit [INTENT] markers only;
+source_files_cited: <int>            # open_count = §6 OQ entries.
 ---
 ```
+
+`verified_count` was RETIRED from the contract in 7.26.0: implicit-verified
+grammar makes it underivable, and an underivable number was pure drift surface
+(kb_output treats a present field as informational, never checks it).
 
 ## Module PRD template (6 sections)
 
@@ -115,7 +118,12 @@ sini, TIDAK PERNAH dikarang. `_Tidak ada._` bila kosong. Badan pertanyaan WAJIB
 human-first — pertanyaan utuh yang bisa dijawab orang bisnis tanpa buka kode
 (konteks 1 kalimat → pertanyaan → detail teknis sebagai keterangan; jargon tidak
 boleh jadi subjek kalimat) — kontrak + contoh ❌/✅ di
-`plugins/mega-sdd/references/output-language.md §OQ authoring`.>
+`plugins/mega-sdd/references/output-language.md §OQ authoring`.
+OQ berbentuk-bukti ("kalau artefak X ada, kejawab" — DDS hilang, ekspor data,
+source program lain) WAJIB bawa probe di akhir baris: `(probe-glob: <pattern>)`
+— glob relatif ke project root ATAU legacy root; census gate menyurface
+`oq_answerable_from_disk` (advisory) begitu bukti-nya muncul di disk (field
+lesson Host: jawaban 3 OQ P1 nganggur sehari di folder tanpa terdeteksi).>
 ```
 
 Citations are INLINE: `(path:line)` or `(path:line-line)` immediately after
@@ -213,6 +221,7 @@ Per module, the controller types ONLY:
 ROLE: Legacy module extractor — module <domain>.
 CONTEXT: legacy root <abs path>; stack(s): <stacks from census.json>; rebuild target: <stack | unknown>.
 READ FIRST: <plugin-root>/skills/extract-intelligence/references/prd-kontrak-template.md
+READ ALSO: <plugin-root>/references/legacy-idioms/rpg-as400.md   # ONLY when stacks include rpg/rpgle/rpg-copy/dds; other stacks omit the line
 FILES (yours alone — siblings cover the rest): <path (size)> …
 OUTPUT TO: <kb>/modules/<domain>.prd.md
 mega-sdd-trace:extract-intelligence
@@ -228,17 +237,22 @@ Single authoritative copy (moved from the retired wave-dispatch reference).
 The extractor reads its own stack's column(s); for stacks beyond the table,
 reason by analogy from the principle name.
 
-| Principle | PHP | JS / TS | Python | C# / .NET | Java | Go | Ruby | Rust |
-|---|---|---|---|---|---|---|---|---|
-| **P1** state write | `UPDATE`/`INSERT`/`$x =` | assignment / ORM `.save()` | assignment / ORM `.save()` | EF `SaveChanges` / property set | JPA `persist`/`merge` / setter | struct field set / `db.Save` | AR `update`/`save` / `attr=` | field set / `diesel update` |
-| **P1** clone copy | `INSERT … SELECT` | object spread `{...x}` | `dict(**x)` / `copy()` | `INSERT … SELECT` / object init | `INSERT … SELECT` / copy ctor | struct copy `b := a` | `dup`/`clone`/`attributes` | `.clone()` / struct update |
-| **P2** entry dispatcher | `$_GET['action']` / `mode==` | `req.method` / route switch | `request.method` / view dispatch | attribute route / `switch(action)` | `@RequestMapping` / servlet `switch` | `switch r.Method` / mux | `params[:action]` / routes | match on path / router |
-| **P3** hard halt | `die()`/`exit()` | `process.exit()`/`throw` | `sys.exit()`/`raise` | `Environment.Exit`/`throw` | `System.exit`/`throw` | `os.Exit`/`panic`/`log.Fatal` | `exit`/`abort`/`raise` | `std::process::exit`/`panic!` |
-| **P3** silent-success | empty `catch`/`@` | empty `catch`/`?? true` | bare `except: pass` | empty `catch`/swallow | empty `catch` | ignored `err` (`_ =`) | bare `rescue`/`rescue nil` | `let _ =`/`.ok()` discard |
-| **P6** DI / IoC | service locator / container | DI token / factory inject | constructor inject / `Depends()` | `IServiceCollection` / ctor inject | `@Autowired`/`@Inject` | wire / provider func | initializer / `.new` inject | trait object / builder |
-| **P6** reflection | `call_user_func`/`$$var` | `obj[name]()` / proxy | `getattr`/`__getattr__` | reflection / `dynamic` | reflection / proxy | `reflect` / interface assert | `send`/`method_missing` | trait dynamic / `Any` |
-| **P6** route/validate by attr | annotation `@Route` | decorator route | decorator route | `[HttpGet]`/`[Authorize]`/`[Required]` | `@GetMapping`/`@Valid` | tag-based bind | DSL macro | attribute macro |
-| **P6** event / wiring | observer / hook | `emitter.on` / callback | signal / observer | event/delegate / `+=` / middleware | listener / `@EventListener` | channel / callback | callback / ActiveSupport notif | channel / trait callback |
+| Principle | PHP | JS / TS | Python | C# / .NET | Java | Go | Ruby | Rust | RPG / AS400 |
+|---|---|---|---|---|---|---|---|---|---|
+| **P1** state write | `UPDATE`/`INSERT`/`$x =` | assignment / ORM `.save()` | assignment / ORM `.save()` | EF `SaveChanges` / property set | JPA `persist`/`merge` / setter | struct field set / `db.Save` | AR `update`/`save` / `attr=` | field set / `diesel update` | `WRITE`/`UPDAT`/`EXCPT` (opcode GLUED to format: `WRITERDDFLOT`) + `Z-ADD`/`MOVE` to record fields |
+| **P1** clone copy | `INSERT … SELECT` | object spread `{...x}` | `dict(**x)` / `copy()` | `INSERT … SELECT` / object init | `INSERT … SELECT` / copy ctor | struct copy `b := a` | `dup`/`clone`/`attributes` | `.clone()` / struct update | field-by-field `MOVE`/`MOVEL` blocks / mirror-DS copy subroutines |
+| **P2** entry dispatcher | `$_GET['action']` / `mode==` | `req.method` / route switch | `request.method` / view dispatch | attribute route / `switch(action)` | `@RequestMapping` / servlet `switch` | `switch r.Method` / mux | `params[:action]` / routes | match on path / router | `SELEC`/`WHEQ` on app/txn code arrays; `*ENTRY PLIST` mode parms |
+| **P3** hard halt | `die()`/`exit()` | `process.exit()`/`throw` | `sys.exit()`/`raise` | `Environment.Exit`/`throw` | `System.exit`/`throw` | `os.Exit`/`panic`/`log.Fatal` | `exit`/`abort`/`raise` | `std::process::exit`/`panic!` | `SETON LR` + `GOTO` end-tag / `SETON H1` / `*PSSR` |
+| **P3** silent-success | empty `catch`/`@` | empty `catch`/`?? true` | bare `except: pass` | empty `catch`/swallow | empty `catch` | ignored `err` (`_ =`) | bare `rescue`/`rescue nil` | `let _ =`/`.ok()` discard | unchecked CHAIN/CALL indicator (`*INxx` never tested); filtered record skipped w/o trace |
+| **P6** DI / IoC | service locator / container | DI token / factory inject | constructor inject / `Depends()` | `IServiceCollection` / ctor inject | `@Autowired`/`@Inject` | wire / provider func | initializer / `.new` inject | trait object / builder | — (static `CALL 'PGM'`; wiring = job stream/CL outside source) |
+| **P6** reflection | `call_user_func`/`$$var` | `obj[name]()` / proxy | `getattr`/`__getattr__` | reflection / `dynamic` | reflection / proxy | `reflect` / interface assert | `send`/`method_missing` | trait dynamic / `Any` | `CALL` with variable program-name field |
+| **P6** route/validate by attr | annotation `@Route` | decorator route | decorator route | `[HttpGet]`/`[Authorize]`/`[Required]` | `@GetMapping`/`@Valid` | tag-based bind | DSL macro | attribute macro | DDS `VALUES`/`COMP`/`RANGE` + `REFFLD` chase to *FREF |
+| **P6** event / wiring | observer / hook | `emitter.on` / callback | signal / observer | event/delegate / `+=` / middleware | listener / `@EventListener` | channel / callback | callback / ActiveSupport notif | channel / trait callback | trigger pgm / data-queue (external to source set — raise [OPEN] + probe) |
+
+Stack rpg/rpgle/rpg-copy/dds: baca juga
+`plugins/mega-sdd/references/legacy-idioms/rpg-as400.md` (mekanika fixed-format
++ jebakan semantik yang field-proven — IFNE truth-table, RETRN-stateful,
+data area, half-adjust round-vs-truncate).
 
 ## Per-module quality gate
 
@@ -277,7 +291,11 @@ routing probe for "KB exists"). Required sections in order:
 5. **`## Mutability Tier Distribution`** — LOCKED/INTENT/ARTIFACT counts per module (heading verbatim — read by `generate-intent --kb`).
 6. **`## Critical Findings`** — do-not-replicate bugs first; lead with what hurts.
 7. **Open Questions roll-up** — 1 line per OQ with link.
-8. **Stats** — module/file/OQ/rule/gotcha counts (from census + frontmatter counts).
+8. **Stats** — module/file/OQ/rule/gotcha counts (from census + the
+   SCRIPT-DERIVED frontmatter counts — run `derive-prd-counts.sh --kb-dir=<kb>
+   --write` BEFORE composing the roll-up; the census gate recounts the roll-up
+   itself and FAILs `rollup_mismatch` on drift, field lesson: Host README
+   claimed LOCKED=5 vs real 4 and a wrong OQ split).
 
 Multi-module extraction adds, between 3 and 4: **`## ERD`** (Mermaid
 `erDiagram` of the cross-module conceptual model, ERD Quality Rails per

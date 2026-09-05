@@ -47,7 +47,7 @@ source_files:
 inferred_count: 1
 open_count: 1
 locked_count: 1
-intent_count: 3
+intent_count: 1
 artifact_count: 0
 verified_count: 4
 ---

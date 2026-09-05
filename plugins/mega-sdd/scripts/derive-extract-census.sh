@@ -49,12 +49,13 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
 import code_enum                   # noqa: E402
+_EXT_MAP = dict(code_enum.EXTS, **code_enum.LEGACY_EXTS)   # census lane: legacy stacks included (7.26.0)
 
 legacy = os.path.abspath(os.environ["LEGACY"])
 kb_dir = os.environ["KB_DIR"]
 quiet = os.environ["QUIET"] == "1"
 
-files, git_ok = code_enum.enumerate_code_files(legacy)
+files, git_ok = code_enum.enumerate_code_files(legacy, include_legacy=True)
 
 rows, total_lines = [], 0
 for rel in files:
@@ -66,15 +67,23 @@ for rel in files:
         # enumerated but unreadable (permissions, broken symlink) — record
         # honestly as a zero-content row; the extraction agent will hit the
         # same wall and the gap surfaces as [OPEN], never silently dropped
-        rows.append({"path": rel, "lang": code_enum.EXTS.get(os.path.splitext(rel)[1], "?"),
+        rows.append({"path": rel, "lang": _EXT_MAP.get(os.path.splitext(rel)[1].lower(), "?"),
                      "lines": 0, "bytes": 0, "sha256": None, "unreadable": True})
         continue
     lines = data.count(b"\n") + (1 if data and not data.endswith(b"\n") else 0)
     total_lines += lines
-    rows.append({"path": rel,
-                 "lang": code_enum.EXTS.get(os.path.splitext(rel)[1], "?"),
-                 "lines": lines, "bytes": len(data),
-                 "sha256": hashlib.sha256(data).hexdigest()})
+    row = {"path": rel,
+           "lang": _EXT_MAP.get(os.path.splitext(rel)[1].lower(), "?"),
+           "lines": lines, "bytes": len(data),
+           "sha256": hashlib.sha256(data).hexdigest()}
+    # Encoding probe (7.26.0, Fase 4 — the BIFREF class): a legacy member that
+    # is not valid UTF-8 (EBCDIC/CP-x export) reads as mojibake; flag it so the
+    # extractor converts/annotates instead of silently mis-reading content.
+    try:
+        data.decode("utf-8")
+    except UnicodeDecodeError:
+        row["encoding"] = "non-utf8"
+    rows.append(row)
 
 stacks = sorted({r["lang"] for r in rows if r["lang"] != "?"})
 
