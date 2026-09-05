@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.45.0
+version: 2.46.0
 description: Executes units into code commits (bolts) via the superpowers bridge or vendored fallback, with Hard Rule pre/post-flight scans that HALT on violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -95,8 +95,11 @@ Follows `references/superpowers-bridge.md` per-unit flow — the default executo
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-dispatch-prompt.sh" \
   --cwd=<project-root> --vault=<vault> --unit=U-XXX \
-  --plugin-root="${CLAUDE_PLUGIN_ROOT}"
+  --plugin-root="${CLAUDE_PLUGIN_ROOT}" \
+  --unit-tier=<unit_tier from the resolve-review-tier.sh JSON you already hold>
 ```
+
+**Pass `--unit-tier` from the SAME router verdict you obtained for the panel/model routing** (`resolve-review-tier.sh` JSON, field `unit_tier` — one source of verdict; the builder never calls the router itself). Only `xs` changes the emission: payload slices are cut/floored per `references/context-enrichment.md §XS emission` while the unit body stays verbatim and every gate/validator is untouched; an unknown value fails OPEN to the full payload. Omitting the flag = full payload (legacy behavior).
 
 **Pass `--plugin-root` — it is required, not optional.** You already have the value; passing it skips the plugin-root resolver spawn and its internal `ls | grep | sort | tail` pipeline — 6 process creations per bolt, ≈53 s over a 40-unit run on a CrowdStrike-scanned Windows laptop, at zero behavioral cost.
 

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v3.65.0 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.28.0] - 2026-09-05 — Size-weighted spec §1: unit_tier xs — dispatch payload menyusut −65% di unit kecil
+
+Gate №A APPROVED oleh owner (A1 = proxy deterministik) setelah Efficiency & Anti-Overengineering Audit (`research/2026-09-05-efficiency-antioverengineering-audit.md`). Spec `docs/superpowers/specs/2026-08-23-size-weighted-spec-design.md` §1 (Step 1+2); §3/§2 menyusul.
+
+### Added
+- **`unit_tier` di router** (`resolve-review-tier.sh`): `xs` = verdict `minimal` + proxy kecil deterministik (acceptance_test 1..2 DAN butir kerja 1..3 dari `## Implementation steps` — atau bullet `## Requirements` di unit legacy); `s/m/l` = label verdict existing. Murni label muatan — panel lens + `implementer_model` TIDAK tersentuh. Doktrin dijaga: section absen/kosong/`parse_note` = bukan xs (unknown never lowers). Ikut ditulis ke `review-tier.json` (additive).
+- **`--unit-tier=` di builder** (`build-dispatch-prompt.sh`): hanya `xs` mengubah emisi — `validation_hints`+`confidence_labels` drop; `depends_on_summaries` drop di ≤1 hop; `framework_pack_rules`/`design_slice`/`starterkit_slice` ditahan di floor ladder-nya (lens design membaca teks pasca-cascade → implementer & reviewer tetap satu kontrak — amendemen dari tabel §1b yang menulis drop); starterkit/map drop di unit non-UI; `symbol_slice` = baris target-file saja; NOTE/tracker/provenance dikompres (fakta + instruksi tetap; alasan penuh di stdout `sections_omitted`). Unit body verbatim, constitution + SEMUA gate tak tersentuh; nilai flag tak dikenal = fail-open ke payload penuh.
+- **Harness**: golden `f4-xs` (replay kelas U-005 — unit implementasi 22 baris) + arm relasi ≤60% di `tests/dispatch-parity/`; suite router baru `tests/size-weighted/test-unit-tier-router.sh` (14 pin).
+
+### Fixed
+- **Regex blok frontmatter resolver** memakai `(?ms)` (DOTALL) sehingga `[ \t]+.*` menelan sisa frontmatter: scalar-list `target_files` menghitung item `binding_refs` sebagai path (unit 2-file terukur `target_files:5`, `file_count` false-fire → quality lens dibayar tanpa alasan; arah fail-up, moat aman). `target_files`/`binding_refs`/`acceptance_test` kini berhenti di key kolom-0 berikutnya; di-pin di suite baru.
+
+### Measured (kriteria terima spec)
+- f4-xs: **18.174 → 6.342 byte (−65%)**, 273 → 125 baris = rasio **12,4:1 → 5,7:1** (prompt-lines : impl-lines). **Target ≤5:1 MISS 0,7 — dilaporkan jujur**: sisa di atas target adalah blok kontrak/proteksi (anti-context, T3 pointer, banner) — memangkasnya = memotong bukti, ditolak. Kalibrasi: est-token full build ≈19–21:1 ≈ angka 17,9:1 tim (fixture representatif).
+- Parity non-xs: f1–f3 **byte-identical** (golden tak berubah di git); shape 166 + cascade 264 assertion hijau.
+
 ## [7.27.0] - 2026-09-05 — Fase 5: rebuild_after DAG, AC golden-master, §7 Run & Recovery, rail klaim-negatif
 
 Spec: `2026-09-05-kb-verify-lane-design.md` Fase 5 (+ Amendemen Fase 5). Menutup
