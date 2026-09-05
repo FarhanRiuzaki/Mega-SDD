@@ -23,6 +23,7 @@ jangan re-type. Controller ketik HANYA:
 ```
 ROLE: Claim verifier — module <domain> (adversarial, read-only).
 CONTEXT: legacy root <abs path>; stack(s): <stacks from census.json>.
+READ ALSO: <plugin-root>/references/legacy-idioms/rpg-as400.md   # ONLY when stacks include rpg/rpgle/rpg-copy/dds
 VERIFY: <kb>/modules/<domain>.prd.md
 SAMPLE: N=12 (spread across all sections; 100% [LOCKED] + 100% money-class on top).
 mega-sdd-trace:extract-intelligence

@@ -25,6 +25,18 @@ EXTS = {".ts": "typescript", ".tsx": "tsx", ".js": "javascript",
         ".dart": "dart", ".ex": "elixir", ".exs": "elixir",
         ".lua": "lua", ".sh": "bash", ".bash": "bash", ".hs": "haskell"}
 
+# Legacy-stack extensions the CENSUS must enumerate but the symbol index must
+# NOT (ast-grep has no grammar for them; indexing lane stays EXTS-only).
+# 7.26.0, spec 2026-09-05-kb-verify-lane-design.md Fase 4 — the Host-AS400
+# census had to be hand-built ("manual, AS400 ext") because these were absent.
+# NOTE: AS400 member exports that encode the type as a filename PREFIX with no
+# extension (Qrpgsrc.DD0215) still need a hand-adjusted census — record that
+# honestly in generated_by when it happens.
+LEGACY_EXTS = {".rpg": "rpg", ".rpgle": "rpgle", ".sqlrpgle": "rpgle",
+               ".dds": "dds", ".pf": "dds", ".lf": "dds",
+               ".clp": "cl", ".clle": "cl",
+               ".cbl": "cobol", ".cob": "cobol", ".cpy": "cobol-copy"}
+
 # Committed dirs git ls-files can still admit (exclusions.md is the owner of
 # the full list). Segment-based, so a nested packages/app/node_modules/ is
 # excluded too — matching the list's `**` semantics.
@@ -49,11 +61,13 @@ def excluded(relpath):
            any(seg in EXCL_DIR_NAMES for seg in relpath.split("/")[:-1])
 
 
-def enumerate_code_files(cwd, git_timeout=30):
+def enumerate_code_files(cwd, git_timeout=30, include_legacy=False):
     """Enumerate code files under cwd: git ls-files (tracked,
     .gitignore-honoring) when cwd is a git tree, else an os.walk with the same
     prune prefixes. Returns (sorted relpaths filtered to EXTS + not excluded,
-    git_ok). An EMPTY tracked list is an answer, not a fallback trigger."""
+    git_ok). include_legacy=True adds LEGACY_EXTS (census lane; the symbol
+    index NEVER passes it — ast-grep has no grammar for those stacks).
+    An EMPTY tracked list is an answer, not a fallback trigger."""
     files, git_ok = [], False
     try:
         p = subprocess.run(["git", "ls-files", "-z"], cwd=cwd,
@@ -73,6 +87,7 @@ def enumerate_code_files(cwd, git_timeout=30):
                        and not (rel + d + "/").startswith(EXCL_TOP)]
             for n in names:
                 files.append(rel + n)
+    exts = dict(EXTS, **LEGACY_EXTS) if include_legacy else EXTS
     return (sorted(f for f in files
-                   if os.path.splitext(f)[1] in EXTS and not excluded(f)),
+                   if os.path.splitext(f)[1].lower() in exts and not excluded(f)),
             git_ok)

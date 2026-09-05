@@ -130,6 +130,7 @@ if IS_MODULE_GRAMMAR:
     marker_checks = [
         ("inferred_count", "[INFERRED]"),
         ("locked_count", "[LOCKED]"),
+        ("intent_count", "[INTENT]"),
         ("artifact_count", "[ARTIFACT]"),
     ]
 else:
@@ -179,8 +180,12 @@ for fm_field, marker in marker_checks:
                        "detail": f"fm={expected}, body={actual}"})
 
 if IS_MODULE_GRAMMAR:
-    # --- module grammar: implicit-default fields + open_count vs §6 OQ entries ---
-    for impl_field in ("verified_count", "intent_count"):
+    # --- module grammar: implicit-default field + open_count vs §6 OQ entries ---
+    # (intent_count moved to exact-check in 7.26.0 — the field is defined as
+    # EXPLICIT [INTENT] markers and script-derived by derive-prd-counts.sh;
+    # verified_count stays underivable → informational only, retired from the
+    # 7.26+ frontmatter contract.)
+    for impl_field in ("verified_count",):
         checks.append({"check": f"{impl_field}_match", "status": "SKIP",
                        "detail": "implicit-default field (7.6+ module grammar) — not recomputable from body"})
     sec6_m = re.search(r"^## 6\.", content, re.MULTILINE)

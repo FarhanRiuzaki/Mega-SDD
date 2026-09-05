@@ -86,6 +86,32 @@ section kontrak operasional; rail klaim-negatif; flow-br-lint advisory.
 4. Role model-tier baru: `extract-intelligence-verify` (row 23, sonnet).
 5. xs single-module: verifier TETAP dispatch (penulis tidak memeriksa dirinya).
 
+## Amendemen Fase 4 (7.26.0, saat implementasi)
+
+1. **verified_count DIPENSIUNKAN dari kontrak frontmatter** (underivable di grammar
+   implicit-verified = permukaan drift murni); `intent_count` didefinisikan ulang =
+   marker [INTENT] EKSPLISIT (script-derived, kb_output exact-check).
+2. **Enumerator**: `code_enum.py` ketambahan lane `LEGACY_EXTS` (rpg/rpgle/sqlrpgle/
+   dds/pf/lf/cl/cobol) via `include_legacy=True` — census memakainya, symbol index
+   TIDAK (ast-grep tanpa grammar stack itu); ekstensi di-match case-insensitive.
+   Ekspor AS400 tanpa ekstensi (Qrpgsrc.XXX) tetap butuh census manual — dicatat jujur.
+3. **Site-census v1 = keluarga rpg saja** (WRITE/UPDAT/EXCPT glued + CALL literal,
+   kolom-7 dikecualikan); stack lain tercatat "no idiom support" — bukan hijau diam.
+   Coverage = sitasi exact ±2 baris atau dalam range a-b; sitasi shorthand `:NNN`
+   tanpa path TIDAK dihitung (memang tak machine-verifiable — fix: tulis path:line).
+4. **Rollup recount** = 2 klaim parseable (Total row Mutability + split/total OQ);
+   README format custom → advisory note, bukan tebakan.
+5. **Probe** = `(probe-glob: <pattern>)` glob-only v1, relatif project root / legacy
+   root; advisory murni (`oq_answerable_from_disk`), tidak pernah FAIL.
+6. **Idiom rpg-as400** = `references/legacy-idioms/rpg-as400.md` + kolom RPG di
+   MASTER STACK IDIOM TABLE — BUKAN pack framework-conventions (itu untuk stack
+   target rebuild; ini cara MEMBACA legacy). READ ALSO line di dispatch extractor
+   + verifier saat stacks ∩ {rpg,rpgle,rpg-copy,dds}.
+7. **Live proof di KB Host (sandbox)**: rollup_mismatch menangkap persis LOCKED
+   5-vs-4 + split OQ 9/20/11-vs-12/18/10 (recount lane F); site_uncovered 12 —
+   termasuk #CRTFLT:125/144/182/201 (4 site float lane E) dan tltran:1438 (site
+   CFTPNT ke-4). Deteksi audit kini deterministik.
+
 ## Tranche C — cost (measured-first, gate terpisah)
 
 - **C1:** fix `TOKEN-COST-REPORT.md` 0 byte (state JSON terisi, report kosong) + pastikan
