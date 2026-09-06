@@ -52,7 +52,7 @@
 | `.claude/settings.local.json` modified | milik sesi lain | shared-worktree rule: jangan sentuh |
 | `--skip-pagerank` / `--force-recheck` dihapus | closed-decision | ladder: numpang MAJOR berikut; hanya wording-nya diperbaiki |
 | `validate-bolt-artifacts.sh` `_parent_reqs`/`_obj_map`/`has_object` (prefetch tanpa pembaca) | proposal-first | di dalam engine B1 recompute-at-gate (moat) — jangan blind cut; dicatat di sini sebagai kandidat spec kecil |
-| Rotasi CHANGELOG (3.980 baris / 229 versi vs aturan 2.000 / 30) | decided-not-built | aturan header-nya sendiri; mekanis tapi diff besar + file contended dua sesi → commit terpisah setelah 7.29.1 hijau, atau owner amandemen kadensnya |
+| Rotasi CHANGELOG (3.980 baris / 229 versi vs aturan 2.000 / 30) | ~~decided-not-built~~ → **DONE** commit terpisah setelah 7.29.1 hijau (owner "gas" 2026-09-06): oldest 50% (v3.65.0–v5.2.2, 114 entri) → `CHANGELOG-ARCHIVE.md`; CHANGELOG tinggal 115 entri | aturan header-nya sendiri; CI parity hanya membaca tag teratas |
 | REPORT BACK domain-extractor "machine-parsed" | no-evidence | parser tak ada dan tak ada konsumen — reword, bukan bangun parser |
 | Fixture `tests/integration/*` yang tak pernah ada | manual walkthrough | header pengungkap + alias → front door; bukan mengarang fixture |
 | Snapshot rows orchestrate-flow (`pending_p0_p1_count` dkk) | annotate | label digest, bukan key state.json — diberi sumber, bukan di-rename (blast radius routing) |
@@ -79,4 +79,4 @@ Workflow selesai 66 menit, 312 agen (125 selesai, 187 error session-limit). Hasi
 | **Confirmed sebagian (1–2 lensa, sisanya error)** | #13 F-30 item 3, #15 model-tiers, #21 CONTRIBUTING vault-contract, #23 analyze 40-business-rules, #26 weighted-routing §3.6, #27 halt-protocol path, #87 domain-extractor, #89 bare refs, #90 snapshot rows, #91 install-deps enum | di-fix; lensa yang sempat jalan tidak menolak |
 | **Tidak terverifikasi lensa (agen error)** | #28–#86 (±60: versi/angka README-CLAUDE-CONTRIBUTING, pengajar xs, PostToolUse comments, dead code, test repins, tests.yml pandoc, .gitignore, integration fixtures, dst.) | di-fix atas verifikasi manual gue terhadap teks sumber + suite 246/246; **bukan** klaim "lolos lensa" |
 
-Yang lensa temukan dan gue rekam tapi TIDAK dibangun: `validate-bolt-artifacts.sh` prefetch `_parent_reqs`/`has_object` (#65 — engine B1, proposal-first); rotasi CHANGELOG (#28 — commit terpisah / amandemen kadens, file contended dua sesi).
+Yang lensa temukan dan gue rekam tapi TIDAK dibangun: `validate-bolt-artifacts.sh` prefetch `_parent_reqs`/`has_object` (#65 — engine B1, proposal-first); rotasi CHANGELOG (#28) — DIKERJAKAN sebagai commit terpisah setelah 7.29.1 hijau.
