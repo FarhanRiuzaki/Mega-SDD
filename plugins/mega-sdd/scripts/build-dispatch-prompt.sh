@@ -1660,11 +1660,8 @@ for r in HARD_RULE_LINES:
         if "." in obj or "/" in obj:                 # path-shaped => mechanical
             _locked_entries.append((obj, "%s `## Hard rules`" % os.path.basename(UNIT_PATH)))
 if _locked_entries:
-    # F-30: the source is cited ONCE per group, not repeated on every entry —
-    # on the field run the same 60-byte label rode 25 consecutive lines
-    # (~1.5 KB of a 3.8 KB block). Every entry still sits under its source;
-    # entries are emitted in first-seen source order, insertion order within.
-    # (F-30 considered and REJECTED a grouped "(source:) once per group" form:
+    # Entries are emitted in first-seen source order, insertion order within,
+    # EACH carrying its own `(source:)` label. (F-30 considered and REJECTED a grouped "(source:) once per group" form:
     # ~1.2 KB/dispatch against the per-entry label rail — every entry carries
     # its own source so no line can be read under another source's label.)
     anti.append("DO NOT MODIFY:")
@@ -3591,13 +3588,12 @@ elif total_bytes > CAP_HARD:
 # would SKIP on "no emitted bolts/**/dispatch-prompt.md found" and silently go
 # dark, which looks identical to a passing suite.
 #
-# VALIDATOR DISPATCH IS A HOOK, NOT A CALLER OBLIGATION. `hooks/post-tool-use`
-# fires validate-dispatch-prompt.sh deterministically on the Bash call that runs
-# this builder, exactly as it fires on a `Write|Edit` of an emitted prompt — the
-# Bash-leg twin of the pre-builder cadence, per bolt, with zero model
-# cooperation. The controller has no wiring step here and must not be given one:
-# a prose obligation that duplicates a hook rots, and plugins/mega-sdd/CLAUDE.md's
-# *gates > rules > hooks* runs ONE WAY ONLY.
+# VALIDATOR DISPATCH IS NOT A CALLER OBLIGATION. validate-dispatch-prompt.sh is
+# ADVISORY and runs under the analyze skill (run-analyze.sh V16) — the per-bolt
+# PostToolUse leg that used to fire it on this builder's Bash call died in
+# v7.5.0 №C/№D. The controller has no wiring step here and must not be given
+# one: a prose obligation that duplicates a dispatcher rots, and
+# plugins/mega-sdd/CLAUDE.md's *gates > rules > hooks* runs ONE WAY ONLY.
 #
 # TEMP FILE + ATOMIC RENAME, AND THAT ALONE. The artifact is written to a SIBLING
 # temp file in the same directory and os.replace()d into place; same directory

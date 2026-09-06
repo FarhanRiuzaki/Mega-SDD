@@ -1,7 +1,7 @@
 """vault_md.py — the ONE vault-markdown parsing grammar (W5, spec
 2026-07-19-batch2-derive-and-diet.md).
 
-Shared by BOTH `validate-vault-oqs.sh` (PostToolUse rail) and
+Shared by BOTH `validate-vault-oqs.sh` (analyze rail) and
 `derive-vault-json.sh` (deterministic generator) via the MEGA_SDD_LIB_DIR
 sys.path pattern — the W2 `binding_md.py` precedent applied to the vault
 surface: OQ-tag / category-bracket parsing can never fork between the
@@ -132,7 +132,7 @@ VAULT_LOCK_KEYS = {
 }
 _LOCK_BULLET_RE = re.compile(r"^-\s*\*\*([^*]+)\*\*\s*:\s*(.+)$")
 
-# v7 Fase 3 layout-2 (vault.md): the six lock values live as YAML-frontmatter
+# v7 Fase 3 layout-2 (vault.md): the six lock values (+ the optional `project_scale`, 7.29.0) live as YAML-frontmatter
 # scalars. Frontmatter is read ONLY when it carries `vault_layout: 2` — the
 # LEGACY 00-index.md frontmatter also has a `vault_version:` line, so an
 # ungated frontmatter-first read would silently re-source that one key on
@@ -273,7 +273,7 @@ def v2_missing_headers(md):
 
 
 def parse_vault_lock(md):
-    """The six Vault Lock metadata values.
+    """The six Vault Lock metadata values (layout-2 adds the optional `project_scale`).
 
     Layout-2 (frontmatter carries `vault_layout: 2`): the values are read
     FRONTMATTER-FIRST from the vault.md scalars; any key absent there still

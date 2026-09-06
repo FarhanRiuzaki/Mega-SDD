@@ -13,6 +13,7 @@ Thumbs.db
 test-output/
 *.test.md
 !tests/**/*.test.md
+!plugins/mega-sdd/tests/**/*.test.md
 
 # Archive
 *.zip

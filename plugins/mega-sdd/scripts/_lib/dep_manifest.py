@@ -3,8 +3,8 @@
 One home for "which packages did this bolt ADD between base..head", across every
 supported ecosystem. Reused by:
   - validate-new-deps.sh  (gate 5, anti-slopsquat: do the added packages EXIST?)
-  - check-dep-authorization.sh (gate 6, anti-over-engineering: did the UNIT
-    sanction them?)
+  - validate-new-deps.sh --unit=  (gate 6, anti-over-engineering: did the UNIT
+    sanction them? — check-dep-authorization.sh was folded in at 7.0.0)
 Extracted so the two gates can never disagree on what "a new dependency" is
 (reuse over a second copy — WAJIB "pas").
 

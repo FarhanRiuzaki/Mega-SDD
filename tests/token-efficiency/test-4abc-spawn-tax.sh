@@ -4,7 +4,7 @@
 #   4a-i  resolver cache: byte-parity cold→hit, ZERO python spawns on a hit
 #         (PATH-shim proof), invalidation on every input class, existence-parity.
 #   4a-ii composable scans: single-vs-multi rc parity on a real vault fixture,
-#         all five state files from ONE invocation, call sites collapsed.
+#         all six state files from ONE invocation, call sites collapsed.
 #   4c    Stop turn-gate: scans skipped when nothing changed (state mtime
 #         proof), re-run on HEAD move AND on evidence-tree writes; the hook's
 #         own debug-log append never defeats the skip (memory/ prune).
@@ -96,8 +96,8 @@ M_STATES=$(ls -A "$PV/.mega-sdd/" | grep -c 'state.json' || true)
 note "== 4a-ii. call sites collapsed =="
 N_PTU=$(grep -c 'validate-bolt-artifacts.sh' "$PTU")
 [ "$N_PTU" = "1" ] && ok "pre-tool-use: exactly ONE validate-bolt-artifacts invocation" || fail "pre-tool-use has $N_PTU invocations"
-grep -q -- '--orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan' "$PTU" \
-  && ok "gate call carries all five scans + --recompute (B1 recompute-at-gate preserved)" || fail "gate flags wrong"
+grep -q -- '--orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --panel-scan' "$PTU" \
+  && ok "gate call carries all six scans + --recompute (B1 recompute-at-gate preserved)" || fail "gate flags wrong"
 N_STP=$(grep -c 'bash "$VALIDATOR_OS"' "$STP")
 [ "$N_STP" = "1" ] && ok "stop: exactly ONE validator invocation" || fail "stop has $N_STP invocations"
 # 7.11.0: --panel-scan (F-07) joins both lanes — detection on Stop, gate at PreToolUse.

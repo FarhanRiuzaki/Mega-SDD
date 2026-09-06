@@ -141,9 +141,10 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
         # Spec §4e widened this prune list (disclosed 4e scope): every validator
         # STATE file, both scan stamps, and the dirty-paths journal are derived
         # OUTPUTS — the five scans key on commits + evidence artifacts only, and
-        # none of these is either. Without the widening, the PostToolUse
-        # validators' per-write state rewrites (and 4e's own stamp) would
-        # re-trigger these scans every write-bearing turn and silently undo §4c.
+        # none of these is either. Without the widening, the gate/analyze state rewrites (and 4e's own
+        # stamp) would re-trigger these scans every write-bearing turn and silently
+        # undo §4c (the per-write PostToolUse rewrites this first guarded against
+        # died in №D v7.5.0; the prune list is still correct).
         CHANGED_SS=$(find "${PROJECT_ROOT}/.mega-sdd" ${LEGACY_SS:+"$LEGACY_SS"} -mindepth 1 \
           \( -name memory -o -name .cache \) -prune -o \
           \( -name .analyze-state.json -o -name CONSISTENCY-REPORT.md \
@@ -186,9 +187,10 @@ fi
 
 # ─── AUTO-ANALYZE: aggregate state files → CONSISTENCY-REPORT.md ────────────
 # Hook-driven auto-chain reporting. Reads existing .*-state.json files written
-# by PostToolUse validators during this session. Cheap (no re-run — aggregate
+# by the execute-bolts gate re-derives or a prior analyze FULL run (the
+# PostToolUse validator fan-out died in №D v7.5.0). Cheap (no re-run — aggregate
 # only), reliable (Stop hook fires deterministically at turn end, not prose).
-# Only runs when ≥1 validator state file exists (some validator fired this chain).
+# Only runs when ≥1 validator state file exists (some gate/analyze wrote one).
 # P3 lean-by-default: this ADVISORY aggregate fires only when the config
 # explicitly opts back in — `spine: classic` OR `profile: full` (the reports
 # are re-derivable on demand via analyze; no gate reads them — the

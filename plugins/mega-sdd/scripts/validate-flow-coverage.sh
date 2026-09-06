@@ -564,11 +564,6 @@ def tokenize_entity(s):
     return toks
 
 
-def normalize_token(s):
-    """Compact stable key for display/dedupe (singularized, alnum-only)."""
-    toks = tokenize_entity(s)
-    return "".join(sorted(toks)) if toks else re.sub(r"[^a-z0-9]+", "", (s or "").lower())
-
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
 
@@ -950,7 +945,7 @@ report = {
         "Add the missing per-step input-validation artifacts (e.g. Form Requests) "
         "to the relevant module unit's `## Target files`, and remove any dead "
         "scaffold stub whose gating flow endpoint does not exist; then re-save the "
-        "unit (PostToolUse will re-validate)."
+        "unit (the execute-bolts gate re-derives; analyze re-runs it)."
     ) if status == "FAIL" else "No action — every input-accepting flow step maps to an artifact; no dead stubs.",
 }
 

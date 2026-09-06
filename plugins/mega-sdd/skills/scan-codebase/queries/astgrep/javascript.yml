@@ -2,7 +2,7 @@
 # ast-grep's javascript grammar parses JSX, so .jsx files match THESE rules —
 # never ship a separate jsx.yml (its rules would double-count every .jsx
 # symbol in the index); the Step-0 router carries a jsx->javascript alias.
-# Mirrors tags-javascript.scm coverage. Kind names verified against ast-grep 0.42.3.
+# Coverage mirrors the former tags-javascript.scm set (tree-sitter lane removed 7.4.0; ast-grep is the only engine). Kind names verified against ast-grep 0.42.3.
 # Contract: 0-based lines (+1 for anchors); dedupe by (file, start.line, ruleId).
 id: javascript-function
 language: javascript

@@ -671,7 +671,7 @@ def _next_action(drops):
             "oleh commit di luar pipeline unit (daftar file ada di field `expected` "
             "pada drop-nya)"
         )
-    parts.append("then re-run validator (or save the unit — PostToolUse auto-re-validates)")
+    parts.append("then re-run validator (the execute-bolts gate re-derives it too)")
     return "; ".join(parts) + "."
 
 status = "PASS" if not drops else "FAIL"

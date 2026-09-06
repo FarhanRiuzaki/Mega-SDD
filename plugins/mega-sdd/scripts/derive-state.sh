@@ -4,9 +4,9 @@
 #
 # Replaces the 10-probe PROSE inspection routing-rules.md used to prescribe: every
 # probe now runs in scripts/_lib/state_probes.py (shared with validate-preflight.sh
-# and the session-start staleness notice) and lands in ONE artifact —
-# <root>/.mega-sdd/state.json — so the probe sets consumed by routing, auto,
-# --resume, session-start, and preflight can never re-diverge again (the P0
+# and ground.sh) and lands in ONE artifact —
+# <root>/.mega-sdd/state.json — so the probe sets consumed by routing, the front
+# door, --resume, GROUND, and preflight can never re-diverge again (the P0
 # has_vault fork was exactly this failure class).
 #
 # state.json shape (script-lane artifact; envelope + two objects):

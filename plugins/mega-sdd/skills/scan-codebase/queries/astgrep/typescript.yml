@@ -1,6 +1,6 @@
 # Tier-1 AUTO-lane (ast-grep) definition rules — TypeScript (.ts ONLY — .tsx is its own
 # ast-grep language and lives in tsx.yml; typescript rules never match .tsx).
-# Mirrors tags-typescript.scm coverage. Kind names verified against ast-grep 0.42.3.
+# Coverage mirrors the former tags-typescript.scm set (tree-sitter lane removed 7.4.0; ast-grep is the only engine). Kind names verified against ast-grep 0.42.3.
 # Consumer contract (scan-procedure.md §Step 5): --json=compact output;
 # range.start.line is 0-BASED (+1 for map anchors); `lines` is the full node
 # text (signature = first line); dedupe rows by (file, start.line, ruleId).

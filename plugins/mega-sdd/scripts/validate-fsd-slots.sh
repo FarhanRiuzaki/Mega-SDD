@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# validate-fsd-slots.sh — Phase B slice B.5 [PostToolUse-validate].
+# validate-fsd-slots.sh — Phase B slice B.5 [analyze / gate re-derive].
 #
 # Walking-skeleton scope: ONE of 3 quality_gate subtype halts:
 #   - quality_gate_failed:template_slot_unfilled
 #     (FSD.md output contains unfilled `{{slot_name}}` placeholder)
 #
 # Other B.5 subtypes deferred to follow-up slices:
-#   - pdf_render_failed: needs PostToolUse Bash matcher with pandoc detection
+#   - pdf_render_failed: VOID — no hook route exists (the PostToolUse Bash matcher died v7.5.0 №C);
+#     render failures surface from md2pdf.sh / the emit-fsd prose, not a validator
 #   - starterkit_metrics_inconsistent: in-skill prose recomputation (orchestrate-flow / generate-units; the old Skill-matcher validator was deleted v7.5.0 №C)
 #
 # Per attestation: this is detection-only at hook layer; auto-fix is emit-fsd's

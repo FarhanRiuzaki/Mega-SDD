@@ -34,4 +34,21 @@ echo "$out" | grep -qE "^mega-sdd-trace:session$" && fail "v7.3.1: the :session 
 echo "$out" | grep -q "mega-sdd" || fail "anchor body missing 'mega-sdd' mention"
 rm -rf "$tmp2"
 
-echo "OK: hook behaves correctly in both signal and no-signal CWDs"
+# Test 3 — re-pinned 7.29.1 (was telemetry-range.test.sh r5/r6, deleted with the
+# telemetry lane in v7.3.0 while the 7.0.0 entry still cited the pin): the C1
+# self-resolve battery runs at GROUND, and session-start writes NO vault artifact.
+GROUND="${REPO_ROOT}/plugins/mega-sdd/scripts/ground.sh"
+r5="$(mktemp -d)"; mkdir -p "$r5/.mega-sdd/vaults/demo"
+( cd "$r5" && git init -q . ) 2>/dev/null   # .git signal → expected_mode=existing
+printf '{"mode": "greenfield"}\n' > "$r5/.mega-sdd/vaults/demo/vault.json"
+c1_out="$(bash "$GROUND" --cwd="$r5" 2>&1 || true)"
+echo "$c1_out" | grep -q 'self-resolved\] mode_migrate' || fail "r5: C1 mode_migrate self-resolve did not fire at GROUND: ${c1_out:0:200}"
+grep -q '"mode": "existing"' "$r5/.mega-sdd/vaults/demo/vault.json" || fail "r5: GROUND did not rewrite vault.json mode → existing"
+r6="$(mktemp -d)"; home6="$(mktemp -d)"; mkdir -p "$r6/.mega-sdd/vaults/demo"
+( cd "$r6" && git init -q . ) 2>/dev/null
+printf '{"mode": "greenfield"}\n' > "$r6/.mega-sdd/vaults/demo/vault.json"
+( cd "$r6" && printf '{"source":"startup","session_id":"s"}' | HOME="$home6" bash "$HOOK" >/dev/null 2>&1 ) || true
+grep -q '"mode": "greenfield"' "$r6/.mega-sdd/vaults/demo/vault.json" || fail "r6: session-start mutated vault.json (it must write no vault artifacts — C1 lives at GROUND)"
+rm -rf "$r5" "$r6" "$home6"
+
+echo "OK: hook behaves correctly in both signal and no-signal CWDs (+ r5 C1-at-GROUND, r6 no-vault-writes)"

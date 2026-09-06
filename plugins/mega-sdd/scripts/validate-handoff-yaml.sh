@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# validate-handoff-yaml.sh — Phase B slice B.1 [PostToolUse-validate].
+# validate-handoff-yaml.sh — Phase B slice B.1 [gate-time handoff verdict / analyze].
 #
 # Validates handoff YAML emitted in skill chat output against handoff-contract.md
 # schema. Covers four C1 halts that historically required orchestrate-flow body

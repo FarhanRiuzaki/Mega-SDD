@@ -16,7 +16,7 @@
 #
 # The check that matters is NOT "does a .gitattributes exist" — it is "does Git
 # itself apply eol=lf to the EXTENSIONLESS hook entry points". A `*.sh` rule
-# looks reasonable and misses all eight of them. So the authoritative assertion
+# looks reasonable and misses all six of them. So the authoritative assertion
 # here is `git check-attr`, asked about those exact paths, with a synthetic
 # `*.sh`-only repo as the control proving the assertion can fail.
 #
@@ -31,7 +31,7 @@ pass() { echo "PASS: $1"; }
 
 CR=$'\r'
 
-# The eight hook entry points have NO extension — this is the exact set a `*.sh`
+# The six hook entry points have NO extension — this is the exact set a `*.sh`
 # rule would miss, so it is the exact set we interrogate.
 HOOK_ENTRIES="pre-tool-use post-tool-use session-start stop user-prompt-submit user-prompt-expansion"
 

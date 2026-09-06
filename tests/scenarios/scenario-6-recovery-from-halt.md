@@ -546,7 +546,7 @@ Recovery options:
 
 ```bash
 # Option 1: Retry single failed tool (most common; transient network issue):
-/mega-sdd:install-deps --tools=mmdc --force-recheck
+/mega-sdd:install-deps --tools=mmdc
 
 # Option 2: Force a specific package manager (for a tool with multiple sources):
 /mega-sdd:install-deps --tools=<tool> --pkg-mgr=<mgr>
@@ -558,7 +558,7 @@ Recovery options:
 # Option 4: Manual install + verify:
 /mega-sdd:install-deps --manual                          # prints install commands but doesn't execute
 # Run the printed command yourself, then:
-/mega-sdd:install-deps --tools=mmdc --force-recheck  # verify install + write to memory
+/mega-sdd:install-deps --tools=mmdc  # every run re-probes (no cache to skip)
 ```
 
 If `subtype: verify_after_install_failed`: install ran but tool not on PATH. Common fix:
@@ -566,7 +566,7 @@ If `subtype: verify_after_install_failed`: install ran but tool not on PATH. Com
 ```bash
 hash -r                       # clear shell command cache
 which <tool>                  # verify path
-# Or restart shell session and re-run /mega-sdd:install-deps --tools=<tool> --force-recheck
+# Or restart shell session and re-run /mega-sdd:install-deps --tools=<tool>
 ```
 
 ---

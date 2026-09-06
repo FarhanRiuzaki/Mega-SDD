@@ -383,7 +383,7 @@ fi
 # ── XS payload-cut arm (size-weighted spec §1b, approved 2026-09-05) ─────────
 # The f4 golden pins the xs BYTES; this arm pins the RELATION: the SAME fixture
 # built WITHOUT --unit-tier must be materially larger — the xs build stays at
-# most 60% of the full build (measured at ship: 35%, 18142 -> 6334 bytes;
+# most 60% of the full build (measured at ship: 35%, 18174 -> 6342 bytes — the build is path-length sensitive, so a few bytes can differ per checkout;
 # lines ratio 12.4:1 -> 5.7:1 on the 22-line U-005-class replay). A regression
 # that quietly re-inflates the xs payload reddens here before any golden regen.
 mv "$WORK/f4-xs" "$WORK/f4-xs.used" 2>/dev/null

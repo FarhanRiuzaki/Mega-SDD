@@ -61,6 +61,8 @@ Halt / self-report / rollback / provenance / atomic contracts: carried by your s
 
 ## Provenance values (per-dispatch)
 
+> At `--unit-tier=xs` this preamble is dropped — the agent-carried trailer shape needs only the values, which ride the header (context-enrichment.md §XS emission).
+
 The VALUES the agent fills into the agent-carried trailer shape (its system
 prompt §Provenance trailer) in every modified file:
 
@@ -95,6 +97,8 @@ Provenance values:
 > `superpowers-bridge.md §Dispatch order` item 3.
 
 ## Acceptance-test provenance NOTE
+
+> At `--unit-tier=xs` the NOTE is compressed to three lines — facts + instruction; the full rationale stays in stdout `sections_omitted` (context-enrichment.md §XS emission).
 
 execute-bolts injects this NOTE into the dispatch prompt when the unit's `acceptance_test._authored_by` field is `same-pass` OR `adversarial-review-failed` (weak blind-spot coverage signals per `generate-units/references/adversarial-test-prompt.md` §provenance values).
 
@@ -299,6 +303,8 @@ Must pass at <pack-specified level>.
 T2 BUDGET TRACKER (informational)
 ═══════════════════════════════════════════
 
+> At `--unit-tier=xs` the tracker is one `file_total` line and `instruction_to_subagent` is omitted when nothing was truncated (context-enrichment.md §XS emission).
+
 ```
 ### T2 budget tracker
 consumed_t1: <X> bytes (cap 12288)
@@ -343,4 +349,4 @@ The budget dict, the priority-ordered T2 section list, the per-section truncatio
 
 ## Logging
 
-`scripts/build-dispatch-prompt.sh` writes the assembled prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md`. The file is **contractual, not merely provenance** — `validate-dispatch-prompt.sh` globs exactly that path and has no other input, so if it stopped being written the advisory gate would go dark. A script write fires no `Write|Edit` tool event, so `hooks/post-tool-use` carries a second, Bash-side dispatch of the same validator, keyed on the builder's own command — deterministic, per bolt, at parity with the pre-builder `Write` cadence. **The controller has no refresh step and must not be given one:** a rule that duplicates a hook rots, and `plugins/mega-sdd/CLAUDE.md`'s *gates > rules > hooks* runs one way only.
+`scripts/build-dispatch-prompt.sh` writes the assembled prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md`. The file is **contractual, not merely provenance** — `validate-dispatch-prompt.sh` globs exactly that path and has no other input, so if it stopped being written the advisory check would go dark. That validator is ADVISORY and runs under the analyze skill (`run-analyze.sh` V16) — no hook fires it per bolt (the PostToolUse leg died in v7.5.0 №C/№D). **The controller has no refresh step and must not be given one:** a rule that duplicates a dispatcher rots, and `plugins/mega-sdd/CLAUDE.md`'s *gates > rules > hooks* runs one way only.

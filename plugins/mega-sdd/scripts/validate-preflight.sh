@@ -231,8 +231,13 @@ def c_vault_version(_):
 
 
 def c_oq_inputs(_):
+    # Layout-aware (leftover fix 7.29.1): OQs live in constraints.md (layout-2)
+    # or 06-constraints.md (legacy 7-file); no layout ever produced
+    # 03-open-questions.md, so the old predicate was fatal on EVERY real vault.
     return (os.path.isfile(os.path.join(VAULT, "vault.json"))
-            and os.path.isfile(os.path.join(VAULT, "03-open-questions.md")))
+            and any(os.path.isfile(os.path.join(VAULT, f))
+                    for f in ("constraints.md", "06-constraints.md",
+                              "03-open-questions.md")))  # last: ancient hand-made vaults / fixtures
 
 
 def c_oq_status_field(_):
@@ -409,8 +414,8 @@ CHECKS = {
     ],
     "resolve-oq": [
         ("vault_present_for_oq", True, c_oq_inputs,
-         "resolve-oq requires a vault with 03-open-questions.md. Run "
-         "generate-intent first."),
+         "resolve-oq requires a vault with vault.json + the OQ doc (constraints.md, "
+         "or 06-constraints.md on the legacy layout). Run generate-intent first."),
         ("oq_status_field_present", False, c_oq_status_field,
          "vault.json open_questions[] entries lack 'status' field (pre-v1.1 "
          "schema). resolve-oq cannot track Resolve/Out-of-Scope/Defer "

@@ -90,6 +90,16 @@ PS2=$(jget project_scale < "$V2/vault.json")
 { [ "$PS2" = "None" ] || [ "$PS2" = "null" ] || [ -z "$PS2" ]; } \
   && pass "absent frontmatter -> no invented project_scale" || fail "absent case: '$PS2'"
 
+# 12. CORPUS SWEEP (7.29.1 — the 7.29.0 "nol false-xs" claim as a pin): every
+# PRD-like doc in the repo corpus derives `standard`; xs must only ever come from a
+# deliberately small PRD (pins 2/9 above), never from a real product doc.
+n=0; bad=""
+for f in "$REPO_ROOT"/tests/scenarios/*.md "$REPO_ROOT"/tests/blackbox/fixture/docs/PRD-leave.md; do
+  [ -f "$f" ] || continue
+  n=$((n + 1)); s=$(scale_of "$f"); [ "$s" = "standard" ] || bad="$bad $(basename "$f")=$s"
+done
+{ [ "$n" -ge 12 ] && [ -z "$bad" ]; } && pass "corpus sweep: $n docs -> all standard (no false-xs)" || fail "corpus sweep: n=$n false-xs:[$bad]"
+
 echo
 if [ "$fails" -eq 0 ]; then echo "OK: all project-scale pins green"; exit 0
 else echo "FAILURES: $fails"; exit 1; fi

@@ -19,9 +19,10 @@ Verify every doc has:
 - [ ] **TL;DR header** present in every doc 01–06. Format: 1-line if `OUTPUT_MODE=compact`, 3-line if `OUTPUT_MODE=full`.
 - [ ] Output language convention consistent — code-level terms in English (entity names, field names, types, enum values, HTTP methods, framework names); prose narrative in PRD language. Avoid mixing English and PRD language in the same prose sentence except for code-term references.
 - [ ] Read-aloud test: the first paragraph of each doc does not sound like AI translation.
-- [ ] First-use acronym/jargon defined inline; cross-doc terms are in the `vault.md ## Glossary`.
+- [ ] First-use acronym/jargon defined inline; cross-doc terms are in the `vault.md ## Glossary` (absent at `project_scale: xs` — first-use inline definitions carry them there).
 - [ ] Cross-ref ≤ 2 per section.
-- [ ] `vault.md` has: the frontmatter lock (`vault_layout: 2` + 6 scalars), Phase context, the EXACT anchors `## Overview` / `## Architecture` / `## Decisions`, Glossary, Auto-Classification Review, Source documents, Changelog. ALL OQs sit in `constraints.md ## Open Questions` (an OQ checkbox anywhere else fails the derive).
+- [ ] `vault.md` has: the frontmatter lock (`vault_layout: 2` + 6 scalars, + `project_scale` when derived), Phase context, the EXACT anchors `## Overview` / `## Architecture` / `## Decisions`, Glossary (omitted at `project_scale: xs`), Auto-Classification Review, Source documents, Changelog. ALL OQs sit in `constraints.md ## Open Questions` (an OQ checkbox anywhere else fails the derive).
+- [ ] If `project_scale: xs`: NO `## Glossary` (no header, no placeholder) AND §Auto-Classification Review carries the `Auto-deferred (project_scale: xs)` sub-heading listing every medium-confidence tech OQ born `deferred` (with its `defer_to` — `binding` brownfield / `stakeholder` greenfield).
 
 **Output mode compliance (driven by `OUTPUT_MODE` from Step 0.7):**
 - [ ] If `compact`: TL;DR header is 1-line in docs 01–06.
@@ -30,7 +31,7 @@ Verify every doc has:
 - [ ] If `compact`: doc 04 Preconditions/Postconditions sections cut; Steps + DoD remain detailed.
 - [ ] If `compact`: doc 05 ADRs use the 1-paragraph format, not the multi-section block.
 - [ ] If `compact`: OQ entries are 1-line, not multi-line elaboration.
-- [ ] Glossary (BOTH modes — the drop is unconditional): product-specific PRD terms only + the pointer line to `_meta/ai-consumer-guide.md` §Standard terms; generic/standard rows never re-emitted.
+- [ ] Glossary (BOTH modes — the drop is unconditional; the whole section is omitted at `project_scale: xs`): product-specific PRD terms only + the pointer line to `_meta/ai-consumer-guide.md` §Standard terms; generic/standard rows never re-emitted.
 - [ ] If `full`: every section per template scaffold is filled, including prose narrative, JSON examples, multi-bullet consequences.
 
 **Anti-halu invariants (mandatory in BOTH modes — never cut even in compact):**
@@ -60,7 +61,7 @@ Verify every doc has:
 **Consumer guide & implementation notes (P2a — the guide is the sole carrier of the generic protocol):**
 - [ ] `<OUTPUT_DIR>/_meta/ai-consumer-guide.md` exists (the Step-3 `cp` Run installed it — copied from the shipped template, never model-rendered).
 - [ ] `vault.md` carries the `_meta/ai-consumer-guide.md` pointer and does NOT restate the halt-YAML examples — a `blocker:` / `resolver_route:` fence in vault.md is a regression (the halt protocol, parallel-work guidance, and companion-skills routing live in the guide only).
-- [ ] `vault.md ## Glossary` carries product-specific terms only + the pointer to the guide's Standard-terms table — no re-emitted generic rows (ADR/DBML/DoD/FK/NFR/OQ/RTO/RPO/SLO or design-system terms).
+- [ ] `vault.md ## Glossary` (when present — omitted at `project_scale: xs`) carries product-specific terms only + the pointer to the guide's Standard-terms table — no re-emitted generic rows (ADR/DBML/DoD/FK/NFR/OQ/RTO/RPO/SLO or design-system terms).
 
 **Design-system grounding (only if any design-system section appears):**
 - [ ] Section presence justified — `02-architecture#ui-components` exists ⇒ `HAS_UI_COMPONENTS = true` from Step 2; `06-constraints#design-system` exists ⇒ at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`.

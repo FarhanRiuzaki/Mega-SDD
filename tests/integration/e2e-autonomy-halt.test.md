@@ -1,5 +1,7 @@
 # E2E: Autonomy Layer — Halt and Resume (Iter 4)
 
+> **Prose walkthrough, not CI (note added 7.29.1).** The `./fixtures/e2e-*-fixture/` paths are illustrative — they were never committed; run the same steps with your own PRD. The typed `/mega-sdd:auto` form was removed at 6.0.0: use `/mega-sdd <prd> --deep` and `/mega-sdd --resume`.
+
 End-to-end integration test for `--deep` mode halting on a blocker, user resolving, and resuming via `--resume`.
 
 ## Fixture
@@ -12,7 +14,7 @@ End-to-end integration test for `--deep` mode halting on a blocker, user resolvi
 ## Test steps
 
 ### Step 1: Initial invocation
-**Run:** `/mega-sdd:auto ./fixtures/e2e-autonomy-halt-fixture/prd-extend-user.md --deep`
+**Run:** `/mega-sdd ./fixtures/e2e-autonomy-halt-fixture/prd-extend-user.md --deep`
 
 **Expect**:
 - Chain proposed: 5 phases (PRD → vault → scan → bind → units → bolts)
@@ -44,7 +46,7 @@ details:
       suggested_action: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT
 next_action: "Run /mega-sdd:resolve-oq --binding /path/to/binding.md"
 
-Chain stopped. Resolve the blocker and run /mega-sdd:auto --resume to continue.
+Chain stopped. Resolve the blocker and run /mega-sdd --resume to continue.
 ```
 
 ### Step 3: User resolves the conflict
@@ -53,7 +55,7 @@ Chain stopped. Resolve the blocker and run /mega-sdd:auto --resume to continue.
 User decides KEEP_CODE (legacy auth stays; vault rewritten). resolve-oq updates vault + binding.md.
 
 ### Step 4: Resume via --resume
-**Run:** `/mega-sdd:auto --resume`
+**Run:** `/mega-sdd --resume`
 
 **Expect chat**:
 ```
@@ -107,7 +109,7 @@ Resuming chain from Phase 3 of 5 (bind-codebase re-runs to produce bound-vault).
 
 ### V5: Halt re-fires if blocker unresolved
 - Alternative path: user does NOT run resolve-oq between Step 2 and Step 4
-- `/mega-sdd:auto --resume` re-runs bind-codebase
+- `/mega-sdd --resume` re-runs bind-codebase
 - Same `bind_conflict` blocker fires identically
 - User CANNOT bypass a halt by re-invoking — safety net is preserved
 

@@ -73,7 +73,10 @@ n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
 # v7.0.0 re-baseline (RECORDED decision — gate-1, spec 2026-08-21 §2.1): the S/M/L
 # weight table joined the core; 3415 → 3916; v7.3.0 observability removal
 # (trace tag + related lines) shrank it to 3625. The pin still freezes the census budget.
-[ "$n" -eq 3846 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3846, 7.17.0: +register natural di baris narrate — spec 2026-08-31-natural-register.md; under the 4030 cap)"
+# 7.29.1 re-baseline (RECORDED — leftover sweep): the dead "memory review" side lane
+# (lane removed v7.3.0) left the anchor and the emit verb gained its |html|summary
+# args: 3846 → 3844. Still a shrink; the 4030 cap stands.
+[ "$n" -eq 3844 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3844, 7.17.0: +register natural di baris narrate — spec 2026-08-31-natural-register.md; under the 4030 cap)"
 # C1b: the COMPACT-mode extraction ('## Hard rule' awk, session-start:150-153 —
 # no frontmatter strip) is pinned separately: a line matching /^## Hard rule/ or
 # 'ANCHOR-CORE ends' inside the frontmatter would move THIS region without

@@ -154,9 +154,9 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 ## resolve-oq preflight checks
 
 - **check_id: `vault_present_for_oq`**
-  command: `test -f <vault-path>/vault.json && test -f <vault-path>/03-open-questions.md`
-  expected: both files exist
-  on_fail: "resolve-oq requires a vault with 03-open-questions.md. Run generate-intent first."
+  command: `test -f <vault-path>/vault.json && { test -f <vault-path>/constraints.md || test -f <vault-path>/06-constraints.md; }`
+  expected: vault.json + the OQ doc of the vault's layout exist (layout-2 `constraints.md`; legacy `06-constraints.md` — no layout ever had `03-open-questions.md`, fixed 7.29.1)
+  on_fail: "resolve-oq requires a vault with vault.json + the OQ doc (constraints.md, or 06-constraints.md on the legacy layout). Run generate-intent first."
   fatal: yes
   predicts_halt: (chain order error)
 

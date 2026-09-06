@@ -9,7 +9,8 @@
 #
 # A knowledge-base domain body MUST be tech-agnostic (no language / framework / DB
 # names) EXCEPT in `## 11. Source References` sections and under `50-integrations/`.
-# This script scans 10-domains/ 20-workflows/ 30-data-model/ for any supported
+# This script scans SCAN_DIRS (the legacy numbered tree 00/10/20/30/40/99 AND the
+# v7.6 PRD-kontrak `modules/<domain>.prd.md` grammar) for any supported
 # stack's leak tokens, section-aware (skips §11 bodies) and dir-aware (skips
 # 50-integrations/).
 #

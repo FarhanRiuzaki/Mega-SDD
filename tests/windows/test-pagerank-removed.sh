@@ -23,7 +23,7 @@ grep -qF "REMOVED 5.29.0" "$GU/SKILL.md" \
   && ok "SKILL Step 7.5 carries the removal tombstone (numbering preserved)" \
   || fail "SKILL 7.5 tombstone missing"
 grep -qF "accepted NO-OP since 5.29.0" "$GU/SKILL.md" \
-  && ok "--skip-pagerank stays listed as an accepted no-op (flag-compat through 5.x)" \
+  && ok "--skip-pagerank stays listed as an accepted no-op (compat shim; removal rides the next MAJOR)" \
   || fail "--skip-pagerank flag-compat line missing"
 if grep -qiE "spawn-cost gate FIRST|symbol-reference graph|personalized PageRank" "$GU/references/task-typing.md"; then
   fail "task-typing still carries the pass's procedure"

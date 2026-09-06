@@ -41,3 +41,15 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### cross_squad_interface_draft
 
 - `cross_squad_interface_draft` — generate-units / execute-bolts: a consumed cross-squad interface is still `status: draft` — the consumer squad is waiting for the producer to lock it. ALWAYS STOP for the consuming unit. Details `{unit_id, interface_id, producer_squad, consumer_squad}` (registry §Type-specific schemas). Resolution: the producer squad locks the interface (`status: locked` in `<vault>/interfaces/`), then the consumer re-runs; predictive preflight surfaces this before dispatch when possible.
+
+### cross_module_dep_invalid
+
+- `cross_module_dep_invalid` — generate-units Step 4.5: a cross-module `depends_on` edge requires an explicit `blocked_by` declaration in the dependent module's `_meta/modules.yaml` entry; missing → this halt. ALWAYS STOP. Resolution: declare `blocked_by` (or drop the edge), re-run generate-units. Schema: `generate-units/references/halt-protocol.md`. (Registered 7.29.1.)
+
+### module_cycle_detected
+
+- `module_cycle_detected` — generate-units Step 4.5: the module-level DAG has a cycle (validated the same way as the unit DAG). ALWAYS STOP. Resolution: break the cycle in `_meta/modules.yaml`, re-run. Schema: `generate-units/references/halt-protocol.md`. (Registered 7.29.1.)
+
+### unit_oq_trace_missing
+
+- `unit_oq_trace_missing` — generate-units Step 12.5 g (MOAT-CRITICAL — the binding→units handoff): an implementation-relevant OQ-ID from the vault/binding is absent from the unit's `binding_refs:`, so a bolt could implement past an open question. ALWAYS STOP. Resolution: add the OQ-ID to `binding_refs:` (or resolve the OQ), re-run Step 12.5. Schema: `generate-units/references/halt-protocol.md §unit_oq_trace_missing`. (Registered 7.29.1.)

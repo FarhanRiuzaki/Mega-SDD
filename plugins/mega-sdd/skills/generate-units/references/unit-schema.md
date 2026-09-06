@@ -158,7 +158,7 @@ binding_refs:                      # binding manifest IDs this unit honors
 
 - src/Http/Controllers/UserController.php:45-67 — existing pattern; follow this shape
 - src/Models/User.php:12 — entity to extend
-- docs/knowledge-base/10-domains/10-cif-customer.md §5 (if KB present) — domain behavior to honor
+- .mega-sdd/knowledge-base/modules/customer.prd.md §2 (if KB present; legacy numbered tree: docs/knowledge-base/10-domains/<domain>.md §5) — domain behavior to honor
 
 ## Hard rules  (validated at bolt time by execute-bolts pre/post-flight)
 <Machine-parseable constraints. Grammar closed in v1 per DESIGN-OQ-4 (5 rule types). One rule per line. Empty section allowed (no rules to enforce).>

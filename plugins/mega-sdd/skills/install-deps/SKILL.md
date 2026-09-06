@@ -1,6 +1,6 @@
 ---
 name: install-deps
-version: 1.11.0
+version: 1.11.1
 description: Detect OS + package manager and install missing optional native deps (ast-grep, ripgrep, jd, pandoc, markdownlint-cli2, mmdc, semgrep, gitleaks) with one batch confirmation; never auto-sudo, never curl-pipe-bash, post-install verify. Triggers — "install deps", "auto install", "install tools", "install pandoc", "pasang tools", "auto install deps", or paraphrases.
 ---
 
@@ -46,7 +46,7 @@ The MCP server itself can also fail to start (npx cold-cache package fetch on a 
 
 ## Pre-flight checks
 
-1. **pkg_mgr_detected**: at least one of (brew | apt | dnf | pacman | apk | winget | scoop | choco | cargo | npm | go | pipx) is on PATH
+1. **pkg_mgr_detected**: at least one of (brew | apt | dnf | yum | pacman | apk | winget | scoop | choco — the `detect-os.sh` PKG_MGR set; `cargo` is its fallback, while npm / go / pipx are §Fallback-chain runtimes, not managers) is on PATH
    - If none → halt `pkg_mgr_not_found`
 
 ## Procedure
@@ -149,7 +149,7 @@ handoff:
   next_action:
     suggested_skill: null
     suggested_args: []
-    rationale: "Deps installed; mega-sdd full-precision mode enabled. Re-run /mega-sdd:install-deps --force-recheck if needed."
+    rationale: "Deps installed; mega-sdd full-precision mode enabled. Re-run /mega-sdd:install-deps if needed (every run re-probes)."
   blockers: []   # populated on install_failed / pkg_mgr_not_found
   metrics:
     tools_audited: <int>             #
@@ -158,21 +158,22 @@ handoff:
     tools_failed: <int>              # install or verify failed
     tools_sudo_pending: <int>        # requires_sudo — printed but not auto-run
     detected_os: <"macos" | "linux" | "wsl" | "windows-bash" | "unknown">
-    detected_pkg_mgr: <"brew" | "apt" | "dnf" | "pacman" | "apk" | "winget" | "scoop" | "choco" | "pipx" | "cargo-fallback" | "none">
+    detected_pkg_mgr: <"brew" | "apt" | "dnf" | "yum" | "pacman" | "apk" | "winget" | "scoop" | "choco" | "pipx" | "cargo-fallback" | "none">
 ```
 
 Status `halted` on `install_failed` OR `pkg_mgr_not_found`. Required ONLY under `--auto`.
 
 ## Anti-hallucination rails
 
-1. NEVER auto-`sudo` — for tools requiring elevation, PRINT command + instruct user to run manually. Memory records as "sudo-pending" status.
+1. NEVER auto-`sudo` — for tools requiring elevation, PRINT command + instruct user to run manually.
 2. NEVER use curl|bash patterns — only signed package manager commands from `tool-matrix.yaml`.
 3. ALWAYS show exact `install_cmd` + source pkg manager + size estimate BEFORE running (AskUserQuestion gate).
 4. ALWAYS verify post-install with `verify_cmd` from matrix — claim "installed" only after verify passes.
 5. NEVER install Claude Code itself — out of scope; this skill installs OPTIONAL mega-sdd deps only.
-6. Memory write happens AFTER verify pass — never record "installed" on partial state.
+6. Claim "installed" only AFTER the verify pass — never on partial state (every run re-probes; the install-outcomes memory log died with the memory lane in v7.3.0).
 7. Skip tools with no matching matrix entry AND no working fallback — emit warning, don't halt entire batch.
 8. NEVER treat `command -v <tool>` as proof a tool works — it may only ever yield `missing`. A Windows App Execution Alias stub resolves on PATH and exits 49. Promotion to `present` requires an execution probe.
 9. The ONLY sanctioned Windows PATH writer is `scripts/fix-windows-path.sh` — `reg add` / hand-written `.reg` imports / `setx PATH` each corrupt or truncate the value while REPORTING success (full failure catalog: `references/windows-path.md`); the script refuses `--ensure-dirs` without `--backup-to`, and that refusal must not be worked around.
+10.–11. *(retired with the memory lane in v7.3.0 — numbering kept so cross-references to rules 12–13 stay valid)*
 12. NEVER run a `verify_cmd` unbounded where a bound resolves, and NEVER run one for a tool `command -v` already reported absent (the v5.8.0 unbounded-probe stall class). Resolve the prefix per Bash invocation — `timeout -k 2 10`, else `gtimeout -k 2 10`, else empty — and treat exit 124, 137 AND 127 as `present`/`verified`, never `missing`/`unverified`.
 13. NEVER hard-code the bound as a literal at a probe site, and NEVER let its absence become a verdict about a tool (stock macOS ships neither `timeout` nor `gtimeout` — a literal prefix would mint the exact false-`missing` class rule 12 prevents). Bound-resolution + the `-k 2` rationale: `references/audit-and-verify.md §Probe contract`.

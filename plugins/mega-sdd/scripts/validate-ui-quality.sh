@@ -36,7 +36,7 @@
 #      bypass where a bolt defers a `## UI contract` to a future unit; writes
 #      .ui-deferral-state.json, ADVISORY, analyze-surfaced, exit 0/1/2
 #      unchanged. The default mode below is untouched.)
-#   (--file-path is accepted for PostToolUse dispatch parity but the scan is
+#   (--file-path is accepted for single-file dispatch parity but the scan is
 #    project-wide / current-truth, like flow-coverage; it is advisory context only.)
 #
 # Output:
@@ -243,7 +243,7 @@ report = {
     "next_action": (
         "ADVISORY (surfaced via analyze; does NOT block execute-bolts): realize each "
         "flagged unit's `## UI contract` required_states in the committed view instead of "
-        "deferring to a future polish unit, then re-run the bolt (PostToolUse re-validates)."
+        "deferring to a future polish unit, then re-run the bolt (the execute-bolts gate re-derives)."
         if deferrals else "No action — no UI obligation was deferred."
     ),
 }
@@ -640,8 +640,8 @@ report = {
         "Fix the raw-scaffold tells (humanize titles/labels, resolve FK ids to a human "
         "label via the relation, format money, replace native alert/confirm with the "
         "project notification idiom) and add the missing required elements (app layout "
-        "extend + responsive grid) to the flagged view file(s), then re-save (PostToolUse "
-        "re-validates)."
+        "extend + responsive grid) to the flagged view file(s), then re-run the bolt (the "
+        "execute-bolts gate re-derives)."
     ) if status == "FAIL" else "No action — every scanned view is clean of scaffold tells and carries the required elements.",
 }
 

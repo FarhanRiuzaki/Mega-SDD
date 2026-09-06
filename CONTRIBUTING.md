@@ -27,14 +27,14 @@ Before submitting:
 
 ## Testing
 
-Most tests are manual fixtures (markdown checklists). Hook + vendoring tests are bash scripts under `tests/hooks/` and `tests/vendoring/`. Run those automatically:
+Shell suites live in TWO trees — `plugins/mega-sdd/tests/` (plugin-local) and `<repo-root>/tests/` (repo-wide). CI discovers every `test-*.sh` / `*.test.sh` at any depth in BOTH trees (`.github/workflows/tests.yml`), so run both locally before claiming green. One suite at a time:
 
 ```bash
 bash tests/hooks/session-start.test.sh
-bash tests/vendoring/sync-superpowers.test.sh
+bash plugins/mega-sdd/tests/graph/test-vault-layout2.sh
 ```
 
-Run manual fixtures by reading them and walking through each case in a fresh Claude Code session.
+The markdown fixtures under `tests/skill-triggering/` and `tests/integration/` are manual walkthroughs: read them and step through each case in a fresh Claude Code session.
 
 ## Versioning rules
 
@@ -103,8 +103,8 @@ When adding a new skill to the plugin:
 
 1. Create directory under `plugins/mega-sdd/skills/<skill-name>/`.
 2. Add `SKILL.md` with frontmatter: `name`, `version: 0.1.0`, `description`.
-3. **Do NOT add a `commands/<skill-name>.md` file.** The public command surface is four verbs (`/mega-sdd`, `/mega-sdd:sync`, `/mega-sdd:emit`, `/mega-sdd:slice`) plus four maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`, `memory`) — nothing else (the 5.x deprecation aliases were removed at 6.0.0). A new skill is internal — it is reached through the `/mega-sdd` front door (state-based routing) or, for a document, the `/mega-sdd:emit` verb. Only a deliberate spec-level decision may extend the canonical surface (see `plugins/mega-sdd/CLAUDE.md` §Commands — `/mega-sdd:slice`, added 6.8.0 per spec `2026-08-12-playwright-embed-design.md`, is the worked example of that escape hatch).
-4. Reference `references/vault-contract.md` for shared definitions instead of duplicating.
+3. **Do NOT add a `commands/<skill-name>.md` file.** The public command surface is three verbs (`/mega-sdd`, `/mega-sdd:sync`, `/mega-sdd:emit`) plus three maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`) — exactly 6 command files, nothing else (the 5.x deprecation aliases were removed at 6.0.0, the `memory` one-timer in v7.3.0, `/mega-sdd:slice` in v7.4.0). A new skill is internal — it is reached through the `/mega-sdd` front door (state-based routing) or, for a document, the `/mega-sdd:emit` verb. Only a deliberate spec-level decision may extend the canonical surface (see `plugins/mega-sdd/CLAUDE.md` §Commands — `/mega-sdd:slice`, added 6.8.0 per spec `2026-08-12-playwright-embed-design.md` and removed in v7.4.0 by owner decision, is the worked example of that escape hatch in both directions).
+4. Reference `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` for shared definitions instead of duplicating.
 5. **Implement `--auto` flag handling (v0.14 convention)**: any new skill that has prompts must define a `## --auto flag` section near the top of its SKILL.md, listing what `--auto` skips (logistical) vs what stays interactive (substance). When blocked in `--auto`, emit a `blocker` artifact per `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol — pick the existing type (`oq_blocker`, `diff_conflict`, `drift_framework_mismatch`) or propose a new type as part of the contract bump.
 6. Add a CHANGELOG entry that includes the new skill at version 0.1.0.
 

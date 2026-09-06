@@ -181,11 +181,6 @@ VOCAB = ("auth", "session", "token", "crypto", "password", "payment",
          "peran", "izin", "otorisasi", "autentikasi", "otentikasi",
          "persetujuan")
 STEMS = ("approv", "authenticat", "authoriz", "oauth", "setuju")
-body_l = body.lower()
-
-def _word_hit(w):
-    pat = r"\s+".join(re.escape(part) for part in w.split())
-    return re.search(r"(?<![a-z0-9_])%s(?:e?s)?(?![a-z0-9_])" % pat, body_l)
 
 # v7.8 (spec 2026-08-29 Fase 3): the match is SCOPED to the unit's CONTRACT
 # sections. Measured on a live 30-unit vault, the unscoped body match fired

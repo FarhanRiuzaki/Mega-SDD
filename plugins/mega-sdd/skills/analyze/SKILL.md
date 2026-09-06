@@ -1,6 +1,6 @@
 ---
 name: analyze
-version: 2.4.1
+version: 2.4.2
 description: Unified cross-artifact consistency analysis — semantic-scoped validator re-runs (unchanged files reuse their ledgered verdict) + vault checks; produces CONSISTENCY-REPORT.md. Triggers — "analyze", "consistency check", "check consistency", "consistency report", "run all validators", "cek konsistensi", or paraphrases.
 ---
 
@@ -112,7 +112,7 @@ handoff:
 
 Plus: vault internal consistency checks (entities/OQs/flows count sync, file completeness, source doc paths).
 
-**Domain-rule gap check (Mode B — LLM, v7):** when a KB exists, READ `knowledge-base/40-business-rules/*.md` against the vault's rules/flows and report any domain rule with no vault counterpart (and vice versa) as an advisory finding in the report. This is semantic-gap detection — judgment work; the old keyword-overlap script (`audit-domain-rules.sh`) was demoted and removed in v7 Fase 2.
+**Domain-rule gap check (Mode B — LLM, v7):** when a KB exists, READ the KB's business rules — `knowledge-base/modules/*.prd.md §2 Business Rules` on a census KB (7.6+), or `knowledge-base/40-business-rules/*.md` on the legacy numbered tree — against the vault's rules/flows and report any domain rule with no vault counterpart (and vice versa) as an advisory finding in the report. This is semantic-gap detection — judgment work; the old keyword-overlap script (`audit-domain-rules.sh`) was demoted and removed in v7 Fase 2.
 
 ### Code-delivery gates (surfaced read-only)
 

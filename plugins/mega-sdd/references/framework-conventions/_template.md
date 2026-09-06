@@ -286,7 +286,7 @@ cross_cutting_concerns:
                       grep-able SIGNATURE (e.g. a trait name), NOT a prose sentence:
                       a sibling that omits the signature is the divergence.>
     registration_signature: <regex the BOLT-written SOURCE file MUST contain — checked
-                             post-flight by slice C (validate-cross-cutting-registration).
+                             post-flight by slice C (`validate-sibling-consistency.sh --cross-cutting`).
                              NOT consumed by slice B.>
     registration_target_glob: <glob (recursive ** ok) for the MODEL source files slice C
                              scans, e.g. app/Models/**/*.php.>

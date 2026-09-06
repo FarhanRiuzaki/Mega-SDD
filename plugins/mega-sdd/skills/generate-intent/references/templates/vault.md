@@ -136,6 +136,10 @@ Product-specific PRD terms only (standard terms — ADR, DBML, DoD, FK, NFR, OQ,
 
 - <OQ tag> → <tech|business> / <confidence> (<1-line note>)
 
+### Auto-deferred (project_scale: xs)   <!-- xs vaults ONLY — omit this whole sub-heading on standard vaults -->
+
+- <OQ tag> → tech / medium — born `deferred` (`defer_to: binding` brownfield · `stakeholder` greenfield); <1-line note>
+
 ## Source documents
 
 - **PRD**: <filename / version / date YYYY-MM>

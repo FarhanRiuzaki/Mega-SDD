@@ -29,3 +29,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### oq_recommend_underspecified
 
 - `oq_recommend_underspecified` — generate-intent / bind-codebase: an OQ marked `resolution_mode: recommend` lacks one or more required fields (`recommendation`, `rationale`, `scan_citations` ≥1, `fallback_if_wrong`). ALWAYS STOP. Details `{oq_id, missing_fields}`. Resolution: user fills missing fields in OQ entry per `vault-core.md §Tech-OQ Recommendations schema`. Source skill: `generate-intent` (Mode B Q&A) or `bind-codebase` (Tech-OQ auto-resolution).
+
+### bind_inputs_missing
+
+- `bind_inputs_missing` — bind-codebase Step 0: a required input cannot be resolved deterministically — `details.missing` ∈ {`vault`, `codebase_map`, `vault_index`}, `details.reason` ∈ {`not_found`, `vault_ambiguous`, `vault_outside_glob_root`, `malformed`}; `details.candidates` is REQUIRED for `vault_ambiguous` (re-invoke with an explicit `--vault=`). ALWAYS STOP. Resolution: run `scan-codebase` (missing map), pass `--vault=`, or fix the vault location / JSON. Full envelope: `bind-codebase/references/auto-memory-handoff.md §Halt YAML — bind_inputs_missing`. (Registered 7.29.1 — emitted since the bind Step-0 contract, never indexed.)

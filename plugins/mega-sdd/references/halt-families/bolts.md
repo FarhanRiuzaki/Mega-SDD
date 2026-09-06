@@ -145,3 +145,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### test_fail
 
 - `test_fail` — execute-bolts: a bolt's acceptance test still fails after the max retry budget (the attempt loop stops instead of thrashing). ALWAYS STOP. Details `{unit_id, attempts, failing_test, last_error}` (registry §Type-specific schemas). Resolution: read `<vault>/bolts/U-XXX/bolt-report.md` for the failure trail; common causes are a missing test runner (`install-deps`), an unmigrated database, or a unit missing a `target_files` dependency — fix, then `/mega-sdd --resume`.
+
+### ambiguous_spec
+
+- `ambiguous_spec` — execute-bolts, emitted by the `bolt-implementer` subagent: the unit spec admits more than one reading and the agent will not guess (no-fabrication rail). ALWAYS STOP (pure-pause — human interpretation call; propose-and-confirm does not apply). Resolution: clarify the unit (`## Requirements` / `## Implementation steps`), re-dispatch. Recovery menu: `execute-bolts/references/halt-recovery.md`. (Registered 7.29.1.)

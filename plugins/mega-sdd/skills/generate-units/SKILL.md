@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.25.0
+version: 2.25.1
 description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task_type per binding Implementation State Map, OQ-IDs carried, Anchors mandatory when evidence exists, dependency DAG (cycles rejected). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -27,7 +27,7 @@ Do NOT use when the vault has unresolved CONFLICT entries in `binding.md` — th
 - `--no-adversarial-review` — SKIP Step 9.5; sets every unit's `acceptance_test._authored_by: same-pass`. DISCOURAGED (re-opens the D4-006 blind-spot risk); debug/regression only
 - `--regenerate` — rewrite existing unit files; PRESERVES units with `acceptance_test._authored_by: human`; others rewritten per Step 9 + 9.5
 - `--reconcile` — living-vault sync lane: UPDATE existing unit IDs in place against the refreshed binding (task_type flips per the new Implementation State Map, Migration notes refreshed from the new field_diff, `status` recomputed via `scripts/compute-unit-staleness.sh`; vanished claims → `status: superseded`, kept never deleted; new claims → new units). ID-stability contract holds — never duplicates. Full pass → `references/task-typing.md §Reconcile pass`
-- Dependency-emission flags: `--strict-deps` (default) · `--loose-deps` (legacy over-emit) · `--no-deps` (testing). Collision: `--collision-policy=<extend|verify|skip|prompt>`. Other: `--no-defensive`, `--skip-pagerank` (accepted NO-OP since 5.29.0 — the pass was removed; the flag keeps resolving through the 5.x cycle)
+- Dependency-emission flags: `--strict-deps` (default) · `--loose-deps` (legacy over-emit) · `--no-deps` (testing). Collision: `--collision-policy=<extend|verify|skip|prompt>`. Other: `--no-defensive`, `--skip-pagerank` (accepted NO-OP since 5.29.0 — the pass was removed; kept as an accepted compat no-op; removal rides the next MAJOR, per the 2026-09-05 audit)
 
 ## Output
 
@@ -45,11 +45,11 @@ The step skeleton is below with every gate/rail inline, and **the inline skeleto
 
 **0.5. Defensive pre-flight check.** Probe upstream artifacts before vault parsing — `codebase-map.md`, `binding.md`, vault.json `implementation_mode`. Open the decision matrix in `references/defensive-generation.md §Step 0.5` ONLY when a probe is missing/stale/contradictory — the all-present path is inline below. **Express-lane rule (P2):** a `binding.md` whose frontmatter carries `binding_metadata.retrieval` was produced WITHOUT a map by design — a missing `codebase-map.md` beside it is NOT a missing artifact; proceed with the binding's grounding (never prompt for, and under `--auto` never auto-run, `scan-codebase` to "repair" an intentionally map-less express project). Otherwise: both present → proceed (HIGH grounding). Brownfield + missing artifacts → INTERACTIVE prompt offering to auto-run scan-codebase + bind-codebase (recommended). `--no-defensive` skips this step; `--auto` defaults to the safest option (auto-run upstream).
 
-**1. Load vault.** Read the 7 vault files + vault.json. If `<vault>/binding.md` + `<vault>/bound/` exist (brownfield), read them too.
+**1. Load vault.** Read the vault docs (layout-2: `vault.md` / `model.md` / `flows.md` / `constraints.md`; legacy: the seven `0N-*.md` files) + vault.json. If `<vault>/binding.md` + `<vault>/bound/` exist (brownfield), read them too.
 
 **1.x. THE HARD GATE.** Before anything else: scan `binding.md` for unresolved CONFLICT entries. If any exist → REFUSE; tell the user to re-run `bind-codebase`. Do not proceed. (See The hard gate above.)
 
-**2. Identify unit candidates.** Walk vault sections (02-architecture, 04-flows, 03-data-model). Each implementable artifact (component, endpoint, schema migration, etc.) becomes a candidate unit.
+**2. Identify unit candidates.** Walk vault sections (`vault.md ## Architecture`, `flows.md`, `model.md` — legacy 02-architecture / 04-flows / 03-data-model). Each implementable artifact (component, endpoint, schema migration, etc.) becomes a candidate unit.
 
 **2.2. Flow-step → artifact derivation.** Do NOT decompose flows at module granularity only. For each USER flow (`F-U-*`), enumerate its input-accepting state-transition steps; the set of per-step input-validation artifacts a module unit ships EQUALS the set of input-accepting steps its flow enumerates — no more (drop dead conditional scaffolds with no gating flow step), no fewer (one artifact per step, not one per controller). Enforced by `validate-flow-coverage.sh`; full rule + the tradefinance-proven failure modes in `references/decomposition-rails.md §Flow-step`.
 

@@ -30,6 +30,19 @@ Floor versi Windows tetap berlaku: laptop kantor minimal 5.9.0; 7.5.0 sudah dive
 
 Ulangi skenario yang sama (3 screen statis, brief yang sama) di 7.5.1 dan ukur dua angka yang kalian ukur dulu: **wall-clock brief→kode pertama** dan **rasio instruksi:kode di unit terkecil**. Kami sengaja tidak mengklaim angka wall-clock dari lab — mesin kalian (Windows + Falcon) adalah kondisi yang sebenarnya, dan pengukuran kalian yang pertama sudah terbukti bisa dipercaya. Prediksi kami yang bisa ditagih: overhead hook per sesi turun ~8×, context per fase turun 10–34% tergantung lane, dan kalau angka 17.9:1 belum turun signifikan — memang belum: itu menunggu tier XS di atas, dan angka kalian jadi baseline resminya.
 
+## Follow-up 2026-09-06 — angka yang kami janjikan sudah ada (7.28.0 / 7.29.0)
+
+Waktu balasan ini ditulis, baris "bobot spec tidak menyesuaikan ukuran" masih BELUM kejawab. Sekarang sudah — angkanya kami laporkan apa adanya:
+
+| Item | Status | Angka / bukti |
+|---|---|---|
+| Rasio instruksi:kode di unit kecil (17,9:1 di unit 22 baris) | **Kejawab di 7.28.0** — `unit_tier: xs` | Replay unit kelas 22 baris: dispatch payload **18.174 → 6.342 byte (−65%)**, rasio baris **12,4:1 → 5,7:1**. Target ≤5:1 **MISS 0,7** — sisanya blok kontrak/proteksi (anti-context, pointer T3, banner) yang sengaja tidak kami potong: itu bukti, bukan lemak. Unit body + semua gate tak tersentuh. |
+| 28 OQ untuk 3 screen | **Kejawab di 7.29.0** — `project_scale: xs` | Skala diturunkan dari STRUKTUR PRD (≤3 screen, ≤2 entity, ≤3 flow), bukan tebakan. Di xs: Glossary vault di-omit dan OQ tech ber-confidence medium lahir `deferred` (tidak ditanya interaktif; standar bukti tidak berubah). Jumlah OQ tetap jujur — seremoni tanyanya yang menyusut. |
+| 12/26 validator SKIP di pack `_universal` | **Ditutup tanpa kode (census)** | Basis angka kalian = fan-out PostToolUse yang sudah dihapus di 7.5.0; di head, validator yang wholly pack-gated tinggal di gate (bagian moat, tidak dioptimasi). Himpunan kandidat "skip list" kosong — tercatat di spec size-weighted §3. |
+| Script-ification fase berikutnya | **Belum** | Masih backlog; prioritas kami sekarang field run versi terkini di mesin kalian. |
+
+Yang masih kami tagih dari kalian: update ke **7.29.x** lalu ulangi skenario 3 screen statis yang sama — dua angka (wall-clock brief→kode pertama, rasio unit terkecil) dari mesin Windows+Falcon kalian jadi baseline resmi tier XS. Angka lab kami sengaja tidak dipakai buat klaim wall-clock.
+
 ---
 
 *Dokumen ini bagian dari triage `research/2026-08-23-team-feedback-triage.md`. Pertanyaan/temuan baru: buka issue atau tulis balik di dokumen feedback kalian.*

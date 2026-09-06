@@ -3,12 +3,15 @@
 #
 # Restored after the v7.3.0 observability removal by owner decision 2026-08-23
 # (research/2026-08-23-v7-gate7b-trace-restore.md): the office AI gateway filters
-# mega-sdd sessions on the `mega-sdd-trace:*` tag family. This hook's ENTIRE job
-# is one echo of `mega-sdd-trace:turn` per user prompt in an adopted (SDD) project.
+# mega-sdd sessions on the `mega-sdd-trace:*` tag family. Line 1 of this hook's
+# output is the gateway tag `mega-sdd-trace:turn` (byte-verbatim, unconditional in
+# an adopted SDD project); the OPTIONAL line 2 is the v7.5.0 №G completion-census
+# sync OFFER (see the contract note below). Both are pure shell.
 #
 # Contract (docs/gateway-contract.md):
 # - Pure shell, ZERO subprocess spawns (no python, no transcript scan, no advisor —
-#   none of the removed observability comes back through this file).
+#   none of the removed observability comes back through this file; the census
+#   is a bash regex over the prompt text, 0 forks).
 # - Non-SDD cwd → exit silently with no output.
 # - stdin is parsed with bash string ops only and NOTHING from it is eval'd or
 #   executed — a hostile cwd value can only make the directory probe fail closed.

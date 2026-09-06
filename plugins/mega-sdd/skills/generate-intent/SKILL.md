@@ -1,12 +1,12 @@
 ---
 name: generate-intent
-version: 2.22.0
+version: 2.22.1
 description: Spec-driven intent generation — a PRD/BRD (+ Figma), a free-text brief (--from-prompt), or a KB (--kb) becomes a 4-file anti-hallucination vault (layout-2); Mode A/B auto-detected; --scope selects one scope of a multi-scope PRD; every OQ tagged category + resolution_mode. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
 ---
 
 # Grand Design Spec Generator (generate-intent)
 
-Converts a PRD/BRD (+ Figma), a free-text brief, or a knowledge base into 7 markdown files inside a user-specified folder, optimized for **anti-hallucination dev handoff** — a downstream dev (human or AI) can implement from these docs without inventing requirements.
+Converts a PRD/BRD (+ Figma), a free-text brief, or a knowledge base into a 4-file layout-2 vault (`vault.md` / `model.md` / `flows.md` / `constraints.md`, + `constitution.md`, `_meta/ai-consumer-guide.md`, `vault.json`) inside a user-specified folder, optimized for **anti-hallucination dev handoff** — a downstream dev (human or AI) can implement from these docs without inventing requirements.
 
 > **Skill instruction language:** this skill reasons in English. **Generated docs match the input language** — Indonesian PRD → Indonesian vault; English PRD → English vault. Chat prompts default to **Indonesian + English technical terms**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 structural tokens stay English (full rules → `plugins/mega-sdd/references/output-language.md`).
 
@@ -88,8 +88,8 @@ Mode A/B/KB all emit the SAME canonical artifact set into the user-confirmed `<O
 
 ```
 <OUTPUT_DIR>/
-├── vault.md             ← Frontmatter lock (vault_layout: 2 + 6 lock values) + ## Overview + ## Architecture
-│                          + ## Decisions (EXACT hard-header strings) + Glossary/Auto-Classification/Sources/Changelog
+├── vault.md             ← Frontmatter lock (vault_layout: 2 + 6 lock values + optional project_scale) + ## Overview + ## Architecture
+│                          + ## Decisions (EXACT hard-header strings) + Glossary (omitted at xs)/Auto-Classification/Sources/Changelog
 ├── model.md             ← Entities, relations, constraints (DBML preferred)
 ├── flows.md             ← User + system flows (Mermaid) + per-flow Definition of Done
 ├── constraints.md       ← Technical/business/NFR + ## Open Questions (the ONE authored OQ home, [origin:] tokens)
@@ -97,7 +97,7 @@ Mode A/B/KB all emit the SAME canonical artifact set into the user-confirmed `<O
 └── vault.json           ← Machine-readable manifest (script-derived — `derive-vault-json.sh`; markdown stays human-authoritative)
 ```
 
-- `vault.json` is the canonical structured manifest AI consumers load for fast, reliable context without parsing prose. Schema, field rules, and regeneration triggers → `references/vault-core.md §schema`. It is **script-derived via `scripts/derive-vault-json.sh`** — the script derives the structural arrays from the 7 markdown files, carries at-generation pins forward, merges the authored `--patch`, and holds the `vault.json.lock` itself (exit 4 → `memory_in_use` halt). Never hand-write vault.json.
+- `vault.json` is the canonical structured manifest AI consumers load for fast, reliable context without parsing prose. Schema, field rules, and regeneration triggers → `references/vault-core.md §schema`. It is **script-derived via `scripts/derive-vault-json.sh`** — the script derives the structural arrays from the vault markdown (layout-2: 4 files; legacy: 7), carries at-generation pins forward, merges the authored `--patch`, and holds the `vault.json.lock` itself (exit 4 → `memory_in_use` halt). Never hand-write vault.json.
 - An 8th file, `constitution.md` (§A–§F project rules), is written at Step 3.4 unless `--no-constitution` is set → `references/vault-core.md §constitution`.
 - Multi-squad mode (≥2 squads) additionally emits `_meta/squads.yaml`, `interfaces/_index.md`, and `.obsidian/graph.json` → `references/setup-flow.md`.
 - Multi-scope vaults tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` → `references/multi-scope.md`.

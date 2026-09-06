@@ -1,5 +1,5 @@
 # Tier-1 AUTO-lane (ast-grep) definition rules — Ruby (.rb, not .erb templates).
-# Mirrors tags-ruby.scm coverage. Kind names verified against ast-grep 0.42.3.
+# Coverage mirrors the former tags-ruby.scm set (tree-sitter lane removed 7.4.0; ast-grep is the only engine). Kind names verified against ast-grep 0.42.3.
 # Contract: 0-based lines (+1 for anchors); dedupe by (file, start.line, ruleId).
 id: ruby-method
 language: ruby

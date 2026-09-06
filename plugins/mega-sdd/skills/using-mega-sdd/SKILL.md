@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 4.2.1
+version: 4.2.2
 description: Session-start router for spec-driven development — weighs every task S/M/L and routes only M/L through a mega-sdd skill; S answers inline. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, revamp, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang.
 ---
 
@@ -20,7 +20,7 @@ Override always wins: `--weight=S|M|L` (the only weight flag — `--full` alread
 
 ## The front door (M/L only)
 
-**Any M/L lane phrase → the `/mega-sdd` front door** — status view + next-chain proposal + one confirmation; an artifact argument gets input-shape detection. Other verbs: `/mega-sdd:sync` (reconcile after the code moved — OFFERED at the next M/L entry, never mandated after an inline fix), `/mega-sdd:emit <prd|fsd|sit|uat>`. Side lanes (consistency check, impact/blast radius, memory review, interop, pasang tools) route by each skill's own description. A NEW PRD/BRD/Figma/brief → multi-PRD routing (revise vs new epic); ambiguity between several owning vaults → ASK.
+**Any M/L lane phrase → the `/mega-sdd` front door** — status view + next-chain proposal + one confirmation; an artifact argument gets input-shape detection. Other verbs: `/mega-sdd:sync` (reconcile after the code moved — OFFERED at the next M/L entry, never mandated after an inline fix), `/mega-sdd:emit <prd|fsd|sit|uat|html|summary>`. Side lanes (consistency check, impact/blast radius, interop, pasang tools) route by each skill's own description. A NEW PRD/BRD/Figma/brief → multi-PRD routing (revise vs new epic); ambiguity between several owning vaults → ASK.
 
 ## Hard rule (tiers M and L only)
 

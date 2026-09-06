@@ -1,5 +1,7 @@
 # E2E: Implementation-State Classification → Task-Type Units (Iter 1)
 
+> **Prose walkthrough, not CI (note added 7.29.1).** The `./fixtures/e2e-*-fixture/` paths are illustrative — they were never committed; run the same steps with your own PRD. The typed `/mega-sdd:auto` form was removed at 6.0.0: use `/mega-sdd <prd> --deep` and `/mega-sdd --resume`.
+
 End-to-end integration test for the Iter 1 flow: brownfield project with mixed existing/new functionality. Validates the full chain `scan-codebase → bind-codebase → generate-units` produces the right mix of `create` and `verify` units.
 
 ## Fixture

@@ -14,7 +14,13 @@ rc=0
 ok()  { echo "PASS ($1)"; }
 bad() { echo "FAIL ($1)"; rc=1; }
 
-command -v pandoc >/dev/null 2>&1 || { echo "SKIP: pandoc absent (md2pdf needs it) — not a failure"; exit 0; }
+if ! command -v pandoc >/dev/null 2>&1; then
+  # LOUD skip (7.29.1): without pandoc the render assertions — including the
+  # BYTE-IDENTICAL moat check — do NOT run. CI installs pandoc so they do there.
+  echo "SKIP: pandoc absent — render + BYTE-IDENTICAL (moat) assertions NOT run (brew install pandoc / apt-get install pandoc)"
+  [ -f "$PLUGIN/references/github.css" ] && ok "github.css shipped in the plugin (not ~/.claude)" || bad "github.css missing from plugin"
+  exit $rc
+fi
 
 WORK="$(mktemp -d 2>/dev/null || mktemp -d -t md2pdf)"
 trap 'rm -rf "$WORK"' EXIT
