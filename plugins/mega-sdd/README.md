@@ -20,6 +20,8 @@ Canonical install, update, and uninstall instructions live in the **[root README
 
 Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../../tests/scenarios/scenario-0-zero-to-first-run.md).
 
+> **Optional companion plugin — `mega-sdd-extras`** (same marketplace, separate `/plugin install mega-sdd-extras`): `/mega-sdd-extras:slice` turns ONE Figma page/frame into framework-conventional UI code through your own Figma MCP, render-checked with the bundled Playwright. Zero hooks/scripts, zero cost when not installed; it reuses this plugin's design corpus and packs. Docs: [`plugins/mega-sdd-extras/README.md`](../mega-sdd-extras/README.md).
+
 ## Commands you'll actually use
 
 
