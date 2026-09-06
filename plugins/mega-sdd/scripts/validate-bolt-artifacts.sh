@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# validate-bolt-artifacts.sh — Phase B slice B.2 [PostToolUse-validate].
+# validate-bolt-artifacts.sh — Phase B slice B.2 [gate re-derive / Stop lane / analyze].
 #
 # Validates 3 bolt-related artifact integrity halts in one pass:
 #   - provenance_missing       (modified file lacks provenance trailer)
@@ -1252,8 +1252,8 @@ if [ -z "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ]; then
   exit 0
 fi
 
-# S6 EB-GATE-6: never MINT a project root — this mode fires on EVERY Write via
-# PostToolUse, and an unconditional mkdir created phantom .mega-sdd/ dirs under
+# S6 EB-GATE-6: never MINT a project root — this mode used to fire on EVERY Write via
+# PostToolUse (fan-out died №D v7.5.0; now gate / Stop lane / analyze), and an unconditional mkdir created phantom .mega-sdd/ dirs under
 # whatever cwd the session happened to resolve (state litter that then forked
 # gate truth). No .mega-sdd/ at the resolved root → nothing to validate against.
 [ -d "${CWD}/.mega-sdd" ] || exit 0
@@ -1433,11 +1433,11 @@ state = {
     "issues": issues,
     "next_action": (
         "Bolt artifacts pass integrity checks." if status == "PASS"
-        else f"{len(issues)} integrity issue(s) detected. Each is detection-only (no auto-fix at hook layer); review listed issues and amend the unit / bolt-report manually, then re-save (PostToolUse re-validates)."
+        else f"{len(issues)} integrity issue(s) detected. Each is detection-only (no auto-fix at hook layer); review listed issues and amend the unit / bolt-report manually, then re-run the execute-bolts gate or analyze (they re-derive)."
     ),
 }
 
-# Telemetry-only single-slot state (the PreToolUse aggregator never reads it —
+# Advisory (analyze-surfaced) single-slot state (the PreToolUse aggregator never reads it —
 # analyze surfaces it); current-truth overwrite per written file.
 try:
     _tmp = state_file + ".tmp.%d" % os.getpid()

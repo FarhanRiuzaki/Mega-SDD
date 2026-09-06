@@ -366,8 +366,8 @@ if [ -z "$CWD" ]; then CWD="$(pwd)"; fi
 if [ -z "$FILE_PATH" ]; then echo '{"status":"ERROR","detail":"--file-path required"}' >&2; exit 2; fi
 if [ ! -f "$FILE_PATH" ]; then echo '{"status":"ERROR","detail":"file not found"}' >&2; exit 2; fi
 
-# Auto-detect legacy root (M4 — inside the validator; PostToolUse can't thread
-# --legacy-root through the generic hook helper). Probe common seed locations for
+# Auto-detect legacy root (M4 — inside the validator; the generic dispatchers
+# (analyze, certify) don't thread --legacy-root). Probe common seed locations for
 # ANY §8.5-ecosystem manifest, not just PHP/Node/Ruby.
 _has_manifest() {
   local d="$1"
@@ -594,7 +594,7 @@ def _build_basename_index(root, max_depth=6, max_files=20000):
     """Walk the legacy tree ONCE and map basename → [paths] (capped at 2 per name —
     enough to detect ambiguity). Built once per invocation so N citations resolve
     O(1); the old code re-walked the whole tree per unresolved citation, a perf
-    cliff on every KB write via the PostToolUse hook. Depth + file caps + a broad
+    cliff on every analyze/certify run (formerly every KB write). Depth + file caps + a broad
     dep-dir skip set keep it bounded on a big tree."""
     index = {}
     if not root or not os.path.isdir(root):

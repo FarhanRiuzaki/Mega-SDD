@@ -174,25 +174,15 @@ Canonical shape: `references/interactive-walk.md` Step 2b. Slots are a display d
 ### REC7: Audit trail on ACCEPT
 - **Setup:** User picks option 1 (recommended)
 - **Expect:** vault.json OQ entry has `resolution_source: recommendation` + `recommendation_citation: <full-citation>`
-- **Memory write:** `.mega-sdd/memory/decisions.md` row marked `source: ai_recommended`
 
 ### REC8: Audit trail on OVERRIDE
 - **Setup:** a `(recommended)` option WAS on the prompt and the user declined it — answering via "Other" with different text (often an alternative from the question text, typed back)
-- **Expect:** vault OQ entry has `resolution_source: user_override`; memory row marked `recommendation_ignored: <recommended-text>`
-- **Self-learning feedback:** override counter incremented for this OQ pattern
-
-### REC9: Self-correction loop after 5 overrides
-- **Setup:** Same OQ pattern has been overridden 5 times across runs
-- **Expect:** `~/.mega-sdd/memory/patterns.md` pending suggestion: "Disable recommendation for OQ pattern X (5/5 overrides)"; user reviews via `/mega-sdd:memory review`; ACCEPT disables future recommendations for that pattern
+- **Expect:** vault OQ entry has `resolution_source: user_override` (the memory row, override counter and the 5-override self-correction loop died with the memory lane in v7.3.0 — nothing else is written)
 
 ### REC10b: "Other" with NO recommendation is a direct answer, NOT an override
 - **Setup:** the no-recommendation shape (no citable signal, or the probe failed) — "Other" is the ONLY answer channel there; user types an answer
-- **Expect:** vault OQ entry gets `resolution_source: user_direct` (the third declared value, per `references/recommendation-context.md §Audit trail`); memory row `source: user_direct`; NO `recommendation_ignored` field
-- **Critical:** the override counter is NOT incremented and no `user_override` row is written. Keying the OVERRIDE branch on the CHANNEL ("answered via Other") instead of on *a recommendation existing and being declined* books every unsourced-OQ answer as an override of a recommendation that never existed — and would fire the REC9 self-correction loop on patterns the recommender never attempted
-
-### REC10: Override reason captured (optional)
-- **Setup:** User picks alternative + provides override reason via free-text
-- **Expect:** memory row includes `override_reason: <user-text>`; aids future pattern analysis
+- **Expect:** vault OQ entry gets `resolution_source: user_direct` (the third declared value, per `references/recommendation-context.md §Audit trail`); NO `recommendation_ignored` field
+- **Critical:** no `user_override` value is written. Keying the OVERRIDE branch on the CHANNEL ("answered via Other") instead of on *a recommendation existing and being declined* books every unsourced-OQ answer as an override of a recommendation that never existed — and would fire the REC9 self-correction loop on patterns the recommender never attempted
 
 ## Pass criteria
 

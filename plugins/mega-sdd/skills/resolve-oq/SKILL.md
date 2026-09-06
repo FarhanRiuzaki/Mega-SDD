@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 2.14.1
+version: 2.14.2
 description: Interactive resolver for Open Questions — walks the OQ roll-up by priority, lands stakeholder answers in the vault, bumps version; --binding resolves CONFLICT entries from binding.md; with no vault but an extract-intelligence KB present, KB mode walks the PRD-kontrak §6 OQs so legacy questions get answered right after extraction. Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", "jawab OQ hasil extract", "resolve oq kb", "jawab open question kb", or paraphrases.
 ---
 
@@ -34,7 +34,7 @@ For each OQ the user (with the skill prompting) chooses one of four outcomes. Th
 | **Out of Scope** | `[4]` | `C` | Move to the doc's Out of Scope section with rationale. Costs ONE follow-up prompt (the rationale). | `[~]` + `→ Out of Scope v{X.Y}: <reason>` | `out_of_scope` |
 | *(end the walk)* | **Esc** | — (no derive run) | This OQ untouched; jump to Step 3 — version bump + Changelog still record the round, then exit. | unchanged | unchanged (remains `open`) |
 
-The platform caps `AskUserQuestion` at 4 options **per question**, so **"Other" carries the free-text answer** (that merge is the collapse) and the considered alternatives ride the question text as prose instead of a slot. **Esc ends the WALK** — the same meaning the plugin's two other `AskUserQuestion` surfaces give it (`execute-bolts/references/halt-recovery.md`, `references/propose-and-confirm-prompt.md`), so Skip gets a real slot. **There is no typed `STOP` sentinel**: an OQ like "lanjut atau berhenti?" is answerable with the word "stop", which a sentinel would silently swallow. Skip and Esc are both stated in the question text of every prompt, so neither is folklore.
+The platform caps `AskUserQuestion` at 4 options **per question**, so **"Other" carries the free-text answer** (that merge is the collapse) and the considered alternatives ride the question text as prose instead of a slot. **Esc ends the WALK** — the same meaning the plugin's two other `AskUserQuestion` surfaces give it (`execute-bolts/references/halt-recovery.md`, `execute-bolts/references/propose-and-confirm-prompt.md`), so Skip gets a real slot. **There is no typed `STOP` sentinel**: an OQ like "lanjut atau berhenti?" is answerable with the word "stop", which a sentinel would silently swallow. Skip and Esc are both stated in the question text of every prompt, so neither is folklore.
 
 The 4-option cap is **per question, not per call** — one `AskUserQuestion` takes 1–4 questions, each with its own ≤4 options and its own "Other". That is why the Defer follow-up collects both the sub-target and the reason in ONE round trip.
 

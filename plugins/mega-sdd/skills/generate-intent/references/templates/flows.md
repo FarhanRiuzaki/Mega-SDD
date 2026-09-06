@@ -45,7 +45,7 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/flows"]
 **Preconditions**: <state required before flow starts>
 <!-- /full-only -->
 
-**Flow** — the flow body is a Mermaid diagram, never a prose numbered list (Mermaid-flows hard rule; quote every node text per `references/mermaid-emission-rules.md`):
+**Flow** — the flow body is a Mermaid diagram, never a prose numbered list (Mermaid-flows hard rule; quote every node text per `plugins/mega-sdd/references/mermaid-emission-rules.md`):
 ```mermaid
 flowchart TD
     S1["<action>"] --> S2["<action>"]

@@ -46,7 +46,7 @@
 #
 # Usage:
 #   validate-dispatch-prompt.sh --cwd=<project-root> [--file-path=<path>] [--quiet]
-#   (--file-path accepted for PostToolUse dispatch parity; the scan is project-wide /
+#   (--file-path accepted for single-file dispatch parity (analyze/certify); the scan is project-wide /
 #    current-truth like the sibling gates; it is advisory context only.)
 #
 # Output:
@@ -89,9 +89,9 @@ mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || {
 
 # Interpreter probe BEFORE anything else runs. Bare `python3` is a documented
 # FALSE POSITIVE on Windows (WindowsApps App Execution Alias stub — stderr
-# message, exit 49), and this validator is dispatched deterministically by
-# hooks/post-tool-use on every builder invocation. A bare `python3` here means
-# the hook fires faithfully into a script that exits 49, writes NO state file,
+# message, exit 49), and this validator is dispatched by analyze FULL (run-analyze.sh V16;
+# the per-builder PostToolUse leg died №C v7.5.0). A bare `python3` here means
+# the dispatcher runs faithfully into a script that exits 49, writes NO state file,
 # and leaves .dispatch-prompt-state.json frozen at last-run truth — a dark gate
 # indistinguishable from a passing one, on exactly the machine class where the
 # builder's own pack loss would need catching.
@@ -409,7 +409,7 @@ report = {
         "(b) inject a view/component code exemplar (linter-clean, not [0]) via the "
         "extended Iter-76 code-slice, and (c) include a `Design system:` line (the vault "
         "design_system style/palette) when the vault resolved one. Then re-run execute-bolts "
-        "(the prompt re-write re-triggers this validator via PostToolUse)."
+        "(then re-run analyze — this validator is advisory and re-runs there)."
     ) if status == "FAIL" else "No action — every ui_ux dispatch prompt carries injected design tokens, a design system, and a view exemplar.",
 }
 

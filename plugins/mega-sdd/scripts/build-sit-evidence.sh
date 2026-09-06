@@ -44,7 +44,7 @@
 #
 # SIGN-OFF SLOT-GRAMMAR GUARD (decision 5 — the chosen zero-risk wiring, per
 # references/emission-engine.md §P5 seams: validate-fsd-slots.sh stays FSD-scoped
-# because its PostToolUse path contract must not widen; the SIT guard lives HERE
+# because its dispatch path contract must not widen; the SIT guard lives HERE
 # as a sibling check): when <vault>/sit/SIT.md exists (default mode) or with
 # --check-signoff (check-only mode), §5 body rows are scanned — ANY
 # non-placeholder text in the Nama / Tanggal / Tanda tangan / Status cells is a

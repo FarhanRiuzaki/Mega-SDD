@@ -2,7 +2,7 @@
 2026-07-19-v5-execution-spec.md decision 8; research §3).
 
 Shared by `derive-state.sh` (the routing state digest), `validate-preflight.sh`
-(the FATAL preflight gate), and the session-start staleness notice via the
+(the FATAL preflight gate), and `ground.sh` (the M/L-entry GROUND step) via the
 MEGA_SDD_LIB_DIR sys.path pattern — the W2/W5 shared-grammar precedent
 (`binding_md.py` / `vault_md.py`) applied to the CWD-inspection surface: the
 10-probe routing inspection and the preflight predicates can never re-diverge
@@ -65,8 +65,8 @@ KB_README_GENERATIONS = (
     os.path.join("old-reference", "knowledge-base", "README.md"),
 )
 
-# Framework/package manifests (session-start Guard-1 list == auto.md starterkit
-# probe superset). `.git` is probed separately via probe_git.
+# Framework/package manifests (the ground.sh guard list == the derive-state
+# manifest-sniff superset; the session-start Guard-1 / auto.md readers are gone). `.git` is probed separately via probe_git.
 # P2 widened to the ecosystems the pack registry + scan Step 2 already
 # enumerate — a .NET repo with two `ready` packs must not halt
 # no_starterkit_detected because the probe never looked for *.csproj.

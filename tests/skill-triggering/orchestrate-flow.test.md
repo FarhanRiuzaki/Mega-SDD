@@ -348,24 +348,22 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 **Setup:**
 - No CLI `--model-tier` flag
 - No `<project>/.mega-sdd/config.yaml` `model_tiers:` section
-- No `~/.mega-sdd/memory/preferences.md` `## Model tiers` section
 
 **Trigger:** `/mega-sdd ./prd.md`
 
 **Expected:**
-- Step 2.8 reads all 3 override sources (cli_overrides, project_overrides, user_overrides) — all empty
+- Step 2.8 reads both override sources (cli_overrides, project_overrides) — all empty (the user-scope `preferences.md` source died with the memory lane in v7.3.0)
 - For each role mentioned in chain → use catalog default per `references/model-tiers.md §Catalog`
 - handoff metadata.model_tiers emitted with catalog defaults
 - metadata.model_tier_sources = {role: "catalog"} for every entry
 - No `model_tier_unknown` halt fired
 - Subagent dispatches (e.g., scan-codebase deep-scan) use catalog defaults (sonnet for auth/rbac/ui-ux/libs-extractors)
 
-### OF-MT2 — CLI flag overrides project config + user preference
+### OF-MT2 — CLI flag overrides project config
 
 **Setup:**
 - CLI flag: `--model-tier=libs-extractor:haiku` (a non-panel role — panel `*-reviewer` lenses are frontmatter-pinned and NOT overridable via `model_tiers:`, per review-panel.md/model-tiers.md §Override syntax)
 - `<project>/.mega-sdd/config.yaml` has `model_tiers: { libs-extractor: opus }`
-- `~/.mega-sdd/memory/preferences.md` `## Model tiers` has `- libs-extractor: sonnet`
 
 **Trigger:** `/mega-sdd --model-tier=libs-extractor:haiku ./prd.md`
 

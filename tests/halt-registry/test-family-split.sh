@@ -65,13 +65,16 @@ B=$(wc -c < "$HP" | tr -d ' ')
 # regrowth (z1 still pins that guidance bodies stay out).
 # 7.11.0: three gate halts registered (panel_evidence_missing / l0_evidence_missing /
 # acceptance_expects_missing, spec 2026-08-30 §3) — cap lifted by their terse entries only.
-[ "$B" -le 32300 ] && ok "b1 registry $B <= 32300" || fail "b1 registry regrew to $B"
+# 7.29.1: five EMITTED-but-unregistered types (bind_inputs_missing, unit_oq_trace_missing,
+# cross_module_dep_invalid, module_cycle_detected, ambiguous_spec) registered — terse index
+# rows + enum tokens only, same class as the 7.11.0 lift.
+[ "$B" -le 33600 ] && ok "b1 registry $B <= 33600" || fail "b1 registry regrew to $B"
 OVER=""
 for f in "$FD"/*.md; do
   FB=$(wc -c < "$f" | tr -d ' ')
-  [ "$FB" -gt 13500 ] && OVER="$OVER $(basename $f):$FB"   # 7.11.0: bolts.md +3 gate halts
+  [ "$FB" -gt 14000 ] && OVER="$OVER $(basename $f):$FB"   # 7.11.0: bolts.md +3 gate halts; 7.29.1: +ambiguous_spec
 done
-[ -z "$OVER" ] && ok "b2 every family <= 13500 B" || fail "b2 oversized family:$OVER"
+[ -z "$OVER" ] && ok "b2 every family <= 14000 B" || fail "b2 oversized family:$OVER"
 
 echo "── c: anchor + pin survival in the canonical file ──"
 grep -q '^## §halt-protocol' "$HP" && ok "c1 §halt-protocol anchor heads its section" || fail "c1 envelope anchor lost"

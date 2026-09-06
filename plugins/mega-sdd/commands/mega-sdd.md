@@ -5,7 +5,7 @@ argument-hint: "[input] [--weight=S|M|L] [--deep|--shallow] [--greenfield] [--sc
 
 > **The command surface** — three public verbs: `/mega-sdd` (this front door), `/mega-sdd:sync` (reconcile with moved code), `/mega-sdd:emit <prd|fsd|sit|uat>` (the four team documents). (`/mega-sdd:slice` was removed in v7.4.0 — Fase 5, owner decision.) Everything else is either auto-invoked by the chain, PROPOSED by this front door when state demands it, or reachable by natural-language phrase — the 5.x deprecation aliases were removed (a typed legacy form arrives as plain text and still routes to its skill).
 
-This command THINLY WRAPS the orchestrate-flow machinery — it detects the input shape, renders state, and dispatches; it never duplicates chain logic. **Every gated phase is dispatched via the Skill tool (`mega-sdd:orchestrate-flow` and its sub-skills) — NEVER offloaded to the Agent tool.** The PreToolUse moat gates key on Skill calls; an Agent-tool offload would bypass them (matcher excludes `Agent`), so it is forbidden.
+This command THINLY WRAPS the orchestrate-flow machinery — it detects the input shape, renders state, and dispatches; it never duplicates chain logic. **Every gated phase is dispatched via the Skill tool (`mega-sdd:orchestrate-flow` and its sub-skills) — NEVER offloaded to the Agent tool.** The PreToolUse moat gates key on Skill calls; the matcher includes `Agent` since 7.9.0 (F-09) but gates ONLY a `bolt-implementer` dispatch (as execute-bolts, in-run semantics) — every other Agent-tool offload of a gated phase is ungated by design, so it is forbidden.
 
 User arguments: $ARGUMENTS
 
@@ -67,7 +67,7 @@ Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-des
 
 ## Starterkit detection
 
-Per user directive "starterkit itu wajib ada. jika tidak ada baru greenfield" — starterkit is REQUIRED by default. Three modes: **A — starterkit-first** (manifest + pack match via the GROUND matcher, DEFAULT), **B — framework-detected** (manifest but `derived.framework_pack: _universal`), **C — greenfield** (EXPLICIT `--greenfield`, or empty CWD + user confirms via the halt). The per-mode, per-spine chain orderings are owned by `orchestrate-flow/references/chain-execution.md` §Starterkit detection + mode classification (single owner — this front door adds no rows); the state-based chain proposals live in `routing-rules.md` §Decision matrix.
+Per user directive "starterkit itu wajib ada. jika tidak ada baru greenfield" — starterkit is REQUIRED by default. Three modes: **A — starterkit-first** (manifest + pack match via the GROUND matcher, DEFAULT), **B — framework-detected** (manifest but `derived.framework_pack: _universal`), **C — greenfield** (EXPLICIT `--greenfield`, or empty CWD + user confirms via the halt). The per-mode, per-spine chain orderings are owned by `orchestrate-flow/references/chain-execution.md` §Starterkit detection + mode classification (single owner — this front door adds no rows); the state-based chain proposals live in `orchestrate-flow/references/routing-rules.md` §Decision matrix.
 
 When neither manifest nor `--greenfield` set → halt `no_starterkit_detected` with options (scaffold first / opt in greenfield / cancel).
 
@@ -110,11 +110,11 @@ The chain transparently invokes diagnostic skills at appropriate phases — the 
 - `--no-fsd` — legacy alias / no-op (FSD is opt-in via `--with-fsd`)
 - `--plan` — Plan mode FIRST. Plan mode is non-destructive: skill body reasons + emits proposed actions but performs no writes. User reviews + transitions to Act via the `--act` flag (`/mega-sdd --act`).
 - `--act` — direct Act mode (the default). Used in the Plan-then-Act transition.
-- `--plan-then-act` — explicit two-phase: Plan first, halt, then Act on continuation. (Gating is flag-driven — the automatic iter classifier is PARKED.)
+- `--plan-then-act` — explicit two-phase: Plan first, halt, then Act on continuation. (Gating is flag-driven — the automatic iter classifier was REMOVED in v7 Fase 2, never wired.)
 
 ## Convergence loops
 
-In `--deep` mode, eligible halts auto-loop up to `--max-cycles` instead of stopping on first halt. The mechanics, the cycle-eligible list, the always-stop classification (canonical classes: `references/halt-protocol.md`, names-only mirror: `orchestrate-flow/references/halt-taxonomy.md`), the cap default, and the per-cycle chat output are owned by `orchestrate-flow/references/convergence-loops.md` (single owner — this front door adds no rows and no numbers). Opt-out: `--no-converge` (stop on any halt); the `--to=<phase>` interaction is in §Flag handling above.
+In `--deep` mode, eligible halts auto-loop up to `--max-cycles` instead of stopping on first halt. The mechanics, the cycle-eligible list, the always-stop classification (canonical classes: `plugins/mega-sdd/references/halt-protocol.md`, names-only mirror: `orchestrate-flow/references/halt-taxonomy.md`), the cap default, and the per-cycle chat output are owned by `orchestrate-flow/references/convergence-loops.md` (single owner — this front door adds no rows and no numbers). Opt-out: `--no-converge` (stop on any halt); the `--to=<phase>` interaction is in §Flag handling above.
 
 ## Hard rails:
 - **ONE upfront confirmation** showing the full proposed chain (per skill, per arguments). User picks Run / Edit / Cancel.
@@ -128,4 +128,4 @@ In `--deep` mode, eligible halts auto-loop up to `--max-cycles` instead of stopp
 
 On halt OR pause: chain stops; surface verbatim blocker YAMLs in chat (per `orchestrate-flow/references/handoff-contract.md`). User resolves and re-runs `/mega-sdd --resume`.
 
-On chain completion: emit final summary per `orchestrate-flow/SKILL.md` Step 7 — total phases completed/paused/halted, flat list of all artifacts produced.
+On chain completion: emit final summary per `orchestrate-flow/SKILL.md` Step 8 (Emit final summary) — total phases completed/paused/halted, flat list of all artifacts produced.

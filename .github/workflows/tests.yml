@@ -51,6 +51,9 @@ jobs:
       - name: Install validator deps
         run: pip install pyyaml
 
+      - name: Install pandoc (tests/render/test-md2pdf.sh — its BYTE-IDENTICAL moat assertion needs it)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq pandoc
+
       - name: Run shell test suites (both test trees)
         if: steps.docsonly.outputs.skip_suite != 'true'
         # Covers BOTH suite trees — plugins/mega-sdd/tests/ AND the repo-root tests/ —

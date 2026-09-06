@@ -1,5 +1,7 @@
 # E2E: Autonomy Layer — Full Pipeline Clean Run (Iter 4)
 
+> **Prose walkthrough, not CI (note added 7.29.1).** The `./fixtures/e2e-*-fixture/` paths are illustrative — they were never committed; run the same steps with your own PRD. The typed `/mega-sdd:auto` form was removed at 6.0.0: use `/mega-sdd <prd> --deep` and `/mega-sdd --resume`.
+
 End-to-end integration test for `--deep` mode running pipeline-end with NO blockers. Validates auto-continue + progress indication + handoff YAML protocol.
 
 ## Fixture
@@ -15,7 +17,7 @@ End-to-end integration test for `--deep` mode running pipeline-end with NO block
 ## Test steps
 
 ### Step 1: Invocation
-**Run:** `/mega-sdd:auto ./fixtures/e2e-autonomy-clean-fixture/prd-leave-management.md --deep`
+**Run:** `/mega-sdd ./fixtures/e2e-autonomy-clean-fixture/prd-leave-management.md --deep`
 
 **Expect**:
 - Input detected as PRD (`.md` extension)

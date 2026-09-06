@@ -1,6 +1,6 @@
 ---
 name: scan-codebase
-version: 2.31.0
+version: 2.31.1
 description: Heuristic codebase scanner for brownfield SDD — produces codebase-map.md; runs ON-DEMAND or on the classic spine (the only codebase-map producer — emissions and the classic bind lane consume the map), not as a default-chain phase. Triggers — "scan codebase", "map this repo", "siapkan context codebase", "init mega-sdd", or paraphrases.
 ---
 

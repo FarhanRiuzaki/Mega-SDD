@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 2.19.0
+version: 2.19.1
 description: Validate a vault against codebase-map.md (+ KB secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim + an Implementation State Map; BLOCKS unit generation while conflicts remain. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
 ---
 
@@ -47,7 +47,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 **1. Load inputs.**
    1. `VAULT_DIR` is already resolved by §Inputs **Step 0** — use it as-is; never re-resolve or widen it here.
    2. **`--express` set → this step and Step 2's retrieval are replaced by `references/express-bind.md`** (ledger + symbol-index + targeted Reads, zero map load; falls back HERE loudly when the index or ledger is unavailable) — Steps 2.5–2.11 and 3–6 then continue below unchanged.
-   3. Otherwise (standard lane): read the vault files (`00-index` … `vault.json`) + `codebase-map.md`. If the codebase-map is missing → halt, emitting `bind_inputs_missing` (`missing: codebase_map`) whose `next_action` instructs the user to run `scan-codebase` first (shape → `references/auto-memory-handoff.md`).
+   3. Otherwise (standard lane): read the vault docs (layout-2 `vault.md` / `model.md` / `flows.md` / `constraints.md`, or the legacy `00-index` … `06-constraints`) + `vault.json` + `codebase-map.md`. If the codebase-map is missing → halt, emitting `bind_inputs_missing` (`missing: codebase_map`) whose `next_action` instructs the user to run `scan-codebase` first (shape → `references/auto-memory-handoff.md`).
    4. Reuse the codebase-map shared snapshot as a freshness attestation — `snapshot-verified` requires BOTH the sha256 match AND the map's `last_scanned_commit` == current HEAD (the sha256 alone proves the map file is unchanged, not that the code hasn't moved); a HEAD mismatch → `snapshot-stale` + a warning to run `/mega-sdd:sync` first.
    5. **External-map provenance check:** also read `.mega-sdd/.codebase-map-state.json` (written by `validate-codebase-map.sh`); if it records `status: FAIL` or a `codebase_map_fm_missing` issue (an externally-authored map without writer-provenance frontmatter), the bind PROCEEDS but WARN with keterangan: "peta codebase ini ditulis di luar mega-sdd (frontmatter provenance hilang/invalid) — presisi binding turun ke klasifikasi biner; jalankan scan-codebase untuk map ber-provenance" and record `binding_metadata.codebase_map_provenance: "unverified-external"` — NEVER `"snapshot-verified"` for such a map.
    6. Propagate `scope_metadata` when the vault is scoped.

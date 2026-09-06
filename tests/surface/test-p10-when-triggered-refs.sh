@@ -108,7 +108,7 @@ grep -qF 'READ FIRST: <plugin-root>/skills/extract-intelligence/references/prd-k
   && pass "M3: grammar-reference READ-FIRST in the dispatch core untouched" \
   || fail "M3: grammar-reference read weakened"
 if ! grep -q 'regardless of classifier' "$P/commands/mega-sdd.md" \
-   && grep -qF 'the automatic iter classifier is PARKED' "$P/commands/mega-sdd.md"; then
+   && grep -qF 'the automatic iter classifier was REMOVED' "$P/commands/mega-sdd.md"; then
   pass "M4: front-door flag texts stop claiming the parked classifier runs (round fold)"
 else fail "M4: front door still sells the classifier as live"; fi
 n_ocv=$(grep -c 'oq_recommend_citation_invalid' "$GI")

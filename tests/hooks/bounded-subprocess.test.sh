@@ -36,7 +36,7 @@
 # `plugins/mega-sdd/hooks/` — the single highest-risk surface in the plugin — was
 # outside it entirely. Those are the BLOCKING `PreToolUse` / `SessionStart` /
 # `UserPromptSubmit` hooks Claude Code synchronously waits on; an unbounded child
-# there IS the 2026-07-28 Windows hang, not an analogue of it. And the eight hook
+# there IS the 2026-07-28 Windows hang, not an analogue of it. And the six hook
 # entry points are EXTENSIONLESS (`pre-tool-use`, `session-start`, …), so a `*.sh`
 # glob can never reach them no matter which directory it is pointed at — the
 # identical failure shape this header already condemns two paragraphs up, repeated
@@ -290,7 +290,7 @@ def enum(d):
     """Shell scripts in `d`, BY CONTENT — not by extension.
 
     The `*.sh` glob this replaced could not see `plugins/mega-sdd/hooks/` at all:
-    all eight hook entry points are extensionless, because Claude Code invokes them
+    all six hook entry points are extensionless, because Claude Code invokes them
     by the bare name in hooks.json. Extension is not the property that matters; being
     a bash script is. So: `*.sh`, OR a first line that is a bash shebang.
 

@@ -1,6 +1,6 @@
 # /mega-sdd front-door Trigger + Input Detection Test
 
-The one-shot autonomous pipeline entrypoint — since 5.0.0 the front door `/mega-sdd` (was `/mega-sdd:auto`; that typed form now resolves as a deprecation alias with IDENTICAL behavior plus a one-line keterangan printed first). Tests input shape detection and routing to `orchestrate-flow --deep --auto`.
+The one-shot autonomous pipeline entrypoint — since 5.0.0 the front door `/mega-sdd` (was `/mega-sdd:auto`; the typed alias was removed at 6.0.0 — a typed legacy form arrives as plain text and still routes to the front door by phrase, with NO keterangan line). Tests input shape detection and routing to `orchestrate-flow --deep --auto`.
 
 ## Trigger cases
 
@@ -91,6 +91,6 @@ All input detection (A1-A5) correctly identifies starting phase. Halt cases (H1-
 
 ## Alias back-compat (5.x)
 
-### AL1: deprecated typed form still resolves
+### AL1: legacy typed form routes as plain text
 - **Prompt:** `/mega-sdd:auto ./prd-feature-x.md`
-- **Expect:** one-line Indonesian deprecation keterangan printed FIRST (points at `/mega-sdd`), then behavior IDENTICAL to A4 — same input detection, same chain, same single confirmation.
+- **Expect:** no slash command registers (alias removed 6.0.0); the text routes to the `/mega-sdd` front door by phrase — same input detection, same chain, same single confirmation as A4; NO deprecation keterangan line (there is no alias left to print one).

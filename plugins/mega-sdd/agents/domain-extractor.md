@@ -44,7 +44,7 @@ the missing file — never proceed on a remembered or guessed template.
 - `[LOCKED]` — must be preserved 1:1 in the rebuild (regulatory/contractual field names, codes, formats, legal calculations). Drift here is a compliance risk.
 - `[INTENT]` — the outcome must be preserved, but the implementation is free to change (a workflow's purpose, a business rule's effect).
 - `[ARTIFACT]` — a legacy implementation detail safe to discard or redesign (framework quirks, dead scaffolding, workarounds). Flag "discard recommended" where you see it.
-- **Mutability default: uncertain → `[INTENT]`.** NEVER auto-default to `[LOCKED]` (needs positive evidence: regulatory citation, contract spec, audit trail, external FK) or `[ARTIFACT]` (needs positive evidence: zero-caller code, legacy stack workaround, dead branch). Pair the tier with the confidence marker — see `references/prd-kontrak-template.md` §Markers & mutability tiers.
+- **Mutability default: uncertain → `[INTENT]`.** NEVER auto-default to `[LOCKED]` (needs positive evidence: regulatory citation, contract spec, audit trail, external FK) or `[ARTIFACT]` (needs positive evidence: zero-caller code, legacy stack workaround, dead branch). Pair the tier with the confidence marker — see `skills/extract-intelligence/references/prd-kontrak-template.md` §Markers & mutability tiers.
 
 ## Extraction depth (deeper reasoning — protected by the citation discipline above)
 
@@ -77,7 +77,7 @@ The disciplines are stack-neutral; the MASTER STACK IDIOM TABLE in the grammar r
 
 Before the machine block, briefly report: the file you wrote, the most important open questions you raised, and any cross-module dependencies you noticed that the synthesis step (README roll-up + data-mutation-policy) will need — mirror them into your frontmatter `depends_on`.
 
-Then end with the machine-parsed REPORT BACK block — the last lines of your response, these lines VERBATIM (values filled in), nothing after them:
+Then end with the controller-read (human-audited — no script parses it) REPORT BACK block — the last lines of your response, these lines VERBATIM (values filled in), nothing after them:
 
 ```
 - path: <absolute output path>

@@ -36,6 +36,11 @@ preview_url: ""            # dev-server base URL (e.g. http://localhost:5173) �
                            #   `scripts/uat-run.sh` (UAT e2e); the execute-bolts controller passes
                            #   the URL into the capture ladder as an argument — `capture-views.sh`
                            #   never reads config. Empty → design lens is code-only.
+# render_html: on          # ABSENT = on: every emit lane (prd/fsd/sit/uat + vault/KB renders) also writes the
+                           #   self-contained offline HTML beside the md (7.16.0). `off` skips the render step.
+# unit_granularity: fine   # ABSENT = default (medium) unit size in generate-units; `coarse` = story-sized units
+                           #   (600 LOC / 8 files, 7.20.0 — same as `--max-complexity=large`), `fine` = smaller.
+                           #   Precedence: flag > config > default.
 ```
 
 Related-but-separate config surfaces (different scopes, documented where they live):

@@ -189,6 +189,6 @@ ast-grep matches AST patterns; it does NOT do dataflow analysis, and it is STATE
 ## References
 
 - ast-grep docs: https://ast-grep.github.io/
-- Tree-sitter integration (shared): `scan-codebase/references/tree-sitter-integration.md`
+- AST engine: ast-grep only — the tree-sitter lane (+ `tree-sitter-integration.md`) was removed in 7.4.0; query glossary under `scan-codebase/queries/astgrep/`, engine resolver `scripts/probe-scan-engine.sh`
 - Design spec: `docs/superpowers/specs/2026-05-20-tech-oq-autoresolve-design.md` §6 (v1 grammar)
 - Design spec: `docs/superpowers/specs/2026-05-21-tech-upgrades-iter6-design.md` §4.2

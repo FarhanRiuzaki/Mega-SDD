@@ -9,6 +9,7 @@
 - Upgrading to 7.0.0 (the vault layout-2 major)
 - Upgrading to 7.3–7.5 (observability removal, surface cull, direct dispatch)
 - Upgrading to 7.6 (extraction revamp: census → PRD-kontrak)
+- Upgrading to 7.7–7.29 (gate hardening, KB accuracy, size-weighted)
 - Upgrading to 6.0.0 (the alias-removal major)
 - TL;DR — two paths
 - Per-iter behavior changes (Iter 36-62, added Iter 62 per F-E-4)
@@ -48,6 +49,20 @@
 
 **What did NOT break:** pre-existing numbered-tree KBs stay readable everywhere (dual grammar) and keep their `--phase` lane. `generate-intent --kb=<kb>` detects the grammar (census.json present → PRD-kontrak lane; else legacy tree lane); the chain, the output home (`<out>/knowledge-base/`), the mutability tiers, and every downstream gate are unchanged. No migration commands — update the plugin and reload; re-extract only when you want a KB on the new grammar.
 
+## Upgrading to 7.7–7.29 (gate hardening, KB accuracy, size-weighted)
+
+**What changed (user-visible, in order):**
+- **7.7–7.8 — sprint/wave scheduling + contract-scoped review routing.** execute-bolts schedules waves by default; the review-tier router scopes its risk signals to the unit's contract (the field misroutes were fixed here).
+- **7.9.0 — Agent-tool dispatch is gated.** A hand-dispatched `bolt-implementer` Agent call now hits the execute-bolts PreToolUse gate (F-09), and the wave rail DENIES `git add -A` / `stash` / `reset --hard` while a bolt is in flight (F-16). Expect a block where an older version silently let a hand dispatch through.
+- **7.10–7.11 — evidence obligations.** Directive-typed Hard rules are ADVISORY (never fail B1); a bolt dispatched with `review-tier.json` MUST carry a panel `findings.json` + `l0-results.json` (`panel_evidence_missing` / `l0_evidence_missing`); a `type: test` acceptance entry needs `expects` (`acceptance_expects_missing`, per unit at its own dispatch).
+- **7.12–7.13 — project packs + L0 advisory.** `.mega-sdd/packs/<framework>.md` resolves (beats a same-named plugin pack); a repo with zero linter/formatter gets a ONE-TIME `l0_toolchain_vacuous` advisory (decision file `.mega-sdd/l0-toolchain-decision.json`).
+- **7.16 — `/mega-sdd:emit html <file|dir>`** renders any mega-sdd md into one self-contained offline HTML.
+- **7.20–7.23 — team-feedback round.** `--max-complexity=large` / config `unit_granularity: coarse`; resolve-oq walks the extraction KB (§6); every OQ prompt opens with Konteks + Maksudnya; the natural-register writing contract applies to every emitted doc.
+- **7.24–7.27 — KB accuracy pack.** KB validators recognise the `modules/*.prd.md` grammar (a post-7.6 KB no longer SKIPs silently — `kb_discovery` MISCONFIGURED backstops it); the claim-verify lane (`claim-verifier` per module) runs after extraction; counts are script-derived; `rebuild_after` DAG + AC golden-master for `[LOCKED]` rules.
+- **7.28–7.29 — size-weighted.** `unit_tier: xs` shrinks the dispatch payload of small units (−65% measured); `project_scale: xs` (derived from PRD structure) omits the vault Glossary and auto-defers medium-confidence tech OQs.
+
+**What did NOT break:** every artifact, every gate/hook contract, both vault layouts, both KB grammars. **No migration commands** for 7.6 → 7.29 — update the plugin (`claude plugin marketplace update` + `claude plugin update`, or `/mega-sdd:update-plugin`) and reload. If a previously-green bolt now blocks on `panel_evidence_missing` / `l0_evidence_missing`, it was dispatched under the new obligation key — run the panel / L0 writers named in the halt envelope.
+
 ## Upgrading to 6.0.0 (the alias-removal major)
 
 **What broke (the ONLY break):** the 24 `/mega-sdd:<stage>` typed deprecation aliases no longer register as slash commands (`generate-intent`, `scan-codebase`, `bind-codebase`, `generate-units`, `execute-bolts`, `resolve-oq`, `detect-drift`, `diff-vault`, `analyze`, `graph`, `lint-units`, `list-modules`, `replay`, `migrate-rules`, `validate-handoff`, `enrich-semantics`, `analyze-parallelism`, `extract-intelligence`, `orchestrate-flow`, `auto`, `emit-fsd`, `emit-prd`, `emit-sit`, `emit-agents-md`). Removal per policy: demoted at 5.0.0, removable the following major after telemetry review (performed 2026-08-04; honest scope: the telemetry corpus records skill events + ref-loads and has NO channel that logs typed command invocations, so it can attest no alias usage — the review is discharged procedurally, and the field floor is covered by this guide, not by the corpus).
@@ -70,7 +85,7 @@ Keep your original PRD or KB; regenerate vault + binding + units fresh on the ne
 **Path B (preserve existing vault + binding + bolts):**
 Run migrations → expect 1-2 schema halts → recover via halt envelope hints. ~15-30 min.
 
-> **v3.41.0+ Iter 62 update (per F-E-4):** target version refreshed from v3.26.1 (Iter 36 doc baseline) to v3.41.0; the CURRENT target is 7.6.x — see the 7.0.0 through 7.6 sections above, which apply on top of everything below. Per-iter behavior summary covers Iter 36-62 (table below). Existing migration commands + recovery sections still valid; new sections cover Iter 54+ (emit-fsd), Iter 55+ (install-deps), Iter 60 (F4 bypass tightening).
+> **v3.41.0+ Iter 62 update (per F-E-4):** target version refreshed from v3.26.1 (Iter 36 doc baseline) to v3.41.0; the CURRENT target is 7.29.x — see the 7.0.0 through 7.7–7.29 sections above, which apply on top of everything below. Per-iter behavior summary covers Iter 36-62 (table below). Existing migration commands + recovery sections still valid; new sections cover Iter 54+ (emit-fsd), Iter 55+ (install-deps), Iter 60 (F4 bypass tightening).
 
 ## Per-iter behavior changes (Iter 36-62, added Iter 62 per F-E-4)
 
@@ -94,13 +109,13 @@ Run migrations → expect 1-2 schema halts → recover via halt envelope hints. 
 
 ## Recommended upgrade paths
 
-- **v3.0-v3.25 → 7.6.x:** use Path A (regenerate from PRD/KB). Many schema + behavior changes accumulated; regen is faster than migrating each artifact.
-- **v3.26-v3.37 → 7.6.x:** use Path B — no flag needed (`--legacy-type-bypass` was RETIRED in v4.75.0; un-annotated fields are warn-only under the deterministic validator).
-- **v3.38-v3.40 → 7.6.x:** seamless upgrade; existing chains compatible.
+- **v3.0-v3.25 → 7.29.x:** use Path A (regenerate from PRD/KB). Many schema + behavior changes accumulated; regen is faster than migrating each artifact.
+- **v3.26-v3.37 → 7.29.x:** use Path B — no flag needed (`--legacy-type-bypass` was RETIRED in v4.75.0; un-annotated fields are warn-only under the deterministic validator).
+- **v3.38-v3.40 → 7.29.x:** seamless upgrade; existing chains compatible.
 
 ## Compatibility matrix
 
-| Old artifact | Works on 7.6.x? | What to do |
+| Old artifact | Works on 7.29.x? | What to do |
 |---|---|---|
 | `docs/mega-sdd/vaults/<slug>/` legacy path | Read OK (back-compat probe) | Optional: `/mega-sdd:migrate-paths` |
 | `.mega-sdd-memory/` legacy path | Read OK (back-compat probe) | Same |

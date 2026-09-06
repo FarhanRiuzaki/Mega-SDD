@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# validate-unit-spec.sh — Phase B slice B.3 [PostToolUse-validate].
+# validate-unit-spec.sh — Phase B slice B.3 [analyze / gate re-derive].
 #
 # Validates 4 unit-spec integrity halts on Write|Edit of unit files:
 #   - unit_underspecified         (required frontmatter fields missing)
@@ -977,7 +977,7 @@ except Exception as e:
 if not quiet:
     print(json.dumps(state, indent=2))
 
-# Exit code: focal file's verdict on single dispatch (PostToolUse semantics);
+# Exit code: focal file's verdict on single dispatch (single-file semantics);
 # merged verdict in project mode (the gate's re-derive entry point).
 if focal_rel is not None:
     sys.exit(1 if any(i.get("file") == focal_rel for i in merged) else 0)

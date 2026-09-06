@@ -15,7 +15,7 @@ Shared definitions referenced by all `mega-sdd` skills — the DRAFTING CORE spl
 
 ## §schema — `vault.json` manifest
 
-Every `mega-sdd` vault has a `vault.json` alongside the 7 markdown files. The markdown is human-authoritative; the JSON is a derived structural index optimized for AI consumers (Claude Code, Cursor, automated agents).
+Every `mega-sdd` vault has a `vault.json` alongside the vault markdown (layout-2: 4 files; legacy: 7). The markdown is human-authoritative; the JSON is a derived structural index optimized for AI consumers (Claude Code, Cursor, automated agents).
 
 **`vault.json` is SCRIPT-DERIVED by `scripts/derive-vault-json.sh` — a model/hand write is an authoring bug.** Three lanes:
 

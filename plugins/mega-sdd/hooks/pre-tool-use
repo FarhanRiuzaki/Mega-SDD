@@ -48,7 +48,7 @@ IFS= read -r -d '' STDIN_JSON || true
 [ -n "$STDIN_JSON" ] || STDIN_JSON='{}'
 
 # ─── Fast negative short-circuit (pure shell, BEFORE the python3 parse) ────────
-# Speed: the matcher is global (Skill|Bash|Edit|Write), so EVERY such tool call in
+# Speed: the matcher is global (Skill|Bash|Edit|Write|Agent — F-09 7.9.0), so EVERY such tool call in
 # EVERY project hits this blocking hook — including non-mega-sdd projects, where the
 # .mega-sdd gate below simply no-ops. Resolve cwd + project root in pure shell here
 # and exit 0 BEFORE paying a python3 cold-start (~30-150ms) when there is no
@@ -543,8 +543,8 @@ case "${TOOL_NAME:-}" in
     # ── v7 chain-engaged marker writer (spec §3.1) ──────────────────────────
     # A mega-sdd:* Skill dispatch IS chain activity: record chain_engaged for
     # this session in the EXISTING session-keyed .gateguard-state.json (one new
-    # field, no new file). From this moment the session is armed — GateGuard and
-    # the PostToolUse validator fan-out run exactly as before v7. using-mega-sdd is excluded (router, not a chain
+    # field, no new file). From this moment the session is armed — GateGuard runs
+    # exactly as before v7 (the PostToolUse validator fan-out it also armed died in №D v7.5.0). using-mega-sdd is excluded (router, not a chain
     # step — same exclusion Branch 1a has always used). Runs BEFORE any gate so
     # even a blocked dispatch arms the session (conservative).
     case "${SKILL_NAME:-}" in
@@ -843,7 +843,8 @@ except Exception as e:
     # One data-driven pass over the gates Farhan kept as HARD BLOCKS (v4 Phase 2,
     # Hybrid decision). Replaces the former Branch 1b + Branches 5/6/7/8/11 + the
     # CD-4 multi-fail precompute. The MOAT gate (binding->units) is checked first.
-    # Each gate reads its PostToolUse-written state file and blocks on its precise
+    # Each gate reads its state file — re-derived at gate time below (№D v7.5.0: no
+    # PostToolUse writer exists anymore) — and blocks on its precise
     # failing condition (status==FAIL, or a specific halt_type count for render-test).
     # Multi-fail surfacing is built in: when >1 gate fails, all names are listed up
     # front so the agent fixes them together instead of one-at-a-time.
@@ -874,16 +875,17 @@ except Exception as e:
         # gate drops to the slowest single validator instead of the sum.
         ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-handoff-binding-units.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         # ── S5 GU-HOOK-1/3/4: re-derive the three unit-stage gate states at gate
-        # time too. Their PostToolUse dispatch is (a) keyed to the Write|Edit tool
-        # path only (a unit written via Bash heredoc never re-validates — stale
-        # PASS), and (b) async (TOCTOU: execute-bolts dispatched right after the
-        # last unit write can read one-write-stale state). validate-unit-spec in
+        # time too. Gate-time re-derivation is the ONLY writer path since №D v7.5.0
+        # (the former PostToolUse dispatch was Write|Edit-keyed — a heredoc-written
+        # unit never re-validated — and async/TOCTOU; both classes are moot now that
+        # nothing else writes these states). validate-unit-spec in
         # project mode + the two project-wide scanners are sub-second; current
         # truth beats a stale cache at the gate that launches a multi-minute run.
         ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-unit-spec.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-flow-coverage.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-sibling-consistency.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
-        # ── S6 EB-GATE-1: re-derive the SIX bolt-stage/quality states at gate
+        # ── S6 EB-GATE-1: re-derive every bolt-stage/quality state (the six bolt-artifact
+        # scans below + ui-quality + cross-cutting + factory-ledger) at gate
         # time too. Their producers are Stop-hook keyed (orphans/batch-suite/
         # postflight: one-turn lag, and NONE exist on a fresh session/clone) or
         # Write|Edit-glob keyed (ui-quality/cross-cutting: a heredoc-written
@@ -891,8 +893,8 @@ except Exception as e:
         # its own branch. Same doctrine as the moat: a stale, absent, or forged
         # state is overwritten with current truth BEFORE the aggregator reads
         # it (this also neutralizes any Bash-forged PASS — EB-GATE-5).
-        # The five bolt-artifact scans run as ONE composable invocation (spec §4a-ii)
-        # — one bash spawn-chain instead of five; every scan's python, state file, and
+        # The six bolt-artifact scans run as ONE composable invocation (spec §4a-ii;
+        # --panel-scan joined in 7.11.0) — one bash spawn-chain instead of six; every scan's python, state file, and
         # verdict are unchanged. Still here: B1 recompute-at-gate (--recompute
         # re-executes each committed Hard-rule bolt's mechanical rules from git/fs
         # ground truth and OVERWRITES its postflight.json before the state is derived
@@ -1127,8 +1129,9 @@ if fails:
     # map (some sections present) is NOT blocked — only the empty-shell shape.
     if [ "${SKILL_NAME:-}" = "mega-sdd:bind-codebase" ]; then
       # ── INT-1 self-heal (god-review S3): the scan procedure's mandated write
-      # path is temp-file + mv (Step 10a scrub), which never fires the PostToolUse
-      # Write|Edit dispatch — so .codebase-map-state.json can be stale in BOTH
+      # path is temp-file + mv (Step 10a scrub) and nothing re-validates the map at
+      # write time (the PostToolUse dispatch died in №D v7.5.0; the mv never fired
+      # it anyway) — so .codebase-map-state.json can be stale in BOTH
       # directions (fail-open on a fresh degenerate map; permanent false-block
       # after a valid re-scan). Re-validate lazily when the map is newer than its
       # state (GateGuard lazy-rebuild pattern). Probe order mirrors bind-codebase.
@@ -1329,7 +1332,7 @@ elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^
 ' 2>/dev/null)
       fi
       if [ "$FP_GUARD" = "protected" ]; then
-        emit_block "Blocked: direct Write/Edit of a gate state file under .mega-sdd/. These files (.validation-blockers.json + the quality-gate states: unit-spec, flow-coverage, sibling-consistency, ui-quality, cross-cutting, bolt-orphans, batch-suite-gate, bolt-postflight, bolt-whitelist, bolt-acceptance, factory-ledger — plus the derived scan stamps .stop-scan-stamp / .ptu-scan-stamp) are written exclusively by validators/hooks — a direct agent write is a forged gate verdict. To clear a blocker, fix the underlying issue and let the validators re-derive (they re-run automatically on unit writes AND at the execute-bolts gate). Human user can still modify these files via shell outside the agent."
+        emit_block "Blocked: direct Write/Edit of a gate state file under .mega-sdd/. These files (.validation-blockers.json + the quality-gate states: unit-spec, flow-coverage, sibling-consistency, ui-quality, cross-cutting, bolt-orphans, batch-suite-gate, bolt-postflight, bolt-whitelist, bolt-acceptance, factory-ledger — plus the derived scan stamps .stop-scan-stamp / .ptu-scan-stamp) are written exclusively by validators/hooks — a direct agent write is a forged gate verdict. To clear a blocker, fix the underlying issue and let the validators re-derive (they re-run at the execute-bolts gate, and under analyze). Human user can still modify these files via shell outside the agent."
       fi
       if [ "$FP_GUARD" = "evidence" ]; then
         emit_block "Blocked: direct Write/Edit of a guarded evidence artifact (preflight.json / postflight.json / acceptance.json / _batch-suite.json / uat evidence result.json). These are produced ONLY by their deterministic writers — run \`bash <plugin>/scripts/run-preflight-scan.sh --cwd=<project-root> --unit=U-XXX\` (captures the pre-flight Hard-rule BASELINE snapshot), \`bash <plugin>/scripts/run-postflight-scan.sh --cwd=<project-root> --unit=U-XXX\` (executes the unit's Hard rules and records verdicts), \`bash <plugin>/scripts/run-acceptance-tests.sh --cwd=<project-root> --unit=U-XXX\` (re-executes the unit's acceptance_test entries + the L0 syntax floor and records the B4 evidence), \`bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root>\` (runs the FULL suite and records the result at the pinned HEAD) or \`bash <plugin>/scripts/uat-run.sh --vault=<vault> --cwd=<project-root>\` (executes the generated UAT e2e specs and records the §5 annex evidence). A hand-written artifact is a forged gate verdict — and a hand-written preflight is a forged BASELINE (a wrong sha256 at pre-flight makes a DO_NOT_MODIFY violation undetectable). Human user can still modify these files via shell outside the agent."
@@ -1562,7 +1565,7 @@ else:
     # [[:space:]] not \s — this runs under BSD grep on macOS where \s is literal.
     # [^;|&]* (not [^)]*) so a nested call like open(os.path.join(root,PROTECTED),'w')
     # is still caught (the join'"'"'s ) no longer terminates the scan). Layered defense —
-    # a variable-indirected target (f=…; open(f,'w')) is NOT caught here; for the six
+    # a variable-indirected target (f=…; open(f,'w')) is NOT caught here; for the
     # gate STATES that is covered by gate-time re-derivation, and for the two evidence
     # artifacts it is the documented best-effort residual (see CLAUDE.md inventory).
     elif echo "$BASH_CMD" | grep -qE "open[[:space:]]*\([^;|&]*($PROTECTED)[^;|&]*,[[:space:]]*[\"'][wax]" ; then

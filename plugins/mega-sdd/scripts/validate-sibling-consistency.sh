@@ -377,7 +377,7 @@ report = {
     "next_action": (
         "In each flagged model, register the cross-cutting concern (e.g. add "
         "`static::addGlobalScope(new BranchScoped)` to booted()) so the branch-scoped table is "
-        "actually filtered at runtime; re-save (PostToolUse re-validates). The next "
+        "actually filtered at runtime; re-run analyze or the execute-bolts gate (they re-derive). The next "
         "mega-sdd:execute-bolts is blocked until the registrations land."
     ) if status == "FAIL" else (
         "No action — every branch-scoped model registers the concern."
@@ -619,7 +619,7 @@ report = {
         "Bring every view-bearing sibling in a module/scope group to parity: if one sibling "
         "declares a `## UI contract` or a `type: render` acceptance test, every view-bearing "
         "sibling must declare the same KIND of obligation. Add the missing obligation(s) to the "
-        "under-served unit(s), then re-save (PostToolUse re-validates)."
+        "under-served unit(s), then re-run analyze / the execute-bolts gate (they re-derive)."
         if divergences else "No action — sibling deliverable obligations are at parity."
     ),
 }
@@ -970,7 +970,7 @@ report = {
     "next_action": (
         "Make every sibling unit sharing a cross-cutting concern declare the SAME "
         "mechanism (the concern's spec_obligation), and declare the derived relation "
-        "accessor for every FK column; then re-save the unit (PostToolUse re-validates)."
+        "accessor for every FK column; then re-run analyze / the execute-bolts gate (they re-derive)."
     ) if status == "FAIL" else "No action — sibling concerns are consistent and FK relations are declared.",
 }
 write_and_exit(report, 0 if status == "PASS" else 1)

@@ -17,7 +17,7 @@ The controller (execute-bolts) does NOT type your dispatch into your task prompt
 
 **Locating the file.** Use the absolute path in the pointer. If the pointer names no path, run ONE `Glob` for `**/bolts/<unit-id>/dispatch-prompt.md` under the project root — exactly one match → read it; **zero matches → halt; two or more matches → halt.** Never pick the newest or the first: more than one match means you do not know which unit generation you were dispatched for, and choosing would fabricate your own provenance. One Glob, then stop hunting.
 
-**The one exception, and how to test for it.** If the full dispatch was inlined into your task prompt instead of pointed at (an older controller, or the legacy fallback executor), work from it and skip the Read. Decide with TWO literal string tests in THIS ORDER — no judgement, first match wins:
+**The one exception, and how to test for it.** If the full dispatch was inlined into your task prompt instead of pointed at (an older controller), work from it and skip the Read. Decide with TWO literal string tests in THIS ORDER — no judgement, first match wins:
 
 1. **Your prompt has a line that STARTS WITH `READ FIRST, IN FULL:` → it is a POINTER. Read the path on that line.** This wins even if the prompt also contains the marker in test 2.
 2. **Otherwise, your prompt contains a line that is exactly `## Unit body (verbatim)` → it is an inlined dispatch.** Work from it; skip the Read.

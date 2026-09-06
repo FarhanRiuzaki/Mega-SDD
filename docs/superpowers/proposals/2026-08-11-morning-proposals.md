@@ -1,6 +1,6 @@
 # Morning proposals — keputusan yang butuh call lo (2026-08-11)
 
-**Status:** DECISION DOC — belum ada satupun yang diimplementasi. Companion dari spec `2026-08-11-audit-phase4-platform-hygiene.md` (yang HANYA ship item hygiene otonom: honest labeling, AUDIT.md archive, parity harness p12).
+**Status:** DECISION DOC — sebagian sudah terselesaikan lewat spec lain (stempel per item di bawah, dicatat 7.29.1); sisanya masih menunggu call lo. Companion dari spec `2026-08-11-audit-phase4-platform-hygiene.md` (yang HANYA ship item hygiene otonom: honest labeling, AUDIT.md archive, parity harness p12).
 **Sumber:** audit `docs/superpowers/audits/2026-08-10-skills-audit.md` (rekomendasi #9, P3/P4) + amendemen moat-takeout lo 2026-08-10 ("klo moat tidak efisien bisa di takeout") + record 2b §S7 (zero cuts — semua kandidat gagal evidence bar-nya sendiri, T2 di-eskalasi ke doc ini).
 **Cara baca:** tiap item = Problem / Options / Numbers / Recommendation / What-I-did-NOT-do-and-why. Semua angka estimasi ~4 bytes/token kecuali ditandai measured.
 
@@ -24,6 +24,8 @@
 ---
 
 ## (b) Free-text delta lane (`generate-intent --amend` / diff-vault chat input)
+
+**RESOLVED — SHIPPED 6.7.0** (delta lane: chat ticket → `diff-vault --from-prompt` → claim-scoped re-bind → reconcile; CHANGELOG 6.7.0, spec 2026-08-12 delta-lane).
 
 **Problem.** Requirement bentuk tiket ("tambah kolom X di form Y") — persis user base plugin ini (tim bank) — tidak punya jalur murah: lane free-text sekarang re-pay full vault generation + full bind. Sim S4 (audit §13): **~230k tok** untuk delta 3 field. Padahal SEMUA machinery downstream sudah ada: diff-vault structured diff, scoped patch, `--paths` claim-scoped re-bind, sync-intersect. Yang hilang HANYA entry adapter-nya (chat-level requirement → scoped diff input).
 
@@ -64,6 +66,8 @@ Konteks: di 2b, tiga kandidat takeout GAGAL evidence bar-nya sendiri (T1/T3 drop
 
 ## (d) Halt-protocol family split
 
+**RESOLVED — SHIPPED 6.14.0** (registry split by family AFTER the measurement gate this item required; CHANGELOG 6.14.0, spec 2026-08-17-halt-registry-family-split.md).
+
 **Problem.** Sebuah halt memuat registry 43.6KB (~11k tok) untuk mengambil SATU envelope YAML (audit §14.5).
 
 **Numbers.** ~11k tok per halt-yang-memuat-registry; tapi ini exceptional path — amortized cost per run TIDAK diketahui (berapa halt per run yang benar-benar buka file itu? `ref_loaded` telemetry ada tapi honest under-count).
@@ -79,7 +83,7 @@ Konteks: di 2b, tiga kandidat takeout GAGAL evidence bar-nya sendiri (T1/T3 drop
 | Item | Status + prasyarat buka |
 |---|---|
 | vault-contract physical reorder | Deferred (P3): cross-skill SSOT blast radius; §-named reads (6.3.0) sudah mengambil sebagian besar win — reorder fisik hanya kalau ada bukti §-reads gagal di lapangan |
-| Wave-5 synthesis diet (extract) | Machinery sudah shipped (frontmatter counts + §summaries + glossary spot-reads); butuh SATU extraction run nyata untuk verifikasi sebelum jadi default |
+| Wave-5 synthesis diet (extract) | Machinery sudah shipped (frontmatter counts + §summaries + glossary spot-reads); butuh SATU extraction run nyata untuk verifikasi sebelum jadi default. **→ VOID 7.6.0**: waves/KB-tree pensiun (extract revamp = census → PRD-kontrak per modul) |
 | os-detection / install-deps demoted-block deletion | Banner keep-in-sync shipped 6.4.0 (additive demotion); hapus blok prose hanya setelah satu field run membuktikan jalur script bertahan |
 | scan/bind `context: fork` flip | Fork-READY sejak v5.15.0, TIDAK di-flip; prasyarat tetap 2 run interaktif: RUN 1 (sync dari subdir) + RUN 2 (depth-2 Agent probe — advisor Step 2.12 bergantung ini); ingat: headless `claude -p` fork NO-OPS, A/B harus interaktif |
 

@@ -383,7 +383,7 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 │   ├── skills/                             # skills (lean routers + progressive disclosure)
 │   ├── agents/                             # 9 first-class subagents (incl. the blind review panel)
 │   ├── commands/                           # exactly 6: 3 public verbs + 3 maintenance one-timers
-│   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (30 packs)
+│   ├── references/                         # paths.md · tooling-install.md · framework-conventions/ (25 packs — 24 full + 1 overlay, per `_registry.md`)
 │   ├── assets/render-html/                 # offline HTML template v2 + vendored marked/mermaid/woff2 fonts
 │   ├── hooks/                              # 6 events, direct dispatch: SessionStart · PreToolUse gate · PostToolUse journal · Stop · UserPromptExpansion/Submit
 │   ├── scripts/                            # the /analyze engine (run-analyze.sh) + migrations + deterministic validators

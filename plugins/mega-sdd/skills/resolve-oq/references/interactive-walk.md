@@ -63,7 +63,7 @@ Persist: `RESOLUTION_SCOPE=<choice>`. Echo back so the user sees the plan.
 
 ## Step 1 — Parse OQ list
 
-1. Read all 7 vault files.
+1. Read all vault docs (layout-2 4-file set, or the legacy 7 files).
 2. For each numbered doc (01–06), extract entries from its `## Open Questions` section that are still `[ ]` (open) — skip `[x]` (resolved) and `[~]` (out of scope).
 3. For each OQ, capture:
    - Tag (`OQ-{CODE}-{N}`)
@@ -195,7 +195,7 @@ string catalog — an English-writing user gets this same prompt in English by p
 [{i}/{N}]  {OQ tag}  [{priority}]  [{category}]  {(scope: {id} — {name}) when vault.json has scope}
   Doc      : {origin doc} → {section}
   Pertanyaan: "{full OQ question text, verbatim}"
-  Sumber   : {citation of the recommendation, probed OK — file §section:line / memory row / D-XXX}
+  Sumber   : {citation of the recommendation, probed OK — file §section:line / D-XXX}
   Hint     : {generator resolution hint, when the OQ carries one}
   {⚠️ **High-stakes business OQ.** Review citation + rationale carefully before accepting.
      AI recommendation is a starting point, not authority.   ← ONLY when category: business AND P1}

@@ -3,8 +3,9 @@
 #
 # TWO modes:
 #   FULL (default / manual): re-run all validators + vault checks → aggregate → report.
-#   AGGREGATE-ONLY (--aggregate-only): read existing state files written by PostToolUse
-#     validators during the chain → aggregate → report. Cheap; no re-run. Used by
+#   AGGREGATE-ONLY (--aggregate-only): read existing state files written by the
+#     execute-bolts gate re-derives / a prior FULL run (the PostToolUse validator
+#     fan-out died in №D v7.5.0) → aggregate → report. Cheap; no re-run. Used by
 #     Stop hook for auto-chain reporting.
 #
 # FULL mode is SEMANTIC-SCOPED by default (S1, spec
@@ -71,7 +72,8 @@ KB_MISCONF=0   # SKIP-honesty (7.24.0 Fase 2): 1 = KB md exists but no kb_* vali
 if [ "$AGGREGATE_ONLY" -eq 1 ]; then
   # ─── AGGREGATE-ONLY MODE ──────────────────────────────────────────────
   # Skip Phase 1 (validator invocation) and Phase 2 (vault internal checks).
-  # Read existing state files written by PostToolUse validators during chain.
+  # Read existing state files written by the execute-bolts gate re-derives / a
+  # prior FULL run (the PostToolUse fan-out died in №D v7.5.0).
   # Jump to Phase 3 aggregation. Each V*_RC defaults to the "STATE_FILE" sentinel
   # (aggregator reads the state file status directly instead of an exit code).
   #
@@ -706,7 +708,7 @@ validator_results = {
     "constitution_propagation": {"rc": os.environ["V11_RC"], "state_file": ".constitution-propagation-state.json"},
     "codebase_map": {"rc": os.environ["V12_RC"], "state_file": ".codebase-map-state.json"},
     # v4 — KEPT hard-block code-delivery gates (enforced at PreToolUse on execute-bolts);
-    # surfaced here read-only from their PostToolUse state files so /analyze is a true
+    # surfaced here read-only from their gate-written state files so /analyze is a true
     # pre-flight of what WILL block bolts (a FAIL here flips overall, as it should).
     "flow_coverage": {"rc": "STATE_FILE", "state_file": ".flow-coverage-state.json"},
     "sibling_consistency": {"rc": "STATE_FILE", "state_file": ".sibling-consistency-state.json"},

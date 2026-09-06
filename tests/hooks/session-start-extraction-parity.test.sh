@@ -35,7 +35,8 @@ GOLD_SLIM="$(awk 'BEGIN{take=0}
 # Live hook output, startup (FULL) and compact (SLIM). Fixture: SDD signal dir,
 # no git/map/index → no staleness noise; wrapper pre-installed → no heal spawn.
 SSHOME="$WORK/home"; mkdir -p "$SSHOME/.claude/commands"
-printf '%s\n' '<!-- mega-sdd-front-door-wrapper v1 — managed by the mega-sdd plugin -->' \
+WV="$(grep -m1 '^WRAPPER_VERSION=' "$REPO/plugins/mega-sdd/scripts/install-front-door.sh" | tr -dc '0-9')"; [ -n "$WV" ] || WV=2
+printf '%s\n' "<!-- mega-sdd-front-door-wrapper v${WV} — managed by the mega-sdd plugin -->" \
   > "$SSHOME/.claude/commands/mega-sdd.md"
 FIX="$WORK/proj"; mkdir -p "$FIX/.mega-sdd"
 run_ss() { ( cd "$FIX" && printf '{"source":"%s","session_id":"s"}' "$1" \

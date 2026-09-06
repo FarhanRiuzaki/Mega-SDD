@@ -105,7 +105,7 @@ Layout-2 (v7 default; marker `vault_layout: 2` in the vault.md frontmatter + vau
 
 | Layout-2 | Legacy (7-file) | Content |
 |---|---|---|
-| `vault.md` frontmatter | `00-index.md` §Vault Lock Status | the six lock values (+ `kb_module_graph`) |
+| `vault.md` frontmatter | `00-index.md` §Vault Lock Status | the six lock values (+ `project_scale` since 7.29.0, + `kb_module_graph`) |
 | `vault.md ## Overview` | `01-overview.md` | product, personas, problem, success criteria |
 | `vault.md ## Architecture` | `02-architecture.md` | layers, components, API contracts |
 | `vault.md ## Decisions` | `05-decisions.md` | `### D-NNN` ADRs |

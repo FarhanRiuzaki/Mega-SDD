@@ -326,7 +326,7 @@ try:
     for k, v in patch.items():
         if k != "open_questions":
             out[k] = v
-    # derive lane: the six Vault Lock values (md wins; absent label → per-key
+    # derive lane: the Vault Lock values — six + the optional layout-2 `project_scale` (md wins; absent label → per-key
     # carry-forward + WARN — never a fabricated enum)
     for key in LOCK_KEYS:
         if key in lock_vals:

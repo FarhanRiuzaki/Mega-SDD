@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# validate-vault-oqs.sh — Phase B slice B.4 [PostToolUse-validate]
+# validate-vault-oqs.sh — Phase B slice B.4 [analyze / gate re-derive]
 #   + Task G (code-delivery sharpening): operator-workflow-UX capture rails.
 #
 # Per-OQ scope (B.4):
@@ -115,8 +115,9 @@ issues = []
 
 # Walk OQ entries with recommendations → check citations
 # Pattern: in markdown OQ blocks, look for "citations:" or "Citation:" lines
-# Format: "Citation: knowledge-base/10-domains/foo.md §section-name"
-# Or: "citations: - knowledge-base/10-domains/foo.md§section"
+# Format: "Citation: knowledge-base/modules/foo.prd.md §section-name" (v7.6 grammar;
+#   the legacy numbered tree `knowledge-base/10-domains/foo.md` still matches)
+# Or: "citations: - knowledge-base/modules/foo.prd.md§section"
 
 # Conservative scope: only check citations that point to knowledge-base/ paths
 citation_pattern = re.compile(

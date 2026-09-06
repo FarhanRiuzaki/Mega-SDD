@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# PostToolUse hook for mega-sdd — PIPELINE validators + living-vault journal
+# PostToolUse hook for mega-sdd — living-vault journal + advisory notices
 # (v7.3.0: observability removed — no telemetry emission of any kind).
 #
-# Legs (№C v7.5.0 — matcher narrowed to Write|Edit; the Skill/Bash legs are
-# deleted, see the case comment below): Write|Edit → dirty-paths journal
-# (always-on) + chain-scoped validator fan-out.
+# Legs (№C/№D v7.5.0 — matcher narrowed to Write|Edit; the Skill/Bash legs AND
+# the validator fan-out are deleted, see the case comment below): Write|Edit →
+# dirty-paths journal (always-on) + the №G advisory notices (LOCKED-edit context
+# line, `auto_verify_on_edit` OFFER). No validator runs here — every gate-read
+# state is re-derived at its own gate, and analyze FULL re-runs the advisories.
 # Exit 0 always (hook must never block tool execution).
 
 set -uo pipefail
@@ -22,9 +24,9 @@ IFS= read -r -d '' STDIN_JSON || true
 [ -n "$STDIN_JSON" ] || STDIN_JSON='{}'
 
 # ─── Fast negative short-circuit (pure shell, BEFORE the python3 parse) ───────
-# The matcher is the widest in hooks.json (Read|Skill|Bash|Write|Edit|Agent), and
-# `Read` is the most frequent tool in any session — so this hook runs after almost
-# EVERY tool call in EVERY project, including ones with no .mega-sdd at all. Until
+# The matcher is `Write|Edit` since №C (v7.5.0; it was the widest in hooks.json —
+# Read|Skill|Bash|Write|Edit|Agent — before v7.3.0), so this hook still runs after
+# every write in EVERY project, including ones with no .mega-sdd at all. Until
 # now it paid its full prologue before it could discover it had nothing to do:
 # python3 cold start + dirname + the resolver walk + date. Measured 15 external
 # process spawns on a Read in a non-mega-sdd project; at ~220 ms/spawn on a
