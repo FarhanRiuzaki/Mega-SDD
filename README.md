@@ -80,6 +80,7 @@ This is the canonical install reference — other docs link here.
 /plugin marketplace add https://scm.bankmegadev.com/ai-rnd/mega-sdd.git
 /plugin install mega-sdd
 /plugin install superpowers   # recommended companion (TDD discipline)
+/plugin install mega-sdd-extras   # optional: /mega-sdd-extras:slice — one Figma page → UI code (separate plugin, zero cost if unused)
 ```
 
 > **The bare `/mega-sdd` verb** — Claude Code registers plugin commands only under the plugin namespace (`/mega-sdd:<command>`), so the bare front door is provided by a tiny user-level wrapper at `~/.claude/commands/mega-sdd.md`. The plugin's SessionStart hook installs and maintains it automatically — your **first session after install** (any project, any CWD) creates it; from the next session on, `/mega-sdd` works everywhere. Until then, `/mega-sdd:mega-sdd` is the namespaced equivalent. Manual install: `bash <plugin-dir>/scripts/install-front-door.sh`.

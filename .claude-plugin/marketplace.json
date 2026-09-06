@@ -33,6 +33,30 @@
         "architecture",
         "code-generation"
       ]
+    },
+    {
+      "name": "mega-sdd-extras",
+      "source": "./plugins/mega-sdd-extras",
+      "description": "Optional companion to mega-sdd: /mega-sdd-extras:slice — ONE Figma page/frame per run (your own Figma MCP; image/URL fallback) into framework-conventional UI code, render-checked via the mega-sdd Playwright MCP. Zero hooks/scripts; zero cost when not invoked.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Farhan Riuzaki"
+      },
+      "homepage": "https://scm.bankmegadev.com/ai-rnd/mega-sdd",
+      "repository": "https://scm.bankmegadev.com/ai-rnd/mega-sdd.git",
+      "license": "MIT",
+      "keywords": [
+        "figma",
+        "design-to-code",
+        "ui-slicing",
+        "mega-sdd"
+      ],
+      "category": "development",
+      "tags": [
+        "figma",
+        "ui",
+        "design-to-code"
+      ]
     }
   ]
 }

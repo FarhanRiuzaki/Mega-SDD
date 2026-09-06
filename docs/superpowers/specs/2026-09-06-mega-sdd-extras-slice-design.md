@@ -1,6 +1,6 @@
 # Spec — `mega-sdd-extras`: slice-design per-page (revive di plugin terpisah)
 
-**Status:** DRAFT — menunggu gate owner (APPROVE / REVISE / PARK). Nol kode sampai gate.
+**Status:** **APPROVED P0 — owner 2026-09-06** ("APPROVE P0", AskUserQuestion). P0 dibangun di commit yang sama dengan amandemen status ini; P1 = bukti lapangan (§6).
 **Sumber keputusan:** `research/2026-08-23-team-feedback-triage.md` §Item 2 (owner, 2026-08-23) — "buat `mega-sdd-extras` berisi slice-design di marketplace yang sama, revive dari commit sebelum d4f82c7, per-page (bukan batch 4 page), pakai koneksi Figma MCP langsung (bukan PNG)". Urutan di triage: setelah №A (size-weighted) — №A SPEC COMPLETE 7.29.0.
 **Rambu:** Evidence-First rule (2026-09-05) — bukti permintaan = kolega tim adalah pemakai nyata workflow design→code (triage §Item 2; balasan tim `docs/mega-sdd/feedback-response-2026-08-23.md` baris "Figma slicing"). `plugins/mega-sdd/CLAUDE.md §Commands`: "`mega-sdd-extras` gets built only if demand appears" — syaratnya terpenuhi, klausulnya diamandemen di P0.
 **Bahan:** skill lama `skills/slice-design/` @ `d4f82c7^` (44 + 39 baris + `commands/slice.md`), spec asal `2026-08-12-playwright-embed-design.md` D1, catatan penghapusan CHANGELOG 7.4.0 №2, kontrak tool Figma MCP (`get_metadata` / `get_design_context` / `get_variable_defs` / `get_screenshot`), tata letak cache plugin terpasang.
@@ -102,7 +102,8 @@ Tidak disentuh: hooks, scripts, skills core, anchor, gate apa pun.
 
 ## 6. Fase
 
-- **P0 — bangun (satu commit, markdown + JSON saja):** §2, §3, §4, §5. Acceptance: suite dua tree hijau + tests baru; `claude plugin validate` dua plugin; **satu live run di mesin ini** pada satu frame Figma nyata (Figma MCP tersedia di sesi ini) — laporan ada, tabel node→file terisi, compare 0 ronde kalau `preview_url` kosong (jujur). Versi extras 0.1.0. Core tidak bump (tidak ada perubahan perilaku) — atau patch bump kalau owner mau README/CLAUDE.md ikut rilis.
+- **P0 — bangun (satu commit, markdown + JSON saja):** §2, §3, §4, §5. Acceptance: suite dua tree hijau + tests baru; `claude plugin validate` dua plugin; satu live run pada satu frame Figma nyata. Versi extras 0.1.0. Core tidak bump (tidak ada perubahan perilaku).
+  **Hasil P0 (2026-09-06):** SHIPPED — suite dua tree 247/247 (incl. `tests/extras/`), `claude plugin validate` extras + marketplace lolos, core anchor 3844 B / 6 command tak berubah. **Live run mesin-ini DI-SKIP atas keputusan owner** (AskUserQuestion "Tunda live run ke kantor (P1)") meski Figma MCP terautentikasi di sesi build — jadi P0 terbukti secara STRUKTURAL saja; klaim "detail tidak melenceng" belum punya bukti run sampai P1. Dicatat jujur, bukan diklaim.
 - **P1 — bukti lapangan (kantor, menumpang kunjungan field run 7.29.1):** kolega menjalankan SATU page yang dulu dia coba dengan PNG. Ukur: wall-clock per page, ronde compare terpakai, delta tersisa (hitung), token (gateway — tag `mega-sdd-trace:slice-design`). Bandingkan lawan pengalaman PNG-nya (kualitatif, jujur). Prasyarat yang belum pasti: akun Figma MCP tim jalan ("begitu akunnya jalan") dan `npx` Playwright di kantor — kalau belum, P1 = jalur fallback image, dan itu yang dilaporkan.
 - **P2 — HANYA kalau P1 memberi bukti:** Code Connect (`get_code_connect_map`) untuk mengikat komponen Figma → komponen repo (reuse-first di level desain); saran token ke `design_system` vault sebagai file usulan (extras tetap tidak menulis vault). Tidak sekarang.
 

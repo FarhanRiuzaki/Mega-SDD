@@ -141,6 +141,7 @@ The `## Overview` / `## Architecture` / `## Decisions` anchors are a HARD-HEADER
 | `execute-bolts` | checkpoints | `<vault>/.internal/checkpoints/` | `<vault>/.mega-sdd/checkpoints/` |
 | `orchestrate-flow` | model-tiers config | `.mega-sdd/config.yaml` (per-project `model_tiers:` section) | (no legacy back-compat) |
 | `emit-agents-md` | AGENTS.md | `<repo-root>/AGENTS.md` (UNCHANGED — interop file) | same |
+| `slice-design` (plugin `mega-sdd-extras`, separate install — writes NOTHING else under `.mega-sdd/`) | slice-report.md | `.mega-sdd/slices/<slug>/slice-report.md` | same path the 6.8.0–7.4.0 core skill used |
 
 The project `.mega-sdd/memory/` dir is still honored as a project-root MARKER by `scripts/_lib/resolve-project-root.sh` and rewritten by migrate-paths, but nothing writes it since v7.3.0. The only live vault-memory artifact is `<vault>/.memory/bolt-outcomes.json` (documented in the canonical-layout tree above).
 
