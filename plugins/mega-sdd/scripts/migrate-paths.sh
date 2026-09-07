@@ -464,7 +464,7 @@ probe_paths:
   vault_candidates:
     - .mega-sdd/vaults/
     - docs/mega-sdd/vaults/    # legacy fallback
-  knowledge_base_candidates:
+  knowledge_base_candidates:   # scaffold only (no reader) — a KB OUTSIDE the tree uses the top-level `knowledge_base: <dir>` key
     - .mega-sdd/knowledge-base/
     - docs/knowledge-base/
     - old-reference/knowledge-base/

@@ -147,6 +147,7 @@ auto_verify_on_edit: false # true → inline edit of a unit's target_file offers
 spine: express            # classic → restore the scan-first chain + Stop-hook analyze aggregate
 # unit_granularity:       # ABSENT is the default (medium); fine|coarse resize generated units (--max-complexity flag wins)
 parallel_max: 4           # execute-bolts wave width
+knowledge_base: ""        # KB dir OUTSIDE the tree (monorepo submodule shared by FE + BE apps); empty → in-project paths
 model_tiers:
   bolt_implementer: inherit # auto → per-unit routing via resolve-review-tier (haiku/sonnet/opus + cascade)
 ```

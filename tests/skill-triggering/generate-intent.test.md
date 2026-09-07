@@ -76,6 +76,27 @@ Manual-run fixture for the 6 detection rules. Each case maps to one rule.
 - **Prompt:** `/mega-sdd:generate-intent --from-prompt "build X" ./prd.md`
 - **Expect:** Mode B (Rule 1 wins); skill warns `"--from-prompt set; ignoring positional ./prd.md. Provide just the brief or just a path, not both."`
 
+### GI-KB-CFG — Shared KB via `knowledge_base:` in config.yaml (7.30.0)
+
+**Setup:**
+- Monorepo: session cwd is `apps/api/` (own `.mega-sdd/`, NO local `knowledge-base/`)
+- `apps/api/.mega-sdd/config.yaml` has `knowledge_base: ../../knowledge/mcf-domain-knowledge/.mega-sdd/knowledge-base/`
+- That directory exists (git submodule) and holds `README.md` + `census.json` + `modules/*.prd.md`
+
+**Trigger:** `/mega-sdd:generate-intent` (no positional arg, no `--from-prompt`)
+
+**Expected:**
+- `derive-state` reports `knowledge_base: present (path: ../../knowledge/.../README.md, source: config)`
+- Mode B KB sub-mode auto-detected with `--kb=../../knowledge/mcf-domain-knowledge/.mega-sdd/knowledge-base` implicit; user confirmation still asked
+- PRD-kontrak grammar detected (census.json present) — consumption per kb-submode.md, unchanged
+
+**Variant (configured but missing):** same config, submodule NOT initialised (directory empty).
+- `knowledge_base: absent`, state.json `probes.knowledge_base.configured_missing: true`, `derived.notes` names the configured path
+- generate-intent does NOT silently pick `apps/web`-style local copies; it halts with the note (init the submodule / fix the path)
+
+**Variant (config + stale local copy):** cwd `apps/web/` with an old `.mega-sdd/knowledge-base/` AND the config key set.
+- Configured KB wins (`source: config`); the local copy is never auto-selected
+
 ## Pass criteria (Mode auto-detect)
 
 All 10 cases above invoke the correct mode per the rule table. No false positives where a path-looking string opens Q&A, or a brief gets treated as a file path. Ambiguous cases (AD3, AD8) prompt the user; do not silently proceed.
