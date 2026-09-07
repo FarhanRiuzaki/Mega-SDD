@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.30.0] - 2026-09-07 — `knowledge_base:` di config.yaml: satu KB bersama untuk monorepo
+
+Run lapangan monorepo-acquisition (FE `apps/web` + BE `apps/api`, KB domain sebagai git submodule dua level di atas kedua app): probe KB cuma lihat 4 path DI DALAM project, jadi BE dapat `absent` dan FE malah nemu copy KB lama. Spec `docs/superpowers/specs/2026-09-07-shared-kb-config-path-design.md`.
+
+### Added
+- **`knowledge_base: <dir>`** (top-level, `.mega-sdd/config.yaml`) — path direktori KB di luar tree (relatif ke project root, absolut boleh, `~` di-expand). Dibaca `state_probes.probe_knowledge_base` (probe 8) → `probes.knowledge_base` dapat `source: config|default` (+ `configured`, `configured_missing`); routing `kb_no_vault` dan auto-detect `generate-intent` otomatis memakai `--kb=<dir config>` tanpa perubahan jalur. Config menang atas 4 generasi in-project; **configured tapi `README.md` tidak ada = ABSENT + satu `derived.notes`** — sengaja TIDAK jatuh ke copy lokal yang basi (itu bug yang mau dicegah). Nol sentuhan hook (script lane saja).
+- Pin: `tests/state/test-derive-state.sh` §11 f11a–f11e (eksternal via config, configured-missing tanpa fall-through, config menang atas lokal, default regresi, path absolut); fixture GI-KB-CFG di `tests/skill-triggering/generate-intent.test.md`.
+
+### Changed
+- Prosa urutan deteksi KB disapu ke satu kebenaran: routing-rules §probe 8, orchestrate-flow §status view, generate-intent SKILL baris 6 + `kb-submode.md` §KB auto-detection, `project-config.md`, README §Per-project config, komentar `paths.md` + scaffold `migrate-paths.sh` (`probe_paths.knowledge_base_candidates` tetap TANPA reader — komentarnya sekarang mengarah ke key yang hidup). generate-intent 2.22.1→2.23.0, orchestrate-flow 2.28.2→2.28.3.
+
+### Sengaja tidak berubah
+- Validator `kb_*` di `run-analyze.sh` tetap project-local (`${CWD}/.mega-sdd/knowledge-base/`): KB bersama divalidasi di repo asalnya, project konsumen tidak mengulang analyze KB orang lain.
+
 ## [7.29.1] - 2026-09-06 — Leftover sweep: sisaan yang lolos dari rilis-rilis sebelumnya
 
 Sapuan sisaan atas HEAD 7.29.0 (8 finder independen → merge 91 item → 3 lensa refutasi per item → fix single-author; laporan + rekonsiliasi lensa di `research/2026-09-06-leftover-sweep.md`). Dua hasil lensa yang MENGUBAH keputusan: fallback legacy `03-open-questions.md` dipertahankan (lihat Fixed), dan flag no-op `--skip-pagerank` hanya di-reword (DEFERRED next major on record). **Nol perubahan perilaku gate.** Yang berubah: satu predikat preflight yang salah sejak lama, satu target defer yang meleset dari kontraknya, lima tipe halt yang dipancarkan tapi tak pernah terdaftar, satu negasi `.gitignore` yang diklaim ada, 22 catatan riset yang disitasi tapi belum dikomit, dan ±60 situs dok/komentar yang masih menceritakan mekanisme yang sudah dihapus.

@@ -449,6 +449,85 @@ printf '%s' "$DIGEST" | grep -qF 'foreign_sdd=' \
   && fail "f6: clean fixture digest grew a foreign_sdd token (byte-stability broken)" \
   || ok "f6: clean digest unchanged (no foreign_sdd token)"
 
+
+# ── 11. knowledge_base: config key (7.30.0, spec 2026-09-07-shared-kb-config-path-design.md) ──
+# A KB shared ACROSS projects (monorepo: FE app + BE app + one KB submodule two levels up)
+# is pointed at by `knowledge_base: <dir>` in .mega-sdd/config.yaml. Config wins over the
+# four in-project generations, and a configured-but-missing path NEVER falls through to a
+# stale local copy — it reports absent + configured_missing + a note.
+note ""
+note "== 11. knowledge_base: config key (shared KB outside the project) =="
+kb_diag() { printf '%s' "$1" | python3 -c 'import json,sys
+d=json.load(sys.stdin); print(d["probes"]["knowledge_base"], d["derived"]["position"], d["derived"]["proposed_next"], d["derived"]["notes"])' 2>/dev/null; }
+kb_fixture() { # $1=dir  $2=config-line-or-empty  $3=local-kb(yes/no)
+  mkdir -p "$1/.mega-sdd"
+  [ -n "$2" ] && printf 'spine: express\n%s\n' "$2" > "$1/.mega-sdd/config.yaml" || printf 'spine: express\n' > "$1/.mega-sdd/config.yaml"
+  if [ "$3" = "yes" ]; then
+    mkdir -p "$1/.mega-sdd/knowledge-base"
+    printf '# Knowledge Base — STALE local copy\n' > "$1/.mega-sdd/knowledge-base/README.md"
+  fi
+  gitinit "$1"
+}
+mkdir -p "$WORK/shared-kb/kb/modules"
+printf '# Knowledge Base — shared v2\n' > "$WORK/shared-kb/kb/README.md"
+printf '{"schema":1}\n' > "$WORK/shared-kb/kb/census.json"
+
+kb_fixture "$WORK/mono/f11a-kb-config-external" 'knowledge_base: ../../shared-kb/kb/' no
+J=$(bash "$DS" --cwd="$WORK/mono/f11a-kb-config-external" --json-only </dev/null 2>/dev/null)
+printf '%s' "$J" | python3 -c "
+import json,sys
+d=json.load(sys.stdin); k=d['probes']['knowledge_base']
+assert k['present'] is True, k
+assert k['source']=='config', k
+assert k['path']=='../../shared-kb/kb/README.md', k
+assert d['derived']['position']=='kb_no_vault', d['derived']['position']
+assert d['derived']['proposed_next'][0]=='generate-intent --kb=../../shared-kb/kb', d['derived']['proposed_next']
+" 2>/dev/null && ok "f11a: external KB via config → present/source=config, chain --kb=../../shared-kb/kb" \
+  || fail "f11a: configured external KB not detected/routed: $(kb_diag "$J")"
+
+kb_fixture "$WORK/mono/f11b-kb-config-missing" 'knowledge_base: ../../shared-kb/does-not-exist/' yes
+J=$(bash "$DS" --cwd="$WORK/mono/f11b-kb-config-missing" --json-only </dev/null 2>/dev/null)
+printf '%s' "$J" | python3 -c "
+import json,sys
+d=json.load(sys.stdin); k=d['probes']['knowledge_base']
+assert k['present'] is False, k
+assert k.get('configured_missing') is True, k
+assert k.get('configured')=='../../shared-kb/does-not-exist/', k
+assert d['derived']['position']!='kb_no_vault', d['derived']['position']
+assert any('knowledge_base' in n and 'does-not-exist' in n for n in d['derived']['notes']), d['derived']['notes']
+" 2>/dev/null && ok "f11b: configured-but-missing KB → absent + configured_missing + note (no fall-through to the stale local copy)" \
+  || fail "f11b: missing configured KB fell through or is silent: $(kb_diag "$J")"
+
+kb_fixture "$WORK/mono/f11c-kb-config-wins" 'knowledge_base: "../../shared-kb/kb"  # shared' yes
+J=$(bash "$DS" --cwd="$WORK/mono/f11c-kb-config-wins" --json-only </dev/null 2>/dev/null)
+printf '%s' "$J" | python3 -c "
+import json,sys
+k=json.load(sys.stdin)['probes']['knowledge_base']
+assert k['present'] is True and k['source']=='config', k
+assert k['path']=='../../shared-kb/kb/README.md', k
+" 2>/dev/null && ok "f11c: config beats the local .mega-sdd/knowledge-base/ (quoted value + trailing comment parsed)" \
+  || fail "f11c: local KB shadowed the configured one: $(kb_diag "$J")"
+
+kb_fixture "$WORK/mono/f11d-kb-default" '' yes
+J=$(bash "$DS" --cwd="$WORK/mono/f11d-kb-default" --json-only </dev/null 2>/dev/null)
+printf '%s' "$J" | python3 -c "
+import json,sys
+k=json.load(sys.stdin)['probes']['knowledge_base']
+assert k['present'] is True and k['source']=='default', k
+assert k['path']=='.mega-sdd/knowledge-base/README.md', k
+" 2>/dev/null && ok "f11d: no config → the 4-generation default still wins (regression pin)" \
+  || fail "f11d: default KB detection regressed: $(kb_diag "$J")"
+
+kb_fixture "$WORK/mono/f11e-kb-config-absolute" "knowledge_base: $WORK/shared-kb/kb" no
+J=$(bash "$DS" --cwd="$WORK/mono/f11e-kb-config-absolute" --json-only </dev/null 2>/dev/null)
+printf '%s' "$J" | python3 -c "
+import json,sys
+k=json.load(sys.stdin)['probes']['knowledge_base']
+assert k['present'] is True and k['source']=='config', k
+assert k['path'].endswith('/shared-kb/kb/README.md'), k
+" 2>/dev/null && ok "f11e: absolute knowledge_base path accepted" \
+  || fail "f11e: absolute path not accepted: $(kb_diag "$J")"
+
 note ""
 if [ "$FAILED" -eq 0 ]; then note "ALL P1 state-engine assertions PASS"; else note "P1 state-engine FAILURES"; fi
 exit $FAILED

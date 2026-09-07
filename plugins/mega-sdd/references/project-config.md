@@ -16,6 +16,14 @@ layout: new                # new = canonical .mega-sdd/ layout (what /mega-sdd:m
                            #   selection is dual-layout probing in `_lib/vault_layouts.py`)
 output_root: .mega-sdd/    # read by `extract-intelligence` only (extraction output root — census + module PRDs land at `<root>/knowledge-base/`); hooks and scripts
                            #   hard-code `.mega-sdd/`
+knowledge_base: ""         # ABSENT = probe the in-project KB paths (.mega-sdd/knowledge-base/ → docs/knowledge-base/ →
+                           #   docs/mega-sdd/knowledge-base/ → old-reference/knowledge-base/). Set to a KB DIRECTORY
+                           #   (the one holding README.md) when the KB lives outside the tree — a monorepo where FE and BE
+                           #   apps share one KB submodule: `../../knowledge/<repo>/.mega-sdd/knowledge-base/`. Relative to
+                           #   the project root, absolute allowed, `~` expanded. Read by derive-state (probes.knowledge_base,
+                           #   source: config) → routing + generate-intent auto-detect (`--kb=<this dir>`). A configured path
+                           #   whose README.md is missing counts as ABSENT (+ a note) — it never falls through to a stale
+                           #   local copy. analyze's kb_* validators stay project-local by design (7.30.0).
 spine: express      # P2 — express (default) | classic; classic restores scan-first chains + the Stop-hook analyze aggregate
 # profile:          # P3 — ABSENT is the default: diagnostics lean-by-default on the express spine (Stop-hook analyze aggregate OFF). Set `full` to re-enable the aggregate; `lean` additionally cuts the advisory chain diagnostics (opt-in)
 review_panel: auto         # execute-bolts review-panel tier: auto (risk-based) | minimal | standard | full

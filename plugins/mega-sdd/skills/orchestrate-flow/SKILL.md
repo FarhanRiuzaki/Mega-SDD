@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.28.2
+version: 2.28.3
 description: Multi-skill lifecycle orchestrator — inspects CWD state, proposes a chain of mega-sdd sub-skills, confirms once, executes in --auto mode with halt-pauses; --deep chains to pipeline-end; --resume continues a paused chain; --sync runs the reconcile lane. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -30,7 +30,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
    units: N
    bolts: N
    codebase_map: present | absent
-   knowledge_base: present | absent (path: ...)  # priority: .mega-sdd/knowledge-base → docs/knowledge-base → docs/mega-sdd/knowledge-base → old-reference/knowledge-base
+   knowledge_base: present | absent (path: ..., source: config|default)  # priority: `knowledge_base:` in config.yaml (shared KB outside the tree; configured-but-missing = absent + note) → .mega-sdd/knowledge-base → docs/knowledge-base → docs/mega-sdd/knowledge-base → old-reference/knowledge-base
    git_repo: yes | no            # probes.git (rows here are the DIGEST's labels, not state.json key names)
    pending_p0_p1_count: N    # probes.oq — status: open (or absent) P0/P1 OQs — these gate
    deferred_p0_p1_count: N   # probes.oq — status: deferred P0/P1 OQs — informational, do not gate

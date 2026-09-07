@@ -194,7 +194,7 @@ Same protocol for codebase-map (`<project>/.mega-sdd/codebase/codebase-map.md` �
 `<project-root>/.mega-sdd/config.yaml` (full key reference: `plugins/mega-sdd/references/project-config.md`):
 
 ```yaml
-# scaffold defaults written by migrate-paths.sh; `layout:`, `defaults:`, `probe_paths:`, `mega_sdd_schema:` have NO reader today — live keys are documented in references/project-config.md
+# scaffold defaults written by migrate-paths.sh; `layout:`, `defaults:`, `probe_paths:`, `mega_sdd_schema:` have NO reader today — live keys are documented in references/project-config.md. A KB outside the tree is pointed at by the LIVE top-level key `knowledge_base: <dir>` (7.30.0), not by `probe_paths.knowledge_base_candidates`.
 # Project-level mega-sdd config
 mega_sdd_schema: 1
 

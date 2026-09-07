@@ -142,9 +142,22 @@ questions. Primary targets:
 
 ## KB auto-detection
 
-Priority order, first hit wins: `.mega-sdd/knowledge-base/README.md`
-(canonical default) → `docs/knowledge-base/README.md` (legacy) →
-`docs/mega-sdd/knowledge-base/README.md` →
-`old-reference/knowledge-base/README.md`. If detected AND no `--from-prompt`
-/ positional PRD argument → set `--kb=<detected-path>` implicitly. Confirm
-with the user before proceeding.
+Priority order, first hit wins — the same probe `derive-state.sh` runs
+(`state_probes.probe_knowledge_base`, `probes.knowledge_base` in state.json):
+
+1. `knowledge_base: <dir>` in `.mega-sdd/config.yaml` — a KB that lives
+   OUTSIDE the project tree (monorepo: one KB submodule shared by the FE and
+   BE apps, e.g. `../../knowledge/<repo>/.mega-sdd/knowledge-base/`).
+   Relative to the project root, absolute allowed, `~` expanded. Configured
+   but `README.md` missing → treated as ABSENT (never falls through to an
+   in-project copy — a stale local KB silently winning is the bug the key
+   prevents); state.json carries `configured_missing` + a note.
+2. `.mega-sdd/knowledge-base/README.md` (canonical default) →
+   `docs/knowledge-base/README.md` (legacy) →
+   `docs/mega-sdd/knowledge-base/README.md` →
+   `old-reference/knowledge-base/README.md`.
+
+If detected AND no `--from-prompt` / positional PRD argument → set
+`--kb=<detected-dir>` implicitly (for a configured KB that is the configured
+path as written, e.g. `--kb=../../knowledge/<repo>/.mega-sdd/knowledge-base`).
+Confirm with the user before proceeding. An explicit `--kb=` always wins.

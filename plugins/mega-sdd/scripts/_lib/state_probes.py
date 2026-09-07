@@ -630,12 +630,57 @@ def probe_codebase_map(cwd, head=None):
     return out
 
 
+KB_CONFIG_KEY_RE = re.compile(
+    r"^knowledge_base:\s*(?:\"([^\"]*)\"|'([^']*)'|([^#]*?))\s*(?:#.*)?$")
+
+
+def _configured_kb_dir(cwd):
+    """`knowledge_base:` (top-level, string) from .mega-sdd/config.yaml — the
+    KB DIRECTORY a project reads when its KB lives outside the tree (monorepo:
+    one KB submodule shared by the FE and BE apps). Same contract as
+    probe_spine: one-line regex, top-level only, first match wins,
+    absent/unreadable/empty → None (default generations apply)."""
+    try:
+        with open(os.path.join(cwd, ".mega-sdd", "config.yaml"),
+                  encoding="utf-8", errors="replace") as f:
+            for ln in f:
+                m = KB_CONFIG_KEY_RE.match(ln)
+                if m:
+                    v = (m.group(1) or m.group(2) or m.group(3) or "").strip()
+                    return v or None
+    except OSError:
+        pass
+    return None
+
+
 def probe_knowledge_base(cwd):
-    """Probe 8 — KB README at its 4 path generations; first hit wins."""
+    """Probe 8 — KB README. `knowledge_base:` in config.yaml wins (7.30.0,
+    spec 2026-09-07-shared-kb-config-path-design.md); otherwise the 4
+    in-project path generations, first hit wins.
+
+    A configured path whose README.md is missing NEVER falls through to an
+    in-project generation: a stale local copy silently winning over the KB
+    the team actually shares is the bug this key exists to prevent. It
+    reports absent + `configured_missing` and derive adds a note."""
+    out = {"present": False, "path": None, "source": None}
+    cfg = _configured_kb_dir(cwd)
+    if cfg:
+        out["configured"] = cfg
+        readme_rel = os.path.join(cfg.rstrip("/\\"), "README.md")
+        expanded = os.path.expanduser(readme_rel)
+        abs_readme = expanded if os.path.isabs(expanded) \
+            else os.path.join(cwd, expanded)
+        if os.path.isfile(abs_readme):
+            out.update(present=True, source="config",
+                       path=os.path.normpath(expanded))
+        else:
+            out["configured_missing"] = True
+        return out
     for rel in KB_README_GENERATIONS:
         if os.path.isfile(os.path.join(cwd, rel)):
-            return {"present": True, "path": rel}
-    return {"present": False, "path": None}
+            out.update(present=True, source="default", path=rel)
+            return out
+    return out
 
 
 def probe_foreign_sdd(cwd, cap=20):
@@ -1027,6 +1072,14 @@ def derive(probes):
     sindex = probes.get("symbol_index") or {
         "present": False, "head_commit": None, "matches_head": "n/a"}
     notes = []
+    kb = probes.get("knowledge_base") or {}
+    if kb.get("configured_missing"):
+        notes.append(
+            "knowledge_base configured at %s but README.md not found -> "
+            "treated as absent (never falls through to an in-project KB); "
+            "fix the path in .mega-sdd/config.yaml or init the submodule"
+            % kb.get("configured")
+        )
 
     if not git_repo and not manifests and not has_code:
         mode_inferred = "greenfield"
