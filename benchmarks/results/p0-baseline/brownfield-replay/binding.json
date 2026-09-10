@@ -1,0 +1,145 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.34.0",
+ "head": "3cec6030",
+ "unit": "U-001",
+ "generated_at": "2026-09-10T10:44:03+00:00",
+ "summary": {
+  "CONFIRMED": 2,
+  "CONFLICT": 9,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U001-A01",
+   "kind": "fs_must_exist",
+   "expect": "apps/api/prisma/schema.prisma",
+   "source": ".mega-sdd/vaults/simkredit/units/U-001.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "apps/api/prisma/schema.prisma",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U001-01",
+   "kind": "text",
+   "expect": "prisma User.created_at column",
+   "source": ".mega-sdd/vaults/simkredit/units/U-001.md:## Claims",
+   "verdict": "CONFLICT",
+   "state": "PARTIAL_FIELDS_MISSING",
+   "anchor": "apps/api/prisma/schema.prisma:40",
+   "confidence": "high",
+   "evidence": "User model :40-60 read in full: nip, name, passwordHash, role, lockedUntil… — no created_at; schema header :25-26 states created_at exists only on product_audit_logs",
+   "text": "User has created_at"
+  },
+  {
+   "id": "C-U001-02",
+   "kind": "text",
+   "expect": "prisma Product.created_at column",
+   "source": ".mega-sdd/vaults/simkredit/units/U-001.md:## Claims",
+   "verdict": "CONFLICT",
+   "state": "PARTIAL_FIELDS_MISSING",
+   "anchor": "apps/api/prisma/schema.prisma:74",
+   "confidence": "high",
+   "evidence": "LoanProduct :74-107 read in full — no created_at (only ProductAuditLog :190 carries createdAt)",
+   "text": "Product has created_at"
+  },
+  {
+   "id": "C-U001-03",
+   "kind": "text",
+   "expect": "prisma Simulation.created_at column",
+   "source": ".mega-sdd/vaults/simkredit/units/U-001.md:## Claims",
+   "verdict": "CONFLICT",
+   "state": "PARTIAL_FIELDS_MISSING",
+   "anchor": "apps/api/prisma/schema.prisma:108",
+   "confidence": "high",
+   "evidence": "Simulation :108-151 read in full — deletedAt only, no created_at",
+   "text": "Simulation has created_at"
+  },
+  {
+   "id": "C-U001-04",
+   "kind": "text",
+   "expect": "prisma Installment.created_at column",
+   "source": ".mega-sdd/vaults/simkredit/units/U-001.md:## Claims",
+   "verdict": "CONFLICT",
+   "state": "PARTIAL_FIELDS_MISSING",
+   "anchor": "apps/api/prisma/schema.prisma:152",
+   "confidence": "high",
+   "evidence": "no `Installment` model anywhere (bounded grep: only column names *Installment); the schedule entity is SimulationSchedule :152-174 and it has no created_at",
+   "text": "Installment has created_at"
+  },
+  {
+   "id": "C-U001-06",
+   "kind": "text",
+   "expect": "prisma money columns Decimal(18,2)",
+   "source": ".mega-sdd/vaults/simkredit/units/U-001.md:## Claims",
+   "verdict": "CONFLICT",
+   "state": "IMPLEMENTED",
+   "anchor": "apps/api/prisma/schema.prisma:95",
+   "confidence": "high",
+   "evidence": "money columns plafonMin/plafonMax :95-96, plafon :119, monthlyInstallment :126, totalInterest :127, principalPart/interestPart/remainingBalance :161-167 are BigInt (whole rupiah, header :9 + OQ-DM-4 note :93); the only Decimal is annualRate @db.Decimal(5,2) :87 — not Decimal(18,2)",
+   "text": "money columns are Decimal(18,2)"
+  },
+  {
+   "id": "C-U001-07",
+   "kind": "text",
+   "expect": "prisma enum SimulationStatus 3 values",
+   "source": ".mega-sdd/vaults/simkredit/units/U-001.md:## Claims",
+   "verdict": "CONFLICT",
+   "state": "PARTIAL_FIELDS_MISSING",
+   "anchor": "apps/api/prisma/schema.prisma:108",
+   "confidence": "high",
+   "evidence": "schema.prisma read in full: no `enum` block at all; Simulation :108-151 has no status column (dtiFlag String? :129, deletedAt :131 only); bounded grep 'status|Status' in the schema silent",
+   "text": "SimulationStatus has 3 values"
+  },
+  {
+   "id": "C-U001-20",
+   "kind": "text",
+   "expect": "auth.ts login payload uses nip",
+   "source": ".mega-sdd/vaults/simkredit/units/U-001.md:## Claims",
+   "verdict": "CONFLICT",
+   "state": "IMPLEMENTED",
+   "anchor": "apps/web/src/libs/auth.ts:66",
+   "confidence": "high",
+   "evidence": "CredentialsProvider :54 declares username; authorize :58-66 POSTs {username, password} to /auth/login — no nip; collision leg: `nip` exists only as prisma User.nip @unique (schema.prisma:43), i.e. the web login payload disagrees with the DB identity",
+   "text": "login sends nip, not username"
+  },
+  {
+   "id": "C-U001-21",
+   "kind": "fs_must_not_exist",
+   "expect": "apps/api/src/auth/refresh.ts",
+   "source": ".mega-sdd/vaults/simkredit/units/U-001.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent",
+   "text": "no refresh-rotation endpoint in the contract"
+  },
+  {
+   "id": "C-U001-22",
+   "kind": "fs_must_not_exist",
+   "expect": "apps/web/src/app/(blank-layout-pages)/register/page.tsx",
+   "source": ".mega-sdd/vaults/simkredit/units/U-001.md:## Claims",
+   "verdict": "CONFLICT",
+   "state": "ALREADY_EXISTS",
+   "anchor": "apps/web/src/app/(blank-layout-pages)/register/page.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "register page is deleted"
+  },
+  {
+   "id": "C-U001-23",
+   "kind": "text",
+   "expect": "auth.ts JWT single role claim",
+   "source": ".mega-sdd/vaults/simkredit/units/U-001.md:## Claims",
+   "verdict": "CONFLICT",
+   "state": "IMPLEMENTED",
+   "anchor": "apps/web/src/libs/auth.ts:105",
+   "confidence": "high",
+   "evidence": "authorize :79 destructures roles + permissions arrays; jwt callback :105-106 stores roles: user.roles, permissions: user.permissions; jwt-permission/index.ts:31-35 keeps roles as Set<string> — JWT carries an array, not a single role; collision leg: prisma User.role String :50 is single-valued (staff|admin), the web token is not",
+   "text": "JWT carries a single role"
+  }
+ ]
+}

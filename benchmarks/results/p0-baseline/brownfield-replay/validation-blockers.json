@@ -1,0 +1,103 @@
+{
+  "status": "FAIL",
+  "ts": "2026-09-10T10:44:03.510059Z",
+  "validator": "validate-handoff-binding-units.sh",
+  "slice": "binding-to-units / OQ-IDs + CONFLICT-IDs propagation + CONFLICT resolution",
+  "summary": {
+    "binding_docs_checked": 0,
+    "units_checked": 1,
+    "oq_ids_in_binding": 0,
+    "oq_ids_in_vault": 0,
+    "conflict_ids_in_binding": 0,
+    "oq_ids_cited_by_some_unit": 0,
+    "conflict_ids_cited_by_some_unit": 0,
+    "conflicts_unresolved": 9,
+    "jit_units_checked": 1,
+    "bindings_stale_recertify": 0,
+    "drops": 9,
+    "extras": 0
+  },
+  "drops": [
+    {
+      "type": "conflict_unresolved",
+      "conflict_id": "C-U001-01",
+      "unit_id": "U-001",
+      "source_binding": ".mega-sdd/vaults/simkredit/bolts/U-001/binding.json",
+      "heading": "User has created_at \u2014 expect: prisma User.created_at column",
+      "expected": "resolve via resolve-oq --binding (write-unit-binding.sh --resolve C-U001-01=KEEP_VAULT|KEEP_CODE|SPLIT --by=user) or fix the code/unit and re-run execute-bolts pre-flight 3.9"
+    },
+    {
+      "type": "conflict_unresolved",
+      "conflict_id": "C-U001-02",
+      "unit_id": "U-001",
+      "source_binding": ".mega-sdd/vaults/simkredit/bolts/U-001/binding.json",
+      "heading": "Product has created_at \u2014 expect: prisma Product.created_at column",
+      "expected": "resolve via resolve-oq --binding (write-unit-binding.sh --resolve C-U001-02=KEEP_VAULT|KEEP_CODE|SPLIT --by=user) or fix the code/unit and re-run execute-bolts pre-flight 3.9"
+    },
+    {
+      "type": "conflict_unresolved",
+      "conflict_id": "C-U001-03",
+      "unit_id": "U-001",
+      "source_binding": ".mega-sdd/vaults/simkredit/bolts/U-001/binding.json",
+      "heading": "Simulation has created_at \u2014 expect: prisma Simulation.created_at column",
+      "expected": "resolve via resolve-oq --binding (write-unit-binding.sh --resolve C-U001-03=KEEP_VAULT|KEEP_CODE|SPLIT --by=user) or fix the code/unit and re-run execute-bolts pre-flight 3.9"
+    },
+    {
+      "type": "conflict_unresolved",
+      "conflict_id": "C-U001-04",
+      "unit_id": "U-001",
+      "source_binding": ".mega-sdd/vaults/simkredit/bolts/U-001/binding.json",
+      "heading": "Installment has created_at \u2014 expect: prisma Installment.created_at column",
+      "expected": "resolve via resolve-oq --binding (write-unit-binding.sh --resolve C-U001-04=KEEP_VAULT|KEEP_CODE|SPLIT --by=user) or fix the code/unit and re-run execute-bolts pre-flight 3.9"
+    },
+    {
+      "type": "conflict_unresolved",
+      "conflict_id": "C-U001-06",
+      "unit_id": "U-001",
+      "source_binding": ".mega-sdd/vaults/simkredit/bolts/U-001/binding.json",
+      "heading": "money columns are Decimal(18,2) \u2014 expect: prisma money columns Decimal(18,2)",
+      "expected": "resolve via resolve-oq --binding (write-unit-binding.sh --resolve C-U001-06=KEEP_VAULT|KEEP_CODE|SPLIT --by=user) or fix the code/unit and re-run execute-bolts pre-flight 3.9"
+    },
+    {
+      "type": "conflict_unresolved",
+      "conflict_id": "C-U001-07",
+      "unit_id": "U-001",
+      "source_binding": ".mega-sdd/vaults/simkredit/bolts/U-001/binding.json",
+      "heading": "SimulationStatus has 3 values \u2014 expect: prisma enum SimulationStatus 3 values",
+      "expected": "resolve via resolve-oq --binding (write-unit-binding.sh --resolve C-U001-07=KEEP_VAULT|KEEP_CODE|SPLIT --by=user) or fix the code/unit and re-run execute-bolts pre-flight 3.9"
+    },
+    {
+      "type": "conflict_unresolved",
+      "conflict_id": "C-U001-20",
+      "unit_id": "U-001",
+      "source_binding": ".mega-sdd/vaults/simkredit/bolts/U-001/binding.json",
+      "heading": "login sends nip, not username \u2014 expect: auth.ts login payload uses nip",
+      "expected": "resolve via resolve-oq --binding (write-unit-binding.sh --resolve C-U001-20=KEEP_VAULT|KEEP_CODE|SPLIT --by=user) or fix the code/unit and re-run execute-bolts pre-flight 3.9"
+    },
+    {
+      "type": "conflict_unresolved",
+      "conflict_id": "C-U001-22",
+      "unit_id": "U-001",
+      "source_binding": ".mega-sdd/vaults/simkredit/bolts/U-001/binding.json",
+      "heading": "register page is deleted \u2014 expect: apps/web/src/app/(blank-layout-pages)/register/page.tsx",
+      "expected": "resolve via resolve-oq --binding (write-unit-binding.sh --resolve C-U001-22=KEEP_VAULT|KEEP_CODE|SPLIT --by=user) or fix the code/unit and re-run execute-bolts pre-flight 3.9"
+    },
+    {
+      "type": "conflict_unresolved",
+      "conflict_id": "C-U001-23",
+      "unit_id": "U-001",
+      "source_binding": ".mega-sdd/vaults/simkredit/bolts/U-001/binding.json",
+      "heading": "JWT carries a single role \u2014 expect: auth.ts JWT single role claim",
+      "expected": "resolve via resolve-oq --binding (write-unit-binding.sh --resolve C-U001-23=KEEP_VAULT|KEEP_CODE|SPLIT --by=user) or fix the code/unit and re-run execute-bolts pre-flight 3.9"
+    }
+  ],
+  "extras": [],
+  "jit_units": [
+    {
+      "unit_id": "U-001",
+      "listed": true,
+      "conflicts_open": 9
+    }
+  ],
+  "next_action": "conflict/binding drops: resolve via resolve-oq --binding <binding.md> (human-in-the-loop) or re-run bind-codebase until conflicts=0; then re-run validator (the execute-bolts gate re-derives it too)."
+}
