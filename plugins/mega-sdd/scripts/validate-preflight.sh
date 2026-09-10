@@ -529,7 +529,42 @@ COLD_HALT_CHECKS = [
 ]
 
 
-def run_checks(skill, entries):
+# ── chain-aware inputs (v8 P0 live finding, 2026-09-10) ──────────────────────
+# A predictive run over a WHOLE chain (--chain=generate-intent,bind-codebase,
+# generate-units,execute-bolts) used to report FATAL for inputs that an EARLIER
+# hop of the same chain produces (vault.json for bind, units/ for bolts): a
+# false fatal on every greenfield chain, and in the xs baseline arm the model
+# had to work around it by re-running preflight per hop. An input that is
+# missing NOW but produced by a hop that precedes this skill in --chain is
+# satisfied by the chain itself → "ok" with the reason; the PreToolUse gate
+# re-checks it at that hop anyway. Inputs no earlier hop produces stay fatal.
+PRODUCES = {"generate-intent": {"vault"}, "scan-codebase": {"codebase_map"},
+            "bind-codebase": {"bound"}, "generate-units": {"units"}}
+
+
+def _missing_inputs(check_id):
+    miss = set()
+    if check_id == "binding_input_complete":
+        if not os.path.isfile(os.path.join(VAULT, "vault.json")):
+            miss.add("vault")
+        if spine() == "classic":
+            has_map = (state_probes.has_codebase_map(cwd) if state_probes is not None
+                       else os.path.isfile(os.path.join(cwd, ".mega-sdd", "codebase", "codebase-map.md")))
+            if not has_map:
+                miss.add("codebase_map")
+    elif check_id == "units_directory_present":
+        if not unit_files():
+            miss.add("units")
+    elif check_id == None:
+        if not os.path.isfile(os.path.join(VAULT, "vault.json")):
+            miss.add("vault")
+    return miss
+
+
+def run_checks(skill, entries, earlier=()):
+    produced = set()
+    for s_ in earlier:
+        produced |= PRODUCES.get(s_, set())
     for check_id, fatal, fn, hint in entries:
         try:
             passed = fn(None)
@@ -540,14 +575,20 @@ def run_checks(skill, entries):
         if passed:
             emit(skill, check_id, "ok", "")
         else:
-            emit(skill, check_id, "fatal" if fatal else "warn", hint)
+            miss = _missing_inputs(check_id)
+            if fatal and miss and miss <= produced:
+                emit(skill, check_id, "ok",
+                     "chain-aware: %s produced by an earlier hop of this chain (%s); re-checked at that hop by the gate"
+                     % ("/".join(sorted(miss)), ", ".join(s_ for s_ in earlier if PRODUCES.get(s_, set()) & miss)))
+            else:
+                emit(skill, check_id, "fatal" if fatal else "warn", hint)
 
 
-for skill in chain:
+for idx, skill in enumerate(chain):
     entries = CHECKS.get(skill)
     if entries is None:
         continue  # unknown skill → skip silently (forward-compat)
-    run_checks(skill, entries)
+    run_checks(skill, entries, earlier=chain[:idx])
     if skill == "execute-bolts":
         run_checks(skill, COLD_HALT_CHECKS)
         if lane() == "lite":
