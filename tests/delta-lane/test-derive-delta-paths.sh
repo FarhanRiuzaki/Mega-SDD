@@ -224,6 +224,63 @@ bash "$SCRIPT" --vault="$V" --cwd="$T" >/dev/null 2>&1; RC=$?
              || fail "k: expected exit 2 on zero affected, got $RC"
 mk_binding
 
+# ── (l) LAYOUT-2 (v7 Fase 3 default): 4-file vault literals + `vault.md:N` claim sources ──
+# P0 2026-09-10: both doc regexes were legacy-only, so a layout-2 vault ALWAYS
+# died at step 1 (e3 shape) and the scoped hop never ran. One doc-set regex now.
+cat > "$V/binding.json" <<'EOF2'
+{"claims": [
+ {"id": "C-DM-01", "verdict": "CONFIRMED", "vault_source": "model.md:12",
+  "anchor": "app/Models/Nasabah.php:12"},
+ {"id": "C-FL-01", "verdict": "CONFIRMED", "vault_source": "flows.md:30",
+  "anchor": "app/Http/Controllers/NasabahController.php:45"},
+ {"id": "C-DC-01", "verdict": "CONFIRMED", "vault_source": "vault.md:80",
+  "anchor": "app/Services/Untouched.php:5"},
+ {"id": "C-CN-01", "verdict": "OQ", "vault_source": "constraints.md:9", "anchor": "—"}
+]}
+EOF2
+cat > "$V/VAULT-DIFF.md" <<'EOF2'
+# Vault Diff Report
+
+## Summary
+
+- **Added**: 1 / 0 / 0 / 0
+
+## Added entities / flows / decisions
+
+### Entity (added): `npwp`
+
+**Action on apply**: append to `model.md` Data model section.
+
+## Changed entities / flows / decisions
+
+**Action on apply**: update the node in `flows.md`; note in the sub-vault.md example is NOT a vault doc.
+
+## Unchanged sections (no action needed)
+
+- `vault.md` unchanged
+EOF2
+OUT="$(bash "$SCRIPT" --vault="$V" --cwd="$T" 2>&1)"; RC=$?
+if [ $RC -eq 0 ] && grep -qx 'app/Models/Nasabah.php' "$PF" \
+   && grep -qx 'app/Http/Controllers/NasabahController.php' "$PF" \
+   && ! grep -qx 'app/Services/Untouched.php' "$PF" \
+   && echo "$OUT" | grep -q '"touched_docs": \["flows.md", "model.md"\]'; then
+  pass "l: layout-2 literals (model.md, flows.md) scope the claims; vault.md (Unchanged) excluded; sub-vault.md not a doc"
+else fail "l: layout-2 vault broke the scoped hop (rc=$RC, out=$OUT, file: $(cat "$PF" 2>/dev/null | tr '\n' ' '))"; fi
+# mutation: moving the model.md claim to the Unchanged doc drops its path
+python3 - "$V/binding.json" <<'EOF2'
+import json, sys
+d = json.load(open(sys.argv[1]))
+for c in d["claims"]:
+    if c["id"] == "C-DM-01":
+        c["vault_source"] = "vault.md:81"
+json.dump(d, open(sys.argv[1], "w"))
+EOF2
+bash "$SCRIPT" --vault="$V" --cwd="$T" >/dev/null 2>&1; RC=$?
+if [ $RC -eq 0 ] && ! grep -qx 'app/Models/Nasabah.php' "$PF" && grep -qx 'app/Http/Controllers/NasabahController.php' "$PF"; then
+  pass "l2: layout-2 mutation (claim moved to vault.md) changes the output — no hardcoded pass"
+else fail "l2: layout-2 mutation did not change the derived set (rc=$RC)"; fi
+mk_binding; mk_diff
+
 echo
 [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"
 exit $rc

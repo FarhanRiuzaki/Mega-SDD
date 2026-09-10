@@ -7,8 +7,12 @@
 # Inverts the sync lane's derivation direction: no code moved — the VAULT was
 # patched (diff-vault --from-prompt apply), so scope is derived from the
 # PATCHED CLAIMS' anchors:
-#   1. touched vault docs   <- <vault>/VAULT-DIFF.md rows (every `0N-*.md`
-#                              doc literal in the diff-body sections)
+#   1. touched vault docs   <- <vault>/VAULT-DIFF.md rows (every vault-doc
+#                              literal in the diff-body sections — layout-2
+#                              `vault.md`/`model.md`/`flows.md`/`constraints.md`
+#                              OR legacy `0N-*.md`; ONE doc-set regex,
+#                              VAULT_DOC_RE, shared by step 1 and step 2 and
+#                              mirrored on make-bound.sh SRC_RE)
 #   2. affected claims      <- binding.json claims[] whose vault_source doc
 #                              is in the touched set
 #   3. anchor paths         <- those claims' anchor cells, parsed EXACTLY the
@@ -106,6 +110,17 @@ def norm(p):
     return p.rstrip("/") or None
 
 
+# The ONE vault-doc grammar this script trusts (P0 fix, 2026-09-10): the
+# layout-2 names + the legacy `0N-*.md` shape — the same doc set make-bound.sh
+# SRC_RE accepts, so a binding.json claim source and a VAULT-DIFF literal are
+# judged by one rule. The lookbehind keeps `sub-vault.md`-style substrings from
+# reading as a vault doc (over-inclusion is safe here, but not needed).
+# Before this fix the two regexes below were legacy-only, so on every layout-2
+# vault (v7 Fase 3 default) the script died at "no vault-doc literal" and the
+# delta lane always fell to a FULL re-bind — fail-closed, never silent, but the
+# whole T09 scoped hop was dead (caught by the 2026-09-10 consumer census).
+VAULT_DOC_RE = r"(?<![\w/.-])((?:0\d-[a-z0-9-]+|vault|model|flows|constraints)\.md)\b"
+
 # 1. Touched vault docs <- VAULT-DIFF.md diff sections. FENCE-STRIPPED,
 # SECTION-BASED (round-hardened): fenced blocks are removed FIRST so a quoted
 # heading/template can neither truncate the body nor fake a section; then the
@@ -125,9 +140,9 @@ for sec in re.split(r"(?m)^## ", defenced)[1:]:
     heading = sec.split("\n", 1)[0].strip().lower()
     if heading.startswith("summary") or heading.startswith("unchanged"):
         continue
-    touched_docs |= set(re.findall(r"\b0\d-[a-z0-9-]+\.md\b", sec))
+    touched_docs |= set(re.findall(VAULT_DOC_RE, sec))
 if not touched_docs:
-    die("no vault-doc literal found in %s diff sections — cannot prove scope" % vd_path)
+    die("no vault-doc literal (vault.md/model.md/flows.md/constraints.md or legacy 0N-*.md) found in %s diff sections — cannot prove scope" % vd_path)
 
 # 2. Affected claims <- binding.json claims[].vault_source doc in touched set.
 bj_path = os.path.join(vault, "binding.json")
@@ -148,7 +163,7 @@ for c in bj["claims"]:
     vs = c.get("vault_source")
     if not vs or str(vs).strip() in ("null", "—", "n/a"):
         continue
-    m = re.match(r"\s*(0\d-[a-z0-9-]+\.md)", str(vs))
+    m = re.match(r"\s*" + VAULT_DOC_RE, str(vs))
     if not m:
         # Fail-closed on shape drift: a non-null vault_source that is not a
         # vault-doc reference means the binding's source space moved — a
