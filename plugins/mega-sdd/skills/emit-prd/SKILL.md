@@ -1,6 +1,6 @@
 ---
 name: emit-prd
-version: 1.1.3
+version: 1.1.4
 description: Generate a PRD from mega-sdd state — forward (vault to PRD prose) or REVERSE (KB, no vault) with [VERIFIED]/[INFERRED]/[OPEN] markers carried verbatim; journeys as Mermaid; reviewed/final maturity human-set. Triggers — "generate PRD", "emit PRD", "buat PRD", "PRD dari knowledge base", "reverse PRD", "PRD dari legacy", or paraphrases.
 ---
 

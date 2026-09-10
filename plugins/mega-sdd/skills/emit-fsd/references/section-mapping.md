@@ -39,7 +39,7 @@
 
 ## Source-of-truth priority
 
-1. **Vault files** (layout-2: `<vault>/vault.md`, `model.md`, `flows.md`, `constraints.md`, `vault.json`; legacy: `00-index.md` … `06-constraints.md`) — declarative intent
+1. **Vault files** (layout-2: `<vault>/vault.md`, `model.md`, `flows.md`, `constraints.md`, `vault.json`; legacy: `00-index.md` … `06-constraints.md`) — declarative intent. Of these the builder actually READS only `vault.md ## Overview` (§1/§2/§10), `flows.md` (§5 fallback), `constraints.md ## Non-functional requirements` (§6) and `vault.json` (header/§10); `model.md` is never a builder input (§7 entities come from the codebase map)
 2. **Binding** (`<vault>/binding.md`, `<vault>-bound/` OR `bound-vault/`) — code-validated state
 3. **Codebase map** (`<project>/.mega-sdd/codebase/codebase-map.md`) — actual codebase facts
 4. **Units** (`<vault>/units/U-NNN.md`) — decomposition
@@ -148,7 +148,8 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 **Source priority:**
 1. `binding.md` §Confirmed Claims (post-binding state)
 2. `codebase-map.md` §Entities + §Modules (raw codebase facts)
-3. `<vault>/04-design.md` (if vault has design doc — older vaults may not)
+
+(That is the whole list. `build-fsd-core.sh` reads NO vault doc for §7 — not `model.md` DBML, not a legacy `04-design.md`; a consumer census on 2026-09-10 found zero readers of either in the builder, and this ref documents what the script executes, never a wished-for source. Entities missing from the map render as `[Pending — …]`, never from the vault.)
 
 **Extraction:**
 - Entities: from codebase-map.md §Entities table — emit as nested list (entity name + 1-line description)
