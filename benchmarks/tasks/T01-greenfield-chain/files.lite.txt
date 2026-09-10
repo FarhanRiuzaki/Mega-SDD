@@ -1,8 +1,9 @@
-# T01 lite arm (v8 P1.f, 2026-09-10): the --lite lane on a GREENFIELD run adds NO commanded reads —
-# pre-flight 3.9 is script-run (derive-unit-claims / write-unit-binding / validate-handoff-binding-units)
-# and the ladder-E3 reference (bind-codebase/references/express-bind.md) loads ONLY when a text claim
-# exists, which a create-only wave never has. So the list = files.optimized.txt verbatim; the
-# measured delta is 0 by construction and is published as such (brownfield text claims would add express-bind.md).
+# T01 lite arm (v8 P1.f, 2026-09-10; amended 7.34.0 debt #6): the --lite lane on a GREENFIELD run
+# adds exactly ONE commanded read over files.optimized.txt — execute-bolts pre-flight 3.9 fires on
+# every wave under --lite and its procedure now lives in references/jit-bind-and-quarantine.md
+# (moved out of SKILL.md so the default v7 arm stops paying for it). The three JIT scripts are
+# script-run (no read); the ladder-E3 reference (bind-codebase/references/express-bind.md) loads ONLY
+# when a text claim exists, which a create-only wave never has. Published as MEASURED per release.
 plugins/mega-sdd/skills/using-mega-sdd/SKILL.md
 plugins/mega-sdd/skills/orchestrate-flow/SKILL.md
 plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md
@@ -32,5 +33,6 @@ plugins/mega-sdd/skills/generate-units/references/adversarial-test-prompt.md
 plugins/mega-sdd/skills/generate-units/references/auto-and-memory.md [SECTION:scope-propagation+_index]
 plugins/mega-sdd/skills/generate-units/references/decomposition-rails.md [SECTION:dependency-graph]
 plugins/mega-sdd/skills/execute-bolts/SKILL.md
+plugins/mega-sdd/skills/execute-bolts/references/jit-bind-and-quarantine.md
 plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md
 plugins/mega-sdd/skills/execute-bolts/references/batch-and-fanout.md [SECTION:--all]
