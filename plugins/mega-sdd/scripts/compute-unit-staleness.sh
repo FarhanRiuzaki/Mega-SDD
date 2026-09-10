@@ -63,8 +63,28 @@ def parse_target_hashes(report_path):
     return hashes or None
 
 units = []
+# W1 (v8 P1.e, spec App. F6c): a quarantine.json written by write-unit-quarantine.sh
+# outranks every other status — the unit was set aside by a DEFER-class halt and
+# its question waits in the final report. Quarantined units with no bolt-report
+# (halted before any commit) are listed too, so execute-bolts + the report see them.
+_quar = {}
+for qf in sorted(glob.glob(os.path.join(vault, "bolts", "U-*", "quarantine.json"))):
+    try:
+        q = json.load(open(qf, encoding="utf-8"))
+        _quar[os.path.basename(os.path.dirname(qf))] = q
+    except Exception:
+        _quar[os.path.basename(os.path.dirname(qf))] = {"halt_type": "unparseable_quarantine"}
+for uid, q in _quar.items():
+    if not os.path.isfile(os.path.join(vault, "bolts", uid, "bolt-report.md")):
+        units.append({"unit": uid, "status": "quarantined", "halt_type": q.get("halt_type"), "reason": q.get("reason"),
+                      "dependents_skipped": q.get("dependents_skipped", [])})
 for report in sorted(glob.glob(os.path.join(vault, "bolts", "U-*", "bolt-report.md"))):
     unit_id = os.path.basename(os.path.dirname(report))
+    if unit_id in _quar:
+        q = _quar[unit_id]
+        units.append({"unit": unit_id, "status": "quarantined", "halt_type": q.get("halt_type"), "reason": q.get("reason"),
+                      "dependents_skipped": q.get("dependents_skipped", [])})
+        continue
     hashes = parse_target_hashes(report)
     if hashes is None:
         units.append({"unit": unit_id, "status": "unknown", "reason": "no target_hashes in bolt-report (legacy)"})

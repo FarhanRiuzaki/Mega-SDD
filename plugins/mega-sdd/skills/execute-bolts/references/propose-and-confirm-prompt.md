@@ -1,5 +1,9 @@
 # Propose-and-Confirm Prompt Template
 
+## One-screen halt (W1 zero-idle, v8 P1.e — spec 2026-09-10 App. F6d)
+
+A BLOCKING halt (`binding_conflict`/`bind_conflict`, `hard_rule_violated`, OQ P1 business — the only three that may wait for a human mid-run) is rendered as ONE screen with exactly three parts, in this order, nothing else above the options: (1) **Apa yang berhenti** — one line: unit id, halt type, the offending claim/rule/OQ verbatim (≤ 2 lines of evidence with `file:line`); (2) **Satu pertanyaan** — the single decision the human must make, phrased so a non-engineer can answer (keterangan contract, `references/output-language.md §OQ authoring`); (3) **Opsi** — the AskUserQuestion options for that halt (CONFLICT: KEEP_VAULT / KEEP_CODE / SPLIT; hard rule: Apply / Alt / Reject / Override; OQ: the 4-slot shape) each with its one-line keterangan. Long-form context (the sections below) stays available as a pointer, never inlined above the options. Every DEFER-class halt does NOT get this screen — it is quarantined (`write-unit-quarantine.sh`) and answered once in the final report.
+
 Canonical prompt for AI fix proposer subagent dispatched when bolt halts with eligible halt type. User reviews proposed fix + approves/rejects via AskUserQuestion.
 
 **Eligible halt types** (per spec §6.3):
