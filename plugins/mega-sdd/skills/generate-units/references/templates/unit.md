@@ -2,6 +2,7 @@
 id: U-XXX
 title: <imperative title>
 vault_source: <e.g., vault.md#Architecture — legacy vaults: 02-architecture.md#auth>
+prd_source: <e.g., docs/PRD.md#halaman-kontak — PRD heading slug or :line this unit implements; list allowed; omit ONLY if the requirement has no PRD home (v8 P1)>
 task_type: create                  # create | extend | verify — from the binding Implementation State Map when present (unit-schema.md)
 grounding_confidence: HIGH         # HIGH | MEDIUM | LOW per unit-schema.md — required on newly generated units
 module: M-default                  # M-<kebab> per _meta/modules.yaml; M-default when no modules.yaml
@@ -29,6 +30,10 @@ binding_refs: []
 ## Context (read first)
 
 <Conversational directive prose, NOT bullets — 2-4 sentences citing the vault sections, the binding entries (C-XX / OQ-XX, or "none"), and why this scope exists: the surrounding system, the user-visible outcome, what changes nothing. (Shape per unit-schema.md §Required body sections.)>
+
+## Claims
+
+<brownfield only — one line per expectation about EXISTING code (unit-schema.md §Claims grammar): `- C-U-XXX-01 "<verbatim>" — expect: <path>[:<symbol>] | <path> — must-exist | <path> — must-not-exist`. Greenfield / create-only: delete this section.>
 
 ## Implementation steps
 

@@ -144,13 +144,21 @@ acceptance_test:                   # how to verify the bolt succeeded
     expects: ""                    # same substring contract — the render REQUIREMENT (route 200 +
                                    # real display field asserted) lives in the TEST's own assertions,
                                    # never as prose in expects
+prd_source: docs/PRD.md#halaman-kontak   # v8 P1 (spec 2026-09-10 App. F1) — the PRD heading (`<prd-file>#<heading-slug>`,
+                                   #   slug = lowercase, non-alphanumerics → `-`) or line (`<prd-file>:<line>`) this
+                                   #   unit implements; repo-relative; a YAML list is allowed. RESOLVED by
+                                   #   validate-unit-spec.sh when present (halt prd_source_unresolvable — a citation
+                                   #   to a heading that does not exist is a fabricated requirement); absent =
+                                   #   legacy unit, tolerated. Input of validate-plan-coverage.sh (P1.d).
+context_source: flows.md#F-U-001   # v8 P1 — alias of vault_source (same `<doc>.md#<anchor>` grammar); writers
+                                   #   emit ONE of the two (v7 chain: vault_source; v8 PLAN: context_source).
 binding_refs:                      # binding manifest IDs this unit honors
   - C-001
   - OQ-012
 ---
 ```
 
-**Legacy keys.** Pre-diet units may carry `grounding_evidence` / `superpowers_skills` / `estimated_complexity` / a nested `mutability` map — readers tolerate all of them; `generate-units` no longer writes them. The diet is writer-side only: no validator requires their absence.
+**Legacy keys.** Pre-diet units may carry `grounding_evidence` / `superpowers_skills` / `estimated_complexity` / a nested `mutability` map — readers tolerate all of them; `generate-units` no longer writes them. **v8 P1 writer diet (spec App. F1d):** the consumer census 2026-09-10 found ZERO readers for `mutability`, `estimated_complexity`, `grounding_evidence`, `superpowers_skills` and `acceptance_test[].ears` — new units MUST NOT carry them. The diet is writer-side only: no validator requires their absence.
 
 ## Required body sections (polished AI-coding-prompt shape)
 
@@ -169,6 +177,15 @@ binding_refs:                      # binding manifest IDs this unit honors
 - src/Http/Controllers/UserController.php:45-67 — existing pattern; follow this shape
 - src/Models/User.php:12 — entity to extend
 - .mega-sdd/knowledge-base/modules/customer.prd.md §2 (if KB present; legacy numbered tree: docs/knowledge-base/10-domains/<domain>.md §5) — domain behavior to honor
+
+## Claims  (v8 P1 — brownfield units only; a CONTRACT about existing code, never a verdict)
+<One line per expectation about EXISTING code this unit relies on or changes. Verdicts are NEVER written here — the JIT bind at dispatch (execute-bolts pre-flight 3.9, spec App. F2–F4) verifies each line and records CONFIRMED/CONFLICT/OQ in the hook-guarded `bolts/U-XXX/binding.json`. Greenfield / create-only units omit the section (their claims derive from target_files: create ⇒ must-not-exist).>
+
+- C-U005-01 "Nasabah model has field `nip` (unique)" — expect: app/Models/Nasabah.php:Nasabah
+- C-U005-02 "no login route exists yet" — expect: routes/web.php — must-not-exist
+- C-U005-03 "migration for nasabah table exists" — expect: database/migrations — must-exist
+
+Grammar: `- C-U<NNN>-<NN> "<verbatim expectation>" — expect: <path>[:<symbol>] | <path> — must-exist | <path> — must-not-exist`. `<path>[:<symbol>]` ⇒ symbol claim (symbol index); bare `<path>` with must-exist/must-not-exist ⇒ filesystem claim (0 model tokens); a quoted expectation without a resolvable symbol ⇒ text claim (ladder E3, express-bind.md).
 
 ## Hard rules  (validated at bolt time by execute-bolts pre/post-flight)
 <Machine-parseable constraints. Grammar closed in v1 per DESIGN-OQ-4 (5 rule types). One rule per line. Empty section allowed (no rules to enforce).>

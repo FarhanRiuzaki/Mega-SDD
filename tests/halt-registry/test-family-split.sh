@@ -68,7 +68,11 @@ B=$(wc -c < "$HP" | tr -d ' ')
 # 7.29.1: five EMITTED-but-unregistered types (bind_inputs_missing, unit_oq_trace_missing,
 # cross_module_dep_invalid, module_cycle_detected, ambiguous_spec) registered — terse index
 # rows + enum tokens only, same class as the 7.11.0 lift.
-[ "$B" -le 33600 ] && ok "b1 registry $B <= 33600" || fail "b1 registry regrew to $B"
+# 33600 -> 34000 (v8 P1.a, 2026-09-10): the registry sat 30 B under the cap; registering
+# ONE emitted halt (prd_source_unresolvable: enum token + a bare index row) cannot fit
+# without trimming unrelated rows. Same class as the two earlier raises above — the
+# registry grew by exactly one legitimately emitted halt, nothing else.
+[ "$B" -le 34000 ] && ok "b1 registry $B <= 34000" || fail "b1 registry regrew to $B"
 OVER=""
 for f in "$FD"/*.md; do
   FB=$(wc -c < "$f" | tr -d ' ')

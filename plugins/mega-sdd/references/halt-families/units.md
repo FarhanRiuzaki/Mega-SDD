@@ -22,6 +22,10 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 - `unit_underspecified` — generate-units: a generated unit lacks one or more required spec fields (`target_files`, `acceptance_test`, `depends_on` graph) preventing bolt dispatch. ALWAYS STOP. Details `{unit_id, missing_fields}`. Resolution: user fills missing fields OR re-runs generate-units with `--strict` for stricter generation. Source skill: `generate-units`.
 
+### prd_source_unresolvable
+
+- `prd_source_unresolvable` — generate-units (v8 P1, spec 2026-09-10 Appendix F1): `prd_source: <prd-file>#<heading-slug>` / `<prd-file>:<line>` must resolve — file exists under the project root AND the slug matches a heading (lowercase, non-alphanumerics → `-`) or the line is within the file. Only checked when the field is PRESENT; absence = legacy unit, never an issue. Emitted by `validate-unit-spec.sh` (issue → status FAIL, generate-units Step 12 halts; not a hook gate). Details `{unit_id, prd_source, reason}`. Resolution: cite a real heading/line, or remove the field.
+
 ### cycle_detected
 
 - `cycle_detected` — generate-units: the unit dependency DAG has a cycle. ALWAYS STOP. Details `{cycle_path: [U-001, U-002, U-001]}` (registry §Type-specific schemas). Resolution: user breaks the cycle by editing the offending units' `depends_on`, then re-runs generate-units.
