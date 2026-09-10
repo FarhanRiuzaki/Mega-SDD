@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.26.0
+version: 2.27.0
 description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task_type per binding Implementation State Map, OQ-IDs carried, Anchors mandatory when evidence exists, dependency DAG (cycles rejected). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -95,7 +95,7 @@ The step skeleton is below with every gate/rail inline, and **the inline skeleto
 
 **9.5. Adversarial test review pass (closes audit D4-006).** acceptance_test authored by the same LLM pass as the unit inherits the same blind spots ("never trust AI to both generate and validate"). For each unit, run the adversarial review (`references/adversarial-test-prompt.md`): default mode re-prompts the main thread as a QA reviewer; `--adversarial-subagent` (or `risk: high`) dispatches a separate subagent; `--no-adversarial-review` skips (sets `_authored_by: same-pass`). Gaps merge into acceptance_test with `_authored_by:` provenance. `--regenerate` PRESERVES `_authored_by: human` units. Detail: `references/decomposition-rails.md §Adversarial`.
 
-**10. Write each unit file** using `references/templates/unit.md` as the body template. When vault.json has a `scope` field, every unit's frontmatter MUST include `scope:` + `scope_name:` sourced verbatim from `scope_metadata` (omit for legacy single-scope). Detail: `references/auto-and-memory.md §Scope propagation`.
+**10. Write each unit file** using `references/templates/unit.md` as the body template. When vault.json has a `scope` field, every unit's frontmatter MUST include `scope:` + `scope_name:` sourced verbatim from `scope_metadata` (omit for legacy single-scope). Detail: `references/auto-and-memory.md §Scope propagation`. **v8 P1 grammar (spec 2026-09-10 App. F1):** write `prd_source:` (`<prd-file>#<heading-slug>` or `:<line>`, list allowed) for every unit whose requirement has a PRD home; brownfield units carry `## Claims` (expectations about EXISTING code — a contract, never a verdict; grammar in `references/unit-schema.md §Claims`); do NOT write the zero-reader fields `mutability`, `estimated_complexity`, `grounding_evidence`, `superpowers_skills`, `acceptance_test[].ears`.
 
 **11. Write `_index.md`** — total unit + module counts, units grouped by module (status, priority, DoD, units table), per-module + cross-module dependency DAGs (Mermaid), suggested topological execution order; falls back to a flat list when only `M-default` exists. Detail: `references/auto-and-memory.md §_index.md`.
 

@@ -132,6 +132,55 @@ VS_DOC_RE = r"(?:vault|model|flows|constraints|constitution|\d{2}-[A-Za-z0-9._-]
 vs_adv = []   # filled per unit by validate_unit(); emitted top-level, never an issue
 
 
+PRD_REF_RE = re.compile(r"^(?P<file>[^#:\s]+?\.md)(?:#(?P<slug>[^\s]+)|:(?P<line>\d+))$")
+
+
+def parse_prd_source_refs(fm):
+    """`prd_source:` scalar, flow list `[a, b]`, or block list → raw refs (quotes stripped)."""
+    m = re.search(r"^prd_source:[ \t]*(.*)$", fm, re.MULTILINE)
+    if not m:
+        return []
+    head = m.group(1).strip()
+    if head.startswith("["):
+        return [x.strip().strip("'\"") for x in head.strip("[]").split(",") if x.strip()]
+    if head:
+        return [head.strip("'\"")]
+    refs = []
+    for ln in fm[m.end():].splitlines():
+        if re.match(r"^\s*-\s+", ln):
+            refs.append(re.sub(r"^\s*-\s+", "", ln).strip().strip("'\""))
+        elif ln.strip() == "":
+            continue
+        else:
+            break
+    return refs
+
+
+def _slug(text):
+    return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", text.strip().lower())).strip("-")
+
+
+def resolve_prd_source(ref):
+    m = PRD_REF_RE.match(ref.strip())
+    if not m:
+        return False, "shape must be <prd-file>.md#<heading-slug> or <prd-file>.md:<line>"
+    path = os.path.join(cwd, m.group("file"))
+    if not os.path.isfile(path):
+        return False, f"file not found under project root: {m.group('file')}"
+    try:
+        text = open(path, encoding="utf-8", errors="replace").read()
+    except OSError as e:
+        return False, f"unreadable: {e}"
+    if m.group("line"):
+        n = int(m.group("line")); total = text.count("\n") + 1
+        return (1 <= n <= total), ("" if 1 <= n <= total else f"line {n} outside 1..{total}")
+    want = _slug(m.group("slug"))
+    heads = [_slug(h) for h in re.findall(r"^#{1,6}[ \t]+(.+?)\s*$", text, re.MULTILINE)]
+    if want in heads:
+        return True, ""
+    return False, f"no heading with slug '{want}' (have: {', '.join(heads[:8])}{'…' if len(heads) > 8 else ''})"
+
+
 def vault_source_shape(value):
     v = value.strip()
     if re.fullmatch(VS_DOC_RE + r"#\S+", v):
@@ -171,7 +220,7 @@ def validate_unit(file_path):
     # ─── Check 1: unit_underspecified — required frontmatter fields ──────────
     # Accept either Layout A (unit_id) or Layout B (id) for unit identifier.
     field_present = {}
-    for f in ["unit_id", "id", "title", "task_type", "target_files", "vault_source", "vault_anchors"]:
+    for f in ["unit_id", "id", "title", "task_type", "target_files", "vault_source", "vault_anchors", "context_source"]:
         if re.search(rf"^{f}:", fm, re.MULTILINE):
             field_present[f] = True
 
@@ -193,7 +242,19 @@ def validate_unit(file_path):
     # (precedent: hard_rules_directive_advisory) and NEVER touches `issues`,
     # `status` or the exit code. Muatan, bukan bukti: a new hard gate here would
     # freeze every existing project over a separator.
-    vs_m = re.search(r"^vault_source:\s*(.+?)\s*$", fm, re.MULTILINE)
+    # ─── prd_source (v8 P1, spec App. F1a) — RESOLVED when present, never required ─
+    # `<prd-file>#<heading-slug>` or `<prd-file>:<line>`, scalar or YAML list. A
+    # citation to a heading/line that does not exist is a fabricated requirement
+    # → issue prd_source_unresolvable (status FAIL for generate-units Step 12 /
+    # analyze; NOT a hook gate). Absent field = legacy unit, silent.
+    for ref in parse_prd_source_refs(fm):
+        ok, why = resolve_prd_source(ref)
+        if not ok:
+            issues.append({"halt_type": "prd_source_unresolvable",
+                           "detail": f"unit {unit_id} prd_source {ref!r} does not resolve: {why}",
+                           "unit_id": unit_id, "prd_source": ref, "reason": why})
+
+    vs_m = re.search(r"^(?:vault_source|context_source):\s*(.+?)\s*$", fm, re.MULTILINE)
     if vs_m:
         vs_raw = vs_m.group(1).strip().strip("'\"")
         vs_shape = vault_source_shape(vs_raw)
@@ -227,8 +288,8 @@ def validate_unit(file_path):
     if "task_type" not in field_present:
         missing_fields.append("task_type")
     # vault_source OR vault_anchors (layout B uses vault_anchors)
-    if "vault_source" not in field_present and "vault_anchors" not in field_present:
-        missing_fields.append("vault_source|vault_anchors")
+    if "vault_source" not in field_present and "vault_anchors" not in field_present and "context_source" not in field_present:
+        missing_fields.append("vault_source|context_source|vault_anchors")
     # target_files presence (for verify, may be empty list; for create/extend, must have entries)
     if "target_files" not in field_present:
         missing_fields.append("target_files")
