@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.32.0] - 2026-09-10 — v8 P1.a–d: grammar unit baru, JIT bind di dispatch (gate CONFLICT unit-scoped), coverage PRD→units
+
+Mandat implementasi v8 owner 2026-09-10 (spec `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md` Appendix F). Rilis ini = **P1.a–P1.d**; P1.e (W1 zero-idle) + P1.f (replay 10/10 CONFLICT simkredit + tracer) menyusul sebagai 7.33.0. Default v7 **tidak berubah**: semua mekanisme baru aditif/dual-read dan hidup hanya bila unit membawa field barunya (atau, nanti, di lane `--lite`).
+
+### Added
+- **Grammar unit (App. F1):** `prd_source: <prd-file>#<heading-slug> | :<line>` (list boleh) — unit akhirnya menyitasi PRD; `context_source` = alias `vault_source`; section `## Claims` = ekspektasi tentang kode EKSISTING (kontrak; verdict tidak pernah ditulis di unit); writer diet 5 field 0-pembaca (`mutability`, `estimated_complexity`, `grounding_evidence`, `superpowers_skills`, `acceptance_test[].ears`). `validate-unit-spec.sh` me-resolve `prd_source` bila ada → issue `prd_source_unresolvable` (validator, bukan gate hook; absen = legacy). generate-units 2.25.1→2.28.0.
+- **JIT bind (App. F2–F4):** `derive-unit-claims.sh` (claim set per wave dari file unit saja — greenfield/create-only = 0 klaim model, terukur di stdout) → `write-unit-binding.sh` **sole writer** `bolts/U-XXX/binding.json` (verdict fs/symbol oleh script; klaim teks = ladder E3 express-bind lalu `--verdicts`; MENOLAK CONFIRMED tanpa anchor, verdict di luar enum, resolve pada non-CONFLICT; `--resolve` = jalur write-back resolve-oq). File masuk **evidence-deny hook** (5 situs) — Write/Edit/Bash ditolak, hanya writer. `validate-handoff-binding-units.sh --units=` → CONFLICT unit terdaftar = drop `conflict_unresolved` (state + deny hook yang sama), tanpa `--units` = extra advisory (CONFLICT U-005 tidak membekukan U-001); hook re-derive mengoper `--units=$AGENT_UNIT`. execute-bolts pre-flight **3.9** (2.47.0) + halt **`binding_conflict`**; resolve-oq `--binding` membaca claim per-unit dan menulis balik lewat writer (2.14.3). Blackbox **S14** live: CONFLICT → blockers FAIL bersumber `binding.json` → resolve → clear.
+- **`validate-plan-coverage.sh` (App. F5):** sensus heading requirement PRD (H2/H3 minus meta + out-of-scope, + F-id) vs union `prd_source` unit ∪ OQ yang mengutip heading → halt **`plan_coverage_gap`**; generate-units Step 12.8; analyze row `plan_coverage`. Satu-satunya rail mekanis untuk prose-gap PRD→units; prasyarat `--lite`.
+- Suite baru: `tests/unit-grammar-p1/`, `tests/jit-bind/`, `tests/plan-coverage/`, blackbox S14.
+
+### Changed
+- Registry halt: +`prd_source_unresolvable`, `binding_conflict`, `plan_coverage_gap` (enum + index + family). **Disclosed:** cap byte `tests/halt-registry` 33.600 → 34.000 — registry duduk 30 B di bawah cap; tiga halt sah tidak muat tanpa memangkas baris lain (kelas sama dengan dua kenaikan sebelumnya).
+
+### Sengaja tidak berubah
+- Nol gate dilemahkan: B1–B4, whitelist, acceptance execution, hard-rule pre/postflight, CONFLICT gate (kini juga unit-scoped) utuh. Flag `--lite` di front door + W1 + replay = 7.33.0.
+
 ## [7.31.0] - 2026-09-10 — v8 P0: delta lane hidup lagi di layout-2, tiga ref jujur, satu grammar `vault_source`, baseline terdekomposisi
 
 Gate owner 2026-09-10 menerima desain **v8 Fused Pipeline** secara bertahap (`docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md` — APPROVED BERTAHAP, kriteria ship P3 dikunci di §7). Rilis ini = **P0**: nol perubahan perilaku gate, semua temuan sensus konsumen yang bisa ditutup tanpa menunggu angka, plus alat ukur untuk kill-criterion. Sensus lengkap (5 lane, path:line) diarsipkan sebagai sensus tetap di `research/2026-09-10-v8-consumer-census.md`.
