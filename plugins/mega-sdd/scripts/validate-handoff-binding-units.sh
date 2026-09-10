@@ -685,6 +685,9 @@ def _next_action(drops):
 # not freeze U-001's dispatch (dependents are blocked via depends_on instead).
 _jit_units = []
 _want = [u.strip() for u in os.environ.get("UNITS", "").split(",") if u.strip()]
+if _want == ["all"]:  # sync --full-bind (7.34.0): every unit of every vault is LISTED → any open CONFLICT blocks
+    _want = sorted({os.path.basename(p)[:-3] for p in glob.glob(os.path.join(vault_dir, "*", "units", "U-*.md"))}
+                   | {os.path.basename(os.path.dirname(p)) for p in glob.glob(os.path.join(vault_dir, "*", "units", "U-*", "unit.md"))})
 for _bp in sorted(glob.glob(os.path.join(vault_dir, "*", "bolts", "U-*", "binding.json"))):
     _uid = os.path.basename(os.path.dirname(_bp))
     try:

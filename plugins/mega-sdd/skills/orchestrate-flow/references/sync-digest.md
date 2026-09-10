@@ -30,7 +30,7 @@ Consumers: the session-start staleness notice points HERE (instead of suggesting
 ```markdown
 # Sync report — <ISO8601>
 **Trigger**: <N journal rows ∪ M git-delta paths (deduped → K changed paths)>
-**Mode**: --auto [--auto-apply=safe]
+**Mode**: --auto [--auto-apply=safe] [--full-bind]
 
 | Phase | Outcome |
 |---|---|
