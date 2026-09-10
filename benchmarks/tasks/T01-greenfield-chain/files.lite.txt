@@ -1,0 +1,36 @@
+# T01 lite arm (v8 P1.f, 2026-09-10): the --lite lane on a GREENFIELD run adds NO commanded reads —
+# pre-flight 3.9 is script-run (derive-unit-claims / write-unit-binding / validate-handoff-binding-units)
+# and the ladder-E3 reference (bind-codebase/references/express-bind.md) loads ONLY when a text claim
+# exists, which a create-only wave never has. So the list = files.optimized.txt verbatim; the
+# measured delta is 0 by construction and is published as such (brownfield text claims would add express-bind.md).
+plugins/mega-sdd/skills/using-mega-sdd/SKILL.md
+plugins/mega-sdd/skills/orchestrate-flow/SKILL.md
+plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md
+plugins/mega-sdd/references/model-tiers.md [SECTION:Catalog]
+plugins/mega-sdd/references/output-language.md [SECTION:Prompt-surfaces]
+plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md
+plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md
+plugins/mega-sdd/commands/mega-sdd.md
+plugins/mega-sdd/skills/orchestrate-flow/references/factory-routing.md
+plugins/mega-sdd/skills/orchestrate-flow/references/factory-ledger-contract.md
+plugins/mega-sdd/skills/orchestrate-flow/references/checkpoint-protocol.md
+plugins/mega-sdd/skills/generate-intent/SKILL.md
+plugins/mega-sdd/skills/generate-intent/references/vault-core.md
+plugins/mega-sdd/skills/generate-intent/references/generation-guide.md [SECTION:Step3+templates+readability]
+plugins/mega-sdd/skills/generate-intent/references/self-check.md
+plugins/mega-sdd/skills/generate-intent/references/auto-and-handoff.md
+plugins/mega-sdd/skills/generate-intent/references/detection-and-shapes.md
+plugins/mega-sdd/skills/generate-intent/references/templates/vault.md
+plugins/mega-sdd/skills/generate-intent/references/templates/model.md
+plugins/mega-sdd/skills/generate-intent/references/templates/flows.md
+plugins/mega-sdd/skills/generate-intent/references/templates/constraints.md
+plugins/mega-sdd/skills/generate-units/SKILL.md
+plugins/mega-sdd/skills/generate-units/references/unit-schema.md
+plugins/mega-sdd/skills/generate-units/references/templates/unit.md
+plugins/mega-sdd/skills/generate-units/references/modules-schema.md
+plugins/mega-sdd/skills/generate-units/references/adversarial-test-prompt.md
+plugins/mega-sdd/skills/generate-units/references/auto-and-memory.md [SECTION:scope-propagation+_index]
+plugins/mega-sdd/skills/generate-units/references/decomposition-rails.md [SECTION:dependency-graph]
+plugins/mega-sdd/skills/execute-bolts/SKILL.md
+plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md
+plugins/mega-sdd/skills/execute-bolts/references/batch-and-fanout.md [SECTION:--all]
