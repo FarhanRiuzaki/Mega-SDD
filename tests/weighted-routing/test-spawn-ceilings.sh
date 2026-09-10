@@ -187,5 +187,50 @@ run_ev PreToolUse "{\"session_id\":\"s\",\"cwd\":\"$PLAIN\",\"tool_name\":\"Edit
   || bad "C9 PRE Edit non-SDD: spawns=$(total)"
 
 echo
+# ── C10–C14 + C8b: the v8 P1 JIT bind path (spec 2026-09-10 App. F2–F4; owner
+# P4 mandate: "spawn-neutral must be PROVEN, not claimed"). Same shim + counting
+# convention as above; each script is exec'd the way execute-bolts pre-flight
+# 3.9 / 3.10 and generate-units 12.8 run it (bash <script> …). MEASURED at
+# ship (macOS, 2026-09-10): derive 4 · writer 4 · validator --units 6 ·
+# quarantine 2 · plan-coverage 2 · in-run Agent gate with a per-unit
+# binding.json 85 (bash 19, dirname 16, git 22, python3 28 — the JIT pass
+# rides the validator's existing python, 0 extra interpreter). Ceilings =
+# measured + margin; Windows+Falcon projections are lower bounds (README).
+FIXJ="$WORK/jit"; mkfix "$FIXJ"
+JV="$FIXJ/.mega-sdd/vaults/v1"; mkdir -p "$JV/units" "$FIXJ/docs"
+printf -- '---\nid: U-001\ntitle: t\ntask_type: create\nvault_source: model.md#a\nprd_source: docs/PRD.md#halaman-a\ntarget_files:\n  - path: src/new.ts\n    operation: create\nacceptance_test:\n  - type: test\n    command: x\n    expects: "OK"\n---\n# u\n' > "$JV/units/U-001.md"
+printf '# PRD\n\n## Halaman A\n\nx\n' > "$FIXJ/docs/PRD.md"; echo '{"open_questions":[]}' > "$JV/vault.json"
+SCR="$PLUGIN/scripts"
+run_script() { ( cd "$FIXJ" && PATH="$SHIM:$PATH" /bin/sh -c "$1" ) >/dev/null 2>&1; }
+reset_counts; run_script "bash $SCR/derive-unit-claims.sh --cwd=$FIXJ --vault=$JV --units=U-001"
+[ "$(total)" -le 6 ] && [ -f "$JV/bolts/_wave-claims.json" ] \
+  && ok "C10 derive-unit-claims: ≤6 spawns ($(total)), wave claims written" \
+  || bad "C10 derive-unit-claims: spawns=$(total) out=$([ -f "$JV/bolts/_wave-claims.json" ] && echo yes || echo no)"
+reset_counts; run_script "bash $SCR/write-unit-binding.sh --cwd=$FIXJ --vault=$JV --unit=U-001 --claims=$JV/bolts/_wave-claims.json"
+[ "$(total)" -le 6 ] && [ -f "$JV/bolts/U-001/binding.json" ] \
+  && ok "C11 write-unit-binding (fs-only wave, 0 model tokens): ≤6 spawns ($(total)), binding.json written" \
+  || bad "C11 write-unit-binding: spawns=$(total) out=$([ -f "$JV/bolts/U-001/binding.json" ] && echo yes || echo no)"
+reset_counts; run_script "bash $SCR/validate-handoff-binding-units.sh --cwd=$FIXJ --units=U-001 --quiet"
+[ "$(total)" -le 9 ] && [ -f "$FIXJ/.mega-sdd/.validation-blockers.json" ] \
+  && ok "C12 validate-handoff-binding-units --units=: ≤9 spawns ($(total)), unit-scoped blockers written" \
+  || bad "C12 validate-handoff-binding-units --units=: spawns=$(total)"
+reset_counts; run_script "bash $SCR/write-unit-quarantine.sh --cwd=$FIXJ --vault=$JV --unit=U-002 --halt=acceptance_red --reason=x"
+[ "$(total)" -le 4 ] && [ -f "$JV/bolts/U-002/quarantine.json" ] \
+  && ok "C13 write-unit-quarantine: ≤4 spawns ($(total))" \
+  || bad "C13 write-unit-quarantine: spawns=$(total)"
+reset_counts; run_script "bash $SCR/validate-plan-coverage.sh --cwd=$FIXJ --prd=$FIXJ/docs/PRD.md --vault=$JV --quiet"
+[ "$(total)" -le 4 ] && [ -f "$FIXJ/.mega-sdd/.plan-coverage-state.json" ] \
+  && ok "C14 validate-plan-coverage: ≤4 spawns ($(total)), coverage state written" \
+  || bad "C14 validate-plan-coverage: spawns=$(total)"
+# C8b: the in-run F-09 gate (PreToolUse Agent bolt-implementer → AGENT_UNIT) with a
+# per-unit binding.json present — the JIT pass must add NO interpreter over C8.
+reset_counts
+run_ev PreToolUse "{\"session_id\":\"$SID\",\"cwd\":\"$FIXJ\",\"transcript_path\":\"$TRANS\",\"tool_name\":\"Agent\",\"tool_input\":{\"subagent_type\":\"mega-sdd:bolt-implementer\",\"prompt\":\"mega-sdd-trace:execute-bolts:U-001\\nRead bolts/U-001/dispatch-prompt.md\"}}" "$FIXJ" >/dev/null
+sleep 1
+JITU=$(python3 -c "import json;d=json.load(open('$FIXJ/.mega-sdd/.validation-blockers.json'));print(len(d.get('jit_units') or []))" 2>/dev/null || echo 0)
+[ "$(total)" -le 95 ] && [ "$JITU" = "1" ] \
+  && ok "C8b PRE Agent bolt-implementer in-run gate + JIT pass: ≤95 spawns ($(total), python $(count python3)), jit_units re-derived for U-001" \
+  || bad "C8b in-run JIT gate: spawns=$(total) python=$(count python3) jit_units=$JITU"
+
 if [ "$fail" -eq 0 ]; then echo "PASS production-path spawn ceilings"; exit 0
 else echo "production-path spawn ceilings FAILED"; exit 1; fi
