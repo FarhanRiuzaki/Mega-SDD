@@ -16,7 +16,7 @@ Registry one-liner (absorbed, same type):
 
 ### constitution_drift_detected
 
-- `constitution_drift_detected` — detect-drift: §B Security or §F Compliance constitution clause drift detected in code. ALWAYS STOP.
+- `constitution_drift_detected` — detect-drift: §B Security or §F Compliance constitution clause drift detected in code, or `constitution.md`'s hash no longer matches the one the binding was made against. ALWAYS STOP in the detect-drift lane — CONFLICT-like (the hard-rule grounding the binding relied on is stale; resolution = `/mega-sdd:sync` / re-bind), kept blocking by owner decision 2026-09-10 (v8 W1 exception); at generate-units 12.4 it stays unit-level DEFER.
 
 ### memory_in_use
 

@@ -56,7 +56,9 @@ script; the model's only judgment is the ladder E3 verdict on `text` claims.
 ## 3.10 Quarantine instead of parking (W1 zero-idle, spec App. F6c)
 
 Only three halts may stop the run and wait for a human: `binding_conflict` /
-`bind_conflict`, `hard_rule_violated`, and OQ P1 business. Every other
+`bind_conflict`, `hard_rule_violated`, and OQ P1 business — plus one exception the
+owner kept blocking as CONFLICT-like (2026-09-10): `bolt_introduces_locked_drift`
+(a bolt touched a LOCKED entity; pure-pause, override-only, never proposed). Every other
 DEFER-class halt on a unit (L0 trio, B1–B4 evidence, `review_critical_unresolved`,
 `test_fail` after the retry budget, `ambiguous_spec`, `anchor_missing`,
 `dispatch_prompt_too_large`, `commit_rejected_by_hook`, …) is RECORDED and the
