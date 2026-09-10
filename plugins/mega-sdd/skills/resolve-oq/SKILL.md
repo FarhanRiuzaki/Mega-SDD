@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 2.14.2
+version: 2.14.3
 description: Interactive resolver for Open Questions — walks the OQ roll-up by priority, lands stakeholder answers in the vault, bumps version; --binding resolves CONFLICT entries from binding.md; with no vault but an extract-intelligence KB present, KB mode walks the PRD-kontrak §6 OQs so legacy questions get answered right after extraction. Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", "jawab OQ hasil extract", "resolve oq kb", "jawab open question kb", or paraphrases.
 ---
 

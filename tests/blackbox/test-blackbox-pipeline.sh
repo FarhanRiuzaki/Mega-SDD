@@ -351,6 +351,47 @@ grep -q '| QA Lead | __________ | __________ | __________ | \[ \] Diterima · \[
 # producer were deleted in Fase 5 №5.)
 
 # ── S13 verdict ──────────────────────────────────────────────────────────────
+stage "S14 JIT bind at dispatch (v8 P1): claim CONFLICT -> per-unit binding.json -> blockers FAIL -> resolve -> PASS"
+cat > "$VAULT/units/U-009.md" <<'MD'
+---
+id: U-009
+title: JIT brownfield unit
+task_type: extend
+vault_source: model.md#leave
+target_files:
+  - path: src/config/limits.php
+    operation: modify
+acceptance_test:
+  - type: test
+    command: php -l src/config/limits.php
+    expects: "No syntax errors"
+---
+# u
+
+## Claims
+- C-U009-01 "limits config exists" — expect: src/config/limits.php — must-exist
+- C-U009-02 "no legacy carryover file" — expect: src/config/limits.php — must-not-exist
+MD
+OUT="$(bash "$SCR/derive-unit-claims.sh" --cwd="$PROJ" --vault="$VAULT" --units=U-009 </dev/null 2>&1)"; RC=$?
+WV="$(ls -d "$VAULT"/bolts/_wave-*/claims.json | head -1)"
+[ $RC -eq 0 ] && [ -f "$WV" ] && echo "$OUT" | grep -q '"text_claims": 0' && ok "S14a derive: fs-only wave, 0 model tokens ($OUT)" || bad "S14a derive rc=$RC: $OUT"
+bash "$SCR/write-unit-binding.sh" --cwd="$PROJ" --vault="$VAULT" --unit=U-009 --claims="$WV" </dev/null >/dev/null 2>&1 \
+  && python3 -c "import json,sys;d=json.load(open(sys.argv[1]));assert d['summary']['CONFLICT']==1 and d['summary']['CONFIRMED']>=1 and d['summary']['OQ']==0, d['summary']" "$VAULT/bolts/U-009/binding.json" \
+  && ok "S14b writer: must-exist CONFIRMED, must-not-exist on an existing file = CONFLICT" || bad "S14b writer verdicts wrong"
+bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --units=U-009 --quiet </dev/null >/dev/null 2>&1; RC=$?
+python3 -c "import json,sys;d=json.load(open(sys.argv[1]));ds=[x for x in d['drops'] if x['type']=='conflict_unresolved' and x.get('unit_id')=='U-009'];assert d['status']=='FAIL' and ds and 'binding.json' in ds[0]['source_binding'], d" "$PROJ/.mega-sdd/.validation-blockers.json" \
+  && [ $RC -eq 1 ] && ok "S14c GATE STATE: --units=U-009 -> .validation-blockers.json FAIL with conflict_unresolved from bolts/U-009/binding.json (the hook denies on this file)" || bad "S14c gate state not FAIL (rc=$RC)"
+bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --quiet </dev/null >/dev/null 2>&1
+python3 -c "import json,sys;d=json.load(open(sys.argv[1]));assert not [x for x in d['drops'] if x.get('unit_id')=='U-009'] and [x for x in d['extras'] if x['type']=='conflict_unit_unresolved'], d" "$PROJ/.mega-sdd/.validation-blockers.json" \
+  && ok "S14d without --units the per-unit CONFLICT is an advisory extra (no whole-vault freeze)" || bad "S14d scoping wrong"
+bash "$SCR/write-unit-binding.sh" --cwd="$PROJ" --vault="$VAULT" --unit=U-009 --resolve=C-U009-02=KEEP_CODE --by=user </dev/null >/dev/null 2>&1 || bad "S14e resolve failed"
+bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --units=U-009 --quiet </dev/null >/dev/null 2>&1 || true
+python3 -c "import json,sys;d=json.load(open(sys.argv[1]));assert not [x for x in d['drops'] if x.get('unit_id')=='U-009'], [x for x in d['drops'] if x.get('unit_id')=='U-009']" "$PROJ/.mega-sdd/.validation-blockers.json" \
+  && python3 -c "import json,sys;d=json.load(open(sys.argv[1]));c=[x for x in d['claims'] if x['id']=='C-U009-02'][0];assert c['resolution']['action']=='KEEP_CODE'" "$VAULT/bolts/U-009/binding.json" \
+  && ok "S14e resolved via writer (KEEP_CODE) -> no U-009 drop remains (other stages' binding.md drops are theirs, not JIT's)" || bad "S14e U-009 drop survived resolution"
+rm -f "$VAULT/units/U-009.md"; rm -rf "$VAULT/bolts/U-009" "$VAULT"/bolts/_wave-*
+bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --quiet </dev/null >/dev/null 2>&1 || true
+
 stage "S13 verdict"
 echo "  artifacts: $(cd "$PROJ" && find .mega-sdd -type f | wc -l | tr -d ' ') files under .mega-sdd/ ($(du -sh "$PROJ/.mega-sdd" 2>/dev/null | cut -f1))"
 echo

@@ -33,3 +33,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### bind_inputs_missing
 
 - `bind_inputs_missing` — bind-codebase Step 0: a required input cannot be resolved deterministically — `details.missing` ∈ {`vault`, `codebase_map`, `vault_index`}, `details.reason` ∈ {`not_found`, `vault_ambiguous`, `vault_outside_glob_root`, `malformed`}; `details.candidates` is REQUIRED for `vault_ambiguous` (re-invoke with an explicit `--vault=`). ALWAYS STOP. Resolution: run `scan-codebase` (missing map), pass `--vault=`, or fix the vault location / JSON. Full envelope: `bind-codebase/references/auto-memory-handoff.md §Halt YAML — bind_inputs_missing`. (Registered 7.29.1 — emitted since the bind Step-0 contract, never indexed.)
+
+### binding_conflict
+
+- `binding_conflict` — execute-bolts pre-flight 3.9 (v8 P1, spec 2026-09-10 Appendix F4): `write-unit-binding.sh` recorded a claim with `verdict: CONFLICT` in `<vault>/bolts/U-XXX/binding.json` and `validate-handoff-binding-units.sh --units=` turned it into a `conflict_unresolved` drop — the SAME `.validation-blockers.json` gate the PreToolUse hook denies `execute-bolts` / `bolt-implementer` dispatches on. ALWAYS STOP for the listed unit(s); other units proceed, dependents skip with the reason. Details `{unit_id, conflict_id, expect, heading}`. Resolution: `resolve-oq --binding` → `write-unit-binding.sh --resolve <id>=KEEP_VAULT|KEEP_CODE|SPLIT --by=user` (the file is hook-guarded evidence — never edited by hand), or fix the code/unit and re-run pre-flight 3.9.

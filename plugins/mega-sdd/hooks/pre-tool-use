@@ -873,7 +873,7 @@ except Exception as e:
         # reads another's output; the aggregator below runs only after wait,
         # so it reads a complete, settled set. Wall-clock on the blocking
         # gate drops to the slowest single validator instead of the sum.
-        ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-handoff-binding-units.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
+        ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-handoff-binding-units.sh" --cwd="$PROJECT_ROOT" --units="${AGENT_UNIT:-}" --quiet >/dev/null 2>&1 || true ) &   # v8 P1.c: --units=<in-flight unit> makes its JIT CONFLICTs (bolts/U-*/binding.json) blocking drops; empty = today
         # ── S5 GU-HOOK-1/3/4: re-derive the three unit-stage gate states at gate
         # time too. Gate-time re-derivation is the ONLY writer path since №D v7.5.0
         # (the former PostToolUse dispatch was Write|Edit-keyed — a heredoc-written
