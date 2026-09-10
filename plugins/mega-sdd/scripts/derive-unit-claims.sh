@@ -3,7 +3,8 @@
 # the claim set of ONE WAVE of units, derived deterministically from the unit
 # files themselves — never from the vault, never from a model.
 #
-#   derive-unit-claims.sh --cwd=<root> --vault=<vault-dir> --units=U-001,U-002[,…]
+#   derive-unit-claims.sh --cwd=<root> --vault=<vault-dir> --units=U-001,U-002[,…] | --units=all
+#   (`all` = every unit under <vault>/units — the `sync --full-bind` sweep, 7.34.0)
 #
 # Per unit, claims are minted from:
 #   target_files          create        → fs_must_not_exist (the path must be absent)
@@ -31,6 +32,11 @@ import glob, json, os, re, sys
 from datetime import datetime, timezone
 cwd = os.path.abspath(os.environ["V_CWD"]); vault = os.environ["V_VAULT"]
 units = [u.strip() for u in os.environ["V_UNITS"].split(",") if u.strip()]
+if units == ["all"]:  # sync --full-bind (7.34.0): the whole vault, sorted, both unit layouts
+    units = sorted({os.path.basename(p)[:-3] for p in glob.glob(os.path.join(vault, "units", "U-*.md"))}
+                   | {os.path.basename(os.path.dirname(p)) for p in glob.glob(os.path.join(vault, "units", "U-*", "unit.md"))})
+    if not units:
+        print("FAIL: --units=all but no units under %s/units" % vault, file=sys.stderr); sys.exit(2)
 head = os.environ["V_HEAD"]
 sys.path.insert(0, os.environ["V_LIB"])
 try:

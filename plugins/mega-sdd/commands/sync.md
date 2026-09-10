@@ -1,6 +1,6 @@
 ---
 description: Reconcile mega-sdd state with the latest code — the never-ending-development lane. Detects what changed since the last scan (in-session AI edits via the dirty journal + manual/external edits via git), then chains changed-set derivation (incremental re-scan on map-bearing projects; a zero-token script on express-born ones) → drift detect → re-bind → unit reconcile. Use after manual edits, AI-prompted changes outside the pipeline, hotfixes, or a git pull — whenever "the code moved on" and the vault/map/binding/units must catch up.
-argument-hint: "[--dry-run] [--auto] [--auto-apply=safe] [--no-drift-check]"
+argument-hint: "[--dry-run] [--auto] [--auto-apply=safe] [--full-bind] [--no-drift-check]"
 ---
 
 Invoke the `mega-sdd:orchestrate-flow` skill via the Skill tool with `--sync` (plus user flags below).
@@ -20,6 +20,7 @@ Flags:
 - `--auto` — fully autonomous: ONE upfront confirmation, then NO mid-chain questions (decision deferral — see below)
 - `--auto-apply=safe` — opt-in: auto-apply the SAFE write-back class only (confidence HIGH + category ∈ name-drift/type-drift/missing-in-vault + claim NOT `[LOCKED]` + code side committed — definition OWNED by detect-drift Step 5; this line mirrors it); everything else queues
 - `--no-drift-check` — standard opt-out (passed through)
+- `--full-bind` — **audit sinkronisasi penuh = `sync --full-bind`.** Instead of the claim-scoped re-bind of step 4, run the v8 JIT bind over EVERY unit of the vault: `derive-unit-claims.sh --units=all` → `write-unit-binding.sh` per unit (fs/symbol claims verdicted by script; `text` claims via ladder E3 verbatim, never CONFIRMED-by-absence) → `validate-handoff-binding-units.sh --units=all` (every open CONFLICT is BLOCKING). This is the button for the adoption / BA-QA question *"apakah kode masih sinkron dengan spec?"* — the whole-vault coverage a `--lite` project otherwise only gets one wave at a time (spec 2026-09-10 §4 degradation b). Output = per-unit `bolts/U-*/binding.json` + the Sync report's Re-bind row with CONFIRMED/CONFLICT/OQ totals; CONFLICTs route to `resolve-oq --binding` like any bind.
 
 Autonomous behavior (`--auto` — decision deferral, per spec §3.7):
 - Safe operations run through: scan merge, claim-scoped re-bind, unit reconcile, stale/new bolt execution (every existing bolt gate intact).
