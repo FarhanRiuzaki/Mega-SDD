@@ -1,0 +1,62 @@
+session_start=2026-09-10T13:20:47.249000+00:00  records=1318  models={'claude-opus-5': 531}
+
+endpoint 2026-09-10T21:08:15+07:00
+  gross wall-clock : 0h47m27s
+  human-wait       : 0.0 min (0 events)
+  net machine time : 0h47m27s
+  raw tokens       : 109,725,919
+  cost-weighted    : 22,374,257
+
+endpoint 2026-09-10T21:36:44+07:00
+  gross wall-clock : 1h15m56s
+  human-wait       : 12.1 min (2 events)
+  net machine time : 1h03m52s
+  raw tokens       : 174,677,447
+  cost-weighted    : 32,034,531
+
+wait events:
+  2026-09-10T14:10:42.616000+00:00 USER     7.1 min
+  2026-09-10T14:34:52.045000+00:00 USER     5.0 min
+  2026-09-10T14:38:43.026000+00:00 USER     2.6 min
+  2026-09-10T14:46:37.335000+00:00 USER     1.2 min
+  2026-09-10T15:05:10.977000+00:00 IDLE    13.6 min
+
+phase decomposition (v8 P0) — endpoint 2026-09-10T21:08:15+07:00
+  segment                                 gross      wait        net      raw tok       cw tok
+  front-door / routing                 0h00m05s     0.0m   0h00m05s       84,130      169,378
+  mega-sdd:mega-sdd                    0h00m19s     0.0m   0h00m19s      467,586      217,082
+  GROUND(script) ×6                    0h03m45s     0.0m   0h03m45s    3,576,886      832,555
+  mega-sdd:orchestrate-flow            0h01m17s     0.0m   0h01m17s    2,411,789      594,754
+  mega-sdd:generate-intent             0h00m38s     0.0m   0h00m38s    1,375,456      478,243
+  GROUND(script)                       0h08m09s     0.0m   0h08m09s   10,767,069    3,417,797
+  mega-sdd:bind-codebase               0h05m21s     0.0m   0h05m21s   12,907,223    2,618,501
+  mega-sdd:generate-units              0h01m48s     0.0m   0h01m48s    4,427,591    1,144,567
+  mega-sdd:resolve-oq                  0h16m25s     0.0m   0h16m25s   36,672,877    7,046,433
+  GROUND(script)                       0h00m07s     0.0m   0h00m07s    1,485,056      172,724
+  mega-sdd:execute-bolts               0h04m02s     0.0m   0h04m02s   26,502,259    4,485,910
+  bolt-implementer ×3                  0h05m24s     0.0m   0h05m24s    9,047,997    1,196,313
+  (sum of segment nets)                                     0h47m27s
+  PRE-CODE  (start → first bolts dispatch 2026-09-10T13:58:47.992000+00:00): net 0h38m00s, cw 16,692,033
+  BOLT-1    (dispatch → first unit commit):         net 0h09m27s, cw 5,682,223
+  pre-code share of net time-to-first-code: 80.1%  (v8 P0 kill-criterion: < 25% ⇒ stop at P1)
+
+BOLT-1 breakdown (v8 P0)
+  window 2026-09-10T13:58:47.992000+00:00 → 2026-09-10T21:08:15+07:00  gross 0h09m27s · wait 0.0m · net 0h09m27s
+  class                               count        sum      union  units
+  implementer dispatches                  3   0h00m03s   0h00m03s  U-001,U-003,U-004
+  review-panel lenses                     0   0h00m00s   0h00m00s  
+  resolution-verifier (fix rounds)        0   0h00m00s   0h00m00s  
+  gate/validator scripts                  9   0h00m06s   0h00m06s  U-001
+  other Agent dispatches                  0   0h00m00s   0h00m00s  
+  other Bash calls                        9   0h00m03s   0h00m03s  U-001
+  Skill dispatches                        1   0h00m01s   0h00m01s  
+  AskUserQuestion                         0   0h00m00s   0h00m00s  
+  fix rounds (implementer re-dispatch per unit − 1): 0   per-unit dispatches: {'U-001': 1, 'U-003': 1, 'U-004': 1}
+  tool-active union (all non-ask spans): 0h00m17s  = 3% of BOLT-1 net; the remainder is controller reasoning/reading between tool calls
+  CAVEAT: Agent spans measure MAIN-LANE blocking time only. A background dispatch (execute-bolts waves, parallel panel lenses) returns its tool_result at once and does its work on the sidechain, so implementer/panel 'sum' here is a LOWER BOUND of their runtime; the COUNTS and the per-unit re-dispatch (fix rounds) are exact. Gate scripts and other Bash calls are foreground and exact.
+
+interaction points (v8 W1 budget: 3-screen ≤2, clinic ≤3)
+  to 2026-09-10T21:08:15+07:00: ASK 0 + mid-run USER waits 0 = 0 interaction point(s); 0 idle event(s) >10min
+  to 2026-09-10T21:36:44+07:00: ASK 0 + mid-run USER waits 2 = 2 interaction point(s); 0 idle event(s) >10min
+
+json written: benchmarks/results/p0-baseline/xs-3screen/extract.json

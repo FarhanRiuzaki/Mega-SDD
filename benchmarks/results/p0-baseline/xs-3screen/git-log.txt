@@ -1,0 +1,7 @@
+41444a9 2026-09-10T21:36:44+07:00 feat(U-005): Buat Halaman Kontak dengan form kirim pesan
+8f946a7 2026-09-10T21:33:27+07:00 feat(U-002): Buat Halaman Tentang Kami
+1a218b2 2026-09-10T21:16:48+07:00 style(U-004): apply prettier formatting to contact-messages route test
+e1fbfbd 2026-09-10T21:16:48+07:00 style(U-001): apply prettier formatting to Beranda page
+9270bf5 2026-09-10T21:10:29+07:00 feat(U-004): Buat skema validasi dan route kirim pesan kontak
+fe0843b 2026-09-10T21:08:33+07:00 feat(U-001): Buat konten statis profil dan Halaman Beranda
+b1ef038 2026-09-10T21:08:15+07:00 feat(U-003): Buka tiga halaman profil untuk pengunjung tanpa login

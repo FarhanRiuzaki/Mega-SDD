@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.35.0] - 2026-09-10 — Tiga defect nyata dari run baseline P0 (deadlock handoff `blockers[]`, resolver root `$HOME`, predictive preflight false-fatal) + angka MEASURED arm xs-3screen
+
+Program otonom v8 §1 (`research/2026-09-10-v8-autonomous-runbook.md`; laporan `research/2026-09-10-v8-p0-baseline.md`). Owner meng-approve bypass permission → dua arm baseline dijalankan headless (`claude -p`, opus, default 7.34.0). Ketiga fix di bawah dipicu bukti dari run itu, bukan asumsi; tidak ada gate yang dilonggarkan — semua memperbaiki kode/dok yang salah.
+
+### Fixed
+- **Handoff `halted` dengan `blockers[]` terisi tidak pernah bisa lolos validasi → chain deadlock** (arm klinik, 15:28–15:34Z: generate-intent halt di dua OQ bisnis → `handoff_type_mismatch` → hook menolak resolve-oq → re-run `--strict-handoff` gagal lagi → loop 4×, lalu model mulai mem-bypass jalur dispatch). Empat sisi: (1) `handoff-contract.md §blockers` menunjuk `halt-protocol §blocker envelope` yang **tidak ada** — bentuk entri tidak terdefinisi di mana pun; kini: entri = body SATU envelope `blocker:` `{type, emitted_by, details, recommendation?}` + contoh. (2) Parser mini `validate-handoff-yaml.sh` hanya paham block list SKALAR; bentuk terdokumentasi (`- type: …` + baris `emitted_by:` lebih dalam) ter-parse jadi mapping — kini item mapping dilacak (`pending_list_item`; list skalar + kasus `suggested_args` 2-level tak berubah). (3) Pesan type error untuk mapping di `blockers:` kini bilang cara membetulkannya ("wrap it: `blockers: [ {…} ]`"). (4) Pesan deny hook tidak lagi menyarankan `rm .handoff-validation-state.json` (me-reset `retry_count` → eskalasi C2 tak pernah nyala). Teacher generate-intent memuat bentuk terisi saat halt. Pin: `tests/handoff/test-blockers-shape.sh` (a–e).
+- **Resolver root memilih `$HOME`**: `~/.mega-sdd/` sisa run lama (`memory/`, `state.json`) lolos tes "substantive", sehingga clone tanpa `.mega-sdd/` sendiri me-resolve ke HOME (arm xs; model menambal dengan `config.yaml`). Kini walk berhenti di HOME kecuali path awal = HOME (proyek di HOME tetap jalan); zero fork. Pin D1–D3 di `tests/hooks/resolve-project-root.test.sh`.
+- **Predictive preflight chain-aware**: `--chain=generate-intent,bind-codebase,generate-units,execute-bolts` di cwd greenfield melapor FATAL untuk input yang dibuat hop sebelumnya (vault.json, units/) — arm xs: `PREFLIGHT: 4 ok, 0 warn, 2 fatal` lalu model menjalankan preflight per hop. Input yang produsennya mendahului skill di `--chain` kini `ok` beralasan ("chain-aware: … produced by an earlier hop"); input tanpa produsen tetap fatal (bind sendirian di cwd kosong → exit 3, pin lama). Pin 2b di `tests/scripts/test-predictive-preflight.sh`.
+
+### Added
+- `benchmarks/scripts/p0-extract-arm.sh` — ekstraksi deterministik satu arm (run.meta → endpoint commit unit pertama/terakhir → `p5-extract.py --json`).
+- `benchmarks/results/p0-baseline/xs-3screen/` — raw arm xs (run.meta, stream.jsonl, extract.json/txt, git-log.txt).
+
+### Measured (arm xs-3screen, n=1, headless, opus, plugin 7.34.0 default — label MEASURED; detail `research/2026-09-10-v8-p0-baseline.md §3b`)
+- time-to-first-code net **47m27s** = PRE-CODE **38m00s** + BOLT-1 9m27s ⇒ **share pra-kode 80,1 %** (kill-criterion terkunci: ≥25 % di salah satu arm ⇒ P2 lanjut). DONE (commit unit terakhir) **1h15m56s** wall → budget ≤60m **MISS**; GROUND 3m45s/≤2m MISS; PLAN ≈32m/≤15m MISS; bolts ≈42m/≤35m MISS. resolve-oq = segmen pra-kode terbesar (16m25s, tanpa manusia).
+- 5 unit / 7 commit; acceptance 5/5, postflight 5/5, panel Important 3 / Minor 19 (0 open), analyze PASS, drift 0 CONFLICT (12 PENDING-SYNC). 0 ask (nonaktif di `-p`) + 13 `[ASSUMED-BY-RUNNER]`. Biaya $77,47.
+- Arm klinik attempt 1 = **bukan data** (deadlock di atas); attempt 2 dijalankan di 7.35.0 (disclosed di laporan).
+
 ## [7.34.1] - 2026-09-10 — Keputusan owner final v8 (xs floor, tiga halt DEFER-loud) + run brownfield live 10 kelas CONFLICT lewat JIT
 
 Program otonom v8 §1 (`research/2026-09-10-v8-autonomous-runbook.md`). Tidak ada gate yang dilonggarkan; dua halt drift justru TETAP blocking.

@@ -1,0 +1,278 @@
+{
+ "session_start": "2026-09-10T13:20:47.249000+00:00",
+ "records": 1318,
+ "models": {
+  "claude-opus-5": 531
+ },
+ "endpoints": {
+  "2026-09-10T21:08:15+07:00": {
+   "gross_s": 2847.751,
+   "wait_s": 0,
+   "net_s": 2847.751,
+   "raw_tokens": 109725919,
+   "cw_tokens": 22374256.699999962,
+   "idle_ratio": 0.0,
+   "interaction_points": 0
+  },
+  "2026-09-10T21:36:44+07:00": {
+   "gross_s": 4556.751,
+   "wait_s": 724.629,
+   "net_s": 3832.1220000000003,
+   "raw_tokens": 174677447,
+   "cw_tokens": 32034530.699999943,
+   "idle_ratio": 0.15902317243141,
+   "interaction_points": 2
+  }
+ },
+ "wait_events": [
+  [
+   "2026-09-10T14:10:42.616000+00:00",
+   "USER",
+   423.422
+  ],
+  [
+   "2026-09-10T14:34:52.045000+00:00",
+   "USER",
+   301.207
+  ],
+  [
+   "2026-09-10T14:38:43.026000+00:00",
+   "USER",
+   156.238
+  ],
+  [
+   "2026-09-10T14:46:37.335000+00:00",
+   "USER",
+   73.519
+  ],
+  [
+   "2026-09-10T15:05:10.977000+00:00",
+   "IDLE",
+   816.586
+  ]
+ ],
+ "phases": {
+  "segments": [
+   {
+    "label": "front-door / routing",
+    "start": "2026-09-10T13:20:47.249000+00:00",
+    "end": "2026-09-10T13:20:52.994000+00:00",
+    "gross_s": 5.745,
+    "wait_s": 0,
+    "net_s": 5.745,
+    "raw_tokens": 84130.0,
+    "cw_tokens": 169378.0
+   },
+   {
+    "label": "mega-sdd:mega-sdd",
+    "start": "2026-09-10T13:20:52.994000+00:00",
+    "end": "2026-09-10T13:21:12.507000+00:00",
+    "gross_s": 19.513,
+    "wait_s": 0,
+    "net_s": 19.513,
+    "raw_tokens": 467586.0,
+    "cw_tokens": 217081.6
+   },
+   {
+    "label": "GROUND(script) ×6",
+    "start": "2026-09-10T13:21:12.507000+00:00",
+    "end": "2026-09-10T13:24:58.145000+00:00",
+    "gross_s": 225.638,
+    "wait_s": 0,
+    "net_s": 225.638,
+    "raw_tokens": 3576886.0,
+    "cw_tokens": 832555.1000000001
+   },
+   {
+    "label": "mega-sdd:orchestrate-flow",
+    "start": "2026-09-10T13:24:58.145000+00:00",
+    "end": "2026-09-10T13:26:15.909000+00:00",
+    "gross_s": 77.764,
+    "wait_s": 0,
+    "net_s": 77.764,
+    "raw_tokens": 2411789.0,
+    "cw_tokens": 594754.3999999999
+   },
+   {
+    "label": "mega-sdd:generate-intent",
+    "start": "2026-09-10T13:26:15.909000+00:00",
+    "end": "2026-09-10T13:26:54.469000+00:00",
+    "gross_s": 38.56,
+    "wait_s": 0,
+    "net_s": 38.56,
+    "raw_tokens": 1375456.0,
+    "cw_tokens": 478242.5999999999
+   },
+   {
+    "label": "GROUND(script)",
+    "start": "2026-09-10T13:26:54.469000+00:00",
+    "end": "2026-09-10T13:35:04.407000+00:00",
+    "gross_s": 489.938,
+    "wait_s": 0,
+    "net_s": 489.938,
+    "raw_tokens": 10767069.0,
+    "cw_tokens": 3417796.5000000014
+   },
+   {
+    "label": "mega-sdd:bind-codebase",
+    "start": "2026-09-10T13:35:04.407000+00:00",
+    "end": "2026-09-10T13:40:26.372000+00:00",
+    "gross_s": 321.965,
+    "wait_s": 0,
+    "net_s": 321.965,
+    "raw_tokens": 12907223.0,
+    "cw_tokens": 2618501.3000000007
+   },
+   {
+    "label": "mega-sdd:generate-units",
+    "start": "2026-09-10T13:40:26.372000+00:00",
+    "end": "2026-09-10T13:42:14.780000+00:00",
+    "gross_s": 108.408,
+    "wait_s": 0,
+    "net_s": 108.408,
+    "raw_tokens": 4427591.0,
+    "cw_tokens": 1144567.0999999999
+   },
+   {
+    "label": "mega-sdd:resolve-oq",
+    "start": "2026-09-10T13:42:14.780000+00:00",
+    "end": "2026-09-10T13:58:40.145000+00:00",
+    "gross_s": 985.365,
+    "wait_s": 0,
+    "net_s": 985.365,
+    "raw_tokens": 36672877.0,
+    "cw_tokens": 7046433.299999998
+   },
+   {
+    "label": "GROUND(script)",
+    "start": "2026-09-10T13:58:40.145000+00:00",
+    "end": "2026-09-10T13:58:47.992000+00:00",
+    "gross_s": 7.847,
+    "wait_s": 0,
+    "net_s": 7.847,
+    "raw_tokens": 1485056.0,
+    "cw_tokens": 172723.6
+   },
+   {
+    "label": "mega-sdd:execute-bolts",
+    "start": "2026-09-10T13:58:47.992000+00:00",
+    "end": "2026-09-10T14:02:50.537000+00:00",
+    "gross_s": 242.545,
+    "wait_s": 0,
+    "net_s": 242.545,
+    "raw_tokens": 26502259.0,
+    "cw_tokens": 4485910.300000001
+   },
+   {
+    "label": "bolt-implementer ×3",
+    "start": "2026-09-10T14:02:50.537000+00:00",
+    "end": "2026-09-10T21:08:15+07:00",
+    "gross_s": 324.463,
+    "wait_s": 0,
+    "net_s": 324.463,
+    "raw_tokens": 9047997.0,
+    "cw_tokens": 1196312.9
+   }
+  ],
+  "pre_code": {
+   "end": "2026-09-10T13:58:47.992000+00:00",
+   "gross_s": 2280.743,
+   "wait_s": 0,
+   "net_s": 2280.743,
+   "cw_tokens": 16692033.499999965
+  },
+  "bolt1": {
+   "start": "2026-09-10T13:58:47.992000+00:00",
+   "gross_s": 567.008,
+   "wait_s": 0,
+   "net_s": 567.008,
+   "cw_tokens": 5682223.199999998
+  },
+  "pre_code_share": 80.08927044534441
+ },
+ "bolt1_breakdown": {
+  "window_start": "2026-09-10T13:58:47.992000+00:00",
+  "window_end": "2026-09-10T21:08:15+07:00",
+  "gross_s": 567.008,
+  "wait_s": 0,
+  "net_s": 567.008,
+  "implementer": {
+   "count": 3,
+   "sum_s": 3.946,
+   "union_s": 3.946,
+   "units": [
+    "U-001",
+    "U-003",
+    "U-004"
+   ]
+  },
+  "panel": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "verifier": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "gate-script": {
+   "count": 9,
+   "sum_s": 6.217,
+   "union_s": 6.2170000000000005,
+   "units": [
+    "U-001"
+   ]
+  },
+  "agent-other": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "bash-other": {
+   "count": 9,
+   "sum_s": 3.2640000000000002,
+   "union_s": 3.2640000000000002,
+   "units": [
+    "U-001"
+   ]
+  },
+  "skill": {
+   "count": 1,
+   "sum_s": 1.252,
+   "union_s": 1.252,
+   "units": []
+  },
+  "ask": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "fix_rounds_from_redispatch": 0,
+  "implementer_per_unit": {
+   "U-001": 1,
+   "U-003": 1,
+   "U-004": 1
+  },
+  "tool_active_union_s": 17.954,
+  "caveat": "agent spans = main-lane blocking only; background dispatch runtime lives on the sidechain (counts exact, durations lower bound)"
+ },
+ "interaction": {
+  "2026-09-10T21:08:15+07:00": {
+   "ask_points": 0,
+   "user_wait_points": 0,
+   "idle_events": 0,
+   "interaction_points": 0
+  },
+  "2026-09-10T21:36:44+07:00": {
+   "ask_points": 0,
+   "user_wait_points": 2,
+   "idle_events": 0,
+   "interaction_points": 2
+  }
+ }
+}
