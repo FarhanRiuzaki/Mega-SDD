@@ -575,6 +575,26 @@ def probe_spine(cwd):
     return "express"
 
 
+def probe_lane(cwd):
+    """`lane:` from .mega-sdd/config.yaml — "standard" (default) or "lite"
+    (v8 P1, spec 2026-09-10 App. F8; 7.34.0 debt #2). The durable form of the
+    front-door `--lite` flag: execute-bolts pre-flight 3.9 (JIT bind every
+    wave) + W1 zero-idle + the plan-coverage PASS rail key on
+    `derived.lane`, so `--resume` and every hop know without the flag being
+    re-typed. Same contract as probe_spine: top-level key only, first match
+    wins, absent/unreadable → default."""
+    try:
+        with open(os.path.join(cwd, ".mega-sdd", "config.yaml"),
+                  encoding="utf-8", errors="replace") as f:
+            for ln in f:
+                m = re.match(r"^lane:\s*[\"']?(standard|lite)[\"']?\s*(?:#.*)?$", ln)
+                if m:
+                    return m.group(1)
+    except OSError:
+        pass
+    return "standard"
+
+
 def probe_code_files(cwd, limit=4000):
     """Existing-code signal for greenfield/brownfield detection. Bounded
     walk (early exit at the first code file; vendored/state dirs skipped).
@@ -1012,6 +1032,7 @@ def collect_probes(cwd):
         "dirty_journal_rows": probe_dirty_journal(cwd),
         "profile": probe_profile(cwd),
         "spine": probe_spine(cwd),
+        "lane": probe_lane(cwd),
         "astgrep_available": probe_astgrep(),
         "foreign_sdd": probe_foreign_sdd(cwd),
         "preflight_predicates": {
@@ -1125,6 +1146,7 @@ def derive(probes):
         "vault": vault["name"] if vault else None,
         "profile": profile,
         "spine": spine,
+        "lane": probes.get("lane", "standard"),
         "framework_pack": fpack["pack"],
         "framework_pack_manifest": fpack["manifest"],
         "vault_path": vault["path"] if vault else None,

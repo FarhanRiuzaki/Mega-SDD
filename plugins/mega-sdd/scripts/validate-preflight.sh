@@ -130,6 +130,46 @@ def spine():
         return "express"
 
 
+def lane():
+    """derived.lane from state.json, else the config probe directly (state.json
+    may predate the key); absent/unreadable → 'standard' (v8 P1 --lite lane)."""
+    try:
+        with open(os.path.join(cwd, ".mega-sdd", "state.json"),
+                  encoding="utf-8") as f:
+            d = json.load(f)
+        v = d.get("derived", {}).get("lane") or d.get("probes", {}).get("lane")
+        if v in ("standard", "lite"):
+            return v
+    except Exception:
+        pass
+    try:
+        return state_probes.probe_lane(cwd) if state_probes else "standard"
+    except Exception:
+        return "standard"
+
+
+def c_plan_coverage_pass(_):
+    """--lite lane rail (v8 P1 F5, 7.34.0 debt #2): bolts may not start while the
+    PRD→units coverage census is missing or FAIL. The state is written by
+    validate-plan-coverage.sh (generate-units Step 12.8)."""
+    p = os.path.join(cwd, ".mega-sdd", ".plan-coverage-state.json")
+    if not os.path.isfile(p):
+        return False  # missing census under --lite = skipped, not a pass (fatal, not fail-open)
+    with open(p, encoding="utf-8") as f:
+        return json.load(f).get("status") == "PASS"
+
+
+LITE_LANE_CHECKS = [
+    ("lite_plan_coverage_pass", True, c_plan_coverage_pass,
+     "lane: lite — .mega-sdd/.plan-coverage-state.json is missing or FAIL "
+     "(plan_coverage_gap): every PRD requirement heading must be owned by a "
+     "unit's prd_source or quoted by an open question BEFORE execute-bolts. "
+     "Run validate-plan-coverage.sh --cwd --prd --vault (generate-units Step "
+     "12.8) and close the listed gaps; a missing state under --lite is a "
+     "skipped census, not a pass."),
+]
+
+
 # ── unit frontmatter helpers (cold-halt checks) ──────────────────────────────
 
 def unit_files():
@@ -510,6 +550,8 @@ for skill in chain:
     run_checks(skill, entries)
     if skill == "execute-bolts":
         run_checks(skill, COLD_HALT_CHECKS)
+        if lane() == "lite":
+            run_checks(skill, LITE_LANE_CHECKS)
 
 print("PREFLIGHT: %d ok, %d warn, %d fatal"
       % (counts["ok"], counts["warn"], counts["fatal"]))

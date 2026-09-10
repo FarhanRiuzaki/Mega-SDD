@@ -1,7 +1,7 @@
 # JIT bind per wave + quarantine — the pre-flight 3.9 / 3.10 procedures
 
 Loaded by `execute-bolts` SKILL.md pre-flight 3.9 / 3.10 ONLY when one of them
-triggers (3.9: the run is `--lite` OR a unit in the wave carries `## Claims` /
+triggers (3.9: the run is lite — front-door `--lite` or `derived.lane: lite` — OR a unit in the wave carries `## Claims` /
 `existing_interfaces`; 3.10: a DEFER-class halt fires on a unit). A default v7
 greenfield wave never reads this file. Spec: `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md`
 Appendix F2–F4 (JIT bind) and F6c (quarantine); audit

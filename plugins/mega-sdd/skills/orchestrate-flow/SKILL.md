@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.28.3
+version: 2.29.0
 description: Multi-skill lifecycle orchestrator — inspects CWD state, proposes a chain of mega-sdd sub-skills, confirms once, executes in --auto mode with halt-pauses; --deep chains to pipeline-end; --resume continues a paused chain; --sync runs the reconcile lane. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -46,6 +46,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
      pack_match: yes | no         # derived.framework_pack != `_universal` (no == fallback)
      manifest_path: <path|null>   # derived.framework_pack_manifest
    spine: express | classic       # derived.spine — express is the P2 default
+   lane: standard | lite          # derived.lane — config.yaml `lane:`; the durable form of the front-door `--lite` flag (v8 P1)
    ```
 
 3. **Resolution preflight** (per `references/chain-execution.md`). Run in order; each is default-on and falls through silently when not applicable:
@@ -123,6 +124,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 - `--factory` — enable state-driven factory routing: read the whole checkpoint ledger and route forward OR backward to re-run an unresolved phase, looping to convergence under the retry cap (`references/factory-routing.md`). Implied by `--deep`.
 - `--express` / `--classic`: the spine switch — **express is the DEFAULT (P2)**. Express: the state engine renders chains WITHOUT a scan phase (GROUND ran as a script) and appends `--express` to every `bind-codebase` hop (bind enumerates claims from the script-derived `claims-ledger.json` PLUS a model completeness sweep of the vault docs, and retrieves evidence via symbol-index queries + targeted Reads, zero codebase-map load; honest fallback to the standard lane when the index/ledger is unavailable — `bind-codebase/references/express-bind.md`). `--classic` (this run) or `spine: classic` in `.mega-sdd/config.yaml` (persistent — the engine reads only the config; the FLAG is applied by the orchestrator at dispatch time, the `--lean` precedent) restores the scan-first chains verbatim. No gate or verdict-grammar change on either spine.
 - `--strict-quality`: escalate advisory quality findings to chain-pausing
+- `--lite`: the v8 P1 lane for THIS run — forwarded to every `generate-units` / `execute-bolts` hop (JIT bind every wave, W1 zero-idle, plan-coverage PASS before bolts). Durable form = `lane: lite` in `.mega-sdd/config.yaml` (`derived.lane`), which `--resume` reads; a run started with the flag but no config key is lite only for as long as the flag is on the chain — say so in the report and offer the one-line config edit.
 - Checkpoint protocol auto-emits per-step JSONL files at `<vault>/.internal/checkpoints/` (per `references/checkpoint-protocol.md`); enables mid-skill resume
 
 ## Greenfield vs brownfield routing

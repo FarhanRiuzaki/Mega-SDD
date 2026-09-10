@@ -25,6 +25,10 @@ knowledge_base: ""         # ABSENT = probe the in-project KB paths (.mega-sdd/k
                            #   whose README.md is missing counts as ABSENT (+ a note) — it never falls through to a stale
                            #   local copy. analyze's kb_* validators stay project-local by design (7.30.0).
 spine: express      # P2 — express (default) | classic; classic restores scan-first chains + the Stop-hook analyze aggregate
+lane: standard      # v8 P1 — standard (default) | lite. The DURABLE form of the front-door `--lite` flag (derived.lane):
+                           #   lite = execute-bolts pre-flight 3.9 JIT bind on EVERY wave + W1 zero-idle + `validate-preflight.sh
+                           #   --predictive` refuses the execute-bolts hop while .plan-coverage-state.json is missing/FAIL.
+                           #   Set it once per project so `--resume` and every hop know the lane without re-typing the flag.
 # profile:          # P3 — ABSENT is the default: diagnostics lean-by-default on the express spine (Stop-hook analyze aggregate OFF). Set `full` to re-enable the aggregate; `lean` additionally cuts the advisory chain diagnostics (opt-in)
 review_panel: auto         # execute-bolts review-panel tier: auto (risk-based) | minimal | standard | full
                            #   (see execute-bolts references/review-panel.md; CLI --review-panel= overrides this key)
