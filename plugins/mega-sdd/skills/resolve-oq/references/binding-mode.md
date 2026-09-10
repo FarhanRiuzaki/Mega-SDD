@@ -6,7 +6,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
 
 ## Procedure
 
-1. **Load and parse binding.md.** Expect sections:
+1. **Load and parse binding.md** — AND (v8 P1, spec 2026-09-10 App. F4) every `<vault>/bolts/U-*/binding.json` whose `claims[]` carry `verdict: CONFLICT` without a `resolution` (JIT bind at dispatch): each such claim is a conflict to walk, presented as `unit · claim id · text · expect · evidence`. Its resolution is written back ONLY via `bash <plugin>/scripts/write-unit-binding.sh --cwd=<root> --vault=<vault> --unit=U-XXX --resolve=<claim-id>=KEEP_VAULT|KEEP_CODE|SPLIT --by=user` — the file is hook-guarded evidence; never Edit it. Expect sections in binding.md:
    - "## Confirmed Claims" (no action needed — informational)
    - "## Conflicts (N) — BLOCKING" carrying one `### CONFLICT-N` detail block per conflict (heading + `- **Vault claim**:` / `- **Codebase reality**:` / `- **Claim**:` lines — the only conflict carrier)
    - "## Open Questions (N)" — auto-propagated deferred OQs that couldn't be auto-resolved

@@ -53,9 +53,11 @@ set -uo pipefail
 
 CWD=""
 QUIET=0
+UNITS=""
 for arg in "$@"; do
   case "$arg" in
     --cwd=*) CWD="${arg#*=}" ;;
+    --units=*) UNITS="${arg#*=}" ;;   # v8 P1.c: unit-scoped JIT verdicts (bolts/U-*/binding.json)
     --quiet) QUIET=1 ;;
     *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
   esac
@@ -89,7 +91,7 @@ mkdir -p "$(dirname "$BLOCKER_FILE")" 2>/dev/null || {
 
 # Run the validator (python3 — robust YAML parsing + regex).
 # Stdout: JSON report. Side-effect: writes BLOCKER_FILE.
-CWD="$CWD" BLOCKER_FILE="$BLOCKER_FILE" QUIET="$QUIET" python3 <<'PYEOF'
+CWD="$CWD" BLOCKER_FILE="$BLOCKER_FILE" QUIET="$QUIET" UNITS="$UNITS" python3 <<'PYEOF'
 import json
 import os
 import re
@@ -674,6 +676,34 @@ def _next_action(drops):
     parts.append("then re-run validator (the execute-bolts gate re-derives it too)")
     return "; ".join(parts) + "."
 
+# ─── v8 P1.c — unit-scoped JIT verdicts (spec 2026-09-10 Appendix F4) ──────────
+# execute-bolts pre-flight 3.9 writes bolts/U-XXX/binding.json (sole writer
+# write-unit-binding.sh, hook-guarded). With --units=U-001,… every CONFLICT claim
+# without a `resolution` in a LISTED unit is a BLOCKING drop (same
+# conflict_unresolved type the hook already denies on). Without --units= the
+# per-unit files are reported as ADVISORY extras only — a CONFLICT on U-005 must
+# not freeze U-001's dispatch (dependents are blocked via depends_on instead).
+_jit_units = []
+_want = [u.strip() for u in os.environ.get("UNITS", "").split(",") if u.strip()]
+for _bp in sorted(glob.glob(os.path.join(vault_dir, "*", "bolts", "U-*", "binding.json"))):
+    _uid = os.path.basename(os.path.dirname(_bp))
+    try:
+        _doc = json.load(open(_bp, encoding="utf-8"))
+    except Exception as _e:
+        if _uid in _want:
+            drops.append({"type": "conflict_unresolved", "conflict_id": "%s:binding.json" % _uid, "unit_id": _uid,
+                          "source_binding": os.path.relpath(_bp, cwd), "heading": "unparseable per-unit binding",
+                          "expected": "re-run write-unit-binding.sh for %s (file unparseable: %s)" % (_uid, type(_e).__name__)})
+        continue
+    _open = [c for c in _doc.get("claims", []) if c.get("verdict") == "CONFLICT" and not c.get("resolution")]
+    _jit_units.append({"unit_id": _uid, "listed": _uid in _want, "conflicts_open": len(_open)})
+    for c in _open:
+        row = {"type": "conflict_unresolved" if _uid in _want else "conflict_unit_unresolved",
+               "conflict_id": c.get("id"), "unit_id": _uid, "source_binding": os.path.relpath(_bp, cwd),
+               "heading": "%s — expect: %s" % (c.get("text") or c.get("kind"), c.get("expect")),
+               "expected": "resolve via resolve-oq --binding (write-unit-binding.sh --resolve %s=KEEP_VAULT|KEEP_CODE|SPLIT --by=user) or fix the code/unit and re-run execute-bolts pre-flight 3.9" % c.get("id")}
+        (drops if _uid in _want else extras).append(row)
+
 status = "PASS" if not drops else "FAIL"
 report = {
     "status": status,
@@ -689,12 +719,14 @@ report = {
         "oq_ids_cited_by_some_unit": len(unit_oq_citations),
         "conflict_ids_cited_by_some_unit": len(unit_conflict_citations),
         "conflicts_unresolved": len([d for d in drops if d.get("type") == "conflict_unresolved"]),
+        "jit_units_checked": len(_jit_units),
         "bindings_stale_recertify": _recertify_stale,
         "drops": len(drops),
         "extras": len(extras),
     },
     "drops": drops,
     "extras": extras,
+    "jit_units": _jit_units,
     # S4 BC-MSG-1: remediation is drop-type aware — the OQ-frontmatter fix can
     # never clear a conflict_unresolved / binding_missing drop.
     "next_action": _next_action(drops),
