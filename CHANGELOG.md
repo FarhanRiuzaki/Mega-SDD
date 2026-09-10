@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.33.0] - 2026-09-10 — v8 P1 selesai: W1 zero-idle, replay 10/10 CONFLICT simkredit lewat JIT, flag `--lite`
+
+Menutup P1 (spec `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md` Appendix F). Default v7 tetap; `--lite` = opt-in.
+
+### Added
+- **W1 zero-idle (App. F6):** PROJECT_SHAPE low-confidence dan PRD tanpa `scopes:` DIREKAM (bukan ditanya) di `--auto`; keputusan L0 toolchain dilipat ke batched ask resolve-oq (menulis `.mega-sdd/l0-toolchain-decision.json`, execute-bolts 3.8 diam); sub-field Defer/OOS direkam dari jawaban yang sama. **Karantina:** `write-unit-quarantine.sh` → `bolts/U-XXX/quarantine.json`; `compute-unit-staleness.sh` → `status: quarantined`; execute-bolts 3.10 — hanya `binding_conflict`/`bind_conflict`, `hard_rule_violated`, OQ P1 business yang boleh menunggu manusia; halt lain mengarantina unit + skip dependents, wave lanjut, tabel **Karantina** + satu pertanyaan per unit di `_summary.md`. Template halt BLOCKING satu layar (`propose-and-confirm-prompt.md §One-screen halt`). Pin statis `tests/w1-zero-idle/` (2 titik interaksi di happy path; angka live = `interaction_points` ekstraktor pada run P5 owner).
+- **Replay 10/10 kelas CONFLICT simkredit lewat JIT** (`tests/jit-bind/test-simkredit-conflict-replay.sh`): 2 kelas fs diverdict script, 8 kelas konten lewat kontrak output ladder E3 (`--verdicts` ber-anchor) → 10/10 `conflict_unresolved`, 0 CONFIRMED-by-absence, clear setelah resolve via writer. Batas dinyatakan di header test: judgment model tidak bisa dibuktikan offline.
+- **`--lite`** di front door (`commands/mega-sdd.md`): pre-flight 3.9 JIT tiap wave + W1 + `validate-plan-coverage.sh` wajib PASS sebelum bolts.
+- Tracer arm `lite` T01 (`benchmarks/tasks/T01-greenfield-chain/files.lite.txt`): greenfield `--lite` menambah 0 commanded read (3.9 = script; `express-bind.md` hanya bila ada text claim) — delta lite vs optimized = 0 by construction. MEASURED T01 di head ini: 114.290 est tok (31 file) vs 112.110 saat P0 — **+1,9 % adalah biaya prosa P1 di SKILL execute-bolts/generate-units yang juga dibayar lane v7**, dipublikasikan apa adanya.
+
+### Changed
+- execute-bolts 2.48.0, generate-intent 2.24.0, resolve-oq 2.15.0.
+
+### Belum (menunggu owner)
+- Angka gate P1 — wall per tahap vs budget dan titik interaksi live — berasal dari dua run P5 interaktif (runbook `research/2026-09-10-p0-baseline/README.md`), juga penentu kill-criterion P0. Tidak diklaim dari lab.
+
 ## [7.32.0] - 2026-09-10 — v8 P1.a–d: grammar unit baru, JIT bind di dispatch (gate CONFLICT unit-scoped), coverage PRD→units
 
 Mandat implementasi v8 owner 2026-09-10 (spec `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md` Appendix F). Rilis ini = **P1.a–P1.d**; P1.e (W1 zero-idle) + P1.f (replay 10/10 CONFLICT simkredit + tracer) menyusul sebagai 7.33.0. Default v7 **tidak berubah**: semua mekanisme baru aditif/dual-read dan hidup hanya bila unit membawa field barunya (atau, nanti, di lane `--lite`).
