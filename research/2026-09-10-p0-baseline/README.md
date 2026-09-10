@@ -1,6 +1,6 @@
 # v8 P0 — baseline 7.31 terdekomposisi per fase (runbook + hasil)
 
-**Status:** RUNBOOK SIAP — hasil **BELUM ADA** (butuh dua run interaktif oleh owner; angka lab tidak pernah dipakai buat klaim waktu — konvensi P5/A7 "never self-reported").
+**Status:** RUNBOOK SIAP — hasil **BELUM ADA**. **Update 2026-09-10 (program otonom §1):** fixture dua arm sudah disiapkan (`TRAINING/p0-xs-arm` @ `6f98c10`, `TRAINING/p0-clinic-arm` @ `b915556`, plugin 7.34.0) dan launcher headless `benchmarks/scripts/p0-headless-run.sh` tervalidasi, tapi launch dari sesi runner ditolak permission classifier — owner menjalankan dua baris `!` di `research/2026-09-10-v8-p0-baseline.md §1`. Deviasi headless (AskUserQuestion nonaktif di `-p`) dicatat di laporan itu §2. Angka lab tidak pernah dipakai buat klaim waktu — konvensi P5/A7 "never self-reported".
 **Keputusan yang bergantung padanya:** gate owner 2026-09-10 — *"Kill-criterion: pra-kode < 25 % time-to-first-code ⇒ berhenti di P1 (JIT bind saja)."* P2 (`plan` + `context.md`) hanya jalan kalau angka ini lolos.
 **Spec:** `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md` §0 (baris "BELUM TERBUKTI") + §7 P0.
 

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.34.1] - 2026-09-10 — Keputusan owner final v8 (xs floor, tiga halt DEFER-loud) + run brownfield live 10 kelas CONFLICT lewat JIT
+
+Program otonom v8 §1 (`research/2026-09-10-v8-autonomous-runbook.md`). Tidak ada gate yang dilonggarkan; dua halt drift justru TETAP blocking.
+
+### Skill version moves
+- `execute-bolts`: 2.49.0 → 2.49.1 (3.10: `bolt_introduces_locked_drift` tetap pure-pause by owner exception)
+
+### Changed
+- **Daftar BLOCKING final dan tertutup** (W1): `binding_conflict`/`bind_conflict` · `hard_rule_violated` · OQ P1 business — plus dua pengecualian CONFLICT-like yang TETAP blocking: `bolt_introduces_locked_drift` (entitas LOCKED = klaim spec terkunci manusia; **override-only, NEVER propose-and-confirm** — kontradiksi lama `halt-protocol`/`bolts.md` "eligible for propose-and-confirm" vs `halt-recovery.md` ditutup ke arah konservatif, registry ditulis ulang byte-neutral 33.981 B) dan `constitution_drift_detected` di lane detect-drift (hash constitution ≠ hash binding = grounding hard-rule basi). `review_critical_unresolved` → **DEFER = karantina unit** (jalur 3.10 sejak 7.33.0), dinyatakan di family `bolts.md`, `halt-recovery.md`, overlay W1 di `halt-taxonomy.md`. Spec Appendix **F10** mencatat keputusannya; audit W1.1 §E-6 ditutup.
+- **F1(e) CLOSED:** target xs body "≤4:1" → "≤4:1 atau contract floor terdokumentasi" (5,4:1 = floor; blok kontrak tidak dipangkas) di spec §3 / App. C / F1.
+
+### Added
+- `benchmarks/scripts/p0-headless-run.sh` — launcher arm P5/P0 headless di clone fixture (`claude -p`, allowlist eksplisit, model opus, system prompt "jawab ask sendiri + tandai [ASSUMED-BY-RUNNER]"); deviasi protokol dinyatakan di header + `research/2026-09-10-v8-p0-baseline.md §2` (`AskUserQuestion` NONAKTIF di `-p`, diprobe).
+- `benchmarks/results/p0-baseline/brownfield-replay/` — raw run brownfield live (unit 10 klaim, wave-claims, ladder-verdicts, binding.json, validation-blockers, run.meta).
+
+### Measured (n=1, label MEASURED)
+- **Run brownfield live** (clone `training-nextjs` @ `3cec603`, ladder E3 dieksekusi live oleh model runner — bukan opus, disclosed): `derive` `fs=3 symbol=0 text=8` → **9/11 CONFLICT, 2 CONFIRMED (kebenaran fs yang benar), 0 OQ; 8/8 klaim konten → CONFLICT, 0 CONFIRMED-by-absence**; gate `--units=U-001` FAIL 9 drop. Menutup batas replay 7.33.0 (kontrak output saja) untuk kelas: created_at ×4, money BigInt vs Decimal, enum status, username vs nip, JWT arrays vs single role.
+- **Kill-criterion P0: BELUM DIPUTUSKAN** — dua arm live diblok permission classifier sesi runner (launch `claude -p` headless ditolak dua kali); owner menjalankan dua baris `!` (laporan §1). Tidak ada verdict tanpa angka.
+
 ## [7.34.0] - 2026-09-10 — Ledger utang v8 P1 ditutup: F1(e) xs body diet (koreksi laporan), `--lite` punya bentuk durable + rail, `sync --full-bind`, spawn ceilings jalur JIT
 
 **Koreksi laporan gate P1:** rilis 7.33.0 bilang "semua item P1 shipped" — **salah**: spec Appendix **F1(e)** (badan xs ringkas + `xs_body_advisory` + target f4-xs ≤4:1) belum dibangun. Ditutup di sini bersama tujuh utang lain yang ditemukan lewat grep di head 7.33.0 (spec Appendix **F9 as-built**). Default v7 tetap; tidak ada gate yang dilonggarkan.

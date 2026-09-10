@@ -1,0 +1,5 @@
+fixture=TRAINING/p0-brownfield-replay (clone of training-nextjs @ 3cec603)
+plugin=7.34.0 @ mega-sdd-github 16bf16e
+ladder_executor=runner model (Claude Fable 5.1) executing express-bind.md §E3 verbatim in the controller role; NOT opus; n=1
+kb=absent (rung 5 n/a); symbol-index=603 symbols/314 files (built by build-symbol-index.sh)
+run_at=2026-09-10T10:44:03Z
