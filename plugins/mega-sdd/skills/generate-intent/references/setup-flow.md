@@ -20,7 +20,7 @@
 
 The per-step `--auto` defaults (Step 0 output-path, 0.5 IMPLEMENTATION_MODE, `mode_migrate_after`, 0.6 PRD_STATUS, 0.7 OUTPUT_MODE, Step 2 gap-count pause) are the canonical table in `generate-intent/references/auto-and-handoff.md` §`--auto` flag behavior — setup-flow does not restate them.
 
-Stays interactive even with `--auto`: the Figma "do you have screenshots?" prompt (must not invent UI); destructive overwrite confirmations; `PROJECT_SHAPE` confirmation when inference confidence is low (otherwise auto-confirm). When invoked via the `Skill` tool without an explicit `--auto`, default to interactive.
+Stays interactive even with `--auto`: the Figma "do you have screenshots?" prompt (must not invent UI); destructive overwrite confirmations. (`PROJECT_SHAPE` is ALWAYS auto-confirmed under `--auto` since v8 P1.e/W1 — low inference confidence is RECORDED, never asked; see `auto-and-handoff.md`.) When invoked via the `Skill` tool without an explicit `--auto`, default to interactive.
 
 ## Step 0 — Output path setup (MANDATORY, before any generation)
 
@@ -176,6 +176,7 @@ b. **Canonical scope handling:**
    - After scope chosen: filter PRD content per the scope-picker §Filter logic + persist the choice per its §Memory write rules (scope-picker ref, routed from the SKILL router); tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` per `generate-intent/references/multi-scope.md`; render sibling-scope informational notes in `vault.md`.
 
 c. **Legacy PRD retrofit bridge:**
+   - **Under `--auto` / the express chain (W1, v8 P1.e — spec 2026-09-10 App. F6b): do NOT ask.** Treat the PRD as single-scope, record `scope_inferred: single` in the vault.json patch, and add ONE delivery-report line offering the retrofit lane (`generate-intent --scope` after a manual `scopes:` block). The prompt below is the INTERACTIVE path only.
    - `AskUserQuestion`: "Yes, propose retrofit (recommended)" (dispatches an AI subagent per the legacy-retrofit-prompt ref, routed from the SKILL router) / "Treat as single-scope PRD" (legacy single-vault) / "Cancel — manual fix first" (**halt `prd_no_scopes_block_user_rejected_retrofit`**).
    - On retrofit chosen: dispatch the subagent; render the diff (detected scopes + evidence + proposed frontmatter + section restructure); `AskUserQuestion` with the glossed menu (canonical code names — `legacy-retrofit-prompt.md` mirrors these): `accept` — tulis `<prd>.retrofit.md` (original tidak disentuh), Step 0.9 restart dari file retrofit; `review per scope` — walk scope satu-satu, approve/reject per scope sebelum ditulis; `skip retrofit` — lanjut sebagai single-scope PRD tanpa filter (legacy); `cancel` — berhenti, tidak ada vault yang ditulis. On accept: write the retrofit to `<prd-name>.retrofit.md` (preserves the original); restart Step 0.9 from step a using the retrofit file. On `overall_confidence: LOW` → **halt `prd_retrofit_low_confidence`** (accept anyway / single-scope fallback / cancel).
 
