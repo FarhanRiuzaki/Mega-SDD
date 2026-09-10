@@ -13,7 +13,7 @@ Three script calls per wave, never hand-written verdicts. Every path below is a
 script; the model's only judgment is the ladder E3 verdict on `text` claims.
 
 1. **Derive the wave's claim set — ONE call per wave.**
-   `bash "${CLAUDE_PLUGIN_ROOT}/scripts/derive-unit-claims.sh" --cwd=<root> --vault=<vault> --units=U-001,…`
+   `bash <plugin-root>/scripts/derive-unit-claims.sh --cwd=<root> --vault=<vault> --units=U-001,…`
    Writes `<vault>/bolts/_wave-claims.json` (one stable file, overwritten per
    wave, head recorded inside) from `target_files` (create ⇒ must-not-exist;
    modify/delete ⇒ must-exist), `## Anchors`, `existing_interfaces`, and
@@ -21,7 +21,7 @@ script; the model's only judgment is the ladder E3 verdict on `text` claims.
    symbol_claims, text_claims, out}}` — **`symbol_claims=text_claims=0` means
    the wave costs ZERO model tokens; say so in the report** (the measured no-op).
 2. **Verdict + write — one call per unit, the sole writer.**
-   `bash "${CLAUDE_PLUGIN_ROOT}/scripts/write-unit-binding.sh" --cwd=<root> --vault=<vault> --unit=U-XXX --claims=<vault>/bolts/_wave-claims.json`
+   `bash <plugin-root>/scripts/write-unit-binding.sh --cwd=<root> --vault=<vault> --unit=U-XXX --claims=<vault>/bolts/_wave-claims.json`
    - `fs_*` claims are verdicted by the script from the filesystem; `symbol`
      claims from `.mega-sdd/codebase/symbol-index.json` (in the expected file →
      CONFIRMED; only elsewhere → CONFLICT collision; nowhere → OQ; index absent
@@ -38,7 +38,7 @@ script; the model's only judgment is the ladder E3 verdict on `text` claims.
      (the same PreToolUse evidence-deny as preflight/postflight/acceptance):
      Write/Edit/Bash to it is denied; only the writer changes it.
 3. **Gate — unit-scoped, the same hook.**
-   `bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-handoff-binding-units.sh" --cwd=<root> --units=U-001,…`
+   `bash <plugin-root>/scripts/validate-handoff-binding-units.sh --cwd=<root> --units=U-001,…`
    FAIL with `conflict_unresolved` drops ⇒ **halt `binding_conflict`** —
    ALWAYS STOP for those units (this is one of the three halts allowed to
    wait for a human, §3.10). Keterangan for the human: *klaim unit bertentangan
@@ -63,7 +63,7 @@ DEFER-class halt on a unit (L0 trio, B1–B4 evidence, `review_critical_unresolv
 wave continues:
 
 ```
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/write-unit-quarantine.sh" --cwd=<root> --vault=<vault> \
+bash <plugin-root>/scripts/write-unit-quarantine.sh --cwd=<root> --vault=<vault> \
   --unit=U-XXX --halt=<halt_type> --reason="<one line>" [--envelope=<halt yaml file>] \
   --dependents=<units skipped via depends_on>
 ```
