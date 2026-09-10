@@ -10,7 +10,14 @@ P5 (`research/2026-08-04-p5-measurement-runbook.md`) mengukur end-to-end: klasik
 
 ## Alat (sudah ada di repo)
 
-`research/2026-08-04-p5-extract.py` sekarang mencetak **phase decomposition** setelah tabel P5 (ditambahkan 2026-09-10): batas fase = record transkrip deterministik (dispatch `Skill` `mega-sdd:*` main-lane, dispatch `Agent` `bolt-implementer`, `Bash` `ground.sh`/`derive-state.sh`), tiap segmen dapat gross/wait/net/raw/cw, lalu dua baris **PRE-CODE** (start → dispatch bolts pertama) dan **BOLT-1** (dispatch → commit unit pertama) + baris `pre-code share of net time-to-first-code: N%` yang langsung dibandingkan ke kill-criterion. Konvensi wait/idle/cw identik dengan P5 (tidak diubah). Smoke-tested 2026-09-10 pada transkrip nyata: jumlah net segmen == net endpoint.
+`research/2026-08-04-p5-extract.py` sekarang mencetak, setelah tabel P5 (ditambahkan 2026-09-10; output P5 lama byte-identik):
+
+1. **Phase decomposition** — batas fase = record transkrip deterministik (dispatch `Skill` `mega-sdd:*` main-lane, dispatch `Agent` `bolt-implementer`, `Bash` `ground.sh`/`derive-state.sh`); segmen berlabel sama berturut-turut dilipat (`×N`); tiap segmen gross/wait/net/raw/cw; lalu **PRE-CODE** (start → dispatch bolts pertama) dan **BOLT-1** (dispatch → commit unit pertama) + baris `pre-code share of net time-to-first-code: N%` yang langsung dibandingkan ke kill-criterion. Jumlah net segmen == net endpoint (dipin lewat smoke test).
+2. **BOLT-1 breakdown** (mandat owner "implementer turns × durasi, panel, fix rounds, gate scripts, konfirmasi vs idle") — dari span `tool_use → tool_result` main-lane: implementer dispatches (count, per-unit → **fix rounds = re-dispatch per unit − 1**), review-panel lenses, resolution-verifier, gate/validator scripts (count + durasi), other Bash, AskUserQuestion; `tool-active union` vs net. **Caveat yang dicetak skrip:** span Agent mengukur waktu BLOCKING main-lane saja — dispatch background (wave execute-bolts, lensa paralel) mengembalikan tool_result seketika dan bekerja di sidechain, jadi durasi implementer/panel = batas bawah; COUNT dan fix rounds eksak; gate script + Bash eksak (foreground).
+3. **Interaction points** — ASK + USER-wait mid-run per endpoint (budget W1: 3-screen ≤ 2, klinik ≤ 3) + jumlah idle event > 10 menit; `idle_ratio = wait/gross` per endpoint (target P1.5: < 20 %).
+4. `--json <path>` menulis semuanya machine-readable → **`benchmarks/results/p0-baseline/<arm>.json`** (rumah resmi hasil; folder + README-nya ada, isinya kosong sampai run dilakukan).
+
+Smoke-tested 2026-09-10 pada dua transkrip nyata (RECON 20 menit: net segmen == net endpoint; HOST-AS400 4 hari, 56 dispatch implementer: breakdown + JSON lengkap — bukan baseline, sesi campuran).
 
 ## Dua skenario
 
@@ -29,7 +36,7 @@ Fixture xs sengaja di `research/` bukan `tests/scenarios/`: sweep korpus `tests/
 4. Minta polos: *"jalankan mega-sdd dari PRD/prd-company-profile.md sampai bolt pertama"*. Jawab OQ dengan tempo natural (waktu jawab = human-wait, dikurangkan). Jangan `--classic`, jangan `--lean`, jangan flag lain — default 7.31.0 apa adanya.
 5. Stop minimum = commit `type(U-XXX):` pertama (endpoint primer). Boleh lanjut sampai semua unit untuk angka sekunder.
 6. Setelah selesai: `/mega-sdd:analyze` (counterweight kualitas), lalu serahkan **path transkrip `.jsonl`** + `git log --format="%h %cI %s"`.
-7. Ekstraksi (siapa pun, deterministik): `python3 research/2026-08-04-p5-extract.py <transcript.jsonl> <first-unit-commit-iso>` → salin tabel P5 + tabel fase + baris share ke §Hasil di bawah, label **MEASURED**.
+7. Ekstraksi (siapa pun, deterministik): `python3 research/2026-08-04-p5-extract.py <transcript.jsonl> <first-unit-commit-iso> [<last-unit-commit-iso>] --json benchmarks/results/p0-baseline/<arm>.json` → commit JSON-nya, salin tabel P5 + fase + BOLT-1 breakdown + interaction points ke §Hasil di bawah, label **MEASURED**. Kolom laporan gate (mandat owner): **wall per tahap vs budget** (GROUND ≤ 2 m · PLAN ≤ 15 m · bolts ≤ 35 m · total ≤ 60 m untuk xs; klinik ≤ 2 jam) dan **jumlah titik interaksi** (≤ 2 / ≤ 3).
 
 Catatan jujur: (a) n=1 per arm — variansi run tidak terukur, disclosed; (b) mesin lab (macOS) ≠ mesin tim (Windows+Falcon) — angka wall-clock absolut bukan klaim, yang dipakai = **rasio** pra-kode/bolt-1 (kill-criterion adalah rasio, sengaja); (c) kalau run terputus/kompaksi, catat — ekstraktor menghitung gap > 10 menit sebagai idle.
 
@@ -47,9 +54,9 @@ Angka pembanding yang sudah ada (P5, klasik 5.9.0, MEASURED): pra-kode 155 m vs 
 
 _Belum ada. Isi tabel di bawah dari output ekstraktor, jangan dari ingatan._
 
-| Arm | plugin | model | gross → ep1 | human-wait | **net → ep1** | PRE-CODE net | BOLT-1 net | **share pra-kode** | cw tok pra-kode / bolt-1 | ASK events | OQ (vault.json) | rework commits | verdict |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| xs-3screen | 7.31.0 | opus | — | — | — | — | — | — | — | — | — | — | — |
-| clinic | 7.31.0 | opus | — | — | — | — | — | — | — | — | — | — | — |
+| Arm | plugin | model | gross → ep1 | human-wait | **net → ep1** | idle_ratio | PRE-CODE net | BOLT-1 net | **share pra-kode** | wall per tahap vs budget (GROUND/PLAN/bolts/total) | titik interaksi (budget) | implementer dispatches / fix rounds | panel lenses | gate scripts | OQ (vault.json) | rework commits | verdict |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| xs-3screen | 7.31.0 | opus | — | — | — | — | — | — | — | — / ≤2m · — / ≤15m · — / ≤35m · — / ≤60m | — (≤2) | — | — | — | — | — | — |
+| clinic | 7.31.0 | opus | — | — | — | — | — | — | — | — · — · — · — / ≤2h | — (≤3) | — | — | — | — | — | — |
 
 Transkrip + `git log` yang dipakai: _(path, commit endpoint)_.
