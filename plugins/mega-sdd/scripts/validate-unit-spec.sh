@@ -87,7 +87,7 @@ if [ -x "$PACK_RESOLVER" ]; then
   TEST_PATTERNS_SECTION=$(bash "$PACK_RESOLVER" --cwd="$CWD" --section="Test patterns" --quiet 2>/dev/null) || TEST_PATTERNS_SECTION=""
 fi
 
-CWD="$CWD" FILE_PATH="$FILE_PATH" STATE_FILE="$STATE_FILE" QUIET="$QUIET" \
+CWD="$CWD" FILE_PATH="$FILE_PATH" STATE_FILE="$STATE_FILE" QUIET="$QUIET" V_LIB="${SCRIPT_DIR}/_lib" \
 TEST_PATTERNS_SECTION="$TEST_PATTERNS_SECTION" python3 <<'PYEOF'
 import glob
 import json
@@ -130,6 +130,50 @@ def _section_body(heading_pat, text):
 # advisory says WHAT drifted, not just "non-canonical".
 VS_DOC_RE = r"(?:vault|model|flows|constraints|constitution|\d{2}-[A-Za-z0-9._-]+)\.md"
 vs_adv = []   # filled per unit by validate_unit(); emitted top-level, never an issue
+
+# xs body diet (v8 P1, spec 2026-09-10 App. F1e) — ADVISORY, never an issue.
+# Keyed on the router's OWN size proxy (_lib/unit_tier.py, the `unit_tier: xs`
+# class: acceptance_test 1..2 AND work items 1..3) so the advisory and the
+# router can never disagree about "small". Budget for that class: Goal 1 line,
+# Context <= 2 sentences, Implementation steps <= 3 (already implied by the
+# proxy), and `## Anti-patterns` / `## Out of scope` only when every item
+# cites a source (U-XXX, OQ-, C-, a doc anchor or file:line). Lines over the
+# budget are the ratio the field measured (Igoo0: instruction:code 17.9:1 on a
+# 22-line unit); a rule here would be a gate on prose length, so it is a list.
+sys.path.insert(0, os.environ.get("V_LIB", ""))
+try:
+    from unit_tier import size_proxy as _xs_size_proxy
+except Exception:  # lib missing (foreign checkout) — advisory silently off
+    _xs_size_proxy = None
+xs_adv = []
+XS_SOURCE_RE = re.compile(r"U-\d{3}|OQ-|C-\d|\.md\b|:\d+\b|§|\(from ", re.IGNORECASE)
+
+
+def xs_body_over(fm, body):
+    """None when the unit is not the xs class or is within budget; else the
+    list of {section, measure, value, budget} entries over budget."""
+    if _xs_size_proxy is None or not _xs_size_proxy(fm, body)["size_small"]:
+        return None
+    over = []
+    goal = _section_body(r"Goal", body)
+    if goal is not None:
+        lines = [ln for ln in goal.splitlines() if ln.strip() and not ln.strip().startswith("<")]
+        if len(lines) > 1:
+            over.append({"section": "Goal", "measure": "lines", "value": len(lines), "budget": 1})
+    ctx = _section_body(r"Context", body)
+    if ctx is not None:
+        n_sent = len(re.findall(r"[.!?](?:\s|$)", ctx))
+        if n_sent > 2:
+            over.append({"section": "Context (read first)", "measure": "sentences", "value": n_sent, "budget": 2})
+    for name, pat in (("Anti-patterns", r"Anti-patterns"), ("Out of scope", r"Out of scope")):
+        sect = _section_body(pat, body)
+        if sect is None:
+            continue
+        items = [ln for ln in sect.splitlines() if re.match(r"^\s*[-*]\s+\S", ln) and not ln.strip().lstrip("-* ").startswith("<")]
+        unsourced = [ln for ln in items if not XS_SOURCE_RE.search(ln)]
+        if unsourced:
+            over.append({"section": name, "measure": "unsourced_items", "value": len(unsourced), "budget": 0})
+    return over or None
 
 
 PRD_REF_RE = re.compile(r"^(?P<file>[^#:\s]+?\.md)(?:#(?P<slug>[^\s]+)|:(?P<line>\d+))$")
@@ -262,6 +306,11 @@ def validate_unit(file_path):
             vs_adv.append({"unit_id": unit_id, "file": rel_path,
                            "vault_source": vs_raw, "shape": vs_shape,
                            "canonical_form": "<doc>.md#<anchor>"})
+
+    _xs_over = xs_body_over(fm, body_after_fm)
+    if _xs_over:
+        xs_adv.append({"unit_id": unit_id, "file": rel_path, "over": _xs_over,
+                       "budget": "xs class (acceptance 1..2, steps 1..3): Goal 1 line · Context <= 2 sentences · Anti-patterns/Out of scope only with a source per item"})
 
     # S5 GU-TASKTYPE-ENUM-1: tolerate quoted scalars + normalize case, then
     # validate against the CLOSED enum — an unknown value is flagged, never
@@ -1063,12 +1112,17 @@ state = {
     # v8 P0 (2026-09-10): vault_source drift per unit — advisory only (see
     # vault_source_shape); an empty list means every unit is canonical.
     "vault_source_advisory": vs_adv,
+    # v8 P1 F1(e) (2026-09-10): xs body diet per unit — advisory only (see
+    # xs_body_over); an empty list means every xs-class unit is within budget.
+    "xs_body_advisory": xs_adv,
     "next_action": (
         ("Unit spec passes integrity checks."
          if status == "PASS"
          else f"{len(merged)} unit-spec issue(s) detected. Detection-only at hook layer; re-emit unit via generate-units --regenerate or amend manually.")
         + (f" Advisory: {len(vs_adv)} unit(s) carry a non-canonical vault_source (canonical `<doc>.md#<anchor>`; see vault_source_advisory) — never a halt."
            if vs_adv else "")
+        + (f" Advisory: {len(xs_adv)} xs-class unit(s) exceed the xs body diet (Goal 1 line · Context <= 2 sentences · Anti-patterns/Out of scope sourced; see xs_body_advisory) — trim the body, never a halt."
+           if xs_adv else "")
     ),
 }
 
