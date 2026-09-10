@@ -147,7 +147,7 @@ TYPE: object — `{ suggested_skill: string, suggested_args: array<string>, rati
 
 ### `blockers:` (REQUIRED)
 
-TYPE: array\<object\> — non-empty per halt-protocol `§blocker envelope` when `status==halted` (`validate-handoff-yaml.sh` FAILs `invalid_handoff` on an empty/absent blocker envelope on a halt). MAY be empty when `status==completed` or `status==paused` — a paused skill legitimately carries `blockers: []` and surfaces triage via `metrics.items_blocked` (e.g. generate-intent's P1-OQ pause; per §Precedence :7 the skill's own reference is operative). This narrows :40/:163 to agree with `§Status values` :249, the halted-specific source.
+TYPE: array\<object\> — **each entry is the body of ONE `blocker:` envelope** (`references/halt-protocol.md §halt-protocol — Unified blocker envelope`: `{ type: <halt_type>, emitted_by: <skill>, details: {…}, recommendation?: {…} }`), i.e. `blockers: [ { type: oq_blocker, emitted_by: generate-intent, details: { oq_ids: [OQ-CN-1], resolver_route: user } } ]` — NEVER the object itself under `blockers:` (a mapping is `handoff_type_mismatch`; the clinic baseline arm 2026-09-10 deadlocked on exactly that). Non-empty when `status==halted` (`validate-handoff-yaml.sh` FAILs `invalid_handoff` on an empty/absent blocker envelope on a halt). MAY be empty when `status==completed` or `status==paused` — a paused skill legitimately carries `blockers: []` and surfaces triage via `metrics.items_blocked` (e.g. generate-intent's P1-OQ pause; per §Precedence :7 the skill's own reference is operative). This narrows :40/:163 to agree with `§Status values` :249, the halted-specific source.
 
 ### `metrics:` (OPTIONAL but encouraged)
 

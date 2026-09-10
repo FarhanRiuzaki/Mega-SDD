@@ -830,7 +830,7 @@ try:
 except Exception as e:
     print(f'(state file parse error: {e})')
 " 2>/dev/null)
-                REASON="${SKILL_NAME} blocked by handoff validation — ${HDETAIL}. Resolve by EITHER (a) re-invoke the upstream producer (${STATE_PRODUCER:-unknown}) — this is auto-allowed and overwrites the FAIL state when it emits a valid handoff; OR (b) delete the stale state file manually: rm ${PROJECT_ROOT}/.mega-sdd/.handoff-validation-state.json (the file is NOT in the anti-self-bypass protected list)."
+                REASON="${SKILL_NAME} blocked by handoff validation — ${HDETAIL}. Resolve by EITHER (a) re-invoke the upstream producer (${STATE_PRODUCER:-unknown}) — this is auto-allowed and overwrites the FAIL state when it emits a valid handoff (fix the handoff YAML per the type_errors above — e.g. blockers must be a LIST of envelope bodies); a second identical failure escalates to user review. Do NOT delete or edit ${PROJECT_ROOT}/.mega-sdd/.handoff-validation-state.json — that resets the retry counter and hides the escalation."
                 emit_block "$REASON"
               fi
             fi
