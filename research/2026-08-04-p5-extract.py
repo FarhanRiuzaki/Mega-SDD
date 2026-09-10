@@ -136,6 +136,115 @@ def main():
     for t, kind, g in wait_events:
         print("  %s %-5s %6.1f min" % (t.isoformat(), kind, g / 60))
 
+    report_phases(recs, start, ep1, wait_events)
+
+
+# ── Phase decomposition (v8 P0, 2026-09-10) ──────────────────────────────────
+# The P5 numbers above are end-to-end. The v8 gate needs the SAME clock split
+# into PRE-CODE (session start → first execute-bolts dispatch) and BOLT-1 (that
+# dispatch → the first acceptance-backed unit commit), because the fusion
+# design only attacks the first band. Boundaries come from deterministic
+# transcript records, never from narration:
+#   - a main-lane `Skill` tool_use whose input.skill starts with `mega-sdd:`
+#   - a main-lane `Agent` tool_use whose subagent_type names bolt-implementer
+#     (hand dispatch — gated as execute-bolts since 7.9.0)
+#   - a main-lane `Bash` tool_use running ground.sh / derive-state.sh (GROUND)
+# Each mark opens a segment that ends at the next mark (the last one ends at
+# ep1). Wait events are attributed to the segment they fall in, tokens likewise
+# (record timestamp in [seg_start, seg_end)), so the segment nets sum to the
+# ep1 net above — a mismatch is a bug in this function, not a finding.
+PRE_CODE_END_LABELS = ("mega-sdd:execute-bolts", "bolt-implementer")
+
+
+def phase_marks(recs):
+    marks = []
+    for r in recs:
+        if r.get("isSidechain") or r.get("type") != "assistant":
+            continue
+        c = (r.get("message") or {}).get("content")
+        if not isinstance(c, list):
+            continue
+        t = ts(r["timestamp"])
+        for item in c:
+            if not isinstance(item, dict) or item.get("type") != "tool_use":
+                continue
+            name = item.get("name")
+            inp = item.get("input") or {}
+            label = None
+            if name == "Skill":
+                sk = str(inp.get("skill") or "")
+                if sk.startswith("mega-sdd:"):
+                    label = sk
+            elif name == "Agent":
+                st = str(inp.get("subagent_type") or "")
+                if "bolt-implementer" in st:
+                    label = "bolt-implementer"
+            elif name == "Bash":
+                cmd = str(inp.get("command") or "")
+                if "ground.sh" in cmd or "derive-state.sh" in cmd:
+                    label = "GROUND(script)"
+            if label:
+                marks.append((t, label))
+    marks.sort(key=lambda m: m[0])
+    return marks
+
+
+def report_phases(recs, start, ep1, wait_events):
+    marks = [m for m in phase_marks(recs) if m[0] <= ep1]
+    print("\nphase decomposition (v8 P0) — endpoint %s" % ep1.isoformat())
+    if not marks:
+        print("  no mega-sdd Skill / bolt-implementer / GROUND dispatch found before the endpoint — "
+              "cannot decompose (was the run driven through the pipeline?)")
+        return
+    # segments: [start, m0) = front door, then [m_i, m_{i+1}), last → ep1
+    bounds = [(start, marks[0][0], "front-door / routing")]
+    for i, (t, label) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else ep1
+        bounds.append((t, end, label))
+    pre_code_end = next((t for t, label in marks
+                         if any(label.startswith(p) for p in PRE_CODE_END_LABELS)), None)
+
+    def seg_stats(a, b):
+        gross = (b - a).total_seconds()
+        wait = sum(g for (t, _, g) in wait_events if a < t <= b)
+        raw = cw = 0.0
+        for r in recs:
+            if r.get("isSidechain"):
+                continue
+            t = ts(r["timestamp"])
+            if not (a <= t < b):
+                continue
+            u = (r.get("message") or {}).get("usage")
+            if u:
+                raw += raw_of(u)
+                cw += cw_of(u)
+        return gross, wait, max(0.0, gross - wait), raw, cw
+
+    print("  %-34s %10s %9s %10s %12s %12s" % ("segment", "gross", "wait", "net", "raw tok", "cw tok"))
+    tot_net = 0.0
+    for a, b, label in bounds:
+        if b <= a:
+            continue
+        gross, wait, net, raw, cw = seg_stats(a, b)
+        tot_net += net
+        print("  %-34s %10s %7.1fm %10s %12s %12s" % (
+            label[:34], dur(a, b), wait / 60,
+            dur(a, a.__class__.fromtimestamp(a.timestamp() + net, tz=a.tzinfo)),
+            "{:,}".format(int(raw)), "{:,.0f}".format(cw)))
+    print("  %-34s %10s %9s %10s" % ("(sum of segment nets)", "", "", dur(start, start.__class__.fromtimestamp(start.timestamp() + tot_net, tz=start.tzinfo))))
+    if pre_code_end is None:
+        print("  PRE-CODE / BOLT-1 split: no execute-bolts or bolt-implementer dispatch before the endpoint")
+        return
+    g1, w1, n1, r1, c1 = seg_stats(start, pre_code_end)
+    g2, w2, n2, r2, c2 = seg_stats(pre_code_end, ep1)
+    total_net = n1 + n2
+    share = (100.0 * n1 / total_net) if total_net else 0.0
+    print("  PRE-CODE  (start → first bolts dispatch %s): net %s, cw %s" % (
+        pre_code_end.isoformat(), dur(start, start.__class__.fromtimestamp(start.timestamp() + n1, tz=start.tzinfo)), "{:,.0f}".format(c1)))
+    print("  BOLT-1    (dispatch → first unit commit):         net %s, cw %s" % (
+        dur(start, start.__class__.fromtimestamp(start.timestamp() + n2, tz=start.tzinfo)), "{:,.0f}".format(c2)))
+    print("  pre-code share of net time-to-first-code: %.1f%%  (v8 P0 kill-criterion: < 25%% ⇒ stop at P1)" % share)
+
 
 if __name__ == "__main__":
     main()
