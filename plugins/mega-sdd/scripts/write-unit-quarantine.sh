@@ -41,7 +41,17 @@ if E["V_ENV"]:
 doc = {"schema": "unit-quarantine/1", "unit": E["V_UNIT"], "halt_type": E["V_HALT"], "reason": E["V_REASON"],
        "dependents_skipped": [d.strip() for d in E["V_DEPS"].split(",") if d.strip()],
        "envelope": env, "quarantined_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-       "question": "Retry the unit after a fix, fix it by hand, or drop it? (one answer per quarantined unit, in the final report)"}
+       # keterangan (OQ-interaction mandate): the ONE question the final report
+       # renders for this unit — question text + source + per-option explanation,
+       # Indonesian, never a bare enum. Renderer copies it verbatim.
+       "question": {
+           "text": "Unit %s dikarantina karena halt `%s` (%s). Mau diapakan?" % (E["V_UNIT"], E["V_HALT"], E["V_REASON"]),
+           "source": "bolts/%s/quarantine.json (write-unit-quarantine.sh; halt envelope tersimpan di field `envelope`)" % E["V_UNIT"],
+           "options": [
+               {"id": "RETRY", "label": "Retry setelah fix", "keterangan": "Penyebab halt sudah diperbaiki (di kode atau di unit) — release karantina, unit dan dependents-nya di-dispatch ulang di wave berikutnya."},
+               {"id": "MANUAL", "label": "Sudah dibereskan manual", "keterangan": "Kamu mengerjakan unit ini sendiri — release karantina; bolt-report tetap wajib (acceptance dijalankan, bukan diklaim)."},
+               {"id": "DROP", "label": "Drop unit", "keterangan": "Unit dikeluarkan dari scope run ini — dependents ikut tertunda; catat alasannya sebagai OQ supaya requirement-nya tidak hilang diam-diam."}],
+           "answer_by": "release via `write-unit-quarantine.sh --release --by=<siapa>` (RETRY/MANUAL) atau OQ (DROP) — satu jawaban per unit, di laporan akhir"}}
 tmp = E["V_OUT"] + ".tmp.%d" % os.getpid()
 with open(tmp, "w", encoding="utf-8") as f: json.dump(doc, f, indent=1, ensure_ascii=False)
 os.replace(tmp, E["V_OUT"])

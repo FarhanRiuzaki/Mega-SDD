@@ -16,8 +16,9 @@ printf 'halt:\n  type: acceptance_red\n  unit: U-002\n' > "$T/halt.yaml"
 OUT="$(bash "$S/write-unit-quarantine.sh" --cwd="$T" --vault="$V" --unit=U-002 --halt=acceptance_red --reason="acceptance red after 3 retries" --envelope="$T/halt.yaml" --dependents=U-003,U-004 2>&1)"; RC=$?
 [ $RC -eq 0 ] && python3 -c "
 import json,sys;d=json.load(open('$V/bolts/U-002/quarantine.json'))
-assert d['schema']=='unit-quarantine/1' and d['halt_type']=='acceptance_red' and d['dependents_skipped']==['U-003','U-004'] and 'acceptance_red' in d['envelope'] and 'question' in d" \
-  && pass "a: quarantine.json written with halt, reason, dependents, envelope, the ONE question" || fail "a: quarantine write wrong (rc=$RC: $OUT)"
+assert d['schema']=='unit-quarantine/1' and d['halt_type']=='acceptance_red' and d['dependents_skipped']==['U-003','U-004'] and 'acceptance_red' in d['envelope']
+q=d['question']; assert 'dikarantina' in q['text'] and 'acceptance_red' in q['text'] and q['source'].startswith('bolts/U-002/') and [o['id'] for o in q['options']]==['RETRY','MANUAL','DROP'] and all(o['keterangan'] for o in q['options'])" \
+  && pass "a: quarantine.json written with halt, reason, dependents, envelope, the ONE question WITH keterangan (text + source + per-option, Indonesian)" || fail "a: quarantine write wrong (rc=$RC: $OUT)"
 bash "$S/write-unit-quarantine.sh" --cwd="$T" --vault="$V" --unit=U-005 --halt=x >/dev/null 2>&1; [ $? -eq 2 ] && pass "a2: missing --reason → exit 2" || fail "a2: usage exit wrong"
 
 OUT="$(cd "$T" && bash "$S/compute-unit-staleness.sh" --project="$T" --vault="$V" 2>/dev/null)"; RC=$?
