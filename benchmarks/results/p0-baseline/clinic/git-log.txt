@@ -1,0 +1,57 @@
+df94377 2026-09-11T03:50:52+07:00 chore(sdd): analyze — consistency report (WARN: oq_count_sync only)
+2060d9e 2026-09-11T03:50:14+07:00 chore(sdd): detect-drift CLINIC — drift report, pending-sync queue, gate state
+6b36901 2026-09-11T03:38:13+07:00 chore(sdd): batch end — summary, html report, full-suite gate, handoff validation state
+494f72d 2026-09-11T03:37:37+07:00 chore(sdd): evidence U-020 — bolt report, L0, panel ledger, postflight, acceptance
+30e1419 2026-09-11T03:28:44+07:00 feat(U-020): Add the reassign-appointment action to the reception board
+00d59b7 2026-09-11T03:16:49+07:00 chore(sdd): evidence U-019 — bolt report, L0, panel ledger, postflight, acceptance
+401aa1c 2026-09-11T03:05:24+07:00 feat(U-019): Add the walk-in and phone appointment dialog with emergency override
+799d243 2026-09-11T02:52:06+07:00 chore(sdd): evidence U-016 — bolt report, L0, panel ledger, postflight, acceptance
+f86a7cd 2026-09-11T02:51:27+07:00 chore(sdd): evidence U-014 — bolt report, L0, panel ledger, postflight, acceptance
+dea1f9e 2026-09-11T02:50:17+07:00 chore(sdd): evidence U-018 — bolt report, L0, panel ledger, postflight, acceptance
+569b012 2026-09-11T02:40:30+07:00 refactor(U-014): Build the patient booking wizard at /book
+6cfe7ed 2026-09-11T02:36:34+07:00 feat(U-014): Build the patient booking wizard at /book
+6f72b5a 2026-09-11T02:31:25+07:00 feat(U-016): Build the patient reschedule page at /reschedule/[token]
+ae2ab55 2026-09-11T02:30:30+07:00 feat(U-018): Build the reception board at /staff/reception
+281fc22 2026-09-11T02:22:31+07:00 chore(sdd): evidence U-015 — bolt report, L0, panel ledger, postflight, acceptance
+6374778 2026-09-11T02:14:32+07:00 fix(U-015): drop the unrequested booking CTA from the cancel result states
+7ad0c82 2026-09-11T02:10:50+07:00 chore(sdd): fix the U-017 bolt-report controller note (shell ate a backticked token)
+5f3a211 2026-09-11T02:10:23+07:00 chore(sdd): evidence U-017 — bolt report, L0, panel ledger, postflight, acceptance
+6913c4f 2026-09-11T02:09:07+07:00 chore(sdd): evidence U-013 — bolt report, L0, panel ledger, postflight, acceptance
+b08e80c 2026-09-11T02:00:27+07:00 feat(U-017): Build the doctor schedule at /staff/schedule
+9e4da28 2026-09-11T01:55:49+07:00 feat(U-013): Build the date and slot picker
+5e8004f 2026-09-11T01:53:02+07:00 feat(U-015): Build the patient cancel confirmation page
+a684169 2026-09-11T01:46:18+07:00 chore(sdd): evidence U-011 — bolt report, L0, panel ledger, postflight, acceptance
+28d09e1 2026-09-11T01:44:21+07:00 chore(sdd): evidence U-004 — bolt report, L0, panel ledger, postflight, acceptance
+533b535 2026-09-11T01:42:01+07:00 chore(sdd): evidence U-007 — bolt report, L0, panel ledger, postflight, acceptance
+1ae70df 2026-09-11T01:32:43+07:00 feat(U-004): Add the appointments repository and query hooks
+2a8c695 2026-09-11T01:32:03+07:00 feat(U-011): Add the appointment status chip and label maps
+36764d6 2026-09-11T01:30:37+07:00 feat(U-007): Add the patient cancel-by-token route handler
+1dac104 2026-09-11T01:25:01+07:00 chore(sdd): evidence U-012 — bolt report, L0, panel ledger, postflight, acceptance
+3493564 2026-09-11T01:24:06+07:00 chore(sdd): evidence U-021 — bolt report, L0, panel ledger, postflight, acceptance
+8b4ce07 2026-09-11T01:14:48+07:00 feat(U-012): Add the branded patient page shell
+835bdf1 2026-09-11T01:12:40+07:00 feat(U-021): Add the staff schedule and reception menu entries in both orientations
+f6d1dc1 2026-09-11T01:08:07+07:00 chore(sdd): evidence U-006 — bolt report, L0, panel ledger, postflight, acceptance
+3d3d276 2026-09-11T01:05:35+07:00 chore(sdd): evidence U-009 — bolt report, L0, panel ledger, postflight, acceptance
+bea6eb3 2026-09-11T01:05:35+07:00 chore(sdd): evidence U-008 — bolt report, L0, panel ledger, postflight, acceptance
+6a7410e 2026-09-11T01:05:35+07:00 chore(sdd): evidence U-005 — bolt report, L0, panel ledger, postflight, acceptance
+dc21b63 2026-09-11T00:52:32+07:00 fix(U-009): Open patient routes and role-gate staff routes in the route guard
+113aef1 2026-09-11T00:50:03+07:00 fix(U-005): Add the appointments proxy routes
+b851537 2026-09-11T00:49:33+07:00 feat(U-008): Add the CRON_SECRET-protected reminder trigger route
+e802baa 2026-09-11T00:49:27+07:00 fix(U-006): Reject non-segment doctor ids before proxying slots upstream
+7f490cf 2026-09-11T00:28:03+07:00 feat(U-005): Add the appointments proxy routes
+61a7f49 2026-09-11T00:27:46+07:00 feat(U-009): Open patient routes and role-gate staff routes in the route guard
+613f624 2026-09-11T00:27:44+07:00 feat(U-006): Add the services, doctors and slots proxy routes
+fdadb3c 2026-09-11T00:22:30+07:00 chore(sdd): evidence U-010 — bolt report, L0, panel ledger, postflight, acceptance
+0a5e206 2026-09-11T00:22:30+07:00 chore(sdd): evidence U-003 — bolt report, L0, panel ledger, postflight, acceptance
+05e8ba4 2026-09-11T00:22:30+07:00 chore(sdd): evidence U-002 — bolt report, L0, panel ledger, postflight, acceptance
+fbf7fcd 2026-09-11T00:22:30+07:00 chore(sdd): evidence U-001 — bolt report, L0, panel ledger, postflight, acceptance
+ea8e2b8 2026-09-11T00:19:00+07:00 chore(sdd): put the -t test filter before --reporter in acceptance commands
+352362b 2026-09-11T00:13:36+07:00 docs(U-010): Make teal-700 the default AA-safe primary color
+41ccd88 2026-09-11T00:13:36+07:00 feat(U-002): Define appointment domain types and Zod schemas
+2fd447f 2026-09-11T00:13:36+07:00 feat(U-010): Make teal-700 the default AA-safe primary color
+591b40d 2026-09-11T00:13:35+07:00 chore(U-001): Add the date-picker and schedule-grid dependencies
+91b16c2 2026-09-11T00:13:35+07:00 feat(U-003): Implement the bookable date and slot rules
+5356cbc 2026-09-11T00:13:35+07:00 refactor(U-010): move primaryColorConfig into a folder module
+83d2eca 2026-09-11T00:00:02+07:00 chore(sdd): cite bracketed and route-group anchor paths by prose line
+ea5af2d 2026-09-10T23:58:11+07:00 chore(sdd): make the settingsContext anchor parseable by the freshness check
+eeb8e54 2026-09-10T23:55:32+07:00 chore(sdd): clinic-appointment-system vault, binding and units
