@@ -23,7 +23,17 @@ A "unit" is an atomic, AI-executable dev prompt derived from a (bound-)vault. Ea
 ---
 id: U-001                         # zero-padded, monotonic
 title: <short imperative phrase>
-vault_source: <vault-file:section>  # which vault section this unit derives from
+vault_source: <doc>.md#<anchor>    # ONE grammar (v8 P0): <doc> = vault.md | model.md | flows.md |
+                                   #   constraints.md | constitution.md (legacy 0N-*.md tolerated on read);
+                                   #   <anchor> = the F-*/D-NNN id, the DBML table name, or the H2/H3
+                                   #   heading slug the unit derives from (e.g. flows.md#F-U-001,
+                                   #   model.md#contact_messages, vault.md#Architecture).
+                                   # Readers are anchor-agnostic (SIT/UAT extract the F-id by search;
+                                   # graph/emit key on `binding.json` claims, a DIFFERENT field with
+                                   # its own `<doc>.md:<line>` grammar). Older shapes — `doc:anchor`,
+                                   # `doc §anchor`, bare `doc` — are read-tolerated but reported by
+                                   # validate-unit-spec.sh in the state's `vault_source_advisory`
+                                   # (never a halt). New units: canonical form only.
 task_type: create                  # create | extend | verify
                                    # create: new code, target_files all `create`
                                    # extend: modify existing; Migration notes mandatory

@@ -124,6 +124,29 @@ def _section_body(heading_pat, text):
     return m.group(1) if m else None
 
 
+# vault_source grammar (unit-schema.md §Required frontmatter, v8 P0): the doc set
+# is the one make-bound.sh SRC_RE / derive-delta-paths.sh VAULT_DOC_RE accept,
+# plus constitution.md (units cite clauses there). Shapes are named so the
+# advisory says WHAT drifted, not just "non-canonical".
+VS_DOC_RE = r"(?:vault|model|flows|constraints|constitution|\d{2}-[A-Za-z0-9._-]+)\.md"
+vs_adv = []   # filled per unit by validate_unit(); emitted top-level, never an issue
+
+
+def vault_source_shape(value):
+    v = value.strip()
+    if re.fullmatch(VS_DOC_RE + r"#\S+", v):
+        return "canonical"
+    if re.fullmatch(VS_DOC_RE, v):
+        return "no_anchor"
+    if re.fullmatch(VS_DOC_RE + r":\S+", v):
+        return "legacy_colon_separator"
+    if re.fullmatch(VS_DOC_RE + r"\s*§\s*.+", v):
+        return "legacy_section_sign"
+    if re.match(VS_DOC_RE + r"\b", v):
+        return "malformed_anchor"
+    return "unknown_doc"
+
+
 def validate_unit(file_path):
     """All unit-spec checks for ONE unit file. Returns the issue list (each issue
     tagged with the unit's repo-relative path)."""
@@ -160,6 +183,24 @@ def validate_unit(file_path):
             unit_id = os.path.basename(os.path.dirname(file_path))
         else:
             unit_id = os.path.basename(file_path).replace(".md", "")
+
+    # ─── vault_source grammar (v8 P0, 2026-09-10) — ADVISORY, never an issue ──
+    # ONE canonical form: `<doc>.md#<anchor>` (unit-schema.md §Required
+    # frontmatter). Field + fixture units carry four shapes today (`doc#anchor`,
+    # `doc:anchor`, `doc §anchor`, bare `doc`), every deterministic reader is
+    # anchor-agnostic (F_ID_RE.search), and no gate keys on the value — so this
+    # records the drift in the state's top-level `vault_source_advisory` list
+    # (precedent: hard_rules_directive_advisory) and NEVER touches `issues`,
+    # `status` or the exit code. Muatan, bukan bukti: a new hard gate here would
+    # freeze every existing project over a separator.
+    vs_m = re.search(r"^vault_source:\s*(.+?)\s*$", fm, re.MULTILINE)
+    if vs_m:
+        vs_raw = vs_m.group(1).strip().strip("'\"")
+        vs_shape = vault_source_shape(vs_raw)
+        if vs_shape != "canonical":
+            vs_adv.append({"unit_id": unit_id, "file": rel_path,
+                           "vault_source": vs_raw, "shape": vs_shape,
+                           "canonical_form": "<doc>.md#<anchor>"})
 
     # S5 GU-TASKTYPE-ENUM-1: tolerate quoted scalars + normalize case, then
     # validate against the CLOSED enum — an unknown value is flagged, never
@@ -958,10 +999,15 @@ state = {
         if (hr_counts[0] + hr_counts[1]) >= 5
            and hr_counts[1] > 0.8 * (hr_counts[0] + hr_counts[1]) else None),
     "issues": merged,
+    # v8 P0 (2026-09-10): vault_source drift per unit — advisory only (see
+    # vault_source_shape); an empty list means every unit is canonical.
+    "vault_source_advisory": vs_adv,
     "next_action": (
-        "Unit spec passes integrity checks."
-        if status == "PASS"
-        else f"{len(merged)} unit-spec issue(s) detected. Detection-only at hook layer; re-emit unit via generate-units --regenerate or amend manually."
+        ("Unit spec passes integrity checks."
+         if status == "PASS"
+         else f"{len(merged)} unit-spec issue(s) detected. Detection-only at hook layer; re-emit unit via generate-units --regenerate or amend manually.")
+        + (f" Advisory: {len(vs_adv)} unit(s) carry a non-canonical vault_source (canonical `<doc>.md#<anchor>`; see vault_source_advisory) — never a halt."
+           if vs_adv else "")
     ),
 }
 
