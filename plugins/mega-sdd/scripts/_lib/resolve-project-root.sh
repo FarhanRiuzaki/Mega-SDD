@@ -67,6 +67,13 @@ resolve_project_root() {
     _rpr_b="$d"
     while [ "${_rpr_b%/}" != "$_rpr_b" ] && [ -n "${_rpr_b%/}" ]; do _rpr_b="${_rpr_b%/}"; done
     _rpr_b="${_rpr_b##*/}"
+    # ── $HOME is never a project root for a DESCENDANT path (v8 P0 live finding,
+    # 2026-09-10): a `~/.mega-sdd/` left by an old run (memory/, state.json)
+    # passes the substantive test below, so every project under HOME without its
+    # own .mega-sdd/ resolved to HOME and wrote its artifacts there. The walk
+    # stops at HOME unless the caller STARTED at HOME (a project literally in
+    # HOME keeps working). Pure string compare — zero forks.
+    if [ -n "${HOME:-}" ] && [ "${d%/}" = "${HOME%/}" ] && [ "${orig%/}" != "${HOME%/}" ]; then break; fi
     if [ -d "$d/.mega-sdd" ] && [ "$_rpr_b" != ".mega-sdd" ]; then
       if [ -z "$first_match" ]; then first_match="$d"; fi
       # Substantive = canonical .mega-sdd content OR a live Factory Line / memory layer
