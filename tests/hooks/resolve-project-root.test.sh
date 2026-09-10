@@ -215,6 +215,23 @@ for f in "$CNT"/*; do [ -e "$f" ] && sentinel=$((sentinel + $(wc -l < "$f" | tr 
 if [ "$sentinel" -gt 0 ]; then pass "fork counter is live (sentinel registered)"
 else fail "fork counter never fires — the 0 above is vacuous"; fi
 
+# ── D. $HOME boundary (v8 P0 live finding 2026-09-10) ───────────────────────
+# A `~/.mega-sdd/` left by an old run (memory/, state.json) passes the
+# substantive test, so a project UNDER HOME with no .mega-sdd/ of its own used
+# to resolve to HOME and write its artifacts there (the xs baseline arm hit it;
+# the model had to seed .mega-sdd/config.yaml to pin the root). HOME is never a
+# root for a descendant path; a project that IS HOME keeps working.
+HB="$(mktemp -d)"; mkdir -p "$HB/home/.mega-sdd/memory" "$HB/home/proj/src" "$HB/home/proj/deep/er"
+touch "$HB/home/.mega-sdd/state.json"
+got="$(HOME="$HB/home" bash -c 'source "$1"; resolve_project_root "$2"' _ "$LIB" "$HB/home/proj/deep/er" 2>/dev/null || true)"
+[ "$got" != "$HB/home" ] && pass "D1 descendant of HOME never resolves to HOME (got '${got:-<empty>}')" || fail "D1 HOME hijacked the project root: $got"
+got="$(HOME="$HB/home" bash -c 'source "$1"; resolve_project_root "$2"' _ "$LIB" "$HB/home" 2>/dev/null || true)"
+[ "$got" = "$HB/home" ] && pass "D2 a project that IS HOME still resolves (start path == HOME)" || fail "D2 project at HOME broken: $got"
+mkdir -p "$HB/home/proj/.mega-sdd/vaults"
+got="$(HOME="$HB/home" bash -c 'source "$1"; resolve_project_root "$2"' _ "$LIB" "$HB/home/proj/deep/er" 2>/dev/null || true)"
+[ "$got" = "$HB/home/proj" ] && pass "D3 a substantive project under HOME resolves to itself, not HOME" || fail "D3 wrong root: $got"
+rm -rf "$HB"
+
 echo
 [ $rc -eq 0 ] && echo "ALL PASS"
 exit $rc
