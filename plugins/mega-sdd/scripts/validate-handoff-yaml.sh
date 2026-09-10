@@ -110,6 +110,15 @@ def parse_handoff_yaml(text):
     handoff = {}
     current_top_key = None
     pending_sub_key = None  # nested dict key awaiting block-list items (2-level)
+    # v8 P0 live finding (clinic baseline arm 2026-09-10): a block list whose items
+    # are MAPPINGS (`- type: oq_blocker` + deeper `emitted_by:` lines — the documented
+    # blockers[] shape) was misparsed: the first line became a scalar item and the
+    # continuation lines REPLACED the list with a dict → every halted handoff with a
+    # populated blockers[] failed handoff_type_mismatch and the chain deadlocked.
+    # pending_list_item = the dict item currently open in a block list; its
+    # continuation lines are the ones indented deeper than the "- " column.
+    pending_list_item = None
+    list_item_col = -1
     # Walk subsequent lines belonging to handoff: block
     j = base_idx + 1
     while j < len(lines):
@@ -128,6 +137,7 @@ def parse_handoff_yaml(text):
                 key, val = m.group(1), m.group(2)
                 current_top_key = key
                 pending_sub_key = None
+                pending_list_item = None
                 if val == "":
                     handoff[key] = None  # block-style; will populate from children
                 elif val.startswith("[") and val.endswith("]"):
@@ -140,7 +150,8 @@ def parse_handoff_yaml(text):
             content = line[children_col:].lstrip()
             if content.startswith("- "):
                 # Block list item
-                item_val = content[2:].strip().strip("'\"")
+                item_body = content[2:].strip()
+                item_val = item_body.strip("'\"")
                 cur = handoff.get(current_top_key)
                 if isinstance(cur, dict) and pending_sub_key:
                     # 2-level: list items belong to the nested key that opened
@@ -150,19 +161,35 @@ def parse_handoff_yaml(text):
                     if not isinstance(cur.get(pending_sub_key), list):
                         cur[pending_sub_key] = []
                     cur[pending_sub_key].append(item_val)
+                    pending_list_item = None
                 else:
                     if not isinstance(cur, list):
                         handoff[current_top_key] = []
-                    handoff[current_top_key].append(item_val)
+                    mk = re.match(r"^([\w_-]+):\s*(.*?)\s*$", item_body)
+                    if mk:
+                        # `- key: val` opens a MAPPING item; deeper lines continue it
+                        item = {mk.group(1): (mk.group(2).strip("'\"") if mk.group(2) else None)}
+                        handoff[current_top_key].append(item)
+                        pending_list_item = item
+                        list_item_col = col
+                    else:
+                        handoff[current_top_key].append(item_val)
+                        pending_list_item = None
             else:
                 # Nested dict key
                 m = re.match(r"^([\w_-]+):\s*(.*?)\s*$", content)
                 if m:
                     sub_key, sub_val = m.group(1), m.group(2)
-                    if not isinstance(handoff.get(current_top_key), dict):
-                        handoff[current_top_key] = {}
-                    handoff[current_top_key][sub_key] = sub_val.strip("'\"") if sub_val else None
-                    pending_sub_key = sub_key if not sub_val else None
+                    if pending_list_item is not None and col > list_item_col \
+                            and isinstance(handoff.get(current_top_key), list):
+                        # continuation of the open mapping item of a block list
+                        pending_list_item[sub_key] = sub_val.strip("'\"") if sub_val else None
+                    else:
+                        if not isinstance(handoff.get(current_top_key), dict):
+                            handoff[current_top_key] = {}
+                        handoff[current_top_key][sub_key] = sub_val.strip("'\"") if sub_val else None
+                        pending_sub_key = sub_key if not sub_val else None
+                        pending_list_item = None
         j += 1
     return {"handoff": handoff}
 
@@ -329,7 +356,12 @@ else:
                            "metadata"]
             for f in LIST_FIELDS:
                 if f in h and h[f] is not None and not is_listish(h[f]):
-                    type_errors.append(f"{f} must be a list when present, got scalar {h[f]!r}")
+                    if f == "blockers" and isinstance(h[f], dict):
+                        # v8 P0 live finding (clinic arm 2026-09-10): the producer wrote ONE envelope
+                        # body as a mapping under blockers: — the fix is to wrap it, say so.
+                        type_errors.append(f"blockers must be a LIST of envelope bodies — wrap it: blockers: [ {{ type: <halt_type>, emitted_by: <skill>, details: {{...}} }} ] (got a mapping with keys {sorted(h[f].keys())!r}; handoff-contract.md §blockers)")
+                    else:
+                        type_errors.append(f"{f} must be a list when present, got scalar {h[f]!r}")
             for f in DICT_FIELDS:
                 if f in h and h[f] is not None and not is_dictish(h[f]):
                     type_errors.append(f"{f} must be an object/map when present, got scalar {h[f]!r}")
