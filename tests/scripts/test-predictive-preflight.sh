@@ -49,6 +49,17 @@ out=$(bash "$S" $SFLAGS --cwd="$EMPTY" --chain=no-such-skill,also-fabricated </d
   && pass "unknown skills -> 0 checks, exit 0 (silent skip)" \
   || fail "unknown-skill handling wrong (rc=$src): $out"
 
+# ── 2b. chain-aware inputs (v8 P0 live finding 2026-09-10): a WHOLE greenfield chain
+# on an empty cwd must NOT report fatal for inputs an earlier hop produces
+# (vault.json by generate-intent, units/ by generate-units) — the xs baseline arm
+# hit exactly this false fatal. The single-hop fatal below (3.) is unchanged.
+out="$(bash "$S" $SFLAGS --cwd="$EMPTY" --chain=generate-intent,bind-codebase,generate-units,execute-bolts </dev/null 2>/dev/null)"; src=$?
+[ "$src" -eq 0 ] && printf '%s\n' "$out" | grep -q '"check": "binding_input_complete", "status": "ok", "hint": "chain-aware: vault produced by an earlier hop of this chain (generate-intent)' \
+  && printf '%s\n' "$out" | grep -q '"check": "units_directory_present", "status": "ok", "hint": "chain-aware: units produced by an earlier hop of this chain (generate-units)' \
+  && printf '%s\n' "$out" | grep -Eq '^PREFLIGHT: [0-9]+ ok, 0 warn, 0 fatal$' \
+  && pass "whole greenfield chain on empty cwd: inputs produced by earlier hops are chain-aware ok, exit 0" \
+  || fail "chain-aware skip missing (rc=$src): $(printf '%s\n' "$out" | grep -e binding_input -e units_directory -e PREFLIGHT)"
+
 # ── 3. fatal path: bind-codebase on empty cwd -> binding_input_complete fatal, exit 3 ──
 out=$(bash "$S" $SFLAGS --cwd="$EMPTY" --chain=bind-codebase </dev/null); src=$?
 [ "$src" -eq 3 ] && pass "fatal mismatch -> exit 3" || fail "bind-codebase on empty cwd exited $src (expected 3)"
