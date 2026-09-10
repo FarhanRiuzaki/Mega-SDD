@@ -711,6 +711,8 @@ validator_results = {
     # surfaced here read-only from their gate-written state files so /analyze is a true
     # pre-flight of what WILL block bolts (a FAIL here flips overall, as it should).
     "flow_coverage": {"rc": "STATE_FILE", "state_file": ".flow-coverage-state.json"},
+    # v8 P1.d (spec 2026-09-10 App. F5): written by generate-units Step 12.8 via validate-plan-coverage.sh; absent = SKIP
+    "plan_coverage": {"rc": "STATE_FILE", "state_file": ".plan-coverage-state.json"},
     "sibling_consistency": {"rc": "STATE_FILE", "state_file": ".sibling-consistency-state.json"},
     "cross_cutting_registration": {"rc": "STATE_FILE", "state_file": ".cross-cutting-state.json"},
     "ui_quality": {"rc": "STATE_FILE", "state_file": ".ui-quality-blockers.json"},

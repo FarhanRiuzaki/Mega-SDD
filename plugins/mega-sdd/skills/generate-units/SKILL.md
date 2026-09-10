@@ -1,6 +1,6 @@
 ---
 name: generate-units
-version: 2.27.0
+version: 2.28.0
 description: Decomposes a (bound-)vault into atomic PR-sized unit specs — task_type per binding Implementation State Map, OQ-IDs carried, Anchors mandatory when evidence exists, dependency DAG (cycles rejected). Use when the user says "generate units", "vault to units", "bikin units", "pecah vault jadi unit", "dev tasks dari vault", or paraphrases.
 ---
 
@@ -114,6 +114,8 @@ The step skeleton is below with every gate/rail inline, and **the inline skeleto
      - **(h) PBT properties citation check:** every `properties[].cites` must resolve to a real vault section / entity / constitution clause — an uncited property is an INVENTED invariant → reject the unit write (full procedure: `references/validation-passes.md`).
    - **12.6 Deduplication check.** A `create` unit whose `target_files` ALL already exist → halt `dedup_ambiguous` (NEVER silent-rewrite the task_type).
    - **12.7 Sibling-consistency sweep.** Reason about siblings TOGETHER (grouped by module + scope): every sibling a pack-declared cross-cutting concern applies to MUST declare the SAME mechanism (no fan-out divergence); every FK column MUST declare its derived relation accessor. Enforced by `validate-sibling-consistency.sh`.
+
+**12.8. PRD coverage (v8 P1, spec App. F5) — script-run.** When the vault records its PRD (`vault.json` `prd_path_at_generation`, or the PRD passed on the chain), **Run** `bash <plugin-root>/scripts/validate-plan-coverage.sh --cwd=<root> --prd=<prd> --vault=<vault>`: every PRD requirement heading must be owned by some unit's `prd_source` or quoted by an open question; exit 1 → **halt `plan_coverage_gap`** listing the headings (add a unit, raise an OQ, or move the heading under an explicit Out-of-scope section). Units are NOT written around the gap — the gap is the finding. No PRD on record → skip with one line.
 
 **13. Audit log.** Append to `vault.json`: `{ "event": "units_generated", "at": "...", "count": N }`. Runs last so the event reflects all post-write validation outcomes.
 

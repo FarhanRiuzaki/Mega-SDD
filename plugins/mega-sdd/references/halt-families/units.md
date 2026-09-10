@@ -26,6 +26,10 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 - `prd_source_unresolvable` — generate-units (v8 P1, spec 2026-09-10 Appendix F1): `prd_source: <prd-file>#<heading-slug>` / `<prd-file>:<line>` must resolve — file exists under the project root AND the slug matches a heading (lowercase, non-alphanumerics → `-`) or the line is within the file. Only checked when the field is PRESENT; absence = legacy unit, never an issue. Emitted by `validate-unit-spec.sh` (issue → status FAIL, generate-units Step 12 halts; not a hook gate). Details `{unit_id, prd_source, reason}`. Resolution: cite a real heading/line, or remove the field.
 
+### plan_coverage_gap
+
+- `plan_coverage_gap` — generate-units Step 12.8 (v8 P1, spec 2026-09-10 Appendix F5): `validate-plan-coverage.sh --cwd --prd --vault` found a PRD requirement heading (H2/H3 outside meta + out-of-scope sections, or an `F-*` id) that NO unit cites via `prd_source` and NO open question quotes — a requirement nothing will ever verify. ALWAYS STOP (validator FAIL; state `.mega-sdd/.plan-coverage-state.json`; analyze row `plan_coverage`). Details `{gaps[{heading, slug, line}]}`. Resolution: add a unit with `prd_source`, raise an OQ quoting the heading, or move the heading under an explicit 'Out of scope' section. Prerequisite for `--lite` being usable by anyone (P1-akhir).
+
 ### cycle_detected
 
 - `cycle_detected` — generate-units: the unit dependency DAG has a cycle. ALWAYS STOP. Details `{cycle_path: [U-001, U-002, U-001]}` (registry §Type-specific schemas). Resolution: user breaks the cycle by editing the offending units' `depends_on`, then re-runs generate-units.
