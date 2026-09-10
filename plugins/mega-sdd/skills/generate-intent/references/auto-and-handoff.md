@@ -23,7 +23,7 @@ The `--auto` flag is set by upstream callers — typically `/mega-sdd`, the life
 
 - **Figma "do you have screenshots?" prompt** if Figma was referenced but no MCP loaded — must NOT invent UI structure.
 - **Destructive overwrite confirmations** when the output folder exists and is non-empty.
-- **PROJECT_SHAPE confirmation** if inference confidence is low (the skill's existing rule). Otherwise auto-confirm the inferred shape.
+- **PROJECT_SHAPE**: auto-confirm the inferred shape ALWAYS (W1, v8 P1.e — spec 2026-09-10 App. F6b). When inference confidence is low, record `project_shape_confidence: low` + the alternatives considered in the vault.json patch and add one delivery-report line — never a prompt under `--auto` (the audit measured this as a 0–1 conditional stop on the happy path).
 
 **What `--auto` does NOT do (anti-halu rails — NEVER bypass):**
 
