@@ -56,7 +56,7 @@ _Belum ada. Isi tabel di bawah dari output ekstraktor, jangan dari ingatan._
 
 | Arm | plugin | model | gross → ep1 | human-wait | **net → ep1** | idle_ratio | PRE-CODE net | BOLT-1 net | **share pra-kode** | wall per tahap vs budget (GROUND/PLAN/bolts/total) | titik interaksi (budget) | implementer dispatches / fix rounds | panel lenses | gate scripts | OQ (vault.json) | rework commits | verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| xs-3screen | 7.31.0 | opus | — | — | — | — | — | — | — | — / ≤2m · — / ≤15m · — / ≤35m · — / ≤60m | — (≤2) | — | — | — | — | — | — |
+| xs-3screen | **7.34.0** (headless, `research/2026-09-10-v8-p0-baseline.md §3b`) | opus | 47m27s → ep1 · 1h15m56s → DONE | 0 (headless; 12,1 m "USER" = artefak notifikasi sub-agent) | 47m27s | 0 (headless) | **38m00s** | 9m27s | **80,1 %** | 3m45s / ≤2m MISS · ≈32m / ≤15m MISS · ≈42m / ≤35m MISS · 76m / ≤60m MISS | 0 ask (nonaktif) + 13 `[ASSUMED-BY-RUNNER]` (≤2 n/a) | 3 wave-1 (5 total) / 0 | 4 lens ×5 unit | — | — | — | — |
 | clinic | 7.31.0 | opus | — | — | — | — | — | — | — | — · — · — · — / ≤2h | — (≤3) | — | — | — | — | — | — |
 
 Transkrip + `git log` yang dipakai: _(path, commit endpoint)_.
