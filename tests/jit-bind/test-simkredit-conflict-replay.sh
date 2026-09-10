@@ -53,7 +53,7 @@ acceptance_test:
 - C-U001-23 "JWT carries a single role" — expect: auth.ts JWT single role claim
 MD
 OUT="$(bash "$S/derive-unit-claims.sh" --cwd="$T" --vault="$V" --units=U-001 2>&1)"; RC=$?
-W="$(ls -d "$V"/bolts/_wave-*/claims.json | head -1)"
+W="$V/bolts/_wave-claims.json"
 [ $RC -eq 0 ] && echo "$OUT" | grep -q '"text_claims": 8' && echo "$OUT" | grep -q '"fs_claims": 3' && pass "a: derive — 8 text (content-shaped) + 3 fs claims (2 must-not-exist + target modify)" || fail "a: derive counts wrong ($OUT)"
 # ladder E3 output contract for the eight content-shaped classes (anchored CONFLICTs, as the field binding recorded them)
 cat > "$T/verdicts.json" <<'EOF'

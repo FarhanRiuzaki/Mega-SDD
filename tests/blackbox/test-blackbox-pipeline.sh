@@ -373,7 +373,7 @@ acceptance_test:
 - C-U009-02 "no legacy carryover file" — expect: src/config/limits.php — must-not-exist
 MD
 OUT="$(bash "$SCR/derive-unit-claims.sh" --cwd="$PROJ" --vault="$VAULT" --units=U-009 </dev/null 2>&1)"; RC=$?
-WV="$(ls -d "$VAULT"/bolts/_wave-*/claims.json | head -1)"
+WV="$VAULT/bolts/_wave-claims.json"
 [ $RC -eq 0 ] && [ -f "$WV" ] && echo "$OUT" | grep -q '"text_claims": 0' && ok "S14a derive: fs-only wave, 0 model tokens ($OUT)" || bad "S14a derive rc=$RC: $OUT"
 bash "$SCR/write-unit-binding.sh" --cwd="$PROJ" --vault="$VAULT" --unit=U-009 --claims="$WV" </dev/null >/dev/null 2>&1 \
   && python3 -c "import json,sys;d=json.load(open(sys.argv[1]));assert d['summary']['CONFLICT']==1 and d['summary']['CONFIRMED']>=1 and d['summary']['OQ']==0, d['summary']" "$VAULT/bolts/U-009/binding.json" \
@@ -389,7 +389,7 @@ bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --units=U-009 --quie
 python3 -c "import json,sys;d=json.load(open(sys.argv[1]));assert not [x for x in d['drops'] if x.get('unit_id')=='U-009'], [x for x in d['drops'] if x.get('unit_id')=='U-009']" "$PROJ/.mega-sdd/.validation-blockers.json" \
   && python3 -c "import json,sys;d=json.load(open(sys.argv[1]));c=[x for x in d['claims'] if x['id']=='C-U009-02'][0];assert c['resolution']['action']=='KEEP_CODE'" "$VAULT/bolts/U-009/binding.json" \
   && ok "S14e resolved via writer (KEEP_CODE) -> no U-009 drop remains (other stages' binding.md drops are theirs, not JIT's)" || bad "S14e U-009 drop survived resolution"
-rm -f "$VAULT/units/U-009.md"; rm -rf "$VAULT/bolts/U-009" "$VAULT"/bolts/_wave-*
+rm -f "$VAULT/units/U-009.md"; rm -rf "$VAULT/bolts/U-009" "$VAULT/bolts/_wave-claims.json"
 bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --quiet </dev/null >/dev/null 2>&1 || true
 
 stage "S13 verdict"

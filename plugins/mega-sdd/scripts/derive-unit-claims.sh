@@ -12,7 +12,7 @@
 #   existing_interfaces   file + symbol → symbol (symbol index lookup, P1.b writer)
 #   ## Claims             `- C-U<NNN>-<NN> "<text>" — expect: <path>[:<sym>] | <path> — must-exist | <path> — must-not-exist`
 #                         → fs_* / symbol / text (text = ladder E3, express-bind.md — model)
-# Output: <vault>/bolts/_wave-<head8>/claims.json
+# Output: <vault>/bolts/_wave-claims.json (one stable file, overwritten per wave; head inside)
 #   {schema:"unit-claims/1", head, generated_by, units[], claims[{id, unit, kind, expect, source, text?}]}
 # stdout: ONE JSON line {"jit_bind":{"units":N,"fs_claims":F,"symbol_claims":S,"text_claims":T,"out":path}}
 #   — greenfield / create-only ⇒ symbol_claims=text_claims=0 ⇒ the wave needs ZERO model tokens.
@@ -111,8 +111,11 @@ for uid in units:
         elif re.match(r"^[^\s:]+:[A-Za-z_]\w*$", exp): add(uid, "symbol", exp, "%s:## Claims" % rel, cid, ctext)
         else: add(uid, "text", exp, "%s:## Claims" % rel, cid, ctext)
 
-out_dir = os.path.join(vault, "bolts", "_wave-%s" % head); os.makedirs(out_dir, exist_ok=True)
-out = os.path.join(out_dir, "claims.json")
+# ONE stable file per vault, overwritten per wave (v8 P1 debt #5, 2026-09-10): the
+# head is recorded INSIDE the doc; a per-head directory accumulated one
+# claims.json per commit and was never cleaned. Convention = bolts/_batch-suite.json.
+out_dir = os.path.join(vault, "bolts"); os.makedirs(out_dir, exist_ok=True)
+out = os.path.join(out_dir, "_wave-claims.json")
 doc = {"schema": "unit-claims/1", "head": head, "generated_by": GEN,
        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "units": units, "claims": claims}
 tmp = out + ".tmp.%d" % os.getpid()
