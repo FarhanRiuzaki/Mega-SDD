@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.34.0] - 2026-09-10 — Ledger utang v8 P1 ditutup: F1(e) xs body diet (koreksi laporan), `--lite` punya bentuk durable + rail, `sync --full-bind`, spawn ceilings jalur JIT
+
+**Koreksi laporan gate P1:** rilis 7.33.0 bilang "semua item P1 shipped" — **salah**: spec Appendix **F1(e)** (badan xs ringkas + `xs_body_advisory` + target f4-xs ≤4:1) belum dibangun. Ditutup di sini bersama tujuh utang lain yang ditemukan lewat grep di head 7.33.0 (spec Appendix **F9 as-built**). Default v7 tetap; tidak ada gate yang dilonggarkan.
+
+### Skill version moves
+- `generate-units`: 2.28.0 → 2.29.0 (Step 10 xs body diet; 12.8 PASS wajib di lane lite)
+- `execute-bolts`: 2.48.0 → 2.49.0 (3.9/3.10 → `references/jit-bind-and-quarantine.md`; trigger 3.9 = flag `--lite` ATAU `derived.lane: lite`)
+- `orchestrate-flow`: 2.28.3 → 2.29.0 (blok derived `lane:`, flag `--lite`, `--sync --full-bind` diteruskan)
+
+### Added
+- **F1(e) xs body diet.** `_lib/unit_tier.py` = SATU proxy ukuran (`acceptance_test` 1..2 DAN butir kerja 1..3) yang dipakai router `resolve-review-tier.sh` (ekstraksi verbatim; golden dispatch-parity f1–f4 byte-identik, router pins 14/14) dan `validate-unit-spec.sh` → **`xs_body_advisory`** per unit kelas xs yang melampaui diet (Goal 1 baris · Context ≤2 kalimat · Anti-patterns/Out of scope hanya bila tiap butir bersumber) — advisory, tidak pernah issue/status/halt. Step 10 + unit-schema + template menulis dietnya. Harness `f5-xs-diet` (replay U-005 di atas diet) + arm MEASURED yang mencetak rasio.
+- **`--lite` bentuk durable + satu rail script.** `config.yaml` `lane: standard|lite` → `state_probes.probe_lane` → `derived.lane` (cermin `spine:`; `--resume` dan tiap hop tahu tanpa flag). `validate-preflight.sh --predictive` menambah `lite_plan_coverage_pass` di hop execute-bolts: **FATAL** (exit 3) bila `.plan-coverage-state.json` absen/FAIL di lane lite — sensus yang absen = dilewati, bukan lulus (sengaja tidak fail-open). Lane standard byte-identik. Gate hook tetap P2 (spec F5). Dok: `project-config.md`, front door, orchestrate-flow, execute-bolts 3.9, generate-units 12.8.
+- **`sync --full-bind`** (amendemen owner). `derive-unit-claims.sh --units=all` (semua unit, dua layout; vault kosong = exit 2) → `write-unit-binding.sh` per unit → `validate-handoff-binding-units.sh --units=all` (semua unit LISTED ⇒ CONFLICT terbuka = BLOCKING). Kalimat *audit sinkronisasi penuh = `sync --full-bind`* ada di `commands/sync.md`; `--sync` orchestrate-flow meneruskannya; baris Mode di Sync report.
+- **Spawn ceilings jalur JIT** (`tests/weighted-routing/test-spawn-ceilings.sh` C10–C14 + C8b, mandat P4 "spawn-neutral dibuktikan"). MEASURED macOS: derive 4 (cap 6) · writer 4 (6) · validator `--units=` 6 (9) · quarantine 2 (4) · plan-coverage 2 (4) · gate in-run `Agent bolt-implementer` dengan `bolts/U-*/binding.json` 86, python 28 — 0 interpreter ekstra atas C8 (cap 95). Windows+Falcon = lower bound.
+- `paths.md` kini mencantumkan `bolts/U-*/binding.json`, `bolts/U-*/quarantine.json`, `bolts/_wave-claims.json`.
+- Tests: `tests/unit-grammar-p1/test-xs-body-advisory.sh`, `tests/w1-zero-idle/test-lite-lane.sh`, `tests/jit-bind/test-full-bind.sh`, golden `tests/dispatch-parity/golden/f5-xs-diet/`.
+
+### Changed
+- **`derive-unit-claims.sh` output** `bolts/_wave-<head8>/claims.json` → **`bolts/_wave-claims.json`** (satu file per vault, ditimpa per wave, head di dalam; direktori per-head menumpuk tanpa cleanup dan ikut ter-commit). Pembaca (tests, blackbox S14) membaca path tetap.
+- **execute-bolts 3.9/3.10 → `references/jit-bind-and-quarantine.md`** (5,4 KB; dibaca hanya saat 3.9 terpicu atau halt kelas DEFER muncul). SKILL.md 48.503 → 47.067 B; 3.9 dari satu baris 1.864 B jadi 734 B pointer.
+- **`quarantine.json.question`** dari kalimat Inggris hardcoded jadi objek keterangan: `text` (unit · halt · alasan) · `source` · `options` RETRY / MANUAL / DROP masing-masing dengan keterangan (Indonesia) · `answer_by`. Tabel Karantina merender objek ini verbatim (mandat keterangan OQ). Schema `unit-quarantine/1` tetap (bentuk satu field, aditif).
+
+### Measured (statis, head rilis; label MEASURED)
+- **f4-xs vs f5-xs-diet** (baris prompt : 22 baris implementasi): **125 → 119 = 5,7:1 → 5,4:1**. Target spec F1(e) **≤4:1 (88 baris) MISS 31 baris** — sisanya blok kontrak/proteksi (anti-context 10 · provenance 9 · NOTE 5 · T2 tracker 13 · T3 7 · omissions 8 · banner 12) yang verdict 7.28.0 tolak dipangkas karena memangkasnya = memotong bukti. Dilaporkan, tidak dilonggarkan.
+- **Tracer T01** (`benchmarks/scripts/measure-context.sh`, est-token = chars/4): optimized (default v7) **114.358** (7.33.0: 114.290; pemangkasan execute-bolts −1.436 B tertutup prosa writer F1(e) +≈1.700 B → net +68 token); lite **115.688** = optimized + `jit-bind-and-quarantine.md` (+1.330).
+
+### Masih terutang (bukan kode)
+Dua run P5 interaktif owner (kill-criterion + kolom gate P1: wall per fase vs budget, interaction points live, idle_ratio <20 %); keputusan tiga halt DEFER-loud; satu run brownfield live untuk 8/10 kelas replay konten (judgment model tidak terbukti offline); pindah batched ask ke ujung PLAN = P2 `plan` (gate owner).
+
 ## [7.33.0] - 2026-09-10 — v8 P1 selesai: W1 zero-idle, replay 10/10 CONFLICT simkredit lewat JIT, flag `--lite`
 
 Menutup P1 (spec `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md` Appendix F). Default v7 tetap; `--lite` = opt-in.
