@@ -59,7 +59,7 @@ MD
 
 # ── a: derive — counts by kind; greenfield unit contributes fs claims only ──
 OUT="$(bash "$S/derive-unit-claims.sh" --cwd="$T" --vault="$V" --units=U-001,U-002 2>&1)"; RC=$?
-W="$(ls -d "$V"/bolts/_wave-*/claims.json 2>/dev/null | head -1)"
+W="$V/bolts/_wave-claims.json"
 python3 - "$OUT" "$W" "$RC" <<'EOF' && pass "a: wave claims.json — 6 fs / 1 symbol / 1 text; U-001 = fs only (0 model tokens); ids + sources stamped" || fail "a: derive output wrong ($OUT)"
 import json, sys
 out = json.loads(sys.argv[1].strip().splitlines()[-1])["jit_bind"]; w = json.load(open(sys.argv[2])); rc = int(sys.argv[3])
