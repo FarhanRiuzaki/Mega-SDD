@@ -71,7 +71,7 @@ Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt ha
 - `hard_rule_unanchored` — config issue.
 - `ambiguous_spec` — human interpretation call (subagent-emitted; pure-pause).
 - `scope_creep_detected` — the unit's scope is wrong or the plan drifted; human restructures.
-- `review_critical_unresolved` — a Critical (or a still-❌ spec lens) survived the retry budget; human reviews the code.
+- `review_critical_unresolved` — a Critical (or a still-❌ spec lens) survived the retry budget; human reviews the code (W1: the unit is QUARANTINED and the question rides the final report — not a mid-run pause).
 - `bolt_introduces_locked_drift` — LOCKED behavior is a human decision by definition; override-only (the fix-proposer template refuses LOCKED files).
 - `verify_unit_writable` — config issue.
 

@@ -89,4 +89,4 @@
 3. Karantina unit sebagai status resmi (`unit-schema.md` `status: quarantined` + alasan) + tabel karantina di `_summary.md`/laporan akhir dengan satu pertanyaan per unit; dependents skip beralasan. Gate/hook tidak diubah.
 4. Halt BLOCKING satu layar (template `propose-and-confirm-prompt.md` dipangkas ke: apa berhenti · satu pertanyaan · opsi).
 5. Pin test: replay 3-screen happy path → tepat 2 `AskUserQuestion`; `idle_ratio` run P5 < 20 % (ekstraktor v2 sudah menghitungnya).
-6. Keputusan owner yang dibutuhkan: tiga kandidat BLOCKING tambahan (baris C DEFER-loud) — tetap DEFER sesuai aturan, atau dikecualikan.
+6. Keputusan owner yang dibutuhkan: tiga kandidat BLOCKING tambahan (baris C DEFER-loud) — tetap DEFER sesuai aturan, atau dikecualikan. **DIPUTUSKAN 2026-09-10 (runbook otonom + klasifikasi runner, spec F10):** `review_critical_unresolved` → DEFER/karantina; `bolt_introduces_locked_drift` dan `constitution_drift_detected` (lane detect-drift) TETAP BLOCKING sebagai CONFLICT-like (grounding). §D-2 ditutup: override-only, never propose-and-confirm, di semua dok.

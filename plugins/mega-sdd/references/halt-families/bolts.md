@@ -20,7 +20,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### bolt_introduces_locked_drift
 
-- `bolt_introduces_locked_drift` — execute-bolts: bolt drift hits a LOCKED entity. ALWAYS STOP (eligible for propose-and-confirm override).
+- `bolt_introduces_locked_drift` — execute-bolts: bolt drift hits a LOCKED entity. ALWAYS STOP (CONFLICT-like; override-only, never propose-and-confirm).
 
 ### self_assessment_missing
 
@@ -72,7 +72,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### review_critical_unresolved
 
-- `review_critical_unresolved` — execute-bolts: the review panel's Critical findings (or a still-❌ spec lens — an unmet requirement carries no severity grade) survived the retry cap; user resolves them. ALWAYS STOP.
+- `review_critical_unresolved` — execute-bolts: the review panel's Critical findings (or a still-❌ spec lens — an unmet requirement carries no severity grade) survived the retry cap; user resolves them. W1: DEFER via quarantine (3.10), final report.
 
 ### batch_suite_red
 
