@@ -232,6 +232,50 @@ Acceptance criteria are the frontmatter `acceptance_test:` entries (authoritativ
 - Filter/sort berdasarkan keterangan.
 MD
       ;;
+    f5-xs-diet)
+      # v8 P1 F1(e) (spec 2026-09-10 App. F1e): the SAME U-005-class unit
+      # authored on the xs body diet (Goal 1 line, Context <= 2 sentences,
+      # steps <= 3, Out of scope dropped because its one item was unsourced).
+      # Same builder, same --unit-tier=xs; the golden pins the dieted payload
+      # and the MEASURED arm below prints both line ratios against the 22-line
+      # implementation so the diet's contribution is a number, not a claim.
+      cat > "$p/.mega-sdd/vaults/v1/units/U-005.md" <<'MD'
+---
+id: U-005
+title: Tambah kolom keterangan di tabel laporan harian
+task_type: create
+scope: S-01
+scope_name: Laporan
+module: laporan
+risk: low
+status: pending
+target_files:
+  - path: app/Views/laporan/harian.php
+    operation: modify
+acceptance_test:
+  - command: "php tests/laporan/harian_keterangan_test.php"
+    expects: "OK"
+    _authored_by: same-pass
+---
+
+## Goal
+
+Tambah kolom `keterangan` di tabel laporan harian.
+
+## Context (read first)
+
+Kolom `keterangan` sudah ada di query (C-014); hanya render di app/Views/laporan/harian.php yang belum. Tidak ada perubahan skema atau query.
+
+## Implementation steps
+
+1. Tambah header kolom `Keterangan` setelah kolom Status.
+2. Render field `keterangan` per baris dengan escape HTML.
+
+## Acceptance criteria
+
+Acceptance criteria are the frontmatter `acceptance_test:` entries (authoritative).
+MD
+      ;;
     f3-hardrules)
       cat > "$p/.mega-sdd/vaults/v1/units/U-003.md" <<'MD'
 ---
@@ -279,7 +323,7 @@ run_fixture() {  # run_fixture <name> <unit> -> populates $WORK/out/<name>/
   # Per-fixture builder flags: f4-xs is the SAME builder under --unit-tier=xs —
   # the flag is the seam under test, so it lives here, not in a fixture file.
   local extra=""
-  case "$name" in f4-xs) extra="--unit-tier=xs" ;; esac
+  case "$name" in f4-xs|f5-xs-diet) extra="--unit-tier=xs" ;; esac
   # Full-tree snapshot BEFORE the build — the emitted-paths golden below is the
   # structural sweep (round M2): a curated copy list is blind to strays, so the
   # COMPLETE set of paths the builder created becomes a golden artifact itself.
@@ -300,7 +344,7 @@ run_fixture() {  # run_fixture <name> <unit> -> populates $WORK/out/<name>/
   return "$brc"
 }
 
-FIXTURES="f1-minimal:U-001 f2-ui:U-002 f3-hardrules:U-003 f4-xs:U-005"
+FIXTURES="f1-minimal:U-001 f2-ui:U-002 f3-hardrules:U-003 f4-xs:U-005 f5-xs-diet:U-005"
 
 # ── regen mode (manual, never CI) ────────────────────────────────────────────
 # All-or-nothing (round m1): every fixture builds into $WORK first; golden/ is
@@ -401,6 +445,21 @@ if [ -f "$FULL_P" ] && [ -f "$XS_P" ]; then
   fi
 else
   fail "xs relation arm: missing prompt(s) — full=$FULL_P xs=$XS_P"
+fi
+
+# ── xs body diet arm (v8 P1 F1(e), 2026-09-10) — MEASURED, printed, pinned ───
+# prompt-lines : implementation-lines on the 22-line U-005-class replay, f4
+# (as the team wrote it) vs f5 (same unit on the diet). The spec's target was
+# <= 4:1 (88 lines); what remains above it is contract/protection blocks the
+# 7.28.0 verdict refused to cut (anti-context, provenance, T2/T3 pointers) —
+# so the pin is the RELATION (diet never fatter than the undieted body) plus
+# the printed numbers; the target itself is reported, never asserted to pass.
+F4_L=$(wc -l < "$GOLD/f4-xs/dispatch-prompt.md" | tr -d ' '); F5_L=$(wc -l < "$GOLD/f5-xs-diet/dispatch-prompt.md" | tr -d ' ')
+echo "MEASURED xs ratio (prompt lines : 22 impl lines): f4-xs=$F4_L ($(python3 -c "print(round($F4_L/22,1))"):1) · f5-xs-diet=$F5_L ($(python3 -c "print(round($F5_L/22,1))"):1) · spec F1e target <=4:1 (88 lines)"
+if [ "$F5_L" -lt "$F4_L" ]; then
+  pass "xs body diet shrinks the dispatch: f5-xs-diet=$F5_L lines < f4-xs=$F4_L lines"
+else
+  fail "xs body diet did not shrink the dispatch: f5-xs-diet=$F5_L >= f4-xs=$F4_L"
 fi
 
 echo

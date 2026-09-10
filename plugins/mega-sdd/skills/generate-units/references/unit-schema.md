@@ -162,12 +162,14 @@ binding_refs:                      # binding manifest IDs this unit honors
 
 ## Required body sections (polished AI-coding-prompt shape)
 
+**xs body diet (v8 P1, spec 2026-09-10 App. F1e).** A unit with 1–2 `acceptance_test` entries AND 1–3 implementation steps is the router's `unit_tier: xs` class (`scripts/_lib/unit_tier.py` — the ONE size proxy shared by `resolve-review-tier.sh` and `validate-unit-spec.sh`). Its body is embedded verbatim in every dispatch prompt, so for that class: **Goal = 1 line · Context ≤ 2 sentences · Implementation steps ≤ 3 · `## Anti-patterns` and `## Out of scope` only when every item cites a source** (U-XXX, OQ-, C-, doc anchor, file:line). `validate-unit-spec.sh` records offenders in the state's `xs_body_advisory` list (advisory — never an issue, status or halt). Non-xs units keep the shape below.
+
 ```markdown
 ## Goal
-<1-2 sentences — what this unit produces>
+<1-2 sentences — what this unit produces; xs class: ONE line>
 
 ## Context (read first)
-<which vault sections, which binding entries, KB sections (if KB present), and WHY this scope exists. Conversational directive prose, NOT bullets. Aim for 2-4 sentences that orient an AI coding agent: what's the surrounding system, what's the user-visible outcome, what changes nothing.>
+<which vault sections, which binding entries, KB sections (if KB present), and WHY this scope exists. Conversational directive prose, NOT bullets. Aim for 2-4 sentences that orient an AI coding agent (xs class: ≤ 2): what's the surrounding system, what's the user-visible outcome, what changes nothing.>
 
 ## Anchors  (mandatory for ALL task_types when binding evidence exists)
 <file:line where existing code lives that this unit references or modifies. AI coding agent reads these BEFORE writing.>
@@ -197,7 +199,7 @@ Grammar: `- C-U<NNN>-<NN> "<verbatim expectation>" — expect: <path>[:<symbol>]
 - file <path> MUST exist after bolt
 
 ## Anti-patterns  (guidance, NOT validated)
-<Conversational don'ts drawn from binding CONFLICTS + KB gotchas + tech-OQ recommendations + experience. AI agent reads these as context; not machine-enforced.>
+<Conversational don'ts drawn from binding CONFLICTS + KB gotchas + tech-OQ recommendations + experience. AI agent reads these as context; not machine-enforced. xs class: omit the section unless every item cites its source.>
 
 - Don't bypass middleware `auth.role` — RBAC pattern in routes/web.php:34
 - Don't replicate the typo `cfkdhl → CFKDDL` from legacy at <legacy-anchor>
@@ -239,7 +241,7 @@ First, open `app/Http/Controllers/UserController.php` and look at the `index` me
  Enforced by validate-unit-spec.sh → verify_grounding_untrusted (blocks the next execute-bolts).>
 
 ## Out of scope (for this unit)
-<explicit list — prevents scope creep into adjacent units>
+<explicit list — prevents scope creep into adjacent units. xs class: omit unless every item names where it lives (U-XXX / OQ-)>
 ```
 
 ## Hard rule grammar (closed v1)

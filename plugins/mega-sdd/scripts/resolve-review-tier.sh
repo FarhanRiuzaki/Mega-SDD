@@ -299,28 +299,14 @@ effort = "low" if implementer_model == "haiku" else "high"
 # (?m) WITHOUT (?s): the block must stop at the next column-0 key —
 # under DOTALL `[ \t]+.*` swallows the rest of the frontmatter and
 # binding_refs items would inflate the count.
-acc_m = re.search(r"(?m)^acceptance_test:[ \t]*\n((?:[ \t]+[^\n]*\n?)*)", fm)
-n_accept = len(re.findall(r"(?m)^[ \t]+-[ \t]", acc_m.group(1))) if acc_m else 0
-
-
-def _section_items(names, item_rx):
-    # returns None when no named section exists; else the item count
-    parts = re.split(r"(?m)^(##\s+.*)$", body)
-    for i in range(1, len(parts), 2):
-        head = parts[i].lstrip("#").strip().lower()
-        head = re.sub(r"\s*\(.*\)\s*$", "", head)
-        if head in names:
-            sect = parts[i + 1] if i + 1 < len(parts) else ""
-            return len(re.findall(item_rx, sect))
-    return None
-
-
-n_steps = _section_items({"implementation steps"}, r"(?m)^\s*\d+[.)]\s")
-n_reqs = _section_items({"requirements"}, r"(?m)^\s*[-*]\s")
-size_small = (1 <= n_accept <= 2
-              and not (n_steps is None and n_reqs is None)
-              and (n_steps is None or 1 <= n_steps <= 3)
-              and (n_reqs is None or 1 <= n_reqs <= 3))
+# The proxy itself lives in _lib/unit_tier.py (v8 P1 F1(e), 2026-09-10) so the
+# validator's xs_body_advisory keys on the SAME notion of "small" — one
+# implementation, never a mirror. Result names unchanged (n_accept/n_steps/
+# n_reqs/size_small); the golden corpus proves the extraction byte-identical.
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+from unit_tier import size_proxy
+_sp = size_proxy(fm, body)
+n_accept, n_steps, n_reqs, size_small = _sp["n_accept"], _sp["n_steps"], _sp["n_reqs"], _sp["size_small"]
 if tier == "minimal":
     unit_tier = "xs" if (size_small and not parse_note) else "s"
 elif tier == "standard":

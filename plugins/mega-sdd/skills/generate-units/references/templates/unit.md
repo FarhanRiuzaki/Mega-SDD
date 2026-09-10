@@ -25,7 +25,7 @@ binding_refs: []
 
 ## Goal
 
-<1-2 sentences>
+<1-2 sentences — xs class (1–2 acceptance entries AND ≤3 steps): ONE line; Context ≤2 sentences; drop Anti-patterns/Out of scope unless every item is sourced (unit-schema.md §xs body diet)>
 
 ## Context (read first)
 
