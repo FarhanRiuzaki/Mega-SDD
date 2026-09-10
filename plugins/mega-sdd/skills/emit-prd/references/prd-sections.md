@@ -64,7 +64,7 @@ with the KB citation:
 ## Section 2 — Aktor
 
 **Slot:** `{{section-2-actors-table}}`
-**Forward source:** the vault Overview actors/roles + `<vault>/flows.md` flow participants; `_meta/squads.yaml` when present
+**Forward source (mechanical, `build-prd-core.sh` §2):** `_meta/squads.yaml` rows ONLY — one `| squad/role | responsibility/lead_name | _meta/squads.yaml |` row per entry. The vault Overview actors/roles and `flows.md` participants are NOT read by the script; when `squads.yaml` is absent (or empty) the slot stays `{{section-2-actors-table}}` and is a MODEL slot (SKILL Step 2: one row per actor actually NAMED in a source — never invent an actor)
 **Reverse source:** KB domain files' actor/role claims (roles named in workflows, auth models)
 **Extraction:** table `| Aktor | Deskripsi | Sumber |` — one row per actor actually named in a source; reverse rows carry markers in the Deskripsi cell.
 **Missing:** `[Pending — belum ada aktor teridentifikasi di sumber]` (never invent an actor).
