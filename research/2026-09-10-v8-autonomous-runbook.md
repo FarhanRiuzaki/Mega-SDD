@@ -64,9 +64,30 @@ Mulai sekarang dari §1. Jangan tanya konfirmasi untuk memulai.
 
 ---
 
+## Amendemen owner untuk P2 (2026-09-11, VERBATIM — berlaku di atas goal P2 di `research/2026-09-10-v8-p0-baseline.md §6`)
+
+Amendemen owner untuk P2 (berlaku di atas goal P2 yang ada di research/2026-09-10-v8-p0-baseline.md §6):
+
+1. PRIORITAS DI DALAM P2 — dari angka P0: klinik bolt-stage ≈199m dari DONE 274,7m. PLAN fusion saja tidak cukup untuk klinik. Urutan kerja P2 diubah: (a) W2 paralel wave xs dulu (ini lever klinik), (b) baru skills/plan + context.md (lever xs). Ukur keduanya terpisah — jangan laporkan satu angka gabungan.
+
+2. BUDGET DIREVISI, JUJUR: xs DONE ≤60m tetap. Klinik: target ≤2h DIPERTAHANKAN sebagai target, tapi kalau setelah W2 + PLAN angkanya mendarat di 2–2,5 jam dengan acceptance 21/21 dan panel tidak memburuk, itu DITERIMA sebagai hasil — tulis apa adanya, jangan kejar angka dengan memangkas panel/verifier di luar aturan xs.
+
+3. REGRESSION TEST BARU (wajib sebelum P2 ditutup): kelas "model mem-bypass dispatch Skill saat handoff deadlock". Test harus membuktikan: handoff halted + blockers[] terisi => validator bisa dilewati lewat jalur sah (retry/resolve), DAN jalur non-Skill tetap ter-deny hook. Ini kelas moat, bukan bug biasa — masuk S-series.
+
+4. CONFOUND VERSI: xs diukur di 7.34.0, klinik di 7.35.0. Untuk semua pengukuran P2, kedua arm WAJIB di plugin version yang sama (classic vs lite dibedakan hanya oleh flag). Kalau perlu, re-run baseline xs di 7.35.0 sekali supaya perbandingannya bersih; catat sebagai biaya yang disengaja.
+
+5. BIAYA: run klinik $259,66. Jangan re-run klinik penuh per commit. Pola: xs arm dipakai untuk iterasi (murah), klinik penuh dijalankan MAKSIMAL 2× di P2 — satu setelah W2 mendarat, satu di akhir sebagai angka resmi. Catat biaya per run di laporan.
+
+6. CAVEAT KUALITAS: 13/18 keputusan [ASSUMED-BY-RUNNER] + ask nonaktif. Semua kesimpulan WALL boleh dipakai; kesimpulan KUALITAS (panel findings, OQ) harus diberi label "headless, asumsi runner" di laporan — jangan diperlakukan setara run interaktif.
+
+7. Sisanya (grammar, resolver, DOCS re-source, ambang revert, moat hijau per commit, NEXT SESSION) tetap persis goal P2. Kalau ambang revert kena, eksekusi sendiri, jangan tanya.
+
+---
+
 ## Status runner (ditambah per sesi, kronologis)
 
 - 2026-09-10 sesi 3dc71eb1 — kontrak disimpan; §1 dimulai (arm baseline 7.34.0 default pada fixture repo).
 - 2026-09-10 sesi 3dc71eb1 (lanjutan) — §1 **BLOCKED host permission**: launch `claude -p` headless (launcher `benchmarks/scripts/p0-headless-run.sh`) ditolak classifier auto-mode dua kali (bypass global, lalu allowlist+Bash) — butuh owner menjalankan dua baris `!` di `research/2026-09-10-v8-p0-baseline.md §1`. Selesai di sesi: fixture 2 arm siap (node_modules disalin, PRD di-seed, skala MEASURED xs/standard), plugin user-scope 7.34.0, `AskUserQuestion` terbukti NONAKTIF di `-p` (deviasi dicatat), **run brownfield live 10 kelas CONFLICT = 9/11 CONFLICT, 8/8 klaim konten lewat ladder E3 live, 0 CONFIRMED-by-absence** (`benchmarks/results/p0-baseline/brownfield-replay/`), keputusan owner final diterapkan (spec F10, commit `16bf16e`). Kill-criterion BELUM diputuskan (tidak ditebak). P2 belum mulai.
 - 2026-09-10 sesi 3dc71eb1 (lanjutan 2) — owner: "gue approve lo bypass" → **arm xs-3screen DIJALANKAN headless (opus, 7.34.0 default)**: time-to-first-code net 47m27s, **PRE-CODE 38m00s = 80,1 %**, BOLT-1 9m27s; DONE (commit unit terakhir) 1h15m56s wall — budget ≤60m MISS; 5 unit / 7 commit, acceptance 5/5, postflight 5/5, panel Important 3 / Minor 19 (0 open), analyze PASS, drift 0 CONFLICT; 0 ask (nonaktif), 13 keputusan `[ASSUMED-BY-RUNNER]`; biaya $77,47. Dua defect nyata dari run diperbaiki: resolver root memilih `$HOME` (`848a11d`), predictive preflight false-fatal untuk input yang dibuat hop sebelumnya (`0753527`). Arm klinik attempt 1 (sid `f56a7450…`) = **BUKAN DATA**: deadlock `handoff_type_mismatch` (bentuk `blockers[]` tak terdefinisi + parser validator tak bisa baca list-of-mappings + hook menyarankan rm state) lalu model mem-bypass dispatch Skill (eksekusi prosedur manual) — tiga defect diperbaiki `46e81c8`/`848a11d`/`0753527`, rilis **7.35.0**; attempt 2 dijalankan di 7.35.0. Karena xs ≥25 %, cabang "berhenti di P1" tertutup — verdict final ditulis setelah klinik attempt 2 terekstrak.
 - 2026-09-11 sesi 3dc71eb1 (penutup) — **klinik attempt 2 (7.35.0) SELESAI**: time-to-first-code 1h16m01s net, **PRE-CODE 1h00m33s = 79,7 %**, DONE 4h34m44s (budget ≤2h MISS 2,3×), 21 unit, acceptance 21/21, panel Critical 5 / Important 46 / Minor 91, JIT bind 21/21 unit (conflict-at-dispatch 14,3 %), karantina W1 menyala 1× (U-006), 18 `[ASSUMED-BY-RUNNER]`, $259,66. **VERDICT KILL-CRITERION: LANJUT P2** (kedua arm ≥25 %). Laporan `research/2026-09-10-v8-p0-baseline.md` §3d/§5. §1 SELESAI. Sesi berikutnya = §2 (goal P2) di sesi baru. SCM PENDING 53406cc..HEAD.
+- 2026-09-11 sesi 3dc71eb1 (amendemen) — owner mengirim **7 amendemen P2** (disimpan verbatim di atas): urutan W2 dulu lalu PLAN (ukur terpisah); budget klinik 2–2,5 jam diterima bila acceptance 21/21 + panel tidak memburuk; regression test S-series kelas "bypass dispatch Skill saat handoff deadlock" wajib sebelum P2 ditutup; kedua arm P2 di versi plugin sama (re-run xs di 7.35.0 sekali, biaya disengaja); klinik penuh maks 2× di P2 + biaya per run dicatat; kesimpulan kualitas headless diberi label "headless, asumsi runner". P2 dimulai di SESI BARU (hygiene: satu fase per sesi).
