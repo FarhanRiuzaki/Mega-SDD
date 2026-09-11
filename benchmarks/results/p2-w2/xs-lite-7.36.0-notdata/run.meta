@@ -1,0 +1,17 @@
+sid=234aa076-861e-48c9-b49d-06c526e1dbee
+arm=/Users/farhanriuzaki/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-xs-lite
+prd=PRD/prd-company-profile.md
+model=opus
+flags=--lite
+transcript=/Users/farhanriuzaki/.claude/projects/-Users-farhanriuzaki-SunnyGo-2026-AIRND2026-Project-TRAINING-p0-xs-lite/234aa076-861e-48c9-b49d-06c526e1dbee.jsonl
+started_at=2026-09-11T01:23:41Z
+head_before=6f98c10
+plugin=Version: 7.36.0
+pid=72335
+ended_at=2026-09-11T02:47:01Z
+head_after=57fe698
+unit_commits=4
+first_unit_commit_iso=2026-09-11T09:04:40+07:00
+last_unit_commit_iso=2026-09-11T09:05:44+07:00
+extract_rc=0
+extract_json=/Users/farhanriuzaki/SunnyGo/2026/AIRND2026/Project/mega-sdd-github/benchmarks/results/p2-w2/xs-lite/extract.json

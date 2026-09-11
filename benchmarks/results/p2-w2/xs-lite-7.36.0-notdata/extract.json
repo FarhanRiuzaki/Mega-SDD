@@ -1,0 +1,278 @@
+{
+ "session_start": "2026-09-11T01:23:43.905000+00:00",
+ "records": 879,
+ "models": {
+  "claude-opus-5": 379,
+  "<synthetic>": 1
+ },
+ "endpoints": {
+  "2026-09-11T09:04:40+07:00": {
+   "gross_s": 2456.095,
+   "wait_s": 0,
+   "net_s": 2456.095,
+   "raw_tokens": 128946319,
+   "cw_tokens": 24850084.70000001,
+   "idle_ratio": 0.0,
+   "interaction_points": 0
+  },
+  "2026-09-11T09:05:44+07:00": {
+   "gross_s": 2520.095,
+   "wait_s": 0,
+   "net_s": 2520.095,
+   "raw_tokens": 128946319,
+   "cw_tokens": 24850084.70000001,
+   "idle_ratio": 0.0,
+   "interaction_points": 0
+  }
+ },
+ "wait_events": [
+  [
+   "2026-09-11T02:06:46.345000+00:00",
+   "USER",
+   280.105
+  ],
+  [
+   "2026-09-11T02:46:37.993000+00:00",
+   "IDLE",
+   1923.67
+  ]
+ ],
+ "phases": {
+  "segments": [
+   {
+    "label": "front-door / routing",
+    "start": "2026-09-11T01:23:43.905000+00:00",
+    "end": "2026-09-11T01:23:48.933000+00:00",
+    "gross_s": 5.028,
+    "wait_s": 0,
+    "net_s": 5.028,
+    "raw_tokens": 80836.0,
+    "cw_tokens": 115776.2
+   },
+   {
+    "label": "mega-sdd:mega-sdd",
+    "start": "2026-09-11T01:23:48.933000+00:00",
+    "end": "2026-09-11T01:24:01.470000+00:00",
+    "gross_s": 12.537,
+    "wait_s": 0,
+    "net_s": 12.537,
+    "raw_tokens": 290974.0,
+    "cw_tokens": 128183.99999999999
+   },
+   {
+    "label": "GROUND(script)",
+    "start": "2026-09-11T01:24:01.470000+00:00",
+    "end": "2026-09-11T01:25:34.916000+00:00",
+    "gross_s": 93.446,
+    "wait_s": 0,
+    "net_s": 93.446,
+    "raw_tokens": 834890.0,
+    "cw_tokens": 195747.9
+   },
+   {
+    "label": "mega-sdd:orchestrate-flow",
+    "start": "2026-09-11T01:25:34.916000+00:00",
+    "end": "2026-09-11T01:25:38.970000+00:00",
+    "gross_s": 4.054,
+    "wait_s": 0,
+    "net_s": 4.054,
+    "raw_tokens": 131997.0,
+    "cw_tokens": 48281.5
+   },
+   {
+    "label": "GROUND(script)",
+    "start": "2026-09-11T01:25:38.970000+00:00",
+    "end": "2026-09-11T01:25:49.904000+00:00",
+    "gross_s": 10.934,
+    "wait_s": 0,
+    "net_s": 10.934,
+    "raw_tokens": 361422.0,
+    "cw_tokens": 70996.5
+   },
+   {
+    "label": "mega-sdd:generate-intent",
+    "start": "2026-09-11T01:25:49.904000+00:00",
+    "end": "2026-09-11T01:34:48.162000+00:00",
+    "gross_s": 538.258,
+    "wait_s": 0,
+    "net_s": 538.258,
+    "raw_tokens": 12559804.0,
+    "cw_tokens": 4457667.399999997
+   },
+   {
+    "label": "GROUND(script)",
+    "start": "2026-09-11T01:34:48.162000+00:00",
+    "end": "2026-09-11T01:35:12.275000+00:00",
+    "gross_s": 24.113,
+    "wait_s": 0,
+    "net_s": 24.113,
+    "raw_tokens": 1459998.0,
+    "cw_tokens": 188124.5
+   },
+   {
+    "label": "mega-sdd:bind-codebase",
+    "start": "2026-09-11T01:35:12.275000+00:00",
+    "end": "2026-09-11T01:40:29.262000+00:00",
+    "gross_s": 316.987,
+    "wait_s": 0,
+    "net_s": 316.987,
+    "raw_tokens": 15463844.0,
+    "cw_tokens": 3374460.399999999
+   },
+   {
+    "label": "mega-sdd:generate-units",
+    "start": "2026-09-11T01:40:29.262000+00:00",
+    "end": "2026-09-11T01:43:52.479000+00:00",
+    "gross_s": 203.217,
+    "wait_s": 0,
+    "net_s": 203.217,
+    "raw_tokens": 13632571.0,
+    "cw_tokens": 2463454.099999999
+   },
+   {
+    "label": "mega-sdd:resolve-oq",
+    "start": "2026-09-11T01:43:52.479000+00:00",
+    "end": "2026-09-11T01:56:17.382000+00:00",
+    "gross_s": 744.903,
+    "wait_s": 0,
+    "net_s": 744.903,
+    "raw_tokens": 29728320.0,
+    "cw_tokens": 6499615.399999998
+   },
+   {
+    "label": "GROUND(script)",
+    "start": "2026-09-11T01:56:17.382000+00:00",
+    "end": "2026-09-11T01:57:30.113000+00:00",
+    "gross_s": 72.731,
+    "wait_s": 0,
+    "net_s": 72.731,
+    "raw_tokens": 12055707.0,
+    "cw_tokens": 1417094.2000000002
+   },
+   {
+    "label": "mega-sdd:execute-bolts",
+    "start": "2026-09-11T01:57:30.113000+00:00",
+    "end": "2026-09-11T02:01:01.881000+00:00",
+    "gross_s": 211.768,
+    "wait_s": 0,
+    "net_s": 211.768,
+    "raw_tokens": 28849449.0,
+    "cw_tokens": 4180745.900000001
+   },
+   {
+    "label": "bolt-implementer ×4",
+    "start": "2026-09-11T02:01:01.881000+00:00",
+    "end": "2026-09-11T09:04:40+07:00",
+    "gross_s": 218.119,
+    "wait_s": 0,
+    "net_s": 218.119,
+    "raw_tokens": 13496507.0,
+    "cw_tokens": 1709936.7
+   }
+  ],
+  "pre_code": {
+   "end": "2026-09-11T01:57:30.113000+00:00",
+   "gross_s": 2026.208,
+   "wait_s": 0,
+   "net_s": 2026.208,
+   "cw_tokens": 18959402.100000016
+  },
+  "bolt1": {
+   "start": "2026-09-11T01:57:30.113000+00:00",
+   "gross_s": 429.887,
+   "wait_s": 0,
+   "net_s": 429.887,
+   "cw_tokens": 5890682.600000006
+  },
+  "pre_code_share": 82.49713467923675
+ },
+ "bolt1_breakdown": {
+  "window_start": "2026-09-11T01:57:30.113000+00:00",
+  "window_end": "2026-09-11T09:04:40+07:00",
+  "gross_s": 429.887,
+  "wait_s": 0,
+  "net_s": 429.887,
+  "implementer": {
+   "count": 4,
+   "sum_s": 6.231999999999999,
+   "union_s": 6.232,
+   "units": [
+    "U-001",
+    "U-002",
+    "U-003",
+    "U-006"
+   ]
+  },
+  "panel": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "verifier": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "gate-script": {
+   "count": 11,
+   "sum_s": 7.486,
+   "union_s": 7.485999999999999,
+   "units": [
+    "U-001",
+    "U-003"
+   ]
+  },
+  "agent-other": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "bash-other": {
+   "count": 9,
+   "sum_s": 3.774,
+   "union_s": 3.774,
+   "units": [
+    "U-001",
+    "U-003"
+   ]
+  },
+  "skill": {
+   "count": 1,
+   "sum_s": 1.35,
+   "union_s": 1.35,
+   "units": []
+  },
+  "ask": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "fix_rounds_from_redispatch": 0,
+  "implementer_per_unit": {
+   "U-001": 1,
+   "U-002": 1,
+   "U-003": 1,
+   "U-006": 1
+  },
+  "tool_active_union_s": 21.929999999999996,
+  "caveat": "agent spans = main-lane blocking only; background dispatch runtime lives on the sidechain (counts exact, durations lower bound)"
+ },
+ "interaction": {
+  "2026-09-11T09:04:40+07:00": {
+   "ask_points": 0,
+   "user_wait_points": 0,
+   "idle_events": 0,
+   "interaction_points": 0
+  },
+  "2026-09-11T09:05:44+07:00": {
+   "ask_points": 0,
+   "user_wait_points": 0,
+   "idle_events": 0,
+   "interaction_points": 0
+  }
+ }
+}

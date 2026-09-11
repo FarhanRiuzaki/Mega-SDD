@@ -1,0 +1,6 @@
+57fe698 2026-09-11T09:05:44+07:00 feat(U-006): Tambah validasi dan endpoint kirim pesan kontak
+91f5a3b 2026-09-11T09:05:07+07:00 feat(U-002): Loloskan tiga halaman profil dari guard login
+1b97b4e 2026-09-11T09:05:04+07:00 feat(U-001): Tambah file konfigurasi konten profil organisasi
+7c47d58 2026-09-11T09:04:40+07:00 feat(U-003): Tambah layout route group halaman publik
+bd66ccb 2026-09-11T09:00:36+07:00 fix(sdd): parseable anchors for U-003/U-004/U-005
+63832af 2026-09-11T08:58:42+07:00 chore(sdd): vault + units company-profile-mini (mega-sdd lite)

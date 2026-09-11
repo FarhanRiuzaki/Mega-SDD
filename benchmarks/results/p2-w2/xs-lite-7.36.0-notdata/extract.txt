@@ -1,0 +1,60 @@
+session_start=2026-09-11T01:23:43.905000+00:00  records=879  models={'claude-opus-5': 379, '<synthetic>': 1}
+
+endpoint 2026-09-11T09:04:40+07:00
+  gross wall-clock : 0h40m56s
+  human-wait       : 0.0 min (0 events)
+  net machine time : 0h40m56s
+  raw tokens       : 128,946,319
+  cost-weighted    : 24,850,085
+
+endpoint 2026-09-11T09:05:44+07:00
+  gross wall-clock : 0h42m00s
+  human-wait       : 0.0 min (0 events)
+  net machine time : 0h42m00s
+  raw tokens       : 128,946,319
+  cost-weighted    : 24,850,085
+
+wait events:
+  2026-09-11T02:06:46.345000+00:00 USER     4.7 min
+  2026-09-11T02:46:37.993000+00:00 IDLE    32.1 min
+
+phase decomposition (v8 P0) — endpoint 2026-09-11T09:04:40+07:00
+  segment                                 gross      wait        net      raw tok       cw tok
+  front-door / routing                 0h00m05s     0.0m   0h00m05s       80,836      115,776
+  mega-sdd:mega-sdd                    0h00m12s     0.0m   0h00m12s      290,974      128,184
+  GROUND(script)                       0h01m33s     0.0m   0h01m33s      834,890      195,748
+  mega-sdd:orchestrate-flow            0h00m04s     0.0m   0h00m04s      131,997       48,282
+  GROUND(script)                       0h00m10s     0.0m   0h00m10s      361,422       70,996
+  mega-sdd:generate-intent             0h08m58s     0.0m   0h08m58s   12,559,804    4,457,667
+  GROUND(script)                       0h00m24s     0.0m   0h00m24s    1,459,998      188,124
+  mega-sdd:bind-codebase               0h05m16s     0.0m   0h05m16s   15,463,844    3,374,460
+  mega-sdd:generate-units              0h03m23s     0.0m   0h03m23s   13,632,571    2,463,454
+  mega-sdd:resolve-oq                  0h12m24s     0.0m   0h12m24s   29,728,320    6,499,615
+  GROUND(script)                       0h01m12s     0.0m   0h01m12s   12,055,707    1,417,094
+  mega-sdd:execute-bolts               0h03m31s     0.0m   0h03m31s   28,849,449    4,180,746
+  bolt-implementer ×4                  0h03m38s     0.0m   0h03m38s   13,496,507    1,709,937
+  (sum of segment nets)                                     0h40m56s
+  PRE-CODE  (start → first bolts dispatch 2026-09-11T01:57:30.113000+00:00): net 0h33m46s, cw 18,959,402
+  BOLT-1    (dispatch → first unit commit):         net 0h07m09s, cw 5,890,683
+  pre-code share of net time-to-first-code: 82.5%  (v8 P0 kill-criterion: < 25% ⇒ stop at P1)
+
+BOLT-1 breakdown (v8 P0)
+  window 2026-09-11T01:57:30.113000+00:00 → 2026-09-11T09:04:40+07:00  gross 0h07m09s · wait 0.0m · net 0h07m09s
+  class                               count        sum      union  units
+  implementer dispatches                  4   0h00m06s   0h00m06s  U-001,U-002,U-003,U-006
+  review-panel lenses                     0   0h00m00s   0h00m00s  
+  resolution-verifier (fix rounds)        0   0h00m00s   0h00m00s  
+  gate/validator scripts                 11   0h00m07s   0h00m07s  U-001,U-003
+  other Agent dispatches                  0   0h00m00s   0h00m00s  
+  other Bash calls                        9   0h00m03s   0h00m03s  U-001,U-003
+  Skill dispatches                        1   0h00m01s   0h00m01s  
+  AskUserQuestion                         0   0h00m00s   0h00m00s  
+  fix rounds (implementer re-dispatch per unit − 1): 0   per-unit dispatches: {'U-001': 1, 'U-002': 1, 'U-003': 1, 'U-006': 1}
+  tool-active union (all non-ask spans): 0h00m21s  = 5% of BOLT-1 net; the remainder is controller reasoning/reading between tool calls
+  CAVEAT: Agent spans measure MAIN-LANE blocking time only. A background dispatch (execute-bolts waves, parallel panel lenses) returns its tool_result at once and does its work on the sidechain, so implementer/panel 'sum' here is a LOWER BOUND of their runtime; the COUNTS and the per-unit re-dispatch (fix rounds) are exact. Gate scripts and other Bash calls are foreground and exact.
+
+interaction points (v8 W1 budget: 3-screen ≤2, clinic ≤3)
+  to 2026-09-11T09:04:40+07:00: ASK 0 + mid-run USER waits 0 = 0 interaction point(s); 0 idle event(s) >10min
+  to 2026-09-11T09:05:44+07:00: ASK 0 + mid-run USER waits 0 = 0 interaction point(s); 0 idle event(s) >10min
+
+json written: /Users/farhanriuzaki/SunnyGo/2026/AIRND2026/Project/mega-sdd-github/benchmarks/results/p2-w2/xs-lite/extract.json
