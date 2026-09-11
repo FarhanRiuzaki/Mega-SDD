@@ -185,11 +185,16 @@ def _fm_scalar_value(fm, label):
 
 
 def vault_layout(md):
-    """2 when the doc's YAML frontmatter carries `vault_layout: 2`
-    (layout-2 vault.md), else 1 (legacy 00-index.md / no frontmatter)."""
+    """3 when the doc's YAML frontmatter carries `vault_layout: 3` (layout-3
+    `context.md`, v8 P2), 2 when it carries `vault_layout: 2` (layout-2
+    vault.md), else 1 (legacy 00-index.md / no frontmatter)."""
     m = _VAULT_FM_RE.match(md or "")
-    if m and (_fm_scalar_value(m.group(1), "vault_layout") or "") == "2":
-        return 2
+    if m:
+        v = _fm_scalar_value(m.group(1), "vault_layout") or ""
+        if v == "3":
+            return 3
+        if v == "2":
+            return 2
     return 1
 
 
@@ -233,17 +238,132 @@ def is_layout2_vault(vault_dir):
     return os.path.isfile(os.path.join(vault_dir, "vault.md"))
 
 
+# ── v8 P2 layout-3 (`context.md`) shared surface — ONE file, section grammar
+# IDENTICAL to layout-2 (spec 2026-09-10 §3 / App. C2). Every legacy or
+# layout-2 doc name resolves to the same file (resolve_doc); a consumer that
+# parses by section slices the H2 it owns with v3_section() and feeds it to
+# the SAME parser (parse_flows / parse_data_model / parse_adrs /
+# parse_open_questions) — never a second grammar, never a forked mapping.
+V3_DOC = "context.md"
+V3_REQUIRED_HEADERS = ("## Flows", "## Data model", "## Constraints",
+                       "## Open Questions")
+V3_OPTIONAL_HEADERS = ("## Decisions", "## Overview")
+# H2 (lower-cased) → DOC_CODE for claim attribution: the three layout-2 FILES
+# keep the codes their filename carried, Overview/Architecture/Decisions keep
+# the layout-2 section codes, Open Questions is a fence (an OQ is never a
+# claim). An UNKNOWN H2 keeps the current section (the layout-2 rule).
+V3_SECTION_CODES = {
+    "overview": "OV",
+    "architecture": "AR",
+    "decisions": "DC",
+    "flows": "FL",
+    "data model": "DM",
+    "constraints": "CN",
+    "open questions": None,
+}
+# legacy / layout-2 doc name → the layout-3 H2 that carries its content
+# (None = the whole file: lock scalars live in the frontmatter).
+V3_SECTION_OF = {
+    "00-index.md": None,
+    "01-overview.md": "overview",
+    "02-architecture.md": "architecture",
+    "03-data-model.md": "data model",
+    "04-flows.md": "flows",
+    "05-decisions.md": "decisions",
+    "06-constraints.md": "constraints",
+    "vault.md": None,
+    "model.md": "data model",
+    "flows.md": "flows",
+    "constraints.md": "constraints",
+    "context.md": None,
+}
+
+
+def is_layout3_vault(vault_dir):
+    """Layout-3 probe used by every consumer: context.md exists."""
+    return os.path.isfile(os.path.join(vault_dir, V3_DOC))
+
+
+def vault_layout_of(vault_dir):
+    """3 / 2 / 1 from the files on disk (context.md > vault.md > legacy)."""
+    if is_layout3_vault(vault_dir):
+        return 3
+    if is_layout2_vault(vault_dir):
+        return 2
+    return 1
+
+
 def resolve_doc(vault_dir, legacy_name):
-    """Dual-layout doc read-resolution (one minor cycle, floor v5.9.0):
-    on a layout-2 vault return the layout-2 file that carries the legacy
-    doc's content; else the legacy path. Callers that need the doc NAME for
-    a citation should use os.path.basename() of this return value so
-    emitted citations always name the file that was actually read."""
+    """Doc read-resolution, ONE place for every consumer (layout-3 → layout-2
+    → legacy): on a layout-3 vault every legacy or layout-2 name resolves to
+    `context.md`; on a layout-2 vault to the layout-2 file that carries the
+    legacy doc's content; else the legacy path. Callers that need the doc
+    NAME for a citation should use os.path.basename() of this return value
+    so emitted citations always name the file that was actually read; callers
+    that parse by section pair it with v3_section() on layout-3."""
+    if is_layout3_vault(vault_dir):
+        return os.path.join(vault_dir, V3_DOC)
     if is_layout2_vault(vault_dir):
         v2 = V2_DOC_OF.get(legacy_name)
         if v2:
             return os.path.join(vault_dir, v2)
     return os.path.join(vault_dir, legacy_name)
+
+
+def v3_sections(md):
+    """{h2-lower: body} for every `## ` heading of a context.md; a body runs
+    to the next H2 (H3+ stay inside). Text before the first H2 → key ''.
+    A repeated H2 appends (never silently drops content)."""
+    out = {}
+    cur = ""
+    buf = []
+    for line in (md or "").splitlines():
+        if line.startswith("## ") and not line.startswith("### "):
+            out[cur] = (out.get(cur, "") + "\n" + "\n".join(buf)) if cur in out else "\n".join(buf)
+            cur = line[3:].strip().lower()
+            buf = []
+        else:
+            buf.append(line)
+    out[cur] = (out.get(cur, "") + "\n" + "\n".join(buf)) if cur in out else "\n".join(buf)
+    return out
+
+
+def v3_section(md, doc_name):
+    """The context.md section body that carries a legacy / layout-2 doc's
+    content ('' when the section is absent; the WHOLE file for names whose
+    content is the frontmatter). The layout-3 leg of resolve_doc for callers
+    that parse by section rather than by file — so `### <word>` headings of a
+    sibling section (e.g. `### Performance` under Constraints) can never leak
+    into the data-model parser as an entity."""
+    key = V3_SECTION_OF.get(doc_name)
+    if key is None:
+        return md or ""
+    return v3_sections(md).get(key, "")
+
+
+def v3_missing_headers(md):
+    """The V3_REQUIRED_HEADERS absent from a layout-3 context.md, in contract
+    order — [] when the hard-header contract is satisfied. Optional sections
+    (Decisions, Overview) are never required."""
+    heads = set()
+    for line in (md or "").splitlines():
+        if line.startswith("## "):
+            heads.add(line[3:].strip().lower())
+    return [h for h in V3_REQUIRED_HEADERS if h[3:].strip().lower() not in heads]
+
+
+def v3_section_codes(lines):
+    """Per-line DOC_CODE attribution for layout-3 context.md: {line_no: code}
+    (the v2_section_codes twin — same rule, the layout-3 anchor set)."""
+    codes = {}
+    cur = None
+    for i, line in enumerate(lines, 1):
+        if line.startswith("## ") and not line.startswith("### "):
+            head = line[3:].strip().lower()
+            if head in V3_SECTION_CODES:
+                cur = V3_SECTION_CODES[head]
+        codes[i] = cur
+    return codes
 
 
 def v2_section_codes(lines):
@@ -275,7 +395,7 @@ def v2_missing_headers(md):
 def parse_vault_lock(md):
     """The six Vault Lock metadata values (layout-2 adds the optional `project_scale`).
 
-    Layout-2 (frontmatter carries `vault_layout: 2`): the values are read
+    Layout-2 / layout-3 (frontmatter carries `vault_layout: 2` / `3`): the values are read
     FRONTMATTER-FIRST from the vault.md scalars; any key absent there still
     falls back to a `## Vault Lock Status` bullet section if one exists
     (dual-layout read, one minor cycle). Legacy layout: bullets inside the
@@ -286,7 +406,7 @@ def parse_vault_lock(md):
     the CALLER carries the prior vault.json value forward and WARNs (never a
     fabricated enum)."""
     fm_vals = {}
-    if vault_layout(md) == 2:
+    if vault_layout(md) in (2, 3):
         fm = _VAULT_FM_RE.match(md).group(1)
         for label, key in _FM_LOCK_KEYS.items():
             raw = _fm_scalar_value(fm, label)

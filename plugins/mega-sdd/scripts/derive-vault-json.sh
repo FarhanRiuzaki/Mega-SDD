@@ -43,10 +43,10 @@ while [ $# -gt 0 ]; do case "$1" in
   *) shift;; esac; done
 [ -n "$VAULT" ] || { echo "usage: derive-vault-json.sh --vault <dir> [--patch <file.json>] [--event '<json>']" >&2; exit 3; }
 [ -d "$VAULT" ] || { echo "FAIL: vault dir not found: $VAULT" >&2; exit 3; }
-# Dual-layout identity (v7 Fase 3, one minor cycle): layout-2 vault.md OR the
-# legacy 00-index.md — one of the two is mandatory.
-if [ ! -f "$VAULT/vault.md" ] && [ ! -f "$VAULT/00-index.md" ]; then
-  echo "FAIL: neither $VAULT/vault.md (layout-2) nor $VAULT/00-index.md (legacy) exists — not a vault" >&2; exit 3
+# Vault identity (v8 P2 layout-3 context.md > v7 Fase 3 layout-2 vault.md >
+# legacy 00-index.md) — one of the three is mandatory.
+if [ ! -f "$VAULT/context.md" ] && [ ! -f "$VAULT/vault.md" ] && [ ! -f "$VAULT/00-index.md" ]; then
+  echo "FAIL: none of $VAULT/context.md (layout-3), $VAULT/vault.md (layout-2), $VAULT/00-index.md (legacy) exists — not a vault" >&2; exit 3
 fi
 if [ -n "$PATCH" ] && [ ! -f "$PATCH" ]; then echo "FAIL: --patch file not found: $PATCH" >&2; exit 3; fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
@@ -65,11 +65,19 @@ event_raw = os.environ.get("V_EVENT") or ""
 js_path = os.path.join(vault, "vault.json")
 lock_path = os.path.join(vault, "vault.json.lock")
 
-# Layout-aware doc set (v7 Fase 3 dual read, one minor cycle). LAYOUT2 keys
+# Layout-aware doc set (v7 Fase 3 dual read + v8 P2 layout-3). LAYOUT keys
 # every branch below; DOCS keeps each layout's file list, DOC_* name the doc
-# that owns each structural class in the active layout.
-LAYOUT2 = vault_md.is_layout2_vault(vault)
-if LAYOUT2:
+# that owns each structural class in the active layout. Layout-3 = ONE file
+# (context.md): every class parses the H2 section it owns (vault_md.v3_section
+# — the SAME parser, sliced), so the grammar stays identical across layouts.
+LAYOUT = vault_md.vault_layout_of(vault)
+LAYOUT2 = LAYOUT == 2
+LAYOUT3 = LAYOUT == 3
+if LAYOUT3:
+    DOCS = [vault_md.V3_DOC]
+    DOC_INDEX = DOC_DM = DOC_FL = DOC_DC = vault_md.V3_DOC
+    OQ_DOCS = [vault_md.V3_DOC]          # `## Open Questions` = the ONE authored OQ home
+elif LAYOUT2:
     DOCS = ["vault.md", "model.md", "flows.md", "constraints.md"]
     DOC_INDEX, DOC_DM, DOC_FL, DOC_DC = "vault.md", "model.md", "flows.md", "vault.md"
     OQ_DOCS = ["constraints.md"]         # OQs are centralized — sole authored home
@@ -149,14 +157,35 @@ try:
                 f"(layout-2 hard-header contract — the section anchors "
                 f"replace the legacy per-file identity)"
             )
-    entities = vault_md.parse_data_model(docs.get(DOC_DM, ""), errors,
-                                         doc_name=DOC_DM)
-    flows = vault_md.parse_flows(docs.get(DOC_FL, ""), errors, doc_name=DOC_FL)
-    adrs = vault_md.parse_adrs(docs.get(DOC_DC, ""), errors, doc_name=DOC_DC)
+    if LAYOUT3:
+        for h in vault_md.v3_missing_headers(docs.get(vault_md.V3_DOC, "")):
+            errors.append(
+                f"context.md is missing the mandatory section header `{h}` "
+                f"(layout-3 hard-header contract — the four sections are the "
+                f"ONLY home of flows / data model / NFR / open questions)"
+            )
+    # parse sources: layout-3 slices the owning H2 section (same parser);
+    # other layouts parse the whole doc — byte-identical to before.
+    def src(fn, legacy_name):
+        if LAYOUT3:
+            return vault_md.v3_section(docs.get(fn, ""), legacy_name)
+        return docs.get(fn, "")
+    SRC_DM = src(DOC_DM, "03-data-model.md")
+    SRC_FL = src(DOC_FL, "04-flows.md")
+    SRC_DC = src(DOC_DC, "05-decisions.md")
+    OQ_SRC = {}
+    for fn in OQ_DOCS:
+        if LAYOUT3:
+            OQ_SRC[fn] = vault_md.v3_sections(docs.get(fn, "")).get("open questions", "")
+        else:
+            OQ_SRC[fn] = docs.get(fn, "")
+    entities = vault_md.parse_data_model(SRC_DM, errors, doc_name=DOC_DM)
+    flows = vault_md.parse_flows(SRC_FL, errors, doc_name=DOC_FL)
+    adrs = vault_md.parse_adrs(SRC_DC, errors, doc_name=DOC_DC)
     skeletons = []
     seen_tags = {}
     for fn in OQ_DOCS:
-        for oq in vault_md.parse_open_questions(fn, docs.get(fn, ""), errors):
+        for oq in vault_md.parse_open_questions(fn, OQ_SRC[fn], errors):
             if oq["tag"] in seen_tags:
                 errors.append(
                     f"duplicate OQ tag across docs: {oq['tag']} "
@@ -180,17 +209,32 @@ try:
                         f"<file>#<anchor>]` to keep its locality)"
                     )
                     break
+    if LAYOUT3:
+        # Same rail, one file: an OQ checkbox line in any section OTHER than
+        # `## Open Questions` would be invisible to the universe — fail loud.
+        for sec, body in vault_md.v3_sections(docs.get(vault_md.V3_DOC, "")).items():
+            if sec == "open questions":
+                continue
+            for line in body.splitlines():
+                if re.match(r"^-\s*\[", line) and vault_md.OQ_TAG_RE.search(line):
+                    errors.append(
+                        f"OQ checkbox line found in context.md `## {sec}` — "
+                        f"layout-3 centralizes ALL Open Questions in context.md "
+                        f"`## Open Questions` (move the line there; use "
+                        f"`[origin: context.md#<anchor>]` to keep its locality)"
+                    )
+                    break
     # 6.0.1 F5: md-hint fallback for the five patch-lane OQ fields — collected
     # per doc, applied LAST in the per-OQ merge (setdefault only; patch and
     # prior carry-forward always win)
     md_hints = {}
     for fn in OQ_DOCS:
-        for t, fields in vault_md.parse_oq_field_hints(docs.get(fn, "")).items():
+        for t, fields in vault_md.parse_oq_field_hints(OQ_SRC[fn]).items():
             md_hints.setdefault(t, {}).update(
                 {k: v for k, v in fields.items() if k not in md_hints.get(t, {})})
     # roll-up category fallback is a LEGACY-only surface (layout-2 has no
     # roll-up — bracket-first is the primary contract there)
-    rollup_cats = ({} if LAYOUT2
+    rollup_cats = ({} if LAYOUT >= 2
                    else vault_md.parse_rollup_categories(docs[DOC_INDEX]))
     for oq in skeletons:
         if not oq.get("category") and oq["tag"] in rollup_cats:
@@ -212,14 +256,13 @@ try:
 
     # ── 3. Cross-count guard (anti-silent-empty; independent loose parse) ──
     loose = {
-        "entities": len(re.findall(r"^[Tt]able\s+\w",
-                                   docs.get(DOC_DM, ""), re.M)),
-        "flows": len(re.findall(r"^###\s+F-", docs.get(DOC_FL, ""), re.M)),
-        "adrs": len(re.findall(r"^###\s+D-", docs.get(DOC_DC, ""), re.M)),
+        "entities": len(re.findall(r"^[Tt]able\s+\w", SRC_DM, re.M)),
+        "flows": len(re.findall(r"^###\s+F-", SRC_FL, re.M)),
+        "adrs": len(re.findall(r"^###\s+D-", SRC_DC, re.M)),
     }
     loose_oq_tags = set()
     for fn in OQ_DOCS:
-        for line in docs.get(fn, "").splitlines():
+        for line in OQ_SRC[fn].splitlines():
             if re.match(r"^-\s*\[", line):
                 m = vault_md.OQ_TAG_RE.search(line)
                 if m:
@@ -429,8 +472,28 @@ try:
         warn(f"{len(dropped)} prior OQ tag(s) absent from the markdown were "
              f"dropped (md-authoritative existence): {', '.join(dropped)}")
 
-    if LAYOUT2:
-        out["vault_layout"] = 2   # dual-layout read marker (absent = legacy)
+    if LAYOUT >= 2:
+        out["vault_layout"] = LAYOUT   # layout read marker (absent = legacy)
+    if LAYOUT3:
+        # v8 P2: the at-generation pins live in the context.md frontmatter
+        # (spec App. D — author / stakeholders / prd pins are written ONCE, in
+        # the md); md wins over patch + prior for these keys, absent = untouched.
+        fm_m = vault_md._VAULT_FM_RE.match(docs.get(vault_md.V3_DOC, ""))
+        fm = fm_m.group(1) if fm_m else ""
+        for key in ("prd_sha256", "prd_path_at_generation", "author"):
+            v = vault_md._fm_scalar_value(fm, key)
+            if v:
+                out[key] = v
+        sm = re.search(r"(?m)^stakeholders:[ \t]*(\[[^\]]*\])?[ \t]*$((?:\n[ \t]+-[^\n]*)*)", fm)
+        if sm:
+            if sm.group(1):
+                items = [x.strip().strip("'\"") for x in sm.group(1)[1:-1].split(",")]
+            else:
+                items = [re.sub(r"^[ \t]+-[ \t]*", "", ln).strip().strip("'\"")
+                         for ln in sm.group(2).splitlines() if ln.strip()]
+            items = [x for x in items if x]
+            if items:
+                out["stakeholders"] = items
     out["entities"] = entities
     out["flows"] = flows
     out["adrs"] = adrs

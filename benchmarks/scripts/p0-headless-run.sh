@@ -26,7 +26,7 @@ set -u
 ARM="${1:?arm dir}"; PRD="${2:?prd rel path}"; LOG="${3:?log dir}"; MODEL="${4:-opus}"; FLAGS="${P0_FLAGS:-}"
 [ -d "$ARM/.git" ] || { echo "not a git clone: $ARM" >&2; exit 2; }
 [ -f "$ARM/$PRD" ] || { echo "PRD missing: $ARM/$PRD" >&2; exit 2; }
-mkdir -p "$LOG"
+mkdir -p "$LOG"; LOG="$(cd "$LOG" && pwd -P)"   # absolute: the launcher cd's into the arm below
 SID="$(python3 -c 'import uuid;print(uuid.uuid4())')"
 ENC="$(python3 -c 'import sys,re;print(re.sub(r"[^A-Za-z0-9]", "-", sys.argv[1]))' "$(cd "$ARM" && pwd -P)")"
 TRANSCRIPT="$HOME/.claude/projects/$ENC/$SID.jsonl"
