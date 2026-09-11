@@ -541,7 +541,11 @@ COLD_HALT_CHECKS = [
 # satisfied by the chain itself → "ok" with the reason; the PreToolUse gate
 # re-checks it at that hop anyway. Inputs no earlier hop produces stay fatal.
 PRODUCES = {"generate-intent": {"vault"}, "scan-codebase": {"codebase_map"},
-            "bind-codebase": {"bound"}, "generate-units": {"units"}}
+            "bind-codebase": {"bound"},
+            # generate-units Step 12.8 / plan Step 5 write .plan-coverage-state.json
+            "generate-units": {"units", "plan_coverage"},
+            # v8 P2 lite lane: plan = context.md + vault.json + units + coverage in ONE hop
+            "plan": {"vault", "units", "plan_coverage"}}
 
 
 def _missing_inputs(check_id):
@@ -557,6 +561,11 @@ def _missing_inputs(check_id):
     elif check_id == "units_directory_present":
         if not unit_files():
             miss.add("units")
+    elif check_id == "lite_plan_coverage_pass":
+        # produced by the plan / generate-units hop that precedes bolts on the
+        # chain — a missing state at chain START is not a skipped census
+        if not os.path.isfile(os.path.join(cwd, ".mega-sdd", ".plan-coverage-state.json")):
+            miss.add("plan_coverage")
     elif check_id == None:
         if not os.path.isfile(os.path.join(VAULT, "vault.json")):
             miss.add("vault")
@@ -594,7 +603,7 @@ for idx, skill in enumerate(chain):
     if skill == "execute-bolts":
         run_checks(skill, COLD_HALT_CHECKS)
         if lane() == "lite":
-            run_checks(skill, LITE_LANE_CHECKS)
+            run_checks(skill, LITE_LANE_CHECKS, earlier=chain[:idx])
 
 print("PREFLIGHT: %d ok, %d warn, %d fatal"
       % (counts["ok"], counts["warn"], counts["fatal"]))
@@ -705,6 +714,26 @@ checks = []
 
 name = skill.split(":")[-1] if skill else ""
 
+
+def _lane():
+    """Dispatch-time lane probe (the predictive block has its own lane()):
+    state_probes.probe_lane when importable, else the config.yaml `lane:` key."""
+    try:
+        if state_probes is not None:
+            return state_probes.probe_lane(cwd)
+    except Exception:
+        pass
+    try:
+        with open(os.path.join(cwd, ".mega-sdd", "config.yaml"), encoding="utf-8") as f:
+            for ln in f:
+                m = re.match(r"^\s*lane\s*:\s*([A-Za-z]+)", ln)
+                if m:
+                    return "lite" if m.group(1).lower() == "lite" else "standard"
+    except OSError:
+        pass
+    return "standard"
+
+
 if name == "bind-codebase":
     if not has_vault():
         fatal = {"check_id": "binding_input_vault_missing",
@@ -716,6 +745,15 @@ if name == "bind-codebase":
                  "on_fail": "bind-codebase needs a codebase-map.md (.mega-sdd/codebase/codebase-map.md) — run scan-codebase first."}
     checks.append({"check": "binding_input_complete", "status": "FAIL" if fatal else "PASS",
                    "lane": "express" if express else "classic"})
+
+elif name == "plan":
+    # v8 P2: plan runs on the lite lane ONLY (the classic chain keeps
+    # generate-intent → bind → generate-units); off-lane = fatal, never a
+    # silent second writer of the vault.
+    if _lane() != "lite":
+        fatal = {"check_id": "plan_off_lane",
+                 "on_fail": "plan runs on the lite lane only — pass --lite on the front door / chain, or set `lane: lite` in .mega-sdd/config.yaml; the default lane uses generate-intent → bind-codebase → generate-units."}
+    checks.append({"check": "plan_lane_lite", "status": "FAIL" if fatal else "PASS"})
 
 elif name == "generate-units":
     if not has_bound_or_vault():

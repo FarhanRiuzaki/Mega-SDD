@@ -975,6 +975,7 @@ def probe_vault_dir(cwd, vdir, layout):
         "layout": layout,
         "has_vault_json": os.path.isfile(vj),
         "vault_doc_count": len(docs),
+        "has_context_md": os.path.isfile(os.path.join(vdir, vault_md.V3_DOC)),  # v8 P2 layout-3 (plan-born)
         "mode": mode,
         "bound_present": bound_present,
         "binding": probe_binding(vdir),
@@ -1216,6 +1217,20 @@ def derive(probes):
         if probes["prd"]["present"]:
             prd = probes["prd"]["candidates"][0]
             if starterkit == "detected":
+                if derived["lane"] == "lite":
+                    # v8 P2 2-hop lite lane (spec §1/§3, App. C3): ONE model
+                    # phase (plan: context.md + units + ONE batched ask) then
+                    # bolts. No bind hop (JIT bind at dispatch, pre-flight 3.9),
+                    # no handoff YAML between the hops — the orchestrator
+                    # re-derives state from disk + runs the predictive
+                    # preflight before the bolts hop. Mode pin: a repo that
+                    # already carries code = `existing` (brownfield claims),
+                    # a bare scaffold = `new`; never asked.
+                    return finish("prd_no_vault", [
+                        "plan %s --lite --mode=%s" % (
+                            prd, "existing" if has_code else "new"),
+                        "execute-bolts --all --lite",
+                    ])
                 if spine == "express":
                     # P2 default: GROUND already ran as a script (derive-state
                     # + build-symbol-index); no scan phase, no --scan= arg —
@@ -1303,6 +1318,20 @@ def derive(probes):
         ])
 
     # ── Pipeline ladder ──────────────────────────────────────────────────
+    if units == 0 and derived["lane"] == "lite" and vault.get("has_context_md"):
+        # v8 P2: a layout-3 vault is plan-born and unit-less only when plan
+        # halted before writing units — re-run plan (never generate-units,
+        # which reads the layout-2/legacy docs).
+        prd = (probes["prd"]["candidates"][0] if probes["prd"]["present"]
+               else None)
+        if prd:
+            return finish("lite_context_no_units", [
+                "plan %s --lite --regenerate" % prd,
+                "execute-bolts --all --lite",
+            ])
+        notes.append("layout-3 vault without units and no PRD candidate on disk: "
+                     "run `plan <prd> --lite --regenerate` with the PRD path")
+        return finish("lite_context_no_units", [])
     if (vault["mode"] or ("greenfield" if mode_inferred == "greenfield" else "existing")) == "greenfield":
         if units == 0:
             return finish("vault_greenfield_no_units", ["generate-units"])

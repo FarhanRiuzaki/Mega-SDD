@@ -22,6 +22,10 @@ Per sub-skill, after it exits. Any failure emits the named halt and STOPS the ch
 3. **b.ix** Cross-metric consistency → `quality_gate_failed` (prose — needs upstream cached state)
 4. Pass → propagate (step c); the confidence floor stays in the consumption loop below
 
+## Lite lane exemption (v8 P2)
+
+`plan` (lite lane, `skills/plan`) emits **no handoff YAML by contract** — the 2-hop chain `plan` → `execute-bolts` carries its state on disk. For the `plan` hop the b.script / b.iv / b.ix gates are SKIPPED; instead, after `plan` returns: (1) re-run `derive-state.sh --cwd=<root>` (the engine reads `context.md` + `units/` + `vault.json`), (2) run `validate-preflight.sh --predictive --cwd=<root> --chain=execute-bolts` — units present + `lite_plan_coverage_pass` are the deterministic gate for the bolts hop — and (3) dispatch `execute-bolts --all --lite`, which meets the same PreToolUse gates as every dispatch. A `plan` hop that halts prints its `blocker:` envelope in chat (halt-protocol keterangan): the orchestrator STOPS on any `blocker:` in plan's last text and never invents a handoff for it. The classic chain (generate-intent → bind → generate-units) keeps every gate below unchanged.
+
 ## b.script — Deterministic per-hop gate (one call)
 
 Save the sub-skill's chat output (the last assistant message) to a temp file, then run:
