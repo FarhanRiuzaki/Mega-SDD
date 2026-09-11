@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [7.36.0] - 2026-09-11 — W2 fast lane di balik `--lite` (kesiapan level-unit, budget fix xs 1, sel xs→sonnet) + analisis MEASURED wall bolt-stage klinik
+
+Program otonom v8 §2 / P2 (`research/2026-09-10-v8-autonomous-runbook.md` §2 + §Amendemen owner; laporan `research/2026-09-11-v8-p2-report.md`). Semua perubahan perilaku di balik `--lite` / `lane: lite`; lane default byte-identik. Tidak ada gate yang dilonggarkan — gate per unit (F-09, B1–B4, whitelist target_files, CONFLICT) tidak disentuh.
+
+### Skill version moves
+- `execute-bolts`: 2.49.1 → 2.50.0 (lane lite: kesiapan level-unit, budget fix xs 1, sel model xs→auto)
+
+### Added
+- `scripts/derive-ready-units.sh` — kesiapan level-unit: `ready` = semua `depends_on` `implemented` + `bolts/U-XXX/acceptance.json` pass + `postflight.json` pass (panel upstream boleh masih berjalan); dependency terkarantina/merah/stale memblokir dependent. Satu baris JSON `ready-units/1` (`ready/blocked{unit,waiting_on}/done/quarantined/in_progress`); tidak pernah men-dispatch apa pun. Spawn C15 MEASURED 5 (ceiling 8).
+- `tests/w2-fast-lane/test-w2-lite.sh` (a–e) — ready set dari fixture DAG (termasuk dep terkarantina dan dep tanpa postflight), usage exit 2, pin prosa di tiga surface.
+- `benchmarks/results/p0-baseline/clinic/wave-decomposition.txt` — dekomposisi bolt-stage klinik per wave (derivasi read-only dari transkrip).
+- `benchmarks/scripts/p0-headless-run.sh`: env `P0_FLAGS` (flag front door disambung ke prompt verbatim, dicatat `flags=` di run.meta) — arm classic vs lite berbeda HANYA flag di versi plugin yang sama (amendemen owner 4).
+
+### Changed (lane lite saja; default tak berubah)
+- `execute-bolts/references/batch-and-fanout.md §--all`: di lane lite, kesiapan level-unit menggantikan barrier wave — controller menjalankan `derive-ready-units.sh` setiap implementer kembali dan men-dispatch `ready[]`; bullet "wave boundary = review boundary" default tetap byte-identik.
+- `execute-bolts/references/review-panel.md §Attempt rounds`: lane lite + `unit_tier: xs` → budget fix-round 1 (satu verifier round, lalu karantina 3.10; tidak pernah re-dispatch kedua).
+- `execute-bolts/SKILL.md` routing model langkah 2: lane lite + `unit_tier: xs` + nilai default `inherit` → `auto` (sonnet untuk unit minimal) sebagai sel terukur, `w2_model_cell: xs→sonnet` di bolt-report; `--model-tier=` dan nilai config eksplisit tetap menang.
+- `commands/mega-sdd.md` baris `--lite`: menyebut W2 (skrip kesiapan, budget fix xs 1, xs auto→sonnet).
+
+### Measured (bolt-stage klinik 7.35.0, headless, n=1 — `research/2026-09-11-v8-p2-report.md §1`)
+- 223,7 menit bolt-stage = **8 wave berurutan** (kedalaman DAG), wall per wave 17–45 m; wave 1-unit tetap 21–25 m (overhead tetap ≈ 8–10 m di luar implementasi); Σ dispatch→commit-pertama 70,0 m (31 %), Σ span panel 51,4 m (23 %), fix round ≈ 25 % wall (U-008 mengulang 4× `secret_in_code` yang sama). Lebar wave sudah paralel — yang mahal = kedalaman + overhead per wave + fix round.
+- **Efek W2 BELUM diukur** — 7.36.0 adalah versi tempat kedua arm P2 (xs classic vs xs lite, lalu klinik `--lite` 1×) dijalankan; angka MEASURED masuk laporan P2 §2–§3.
+
 ## [7.35.0] - 2026-09-10 — Tiga defect nyata dari run baseline P0 (deadlock handoff `blockers[]`, resolver root `$HOME`, predictive preflight false-fatal) + angka MEASURED arm xs-3screen
 
 Program otonom v8 §1 (`research/2026-09-10-v8-autonomous-runbook.md`; laporan `research/2026-09-10-v8-p0-baseline.md`). Owner meng-approve bypass permission → dua arm baseline dijalankan headless (`claude -p`, opus, default 7.34.0). Ketiga fix di bawah dipicu bukti dari run itu, bukan asumsi; tidak ada gate yang dilonggarkan — semua memperbaiki kode/dok yang salah.
