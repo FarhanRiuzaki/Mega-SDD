@@ -52,6 +52,8 @@ Narrate (chat, halts, recommendations) in **natural Indonesian-English mix — t
 generate-intent → (bind-codebase --express if brownfield — claim-scoped, zero map load; scan-codebase is ON-DEMAND / classic-spine only) → generate-units → execute-bolts
 ```
 
+Lite lane (`--lite` / config `lane: lite`, v8 P2, opt-in): `plan` (PRD → `context.md` + units, ONE batched ask at the end) → `execute-bolts --all --lite` (JIT bind per wave, W2 readiness). Default lane unchanged.
+
 Legacy-rebuild upstream lane (code is the only spec):
 
 ```
