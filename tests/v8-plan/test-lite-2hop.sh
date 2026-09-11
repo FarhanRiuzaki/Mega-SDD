@@ -22,7 +22,9 @@ import sys, json; sys.path.insert(0, '$S/_lib'); import state_probes as sp
 d = sp.collect_state('$1')['derived']; print(json.dumps([d['position'], d['proposed_next']]))" 2>/dev/null; }
 # a
 A="$T/a"; mk "$A" 1
-echo "$(chain "$A")" | grep -q '"generate-intent PRD/prd.md"' && ! echo "$(chain "$A")" | grep -q '"plan ' && pass "a: no lane → classic chain (generate-intent first), plan never proposed" || fail "a: classic chain changed: $(chain "$A")"
+# express (index/ast-grep present) renders `generate-intent PRD/prd.md`; a host without ast-grep (CI)
+# renders the classic scan-first spine `generate-intent PRD/prd.md --scan=…` — both are the v7 chain
+echo "$(chain "$A")" | grep -q '"generate-intent PRD/prd.md' && ! echo "$(chain "$A")" | grep -q '"plan ' && pass "a: no lane → v7 chain (generate-intent hop, express or classic spine), plan never proposed" || fail "a: classic chain changed: $(chain "$A")"
 printf 'lane: lite\n' > "$A/.mega-sdd/config.yaml"
 [ "$(chain "$A")" = '["prd_no_vault", ["plan PRD/prd.md --lite --mode=existing", "execute-bolts --all --lite"]]' ] && pass "a: lane lite + code → 2-hop plan --mode=existing → execute-bolts --all --lite" || fail "a: lite chain wrong: $(chain "$A")"
 B="$T/b"; mk "$B" 0; printf 'lane: lite\n' > "$B/.mega-sdd/config.yaml"
