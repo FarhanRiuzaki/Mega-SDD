@@ -29,6 +29,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### plan_coverage_gap
 
 - `plan_coverage_gap` — generate-units Step 12.8 (v8 P1, spec 2026-09-10 Appendix F5): `validate-plan-coverage.sh --cwd --prd --vault` found a PRD requirement heading (H2/H3 outside meta + out-of-scope sections, or an `F-*` id) that NO unit cites via `prd_source` and NO open question quotes — a requirement nothing will ever verify. ALWAYS STOP (validator FAIL; state `.mega-sdd/.plan-coverage-state.json`; analyze row `plan_coverage`). Details `{gaps[{heading, slug, line}]}`. Resolution: add a unit with `prd_source`, raise an OQ quoting the heading, or move the heading under an explicit 'Out of scope' section. Prerequisite for `--lite` being usable by anyone (P1-akhir).
+- v8 P2 lite lane: also emitted by `plan` Step 5 (the same script, `emitted_by: plan`) — the units are written first, the gap is the finding.
 
 ### cycle_detected
 
