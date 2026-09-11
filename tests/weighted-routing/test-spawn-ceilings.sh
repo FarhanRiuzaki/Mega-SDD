@@ -226,6 +226,10 @@ reset_counts; run_script "bash $SCR/derive-ready-units.sh --cwd=$FIXJ --vault=$J
 [ "$(total)" -le 8 ] \
   && ok "C15 derive-ready-units (W2 lite readiness; wraps compute-unit-staleness): ≤8 spawns ($(total))" \
   || bad "C15 derive-ready-units: spawns=$(total)"
+reset_counts; run_script "bash $SCR/derive-plan-pins.sh --cwd=$FIXJ --prd=docs/PRD.md"
+[ "$(total)" -le 8 ] \
+  && ok "C16 derive-plan-pins (plan Step 0 pins; wraps derive-project-scale + git config, sha in python): ≤8 spawns ($(total))" \
+  || bad "C16 derive-plan-pins: spawns=$(total)"
 # C8b: the in-run F-09 gate (PreToolUse Agent bolt-implementer → AGENT_UNIT) with a
 # per-unit binding.json present — the JIT pass must add NO interpreter over C8.
 reset_counts
