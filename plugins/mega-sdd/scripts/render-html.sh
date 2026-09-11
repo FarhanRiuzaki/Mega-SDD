@@ -71,7 +71,7 @@ def detect_lens(path):
     if b == "_index.md" and "/units" in p: return "units"
     if b.startswith("DRIFT-REPORT"): return "drift"
     if re.match(r"ADR-\d+", b): return "adr"
-    if b in ("vault.md", "model.md", "flows.md", "constraints.md"): return "vault"
+    if b in ("context.md", "vault.md", "model.md", "flows.md", "constraints.md"): return "vault"
     return "generic"
 
 # ── summary strip per lens — hitungan regex sederhana, gagal → tile dihilangkan.

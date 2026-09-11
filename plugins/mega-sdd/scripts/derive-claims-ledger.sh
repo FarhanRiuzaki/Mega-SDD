@@ -39,8 +39,16 @@ ledger_path = os.path.join(vault, "claims-ledger.json")
 # Layout-aware doc set + DOC_CODE (v7 Fase 3 dual read): on layout-2 the
 # per-file codes OV/AR/DC re-key to vault.md SECTIONS (the hard-header
 # contract — vault_md.V2_SECTION_ANCHORS is the one mapping).
-LAYOUT2 = vault_md.is_layout2_vault(vault)
-if LAYOUT2:
+LAYOUT = vault_md.vault_layout_of(vault)      # 3 > 2 > 1 — ONE resolver
+LAYOUT2 = LAYOUT == 2
+LAYOUT3 = LAYOUT == 3
+if LAYOUT3:
+    # v8 P2 layout-3: ONE file; DOC_CODE comes from the H2 section
+    # (vault_md.V3_SECTION_CODES via v3_section_codes) — never from a filename.
+    DOCS = [vault_md.V3_DOC]
+    DOC_CODE = {}
+    DOC_IDX = DOC_DM = DOC_FL = DOC_DC = DOC_CN = vault_md.V3_DOC
+elif LAYOUT2:
     DOCS = ["vault.md", "model.md", "flows.md", "constraints.md"]
     DOC_CODE = {"model.md": "DM", "flows.md": "FL", "constraints.md": "CN"}
     DOC_IDX, DOC_DM, DOC_FL, DOC_DC = "vault.md", "model.md", "flows.md", "vault.md"
@@ -57,7 +65,7 @@ else:
     DOC_CN = "06-constraints.md"
 SECTION_RE = re.compile(r"^##\s+§([\w-]+)\b\s*(.*)$")   # binding-coverage harvest form
 MODE_RE = re.compile(r"^-\s*\*\*Implementation[ _]mode\*\*\s*:", re.IGNORECASE)
-NFR_HEAD_RE = re.compile(r"^##\s+Non-functional requirements\b", re.IGNORECASE)
+NFR_HEAD_RE = re.compile(r"^#{2,3}\s+Non-functional requirements\b", re.IGNORECASE)  # H3 under `## Constraints` on layout-3
 
 docs, doc_shas = {}, {}
 for fn in DOCS:
@@ -68,7 +76,7 @@ for fn in DOCS:
         docs[fn] = raw.decode("utf-8", errors="replace")
 if not docs:
     print(f"FAIL: no vault docs found in {vault} "
-          f"(layout-2: vault.md/model.md/flows.md/constraints.md; legacy: 00-06)")
+          f"(layout-3: context.md; layout-2: vault.md/model.md/flows.md/constraints.md; legacy: 00-06)")
     sys.exit(3)
 
 def name_variants(snake):
@@ -118,6 +126,12 @@ def add(doc, line_no, ctype, text, extra=None, code=None):
 # line in vault.md (gate addition 2 — the residue moved, it did not die).
 lock_vals = vault_md.parse_vault_lock(docs.get(DOC_IDX, ""))
 _ix_lines = docs.get(DOC_IDX, "").splitlines()
+if LAYOUT3:
+    for _h in vault_md.v3_missing_headers(docs.get(vault_md.V3_DOC, "")):
+        errors.append(
+            f"context.md is missing the mandatory section header `{_h}` "
+            f"(layout-3 hard-header contract — DOC_CODE comes from the section)"
+        )
 if LAYOUT2:
     # hard-header contract: fail LOUD (exit != 0, naming the header) before
     # any claim math can produce a silently thin ledger
@@ -127,6 +141,7 @@ if LAYOUT2:
             f"(layout-2 hard-header contract — DOC_CODE re-keys from filename "
             f"to section, so the anchors are a contract, not a convention)"
         )
+if LAYOUT2 or LAYOUT3:
     _in_fm = False
     for i, line in enumerate(_ix_lines, 1):
         if i == 1 and line.strip() == "---":
@@ -136,7 +151,7 @@ if LAYOUT2:
             break
         if _in_fm and re.match(r"^implementation_mode\s*:", line):
             mode_val = lock_vals.get("implementation_mode")
-            add("vault.md", i, "mode", line.strip(),
+            add(DOC_IDX, i, "mode", line.strip(),
                 {"hints": {"terms": [mode_val.lower()] if mode_val else []}},
                 code="MODE")
             break
@@ -153,7 +168,7 @@ else:
             break
 
 # ── per doc, in document order, one ordinal stream per doc/section-code ──
-_CLAIM_DOCS = DOCS if LAYOUT2 else DOCS[1:]
+_CLAIM_DOCS = DOCS if LAYOUT >= 2 else DOCS[1:]
 for fn in _CLAIM_DOCS:
     md = docs.get(fn, "")
     if not md:
@@ -162,7 +177,8 @@ for fn in _CLAIM_DOCS:
     # Layout-2 vault.md: per-line section attribution (OV/AR/DC) — the ONE
     # mapping in vault_md.v2_section_codes; a claim heading outside every
     # anchor section cannot be attributed and fails loud (no fabricated code).
-    sec_codes = (vault_md.v2_section_codes(lines)
+    sec_codes = (vault_md.v3_section_codes(lines) if LAYOUT3
+                 else vault_md.v2_section_codes(lines)
                  if (LAYOUT2 and fn == "vault.md") else None)
 
     def _code_at(i):
@@ -171,11 +187,17 @@ for fn in _CLAIM_DOCS:
         c = sec_codes.get(i)
         if c is None:
             errors.append(
-                f"vault.md:{i}: claim heading sits outside the "
-                f"Overview/Architecture/Decisions anchor sections — it cannot "
-                f"be attributed a DOC_CODE (move it under an anchor header)"
+                f"{fn}:{i}: claim heading sits outside the anchor sections "
+                f"(Overview/Architecture/Decisions; layout-3 also Flows/Data "
+                f"model/Constraints) — it cannot be attributed a DOC_CODE "
+                f"(move it under an anchor header)"
             )
         return c
+
+    def _sec_code(i):
+        # section-attributed code for the structural claims (entity / flow /
+        # constraint) — layout-3 only; other layouts keep the per-file code.
+        return _code_at(i) if LAYOUT3 else None
 
     # (a) `## §<id>` component/section claims — the same headings the
     # binding-coverage validator harvests, so ledger coverage == validator scope.
@@ -229,7 +251,8 @@ for fn in _CLAIM_DOCS:
                     text = pending_purpose or stripped
                     add(fn, pending_line if pending_purpose else i, "entity",
                         text, {"entity": name, "fields": [],
-                               "hints": {"symbols": name_variants(name)}})
+                               "hints": {"symbols": name_variants(name)}},
+                        code=_sec_code(pending_line if pending_purpose else i))
                     current = claims[-1]
                     pending_purpose, pending_line = None, None
                     depth = 1
@@ -260,15 +283,16 @@ for fn in _CLAIM_DOCS:
             if depth <= 0:
                 depth, current = 0, None
 
-    elif fn == DOC_FL:
+    if fn == DOC_FL:
         for i, line in enumerate(lines, 1):
             fm = vault_md.FLOW_HEADING_RE.match(line)
             if fm:
                 add(fn, i, "flow", fm.group(2).strip(),
                     {"native_id": fm.group(1),
-                     "hints": {"terms": terms_of(fm.group(2))}})
+                     "hints": {"terms": terms_of(fm.group(2))}},
+                    code=_sec_code(i))
 
-    elif fn == DOC_DC:
+    if fn == DOC_DC:
         for i, line in enumerate(lines, 1):
             am = vault_md.ADR_HEADING_RE.match(line)
             if am:
@@ -280,14 +304,14 @@ for fn in _CLAIM_DOCS:
                      "hints": {"terms": terms_of(am.group(2))}},
                     code=_c)
 
-    elif fn == DOC_CN:
+    if fn == DOC_CN:
         # (c) NFR table rows: | Category | Requirement | Source |
         in_nfr = False
         for i, line in enumerate(lines, 1):
             if NFR_HEAD_RE.match(line):
                 in_nfr = True
                 continue
-            if in_nfr and line.startswith("## "):
+            if in_nfr and line.startswith("#"):    # any heading ends the table (H3 NFR on layout-3)
                 in_nfr = False
             if in_nfr and line.strip().startswith("|"):
                 # escaped pipes (\|) are cell content, not separators
@@ -296,7 +320,8 @@ for fn in _CLAIM_DOCS:
                 if len(cells) >= 2 and cells[0] not in ("Category", "") \
                         and set(cells[0]) - set("-: "):
                     add(fn, i, "constraint", cells[1],
-                        {"hints": {"terms": terms_of(cells[1])}})
+                        {"hints": {"terms": terms_of(cells[1])}},
+                        code=_sec_code(i))
 
 # ── cross-count guard: line-aware extraction vs the shared-lib parsers.
 # Lib parse errors are VAULT defects; a count fork with a clean lib parse is a

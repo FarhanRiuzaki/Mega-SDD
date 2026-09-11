@@ -91,9 +91,11 @@ NFR: median response < 300ms per PRD SLA.
 
 - **Purpose**: a sibling-section H3 that must NEVER parse as an entity
 
-| NFR | Target | Source |
+### Non-functional requirements
+
+| Category | Requirement | Source |
 |---|---|---|
-| latency | p50 < 300ms | PRD §6 |
+| Performance | p50 < 300ms | PRD §6 |
 
 ## Decisions
 

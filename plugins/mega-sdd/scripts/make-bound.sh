@@ -30,7 +30,8 @@ while [ $# -gt 0 ]; do case "$1" in --vault) VAULT="${2:-}"; shift 2;; --vault=*
 # Dual layout (v7 Fase 3): legacy 0[0-6]-*.md OR layout-2 vault.md set.
 set -- "$VAULT"/0[0-6]-*.md
 [ -f "$1" ] || set -- "$VAULT"/vault.md
-[ -f "$1" ] || { echo "FAIL: no vault docs (layout-2 vault.md or legacy 0[0-6]-*.md) in $VAULT" >&2; exit 3; }
+[ -f "$1" ] || set -- "$VAULT"/context.md
+[ -f "$1" ] || { echo "FAIL: no vault docs (layout-3 context.md, layout-2 vault.md or legacy 0[0-6]-*.md) in $VAULT" >&2; exit 3; }
 [ -f "$VAULT/binding.md" ] || { echo "FAIL: $VAULT/binding.md missing — re-run bind Step 4" >&2; exit 3; }
 [ -f "$VAULT/binding.json" ] || { echo "FAIL: $VAULT/binding.json missing — re-run bind Step 4.5 (derive-binding-json.sh)" >&2; exit 3; }
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
@@ -93,7 +94,7 @@ if strict:
 # (v7 Fase 3 dual read). vault.json is NOT copied.
 docs = sorted(f for f in os.listdir(vault)
               if (re.match(r"^0[0-6]-.+\.md$", f)
-                  or f in ("vault.md", "model.md", "flows.md", "constraints.md"))
+                  or f in ("context.md", "vault.md", "model.md", "flows.md", "constraints.md"))
               and os.path.isfile(os.path.join(vault, f)))
 
 # Annotation index: only the exact `<file>.md:<line>` vault_source form is

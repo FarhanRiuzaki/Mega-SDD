@@ -93,6 +93,7 @@ fi
 CWD="$CWD" STATE_FILE="$STATE_FILE" QUIET="$QUIET" \
 FLOW_SECTION="$FLOW_SECTION" SCAFFOLD_SECTION="$SCAFFOLD_SECTION" \
 ENTITY_SOURCE_SECTION="$ENTITY_SOURCE_SECTION" ENTITY_TOKEN_SECTION="$ENTITY_TOKEN_SECTION" \
+MEGA_SDD_LIB_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/_lib" \
 python3 <<'PYEOF'
 import json
 import os
@@ -100,6 +101,8 @@ import re
 import sys
 import glob
 import fnmatch
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import vault_md   # ONE resolver: layout-3 context.md > layout-2 flows.md > legacy 04-flows.md
 from datetime import datetime, timezone
 
 cwd = os.environ["CWD"]
@@ -320,6 +323,9 @@ for e in scaffold_entries:
 # it with the base vault's flows doc. v7 Fase 3 dual-layout read (one minor
 # cycle): probe the layout-2 `flows.md` FIRST, fall back to legacy `04-flows.md`.
 def _flows_path(d):
+    p3 = os.path.join(d, vault_md.V3_DOC)          # v8 P2 layout-3: ONE file
+    if os.path.isfile(p3):
+        return p3
     p2 = os.path.join(d, "flows.md")
     return p2 if os.path.isfile(p2) else os.path.join(d, "04-flows.md")
 
@@ -677,6 +683,9 @@ for _fpath, _upaths, _vname in all_candidates:
             flows_text = f.read()
     except Exception:
         continue
+    if os.path.basename(_fpath) == vault_md.V3_DOC:
+        # layout-3: only the `## Flows` section carries flows (shared slicer)
+        flows_text = vault_md.v3_section(flows_text, "04-flows.md")
     parts = re.split(r"^(###\s+.*)$", flows_text, flags=re.MULTILINE)
     # parts: [pre, header1, body1, header2, body2, ...]
     i = 1
