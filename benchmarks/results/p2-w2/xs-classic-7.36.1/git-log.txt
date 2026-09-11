@@ -1,0 +1,9 @@
+33fb2ba 2026-09-11T11:41:05+07:00 style(U-005): apply the repo prettier config to the Kontak files
+332e483 2026-09-11T11:38:34+07:00 fix(U-005): Bangun halaman Kontak dengan form kirim pesan
+d300393 2026-09-11T11:35:37+07:00 feat(U-005): Bangun halaman Kontak dengan form kirim pesan
+14645fb 2026-09-11T11:32:13+07:00 feat(U-003): Bangun halaman Tentang Kami dari file konfigurasi konten
+6d0edf6 2026-09-11T11:14:15+07:00 style(U-002): apply the repo prettier config to the Beranda files
+e673856 2026-09-11T11:13:12+07:00 style(U-001): apply the repo prettier config to the route-access test
+0334d94 2026-09-11T11:01:24+07:00 feat(U-004): Tambah endpoint kirim pesan kontak dengan validasi server
+cf4e6bd 2026-09-11T11:00:30+07:00 feat(U-002): Bangun halaman Beranda dari file konfigurasi konten
+c9e0c12 2026-09-11T10:59:32+07:00 feat(U-001): Buka tiga halaman publik di guard route tanpa melonggarkan dashboard
