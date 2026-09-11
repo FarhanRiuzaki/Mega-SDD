@@ -69,6 +69,7 @@ vault = os.path.abspath(os.environ["VAULT"])
 
 sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
 import vault_md
+import prd_sniff   # v8 P2 DOCS re-source (spec App. D): layout-3 reads the PRD file for §1/§3
 
 def vdoc(name):
     # v7 Fase 3 dual-layout read (one minor cycle): layout-2 file when present.
@@ -99,6 +100,28 @@ def read(p):
 
 def rel(p):
     return os.path.relpath(p, cwd).replace(os.sep, "/")
+
+# ── v8 P2 DOCS re-source (spec App. D): on a layout-3 vault PRD §1/§3 read the
+# PRD FILE directly (verbatim quotes, cited); absent → `[Pending — PRD §…]`,
+# never a model slot to fill by invention. Layout-2 / legacy / reverse: untouched.
+LAYOUT3 = bool(os.environ.get("VAULT")) and vault_md.is_layout3_vault(vault)
+prd_rel, prd_sn = None, None
+if LAYOUT3:
+    _vj0 = {}
+    try:
+        _vj0 = json.load(open(os.path.join(vault, "vault.json")))
+    except Exception:
+        pass
+    _pp = str(_vj0.get("prd_path_at_generation") or "")
+    for _c in ([_pp, os.path.join(cwd, _pp), os.path.join(vault, _pp)] if _pp else []):
+        if os.path.isfile(_c):
+            prd_rel = rel(os.path.abspath(_c))
+            prd_sn = prd_sniff.sniff(read(_c) or "")
+            break
+
+def prd_quote(key):
+    ent = (prd_sn or {}).get(key)
+    return (prd_sniff.quote(ent["body"]) if ent else None), (ent["heading"] if ent else None)
 
 # KB root resolution (canonical → legacy)
 if mode == "reverse":
@@ -179,6 +202,20 @@ if mode == "forward":
     ov = vtext("01-overview.md")
     if ov:
         cite(1, "vault/" + vdoc_name("01-overview.md"))
+    if LAYOUT3:
+        # the two §1 slots stop being model slots: filled VERBATIM from the PRD or an honest Pending
+        for slot, key, label in (("section-1-background", "background", "Background"),
+                                 ("section-1-purpose", "goals", "Goals")):
+            q, h = prd_quote(key)
+            if q:
+                slots[slot] = q
+                cite(1, "%s §%s" % (prd_rel, h))
+            else:
+                slots[slot] = "[Pending — PRD §%s tidak ada di %s — tidak dikarang]" % (
+                    label, prd_rel or "PRD (path tidak tercatat di vault.json prd_path_at_generation)")
+                pending_count += 1
+            if slot in model_slots:
+                model_slots.remove(slot)
 else:
     for c in ("README.md",):
         if os.path.isfile(os.path.join(kb_root, c)):
@@ -221,6 +258,14 @@ if mode == "forward":
             parts.append("- **%s — %s**: %s [Source: vault/02-functional.md:L%d (sha256: pending)]"
                          % (h.group(2), h.group(3).strip() or "(untitled)", first_para, ln))
         cite(3, "vault/" + vdoc_name("02-functional.md"))
+    if LAYOUT3 and not fn and prd_sn and prd_sn.get("requirements"):
+        # layout-3: requirement rows come from the PRD's own requirement headings
+        # (the same census validate-plan-coverage.sh runs), quoted + cited
+        for r in prd_sn["requirements"]:
+            first = prd_sniff.quote(r["body"], 1) or "(tanpa deskripsi)"
+            parts.append("- **%s**: %s [Source: %s:L%d (sha256: pending)]"
+                         % (r["heading"], first, prd_rel, r["line"]))
+        cite(3, prd_rel)
     if fl:
         finv = ["- %s — %s" % (m.group(1), m.group(2).strip())
                 for m in re.finditer(r"(?m)^#{2,3}\s+(F-[\w-]+)\s*[—:-]?\s*(.*)$", fl)]

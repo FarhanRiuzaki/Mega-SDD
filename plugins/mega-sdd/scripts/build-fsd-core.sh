@@ -68,6 +68,7 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
 import vault_md
+import prd_sniff   # v8 P2 DOCS re-source (spec App. D): layout-3 reads the PRD file for §1/§2
 
 vault = os.path.abspath(os.environ["VAULT"])
 
@@ -170,6 +171,38 @@ try:
     vj = json.load(open(os.path.join(vault, "vault.json")))
 except Exception:
     pass
+# ── v8 P2 DOCS re-source (spec 2026-09-10 App. D): a layout-3 vault carries no
+# Overview prose — FSD §1/§2 read the PRD FILE directly (heading sniff, quotes
+# VERBATIM, cited `<prd> §<heading>`); a section the PRD lacks renders
+# `[Pending — PRD §…]`, never a paraphrase. Layout-2 / legacy: untouched.
+LAYOUT3 = vault_md.is_layout3_vault(vault)
+prd_rel, prd_text, prd_sn = None, None, None
+if LAYOUT3:
+    _pp = str(vj.get("prd_path_at_generation") or "")
+    for _c in ([_pp, os.path.join(cwd, _pp), os.path.join(vault, _pp)] if _pp else []):
+        if os.path.isfile(_c):
+            prd_text = read(_c)
+            prd_rel = os.path.relpath(os.path.abspath(_c), cwd).replace(os.sep, "/")
+            break
+    if prd_text is not None:
+        prd_sn = prd_sniff.sniff(prd_text)
+
+def prd_part(key):
+    """(quoted body, heading, (line_from, line_to)) for a sniffed PRD section, or Nones."""
+    ent = (prd_sn or {}).get(key)
+    if not ent:
+        return None, None, None
+    q = prd_sniff.quote(ent["body"])
+    if not q:
+        return None, None, None
+    return q, ent["heading"], (ent["line"] + 1, ent["line"] + ent["body"].count("\n") + 1)
+
+def prd_pending(label):
+    global pending_count
+    pending_count += 1
+    where = prd_rel or "PRD (path tidak tercatat di vault.json prd_path_at_generation)"
+    return "[Pending — PRD §%s tidak ada di %s — tidak dikarang]" % (label, where)
+
 project = sty.get("project_name") or vj.get("project_name") or os.path.basename(vault)
 vver = str(vj.get("vault_version", "0.1"))
 author = str(vj.get("author", "(unspecified)"))
@@ -291,7 +324,18 @@ slots = {}
 # ── §1 Overview ──
 purpose = md_section(ov, "Purpose|Product") if ov else None
 scope_b = md_section(ov, "Scope|Target users / personas") if ov else None
-if ov and (purpose or scope_b):
+if LAYOUT3:
+    bg, bgh, bgs = prd_part("background")
+    sc, sch, scs = prd_part("scope")
+    if bg or sc:
+        slots["section-1-content"] = "\n\n".join(x for x in (bg, sc) if x)
+        if bg:
+            cite(1, "%s §%s" % (prd_rel, bgh), bgs)
+        if sc:
+            cite(1, "%s §%s" % (prd_rel, sch), scs)
+    else:
+        slots["section-1-content"] = prd_pending("Background / §Scope")
+elif ov and (purpose or scope_b):
     body = "\n\n".join(x for x in (purpose, scope_b) if x)
     slots["section-1-content"] = body
     lr1 = line_range(ov, purpose) if purpose else None
@@ -302,14 +346,25 @@ else:
     slots["section-1-content"] = pend("vault/" + vdoc_name("01-overview.md"))
 
 # ── §2 Goals / Non-Goals ──
-goals = md_section(ov, "Goals|Success criteria") if ov else None
-nongoals = md_section(ov, "Non-Goals|Out of Scope") if ov else None
-slots["section-2-goals-content"] = goals or "[Pending — vault/%s §Goals not yet generated]" % vdoc_name("01-overview.md")
-slots["section-2-non-goals-content"] = nongoals or "[Pending — vault/%s §Non-Goals not yet generated]" % vdoc_name("01-overview.md")
-if goals is None and nongoals is None:
-    pending_count += 1
+if LAYOUT3:
+    g, gh, gs = prd_part("goals")
+    ng, ngh, ngs = prd_part("out_of_scope")
+    goals, nongoals = g, ng          # later sections (§10 out-of-scope rows) read these names
+    slots["section-2-goals-content"] = g or prd_pending("Goals")
+    slots["section-2-non-goals-content"] = ng or prd_pending("Out of scope")
+    if g:
+        cite(2, "%s §%s" % (prd_rel, gh), gs)
+    if ng:
+        cite(2, "%s §%s" % (prd_rel, ngh), ngs)
 else:
-    cite(2, "vault/" + vdoc_name("01-overview.md"), line_range(ov, goals or nongoals))
+    goals = md_section(ov, "Goals|Success criteria") if ov else None
+    nongoals = md_section(ov, "Non-Goals|Out of Scope") if ov else None
+    slots["section-2-goals-content"] = goals or "[Pending — vault/%s §Goals not yet generated]" % vdoc_name("01-overview.md")
+    slots["section-2-non-goals-content"] = nongoals or "[Pending — vault/%s §Non-Goals not yet generated]" % vdoc_name("01-overview.md")
+    if goals is None and nongoals is None:
+        pending_count += 1
+    else:
+        cite(2, "vault/" + vdoc_name("01-overview.md"), line_range(ov, goals or nongoals))
 
 # ── §3 Stakeholders ──
 rows3 = []
