@@ -56,8 +56,11 @@ fi
 STATE_FILE="${CWD}/.mega-sdd/.vault-flow-staging-state.json"
 mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || exit 2
 
-CWD="$CWD" STATE_FILE="$STATE_FILE" QUIET="$QUIET" python3 -W ignore::DeprecationWarning <<'PYEOF'
+CWD="$CWD" STATE_FILE="$STATE_FILE" QUIET="$QUIET" \
+MEGA_SDD_LIB_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/_lib" python3 -W ignore::DeprecationWarning <<'PYEOF'
 import json, os, re, sys, glob
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import vault_md   # ONE resolver: layout-3 context.md > layout-2 flows.md > legacy 04-flows.md
 
 cwd = os.environ["CWD"]
 state_file = os.environ["STATE_FILE"]
@@ -120,13 +123,17 @@ vault_dirs = [d for d in vault_dirs
 
 for vault_dir in vault_dirs:
     vault_name = os.path.basename(vault_dir)
-    # v7 Fase 3 dual layout: layout-2 flows.md first, legacy 04-flows.md fallback
-    flows_doc = os.path.join(vault_dir, "flows.md")
+    # v8 P2 layout-3 context.md first, then v7 Fase 3 layout-2 flows.md, legacy 04-flows.md
+    flows_doc = os.path.join(vault_dir, vault_md.V3_DOC)
+    if not os.path.isfile(flows_doc):
+        flows_doc = os.path.join(vault_dir, "flows.md")
     if not os.path.isfile(flows_doc):
         flows_doc = os.path.join(vault_dir, "04-flows.md")
     if not os.path.isfile(flows_doc):
         continue
     content = read_text(flows_doc)
+    if content is not None and os.path.basename(flows_doc) == vault_md.V3_DOC:
+        content = vault_md.v3_section(content, "04-flows.md")   # `## Flows` only
     if content is None:
         continue
 

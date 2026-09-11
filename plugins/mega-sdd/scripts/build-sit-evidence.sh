@@ -263,7 +263,10 @@ def parse_vault(vroot):
             pass
     flows_path = _flpath(vroot)
     if os.path.isfile(flows_path):
-        lines = open(flows_path, encoding="utf-8", errors="surrogateescape").read().split("\n")
+        _ftxt = open(flows_path, encoding="utf-8", errors="surrogateescape").read()
+        if os.path.basename(flows_path) == vault_md.V3_DOC:
+            _ftxt = vault_md.v3_section(_ftxt, "04-flows.md")   # layout-3: `## Flows` only
+        lines = _ftxt.split("\n")
         heads = []
         for i, line in enumerate(lines):
             m = vault_md.FLOW_HEADING_RE.match(line)

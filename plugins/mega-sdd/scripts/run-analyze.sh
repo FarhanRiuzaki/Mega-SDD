@@ -118,7 +118,7 @@ if [ "$AGGREGATE_ONLY" -eq 1 ]; then
     || _has "${CWD}/.mega-sdd/knowledge-base/20-workflows" -name "*.md" -not -path "*/.archived/*" \
     || _has "${CWD}/.mega-sdd/knowledge-base/modules" -name "*.prd.md" -not -path "*/.archived/*"; } \
     && V7F_RC="STATE_FILE" || V7F_RC="SKIP"
-  _has "${CWD}/.mega-sdd/vaults" \( -name "04-flows.md" -o -name "flows.md" \) -not -path "*/.archived/*" \
+  _has "${CWD}/.mega-sdd/vaults" \( -name "04-flows.md" -o -name "flows.md" -o -name "context.md" \) -not -path "*/.archived/*" \
     && V7VF_RC="STATE_FILE" || V7VF_RC="SKIP"
   { _has "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" \
     || _has "${CWD}/.mega-sdd/knowledge-base/modules" -name "*.prd.md" -not -path "*/.archived/*"; } \
@@ -187,7 +187,7 @@ if [ ! -s "${TMPD}/files.kb_output" ] && \
      2>/dev/null | grep -q .; then
   KB_MISCONF=1
 fi
-find "${CWD}/.mega-sdd/vaults" \( -name "04-flows.md" -o -name "flows.md" \) -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.vault_flows"
+find "${CWD}/.mega-sdd/vaults" \( -name "04-flows.md" -o -name "flows.md" -o -name "context.md" \) -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.vault_flows"
 # unit_baseline drives NO reuse in analyze (unit_spec always re-runs, single
 # invocation below) — it is the changed-set baseline for lint-units --changed-only.
 find "${CWD}/.mega-sdd/vaults" -path "*/units/U-*.md" -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.unit_baseline"
@@ -575,10 +575,15 @@ for vj_path in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "v
     # detectors for deriver-parser bugs. Do NOT cull them as "tautological
     # now that vault.json is script-derived".
     # v7 Fase 3 dual-layout read (one minor cycle): layout-2 file first.
+    # v8 P2 layout-3 (context.md, ONE file): every class reads the same file —
+    # the loose regexes below are section-blind by design (independent check).
+    LAYOUT3 = os.path.isfile(os.path.join(vault_dir, "context.md"))
     def _vdoc(v2_name, legacy_name):
+        if LAYOUT3:
+            return os.path.join(vault_dir, "context.md")
         p2 = os.path.join(vault_dir, v2_name)
         return p2 if os.path.isfile(p2) else os.path.join(vault_dir, legacy_name)
-    LAYOUT2 = os.path.isfile(os.path.join(vault_dir, "vault.md"))
+    LAYOUT2 = os.path.isfile(os.path.join(vault_dir, "vault.md")) and not LAYOUT3
 
     # Check 1: vault.json entities count vs data-model doc entity blocks
     dm_path = _vdoc("model.md", "03-data-model.md")
@@ -614,7 +619,9 @@ for vj_path in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "v
                           "detail": f"vault.json={vj_oqs}, idx_tags={len(oq_tags)}"})
 
     # Check 3: required vault files present (per layout)
-    if LAYOUT2:
+    if LAYOUT3:
+        expected_files = ["context.md", "vault.json"]
+    elif LAYOUT2:
         expected_files = ["vault.md", "model.md", "flows.md",
                           "constraints.md", "vault.json"]
     else:

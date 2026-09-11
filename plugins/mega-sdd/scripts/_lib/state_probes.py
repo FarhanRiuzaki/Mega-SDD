@@ -144,15 +144,17 @@ def _canonical_vault_root(cwd):
     return os.path.join(cwd, ".mega-sdd", "vaults")
 
 
-# v7 Fase 3 layout-2 doc names (dual-layout probes, one minor cycle).
+# v7 Fase 3 layout-2 doc names (dual-layout probes, one minor cycle) + the v8
+# P2 layout-3 single file (vault_md.V3_DOC — ONE resolver, no forked mapping).
 V2_DOC_NAMES = ("vault.md", "model.md", "flows.md", "constraints.md")
+V3_DOC_NAMES = (vault_md.V3_DOC,)
 
 
 def _vault_docs(vdir):
-    """Vault markdown docs in EITHER layout: legacy 0[0-6]-*.md glob plus the
-    layout-2 fixed names present in vdir."""
+    """Vault markdown docs in ANY layout: legacy 0[0-6]-*.md glob plus the
+    layout-2 fixed names plus the layout-3 context.md present in vdir."""
     docs = glob.glob(os.path.join(vdir, "0[0-6]-*.md"))
-    for n in V2_DOC_NAMES:
+    for n in V3_DOC_NAMES + V2_DOC_NAMES:
         p = os.path.join(vdir, n)
         if os.path.isfile(p):
             docs.append(p)
@@ -884,6 +886,9 @@ def probe_oq_counts(vdir):
                     md = f.read()
             except OSError:
                 continue
+            if os.path.basename(doc) == vault_md.V3_DOC:
+                # layout-3: the ONE OQ home is the `## Open Questions` section
+                md = vault_md.v3_sections(md).get("open questions", "")
             rows.extend(
                 vault_md.parse_open_questions(os.path.basename(doc), md, errors)
             )

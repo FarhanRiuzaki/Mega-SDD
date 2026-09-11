@@ -74,6 +74,16 @@ def vdoc(name):
     # v7 Fase 3 dual-layout read (one minor cycle): layout-2 file when present.
     return vault_md.resolve_doc(vault, name)
 
+def vtext(name):
+    # v8 P2 layout-3: every name resolves to context.md — return the H2 section
+    # that carries the legacy doc's content (shared slicer), so an extractor
+    # never sees a sibling section. Other layouts: the whole resolved file.
+    _p = vdoc(name)
+    t = read(_p)
+    if t is not None and os.path.basename(_p) == vault_md.V3_DOC:
+        return vault_md.v3_section(t, name) or None
+    return t
+
 def vdoc_name(name):
     return os.path.basename(vdoc(name)) if os.environ.get("VAULT") else None
 kb = os.environ.get("KB") or ""
@@ -166,7 +176,7 @@ slots["section-1-background"] = "{{section-1-background}}"
 slots["section-1-purpose"] = "{{section-1-purpose}}"
 model_slots += ["section-1-background", "section-1-purpose"]
 if mode == "forward":
-    ov = read(vdoc("01-overview.md"))
+    ov = vtext("01-overview.md")
     if ov:
         cite(1, "vault/" + vdoc_name("01-overview.md"))
 else:
@@ -198,8 +208,8 @@ else:
 
 # §3 — functional requirements
 if mode == "forward":
-    fn = read(vdoc("02-functional.md"))
-    fl = read(vdoc("04-flows.md"))
+    fn = vtext("02-functional.md")
+    fl = vtext("04-flows.md")
     parts = []
     if fn:
         heads = list(re.finditer(r"(?m)^(#{2,3})\s+(FR-\d+)\s*[—:-]?\s*(.*)$", fn))
@@ -245,7 +255,7 @@ def mermaid_blocks(text):
 journeys = []
 jn = 0
 if mode == "forward":
-    fl = read(vdoc("04-flows.md"))
+    fl = vtext("04-flows.md")
     if fl:
         flows = list(re.finditer(r"(?ms)^#{2,3}\s+(F-[\w-]+)\s*[—:-]?\s*(.*?)$(.*?)(?=^#{2,3}\s+F-|\Z)", fl))
         flows.sort(key=lambda m: (0 if m.group(1).startswith("F-U-") else 1))
@@ -294,7 +304,7 @@ CATS = (("section-5-performance", ("performance", "latency", "throughput", "p95"
         ("section-5-availability", ("availability", "uptime", "sla", "failover")),
         ("section-5-other", ("compliance", "regulat", "audit", "ojk", "bi-")))
 if mode == "forward":
-    fn = read(vdoc("02-functional.md"))
+    fn = vtext("02-functional.md")
     const = read(os.path.join(vault, "_meta", "constitution.md"))
     nfr = md_section(fn, "NFR") or (md_section(fn, "Non-Functional Requirements") if fn else None)
     for slot, words in CATS:
@@ -329,7 +339,7 @@ else:
 # §6 — open items
 rows6 = []
 if mode == "forward":
-    oq = read(vdoc("03-open-questions.md"))
+    oq = vtext("03-open-questions.md")
     if oq:
         for m in re.finditer(r"(?ms)^#{2,4}\s+(OQ-[\w-]+)\s*[—:-]?\s*(.*?)$(.*?)(?=^#{2,4}\s|\Z)", oq):
             if re.search(r"(?mi)^\s*\**status\**\s*:\s*\**\s*resolved", m.group(3)):

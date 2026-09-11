@@ -275,6 +275,7 @@ V3_SECTION_OF = {
     "model.md": "data model",
     "flows.md": "flows",
     "constraints.md": "constraints",
+    "03-open-questions.md": "open questions",   # ancient hand-made vaults / fixtures
     "context.md": None,
 }
 
@@ -335,7 +336,9 @@ def v3_section(md, doc_name):
     that parse by section rather than by file — so `### <word>` headings of a
     sibling section (e.g. `### Performance` under Constraints) can never leak
     into the data-model parser as an entity."""
-    key = V3_SECTION_OF.get(doc_name)
+    if doc_name not in V3_SECTION_OF:
+        return ""            # a doc layout-3 never carried (e.g. 02-functional.md): absent, never the whole file
+    key = V3_SECTION_OF[doc_name]
     if key is None:
         return md or ""
     return v3_sections(md).get(key, "")

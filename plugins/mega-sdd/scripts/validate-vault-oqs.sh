@@ -58,7 +58,7 @@ fi
 
 # Only validate vault doc files
 case "$FILE_PATH" in
-  *.mega-sdd/vaults/*/0[1-6]-*.md|*.mega-sdd/vaults/*/vault.json) ;;
+  *.mega-sdd/vaults/*/0[1-6]-*.md|*.mega-sdd/vaults/*/vault.json|*.mega-sdd/vaults/*/context.md) ;;   # + v8 P2 layout-3
   *) exit 0 ;;
 esac
 
@@ -484,8 +484,19 @@ def vault_looks_english(text):
 # source). v7 Fase 3 dual-layout read (one minor cycle): probe the layout-2
 # `flows.md` FIRST, fall back to the legacy `04-flows.md`.
 def _flows_path(d):
+    p3 = os.path.join(d, vault_md.V3_DOC)          # v8 P2 layout-3: ONE file
+    if os.path.isfile(p3):
+        return p3
     p2 = os.path.join(d, "flows.md")
     return p2 if os.path.isfile(p2) else os.path.join(d, "04-flows.md")
+
+def _flows_text(p):
+    # layout-3: the flows live in the `## Flows` section of context.md — slice
+    # it through the shared resolver so sibling sections never leak in.
+    t = _read(p)
+    if t and os.path.basename(p) == vault_md.V3_DOC:
+        return vault_md.v3_section(t, "04-flows.md")
+    return t
 
 vault_root = os.path.join(cwd, ".mega-sdd", "vaults")
 active_vault_dir = None
@@ -508,7 +519,7 @@ if os.path.isdir(vault_root):
             )
 
 if active_vault_dir:
-    flows_text = _read(_flows_path(active_vault_dir))
+    flows_text = _flows_text(_flows_path(active_vault_dir))
     if flows_text:
         # Gather the surfaces-evidence corpus + design_system_flags ONCE. Rail 2
         # (design_source) reads only language-invariant inputs (design_system_flags JSON
@@ -517,7 +528,11 @@ if active_vault_dir:
         # reach it). Rail 1 (operator_surface) needs the workflow verdict.
         # v7 Fase 3 dual layout: on layout-2 the 01/02 prose lives in vault.md
         # and the data model in model.md (same corpus, relocated files).
-        if os.path.isfile(os.path.join(active_vault_dir, "vault.md")):
+        if os.path.isfile(os.path.join(active_vault_dir, vault_md.V3_DOC)):
+            # layout-3: the whole context.md is the corpus (superset — regex scans)
+            _prose_docs = (vault_md.V3_DOC,)
+            _design_docs = ()
+        elif os.path.isfile(os.path.join(active_vault_dir, "vault.md")):
             _prose_docs = ("vault.md", "model.md")
             _design_docs = ("constraints.md",)
         else:

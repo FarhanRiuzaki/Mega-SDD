@@ -1245,10 +1245,22 @@ _NON_FLOW_HEAD = re.compile(
     r"definition\s+of\s+done|dod|changelog|references?|see\s+also|assumptions?|"
     r"non[\s-]goals?)\b", re.IGNORECASE)
 if (os.path.basename(file_path).endswith("04-flows.md")
-        or os.path.basename(file_path) == "flows.md"):   # v7 Fase 3 layout-2
+        or os.path.basename(file_path) == "flows.md"          # v7 Fase 3 layout-2
+        or os.path.basename(file_path) == "context.md"):      # v8 P2 layout-3 (ONE file)
     _HEAD_RE = re.compile(r"^###\s+(.+?)\s*$", re.MULTILINE)
+    # layout-3 (context.md, ONE file): only the `## Flows` H2 carries flow
+    # entries — bound the head scan to that section (offsets stay file-absolute
+    # so reported line numbers are unchanged).
+    _lo, _hi = 0, len(content)
+    if os.path.basename(file_path) == "context.md":
+        _fh = re.search(r"^## Flows[ \t]*$", content, re.MULTILINE)
+        _lo = _fh.end() if _fh else len(content)
+        _nx = re.compile(r"^## ", re.MULTILINE).search(content, _lo)
+        _hi = _nx.start() if _nx else len(content)
     heads = []
     for m in _HEAD_RE.finditer(content):
+        if not (_lo <= m.start() < _hi):
+            continue
         label = m.group(1).strip()
         if _NON_FLOW_HEAD.match(label):
             continue

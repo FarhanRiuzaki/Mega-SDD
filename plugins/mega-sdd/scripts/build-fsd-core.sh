@@ -75,6 +75,16 @@ def vdoc(name):
     # v7 Fase 3 dual-layout read (one minor cycle): layout-2 file when present.
     return vault_md.resolve_doc(vault, name)
 
+def vtext(name):
+    # v8 P2 layout-3: every name resolves to context.md — return the H2 section
+    # that carries the legacy doc's content (shared slicer), so an extractor
+    # never sees a sibling section. Other layouts: the whole resolved file.
+    _p = vdoc(name)
+    t = read(_p)
+    if t is not None and os.path.basename(_p) == vault_md.V3_DOC:
+        return vault_md.v3_section(t, name) or None
+    return t
+
 def vdoc_name(name):
     return os.path.basename(vdoc(name))
 cwd = os.path.abspath(os.environ["CWD"])
@@ -182,8 +192,8 @@ def pend(src):
     return "[Pending — %s not yet generated]" % src
 
 # ── Source loaders ──
-ov = read(vdoc("01-overview.md"))
-fn = read(vdoc("02-functional.md"))
+ov = vtext("01-overview.md")
+fn = vtext("02-functional.md")
 binding_rel = "binding.md"
 binding = read(os.path.join(vault, "binding.md"))
 if binding is None:
@@ -318,7 +328,11 @@ if sq:
     cite(3, "vault/_meta/squads.yaml")
 elif isinstance(vj.get("stakeholders"), list) and vj["stakeholders"]:
     for s in vj["stakeholders"]:
-        rows3.append("| %s | %s | %s |" % (s.get("role", ""), s.get("name", ""), s.get("responsibility", "")))
+        if isinstance(s, dict):
+            rows3.append("| %s | %s | %s |" % (s.get("role", ""), s.get("name", ""), s.get("responsibility", "")))
+        else:
+            # layout-3 context.md frontmatter: `stakeholders: ["<name/role>"]` (names only, PRD-sourced)
+            rows3.append("| Stakeholder | %s | |" % str(s))
     cite(3, "vault.json")
 elif vj.get("author"):
     rows3.append("| Author | %s | Project owner |" % vj["author"])
@@ -414,7 +428,7 @@ if not fr_rows:
     # 02-functional.md — the functional enumeration of a modern vault is its
     # flows (04-flows.md `### F-*` + per-flow DoD; SIT already builds from
     # exactly this). Legacy FR-heading vaults keep the branch above.
-    fl = read(vdoc("04-flows.md"))
+    fl = vtext("04-flows.md")
     if fl:
         # id must END at the match (round: `F-U_002` half-matched as id "F-U";
         # a heading the grammar cannot parse whole is DROPPED, never truncated)
@@ -494,7 +508,7 @@ slots["section-5-fr-details"] = "\n\n".join(fr_details)
 nfr = md_section(fn, "NFR") or (md_section(fn, "Non-Functional Requirements") if fn else None)
 # Modern-vault fallback (P4 repair): the modern NFR home is
 # 06-constraints.md `## Non-functional requirements` (the table vault_md parses)
-cons_doc = read(vdoc("06-constraints.md"))
+cons_doc = vtext("06-constraints.md")
 nfr_cons = md_section(cons_doc, "Non-functional requirements|Non-Functional Requirements") if cons_doc else None
 def const_clauses(cat_words):
     if not const:
@@ -617,7 +631,7 @@ else:
     slots["section-9-acceptance-concerns-content"] = "\n".join(concerns) if concerns else "(none)"
 
 # ── §10 Risks & open issues ──
-oq = read(vdoc("03-open-questions.md"))
+oq = vtext("03-open-questions.md")
 rows10 = []
 if oq:
     for m in re.finditer(r"(?ms)^#{2,4}\s+(OQ-[\w-]+)\s*[—:-]?\s*(.*?)$(.*?)(?=^#{2,4}\s|\Z)", oq):
@@ -655,7 +669,7 @@ if not rows10:
     # honesty backstop (round doc-16): a vault whose OQs live only in the
     # 00-index roll-up (no 03-open-questions.md, no readable vault.json) must
     # never render a sourced-looking "(none)" — surface the gap instead
-    idx10 = read(vdoc("00-index.md")) or ""
+    idx10 = vtext("00-index.md") or ""
     if re.search(r"\bOQ-(?:[A-Z]+(?:-[A-Z0-9]+)*-)?\d+\b", idx10):
         rows10.append("| — | [Pending — OQ ada di 00-index roll-up tetapi vault.json tidak terbaca — jalankan derive-vault-json.sh lalu re-emit] | — | — |")
         pending_count += 1
