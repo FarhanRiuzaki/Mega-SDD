@@ -88,7 +88,7 @@ handoff:
     #   PENDING-SYNC.md ARE the deliverable; a human triages the queue later via `/mega-sdd:sync` or `resolve-oq`.
     # NEVER route drift to resolve-oq: resolve-oq has NO drift-consumption mode — it resolves normal vault OQs only
     #   (including any drift-CREATED `OQ-DC-N` stub in its ordinary intent mode), it does not consume drift findings.
-  blockers: []                              # populated on drift_framework_mismatch
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers); populated on drift_framework_mismatch
   metrics:
     items_processed: <N claims compared>
     items_blocked: <N drift findings>

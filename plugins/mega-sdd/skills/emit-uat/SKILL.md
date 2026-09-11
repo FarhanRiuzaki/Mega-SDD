@@ -162,7 +162,7 @@ handoff:
     suggested_skill: null
     suggested_args: []
     rationale: "UAT emitted at maturity draft; eksekusi + sign-off dilakukan manusia (workbook xlsx / berita acara)."
-  blockers: []
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers)
   metrics:
     maturity: "draft"
     e2e_specs: <n generated>

@@ -102,7 +102,7 @@ handoff:
     suggested_skill: null    # terminal skill; no pipeline continuation
     type: chain_complete     # AGENTS.md is the pipeline terminal output for AI agent consumers
     rationale: "AGENTS.md emitted; pipeline already complete."
-  blockers: []               # populated on halt — envelope per plugins/mega-sdd/references/halt-protocol.md
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers); populated on halt — envelope per plugins/mega-sdd/references/halt-protocol.md
   metrics:
     agents_md_lines: <N>
     rules_emitted: <N>

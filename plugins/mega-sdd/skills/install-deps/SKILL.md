@@ -150,7 +150,7 @@ handoff:
     suggested_skill: null
     suggested_args: []
     rationale: "Deps installed; mega-sdd full-precision mode enabled. Re-run /mega-sdd:install-deps if needed (every run re-probes)."
-  blockers: []   # populated on install_failed / pkg_mgr_not_found
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers); populated on install_failed / pkg_mgr_not_found
   metrics:
     tools_audited: <int>             #
     tools_already_present: <int>     # already installed pre-skill

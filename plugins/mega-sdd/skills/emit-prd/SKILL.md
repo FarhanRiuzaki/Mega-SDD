@@ -110,7 +110,7 @@ handoff:
     suggested_skill: <null | "generate-intent">
     suggested_args: ["--kb=<kb-root>"]   # reverse mode only
     rationale: "PRD draft emitted; reverse lane continues via generate-intent --kb (the PRD is an output, not the pipeline input)."
-  blockers: []
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers)
   metrics:
     mode: <"forward" | "reverse">
     maturity: "draft-from-legacy"

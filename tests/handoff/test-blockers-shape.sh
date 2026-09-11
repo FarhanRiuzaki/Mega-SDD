@@ -47,4 +47,13 @@ grep -q 'each entry is the body of ONE `blocker:` envelope' "$P/skills/orchestra
   && pass "c: handoff-contract §blockers defines the entry shape and no longer points at a non-existent section" || fail "c: contract still dangling"
 grep -q 'a LIST of envelope bodies' "$P/skills/generate-intent/references/auto-and-handoff.md" && pass "d: generate-intent teacher shows the populated shape on halt" || fail "d: teacher still says only 'populated on halt'"
 ! grep -q 'delete the stale state file manually' "$P/hooks/pre-tool-use" && grep -q 'Do NOT delete or edit' "$P/hooks/pre-tool-use" && pass "e: hook deny message no longer invites a state-file reset" || fail "e: hook still suggests rm of the state file"
+# ── v8 P2 live finding (xs-classic arm 2026-09-11, same seam) ────────────────
+rm -f "$T/.mega-sdd/.handoff-validation-state.json"
+mk $'  blockers:\n    - type: bind_conflict\n      emitted_by: bind-codebase\n      details:\n        conflicts:\n          - id: CONFLICT-1\n            claim: "three public pages without login"\n            code: src/proxy.ts:11\n        summary: one active conflict\n      next_action: "resolve-oq --binding"\n    - type: oq_blocker\n      emitted_by: bind-codebase\n      details: { oq_ids: [OQ-AR-2] }'
+bash "$V" --cwd="$T" --response-file="$T/resp.md" --skill-name=mega-sdd:bind-codebase >/dev/null 2>&1; RC=$?
+[ $RC -eq 0 ] && python3 -c "import json;d=json.load(open('$T/.mega-sdd/.handoff-validation-state.json'));assert d['status']=='PASS',d" \
+  && pass "f: a block list NESTED inside a blocker body + an outer key after it → still ONE blocker each, PASS (exit 0)" || fail "f: nested list inside blocker body rejected (rc=$RC) — the xs-classic deadlock shape"
+grep -q 'MUST be the LAST assistant TEXT of your reply' "$P/hooks/pre-tool-use" && pass "g: hook deny message names the legal path (corrected handoff = last assistant TEXT)" || fail "g: hook deny message silent on the transcript-text requirement"
+n_bad=$(grep -rn '^\s*blockers: \[\]' "$P/skills" --include='*.md' | grep -vc 'LIST of envelope bodies'); [ "$n_bad" -eq 0 ] && pass "h: every handoff teacher's blockers line carries the flat-shape pointer" || fail "h: $n_bad teacher(s) still show blockers: [] without the shape pointer"
+grep -q 'nested inside an entry' "$P/skills/orchestrate-flow/references/handoff-contract.md" && pass "i: contract documents the nested-list acceptance" || fail "i: contract silent on nested lists"
 echo; [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"; exit $rc

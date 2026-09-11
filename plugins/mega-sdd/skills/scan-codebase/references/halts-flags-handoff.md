@@ -239,7 +239,7 @@ handoff:
     # third of that lane's record (the other two: the map frontmatter and one chat line).
     # Status stays `completed`.
     rationale: "Scan complete; starterkit-first ordering — generate-intent consumes codebase-map.md as scan-pack input for pack-aware vault generation (bind-codebase when a vault already exists; detect-drift on the sync lane)."
-  blockers: []                                          # populated when status: halted
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers); populated when status: halted
   metrics:
     files_scanned: <int>
     symbols_extracted: <int>

@@ -167,7 +167,7 @@ handoff:
     suggested_skill: null
     suggested_args: []
     rationale: "FSD emitted; upload <vault>/fsd/FSD.pdf to Confluence per corporate workflow."
-  blockers: []   # populated on quality_gate_failed
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers); populated on quality_gate_failed
   metrics:
     sections_emitted: <int>          # ≥0, ≤10 — count of FSD sections rendered
     sections_excluded: <int>         # ≥0, ≤10 — per --sections / include_sections filter

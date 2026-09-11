@@ -129,7 +129,7 @@ handoff:
     suggested_skill: mega-sdd:orchestrate-flow  # diff clean
     suggested_args: ["--auto"]
     rationale: "<1-sentence — e.g., 'diff_conflict surfaced; re-run diff-vault interactively (no --auto) to resolve' OR 'N new OQs materialized; resolve-oq walks them' OR 'Diff clean; vault updated; binding may need re-run'>"
-  blockers: []
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers)
   metrics:
     items_processed: <N changes detected: added + removed + modified>
     items_blocked: <N CONFLICTs requiring resolution>

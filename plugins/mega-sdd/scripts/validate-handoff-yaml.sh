@@ -115,10 +115,18 @@ def parse_handoff_yaml(text):
     # blockers[] shape) was misparsed: the first line became a scalar item and the
     # continuation lines REPLACED the list with a dict → every halted handoff with a
     # populated blockers[] failed handoff_type_mismatch and the chain deadlocked.
-    # pending_list_item = the dict item currently open in a block list; its
-    # continuation lines are the ones indented deeper than the "- " column.
-    pending_list_item = None
-    list_item_col = -1
+    # v8 P2 live finding (xs-classic arm 2026-09-11, same seam): a `- id:` list
+    # NESTED inside a blocker body (`details: > conflicts: > - id: CONFLICT-1`) was
+    # parsed as a SIBLING blocker, and the blocker's next key back at the outer
+    # indent (`next_action:`) then clobbered the whole list into a mapping →
+    # handoff_type_mismatch again. Block-list mapping items are now tracked as a
+    # STACK of (item, dash_col, last_open_key): a dash deeper than the open item's
+    # dash is a nested list attached to the item's last opened key; a key at or
+    # left of an open item's dash closes it (and every deeper one) first.
+    item_stack = []   # [(item_dict, dash_col, last_open_key)]
+    def _close_items(c):
+        while item_stack and c <= item_stack[-1][1]:
+            item_stack.pop()
     # Walk subsequent lines belonging to handoff: block
     j = base_idx + 1
     while j < len(lines):
@@ -137,7 +145,7 @@ def parse_handoff_yaml(text):
                 key, val = m.group(1), m.group(2)
                 current_top_key = key
                 pending_sub_key = None
-                pending_list_item = None
+                item_stack = []
                 if val == "":
                     handoff[key] = None  # block-style; will populate from children
                 elif val.startswith("[") and val.endswith("]"):
@@ -153,7 +161,22 @@ def parse_handoff_yaml(text):
                 item_body = content[2:].strip()
                 item_val = item_body.strip("'\"")
                 cur = handoff.get(current_top_key)
-                if isinstance(cur, dict) and pending_sub_key:
+                mk = re.match(r"^([\w_-]+):\s*(.*?)\s*$", item_body)
+                _close_items(col)
+                if item_stack:
+                    # NESTED list inside an open mapping item → attach to the key
+                    # that opened block-style (e.g. details: > conflicts:)
+                    parent, pcol, pkey = item_stack[-1]
+                    pkey = pkey or "_items"
+                    if not isinstance(parent.get(pkey), list):
+                        parent[pkey] = []
+                    if mk:
+                        item = {mk.group(1): (mk.group(2).strip("'\"") if mk.group(2) else None)}
+                        parent[pkey].append(item)
+                        item_stack.append((item, col, None))
+                    else:
+                        parent[pkey].append(item_val)
+                elif isinstance(cur, dict) and pending_sub_key:
                     # 2-level: list items belong to the nested key that opened
                     # block-style (e.g. next_action: > suggested_args:) — do NOT
                     # clobber the parent dict (pre-2026-06-11 bug: scope-args
@@ -161,35 +184,35 @@ def parse_handoff_yaml(text):
                     if not isinstance(cur.get(pending_sub_key), list):
                         cur[pending_sub_key] = []
                     cur[pending_sub_key].append(item_val)
-                    pending_list_item = None
                 else:
                     if not isinstance(cur, list):
                         handoff[current_top_key] = []
-                    mk = re.match(r"^([\w_-]+):\s*(.*?)\s*$", item_body)
                     if mk:
                         # `- key: val` opens a MAPPING item; deeper lines continue it
                         item = {mk.group(1): (mk.group(2).strip("'\"") if mk.group(2) else None)}
                         handoff[current_top_key].append(item)
-                        pending_list_item = item
-                        list_item_col = col
+                        item_stack.append((item, col, None))
                     else:
                         handoff[current_top_key].append(item_val)
-                        pending_list_item = None
             else:
                 # Nested dict key
                 m = re.match(r"^([\w_-]+):\s*(.*?)\s*$", content)
                 if m:
                     sub_key, sub_val = m.group(1), m.group(2)
-                    if pending_list_item is not None and col > list_item_col \
-                            and isinstance(handoff.get(current_top_key), list):
-                        # continuation of the open mapping item of a block list
-                        pending_list_item[sub_key] = sub_val.strip("'\"") if sub_val else None
+                    _close_items(col)
+                    if item_stack and isinstance(handoff.get(current_top_key), list):
+                        # continuation of the innermost open mapping item of a
+                        # block list (one level flattened: a deeper mapping key
+                        # lands on the same item; a block-style key opens the
+                        # slot a nested list attaches to)
+                        item, icol, _ = item_stack[-1]
+                        item[sub_key] = sub_val.strip("'\"") if sub_val else None
+                        item_stack[-1] = (item, icol, sub_key if not sub_val else None)
                     else:
                         if not isinstance(handoff.get(current_top_key), dict):
                             handoff[current_top_key] = {}
                         handoff[current_top_key][sub_key] = sub_val.strip("'\"") if sub_val else None
                         pending_sub_key = sub_key if not sub_val else None
-                        pending_list_item = None
         j += 1
     return {"handoff": handoff}
 

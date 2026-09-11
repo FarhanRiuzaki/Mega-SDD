@@ -300,7 +300,7 @@ handoff:
     suggested_skill: mega-sdd:detect-drift
     suggested_args: []                     # → ["--scope=<id>"] when the `scope:` block below is present (AUDIT L9): propagate THIS batch's scope so the chained detect-drift inherits it instead of full-scanning. Stays [] for a single-scope vault.
     rationale: "All bolts executed; recommend a periodic drift check."
-  blockers: []   # populated on test_fail / hard_rule_violated / hard_rule_unparseable / hard_rule_unanchored / cross_squad_interface_draft / verify_unit_writable
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers); populated on test_fail / hard_rule_violated / hard_rule_unparseable / hard_rule_unanchored / cross_squad_interface_draft / verify_unit_writable
   metrics:
     items_processed: <N units ACTUALLY executed/committed — MUST be 0 for a --dry-run/preview or an "all units already done" no-op re-run; never the would-process count. The bolt_artifacts_missing gate keys off this field.>
     items_blocked: <N halts encountered>
