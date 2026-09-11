@@ -115,7 +115,7 @@ handoff:
     suggested_skill: mega-sdd:bind-codebase    # OR mega-sdd:generate-units (KEEP_VAULT/DEFER-only) OR mega-sdd:orchestrate-flow (intent mode)
     suggested_args: ["--auto"]
     rationale: "<1-sentence — e.g., 'KEEP_CODE/SPLIT resolutions; re-run binding gate' / 'KEEP_VAULT/DEFER only; binding resolved, proceed to units' / 'P1 OQs answered; chain resumable'>"
-  blockers: []
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers)
   metrics:
     items_processed: <N OQs/CONFLICTs walked>
     items_resolved: <N actions taken>

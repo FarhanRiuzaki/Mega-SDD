@@ -138,7 +138,7 @@ handoff:
     # ran with --paths.
     suggested_args: ["--auto"]                 # full re-bind (incl. --paths fallback); ["--reconcile", "--auto"] only when a claim-scoped re-bind actually executed
     rationale: "<1-sentence>"
-  blockers: []                                  # populated on bind_conflict
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers); populated on bind_conflict
   metrics:
     items_processed: <N claims>
     items_blocked: <N CONFLICTs>

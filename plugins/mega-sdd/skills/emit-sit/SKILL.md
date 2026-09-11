@@ -133,7 +133,7 @@ handoff:
     suggested_skill: null
     suggested_args: []
     rationale: "SIT emitted at maturity <verdict>; sign-off dilakukan manusia di dokumen cetak."
-  blockers: []
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers)
   metrics:
     maturity: <"planned" | "partial" | "executed">
     ts_count: <int>

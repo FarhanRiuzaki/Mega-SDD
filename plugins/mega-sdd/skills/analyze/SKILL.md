@@ -84,7 +84,7 @@ handoff:
     suggested_skill: null
     suggested_args: []
     rationale: "Consistency analysis complete. Review report and resolve any FAILs before proceeding."
-  blockers: []
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers)
   metrics:
     validators_run: <N>
     validators_pass: <N>

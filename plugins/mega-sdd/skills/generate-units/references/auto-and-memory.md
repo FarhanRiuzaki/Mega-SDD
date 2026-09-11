@@ -47,7 +47,7 @@ handoff:
     suggested_skill: mega-sdd:execute-bolts
     suggested_args: ["--all", "--parallel", "--auto"]   # chain runs dispatch wave-parallel (`docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2a); the wave layering arrives via the chain's analyze-parallelism auto-run, the overlap rail stays with execute-bolts
     rationale: "Units generated; execute via bolts (independent units dispatched per wave)."
-  blockers: []   # populated on cycle/cross-squad/dedup/unit_underspecified/hard_rule_unparseable/starterkit_rule_citation_missing
+  blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers); populated on cycle/cross-squad/dedup/unit_underspecified/hard_rule_unparseable/starterkit_rule_citation_missing
   metrics:
     items_processed: <N units>
     items_blocked: 0
