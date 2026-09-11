@@ -222,6 +222,10 @@ reset_counts; run_script "bash $SCR/validate-plan-coverage.sh --cwd=$FIXJ --prd=
 [ "$(total)" -le 4 ] && [ -f "$FIXJ/.mega-sdd/.plan-coverage-state.json" ] \
   && ok "C14 validate-plan-coverage: ≤4 spawns ($(total)), coverage state written" \
   || bad "C14 validate-plan-coverage: spawns=$(total)"
+reset_counts; run_script "bash $SCR/derive-ready-units.sh --cwd=$FIXJ --vault=$JV"
+[ "$(total)" -le 8 ] \
+  && ok "C15 derive-ready-units (W2 lite readiness; wraps compute-unit-staleness): ≤8 spawns ($(total))" \
+  || bad "C15 derive-ready-units: spawns=$(total)"
 # C8b: the in-run F-09 gate (PreToolUse Agent bolt-implementer → AGENT_UNIT) with a
 # per-unit binding.json present — the JIT pass must add NO interpreter over C8.
 reset_counts
