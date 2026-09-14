@@ -1,0 +1,353 @@
+{
+ "schema": 1,
+ "unit": "U-004",
+ "attempt": 2,
+ "head": "8a58e39919d5e933775ce0d1d74e2ede7bde82f5",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "spec",
+   "lenses": [
+    "spec"
+   ],
+   "severity": "Important",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 34,
+   "title": "Unrequested company name + tagline header",
+   "detail": "Spec Goal/Implementation step 1 call for only the \"Tentang Kami\" heading, the about paragraphs, the team list and the Beranda link; PRD §Halaman Tentang Kami is likewise limited to \"Profil singkat (dua–tiga paragraf statis), daftar tim..., dan tautan kembali ke Beranda.\" The overline rendering companyProfile.name and the companyProfile.tagline line (lines 34-40) are copy neither the unit spec nor the PRD section requested for this page.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "spec",
+   "lenses": [
+    "spec"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 72,
+   "title": "Decorative briefcase icon per team member",
+   "detail": "Not requested by spec step 1 (\"the team as a semantic list of name + role\"); aria-hidden and not an img so it does not trip D-002, but it is unrequested decoration.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "spec",
+   "lenses": [
+    "spec"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 87,
+   "title": "Decorative arrow-left icon on Beranda button",
+   "detail": "startIcon glyph is UI decoration not called for by Implementation step 1.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/views/company-profile/AboutView/index.test.tsx",
+   "line": 52,
+   "title": "The \"no photos or avatars\" test cannot detect an avatar",
+   "detail": "querySelector('img') and queryAllByRole('img') only find image elements; an MUI Avatar with initials renders a div and one with no content an aria-hidden svg, so both still pass. The sibling HomeView uses CustomAvatar (HomeView/index.tsx:75). Fix: also assert container.querySelector('.MuiAvatar-root') is null, inside the team list items too.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-5",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 46,
+   "title": "a data-testid added only for the test",
+   "detail": "Only data-testid in src/; paragraphs already sit in a labelled section \"Profil perusahaan\" (line 43). Drop it and query within the region.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-6",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 31,
+   "title": "hand-built width wrapper instead of MUI Container",
+   "detail": "Lines 31-32 build main/div with max-is-[1100px]; the sibling uses Container maxWidth lg (HomeView/index.tsx:39-40), so widths/padding differ (1100 vs 1200px).",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-7",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/AboutView/index.test.tsx",
+   "line": 64,
+   "title": "The metadata test only re-checks a hard-coded value",
+   "detail": "expect(metadata.title).toBe('Tentang Kami') compares literals and couples the view test to the route file.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-8",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Important",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 34,
+   "title": "Overline brand label fails 4.5:1 contrast (WCAG AA)",
+   "detail": "color='primary.main' resolves to #7367F0 (src/configs/primaryColorConfig.ts:13) on page background #F8F7FA/#FFFFFF (src/@core/theme/colorSchemes.ts:86-87); contrast about 4.2-4.3:1, below the design slice's 4.5:1 rule for normal text (12px overline is not large text). Fix: a theme colour meeting AA (text.primary/text.secondary or a darker primary shade).",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-9",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 70,
+   "title": "Team-member name skips heading levels (h2 -> h6)",
+   "detail": "Typography variant h6 with no component override renders <h6> under the <h2> \"Tim Kami\" (line 54). Fix: component='p' or 'h3'.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-10",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 32,
+   "title": "Arbitrary max-width value instead of a layout token",
+   "detail": "max-is-[1100px] instead of Container maxWidth lg used elsewhere.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-11",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/views/company-profile/AboutView/index.test.tsx",
+   "line": 49,
+   "title": "The D-002 test catches photos but not avatars",
+   "detail": "Only img elements and role=img are checked; an MUI Avatar/CustomAvatar with initials renders div.MuiAvatar-root (sibling HomeView/index.tsx:75 uses it), so an avatar in the team rows would still pass. Fix: assert container.querySelector('.MuiAvatar-root') is null and that each list item holds exactly name + role.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 2,
+   "last_seen_round": 2,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-12",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 10,
+   "title": "'use client' on a view with no state, hooks or handlers",
+   "detail": "Could be a server component; matches the HomeView precedent, optional.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 2,
+   "last_seen_round": 2,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-13",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/AboutView/index.test.tsx",
+   "line": 13,
+   "title": "The view test imports the app route module to test metadata",
+   "detail": "Lines 63-67 only check the literal metadata.title and tie the view test to the app/ route.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 2,
+   "last_seen_round": 2,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-14",
+   "lens": "standards",
+   "lenses": [
+    "standards"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 39,
+   "title": "New data-testid selector idiom not used anywhere else in repo",
+   "detail": "data-testid='about-paragraph' exists only to count paragraphs; sibling tests use semantic role queries.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 2,
+   "last_seen_round": 2,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-15",
+   "lens": "standards",
+   "lenses": [
+    "standards"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 16,
+   "title": "Alias inconsistent with same-directory sibling",
+   "detail": "HomeView/index.tsx:29 imports @configs/companyProfile; AboutView uses @/configs/companyProfile (both resolve).",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 2,
+   "last_seen_round": 2,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-16",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Important",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 66,
+   "title": "Heading hierarchy skips levels (h2 -> h6)",
+   "detail": "h1 (line 34) -> h2 \"Tim Kami\" (line 50) -> h6 team-member names (line 66); HomeView nests h1 -> h2 -> h3. Fix: variant='h6' component='h3' or drop the heading role.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 2,
+   "last_seen_round": 2,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-17",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Important",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 32,
+   "title": "Hard-coded pixel max-width instead of theme/Container token",
+   "detail": "max-is-[1100px] one-off value; HomeView uses Container maxWidth='lg'.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 2,
+   "last_seen_round": 2,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-18",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Important",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 39,
+   "title": "Floor met, ceiling absent vs the sibling pattern",
+   "detail": "Plain cards with no accent, iconography, depth or motion compared with HomeView's tinted hero, avatars and hover motion (lines 39-73).",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 2,
+   "last_seen_round": 2,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-19",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 63,
+   "title": "role=\"listitem\" not set explicitly on team li items",
+   "detail": "list-style none can strip item roles in Safari/VoiceOver; container has role=list only.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 2,
+   "last_seen_round": 2,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-20",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/AboutView/index.tsx",
+   "line": 39,
+   "title": "\"Profil perusahaan\" section has no visible heading",
+   "detail": "Only an aria-label, while the team section has a visible h2.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 2,
+   "last_seen_round": 2,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T17:08:33.288236Z"
+}

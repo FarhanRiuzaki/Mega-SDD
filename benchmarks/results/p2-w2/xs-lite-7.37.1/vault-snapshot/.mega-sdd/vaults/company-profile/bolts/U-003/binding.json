@@ -1,0 +1,93 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "b243a5b0",
+ "unit": "U-003",
+ "generated_at": "2026-09-14T16:32:32+00:00",
+ "summary": {
+  "CONFIRMED": 7,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U003-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/beranda/page.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-003.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U003-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/views/company-profile/HomeView/index.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-003.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U003-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/views/company-profile/HomeView/index.test.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-003.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U003-A04",
+   "kind": "fs_must_exist",
+   "expect": "src/app/(blank-layout-pages)/login/page.tsx:1-22",
+   "source": ".mega-sdd/vaults/company-profile/units/U-003.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/(blank-layout-pages)/login/page.tsx:1-22",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U003-A05",
+   "kind": "fs_must_exist",
+   "expect": "src/app/(blank-layout-pages)/layout.tsx:12-24",
+   "source": ".mega-sdd/vaults/company-profile/units/U-003.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/(blank-layout-pages)/layout.tsx:12-24",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U003-01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/beranda",
+   "source": ".mega-sdd/vaults/company-profile/units/U-003.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent",
+   "text": "no beranda route exists yet"
+  },
+  {
+   "id": "C-U003-02",
+   "kind": "fs_must_exist",
+   "expect": "src/app/(blank-layout-pages)/layout.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-003.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/(blank-layout-pages)/layout.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the blank-layout route group layout exists"
+  }
+ ]
+}

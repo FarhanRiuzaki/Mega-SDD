@@ -1,0 +1,8 @@
+{
+  "formatters": 2,
+  "linters": 1,
+  "typecheckers": 1,
+  "advisory": false,
+  "plugin_version": "7.37.1",
+  "written_at": "2026-09-14T16:09:01.210007Z"
+}

@@ -1,0 +1,11 @@
+{
+ "status": "green",
+ "head_sha": "c58d43c9450890aff2efc7c45475eed448a56f08",
+ "ran_at": "2026-09-14T17:04:44.255095Z",
+ "runner": "pnpm test",
+ "exit_code": 0,
+ "output_tail": " \u2713 src/views/company-profile/HomeView/index.test.tsx (5 tests) 271ms\n(node:40811) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:40812) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:40815) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n \u2713 src/configs/companyProfile/index.test.ts (3 tests) 4ms\n \u2713 src/libs/api/query-params/index.test.ts (3 tests) 4ms\n \u2713 src/libs/query-keys/index.test.ts (2 tests) 4ms\n \u2713 src/features/contact/components/ContactForm/index.test.tsx (9 tests) 2124ms\n   \u2713 ContactForm > shows the email error under Email, keeps the typed values and sends no request  628ms\n   \u2713 ContactForm > submits the trimmed fields and shows \"Pesan terkirim\" inline on success  401ms\n   \u2713 ContactForm > shows the server error inline and keeps the typed values when the server rejects  382ms\n\n Test Files  10 passed (10)\n      Tests  73 passed (73)\n   Start at  00:04:38\n   Duration  5.23s (transform 441ms, setup 2.88s, collect 3.67s, tests 2.85s, environment 10.20s, prepare 1.01s)",
+ "written_by": "run-full-suite.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T17:04:44.256320Z"
+}

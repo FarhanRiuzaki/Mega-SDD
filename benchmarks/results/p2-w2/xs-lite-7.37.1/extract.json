@@ -1,0 +1,218 @@
+{
+ "session_start": "2026-09-14T15:59:33.839000+00:00",
+ "records": 798,
+ "models": {
+  "claude-opus-5": 302
+ },
+ "endpoints": {
+  "2026-09-14T23:20:17+07:00": {
+   "gross_s": 1243.161,
+   "wait_s": 0,
+   "net_s": 1243.161,
+   "raw_tokens": 30845715,
+   "cw_tokens": 8339690.499999992,
+   "idle_ratio": 0.0,
+   "interaction_points": 0
+  },
+  "2026-09-15T00:03:23+07:00": {
+   "gross_s": 3829.161,
+   "wait_s": 0,
+   "net_s": 3829.161,
+   "raw_tokens": 74126179,
+   "cw_tokens": 16986463.099999987,
+   "idle_ratio": 0.0,
+   "interaction_points": 0
+  }
+ },
+ "wait_events": [
+  [
+   "2026-09-14T17:23:23.913000+00:00",
+   "IDLE",
+   749.205
+  ]
+ ],
+ "phases": {
+  "segments": [
+   {
+    "label": "front-door / routing",
+    "start": "2026-09-14T15:59:33.839000+00:00",
+    "end": "2026-09-14T15:59:38.407000+00:00",
+    "gross_s": 4.568,
+    "wait_s": 0,
+    "net_s": 4.568,
+    "raw_tokens": 40517.0,
+    "cw_tokens": 57900.1
+   },
+   {
+    "label": "mega-sdd:mega-sdd",
+    "start": "2026-09-14T15:59:38.407000+00:00",
+    "end": "2026-09-14T15:59:59.260000+00:00",
+    "gross_s": 20.853,
+    "wait_s": 0,
+    "net_s": 20.853,
+    "raw_tokens": 456304.0,
+    "cw_tokens": 168944.9
+   },
+   {
+    "label": "GROUND(script) ×2",
+    "start": "2026-09-14T15:59:59.260000+00:00",
+    "end": "2026-09-14T16:00:10.665000+00:00",
+    "gross_s": 11.405,
+    "wait_s": 0,
+    "net_s": 11.405,
+    "raw_tokens": 348588.0,
+    "cw_tokens": 63518.2
+   },
+   {
+    "label": "mega-sdd:orchestrate-flow",
+    "start": "2026-09-14T16:00:10.665000+00:00",
+    "end": "2026-09-14T16:00:21.014000+00:00",
+    "gross_s": 10.349,
+    "wait_s": 0,
+    "net_s": 10.349,
+    "raw_tokens": 333646.0,
+    "cw_tokens": 100574.8
+   },
+   {
+    "label": "mega-sdd:plan",
+    "start": "2026-09-14T16:00:21.014000+00:00",
+    "end": "2026-09-14T16:09:00.838000+00:00",
+    "gross_s": 519.824,
+    "wait_s": 0,
+    "net_s": 519.824,
+    "raw_tokens": 10270745.0,
+    "cw_tokens": 3144913.4999999977
+   },
+   {
+    "label": "GROUND(script) ×2",
+    "start": "2026-09-14T16:09:00.838000+00:00",
+    "end": "2026-09-14T16:15:50.007000+00:00",
+    "gross_s": 409.169,
+    "wait_s": 0,
+    "net_s": 409.169,
+    "raw_tokens": 10335034.0,
+    "cw_tokens": 2834026.0000000023
+   },
+   {
+    "label": "mega-sdd:execute-bolts",
+    "start": "2026-09-14T16:15:50.007000+00:00",
+    "end": "2026-09-14T16:18:05.640000+00:00",
+    "gross_s": 135.633,
+    "wait_s": 0,
+    "net_s": 135.633,
+    "raw_tokens": 8053340.0,
+    "cw_tokens": 1825840.3000000003
+   },
+   {
+    "label": "bolt-implementer ×3",
+    "start": "2026-09-14T16:18:05.640000+00:00",
+    "end": "2026-09-14T23:20:17+07:00",
+    "gross_s": 131.36,
+    "wait_s": 0,
+    "net_s": 131.36,
+    "raw_tokens": 1007541.0,
+    "cw_tokens": 143972.7
+   }
+  ],
+  "pre_code": {
+   "end": "2026-09-14T16:15:50.007000+00:00",
+   "gross_s": 976.168,
+   "wait_s": 0,
+   "net_s": 976.168,
+   "cw_tokens": 6369877.499999989
+  },
+  "bolt1": {
+   "start": "2026-09-14T16:15:50.007000+00:00",
+   "gross_s": 266.993,
+   "wait_s": 0,
+   "net_s": 266.993,
+   "cw_tokens": 1969813.0
+  },
+  "pre_code_share": 78.52305534037828
+ },
+ "bolt1_breakdown": {
+  "window_start": "2026-09-14T16:15:50.007000+00:00",
+  "window_end": "2026-09-14T23:20:17+07:00",
+  "gross_s": 266.993,
+  "wait_s": 0,
+  "net_s": 266.993,
+  "implementer": {
+   "count": 3,
+   "sum_s": 977.219,
+   "union_s": 548.159,
+   "units": [
+    "U-001",
+    "U-002",
+    "U-005"
+   ]
+  },
+  "panel": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "verifier": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "gate-script": {
+   "count": 3,
+   "sum_s": 1.527,
+   "union_s": 1.5270000000000001,
+   "units": [
+    "U-001"
+   ]
+  },
+  "agent-other": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "bash-other": {
+   "count": 4,
+   "sum_s": 2.765,
+   "union_s": 2.765,
+   "units": [
+    "U-001"
+   ]
+  },
+  "skill": {
+   "count": 1,
+   "sum_s": 1.179,
+   "union_s": 1.179,
+   "units": []
+  },
+  "ask": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "fix_rounds_from_redispatch": 0,
+  "implementer_per_unit": {
+   "U-002": 1,
+   "U-001": 1,
+   "U-005": 1
+  },
+  "tool_active_union_s": 555.216,
+  "caveat": "agent spans = main-lane blocking only; background dispatch runtime lives on the sidechain (counts exact, durations lower bound)"
+ },
+ "interaction": {
+  "2026-09-14T23:20:17+07:00": {
+   "ask_points": 0,
+   "user_wait_points": 0,
+   "idle_events": 0,
+   "interaction_points": 0
+  },
+  "2026-09-15T00:03:23+07:00": {
+   "ask_points": 0,
+   "user_wait_points": 0,
+   "idle_events": 0,
+   "interaction_points": 0
+  }
+ }
+}

@@ -1,0 +1,82 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "b243a5b0",
+ "unit": "U-004",
+ "generated_at": "2026-09-14T16:32:32+00:00",
+ "summary": {
+  "CONFIRMED": 6,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U004-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/tentang-kami/page.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-004.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U004-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/views/company-profile/AboutView/index.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-004.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U004-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/views/company-profile/AboutView/index.test.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-004.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U004-A04",
+   "kind": "fs_must_exist",
+   "expect": "src/app/(blank-layout-pages)/login/page.tsx:1-22",
+   "source": ".mega-sdd/vaults/company-profile/units/U-004.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/(blank-layout-pages)/login/page.tsx:1-22",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U004-01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/tentang-kami",
+   "source": ".mega-sdd/vaults/company-profile/units/U-004.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent",
+   "text": "no tentang-kami route exists yet"
+  },
+  {
+   "id": "C-U004-02",
+   "kind": "fs_must_exist",
+   "expect": "src/app/(blank-layout-pages)/layout.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-004.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/(blank-layout-pages)/layout.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the blank-layout route group layout exists"
+  }
+ ]
+}

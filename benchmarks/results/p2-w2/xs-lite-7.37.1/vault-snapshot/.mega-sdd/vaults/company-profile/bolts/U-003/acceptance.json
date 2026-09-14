@@ -1,0 +1,24 @@
+{
+ "unit_id": "U-003",
+ "executed_at": "2026-09-14T16:45:53.185720Z",
+ "status": "pass",
+ "head_sha": "3e415808af221b2874a4019fc505736159974722",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/views/company-profile/HomeView/index.test.tsx",
+   "expects": "Test Files  1 passed (1)",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-xs-lite\n> vitest run src/views/company-profile/HomeView/index.test.tsx\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-xs-lite\n\n \u2713 src/views/company-profile/HomeView/index.test.tsx (5 tests) 144ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  23:45:54\n   Duration  1.35s (transform 55ms, setup 136ms, collect 309ms, tests 144ms, environment 384ms",
+   "output_tail": ".tsx\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-xs-lite\n\n \u2713 src/views/company-profile/HomeView/index.test.tsx (5 tests) 144ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  23:45:54\n   Duration  1.35s (transform 55ms, setup 136ms, collect 309ms, tests 144ms, environment 384ms, prepare 71ms)\n\n(node:18183) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T16:45:55.748197Z",
+ "duration_ms": 2562
+}

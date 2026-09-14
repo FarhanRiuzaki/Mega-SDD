@@ -1,0 +1,24 @@
+{
+ "unit_id": "U-006",
+ "executed_at": "2026-09-14T16:53:39.775414Z",
+ "status": "pass",
+ "head_sha": "cdbdccb4baf0298fb52876ee14905a6875c27567",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/contact/components/ContactForm/index.test.tsx",
+   "expects": "Test Files  1 passed (1)",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-xs-lite\n> vitest run src/features/contact/components/ContactForm/index.test.tsx\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-xs-lite\n\n \u2713 src/features/contact/components/ContactForm/index.test.tsx (9 tests) 1819ms\n   \u2713 ContactForm > shows the email error under Email, keeps the typed values and sends no request  438ms\n   \u2713 ContactForm > submits the trimmed fi",
+   "output_tail": "ds and shows \"Pesan terkirim\" inline on success  384ms\n   \u2713 ContactForm > shows the server error inline and keeps the typed values when the server rejects  355ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  23:53:40\n   Duration  3.35s (transform 90ms, setup 171ms, collect 458ms, tests 1.82s, environment 537ms, prepare 79ms)\n\n(node:28675) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T16:53:44.401910Z",
+ "duration_ms": 4626
+}

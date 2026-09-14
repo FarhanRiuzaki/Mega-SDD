@@ -1,0 +1,29 @@
+{
+ "unit_id": "U-006",
+ "scanned_at": "2026-09-14T16:59:49.004918Z",
+ "status": "pass",
+ "head_sha": "cdbdccb4baf0298fb52876ee14905a6875c27567",
+ "written_by": "validate-bolt-artifacts.sh --recompute",
+ "rules": [
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "directive",
+   "rule": "NEVER use dangerouslySetInnerHTML or render raw visitor HTML (constitution B-002)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "NEVER call enqueueSnackbar in the repository (constitution C-002)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T16:59:49.118742Z"
+}

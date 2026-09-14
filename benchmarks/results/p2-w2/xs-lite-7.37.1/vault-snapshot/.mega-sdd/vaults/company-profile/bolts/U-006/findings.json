@@ -1,0 +1,200 @@
+{
+ "schema": 1,
+ "unit": "U-006",
+ "attempt": 1,
+ "head": "cdbdccb4baf0298fb52876ee14905a6875c27567",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "spec",
+   "lenses": [
+    "spec"
+   ],
+   "severity": "Minor",
+   "file": "src/app/(blank-layout-pages)/kontak/page.tsx",
+   "line": 38,
+   "title": "Unrequested company-name overline copy",
+   "detail": "Spec step 2 only calls for metadata title, a Kontak heading and ContactForm; the variant='overline' company-name eyebrow is copy the spec never asked for (OQ-FL-1 on final copy still open).",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "spec",
+   "lenses": [
+    "spec"
+   ],
+   "severity": "Minor",
+   "file": "src/app/(blank-layout-pages)/kontak/page.tsx",
+   "line": 45,
+   "title": "Unrequested intro paragraph",
+   "detail": "\"Isi form di bawah ini... Semua field wajib diisi.\" is visitor-facing copy not in the Implementation steps or PRD.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "spec",
+   "lenses": [
+    "spec"
+   ],
+   "severity": "Minor",
+   "file": "src/app/(blank-layout-pages)/kontak/page.tsx",
+   "line": 28,
+   "title": "Unrequested metadata.description",
+   "detail": "Spec step 2 specifies only metadata title Kontak; a description was added.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/contact/components/ContactForm/index.test.tsx",
+   "line": 165,
+   "title": "the \"plain text, never HTML\" test can never fail",
+   "detail": "Typing into a controlled input can never produce a <b> element; the only server-controlled text outside an input is {error.message} at index.tsx:60. Delete the test or point it at a 400 whose message is '<b>x</b>'.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-5",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/contact/components/ContactForm/index.tsx",
+   "line": 55,
+   "title": "Untested branch: onInvalid clears the stale banner",
+   "detail": "No test submits invalid data after a finished mutation; resetMutation() on invalid submit is uncovered.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-6",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/contact/components/ContactForm/index.tsx",
+   "line": 49,
+   "title": "Untested behavior: form resets after success",
+   "detail": "The success test checks the alert and request body but not that resetForm(contactMessageDefaults) ran.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-7",
+   "lens": "standards",
+   "lenses": [
+    "standards"
+   ],
+   "severity": "Important",
+   "file": "src/features/contact/components/ContactForm/index.test.tsx",
+   "line": 175,
+   "title": "Page-level assertions and cross-module import added to ContactForm's test folder",
+   "detail": "The describe('kontak page') block (lines 14, 175-187) imports @/app/(blank-layout-pages)/kontak/page and asserts page metadata/heading from inside ContactForm/index.test.tsx; CLAUDE.md scopes a test folder to its own module and no sibling tests an app-router page. Move or drop the page-level assertions.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-8",
+   "lens": "standards",
+   "lenses": [
+    "standards"
+   ],
+   "severity": "Minor",
+   "file": "src/app/(blank-layout-pages)/kontak/page.tsx",
+   "line": 44,
+   "title": "Page inlines markup instead of delegating to a View component",
+   "detail": "login/beranda/tentang-kami page.tsx are thin wrappers rendering a @views component; kontak/page.tsx inlines the Card/Typography layout (the unit's target_files omitted a View file — spec-scoping note).",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-9",
+   "lens": "standards",
+   "lenses": [
+    "standards"
+   ],
+   "severity": "Minor",
+   "file": "src/features/contact/components/ContactForm/index.tsx",
+   "line": 121,
+   "title": "Decorative send icon omits aria-hidden",
+   "detail": "HomeView/index.tsx:60 sets aria-hidden='true' on its decorative icon; tabler-send does not.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-10",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Important",
+   "file": "src/app/(blank-layout-pages)/kontak/page.tsx",
+   "line": 35,
+   "title": "Kontak page is a lone centered card, not a composed page",
+   "detail": "main uses items-center justify-center to centre a single Card (lines 35-55), the design slice's named \"single centered card\" failure mode; sibling pages (HomeView/index.tsx:39-90, AboutView/index.tsx:30-95) use a top-down Container with header block and a back-navigation link. Fix: same page shell as the siblings (top-aligned main/Container, header landmark, Beranda back link).",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-11",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Minor",
+   "file": "src/app/(blank-layout-pages)/kontak/page.tsx",
+   "line": 37,
+   "title": "Intro block is a bare div, not a header landmark",
+   "detail": "Siblings wrap the overline/h1/intro block in <header> (AboutView/index.tsx:33-41).",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T16:59:30.385623Z"
+}

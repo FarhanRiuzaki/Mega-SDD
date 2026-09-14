@@ -1,0 +1,104 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "32d5284e",
+ "unit": "U-001",
+ "generated_at": "2026-09-14T16:17:33+00:00",
+ "summary": {
+  "CONFIRMED": 8,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U001-A01",
+   "kind": "fs_must_exist",
+   "expect": "src/proxy.ts",
+   "source": ".mega-sdd/vaults/company-profile/units/U-001.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/proxy.ts",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U001-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/proxy.test.ts",
+   "source": ".mega-sdd/vaults/company-profile/units/U-001.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U001-A03",
+   "kind": "fs_must_exist",
+   "expect": "src/proxy.ts:7-33",
+   "source": ".mega-sdd/vaults/company-profile/units/U-001.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/proxy.ts:7-33",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U001-A04",
+   "kind": "fs_must_exist",
+   "expect": "src/proxy.ts:11",
+   "source": ".mega-sdd/vaults/company-profile/units/U-001.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/proxy.ts:11",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U001-A05",
+   "kind": "fs_must_exist",
+   "expect": "next.config.ts:5-13",
+   "source": ".mega-sdd/vaults/company-profile/units/U-001.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "next.config.ts:5-13",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U001-A06",
+   "kind": "symbol",
+   "expect": "src/proxy.ts:proxy",
+   "source": ".mega-sdd/vaults/company-profile/units/U-001.md:existing_interfaces",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/proxy.ts:7",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file"
+  },
+  {
+   "id": "C-U001-01",
+   "kind": "symbol",
+   "expect": "src/proxy.ts:proxy",
+   "source": ".mega-sdd/vaults/company-profile/units/U-001.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/proxy.ts:7",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file",
+   "text": "proxy() is the route guard for page requests"
+  },
+  {
+   "id": "C-U001-02",
+   "kind": "fs_must_exist",
+   "expect": "next.config.ts",
+   "source": ".mega-sdd/vaults/company-profile/units/U-001.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "next.config.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "root redirect / -> /home is configured in next.config.ts"
+  }
+ ]
+}

@@ -1,0 +1,147 @@
+{
+ "arm": "/Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-xs-lite",
+ "vault": ".mega-sdd/vaults/company-profile",
+ "units_total": 6,
+ "units": {
+  "U-001": {
+   "status": "success",
+   "retries": 0,
+   "acceptance": "pass",
+   "postflight": "pass",
+   "findings": {},
+   "spec_verdict": "pass",
+   "panel_attempt": 1,
+   "jit": {
+    "CONFIRMED": 8,
+    "CONFLICT": 0,
+    "OQ": 0
+   }
+  },
+  "U-002": {
+   "status": "success",
+   "retries": 0,
+   "acceptance": "pass",
+   "postflight": "pass",
+   "findings": {},
+   "spec_verdict": "pass",
+   "panel_attempt": 1,
+   "jit": {
+    "CONFIRMED": 4,
+    "CONFLICT": 0,
+    "OQ": 0
+   }
+  },
+  "U-003": {
+   "status": "success",
+   "retries": 0,
+   "acceptance": "pass",
+   "postflight": "pass",
+   "findings": {
+    "Minor": 5,
+    "Important": 2
+   },
+   "spec_verdict": "pass",
+   "panel_attempt": 1,
+   "jit": {
+    "CONFIRMED": 7,
+    "CONFLICT": 0,
+    "OQ": 0
+   }
+  },
+  "U-004": {
+   "status": "success",
+   "retries": 1,
+   "acceptance": "pass",
+   "postflight": "pass",
+   "findings": {
+    "Important": 7,
+    "Minor": 13
+   },
+   "spec_verdict": "pass",
+   "panel_attempt": 2,
+   "jit": {
+    "CONFIRMED": 6,
+    "CONFLICT": 0,
+    "OQ": 0
+   }
+  },
+  "U-005": {
+   "status": "success",
+   "retries": 0,
+   "acceptance": "pass",
+   "postflight": "pass",
+   "findings": {
+    "Minor": 3,
+    "Important": 3
+   },
+   "spec_verdict": "pass",
+   "panel_attempt": 1,
+   "jit": {
+    "CONFIRMED": 12,
+    "CONFLICT": 0,
+    "OQ": 1
+   }
+  },
+  "U-006": {
+   "status": "success",
+   "retries": 0,
+   "acceptance": "pass",
+   "postflight": "pass",
+   "findings": {
+    "Minor": 9,
+    "Important": 2
+   },
+   "spec_verdict": "pass",
+   "panel_attempt": 1,
+   "jit": {
+    "CONFIRMED": 10,
+    "CONFLICT": 0,
+    "OQ": 1
+   }
+  }
+ },
+ "done": 6,
+ "quarantined": 0,
+ "halts": {},
+ "fix_rounds_total(retries)": 1,
+ "acceptance_units": "6/6",
+ "acceptance_entries": {
+  "executed": 6,
+  "passed": 6,
+  "failed": 0,
+  "pending_manual": 0
+ },
+ "postflight_units": "6/6",
+ "panel_findings": {
+  "Critical": 0,
+  "Important": 14,
+  "Minor": 30
+ },
+ "panel_findings_status": {
+  "advisory": 44
+ },
+ "jit_units": 6,
+ "jit_conflict_units": 0,
+ "conflict_at_dispatch": 0.0,
+ "jit_claims": {
+  "CONFIRMED": 47,
+  "CONFLICT": 0,
+  "OQ": 2
+ },
+ "oq": {
+  "P1/resolved": 1,
+  "P2/deferred": 4
+ },
+ "oq_total": 5,
+ "run": {
+  "sid": "ab4490f8-fb9c-407f-b2ba-5c581ea8bd02",
+  "plugin": "Version: 7.37.1",
+  "flags": "--lite",
+  "total_cost_usd": 57.24002574999996,
+  "num_turns": 176,
+  "result_subtype": "success",
+  "unit_commits": "10",
+  "first_unit_commit": "2026-09-14T23:20:17+07:00",
+  "last_unit_commit": "2026-09-15T00:03:23+07:00"
+ }
+}

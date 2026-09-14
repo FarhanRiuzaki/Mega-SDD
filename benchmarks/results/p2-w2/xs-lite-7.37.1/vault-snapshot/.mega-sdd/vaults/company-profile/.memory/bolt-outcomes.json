@@ -1,0 +1,46 @@
+{
+ "bolts": [
+  {
+   "unit_id": "U-001",
+   "run_at": "2026-09-14T17:09:45Z",
+   "task_type": "extend",
+   "status": "completed",
+   "duration_ms": 289000
+  },
+  {
+   "unit_id": "U-002",
+   "run_at": "2026-09-14T17:09:45Z",
+   "task_type": "create",
+   "status": "completed",
+   "duration_ms": 144000
+  },
+  {
+   "unit_id": "U-003",
+   "run_at": "2026-09-14T17:09:45Z",
+   "task_type": "create",
+   "status": "completed",
+   "duration_ms": 610000
+  },
+  {
+   "unit_id": "U-004",
+   "run_at": "2026-09-14T17:09:45Z",
+   "task_type": "create",
+   "status": "completed",
+   "duration_ms": 611000
+  },
+  {
+   "unit_id": "U-005",
+   "run_at": "2026-09-14T17:09:45Z",
+   "task_type": "create",
+   "status": "completed",
+   "duration_ms": 540000
+  },
+  {
+   "unit_id": "U-006",
+   "run_at": "2026-09-14T17:09:45Z",
+   "task_type": "create",
+   "status": "completed",
+   "duration_ms": 908000
+  }
+ ]
+}

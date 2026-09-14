@@ -1,0 +1,115 @@
+{
+ "schema": 1,
+ "unit": "U-005",
+ "attempt": 1,
+ "head": "b243a5b0d100cbc5d1b867bf3b3c79866ba502c7",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/app/api/v1/contact-messages/route.test.ts",
+   "line": 86,
+   "title": "No tests for the email length limit, email trimming or empty email",
+   "detail": "The it.each table covers name >100 and message >2000, but no test reaches .max(255, 'Email maksimal 255 karakter') at contact.schema.ts:26. Email trimming and the \"empty email reports wajib diisi, not a format error\" order (contact.schema.ts:23-24) are also untested. Add rows for a 262-char email and an empty email, plus a padded email to the trim test.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Important",
+   "file": "src/app/api/v1/contact-messages/route.ts",
+   "line": 25,
+   "title": "Abuse surface: public unauthenticated write, no throttle or body cap",
+   "detail": "Anyone can call this POST with no rate limit, CAPTCHA or honeypot, and every valid call writes a row upstream. await req.json() parses the whole body before any size check; the schema limits only bound what gets forwarded. Fix: reject early on Content-Length (e.g. >16 KB) and read with a size cap; add per-IP rate limiting plus a honeypot or CAPTCHA.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Minor",
+   "file": "src/app/api/v1/contact-messages/route.ts",
+   "line": 47,
+   "title": "Info exposure: upstream error envelope sent verbatim to anonymous callers",
+   "detail": "NextResponse.json(res) passes upstream code/message (copied by src/libs/api/server.ts:20-25) to unauthenticated clients. Fix: on success === false return a fixed generic message/code and log the upstream detail server-side.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "standards",
+   "lenses": [
+    "standards"
+   ],
+   "severity": "Important",
+   "file": "src/features/contact/types/index.ts",
+   "line": 5,
+   "title": "`ContactMessage` interface breaks the feature `I`-prefix convention",
+   "detail": "Every sibling features/<feature>/types/index.ts (users: IUser, roles: IRole, permissions: IPermission, branches: IBranch, profile: IMyProfile) prefixes entity interfaces with `I`. This file exports plain `ContactMessage`; rename to `IContactMessage` to match the established pattern.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-5",
+   "lens": "standards",
+   "lenses": [
+    "standards"
+   ],
+   "severity": "Important",
+   "file": "src/features/contact/types/index.ts",
+   "line": 24,
+   "title": "`ContactMessagePayload` breaks the feature `T`-prefix convention for payload types",
+   "detail": "Siblings name payload/list type aliases with a `T` prefix (TCreateUserPayload, TUpdateRolePayload, TCreatePermissionPayload, TUpdateProfilePayload). Should be `TContactMessagePayload` to stay consistent with every other feature's types/index.ts.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-6",
+   "lens": "standards",
+   "lenses": [
+    "standards"
+   ],
+   "severity": "Minor",
+   "file": "src/features/contact/types/index.ts",
+   "line": 27,
+   "title": "`ContactMessageFieldErrors` also lacks the sibling `T` prefix",
+   "detail": "Same convention source (all non-interface type aliases in feature types/index.ts files are T-prefixed); low impact since route-local plumbing, rename for consistency (TContactMessageFieldErrors).",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T16:34:20.985848Z"
+}

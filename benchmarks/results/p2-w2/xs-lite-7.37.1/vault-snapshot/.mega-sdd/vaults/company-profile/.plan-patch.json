@@ -1,0 +1,14 @@
+{
+  "source_documents": [
+    {"type": "PRD", "path": "PRD/prd-company-profile.md", "version": "1.0", "date": "2026-09-10"}
+  ],
+  "design_system_flags": {"HAS_UI_COMPONENTS": false, "HAS_TOKENS": false, "HAS_A11Y": false, "HAS_VOICE_BRAND": false},
+  "open_questions": {
+    "OQ-AR-1": {
+      "recommendation": "Pakai route /beranda, /tentang-kami, /kontak di route group (blank-layout-pages) dan biarkan redirect / -> /home tidak berubah",
+      "rationale": "Segmen kebab-case mengikuti nama halaman di PRD dan naming standard pack next (route segment kebab-case); redirect root existing ke dashboard admin tetap, sehingga perilaku admin tidak berubah dan scope tidak melebar",
+      "scan_citations": ["next.config.ts:5", "src/proxy.ts:11", "src/app/(blank-layout-pages)/layout.tsx:12"],
+      "fallback_if_wrong": "Ganti segmen route (dan daftar route publik di src/proxy.ts) ke URL yang dipilih stakeholder; bila Beranda harus di /, ubah redirect di next.config.ts"
+    }
+  }
+}

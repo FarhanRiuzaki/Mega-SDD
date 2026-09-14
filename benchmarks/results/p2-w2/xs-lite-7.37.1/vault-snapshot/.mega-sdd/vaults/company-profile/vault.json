@@ -1,0 +1,186 @@
+{
+  "vault_version": "1.0",
+  "vault_layout": 3,
+  "generated_at": "2026-09-14T17:09:46.171276Z",
+  "project_shape": "web-app",
+  "implementation_mode": "existing",
+  "prd_status": "final",
+  "output_mode": "compact",
+  "mode_migrate_after": null,
+  "project_scale": "xs",
+  "prd_sha256": "c2dd8bba04e247817393ddd6bb6a00492ce393b1c532c67e51bed7570d0a60ec",
+  "prd_path_at_generation": "PRD/prd-company-profile.md",
+  "constitution_version": "1.0",
+  "constitution_hash": "07ea4a4d993569ebe95204cc47a4f7568a9f5bd8dcea2c479bc19b65b143033f",
+  "source_documents": [
+    {
+      "type": "PRD",
+      "path": "PRD/prd-company-profile.md",
+      "version": "1.0",
+      "date": "2026-09-10"
+    }
+  ],
+  "design_system_flags": {
+    "HAS_UI_COMPONENTS": false,
+    "HAS_TOKENS": false,
+    "HAS_A11Y": false,
+    "HAS_VOICE_BRAND": false
+  },
+  "entities": [
+    {
+      "name": "contact_messages",
+      "purpose": "Pesan kontak dari pengunjung, dibaca admin langsung lewat database (tanpa UI admin di rilis ini)",
+      "doc": "context.md",
+      "fields_count": 5
+    }
+  ],
+  "flows": [
+    {
+      "id": "F-U-001",
+      "title": "Kirim pesan kontak",
+      "type": "user",
+      "doc": "context.md",
+      "dod_count": 5
+    }
+  ],
+  "adrs": [],
+  "open_questions": [
+    {
+      "tag": "OQ-DM-1",
+      "priority": "P1",
+      "doc": "context.md",
+      "status": "resolved",
+      "category": "business",
+      "origin": "context.md#Data-model",
+      "text": "PRD meminta pesan kontak disimpan ke tabel `contact_messages` supaya admin bisa membacanya lewat database, tetapi aplikasi ini tidak punya database sendiri — semua data dikirim ke API upstream. Di mana tabel `contact_messages` berada, dan lewat jalur apa pesan disimpan?",
+      "resolver_owner": "PO / tim backend",
+      "resolved_at": "2026-09-14T16:15:33.608858Z"
+    },
+    {
+      "tag": "OQ-AR-1",
+      "priority": "P2",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "tech",
+      "resolution_mode": "recommend",
+      "classification_confidence": "medium",
+      "origin": "context.md#Constraints",
+      "text": "PRD tidak menyebut alamat URL ketiga halaman publik, sementara `/` sudah dialihkan ke dashboard `/home`. URL apa yang dipakai untuk Beranda, Tentang Kami, dan Kontak? —",
+      "deferred_reason": "project_scale=xs — resurfaced after bolts; unit memakai rekomendasi `/beranda`, `/tentang-kami`, `/kontak` sementara.",
+      "recommendation": "Pakai route /beranda, /tentang-kami, /kontak di route group (blank-layout-pages) dan biarkan redirect / -> /home tidak berubah",
+      "rationale": "Segmen kebab-case mengikuti nama halaman di PRD dan naming standard pack next (route segment kebab-case); redirect root existing ke dashboard admin tetap, sehingga perilaku admin tidak berubah dan scope tidak melebar",
+      "scan_citations": [
+        "next.config.ts:5",
+        "src/proxy.ts:11",
+        "src/app/(blank-layout-pages)/layout.tsx:12"
+      ],
+      "fallback_if_wrong": "Ganti segmen route (dan daftar route publik di src/proxy.ts) ke URL yang dipilih stakeholder; bila Beranda harus di /, ubah redirect di next.config.ts",
+      "deferred_at": "2026-09-14T16:10:07.381050Z"
+    },
+    {
+      "tag": "OQ-FL-1",
+      "priority": "P2",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "business",
+      "origin": "context.md#F-U-001",
+      "text": "PRD hanya menetapkan teks sukses \"Pesan terkirim\"; kalimat pesan error per field tidak ditentukan. Kalimat error apa yang ditampilkan untuk nama, email, dan pesan? —",
+      "deferred_reason": "project_scale=xs — resurfaced after bolts; unit memakai kalimat yang menyalin aturan PRD (wajib / maks 100 karakter / format email valid / maks 2000 karakter) sementara.",
+      "deferred_at": "2026-09-14T16:10:07.381050Z"
+    },
+    {
+      "tag": "OQ-FL-2",
+      "priority": "P2",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "business",
+      "origin": "context.md#Overview",
+      "text": "PRD memberi tombol Beranda",
+      "deferred_reason": "project_scale=xs — resurfaced after bolts; tidak ada navigasi tambahan yang dibuat.",
+      "deferred_at": "2026-09-14T16:10:07.381050Z"
+    },
+    {
+      "tag": "OQ-CN-1",
+      "priority": "P2",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "business",
+      "text": "Target performa \"halaman statis termuat < 2 detik di koneksi 3G\" tidak menyebut cara dan alat ukurnya, sehingga belum ada acceptance test yang bisa membuktikannya. Siapa yang mengukur, dan dengan alat apa? —",
+      "deferred_reason": "project_scale=xs — resurfaced after bolts.",
+      "deferred_at": "2026-09-14T16:10:07.381050Z"
+    }
+  ],
+  "open_questions_summary": {
+    "total": 5,
+    "by_priority": {
+      "P1": 1,
+      "P2": 4,
+      "P3": 0
+    },
+    "by_status": {
+      "open": 0,
+      "resolved": 1,
+      "deferred": 4,
+      "out_of_scope": 0
+    }
+  },
+  "changelog": [
+    {
+      "event": "units_generated",
+      "at": "2026-09-14T16:14:50Z",
+      "count": 6
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-001",
+      "commits": [
+        "a707a541ad42cfedc766f89aed852c6c96c08323"
+      ],
+      "at": "2026-09-14T17:09:45Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-002",
+      "commits": [
+        "bd6002dd4b9f8acb48109ef5137950f0fc3ead6b"
+      ],
+      "at": "2026-09-14T17:09:45Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-003",
+      "commits": [
+        "3e415808af221b2874a4019fc505736159974722"
+      ],
+      "at": "2026-09-14T17:09:45Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-004",
+      "commits": [
+        "b5ca3cacd7139af06ac87e4aefd418bfc0becf26",
+        "8a58e39919d5e933775ce0d1d74e2ede7bde82f5"
+      ],
+      "at": "2026-09-14T17:09:45Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-005",
+      "commits": [
+        "b243a5b0d100cbc5d1b867bf3b3c79866ba502c7",
+        "9c81f94757b4f94ba62954d36839c33163bfef8e"
+      ],
+      "at": "2026-09-14T17:09:46Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-006",
+      "commits": [
+        "37ff5ebf0ef1d947d04bab259bd273543507c1ed",
+        "cdbdccb4baf0298fb52876ee14905a6875c27567"
+      ],
+      "at": "2026-09-14T17:09:46Z"
+    }
+  ],
+  "author": "Farhan Riuzaki"
+}

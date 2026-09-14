@@ -1,0 +1,105 @@
+{
+  "status": "pass",
+  "gates": {
+    "toolchain": {
+      "ran": true,
+      "source": "detect",
+      "formatters": 2,
+      "linters": 1,
+      "typecheckers": 1
+    },
+    "format": {
+      "ran": true,
+      "results": [
+        {
+          "tool": "prettier",
+          "check_cmd": "npx prettier --check --ignore-unknown .mega-sdd/vaults/company-profile/bolts/U-006/bolt-report.md 'src/app/(blank-layout-pages)/kontak/page.tsx' src/features/contact/components/ContactForm/index.test.tsx src/features/contact/components/ContactForm/index.tsx src/features/contact/hooks/useContact.ts src/features/contact/repositories/contact.repository.ts",
+          "pass": true,
+          "scoped": true,
+          "touched_files": 6,
+          "fix_cmd": "npx prettier --write --ignore-unknown .mega-sdd/vaults/company-profile/bolts/U-006/bolt-report.md 'src/app/(blank-layout-pages)/kontak/page.tsx' src/features/contact/components/ContactForm/index.test.tsx src/features/contact/components/ContactForm/index.tsx src/features/contact/hooks/useContact.ts src/features/contact/repositories/contact.repository.ts",
+          "fix_applied": true,
+          "fix_rc": 0,
+          "fixed": true
+        },
+        {
+          "tool": "editorconfig",
+          "check_cmd": "true  # baseline only \u2014 honored by the tools above",
+          "pass": true
+        }
+      ],
+      "fix_applied": true
+    },
+    "lint_typecheck": {
+      "ran": true,
+      "results": [
+        {
+          "tool": "eslint",
+          "check_cmd": "npx eslint .",
+          "pass": true
+        },
+        {
+          "tool": "tsc",
+          "check_cmd": "npx tsc --noEmit",
+          "pass": true
+        }
+      ],
+      "findings": 0
+    },
+    "secrets": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "engine": "gitleaks",
+        "findings": [],
+        "total": 0
+      }
+    },
+    "sast": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "skipped": false,
+        "findings": [],
+        "total": 0,
+        "blocking": false
+      }
+    },
+    "new_deps": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "new_deps": [],
+        "total_new": 0,
+        "blocking": false,
+        "warning": null
+      }
+    },
+    "dep_authorization": {
+      "ran": true,
+      "result": {
+        "unit": "U-006.md",
+        "enforced": true,
+        "allowed_new_deps": [],
+        "added_deps": [],
+        "unauthorized": [],
+        "finding": null,
+        "warning": null
+      }
+    }
+  },
+  "skips": [],
+  "not_run": [],
+  "config": {
+    "code_gates_enabled": true,
+    "no_code_gates_flag": false
+  },
+  "range": {
+    "base": "3e415808af221b2874a4019fc505736159974722",
+    "head": "cdbdccb4baf0298fb52876ee14905a6875c27567"
+  },
+  "written_by": "run-code-gates.sh",
+  "unit_id": "U-006",
+  "plugin_version": "7.37.1",
+  "written_at": "2026-09-14T16:53:39.191064Z"
+}

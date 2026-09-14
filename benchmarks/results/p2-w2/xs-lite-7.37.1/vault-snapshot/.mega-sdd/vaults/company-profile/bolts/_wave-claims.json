@@ -1,0 +1,90 @@
+{
+ "schema": "unit-claims/1",
+ "head": "1b87a24b",
+ "generated_by": "derive-unit-claims.sh@7.37.1",
+ "generated_at": "2026-09-14T16:37:12+00:00",
+ "units": [
+  "U-006"
+ ],
+ "claims": [
+  {
+   "id": "C-U006-A01",
+   "unit": "U-006",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/kontak/page.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-006.md:target_files"
+  },
+  {
+   "id": "C-U006-A02",
+   "unit": "U-006",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/repositories/contact.repository.ts",
+   "source": ".mega-sdd/vaults/company-profile/units/U-006.md:target_files"
+  },
+  {
+   "id": "C-U006-A03",
+   "unit": "U-006",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/hooks/useContact.ts",
+   "source": ".mega-sdd/vaults/company-profile/units/U-006.md:target_files"
+  },
+  {
+   "id": "C-U006-A04",
+   "unit": "U-006",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/components/ContactForm/index.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-006.md:target_files"
+  },
+  {
+   "id": "C-U006-A05",
+   "unit": "U-006",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/components/ContactForm/index.test.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-006.md:target_files"
+  },
+  {
+   "id": "C-U006-A06",
+   "unit": "U-006",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/repositories/user.repository.ts:1-19",
+   "source": ".mega-sdd/vaults/company-profile/units/U-006.md:## Anchors"
+  },
+  {
+   "id": "C-U006-A07",
+   "unit": "U-006",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/hooks/useUsers.ts:1-20",
+   "source": ".mega-sdd/vaults/company-profile/units/U-006.md:## Anchors"
+  },
+  {
+   "id": "C-U006-A08",
+   "unit": "U-006",
+   "kind": "fs_must_exist",
+   "expect": "src/test/utils.tsx:37-42",
+   "source": ".mega-sdd/vaults/company-profile/units/U-006.md:## Anchors"
+  },
+  {
+   "id": "C-U006-A09",
+   "unit": "U-006",
+   "kind": "symbol",
+   "expect": "src/libs/api/client.ts:apiClient",
+   "source": ".mega-sdd/vaults/company-profile/units/U-006.md:existing_interfaces"
+  },
+  {
+   "id": "C-U006-01",
+   "unit": "U-006",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/kontak",
+   "source": ".mega-sdd/vaults/company-profile/units/U-006.md:## Claims",
+   "text": "no kontak route exists yet"
+  },
+  {
+   "id": "C-U006-02",
+   "unit": "U-006",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/client.ts",
+   "source": ".mega-sdd/vaults/company-profile/units/U-006.md:## Claims",
+   "text": "apiClient browser fetcher exists"
+  }
+ ]
+}

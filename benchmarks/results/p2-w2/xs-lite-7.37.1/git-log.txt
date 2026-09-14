@@ -1,0 +1,21 @@
+d5c080a 2026-09-15T00:23:54+07:00 chore(sdd): analyze — CONSISTENCY-REPORT overall PASS
+146a3aa 2026-09-15T00:23:39+07:00 chore(sdd): post-bolt drift gate — DRIFT-REPORT + PENDING-SYNC
+b291f02 2026-09-15T00:10:54+07:00 chore(sdd): batch evidence — _summary, full-suite gate, vault changelog
+4228997 2026-09-15T00:10:54+07:00 chore(sdd): evidence U-006 — preflight/binding/L0/panel/postflight/acceptance
+e53e9c7 2026-09-15T00:10:54+07:00 chore(sdd): evidence U-005 — preflight/binding/L0/panel/postflight/acceptance
+d0ff68e 2026-09-15T00:10:54+07:00 chore(sdd): evidence U-004 — preflight/binding/L0/panel/postflight/acceptance
+d5dc844 2026-09-15T00:10:54+07:00 chore(sdd): evidence U-003 — preflight/binding/L0/panel/postflight/acceptance
+82afc59 2026-09-15T00:10:54+07:00 chore(sdd): evidence U-002 — preflight/binding/L0/panel/postflight/acceptance
+3966e19 2026-09-15T00:10:53+07:00 chore(sdd): evidence U-001 — preflight/binding/L0/panel/postflight/acceptance
+c58d43c 2026-09-15T00:03:23+07:00 docs(U-004): Build the public Tentang Kami page
+8a58e39 2026-09-15T00:01:17+07:00 fix(U-004): Build the public Tentang Kami page
+cdbdccb 2026-09-14T23:52:11+07:00 test(U-006): pin exact accessible names and assert required state in ContactForm tests
+37ff5eb 2026-09-14T23:48:56+07:00 feat(U-006): Build the public Kontak page with the contact form
+3e41580 2026-09-14T23:41:01+07:00 feat(U-003): Build the public Beranda page
+b5ca3ca 2026-09-14T23:39:01+07:00 feat(U-004): Build the public Tentang Kami page
+1b87a24 2026-09-14T23:37:11+07:00 docs(sdd): fix U-006 anchor range (KEEP_CODE for C-U006-A06)
+9c81f94 2026-09-14T23:35:34+07:00 style(U-005): apply L0 prettier fix to contact-messages route test
+b243a5b 2026-09-14T23:24:46+07:00 feat(U-005): Add the contact-message schema and the server-validating submit route
+a707a54 2026-09-14T23:22:34+07:00 feat(U-001): Open the three public company-profile routes in the proxy guard
+bd6002d 2026-09-14T23:20:17+07:00 feat(U-002): Add the static company-profile content config
+32d5284 2026-09-14T23:17:18+07:00 docs(sdd): plan company-profile vault (context, constitution, 6 units)

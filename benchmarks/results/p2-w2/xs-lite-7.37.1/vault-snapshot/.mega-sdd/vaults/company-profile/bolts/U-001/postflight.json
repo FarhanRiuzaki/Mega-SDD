@@ -1,0 +1,29 @@
+{
+ "unit_id": "U-001",
+ "scanned_at": "2026-09-14T16:59:49.004918Z",
+ "status": "pass",
+ "head_sha": "cdbdccb4baf0298fb52876ee14905a6875c27567",
+ "written_by": "validate-bolt-artifacts.sh --recompute",
+ "rules": [
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify next.config.ts",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch next.config.ts"
+  },
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "directive",
+   "rule": "ALWAYS keep the existing /login and /register bounce and the anonymous redirect to /login for every other path (constitution C-004 opens only the three PRD pages)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T16:59:49.111158Z"
+}

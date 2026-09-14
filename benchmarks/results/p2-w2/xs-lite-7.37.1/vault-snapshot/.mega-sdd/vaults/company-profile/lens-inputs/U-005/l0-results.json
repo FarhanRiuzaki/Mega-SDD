@@ -1,0 +1,102 @@
+{
+  "status": "pass",
+  "gates": {
+    "toolchain": {
+      "ran": true,
+      "source": "detect",
+      "formatters": 2,
+      "linters": 1,
+      "typecheckers": 1
+    },
+    "format": {
+      "ran": true,
+      "results": [
+        {
+          "tool": "prettier",
+          "check_cmd": "npx prettier --check --ignore-unknown src/app/api/v1/contact-messages/route.test.ts src/app/api/v1/contact-messages/route.ts src/features/contact/schemas/contact.schema.ts src/features/contact/types/index.ts",
+          "pass": true,
+          "scoped": true,
+          "touched_files": 4
+        },
+        {
+          "tool": "editorconfig",
+          "check_cmd": "true  # baseline only \u2014 honored by the tools above",
+          "pass": true
+        }
+      ],
+      "fix_applied": false
+    },
+    "lint_typecheck": {
+      "ran": true,
+      "results": [
+        {
+          "tool": "eslint",
+          "check_cmd": "npx eslint .",
+          "pass": true
+        },
+        {
+          "tool": "tsc",
+          "check_cmd": "npx tsc --noEmit",
+          "pass": false,
+          "output_tail": ".next/dev/types/validator.ts(53,39): error TS2307: Cannot find module '../../../src/app/(blank-layout-pages)/beranda/page.js' or its corresponding type declarations.\n.next/dev/types/validator.ts(62,39): error TS2307: Cannot find module '../../../src/app/(blank-layout-pages)/kontak/page.js' or its corresponding type declarations.\n.next/dev/types/validator.ts(89,39): error TS2307: Cannot find module '../../../src/app/(blank-layout-pages)/tentang-kami/page.js' or its corresponding type declarations.\n.next/types/validator.ts(53,39): error TS2307: Cannot find module '../../src/app/(blank-layout-pages)/beranda/page.js' or its corresponding type declarations.\n.next/types/validator.ts(62,39): error TS2307: Cannot find module '../../src/app/(blank-layout-pages)/kontak/page.js' or its corresponding type declarations.\n.next/types/validator.ts(89,39): error TS2307: Cannot find module '../../src/app/(blank-layout-pages)/tentang-kami/page.js' or its corresponding type declarations.\nnpm warn Unknown project config \"auto-install-peers\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"shamefully-hoist\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"node-linker\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\n"
+        }
+      ],
+      "findings": 1
+    },
+    "secrets": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "engine": "gitleaks",
+        "findings": [],
+        "total": 0
+      }
+    },
+    "sast": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "skipped": false,
+        "findings": [],
+        "total": 0,
+        "blocking": false
+      }
+    },
+    "new_deps": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "new_deps": [],
+        "total_new": 0,
+        "blocking": false,
+        "warning": null
+      }
+    },
+    "dep_authorization": {
+      "ran": true,
+      "result": {
+        "unit": "U-005.md",
+        "enforced": true,
+        "allowed_new_deps": [],
+        "added_deps": [],
+        "unauthorized": [],
+        "finding": null,
+        "warning": null
+      }
+    }
+  },
+  "skips": [],
+  "not_run": [],
+  "config": {
+    "code_gates_enabled": true,
+    "no_code_gates_flag": false
+  },
+  "range": {
+    "base": "a707a541ad42cfedc766f89aed852c6c96c08323",
+    "head": "9c81f94757b4f94ba62954d36839c33163bfef8e"
+  },
+  "written_by": "run-code-gates.sh",
+  "unit_id": "U-005",
+  "plugin_version": "7.37.1",
+  "written_at": "2026-09-14T16:35:49.161070Z"
+}

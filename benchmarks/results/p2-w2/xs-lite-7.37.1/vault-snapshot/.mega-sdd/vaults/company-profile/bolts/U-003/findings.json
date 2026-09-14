@@ -1,0 +1,132 @@
+{
+ "schema": 1,
+ "unit": "U-003",
+ "attempt": 1,
+ "head": "3e415808af221b2874a4019fc505736159974722",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "spec",
+   "lenses": [
+    "spec"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/HomeView/index.tsx",
+   "line": 53,
+   "title": "Section heading \"Layanan Kami\" is view-authored, not config-sourced",
+   "detail": "The Hard rule bars hard-coding organisation/tagline/service content; \"Layanan Kami\" is a section label (chrome), not organisation data, and matches the sibling AboutView pattern — noted for visibility, not a Hard-rule violation.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/app/(blank-layout-pages)/beranda/page.tsx",
+   "line": 20,
+   "title": "Page metadata (title Beranda) is not tested",
+   "detail": "Nothing imports beranda/page, so its metadata is never checked; add expect(metadata.title).toBe('Beranda').",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/HomeView/index.test.tsx",
+   "line": 51,
+   "title": "Layout test depends on MUI internal class names",
+   "detail": "Lines 51-59 check MuiGrid-grid-xs-12 / MuiGrid-grid-md-4; ties the suite to MUI class naming and still cannot prove the 375px layout in jsdom.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/HomeView/index.tsx",
+   "line": 73,
+   "title": "card transition classes overlap and contradict each other",
+   "detail": "transition-shadow is always on and overridden by motion-safe:transition-all, so reduced-motion users still get an animation; a hover lift makes non-clickable cards look clickable.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-5",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/views/company-profile/HomeView/index.tsx",
+   "line": 75,
+   "title": "numbered CustomAvatar badge the unit didn't ask for",
+   "detail": "Decoration outside the spec (title + paragraph per service), adds an @core import.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-6",
+   "lens": "standards",
+   "lenses": [
+    "standards"
+   ],
+   "severity": "Important",
+   "file": "src/views/company-profile/HomeView/index.test.tsx",
+   "line": 14,
+   "title": "Test imports view via alias instead of the established self-import convention",
+   "detail": "Every existing folder-colocated test (src/configs/companyProfile/index.test.ts:10, src/libs/api/query-params/index.test.ts:3, src/libs/jwt-permission/index.test.ts:3, src/libs/query-keys/index.test.ts:3, ContactForm/index.test.tsx:18, AboutView/index.test.tsx:16) imports the module under test with `import X from '.'`; this test uses `@views/company-profile/HomeView`. Change to `import HomeView from '.'`.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-7",
+   "lens": "standards",
+   "lenses": [
+    "standards"
+   ],
+   "severity": "Important",
+   "file": "src/views/company-profile/HomeView/index.tsx",
+   "line": 29,
+   "title": "companyProfile import uses `@configs/*` instead of the feature's established `@/configs/*` alias",
+   "detail": "Sibling files (AboutView/index.tsx:23, AboutView/index.test.tsx:12, kontak/page.tsx:21) use `@/configs/companyProfile`; this bolt's page.tsx:18 and HomeView/index.tsx:29 use `@configs/companyProfile` (resolves identically, naming split within the feature).",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T16:53:13.261278Z"
+}

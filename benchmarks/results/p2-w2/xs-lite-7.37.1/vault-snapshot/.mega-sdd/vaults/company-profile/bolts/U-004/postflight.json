@@ -1,0 +1,34 @@
+{
+ "unit_id": "U-004",
+ "scanned_at": "2026-09-14T17:04:17.809283Z",
+ "status": "pass",
+ "head_sha": "c58d43c9450890aff2efc7c45475eed448a56f08",
+ "written_by": "run-postflight-scan.sh",
+ "rules": [
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/app/(blank-layout-pages)/layout.tsx",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/app/(blank-layout-pages)/layout.tsx"
+  },
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "directive",
+   "rule": "NEVER render team photos or avatars \u2014 team entries show name and role only (constitution D-002)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "directives": {
+  "total": 1,
+  "attested": 0,
+  "unverified": 1
+ },
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T17:04:17.898272Z"
+}

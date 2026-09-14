@@ -1,0 +1,24 @@
+{
+ "tier": "minimal",
+ "lenses": [
+  "spec"
+ ],
+ "signals_fired": [],
+ "signals_evaluated": [
+  "auth_globs",
+  "manifest",
+  "file_count",
+  "vocabulary",
+  "constitution_b",
+  "risk_field"
+ ],
+ "target_files": 2,
+ "task_type": "extend",
+ "implementer_model": "sonnet",
+ "effort": "high",
+ "unit_tier": "xs",
+ "unit_id": "U-001",
+ "written_by": "resolve-review-tier.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T16:17:35.818680Z"
+}

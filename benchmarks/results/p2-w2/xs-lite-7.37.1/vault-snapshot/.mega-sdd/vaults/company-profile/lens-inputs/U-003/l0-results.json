@@ -1,0 +1,106 @@
+{
+  "status": "pass",
+  "gates": {
+    "toolchain": {
+      "ran": true,
+      "source": "detect",
+      "formatters": 2,
+      "linters": 1,
+      "typecheckers": 1
+    },
+    "format": {
+      "ran": true,
+      "results": [
+        {
+          "tool": "prettier",
+          "check_cmd": "npx prettier --check --ignore-unknown .mega-sdd/vaults/company-profile/bolts/U-003/bolt-report.md 'src/app/(blank-layout-pages)/beranda/page.tsx' src/views/company-profile/HomeView/index.test.tsx src/views/company-profile/HomeView/index.tsx",
+          "pass": true,
+          "scoped": true,
+          "touched_files": 4,
+          "fix_cmd": "npx prettier --write --ignore-unknown .mega-sdd/vaults/company-profile/bolts/U-003/bolt-report.md 'src/app/(blank-layout-pages)/beranda/page.tsx' src/views/company-profile/HomeView/index.test.tsx src/views/company-profile/HomeView/index.tsx",
+          "fix_applied": true,
+          "fix_rc": 0,
+          "fixed": true
+        },
+        {
+          "tool": "editorconfig",
+          "check_cmd": "true  # baseline only \u2014 honored by the tools above",
+          "pass": true
+        }
+      ],
+      "fix_applied": true
+    },
+    "lint_typecheck": {
+      "ran": true,
+      "results": [
+        {
+          "tool": "eslint",
+          "check_cmd": "npx eslint .",
+          "pass": false,
+          "output_tail": "\n/Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-xs-lite/src/features/contact/components/ContactForm/index.test.tsx\n  143:5  error  Expected blank line before this statement  padding-line-between-statements\n\n\u2716 1 problem (1 error, 0 warnings)\n  1 error and 0 warnings potentially fixable with the `--fix` option.\n\nnpm warn Unknown project config \"auto-install-peers\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"shamefully-hoist\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"node-linker\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\n"
+        },
+        {
+          "tool": "tsc",
+          "check_cmd": "npx tsc --noEmit",
+          "pass": true
+        }
+      ],
+      "findings": 1
+    },
+    "secrets": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "engine": "gitleaks",
+        "findings": [],
+        "total": 0
+      }
+    },
+    "sast": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "skipped": false,
+        "findings": [],
+        "total": 0,
+        "blocking": false
+      }
+    },
+    "new_deps": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "new_deps": [],
+        "total_new": 0,
+        "blocking": false,
+        "warning": null
+      }
+    },
+    "dep_authorization": {
+      "ran": true,
+      "result": {
+        "unit": "U-003.md",
+        "enforced": true,
+        "allowed_new_deps": [],
+        "added_deps": [],
+        "unauthorized": [],
+        "finding": null,
+        "warning": null
+      }
+    }
+  },
+  "skips": [],
+  "not_run": [],
+  "config": {
+    "code_gates_enabled": true,
+    "no_code_gates_flag": false
+  },
+  "range": {
+    "base": "b5ca3cacd7139af06ac87e4aefd418bfc0becf26",
+    "head": "3e415808af221b2874a4019fc505736159974722"
+  },
+  "written_by": "run-code-gates.sh",
+  "unit_id": "U-003",
+  "plugin_version": "7.37.1",
+  "written_at": "2026-09-14T16:45:52.557146Z"
+}
