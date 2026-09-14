@@ -117,4 +117,43 @@ n=$(grep -c 'review-tier|binding)\\.json' "$HOOK"); m=$(grep -c "review-tier|bin
 [ "$n" -ge 4 ] && pass "e1: python-form evidence-deny regex carries |binding at $n site(s)" || fail "e1: python-form sites=$n (<4)"
 grep -q 'findings|review-tier|binding)\\.json' "$HOOK" && pass "e2: bash PROTECTED alternation carries binding" || fail "e2: bash PROTECTED missing binding"
 
+# ── f: v8 P2 D1 — a Next.js route-group / dynamic-segment anchor keeps its full path ──
+# (lite 7.36.1 arm: `src/app/(blank-layout-pages)/register/page.tsx:1-22` was cut to
+#  `register/page.tsx:1-22` → fs absent → FALSE CONFLICT on 3/7 units)
+mkdir -p "$T/src/app/(grp)/[id]"; printf 'a\nb\nc\n' > "$T/src/app/(grp)/[id]/page.tsx"
+( cd "$T" && git add -A && git -c user.email=t@t -c user.name=t commit -qm rg )
+cat > "$V/units/U-003.md" <<'MD'
+---
+id: U-003
+title: route group
+task_type: extend
+vault_source: flows.md#F-U-003
+target_files:
+  - path: src/app/(grp)/[id]/page.tsx
+    operation: modify
+acceptance_test:
+  - type: test
+    command: x
+    expects: ""
+---
+# u
+
+## Anchors
+- src/app/(grp)/[id]/page.tsx:1-2 — page pattern in a route group
+MD
+bash "$S/derive-unit-claims.sh" --cwd="$T" --vault="$V" --units=U-003 >/dev/null 2>&1; RC=$?
+python3 - "$W" "$RC" <<'PYA' && pass "f1: route-group anchor derives the FULL path (src/app/(grp)/[id]/page.tsx:1-2), not a truncated tail" || fail "f1: route-group anchor truncated or missing"
+import json, sys
+w = json.load(open(sys.argv[1])); rc = int(sys.argv[2]); assert rc == 0
+a = [c for c in w["claims"] if c["unit"] == "U-003" and c["source"].endswith("## Anchors")]
+assert len(a) == 1 and a[0]["kind"] == "fs_must_exist" and a[0]["expect"] == "src/app/(grp)/[id]/page.tsx:1-2", a
+PYA
+bash "$S/write-unit-binding.sh" --cwd="$T" --vault="$V" --unit=U-003 --claims="$W" >/dev/null 2>&1; RC=$?
+python3 - "$V/bolts/U-003/binding.json" "$RC" <<'PYB' && pass "f2: the route-group anchor binds CONFIRMED (file present) — no false CONFLICT" || fail "f2: route-group anchor did not bind CONFIRMED"
+import json, sys
+d = json.load(open(sys.argv[1])); rc = int(sys.argv[2])
+a = [c for c in d["claims"] if c["expect"] == "src/app/(grp)/[id]/page.tsx:1-2"]
+assert a and a[0]["verdict"] == "CONFIRMED", (rc, a, d.get("summary"))
+PYB
+
 echo; [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"; exit $rc

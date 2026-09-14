@@ -141,7 +141,12 @@ def parse_acceptance_entries(full_text):
         m = re.match(r"^\s*([A-Za-z_]+)\s*:\s*(.*)$", ln)
         if m:
             k = m.group(1).strip().lower()
-            v = m.group(2).strip().strip("'\"")
+            v = m.group(2).strip()
+            # v8 P2 D2 (2026-09-14): strip quotes ONLY when the scalar is wrapped whole by one
+            # matching pair — `pnpm test:run -t "x y"` used to lose its closing quote
+            # (sh: unexpected EOF) and fail the unit's acceptance for a parser artefact.
+            if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":
+                v = v[1:-1]
             if k in ("type", "kind", "command", "expects", "desc", "ears"):
                 cur.setdefault("type" if k == "kind" else k, v)
     if cur:

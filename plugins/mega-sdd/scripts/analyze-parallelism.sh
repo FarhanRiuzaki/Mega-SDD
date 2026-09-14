@@ -171,7 +171,9 @@ def scalar(fm, key):
     if v.startswith("#") or v == "":
         return ""
     v = v.split("  #", 1)[0].strip()  # strip trailing inline comment
-    return v.strip("'\"")
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":  # v8 P2 D2: unwrap whole pairs only
+        return v[1:-1]
+    return v
 
 
 def list_field(fm, key):

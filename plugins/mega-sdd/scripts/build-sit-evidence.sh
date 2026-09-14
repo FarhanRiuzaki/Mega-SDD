@@ -207,7 +207,9 @@ def parse_acceptance_entries(full_text):
         m = re.match(r"^\s*([A-Za-z_]+)\s*:\s*(.*)$", ln)
         if m:
             k = m.group(1).strip().lower()
-            v = m.group(2).strip().strip("'\"")
+            v = m.group(2).strip()
+            if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":  # v8 P2 D2: unwrap whole pairs only
+                v = v[1:-1]
             if k in ("type", "kind", "command", "expects", "desc", "ears"):
                 cur.setdefault("type" if k == "kind" else k, v)
     if cur:

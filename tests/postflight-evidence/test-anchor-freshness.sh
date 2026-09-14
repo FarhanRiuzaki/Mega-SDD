@@ -92,5 +92,18 @@ printf -- '---\nid: U-011\ntask_type: create\ntarget_files:\n  - path: a.txt\n  
 OUT=$(bash "$CAF" --cwd="$F2" --unit=U-011 </dev/null 2>&1); RC=$?
 [ $RC -eq 0 ] && ok "unit without ## Anchors → exit 0 (nothing to verify)" || fail "no-anchors lane broken rc=$RC: $OUT"
 
+echo "── v8 P2 D1: route-group / dynamic-segment path is a legal anchor ──"
+mkdir -p "$F/src/(grp)/[id]"; printf 'l1\nl2\n' > "$F/src/(grp)/[id]/svc.php"
+( cd "$F" && git add -A && git -c user.email=t@t -c user.name=t commit -q -m "rg" )
+mk_unit "- src/(grp)/[id]/svc.php:2 — the anchor inside a route group"
+OUT=$(bash "$CAF" --cwd="$F" --unit=U-010 </dev/null 2>&1); RC=$?
+[ $RC -eq 0 ] && printf '%s' "$OUT" | grep -q "1 anchor(s) fresh" \
+  && ok "route-group anchor recognised and fresh (exit 0)" || fail "route-group anchor not recognised rc=$RC: $OUT"
+mk_unit "- src/(grp)/[id]/svc.php:99 — stale inside a route group"
+OUT=$(bash "$CAF" --cwd="$F" --unit=U-010 </dev/null 2>&1); RC=$?
+# (U-010 is already bolted in this fixture → stale = advisory WARN, rc 0; the point here is the NAME)
+printf '%s' "$OUT" | grep -qF "src/(grp)/[id]/svc.php:99" && printf '%s' "$OUT" | grep -q "line_out_of_range" \
+  && ok "stale route-group anchor named with its FULL path (not a truncated tail)" || fail "stale route-group anchor mis-named rc=$RC: $OUT"
+
 echo
 [ "$FAILED" -eq 0 ] && { echo "test-anchor-freshness: ALL PASS"; exit 0; } || { echo "test-anchor-freshness: FAILURES"; exit 1; }

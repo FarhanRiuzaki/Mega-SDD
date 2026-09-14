@@ -324,18 +324,47 @@ def main():
                 result["gates"]["format"] = {"ran": False}
             else:
                 entries = []; fix_applied = False
+                # v8 P2 D3 (2026-09-14, lite 7.36.1 arm): the DETECTED prettier pair
+                # (`npx prettier --check .` / `--write .`) swept the whole repo — the
+                # `--check .` failed on pre-existing unformatted files, the `--write .`
+                # then rewrote 82 tracked files outside the bolt's whitelist and the
+                # controller spent the wave restoring them. Scope the detected prettier
+                # commands to the files the bolt range actually touched (+ --ignore-unknown
+                # so a non-prettier file cannot fail the gate). A pack-override toolchain
+                # (`## Toolchain` fenced commands) and every other tool run verbatim —
+                # those arguments are the project's, not a detection default.
+                rc_t, out_t, _err_t, to_t = run(["git", "diff", "--name-only", base, head], cwd, 60)
+                touched = [] if (rc_t != 0 or to_t) else \
+                    [l.strip() for l in out_t.splitlines() if l.strip() and os.path.isfile(os.path.join(cwd, l.strip()))]
+                def scoped(cmd, tool):
+                    """(command, scoped?) — scoped=None means 'nothing to run' (no touched files)."""
+                    c = (cmd or "").rstrip()
+                    if tool != "prettier" or not c.endswith(" ."):
+                        return cmd, False
+                    if not touched:
+                        return cmd, None
+                    import shlex
+                    return c[:-1].rstrip() + " --ignore-unknown " + " ".join(shlex.quote(t) for t in touched), True
                 for f in formatters:
-                    rc, out, err, to = run_tool(f.get("check_cmd", "false"))
-                    e = {"tool": f.get("tool"), "check_cmd": f.get("check_cmd"), "pass": rc == 0}
+                    chk, sc = scoped(f.get("check_cmd", "false"), f.get("tool"))
+                    if sc is None:
+                        entries.append({"tool": f.get("tool"), "check_cmd": f.get("check_cmd"), "pass": True,
+                                        "scoped": True, "skipped_no_touched_files": True})
+                        continue
+                    rc, out, err, to = run_tool(chk)
+                    e = {"tool": f.get("tool"), "check_cmd": chk, "pass": rc == 0}
+                    if sc: e["scoped"] = True; e["touched_files"] = len(touched)
                     tail_src = out + err
                     if to:
                         e["pass"] = False; e["timeout"] = True
                     elif rc != 0 and f.get("fix_cmd"):
-                        rcf, outf, errf, tof = run_tool(f["fix_cmd"])
+                        fix, _ = scoped(f["fix_cmd"], f.get("tool"))
+                        e["fix_cmd"] = fix
+                        rcf, outf, errf, tof = run_tool(fix)
                         fix_applied = True
                         e["fix_applied"] = True                      # fix_cmd was RUN
                         e["fix_rc"] = None if tof else rcf           # ...and how it exited
-                        rc2, out2, err2, to2 = run_tool(f["check_cmd"])
+                        rc2, out2, err2, to2 = run_tool(chk)
                         e["pass"] = (rc2 == 0) and not to2
                         e["fixed"] = e["pass"]
                         tail_src = out2 + err2                       # the re-check's output, not the first check's

@@ -202,5 +202,19 @@ i=d['issues'][0]; assert i['halt_type']=='acceptance_evidence_missing' and 'STAL
   ok "stale evidence (newer bolt commit not covered) → acceptance_evidence_missing STALE"
 else fail "staleness anchor broken rc=$RC: $OUT"; fi
 
+echo "── v8 P2 D2: a trailing quoted argument survives the scalar parser ──"
+# lite 7.36.1 arm: `pnpm test:run -t "x y"` lost its closing quote (sh: unexpected EOF) → fail.
+PQ="$WORK/pq"; mk_project "$PQ" '  - type: test\n    command: echo -t "hello world"\n    expects: "hello world"\n  - type: test\n    command: '"'"'echo "a b"'"'"'\n    expects: "a b"\n' "Unit: U-001
+SDD-Acceptance: v5"
+OUT=$(bash "$RAT" --cwd="$PQ" --unit=U-001 </dev/null 2>&1); RC=$?
+[ $RC -eq 0 ] && [ "$(jget "$(AJ "$PQ")" '["status"]')" = "pass" ] \
+  && ok "unwrapped scalar with a trailing quoted arg runs intact; single-quote-wrapped scalar still unwrapped" \
+  || fail "quoted-arg acceptance broken rc=$RC status=$(jget "$(AJ "$PQ")" '["status"]' 2>/dev/null): $OUT"
+python3 - "$(AJ "$PQ")" <<'PYC' && ok "entries record the command verbatim (closing quote kept)" || fail "command text lost its closing quote"
+import json, sys
+d = json.load(open(sys.argv[1])); cmds = [e["command"] for e in d["entries"]]
+assert 'echo -t "hello world"' in cmds and 'echo "a b"' in cmds, cmds
+PYC
+
 echo
 [ "$FAILED" -eq 0 ] && { echo "test-acceptance-evidence: ALL PASS"; exit 0; } || { echo "test-acceptance-evidence: FAILURES"; exit 1; }

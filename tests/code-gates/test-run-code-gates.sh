@@ -258,5 +258,48 @@ if grep -q 'resolve-plugin-root.sh' "$CG"; then fail "the retired per-bolt resol
 grep -q 'ONE call: run-code-gates.sh' "$SB" && ok "bridge diagram: L0 is one call" || fail "bridge diagram not updated"
 grep -qF 'gates 3 and 5 always run' "$CG" && ok "always-run pair pinned in the wrapper contract" || fail "always-run pair not in wrapper contract"
 
+note "== 9. v8 P2 D3: a DETECTED prettier pair is scoped to the bolt's touched files =="
+# lite 7.36.1 arm (2026-09-14): `npx prettier --check .` failed on legacy files, `--write .`
+# rewrote 82 tracked files outside the whitelist. Proof by PATH-shim spy on `npx`.
+FIXP="$WORK/fixp"; mkfix "$FIXP"
+printf '{}\n' > "$FIXP/.prettierrc"; printf 'legacy\n' > "$FIXP/legacy.js"
+git -C "$FIXP" add .prettierrc legacy.js && git -C "$FIXP" commit -qm cfg
+BASEP="$(git -C "$FIXP" rev-parse HEAD)"
+printf 'x = 2\n' > "$FIXP/app.py" && git -C "$FIXP" add app.py && git -C "$FIXP" commit -qm bolt
+HEADP="$(git -C "$FIXP" rev-parse HEAD)"
+SHIMP="$WORK/shimp"; mkdir -p "$SHIMP"
+cat > "$SHIMP/npx" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$NPX_LOG"
+case "$*" in *--check*) if [ -e "$NPX_FAIL_ONCE" ]; then rm -f "$NPX_FAIL_ONCE"; exit 1; fi; exit 0;; esac
+exit 0
+EOF
+chmod +x "$SHIMP/npx"
+NPXLOG="$WORK/npx.log"; : > "$NPXLOG"; touch "$WORK/failonce"
+OUT9="$WORK/scoped.json"
+NPX_LOG="$NPXLOG" NPX_FAIL_ONCE="$WORK/failonce" PATH="$SHIMP:$PATH" bash "$RCG" --cwd="$FIXP" --base="$BASEP" --head="$HEADP" > "$OUT9"; rc=$?
+[ "$rc" -eq 0 ] && ok "scoped prettier run exits 0" || fail "scoped prettier run rc=$rc: $(cat "$OUT9" | head -c 300)"
+[ "$(jget "$OUT9" "d['gates']['format']['results'][0].get('scoped')")" = "True" ] && ok "format result flags scoped=true" || fail "scoped flag missing: $(jget "$OUT9" "d['gates']['format']")"
+if grep -q -- '--check --ignore-unknown app.py$' "$NPXLOG" && grep -q -- '--write --ignore-unknown app.py$' "$NPXLOG" \
+   && ! grep -q -- ' \.$' "$NPXLOG" && ! grep -q 'legacy.js' "$NPXLOG"; then
+  ok "check AND fix ran on the touched file only (+ --ignore-unknown); never on '.' nor on the legacy file"
+else fail "prettier argv not scoped: $(tr '\n' '|' < "$NPXLOG")"; fi
+[ "$(jget "$OUT9" "d['gates']['format']['results'][0]['fixed']")" = "True" ] && ok "fix path still disclosed (fixed=true after the scoped re-check)" || fail "fixed flag lost on the scoped path"
+# pack-override commands are NOT rewritten (their args are the project's)
+PACKDOT="$WORK/packdot.md"
+cat > "$PACKDOT" <<'EOF'
+# pack
+
+## Toolchain
+
+```yaml
+toolchain:
+  format_check_cmd: npx prettier --check .
+```
+EOF
+: > "$NPXLOG"
+NPX_LOG="$NPXLOG" PATH="$SHIMP:$PATH" bash "$RCG" --cwd="$FIXP" --base="$BASEP" --head="$HEADP" --pack="$PACKDOT" > "$WORK/packdot.json"; rc=$?
+grep -q -- '--check \.$' "$NPXLOG" && ok "pack-override prettier --check . runs verbatim (not scoped)" || fail "pack-override command was rewritten: $(cat "$NPXLOG")"
+
 if [ "$FAILED" -eq 0 ]; then note "ALL RUN-CODE-GATES PROOFS OK"; else note "run-code-gates FAILED"; fi
 exit $FAILED

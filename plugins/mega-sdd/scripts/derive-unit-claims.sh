@@ -46,7 +46,12 @@ except Exception:
     GEN = "derive-unit-claims.sh"
 
 CLAIM_RE = re.compile(r'^-\s+(C-U[\w-]+)\s+"(.+?)"\s+—\s+expect:\s+(.+?)\s*$')
-ANCHOR_RE = re.compile(r'((?:[\w.\-]+/)*[\w.\-]+\.[A-Za-z]\w{0,7}):(\d+)(?:-(\d+))?\b')
+# v8 P2 D1 (2026-09-14, lite 7.36.1 arm): a Next.js route-group / dynamic / slot segment
+# — `(group)`, `[id]`, `@slot` — is a legal path segment; the old `[\w.\-]` grammar cut
+# `src/app/(blank-layout-pages)/register/page.tsx:1-22` down to `register/page.tsx:1-22`
+# and minted a FALSE fs_must_exist CONFLICT on 3/7 units. Same literal as the TOKEN regex
+# in check-anchor-freshness.sh / build-dispatch-prompt.sh (kept in step by hand).
+ANCHOR_RE = re.compile(r'((?:(?:[\w.\-]+|\([\w.\-]+\)|\[[\w.\-]+\]|@[\w.\-]+)/)*[\w.\-]+\.[A-Za-z]\w{0,7}):(\d+)(?:-(\d+))?\b')
 
 def unit_file(uid):
     for pat in (os.path.join(vault, "units", uid + ".md"), os.path.join(vault, "units", uid, "unit.md")):

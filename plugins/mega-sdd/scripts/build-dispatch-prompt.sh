@@ -619,7 +619,11 @@ def fm_scalar(fm, key):
     if v.startswith("#") or v == "":
         return ""
     v = v.split("  #", 1)[0].strip()
-    return v.strip("'\"")
+    # v8 P2 D2 (2026-09-14): unwrap only a whole matching quote pair — a trailing quoted
+    # argument (`-t "x y"`) must reach the implementer intact.
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":
+        return v[1:-1]
+    return v
 
 
 def fm_list(fm, key):
@@ -1236,7 +1240,7 @@ for p in TARGET_PATHS:
 # NOT hoistable to one batch-start pass: "never a bind-era HIGH re-stamped
 # mid-batch" (:79) means the probe must reflect the tree at THIS bolt's assembly.
 ANCHOR_TOKEN_RE = re.compile(
-    r"(?<![\w:/])((?:[\w.\-]+/)*[\w.\-]+\.[A-Za-z][\w]{0,7}):(\d+)(?:-\d+)?\b")
+    r"(?<![\w:/])((?:(?:[\w.\-]+|\([\w.\-]+\)|\[[\w.\-]+\]|@[\w.\-]+)/)*[\w.\-]+\.[A-Za-z][\w]{0,7}):(\d+)(?:-\d+)?\b")
 
 anchors = []          # [(path, line)]
 _am = re.search(r"(?ims)^##[ \t]+Anchors\b[^\n]*\n(.*?)(?=^##[ \t]|\Z)", UNIT_TEXT)

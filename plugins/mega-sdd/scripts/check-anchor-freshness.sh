@@ -104,7 +104,7 @@ for unit_id in unit_ids:
         sys.exit(2)
     unit_files[unit_id] = uf
 
-TOKEN = re.compile(r"(?<![\w:/])((?:[\w.\-]+/)*[\w.\-]+\.[A-Za-z][\w]{0,7}):(\d+)(?:-\d+)?\b")
+TOKEN = re.compile(r"(?<![\w:/])((?:(?:[\w.\-]+|\([\w.\-]+\)|\[[\w.\-]+\]|@[\w.\-]+)/)*[\w.\-]+\.[A-Za-z][\w]{0,7}):(\d+)(?:-\d+)?\b")
 
 # Fixed costs paid ONCE per batch (tranche 4d): the tracked-file set and — only
 # when some unit is actually stale — the walk_unit_commits log walk (which
