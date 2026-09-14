@@ -1,0 +1,271 @@
+{
+ "session_start": "2026-09-14T07:03:51.609000+00:00",
+ "records": 1479,
+ "models": {
+  "claude-opus-5": 580
+ },
+ "endpoints": {
+  "2026-09-14T14:44:33+07:00": {
+   "gross_s": 2441.391,
+   "wait_s": 0,
+   "net_s": 2441.391,
+   "raw_tokens": 61785451,
+   "cw_tokens": 15646861.39999999,
+   "idle_ratio": 0.0,
+   "interaction_points": 0
+  },
+  "2026-09-14T15:33:23+07:00": {
+   "gross_s": 5371.391,
+   "wait_s": 0,
+   "net_s": 5371.391,
+   "raw_tokens": 124931395,
+   "cw_tokens": 28141361.699999947,
+   "idle_ratio": 0.0,
+   "interaction_points": 0
+  }
+ },
+ "wait_events": [
+  [
+   "2026-09-14T09:10:21.443000+00:00",
+   "IDLE",
+   1005.113
+  ],
+  [
+   "2026-09-14T09:22:05.032000+00:00",
+   "IDLE",
+   688.666
+  ]
+ ],
+ "phases": {
+  "segments": [
+   {
+    "label": "front-door / routing",
+    "start": "2026-09-14T07:03:51.609000+00:00",
+    "end": "2026-09-14T07:03:57.201000+00:00",
+    "gross_s": 5.592,
+    "wait_s": 0,
+    "net_s": 5.592,
+    "raw_tokens": 81192.0,
+    "cw_tokens": 163418.0
+   },
+   {
+    "label": "mega-sdd:mega-sdd",
+    "start": "2026-09-14T07:03:57.201000+00:00",
+    "end": "2026-09-14T07:04:01.259000+00:00",
+    "gross_s": 4.058,
+    "wait_s": 0,
+    "net_s": 4.058,
+    "raw_tokens": 90092.0,
+    "cw_tokens": 104580.1
+   },
+   {
+    "label": "GROUND(script) ×3",
+    "start": "2026-09-14T07:04:01.259000+00:00",
+    "end": "2026-09-14T07:04:35.026000+00:00",
+    "gross_s": 33.767,
+    "wait_s": 0,
+    "net_s": 33.767,
+    "raw_tokens": 636321.0,
+    "cw_tokens": 146140.7
+   },
+   {
+    "label": "mega-sdd:orchestrate-flow",
+    "start": "2026-09-14T07:04:35.026000+00:00",
+    "end": "2026-09-14T07:04:41.873000+00:00",
+    "gross_s": 6.847,
+    "wait_s": 0,
+    "net_s": 6.847,
+    "raw_tokens": 188128.0,
+    "cw_tokens": 67772.7
+   },
+   {
+    "label": "GROUND(script)",
+    "start": "2026-09-14T07:04:41.873000+00:00",
+    "end": "2026-09-14T07:05:10.104000+00:00",
+    "gross_s": 28.231,
+    "wait_s": 0,
+    "net_s": 28.231,
+    "raw_tokens": 547660.0,
+    "cw_tokens": 131803.40000000002
+   },
+   {
+    "label": "mega-sdd:generate-intent",
+    "start": "2026-09-14T07:05:10.104000+00:00",
+    "end": "2026-09-14T07:10:22.434000+00:00",
+    "gross_s": 312.33,
+    "wait_s": 0,
+    "net_s": 312.33,
+    "raw_tokens": 4032600.0,
+    "cw_tokens": 1790890.1000000003
+   },
+   {
+    "label": "GROUND(script)",
+    "start": "2026-09-14T07:10:22.434000+00:00",
+    "end": "2026-09-14T07:17:04.025000+00:00",
+    "gross_s": 401.591,
+    "wait_s": 0,
+    "net_s": 401.591,
+    "raw_tokens": 6590348.0,
+    "cw_tokens": 1946788.7999999998
+   },
+   {
+    "label": "mega-sdd:bind-codebase",
+    "start": "2026-09-14T07:17:04.025000+00:00",
+    "end": "2026-09-14T07:17:04.034000+00:00",
+    "gross_s": 0.009,
+    "wait_s": 0,
+    "net_s": 0.009,
+    "raw_tokens": 196925.0,
+    "cw_tokens": 25918.7
+   },
+   {
+    "label": "GROUND(script)",
+    "start": "2026-09-14T07:17:04.034000+00:00",
+    "end": "2026-09-14T07:23:37.796000+00:00",
+    "gross_s": 393.762,
+    "wait_s": 0,
+    "net_s": 393.762,
+    "raw_tokens": 9644921.0,
+    "cw_tokens": 2405555.1999999993
+   },
+   {
+    "label": "mega-sdd:generate-units",
+    "start": "2026-09-14T07:23:37.796000+00:00",
+    "end": "2026-09-14T07:23:38.041000+00:00",
+    "gross_s": 0.245,
+    "wait_s": 0,
+    "net_s": 0.245,
+    "raw_tokens": 284346.0,
+    "cw_tokens": 37102.0
+   },
+   {
+    "label": "GROUND(script) ×2",
+    "start": "2026-09-14T07:23:38.041000+00:00",
+    "end": "2026-09-14T07:39:04.714000+00:00",
+    "gross_s": 926.673,
+    "wait_s": 0,
+    "net_s": 926.673,
+    "raw_tokens": 24179718.0,
+    "cw_tokens": 5895713.3999999985
+   },
+   {
+    "label": "mega-sdd:execute-bolts",
+    "start": "2026-09-14T07:39:04.714000+00:00",
+    "end": "2026-09-14T07:41:43.659000+00:00",
+    "gross_s": 158.945,
+    "wait_s": 0,
+    "net_s": 158.945,
+    "raw_tokens": 10454329.0,
+    "cw_tokens": 2342377.900000001
+   },
+   {
+    "label": "bolt-implementer ×3",
+    "start": "2026-09-14T07:41:43.659000+00:00",
+    "end": "2026-09-14T14:44:33+07:00",
+    "gross_s": 169.341,
+    "wait_s": 0,
+    "net_s": 169.341,
+    "raw_tokens": 4858871.0,
+    "cw_tokens": 588800.3999999999
+   }
+  ],
+  "pre_code": {
+   "end": "2026-09-14T07:39:04.714000+00:00",
+   "gross_s": 2113.105,
+   "wait_s": 0,
+   "net_s": 2113.105,
+   "cw_tokens": 12715683.09999999
+  },
+  "bolt1": {
+   "start": "2026-09-14T07:39:04.714000+00:00",
+   "gross_s": 328.286,
+   "wait_s": 0,
+   "net_s": 328.286,
+   "cw_tokens": 2931178.3000000007
+  },
+  "pre_code_share": 86.55332144666708
+ },
+ "bolt1_breakdown": {
+  "window_start": "2026-09-14T07:39:04.714000+00:00",
+  "window_end": "2026-09-14T14:44:33+07:00",
+  "gross_s": 328.286,
+  "wait_s": 0,
+  "net_s": 328.286,
+  "implementer": {
+   "count": 3,
+   "sum_s": 3.557,
+   "union_s": 3.5569999999999995,
+   "units": [
+    "U-001",
+    "U-002",
+    "U-003"
+   ]
+  },
+  "panel": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "verifier": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "gate-script": {
+   "count": 2,
+   "sum_s": 3.301,
+   "union_s": 3.301,
+   "units": [
+    "U-001"
+   ]
+  },
+  "agent-other": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "bash-other": {
+   "count": 4,
+   "sum_s": 1.948,
+   "union_s": 1.948,
+   "units": []
+  },
+  "skill": {
+   "count": 1,
+   "sum_s": 1.092,
+   "union_s": 1.092,
+   "units": []
+  },
+  "ask": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "fix_rounds_from_redispatch": 0,
+  "implementer_per_unit": {
+   "U-001": 1,
+   "U-002": 1,
+   "U-003": 1
+  },
+  "tool_active_union_s": 11.486,
+  "caveat": "agent spans = main-lane blocking only; background dispatch runtime lives on the sidechain (counts exact, durations lower bound)"
+ },
+ "interaction": {
+  "2026-09-14T14:44:33+07:00": {
+   "ask_points": 0,
+   "user_wait_points": 0,
+   "idle_events": 0,
+   "interaction_points": 0
+  },
+  "2026-09-14T15:33:23+07:00": {
+   "ask_points": 0,
+   "user_wait_points": 0,
+   "idle_events": 0,
+   "interaction_points": 0
+  }
+ }
+}

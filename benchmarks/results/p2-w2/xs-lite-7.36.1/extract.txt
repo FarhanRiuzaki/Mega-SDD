@@ -1,0 +1,60 @@
+session_start=2026-09-14T07:03:51.609000+00:00  records=1479  models={'claude-opus-5': 580}
+
+endpoint 2026-09-14T14:44:33+07:00
+  gross wall-clock : 0h40m41s
+  human-wait       : 0.0 min (0 events)
+  net machine time : 0h40m41s
+  raw tokens       : 61,785,451
+  cost-weighted    : 15,646,861
+
+endpoint 2026-09-14T15:33:23+07:00
+  gross wall-clock : 1h29m31s
+  human-wait       : 0.0 min (0 events)
+  net machine time : 1h29m31s
+  raw tokens       : 124,931,395
+  cost-weighted    : 28,141,362
+
+wait events:
+  2026-09-14T09:10:21.443000+00:00 IDLE    16.8 min
+  2026-09-14T09:22:05.032000+00:00 IDLE    11.5 min
+
+phase decomposition (v8 P0) — endpoint 2026-09-14T14:44:33+07:00
+  segment                                 gross      wait        net      raw tok       cw tok
+  front-door / routing                 0h00m05s     0.0m   0h00m05s       81,192      163,418
+  mega-sdd:mega-sdd                    0h00m04s     0.0m   0h00m04s       90,092      104,580
+  GROUND(script) ×3                    0h00m33s     0.0m   0h00m33s      636,321      146,141
+  mega-sdd:orchestrate-flow            0h00m06s     0.0m   0h00m06s      188,128       67,773
+  GROUND(script)                       0h00m28s     0.0m   0h00m28s      547,660      131,803
+  mega-sdd:generate-intent             0h05m12s     0.0m   0h05m12s    4,032,600    1,790,890
+  GROUND(script)                       0h06m41s     0.0m   0h06m41s    6,590,348    1,946,789
+  mega-sdd:bind-codebase               0h00m00s     0.0m   0h00m00s      196,925       25,919
+  GROUND(script)                       0h06m33s     0.0m   0h06m33s    9,644,921    2,405,555
+  mega-sdd:generate-units              0h00m00s     0.0m   0h00m00s      284,346       37,102
+  GROUND(script) ×2                    0h15m26s     0.0m   0h15m26s   24,179,718    5,895,713
+  mega-sdd:execute-bolts               0h02m38s     0.0m   0h02m38s   10,454,329    2,342,378
+  bolt-implementer ×3                  0h02m49s     0.0m   0h02m49s    4,858,871      588,800
+  (sum of segment nets)                                     0h40m41s
+  PRE-CODE  (start → first bolts dispatch 2026-09-14T07:39:04.714000+00:00): net 0h35m13s, cw 12,715,683
+  BOLT-1    (dispatch → first unit commit):         net 0h05m28s, cw 2,931,178
+  pre-code share of net time-to-first-code: 86.6%  (v8 P0 kill-criterion: < 25% ⇒ stop at P1)
+
+BOLT-1 breakdown (v8 P0)
+  window 2026-09-14T07:39:04.714000+00:00 → 2026-09-14T14:44:33+07:00  gross 0h05m28s · wait 0.0m · net 0h05m28s
+  class                               count        sum      union  units
+  implementer dispatches                  3   0h00m03s   0h00m03s  U-001,U-002,U-003
+  review-panel lenses                     0   0h00m00s   0h00m00s  
+  resolution-verifier (fix rounds)        0   0h00m00s   0h00m00s  
+  gate/validator scripts                  2   0h00m03s   0h00m03s  U-001
+  other Agent dispatches                  0   0h00m00s   0h00m00s  
+  other Bash calls                        4   0h00m01s   0h00m01s  
+  Skill dispatches                        1   0h00m01s   0h00m01s  
+  AskUserQuestion                         0   0h00m00s   0h00m00s  
+  fix rounds (implementer re-dispatch per unit − 1): 0   per-unit dispatches: {'U-001': 1, 'U-002': 1, 'U-003': 1}
+  tool-active union (all non-ask spans): 0h00m11s  = 3% of BOLT-1 net; the remainder is controller reasoning/reading between tool calls
+  CAVEAT: Agent spans measure MAIN-LANE blocking time only. A background dispatch (execute-bolts waves, parallel panel lenses) returns its tool_result at once and does its work on the sidechain, so implementer/panel 'sum' here is a LOWER BOUND of their runtime; the COUNTS and the per-unit re-dispatch (fix rounds) are exact. Gate scripts and other Bash calls are foreground and exact.
+
+interaction points (v8 W1 budget: 3-screen ≤2, clinic ≤3)
+  to 2026-09-14T14:44:33+07:00: ASK 0 + mid-run USER waits 0 = 0 interaction point(s); 0 idle event(s) >10min
+  to 2026-09-14T15:33:23+07:00: ASK 0 + mid-run USER waits 0 = 0 interaction point(s); 0 idle event(s) >10min
+
+json written: /Users/<user>/SunnyGo/2026/AIRND2026/Project/mega-sdd-github/benchmarks/results/p2-w2/xs-lite-7.36.1/extract.json
