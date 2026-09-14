@@ -1,0 +1,115 @@
+{
+ "schema": 1,
+ "unit": "U-018",
+ "attempt": 1,
+ "head": "f1c0025869872bc1919e52352a8f7598b2c4c5ab",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/WalkInDialog/index.tsx",
+   "line": 175,
+   "title": "duplicate: doctor select copied from ReassignDialog",
+   "detail": "Repeats ReassignDialog/index.tsx:147-187 almost line for line; extract a shared DoctorSelect.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/WalkInDialog/index.test.tsx",
+   "line": 191,
+   "title": "No test covers the submit-time off-grid guard (OFF_GRID_TIME_ERROR)",
+   "detail": "index.tsx:117-131 is untested; add a vi.setSystemTime test asserting no POST and the error text.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/WalkInDialog/index.tsx",
+   "line": 372,
+   "title": "same two error lines copied into both non-override branches",
+   "detail": "Render the helpers once.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/WalkInDialog/index.test.tsx",
+   "line": 229,
+   "title": "The fix commit's missing-date error is untested",
+   "detail": "Render without defaultDate and expect \"Select a date\".",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-5",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/WalkInDialog/index.tsx",
+   "line": 174,
+   "title": "two-column grid sx literal repeated 3 times",
+   "detail": "Hoist to a constant.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-6",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/WalkInDialog/index.tsx",
+   "line": 214,
+   "title": "Doctor/service selects have no explicit empty-list state",
+   "detail": "Add a caption or disable with helper text.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 2,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:57:12.291902Z"
+}

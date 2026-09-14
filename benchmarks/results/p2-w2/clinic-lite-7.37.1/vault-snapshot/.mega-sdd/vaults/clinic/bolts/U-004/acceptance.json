@@ -1,0 +1,44 @@
+{
+ "unit_id": "U-004",
+ "executed_at": "2026-09-14T14:05:06.522808Z",
+ "status": "pass",
+ "head_sha": "f437fa0995df9ced40811e88b7b89be89258c689",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/configs/primaryColorConfig/index.test.ts --reporter=verbose",
+   "expects": "uses teal-700 as the default primary color",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/configs/primaryColorConfig/index.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/configs/primaryColorConfig/index.test.ts > primary color presets > uses teal-700 as the default primary color 1ms\n \u2713 src/configs/primaryColorConfig/index.test.ts > primary color presets > keeps white-on-prim",
+   "output_tail": "n-primary contrast at or above 4.5 to 1 0ms\n \u2713 src/configs/primaryColorConfig/index.test.ts > primary color presets > never uses a raw brand hue as a main color 0ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  21:05:07\n   Duration  1.12s (transform 43ms, setup 189ms, collect 10ms, tests 4ms, environment 567ms, prepare 76ms)\n\n(node:21119) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/configs/primaryColorConfig/index.test.ts --reporter=verbose",
+   "expects": "keeps white-on-primary contrast at or above 4.5 to 1",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/configs/primaryColorConfig/index.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/configs/primaryColorConfig/index.test.ts > primary color presets > uses teal-700 as the default primary color 1ms\n \u2713 src/configs/primaryColorConfig/index.test.ts > primary color presets > keeps white-on-prim",
+   "output_tail": "n-primary contrast at or above 4.5 to 1 0ms\n \u2713 src/configs/primaryColorConfig/index.test.ts > primary color presets > never uses a raw brand hue as a main color 0ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  21:05:09\n   Duration  915ms (transform 44ms, setup 145ms, collect 12ms, tests 4ms, environment 388ms, prepare 73ms)\n\n(node:21193) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/configs/primaryColorConfig/index.test.ts --reporter=verbose",
+   "expects": "never uses a raw brand hue as a main color",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/configs/primaryColorConfig/index.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/configs/primaryColorConfig/index.test.ts > primary color presets > uses teal-700 as the default primary color 1ms\n \u2713 src/configs/primaryColorConfig/index.test.ts > primary color presets > keeps white-on-prim",
+   "output_tail": "n-primary contrast at or above 4.5 to 1 0ms\n \u2713 src/configs/primaryColorConfig/index.test.ts > primary color presets > never uses a raw brand hue as a main color 0ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  21:05:12\n   Duration  884ms (transform 40ms, setup 132ms, collect 10ms, tests 3ms, environment 400ms, prepare 72ms)\n\n(node:21267) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:05:13.157895Z",
+ "duration_ms": 6634
+}

@@ -1,0 +1,99 @@
+{
+ "schema": "unit-claims/1",
+ "head": "d743b4d0",
+ "generated_by": "derive-unit-claims.sh@7.37.1",
+ "generated_at": "2026-09-14T14:57:34+00:00",
+ "units": [
+  "U-019"
+ ],
+ "claims": [
+  {
+   "id": "C-U019-A01",
+   "unit": "U-019",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/ReceptionBoard/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:target_files"
+  },
+  {
+   "id": "C-U019-A02",
+   "unit": "U-019",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/ReceptionBoard/columns.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:target_files"
+  },
+  {
+   "id": "C-U019-A03",
+   "unit": "U-019",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/ReceptionBoard/index.test.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:target_files"
+  },
+  {
+   "id": "C-U019-A04",
+   "unit": "U-019",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(dashboard)/staff/reception/page.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:target_files"
+  },
+  {
+   "id": "C-U019-A05",
+   "unit": "U-019",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/components/table/index.tsx:1-128",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:## Anchors"
+  },
+  {
+   "id": "C-U019-A06",
+   "unit": "U-019",
+   "kind": "fs_must_exist",
+   "expect": "src/app/(dashboard)/users/page.tsx:1-17",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:## Anchors"
+  },
+  {
+   "id": "C-U019-A07",
+   "unit": "U-019",
+   "kind": "symbol",
+   "expect": "src/components/table/BaseTable.tsx:BaseTable",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:existing_interfaces"
+  },
+  {
+   "id": "C-U019-A08",
+   "unit": "U-019",
+   "kind": "symbol",
+   "expect": "src/components/rbac/ProtectedRoute.tsx:ProtectedRoute",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:existing_interfaces"
+  },
+  {
+   "id": "C-U019-01",
+   "unit": "U-019",
+   "kind": "symbol",
+   "expect": "src/components/table/BaseTable.tsx:BaseTable",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:## Claims",
+   "text": "BaseTable is the house data table"
+  },
+  {
+   "id": "C-U019-02",
+   "unit": "U-019",
+   "kind": "symbol",
+   "expect": "src/components/rbac/ProtectedRoute.tsx:ProtectedRoute",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:## Claims",
+   "text": "ProtectedRoute supports role requirements"
+  },
+  {
+   "id": "C-U019-03",
+   "unit": "U-019",
+   "kind": "fs_must_exist",
+   "expect": "src/features/appointments/components/ReassignDialog/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:## Claims",
+   "text": "the reassign dialog exists"
+  },
+  {
+   "id": "C-U019-04",
+   "unit": "U-019",
+   "kind": "fs_must_exist",
+   "expect": "src/features/appointments/components/WalkInDialog/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:## Claims",
+   "text": "the walk-in dialog exists"
+  }
+ ]
+}

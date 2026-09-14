@@ -1,0 +1,48 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "8af59196",
+ "unit": "U-002",
+ "generated_at": "2026-09-14T11:19:54+00:00",
+ "summary": {
+  "CONFIRMED": 3,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U002-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/utils/slots/index.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-002.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U002-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/utils/slots/index.test.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-002.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U002-01",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/query-params/index.test.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-002.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/query-params/index.test.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "pure helpers with tests live in a folder with index.ts and index.test.ts"
+  }
+ ]
+}

@@ -1,0 +1,59 @@
+{
+ "unit_id": "U-016",
+ "scanned_at": "2026-09-14T15:02:40.722076Z",
+ "status": "pass",
+ "head_sha": "1f889d7e51e3d93b5b3e0d61f1aaccd91e958bca",
+ "written_by": "validate-bolt-artifacts.sh --recompute",
+ "rules": [
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/components/rbac/ProtectedRoute.tsx",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/components/rbac/ProtectedRoute.tsx"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/data/navigation/verticalMenuData.tsx",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/data/navigation/verticalMenuData.tsx"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/data/navigation/horizontalMenuData.tsx",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/data/navigation/horizontalMenuData.tsx"
+  },
+  {
+   "type": "FILE_PRESENCE_RULE",
+   "rule": "file src/app/(dashboard)/staff/schedule/page.tsx MUST exist after bolt",
+   "verdict": "pass",
+   "evidence": "src/app/(dashboard)/staff/schedule/page.tsx exists"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST guard the page with ProtectedRoute requiring the doctor role (constitution B-005)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST render appointment status with AppointmentStatusChip so status is never color-only (constitution F-002)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST keep the grid keyboard-reachable with each appointment cell a focusable button that opens the detail dialog (constitution F-001)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:02:40.872700Z"
+}

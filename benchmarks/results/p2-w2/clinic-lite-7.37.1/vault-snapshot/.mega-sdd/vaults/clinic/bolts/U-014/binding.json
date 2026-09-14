@@ -1,0 +1,83 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "709d0990",
+ "unit": "U-014",
+ "generated_at": "2026-09-14T11:56:36+00:00",
+ "summary": {
+  "CONFIRMED": 6,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U014-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/RescheduleForm/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-014.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U014-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/RescheduleForm/index.test.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-014.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U014-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(patient)/reschedule/[token]/page.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-014.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U014-01",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/components/UserDetailDialog.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-014.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/users/components/UserDetailDialog.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "detail rendering with a query hook exists in the users feature"
+  },
+  {
+   "id": "C-U014-02",
+   "kind": "fs_must_exist",
+   "expect": "src/features/appointments/components/SlotPicker/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-014.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/appointments/components/SlotPicker/index.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the slot picker exists"
+  },
+  {
+   "id": "C-U014-03",
+   "kind": "fs_must_exist",
+   "expect": "src/features/appointments/components/AppointmentStatusChip/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-014.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/appointments/components/AppointmentStatusChip/index.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the status chip exists"
+  }
+ ]
+}

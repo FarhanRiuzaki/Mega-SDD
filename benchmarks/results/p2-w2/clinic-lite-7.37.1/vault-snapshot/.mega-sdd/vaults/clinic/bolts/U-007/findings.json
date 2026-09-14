@@ -1,0 +1,115 @@
+{
+ "schema": 1,
+ "unit": "U-007",
+ "attempt": 1,
+ "head": "e122613de08a99f27cb4f5346bd6eac0a9e6c8b0",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/app/api/v1/appointments/schedule/route.ts",
+   "line": 32,
+   "title": "reject() error helper now exists in three copies",
+   "detail": "Also at src/app/api/v1/appointments/[id]/reassign/route.ts:33 and src/app/api/v1/appointments/route.ts:32; export one reject() from src/libs/api/route-handler.ts.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/app/api/v1/appointments/schedule/route.ts",
+   "line": 60,
+   "title": "Envelope-to-status mapping rewritten instead of reusing respond()",
+   "detail": "Also at reassign/route.ts:74; export respond from route-handler.ts:19 and reuse it.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/app/api/v1/appointments/schedule/route.test.ts",
+   "line": 20,
+   "title": "Server-session mock setup copied into each new test file",
+   "detail": "4 copies in the repo; add a server-session holder in src/test/mocks.ts.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Important",
+   "file": "src/libs/auth.ts",
+   "line": 121,
+   "title": "Broken access control: browser can rewrite the roles/id these routes trust (pre-existing, not in this diff)",
+   "detail": "`if (trigger === 'update' && session) return { ...token, ...session }` lets a doctor call useSession().update({ roles: ['receptionist'] }) or update({ id }) and defeat schedule/route.ts:45-54 and reassign/route.ts:46-48. Fix forward in the unit owning auth.ts: allowlist harmless profile fields only.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-5",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Important",
+   "file": "src/app/api/v1/appointments/schedule/route.ts",
+   "line": 46,
+   "title": "Parameter pollution: all query keys are forwarded",
+   "detail": "Object.fromEntries(searchParams) forwards every key; only the exact doctorId key is overwritten. Build params from an allowlist (from/to) and set doctorId from the session for doctors.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-6",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Minor",
+   "file": "src/app/api/v1/appointments/[id]/reassign/route.ts",
+   "line": 69,
+   "title": "encodeURIComponent leaves . / .. segments intact",
+   "detail": "Validate id with a strict pattern and 400 before upstream.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:57:12.224358Z"
+}

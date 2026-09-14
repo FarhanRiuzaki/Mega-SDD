@@ -1,0 +1,99 @@
+{
+ "unit_id": "U-013",
+ "executed_at": "2026-09-14T14:55:22.983651Z",
+ "status": "pass",
+ "head_sha": "6bf6e1d1ce6edef834f88fca0e63f4d40562ef33",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose",
+   "expects": "walks through all steps and books with the online channel",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > walks through all steps and books with the online channel 1559ms\n \u2713 src/features/appointments/components/B",
+   "output_tail": " 1435ms\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > does not persist patient data in localStorage or cookies 1149ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  21:55:24\n   Duration  12.28s (transform 115ms, setup 196ms, collect 786ms, tests 10.45s, environment 413ms, prepare 86ms)\n\n(node:89508) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose",
+   "expects": "blocks the next step until the current step fields are valid",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > walks through all steps and books with the online channel 1555ms\n \u2713 src/features/appointments/components/B",
+   "output_tail": " 1424ms\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > does not persist patient data in localStorage or cookies 1118ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  21:55:37\n   Duration  12.15s (transform 110ms, setup 176ms, collect 736ms, tests 10.46s, environment 399ms, prepare 75ms)\n\n(node:89752) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose",
+   "expects": "announces the booking confirmation in a status region",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > walks through all steps and books with the online channel 1566ms\n \u2713 src/features/appointments/components/B",
+   "output_tail": " 1434ms\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > does not persist patient data in localStorage or cookies 1136ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  21:55:50\n   Duration  12.40s (transform 109ms, setup 182ms, collect 755ms, tests 10.53s, environment 545ms, prepare 65ms)\n\n(node:90013) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose",
+   "expects": "returns to the date step when the slot was taken meanwhile",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > walks through all steps and books with the online channel 1566ms\n \u2713 src/features/appointments/components/B",
+   "output_tail": " 1432ms\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > does not persist patient data in localStorage or cookies 1116ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  21:56:04\n   Duration  12.32s (transform 112ms, setup 177ms, collect 697ms, tests 10.53s, environment 503ms, prepare 78ms)\n\n(node:90276) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "manual",
+   "desc": "Book an appointment at /book on a 375px viewport using only the keyboard: every step is reachable, errors are read as text, and the confirmation is announced.",
+   "pending_manual": true
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose",
+   "expects": "does not send an override flag in the booking request",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > walks through all steps and books with the online channel 1545ms\n \u2713 src/features/appointments/components/B",
+   "output_tail": " 1456ms\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > does not persist patient data in localStorage or cookies 1119ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  21:56:18\n   Duration  12.22s (transform 109ms, setup 150ms, collect 651ms, tests 10.54s, environment 506ms, prepare 79ms)\n\n(node:90504) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose",
+   "expects": "does not claim the confirmation email has already been sent",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > walks through all steps and books with the online channel 1547ms\n \u2713 src/features/appointments/components/B",
+   "output_tail": " 1436ms\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > does not persist patient data in localStorage or cookies 1124ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  21:56:31\n   Duration  12.25s (transform 110ms, setup 150ms, collect 642ms, tests 10.49s, environment 577ms, prepare 83ms)\n\n(node:90735) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose",
+   "expects": "keeps patient details filled in after a slot conflict returns to the date step",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > walks through all steps and books with the online channel 1608ms\n \u2713 src/features/appointments/components/B",
+   "output_tail": " 1438ms\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > does not persist patient data in localStorage or cookies 1132ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  21:56:45\n   Duration  12.31s (transform 114ms, setup 123ms, collect 666ms, tests 10.60s, environment 538ms, prepare 60ms)\n\n(node:90994) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose",
+   "expects": "does not persist patient data in localStorage or cookies",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/BookingWizard/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > walks through all steps and books with the online channel 1545ms\n \u2713 src/features/appointments/components/B",
+   "output_tail": " 1429ms\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx > BookingWizard > does not persist patient data in localStorage or cookies 1142ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  21:56:58\n   Duration  12.14s (transform 111ms, setup 140ms, collect 644ms, tests 10.47s, environment 517ms, prepare 85ms)\n\n(node:91253) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:57:11.314257Z",
+ "duration_ms": 108329
+}

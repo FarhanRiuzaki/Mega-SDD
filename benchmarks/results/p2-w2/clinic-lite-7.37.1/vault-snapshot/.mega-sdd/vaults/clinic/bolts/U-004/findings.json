@@ -1,0 +1,64 @@
+{
+ "schema": 1,
+ "unit": "U-004",
+ "attempt": 1,
+ "head": "ac7e9bd583cba38a0562e42ebe6aa36c928d1b4a",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/configs/primaryColorConfig/index.test.ts",
+   "line": 31,
+   "title": "stdlib: hand-rolled WCAG luminance/contrast helpers that MUI already ships",
+   "detail": "Lines 30-45 re-implement getLuminance/getContrastRatio exported by @mui/material/styles (already imported at src/components/theme/index.tsx:8); replace and drop the white-on-black self-check at lines 57-58.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/configs/primaryColorConfig/index.ts",
+   "line": 37,
+   "title": "unused `light` on primary-3 and a comment describing a use that doesn't exist",
+   "detail": "Nothing reads a preset's light/dark; drop light or give light/dark like the other presets.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "standards",
+   "lenses": [
+    "standards"
+   ],
+   "severity": "Minor",
+   "file": "src/configs/primaryColorConfig/index.ts",
+   "line": 41,
+   "title": "primary-3 entry omits `dark`, unlike every sibling preset",
+   "detail": "Data-shape drift only; no consumer reads it. Add a teal-800-family dark to match siblings.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:13:16.366137Z"
+}

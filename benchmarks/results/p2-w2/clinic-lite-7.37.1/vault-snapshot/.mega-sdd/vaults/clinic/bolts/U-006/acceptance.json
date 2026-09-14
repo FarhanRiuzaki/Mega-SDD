@@ -1,0 +1,94 @@
+{
+ "unit_id": "U-006",
+ "executed_at": "2026-09-14T15:23:18.387803Z",
+ "status": "pass",
+ "head_sha": "def8f8ccdd3812b8ad3615124f20346708c81778",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/appointments --reporter=verbose",
+   "expects": "cancels through upstream when a token is posted",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/appointments --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cancel > cancels through upstream when a token is posted 5ms\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cance",
+   "output_tail": " into the upstream path 0ms\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cancel > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  22:23:19\n   Duration  1.24s (transform 54ms, setup 181ms, collect 96ms, tests 16ms, environment 564ms, prepare 78ms)\n\n(node:22855) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/appointments --reporter=verbose",
+   "expects": "rejects a cancel request without a token with 400",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/appointments --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cancel > cancels through upstream when a token is posted 5ms\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cance",
+   "output_tail": " into the upstream path 0ms\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cancel > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  22:23:21\n   Duration  1.02s (transform 55ms, setup 144ms, collect 73ms, tests 13ms, environment 393ms, prepare 73ms)\n\n(node:22930) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/appointments --reporter=verbose",
+   "expects": "exposes no GET handler so an email link cannot cancel by itself",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/appointments --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cancel > cancels through upstream when a token is posted 6ms\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cance",
+   "output_tail": " into the upstream path 0ms\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cancel > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  22:23:24\n   Duration  992ms (transform 54ms, setup 149ms, collect 79ms, tests 14ms, environment 383ms, prepare 86ms)\n\n(node:23003) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run appointments/token --reporter=verbose",
+   "expects": "loads the appointment for a token from upstream",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run appointments/token --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/token/[token]/route.test.ts > /api/v1/appointments/token/[token] > loads the appointment for a token from upstream 6ms\n \u2713 src/app/api/v1/appointments/token/[token]/route.test.ts > /api/v1/appointments/token/[t",
+   "output_tail": " for both handlers 1ms\n \u2713 src/app/api/v1/appointments/token/[token]/route.test.ts > /api/v1/appointments/token/[token] > maps a failed upstream envelope to 400 1ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  22:23:26\n   Duration  991ms (transform 60ms, setup 151ms, collect 76ms, tests 19ms, environment 393ms, prepare 79ms)\n\n(node:23077) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run appointments/token --reporter=verbose",
+   "expects": "rejects a reschedule payload without a valid start time with 400",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run appointments/token --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/token/[token]/route.test.ts > /api/v1/appointments/token/[token] > loads the appointment for a token from upstream 6ms\n \u2713 src/app/api/v1/appointments/token/[token]/route.test.ts > /api/v1/appointments/token/[t",
+   "output_tail": " for both handlers 1ms\n \u2713 src/app/api/v1/appointments/token/[token]/route.test.ts > /api/v1/appointments/token/[token] > maps a failed upstream envelope to 400 1ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  22:23:28\n   Duration  989ms (transform 58ms, setup 147ms, collect 82ms, tests 19ms, environment 393ms, prepare 74ms)\n\n(node:23151) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run appointments/token --reporter=verbose",
+   "expects": "reschedules through upstream when a valid start time is provided",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run appointments/token --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/token/[token]/route.test.ts > /api/v1/appointments/token/[token] > loads the appointment for a token from upstream 6ms\n \u2713 src/app/api/v1/appointments/token/[token]/route.test.ts > /api/v1/appointments/token/[t",
+   "output_tail": " for both handlers 1ms\n \u2713 src/app/api/v1/appointments/token/[token]/route.test.ts > /api/v1/appointments/token/[token] > maps a failed upstream envelope to 400 1ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  22:23:30\n   Duration  1.03s (transform 57ms, setup 149ms, collect 87ms, tests 19ms, environment 385ms, prepare 78ms)\n\n(node:23224) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/appointments --reporter=verbose",
+   "expects": "never echoes the token back in the response body",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/appointments --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cancel > cancels through upstream when a token is posted 5ms\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cance",
+   "output_tail": " into the upstream path 0ms\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cancel > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  22:23:32\n   Duration  951ms (transform 49ms, setup 132ms, collect 72ms, tests 13ms, environment 379ms, prepare 79ms)\n\n(node:23299) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/appointments --reporter=verbose",
+   "expects": "does not call upstream when the cancel payload fails validation",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/appointments --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cancel > cancels through upstream when a token is posted 6ms\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cance",
+   "output_tail": " into the upstream path 0ms\n \u2713 src/app/api/appointments/[id]/cancel/route.test.ts > POST /api/appointments/[id]/cancel > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  22:23:34\n   Duration  991ms (transform 55ms, setup 142ms, collect 76ms, tests 14ms, environment 398ms, prepare 73ms)\n\n(node:23374) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:23:36.247328Z",
+ "duration_ms": 17859
+}

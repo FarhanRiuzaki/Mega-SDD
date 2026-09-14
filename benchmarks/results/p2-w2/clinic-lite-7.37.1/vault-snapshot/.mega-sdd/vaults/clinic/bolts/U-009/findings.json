@@ -1,0 +1,81 @@
+{
+ "schema": 1,
+ "unit": "U-009",
+ "attempt": 1,
+ "head": "1705313e88a33d38b5a82f6c9b12c300591fc930",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/hooks/useAppointments/index.test.tsx",
+   "line": 146,
+   "title": "No failure-path tests: all 6 tests are happy-path",
+   "detail": "No test sends a non-OK response (409 slot conflict on booking, failed reschedule) to check the error snackbar and that nothing is invalidated; no onError branch is covered anywhere, including the hand-written one at index.ts:100. Add 409 cases for useCreateAppointment and useRescheduleAppointment and assert the error text renders.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/hooks/useAppointments/index.ts",
+   "line": 108,
+   "title": "detailKey invalidates a key nothing registers",
+   "detail": "listKey appointmentKeys.all() already covers it (also :116); keep only because makeUpdateMutation requires it and fix the comment.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/hooks/useAppointments/index.test.tsx",
+   "line": 54,
+   "title": "flush() uses a fixed 50ms real sleep to prove no request was sent",
+   "detail": "Timing-dependent; assert on query fetchStatus idle or a waitFor on the handler spy.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "standards",
+   "lenses": [
+    "standards"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/hooks/useAppointments/index.ts",
+   "line": 86,
+   "title": "Mutation hooks invalidate appointmentKeys.all() instead of .lists()",
+   "detail": "Sibling useUsers.ts:33 invalidates userKeys.lists(); here create/cancel/reassign pass appointmentKeys.all() (lines 86, 107, 115), busting availability/schedule/token queries too. Intent is explained in-code; use .lists() if only the list should refresh.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:54:57.494896Z"
+}

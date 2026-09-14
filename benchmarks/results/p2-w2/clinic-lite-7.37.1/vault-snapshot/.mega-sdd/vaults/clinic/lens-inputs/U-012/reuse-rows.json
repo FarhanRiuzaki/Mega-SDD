@@ -1,0 +1,1 @@
+{"rows":[{"new_name":"formatDate","new_file":"src/features/appointments/components/SlotPicker/index.tsx","match_name":"formatDate","match_file":"src/utils/dateFormatter.ts","match_line":12,"match_class":"exact","signature":"formatDate = (date: string | Date, formatStr: string = 'DD MMM YYYY') => {","source":"symbol-index"}],"count":1,"truncated":0,"note":null}

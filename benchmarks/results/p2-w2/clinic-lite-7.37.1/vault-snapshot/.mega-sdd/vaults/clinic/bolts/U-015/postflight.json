@@ -1,0 +1,40 @@
+{
+ "unit_id": "U-015",
+ "scanned_at": "2026-09-14T15:24:41.010910Z",
+ "status": "pass",
+ "head_sha": "def8f8ccdd3812b8ad3615124f20346708c81778",
+ "written_by": "run-postflight-scan.sh",
+ "rules": [
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/views/Login.tsx",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/views/Login.tsx"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/libs/auth.ts",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/libs/auth.ts"
+  },
+  {
+   "type": "FILE_PRESENCE_RULE",
+   "rule": "file src/app/(blank-layout-pages)/staff/login/page.tsx MUST exist after bolt",
+   "verdict": "pass",
+   "evidence": "src/app/(blank-layout-pages)/staff/login/page.tsx exists"
+  }
+ ],
+ "directives": {
+  "total": 0,
+  "attested": 0,
+  "unverified": 0
+ },
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:24:41.129716Z"
+}

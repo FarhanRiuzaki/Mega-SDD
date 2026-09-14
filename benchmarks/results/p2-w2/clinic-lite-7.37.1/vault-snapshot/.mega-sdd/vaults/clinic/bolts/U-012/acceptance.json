@@ -1,0 +1,59 @@
+{
+ "unit_id": "U-012",
+ "executed_at": "2026-09-14T11:55:37.576079Z",
+ "status": "pass",
+ "head_sha": "709d0990f1ab7eb87d663aacec6cd44027a68ecc",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/SlotPicker/index.test.tsx --reporter=verbose",
+   "expects": "shows only free slots for the chosen date",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/SlotPicker/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/SlotPicker/index.test.tsx > SlotPicker > shows only free slots for the chosen date 409ms\n \u2713 src/features/appointments/components/SlotPicker/index.test.tsx >",
+   "output_tail": "flags a weekend date with an in-text error 62ms\n \u2713 src/features/appointments/components/SlotPicker/index.test.tsx > SlotPicker > selects a slot by keyboard 144ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:55:38\n   Duration  2.13s (transform 62ms, setup 122ms, collect 612ms, tests 665ms, environment 387ms, prepare 75ms)\n\n(node:31049) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/SlotPicker/index.test.tsx --reporter=verbose",
+   "expects": "announces the number of available slots in a live region",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/SlotPicker/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/SlotPicker/index.test.tsx > SlotPicker > shows only free slots for the chosen date 397ms\n \u2713 src/features/appointments/components/SlotPicker/index.test.tsx >",
+   "output_tail": "flags a weekend date with an in-text error 57ms\n \u2713 src/features/appointments/components/SlotPicker/index.test.tsx > SlotPicker > selects a slot by keyboard 137ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:55:41\n   Duration  1.97s (transform 63ms, setup 115ms, collect 495ms, tests 644ms, environment 376ms, prepare 64ms)\n\n(node:31123) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/SlotPicker/index.test.tsx --reporter=verbose",
+   "expects": "flags a weekend date with an in-text error",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/SlotPicker/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/SlotPicker/index.test.tsx > SlotPicker > shows only free slots for the chosen date 404ms\n \u2713 src/features/appointments/components/SlotPicker/index.test.tsx >",
+   "output_tail": "flags a weekend date with an in-text error 61ms\n \u2713 src/features/appointments/components/SlotPicker/index.test.tsx > SlotPicker > selects a slot by keyboard 136ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:55:44\n   Duration  2.00s (transform 68ms, setup 137ms, collect 499ms, tests 654ms, environment 363ms, prepare 81ms)\n\n(node:31228) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/SlotPicker/index.test.tsx --reporter=verbose",
+   "expects": "selects a slot by keyboard",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/SlotPicker/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/SlotPicker/index.test.tsx > SlotPicker > shows only free slots for the chosen date 395ms\n \u2713 src/features/appointments/components/SlotPicker/index.test.tsx >",
+   "output_tail": "flags a weekend date with an in-text error 58ms\n \u2713 src/features/appointments/components/SlotPicker/index.test.tsx > SlotPicker > selects a slot by keyboard 136ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:55:48\n   Duration  1.97s (transform 61ms, setup 132ms, collect 482ms, tests 641ms, environment 373ms, prepare 69ms)\n\n(node:31302) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "manual",
+   "desc": "At 375px width, tab through the date field and the slot buttons: each slot is at least 44px tall, focus is visible, and the live region reads the slot count after the date changes.",
+   "pending_manual": true
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:55:50.382874Z",
+ "duration_ms": 12806
+}

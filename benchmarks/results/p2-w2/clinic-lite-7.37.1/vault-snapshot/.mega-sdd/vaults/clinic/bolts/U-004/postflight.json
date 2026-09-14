@@ -1,0 +1,47 @@
+{
+ "unit_id": "U-004",
+ "scanned_at": "2026-09-14T15:02:40.722076Z",
+ "status": "pass",
+ "head_sha": "1f889d7e51e3d93b5b3e0d61f1aaccd91e958bca",
+ "written_by": "validate-bolt-artifacts.sh --recompute",
+ "rules": [
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/@core/contexts/settingsContext.tsx",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/@core/contexts/settingsContext.tsx"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/components/theme/index.tsx",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/components/theme/index.tsx"
+  },
+  {
+   "type": "FILE_PRESENCE_RULE",
+   "rule": "file src/configs/primaryColorConfig/index.ts MUST exist after bolt",
+   "verdict": "pass",
+   "evidence": "src/configs/primaryColorConfig/index.ts exists"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST keep the `PrimaryColorConfig` type export and the default export array shape so existing imports compile (constitution C-004)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST use teal-700 #0E7490 as the default primary and never raw #0891B2 or #16A34A as a main color (constitution F-003)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:02:40.861328Z"
+}

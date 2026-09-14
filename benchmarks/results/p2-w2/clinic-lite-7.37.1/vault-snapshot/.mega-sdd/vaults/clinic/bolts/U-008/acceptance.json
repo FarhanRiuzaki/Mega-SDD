@@ -1,0 +1,74 @@
+{
+ "unit_id": "U-008",
+ "executed_at": "2026-09-14T11:35:54.271103Z",
+ "status": "pass",
+ "head_sha": "121df3b7f40662e9296d4f66c2c5b52652530ee8",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/cron/reminders/route.test.ts --reporter=verbose",
+   "expects": "rejects a request without the cron secret with 401",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/cron/reminders/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > rejects a request without the cron secret with 401 5ms\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > rejects every request when ",
+   "output_tail": "he exact Bearer prefix and never echoes it 1ms\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > maps a failed upstream sweep envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  18:35:55\n   Duration  1.15s (transform 49ms, setup 184ms, collect 49ms, tests 14ms, environment 545ms, prepare 74ms)\n\n(node:99009) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/cron/reminders/route.test.ts --reporter=verbose",
+   "expects": "rejects every request when CRON_SECRET is not configured",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/cron/reminders/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > rejects a request without the cron secret with 401 5ms\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > rejects every request when ",
+   "output_tail": "he exact Bearer prefix and never echoes it 1ms\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > maps a failed upstream sweep envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  18:35:57\n   Duration  921ms (transform 52ms, setup 146ms, collect 36ms, tests 14ms, environment 392ms, prepare 75ms)\n\n(node:99085) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/cron/reminders/route.test.ts --reporter=verbose",
+   "expects": "triggers the upstream reminder sweep when the secret matches",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/cron/reminders/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > rejects a request without the cron secret with 401 5ms\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > rejects every request when ",
+   "output_tail": "he exact Bearer prefix and never echoes it 1ms\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > maps a failed upstream sweep envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  18:35:59\n   Duration  909ms (transform 49ms, setup 120ms, collect 36ms, tests 15ms, environment 398ms, prepare 71ms)\n\n(node:99160) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/cron/reminders/route.test.ts --reporter=verbose",
+   "expects": "rejects a request with an incorrect secret value with 401",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/cron/reminders/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > rejects a request without the cron secret with 401 5ms\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > rejects every request when ",
+   "output_tail": "he exact Bearer prefix and never echoes it 1ms\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > maps a failed upstream sweep envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  18:36:01\n   Duration  928ms (transform 45ms, setup 139ms, collect 35ms, tests 14ms, environment 376ms, prepare 58ms)\n\n(node:99234) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/cron/reminders/route.test.ts --reporter=verbose",
+   "expects": "rejects a request whose bearer token has a different length than the secret with 401",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/cron/reminders/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > rejects a request without the cron secret with 401 5ms\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > rejects every request when ",
+   "output_tail": "he exact Bearer prefix and never echoes it 1ms\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > maps a failed upstream sweep envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  18:36:03\n   Duration  917ms (transform 50ms, setup 136ms, collect 36ms, tests 15ms, environment 382ms, prepare 68ms)\n\n(node:99307) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/cron/reminders/route.test.ts --reporter=verbose",
+   "expects": "triggers the upstream reminder sweep via GET when the secret matches",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/cron/reminders/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > rejects a request without the cron secret with 401 5ms\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > rejects every request when ",
+   "output_tail": "he exact Bearer prefix and never echoes it 1ms\n \u2713 src/app/api/cron/reminders/route.test.ts > /api/cron/reminders > maps a failed upstream sweep envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  18:36:06\n   Duration  914ms (transform 47ms, setup 116ms, collect 38ms, tests 13ms, environment 386ms, prepare 84ms)\n\n(node:99381) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:36:07.244075Z",
+ "duration_ms": 12972
+}

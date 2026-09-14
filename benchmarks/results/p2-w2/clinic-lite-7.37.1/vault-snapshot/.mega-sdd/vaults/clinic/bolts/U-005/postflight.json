@@ -1,0 +1,53 @@
+{
+ "unit_id": "U-005",
+ "scanned_at": "2026-09-14T15:02:40.722076Z",
+ "status": "pass",
+ "head_sha": "1f889d7e51e3d93b5b3e0d61f1aaccd91e958bca",
+ "written_by": "validate-bolt-artifacts.sh --recompute",
+ "rules": [
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/libs/api/route-handler.ts",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/libs/api/route-handler.ts"
+  },
+  {
+   "type": "NAMING_RULE",
+   "rule": "file:src/app/api/v1/**/route.ts MUST follow kebab-case naming",
+   "verdict": "pass",
+   "evidence": "all 4 new file(s) matching file:src/app/api/v1/**/route.ts follow kebab-case"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST parse the POST body with createAppointmentPayloadSchema before any upstream call and answer 400 on failure (constitution B-001)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST reject bookingChannel staff or override true unless the session holds the receptionist role (constitution C-006)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST call apiServer, never apiClient, inside these Route Handlers (constitution C-001)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST NOT log request bodies or patient data (constitution F-004)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:02:40.862581Z"
+}

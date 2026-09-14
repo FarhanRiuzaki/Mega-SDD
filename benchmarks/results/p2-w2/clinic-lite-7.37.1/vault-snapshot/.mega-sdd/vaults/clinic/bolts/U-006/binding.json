@@ -1,0 +1,138 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "121df3b7",
+ "unit": "U-006",
+ "generated_at": "2026-09-14T11:39:05+00:00",
+ "summary": {
+  "CONFIRMED": 11,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U006-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/appointments/[id]/cancel/route.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-006.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U006-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/appointments/[id]/cancel/route.test.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-006.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U006-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/v1/appointments/token/[token]/route.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-006.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U006-A04",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/v1/appointments/token/[token]/route.test.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-006.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U006-A05",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/route-handler.ts:19-50",
+   "source": ".mega-sdd/vaults/clinic/units/U-006.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/route-handler.ts:19-50",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U006-A06",
+   "kind": "fs_must_exist",
+   "expect": "src/app/api/v1/users/[id]/route.ts:1-5",
+   "source": ".mega-sdd/vaults/clinic/units/U-006.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/api/v1/users/[id]/route.ts:1-5",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U006-A07",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/server.ts:9-27",
+   "source": ".mega-sdd/vaults/clinic/units/U-006.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/server.ts:9-27",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U006-A08",
+   "kind": "symbol",
+   "expect": "src/libs/api/route-handler.ts:proxyGet",
+   "source": ".mega-sdd/vaults/clinic/units/U-006.md:existing_interfaces",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/route-handler.ts:31",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file"
+  },
+  {
+   "id": "C-U006-01",
+   "kind": "symbol",
+   "expect": "src/libs/api/route-handler.ts:proxyGet",
+   "source": ".mega-sdd/vaults/clinic/units/U-006.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/route-handler.ts:31",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file",
+   "text": "proxyGet supports dynamic route params"
+  },
+  {
+   "id": "C-U006-02",
+   "kind": "fs_must_exist",
+   "expect": "src/app/api/v1/users/[id]/route.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-006.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/api/v1/users/[id]/route.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "dynamic-segment proxy routes already exist"
+  },
+  {
+   "id": "C-U006-03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/appointments",
+   "source": ".mega-sdd/vaults/clinic/units/U-006.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent",
+   "text": "no cancel route exists yet"
+  }
+ ]
+}

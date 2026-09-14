@@ -1,0 +1,41 @@
+{
+ "unit_id": "U-018",
+ "scanned_at": "2026-09-14T15:02:40.722076Z",
+ "status": "pass",
+ "head_sha": "1f889d7e51e3d93b5b3e0d61f1aaccd91e958bca",
+ "written_by": "validate-bolt-artifacts.sh --recompute",
+ "rules": [
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "FILE_PRESENCE_RULE",
+   "rule": "file src/features/appointments/components/WalkInDialog/index.tsx MUST exist after bolt",
+   "verdict": "pass",
+   "evidence": "src/features/appointments/components/WalkInDialog/index.tsx exists"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST send bookingChannel staff for every appointment created from this dialog (constitution C-006)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST offer a free time outside the slot grid only while the emergency override switch is on (source: PRD \u00a7Clinic.1 F-S-002 step 4)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST validate patient details with walkInSchema before submitting and show errors as text (constitution B-001)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:02:40.874487Z"
+}

@@ -1,0 +1,200 @@
+{
+ "schema": 1,
+ "unit": "U-013",
+ "attempt": 1,
+ "head": "b1544b1f2e959a7c0ab35e6a44b9c3705b78cfe6",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/BookingWizard/index.tsx",
+   "line": 114,
+   "title": "hand-rolled pad/readBrowserClock duplicates dayjs usage",
+   "detail": "Siblings use dayjs (WalkInDialog:87-88, RescheduleForm:357-358); replace and delete pad.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/BookingWizard/index.tsx",
+   "line": 129,
+   "title": "toSlotTime fixes an unclear API field format in only one of three consumers",
+   "detail": "Normalize bookedStartTimes once in fetchAvailability/useAvailability and delete toSlotTime.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/BookingWizard/index.tsx",
+   "line": 794,
+   "title": "DetailList/DetailItem copy RescheduleForm's summary list",
+   "detail": "Extract one shared component.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/BookingWizard/index.test.tsx",
+   "line": 222,
+   "title": "No tests for the new error and start-over paths",
+   "detail": "Add MSW 500 cases for lookups, availability, non-conflict failure, and startOver.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-5",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/BookingWizard/index.tsx",
+   "line": 738,
+   "title": "Placeholder copied verbatim from WalkInDialog",
+   "detail": "Share it.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-6",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/BookingWizard/index.tsx",
+   "line": 266,
+   "title": "Every booking failure shown as a slot conflict; message shown twice (snackbar + Alert)",
+   "detail": "Neutral title; avoid double display.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-7",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/BookingWizard/index.tsx",
+   "line": 1,
+   "title": "831 lines in one module",
+   "detail": "Split steps and shared components.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-8",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/BookingWizard/index.tsx",
+   "line": 308,
+   "title": "doctor and service Controller blocks near-identical",
+   "detail": "Collapse into a LookupSelect.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-9",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/BookingWizard/index.test.tsx",
+   "line": 519,
+   "title": "Console spies restored at end of test body",
+   "detail": "Restore in afterEach.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-10",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/BookingWizard/index.tsx",
+   "line": 265,
+   "title": "Patient PII stays in the mutation state after booking",
+   "detail": "createAppointment.variables keeps name/email/phone until startOver; call createAppointment.reset() after reset(bookingFormDefaults) or fix the comment.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-11",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/BookingWizard/index.tsx",
+   "line": 614,
+   "title": "Stepper step labels hidden with display:none below sm",
+   "detail": "Removes step names from the a11y tree on mobile (mitigated by per-step h2); prefer sr-only clipping.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:57:12.356687Z"
+}

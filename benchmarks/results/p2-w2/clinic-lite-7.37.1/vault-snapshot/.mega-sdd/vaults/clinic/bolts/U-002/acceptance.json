@@ -1,0 +1,64 @@
+{
+ "unit_id": "U-002",
+ "executed_at": "2026-09-14T11:37:03.725354Z",
+ "status": "pass",
+ "head_sha": "121df3b7f40662e9296d4f66c2c5b52652530ee8",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/utils/slots/index.test.ts --reporter=verbose",
+   "expects": "generates 28 fifteen-minute slots from 09:00 to 16:45 without lunch",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/utils/slots/index.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rules > generates 28 fifteen-minute slots from 09:00 to 16:45 without lunch 2ms\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rul",
+   "output_tail": "rules > rejects past dates and weekends 0ms\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rules > hides slots earlier than now on the current day 0ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  18:37:04\n   Duration  1.12s (transform 46ms, setup 165ms, collect 13ms, tests 5ms, environment 554ms, prepare 83ms)\n\n(node:3252) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/utils/slots/index.test.ts --reporter=verbose",
+   "expects": "narrows slots to the doctor working hours within the global bounds",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/utils/slots/index.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rules > generates 28 fifteen-minute slots from 09:00 to 16:45 without lunch 2ms\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rul",
+   "output_tail": "rules > rejects past dates and weekends 0ms\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rules > hides slots earlier than now on the current day 0ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  18:37:07\n   Duration  880ms (transform 46ms, setup 134ms, collect 14ms, tests 5ms, environment 385ms, prepare 70ms)\n\n(node:3325) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/utils/slots/index.test.ts --reporter=verbose",
+   "expects": "hides booked start times from the available slots",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/utils/slots/index.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rules > generates 28 fifteen-minute slots from 09:00 to 16:45 without lunch 2ms\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rul",
+   "output_tail": "rules > rejects past dates and weekends 0ms\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rules > hides slots earlier than now on the current day 0ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  18:37:09\n   Duration  904ms (transform 42ms, setup 135ms, collect 14ms, tests 5ms, environment 375ms, prepare 68ms)\n\n(node:3399) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/utils/slots/index.test.ts --reporter=verbose",
+   "expects": "rejects past dates and weekends",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/utils/slots/index.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rules > generates 28 fifteen-minute slots from 09:00 to 16:45 without lunch 2ms\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rul",
+   "output_tail": "rules > rejects past dates and weekends 0ms\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rules > hides slots earlier than now on the current day 0ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  18:37:11\n   Duration  878ms (transform 44ms, setup 125ms, collect 13ms, tests 5ms, environment 376ms, prepare 70ms)\n\n(node:3474) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/utils/slots/index.test.ts --reporter=verbose",
+   "expects": "hides slots earlier than now on the current day",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/utils/slots/index.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rules > generates 28 fifteen-minute slots from 09:00 to 16:45 without lunch 2ms\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rul",
+   "output_tail": "rules > rejects past dates and weekends 0ms\n \u2713 src/features/appointments/utils/slots/index.test.ts > slot rules > hides slots earlier than now on the current day 0ms\n\n Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  18:37:13\n   Duration  861ms (transform 42ms, setup 120ms, collect 14ms, tests 5ms, environment 385ms, prepare 66ms)\n\n(node:3547) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:37:14.337389Z",
+ "duration_ms": 10611
+}

@@ -1,0 +1,35 @@
+{
+ "unit_id": "U-002",
+ "scanned_at": "2026-09-14T15:02:40.722076Z",
+ "status": "pass",
+ "head_sha": "1f889d7e51e3d93b5b3e0d61f1aaccd91e958bca",
+ "written_by": "validate-bolt-artifacts.sh --recompute",
+ "rules": [
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "FILE_PRESENCE_RULE",
+   "rule": "file src/features/appointments/utils/slots/index.ts MUST exist after bolt",
+   "verdict": "pass",
+   "evidence": "src/features/appointments/utils/slots/index.ts exists"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST keep the module free of React, network and date-library imports so it stays a pure function module (constitution A-002)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST treat 09:00\u201317:00 and the 12:00\u201313:00 lunch break as hard outer bounds that working hours can only narrow (source: PRD \u00a75 BR-001)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:02:40.858871Z"
+}

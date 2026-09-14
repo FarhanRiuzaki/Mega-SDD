@@ -1,0 +1,93 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "121df3b7",
+ "unit": "U-003",
+ "generated_at": "2026-09-14T11:39:04+00:00",
+ "summary": {
+  "CONFIRMED": 7,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U003-A01",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/label-maps.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-003.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/label-maps.ts",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U003-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/AppointmentStatusChip/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-003.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U003-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/AppointmentStatusChip/index.test.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-003.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U003-A04",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/label-maps.ts:1-56",
+   "source": ".mega-sdd/vaults/clinic/units/U-003.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/label-maps.ts:1-56",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U003-A05",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/components/table/index.tsx:1-20",
+   "source": ".mega-sdd/vaults/clinic/units/U-003.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/users/components/table/index.tsx:1-20",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U003-01",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/label-maps.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-003.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/label-maps.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "label-maps.ts is the central value→label module"
+  },
+  {
+   "id": "C-U003-02",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/label-maps.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-003.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/label-maps.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "ACCOUNT_TYPE_LABELS is an existing export that must survive"
+  }
+ ]
+}

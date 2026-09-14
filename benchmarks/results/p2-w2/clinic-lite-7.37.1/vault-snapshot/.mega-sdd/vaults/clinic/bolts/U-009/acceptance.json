@@ -1,0 +1,64 @@
+{
+ "unit_id": "U-009",
+ "executed_at": "2026-09-14T11:50:52.677026Z",
+ "status": "pass",
+ "head_sha": "a0aef4a1e0aa557f163fa7a9c92e094dda044624",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/hooks/useAppointments/index.test.tsx --reporter=verbose",
+   "expects": "loads doctors and services from the clinic proxy routes",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/hooks/useAppointments/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/hooks/useAppointments/index.test.tsx > useAppointments hooks > loads doctors and services from the clinic proxy routes 42ms\n \u2713 src/features/appointments/hooks/useAppoi",
+   "output_tail": " src/features/appointments/hooks/useAppointments/index.test.tsx > useAppointments hooks > loads and reschedules an appointment through the encoded token route 24ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  18:50:53\n   Duration  1.43s (transform 61ms, setup 128ms, collect 167ms, tests 433ms, environment 363ms, prepare 62ms)\n\n(node:23239) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/hooks/useAppointments/index.test.tsx --reporter=verbose",
+   "expects": "requests availability only when doctor and date are chosen",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/hooks/useAppointments/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/hooks/useAppointments/index.test.tsx > useAppointments hooks > loads doctors and services from the clinic proxy routes 42ms\n \u2713 src/features/appointments/hooks/useAppoi",
+   "output_tail": " src/features/appointments/hooks/useAppointments/index.test.tsx > useAppointments hooks > loads and reschedules an appointment through the encoded token route 24ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  18:50:56\n   Duration  1.47s (transform 69ms, setup 135ms, collect 180ms, tests 447ms, environment 381ms, prepare 66ms)\n\n(node:23313) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/hooks/useAppointments/index.test.tsx --reporter=verbose",
+   "expects": "posts a booking to the appointments proxy route",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/hooks/useAppointments/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/hooks/useAppointments/index.test.tsx > useAppointments hooks > loads doctors and services from the clinic proxy routes 42ms\n \u2713 src/features/appointments/hooks/useAppoi",
+   "output_tail": " src/features/appointments/hooks/useAppointments/index.test.tsx > useAppointments hooks > loads and reschedules an appointment through the encoded token route 23ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  18:50:58\n   Duration  1.46s (transform 64ms, setup 137ms, collect 173ms, tests 444ms, environment 362ms, prepare 70ms)\n\n(node:23414) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/hooks/useAppointments/index.test.tsx --reporter=verbose",
+   "expects": "cancels through the token cancel route outside the v1 prefix",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/hooks/useAppointments/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/hooks/useAppointments/index.test.tsx > useAppointments hooks > loads doctors and services from the clinic proxy routes 41ms\n \u2713 src/features/appointments/hooks/useAppoi",
+   "output_tail": " src/features/appointments/hooks/useAppointments/index.test.tsx > useAppointments hooks > loads and reschedules an appointment through the encoded token route 22ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  18:51:01\n   Duration  1.44s (transform 62ms, setup 121ms, collect 182ms, tests 437ms, environment 374ms, prepare 72ms)\n\n(node:23517) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/hooks/useAppointments/index.test.tsx --reporter=verbose",
+   "expects": "reassigns an appointment and refreshes the schedule",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/hooks/useAppointments/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/hooks/useAppointments/index.test.tsx > useAppointments hooks > loads doctors and services from the clinic proxy routes 40ms\n \u2713 src/features/appointments/hooks/useAppoi",
+   "output_tail": " src/features/appointments/hooks/useAppointments/index.test.tsx > useAppointments hooks > loads and reschedules an appointment through the encoded token route 23ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  18:51:04\n   Duration  1.46s (transform 62ms, setup 128ms, collect 175ms, tests 424ms, environment 369ms, prepare 65ms)\n\n(node:23604) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:51:05.782357Z",
+ "duration_ms": 13105
+}

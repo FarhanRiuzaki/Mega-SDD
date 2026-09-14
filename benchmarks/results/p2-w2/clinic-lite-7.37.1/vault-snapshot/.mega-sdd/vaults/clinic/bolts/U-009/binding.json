@@ -1,0 +1,172 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "121df3b7",
+ "unit": "U-009",
+ "generated_at": "2026-09-14T11:39:05+00:00",
+ "summary": {
+  "CONFIRMED": 14,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U009-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/repositories/appointment.repository.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U009-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/hooks/useAppointments/index.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U009-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/hooks/useAppointments/index.test.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U009-A04",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/repositories/user.repository.ts:1-19",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/users/repositories/user.repository.ts:1-19",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U009-A05",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/hooks/useUsers.ts:1-51",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/users/hooks/useUsers.ts:1-51",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U009-A06",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/crud-hooks.ts:21-61",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/crud-hooks.ts:21-61",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U009-A07",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/client.ts:10-18",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/client.ts:10-18",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U009-A08",
+   "kind": "fs_must_exist",
+   "expect": "src/test/utils.tsx:36",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/test/utils.tsx:36",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U009-A09",
+   "kind": "symbol",
+   "expect": "src/libs/query-keys/index.ts:createQueryKeys",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:existing_interfaces",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/query-keys/index.ts:8",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file"
+  },
+  {
+   "id": "C-U009-A10",
+   "kind": "symbol",
+   "expect": "src/libs/api/crud-hooks.ts:makeCreateMutation",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:existing_interfaces",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/crud-hooks.ts:21",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file"
+  },
+  {
+   "id": "C-U009-01",
+   "kind": "symbol",
+   "expect": "src/libs/query-keys/index.ts:createQueryKeys",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/query-keys/index.ts:8",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file",
+   "text": "createQueryKeys is the query-key factory"
+  },
+  {
+   "id": "C-U009-02",
+   "kind": "symbol",
+   "expect": "src/libs/api/crud-hooks.ts:makeCreateMutation",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/crud-hooks.ts:21",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file",
+   "text": "makeCreateMutation wires snackbar and invalidation"
+  },
+  {
+   "id": "C-U009-03",
+   "kind": "symbol",
+   "expect": "src/test/utils.tsx:renderWithProviders",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/test/utils.tsx:36",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file",
+   "text": "renderWithProviders is the component test helper"
+  },
+  {
+   "id": "C-U009-04",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/client.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-009.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/client.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "apiClient is the browser fetcher"
+  }
+ ]
+}

@@ -1,0 +1,104 @@
+{
+ "unit_id": "U-007",
+ "executed_at": "2026-09-14T14:40:30.010874Z",
+ "status": "pass",
+ "head_sha": "095041fcec23a88ec6c2269b09a6bc57507a8baa",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run appointments/schedule/route --reporter=verbose",
+   "expects": "forces the doctor id to the signed-in doctor",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run appointments/schedule/route --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule > forces the doctor id to the signed-in doctor 5ms\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule ",
+   "output_tail": " roles as a receptionist 1ms\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:40:31\n   Duration  1.26s (transform 50ms, setup 199ms, collect 54ms, tests 13ms, environment 647ms, prepare 71ms)\n\n(node:64791) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run appointments/schedule/route --reporter=verbose",
+   "expects": "passes the receptionist query through for all doctors",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run appointments/schedule/route --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule > forces the doctor id to the signed-in doctor 6ms\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule ",
+   "output_tail": " roles as a receptionist 1ms\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:40:33\n   Duration  928ms (transform 48ms, setup 138ms, collect 40ms, tests 13ms, environment 395ms, prepare 70ms)\n\n(node:64866) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run appointments/schedule/route --reporter=verbose",
+   "expects": "rejects a schedule request from a user without a staff role with 403",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run appointments/schedule/route --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule > forces the doctor id to the signed-in doctor 5ms\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule ",
+   "output_tail": " roles as a receptionist 1ms\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:40:35\n   Duration  933ms (transform 71ms, setup 155ms, collect 37ms, tests 13ms, environment 390ms, prepare 75ms)\n\n(node:64940) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run appointments/schedule/route --reporter=verbose",
+   "expects": "rejects an unauthenticated schedule request with 401",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run appointments/schedule/route --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule > forces the doctor id to the signed-in doctor 6ms\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule ",
+   "output_tail": " roles as a receptionist 1ms\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:40:37\n   Duration  961ms (transform 56ms, setup 152ms, collect 40ms, tests 13ms, environment 404ms, prepare 66ms)\n\n(node:65014) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run reassign/route --reporter=verbose",
+   "expects": "rejects a reassign request from a non-receptionist with 403",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run reassign/route --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/[id]/reassign/route.test.ts > POST /api/v1/appointments/[id]/reassign > rejects a reassign request from a non-receptionist with 403 5ms\n \u2713 src/app/api/v1/appointments/[id]/reassign/route.test.ts > POST /api/v1/app",
+   "output_tail": "upstream path 0ms\n \u2713 src/app/api/v1/appointments/[id]/reassign/route.test.ts > POST /api/v1/appointments/[id]/reassign > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:40:40\n   Duration  1.02s (transform 60ms, setup 151ms, collect 99ms, tests 13ms, environment 392ms, prepare 72ms)\n\n(node:65090) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run reassign/route --reporter=verbose",
+   "expects": "forwards a valid reassign to upstream",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run reassign/route --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/[id]/reassign/route.test.ts > POST /api/v1/appointments/[id]/reassign > rejects a reassign request from a non-receptionist with 403 6ms\n \u2713 src/app/api/v1/appointments/[id]/reassign/route.test.ts > POST /api/v1/app",
+   "output_tail": "upstream path 0ms\n \u2713 src/app/api/v1/appointments/[id]/reassign/route.test.ts > POST /api/v1/appointments/[id]/reassign > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:40:42\n   Duration  1.01s (transform 64ms, setup 156ms, collect 78ms, tests 14ms, environment 388ms, prepare 82ms)\n\n(node:65163) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run reassign/route --reporter=verbose",
+   "expects": "rejects an invalid reassign payload with 400 without calling upstream",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run reassign/route --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/[id]/reassign/route.test.ts > POST /api/v1/appointments/[id]/reassign > rejects a reassign request from a non-receptionist with 403 5ms\n \u2713 src/app/api/v1/appointments/[id]/reassign/route.test.ts > POST /api/v1/app",
+   "output_tail": "upstream path 0ms\n \u2713 src/app/api/v1/appointments/[id]/reassign/route.test.ts > POST /api/v1/appointments/[id]/reassign > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:40:44\n   Duration  1.01s (transform 57ms, setup 149ms, collect 84ms, tests 14ms, environment 414ms, prepare 63ms)\n\n(node:65237) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run reassign/route --reporter=verbose",
+   "expects": "rejects an unauthenticated reassign request with 401",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run reassign/route --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/[id]/reassign/route.test.ts > POST /api/v1/appointments/[id]/reassign > rejects a reassign request from a non-receptionist with 403 6ms\n \u2713 src/app/api/v1/appointments/[id]/reassign/route.test.ts > POST /api/v1/app",
+   "output_tail": "upstream path 0ms\n \u2713 src/app/api/v1/appointments/[id]/reassign/route.test.ts > POST /api/v1/appointments/[id]/reassign > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:40:46\n   Duration  1.03s (transform 58ms, setup 156ms, collect 91ms, tests 13ms, environment 402ms, prepare 76ms)\n\n(node:65311) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run appointments/schedule/route --reporter=verbose",
+   "expects": "treats a user with both doctor and receptionist roles as a receptionist",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run appointments/schedule/route --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule > forces the doctor id to the signed-in doctor 6ms\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule ",
+   "output_tail": " roles as a receptionist 1ms\n \u2713 src/app/api/v1/appointments/schedule/route.test.ts > GET /api/v1/appointments/schedule > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:40:48\n   Duration  957ms (transform 50ms, setup 153ms, collect 44ms, tests 13ms, environment 388ms, prepare 84ms)\n\n(node:65385) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:40:50.172439Z",
+ "duration_ms": 20161
+}

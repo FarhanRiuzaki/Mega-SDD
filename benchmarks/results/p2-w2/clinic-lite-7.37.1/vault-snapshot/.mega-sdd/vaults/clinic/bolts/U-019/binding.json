@@ -1,0 +1,150 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "d743b4d0",
+ "unit": "U-019",
+ "generated_at": "2026-09-14T14:57:34+00:00",
+ "summary": {
+  "CONFIRMED": 12,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U019-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/ReceptionBoard/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U019-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/ReceptionBoard/columns.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U019-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/ReceptionBoard/index.test.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U019-A04",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(dashboard)/staff/reception/page.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U019-A05",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/components/table/index.tsx:1-128",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/users/components/table/index.tsx:1-128",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U019-A06",
+   "kind": "fs_must_exist",
+   "expect": "src/app/(dashboard)/users/page.tsx:1-17",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/(dashboard)/users/page.tsx:1-17",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U019-A07",
+   "kind": "symbol",
+   "expect": "src/components/table/BaseTable.tsx:BaseTable",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:existing_interfaces",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/components/table/BaseTable.tsx:62",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file"
+  },
+  {
+   "id": "C-U019-A08",
+   "kind": "symbol",
+   "expect": "src/components/rbac/ProtectedRoute.tsx:ProtectedRoute",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:existing_interfaces",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/components/rbac/ProtectedRoute.tsx:28",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file"
+  },
+  {
+   "id": "C-U019-01",
+   "kind": "symbol",
+   "expect": "src/components/table/BaseTable.tsx:BaseTable",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/components/table/BaseTable.tsx:62",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file",
+   "text": "BaseTable is the house data table"
+  },
+  {
+   "id": "C-U019-02",
+   "kind": "symbol",
+   "expect": "src/components/rbac/ProtectedRoute.tsx:ProtectedRoute",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/components/rbac/ProtectedRoute.tsx:28",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file",
+   "text": "ProtectedRoute supports role requirements"
+  },
+  {
+   "id": "C-U019-03",
+   "kind": "fs_must_exist",
+   "expect": "src/features/appointments/components/ReassignDialog/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/appointments/components/ReassignDialog/index.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the reassign dialog exists"
+  },
+  {
+   "id": "C-U019-04",
+   "kind": "fs_must_exist",
+   "expect": "src/features/appointments/components/WalkInDialog/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-019.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/appointments/components/WalkInDialog/index.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the walk-in dialog exists"
+  }
+ ]
+}

@@ -1,0 +1,52 @@
+{
+ "unit_id": "U-006",
+ "scanned_at": "2026-09-14T15:23:17.883961Z",
+ "status": "pass",
+ "head_sha": "def8f8ccdd3812b8ad3615124f20346708c81778",
+ "written_by": "run-postflight-scan.sh",
+ "rules": [
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/libs/api/route-handler.ts",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/libs/api/route-handler.ts"
+  },
+  {
+   "type": "FILE_PRESENCE_RULE",
+   "rule": "file src/app/api/appointments/[id]/cancel/route.ts MUST exist after bolt",
+   "verdict": "pass",
+   "evidence": "src/app/api/appointments/[id]/cancel/route.ts exists"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST export only POST from the cancel route so that a GET request cannot cancel an appointment (source: PRD \u00a7Clinic.1 F-U-002 step 2)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST parse the cancel body with cancelPayloadSchema and the reschedule body with reschedulePayloadSchema before calling upstream, answering 400 on failure (constitution B-001)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST forward the token only to the upstream API and never echo it in a response or log (constitution B-002)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "directives": {
+  "total": 3,
+  "attested": 0,
+  "unverified": 3
+ },
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:23:18.018975Z"
+}

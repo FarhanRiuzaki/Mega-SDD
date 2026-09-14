@@ -1,0 +1,115 @@
+{
+ "schema": 1,
+ "unit": "U-016",
+ "attempt": 1,
+ "head": "f437fa0995df9ced40811e88b7b89be89258c689",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/AppointmentDetailDialog/index.tsx",
+   "line": 34,
+   "title": "duplication: 4th copy of the DetailRow component",
+   "detail": "Same shape as UserDetailDialog.tsx:26, RoleDetailDialog.tsx:24, PermissionDetailDialog.tsx:27; extracting a shared DetailRow touches files outside this unit (orchestrator scope decision).",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/DoctorSchedule/index.tsx",
+   "line": 73,
+   "title": "No tests for day-view stepping, weekend handling or the Go-to-today button",
+   "detail": "stepWorkingDay, move(-1), Go-to-today disabled state, mondayOf weekend mapping, off-grid rows, lunch row and retry are untested; add the listed cases.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/DoctorSchedule/index.tsx",
+   "line": 109,
+   "title": "'Patient name unavailable' fallback repeated 3 times",
+   "detail": "Export one patientNameOf helper.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/DoctorSchedule/index.tsx",
+   "line": 60,
+   "title": "Date helpers and grid rendering sit inside one ~385-line component",
+   "detail": "Move pure helpers to a tested utils module; consider a ScheduleGrid component.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-5",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/DoctorSchedule/index.tsx",
+   "line": 149,
+   "title": "`unit` always equals `view`",
+   "detail": "Delete it.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-6",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/DoctorSchedule/index.tsx",
+   "line": 123,
+   "title": "Architectural drift: B-005 doctor-only scoping relies on a route that does not exist yet",
+   "detail": "useSchedule calls /api/v1/appointments/schedule but no handler exists in the repo at this head; fails closed (404 → error state) so not exploitable. Fix: add the session-scoped schedule route (planned in U-007) or correct the comments at DoctorSchedule/index.tsx:123 and staff/schedule/page.tsx:26-27.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:13:16.425324Z"
+}

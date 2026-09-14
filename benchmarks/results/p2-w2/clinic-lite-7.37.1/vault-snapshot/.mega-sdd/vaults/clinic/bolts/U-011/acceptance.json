@@ -1,0 +1,49 @@
+{
+ "unit_id": "U-011",
+ "executed_at": "2026-09-14T14:06:23.976718Z",
+ "status": "pass",
+ "head_sha": "f437fa0995df9ced40811e88b7b89be89258c689",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/PatientShell/index.test.tsx --reporter=verbose",
+   "expects": "renders header main and footer landmarks",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/PatientShell/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/PatientShell/index.test.tsx > PatientShell > renders header main and footer landmarks 75ms\n \u2713 src/features/appointments/components/PatientShell/index.test",
+   "output_tail": "ation to the booking page 19ms\n \u2713 src/features/appointments/components/PatientShell/index.test.tsx > PatientShell > shows the product name as the brand text 10ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  21:06:24\n   Duration  1.40s (transform 61ms, setup 185ms, collect 359ms, tests 107ms, environment 402ms, prepare 75ms)\n\n(node:25216) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/PatientShell/index.test.tsx --reporter=verbose",
+   "expects": "links the header navigation to the booking page",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/PatientShell/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/PatientShell/index.test.tsx > PatientShell > renders header main and footer landmarks 75ms\n \u2713 src/features/appointments/components/PatientShell/index.test",
+   "output_tail": "ation to the booking page 20ms\n \u2713 src/features/appointments/components/PatientShell/index.test.tsx > PatientShell > shows the product name as the brand text 11ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  21:06:27\n   Duration  1.28s (transform 66ms, setup 152ms, collect 279ms, tests 108ms, environment 394ms, prepare 75ms)\n\n(node:25290) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/PatientShell/index.test.tsx --reporter=verbose",
+   "expects": "shows the product name as the brand text",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/PatientShell/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/PatientShell/index.test.tsx > PatientShell > renders header main and footer landmarks 73ms\n \u2713 src/features/appointments/components/PatientShell/index.test",
+   "output_tail": "ation to the booking page 18ms\n \u2713 src/features/appointments/components/PatientShell/index.test.tsx > PatientShell > shows the product name as the brand text 11ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  21:06:30\n   Duration  1.27s (transform 57ms, setup 131ms, collect 282ms, tests 104ms, environment 402ms, prepare 69ms)\n\n(node:25365) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "manual",
+   "desc": "Open /book at a 375px-wide viewport: header, content and footer fit without horizontal scrolling and every link is reachable by keyboard with a visible focus ring.",
+   "pending_manual": true
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:06:31.595767Z",
+ "duration_ms": 7618
+}

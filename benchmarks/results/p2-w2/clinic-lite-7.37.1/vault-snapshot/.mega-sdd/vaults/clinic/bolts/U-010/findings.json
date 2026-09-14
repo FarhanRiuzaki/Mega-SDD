@@ -1,0 +1,30 @@
+{
+ "schema": 1,
+ "unit": "U-010",
+ "attempt": 1,
+ "head": "101b34534f1089529643fea2327eb1114d330f7d",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/proxy.ts",
+   "line": 59,
+   "title": "Signed-in pass-through on a protected page is never tested",
+   "detail": "Only a signed-in user on a page that is neither a sign-in page nor a patient page (e.g. `/home`, `/staff/schedule`) reaches this final `NextResponse.next()`. That is the branch the refactor rewrote (`!isPublicRoute` → `!isAuthPage`), and none of the 10 tests in `src/proxy.test.ts` covers it, so a guard that sent every protected page to `/login` would still pass the whole suite. Fix: add a test that sets `sessionHolder.current = signedInSession` and calls `expectPassThrough(await visit('/staff/schedule'))` and `expectPassThrough(await visit('/home'))`, and in the same change add a check that an anonymous visitor on `/register` passes through.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:34:08.649799Z"
+}

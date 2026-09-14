@@ -1,0 +1,84 @@
+{
+ "unit_id": "U-014",
+ "executed_at": "2026-09-14T14:52:42.603994Z",
+ "status": "pass",
+ "head_sha": "6bf6e1d1ce6edef834f88fca0e63f4d40562ef33",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose",
+   "expects": "shows the current appointment for the token",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > shows the current appointment for the token 181ms\n \u2713 src/features/appointments/components/RescheduleFor",
+   "output_tail": "rejected 226ms\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > never renders the token value anywhere on the page 176ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  21:52:43\n   Duration  3.25s (transform 109ms, setup 185ms, collect 847ms, tests 1.27s, environment 555ms, prepare 71ms)\n\n(node:83449) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose",
+   "expects": "reschedules to the chosen free slot",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > shows the current appointment for the token 181ms\n \u2713 src/features/appointments/components/RescheduleFor",
+   "output_tail": "rejected 228ms\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > never renders the token value anywhere on the page 177ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  21:52:48\n   Duration  2.79s (transform 109ms, setup 143ms, collect 631ms, tests 1.26s, environment 383ms, prepare 73ms)\n\n(node:83553) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose",
+   "expects": "shows an error when the token is invalid",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > shows the current appointment for the token 183ms\n \u2713 src/features/appointments/components/RescheduleFor",
+   "output_tail": "rejected 233ms\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > never renders the token value anywhere on the page 183ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  21:52:52\n   Duration  2.82s (transform 111ms, setup 142ms, collect 668ms, tests 1.27s, environment 385ms, prepare 84ms)\n\n(node:83658) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose",
+   "expects": "announces the rescheduled confirmation in a status region",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > shows the current appointment for the token 179ms\n \u2713 src/features/appointments/components/RescheduleFor",
+   "output_tail": "rejected 223ms\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > never renders the token value anywhere on the page 187ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  21:52:56\n   Duration  2.81s (transform 109ms, setup 138ms, collect 662ms, tests 1.26s, environment 394ms, prepare 77ms)\n\n(node:83762) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose",
+   "expects": "sends only startTime in the reschedule request body",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > shows the current appointment for the token 182ms\n \u2713 src/features/appointments/components/RescheduleFor",
+   "output_tail": "rejected 224ms\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > never renders the token value anywhere on the page 176ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  21:53:00\n   Duration  2.79s (transform 105ms, setup 156ms, collect 646ms, tests 1.25s, environment 395ms, prepare 71ms)\n\n(node:83868) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose",
+   "expects": "hides the slot picker for a cancelled appointment",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > shows the current appointment for the token 183ms\n \u2713 src/features/appointments/components/RescheduleFor",
+   "output_tail": "rejected 227ms\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > never renders the token value anywhere on the page 178ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  21:53:04\n   Duration  2.76s (transform 110ms, setup 129ms, collect 659ms, tests 1.24s, environment 389ms, prepare 78ms)\n\n(node:83973) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose",
+   "expects": "never renders the token value anywhere on the page",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/RescheduleForm/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > shows the current appointment for the token 182ms\n \u2713 src/features/appointments/components/RescheduleFor",
+   "output_tail": "rejected 227ms\n \u2713 src/features/appointments/components/RescheduleForm/index.test.tsx > RescheduleForm > never renders the token value anywhere on the page 180ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  21:53:08\n   Duration  2.81s (transform 108ms, setup 147ms, collect 657ms, tests 1.26s, environment 389ms, prepare 69ms)\n\n(node:84077) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:53:11.299740Z",
+ "duration_ms": 28695
+}

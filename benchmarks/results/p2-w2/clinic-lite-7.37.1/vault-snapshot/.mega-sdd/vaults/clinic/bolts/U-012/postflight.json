@@ -1,0 +1,41 @@
+{
+ "unit_id": "U-012",
+ "scanned_at": "2026-09-14T15:02:40.722076Z",
+ "status": "pass",
+ "head_sha": "1f889d7e51e3d93b5b3e0d61f1aaccd91e958bca",
+ "written_by": "validate-bolt-artifacts.sh --recompute",
+ "rules": [
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "FILE_PRESENCE_RULE",
+   "rule": "file src/features/appointments/components/SlotPicker/index.tsx MUST exist after bolt",
+   "verdict": "pass",
+   "evidence": "src/features/appointments/components/SlotPicker/index.tsx exists"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST take every slot decision from the U-002 helpers instead of re-implementing hours, lunch or weekend rules (source: PRD \u00a75 BR-001)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST hide taken slots rather than show them disabled or labelled, so no other patient's booking is revealed (constitution B-006)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST label the date input, show errors as text, announce availability in an aria-live polite status region and keep every slot button at least 44px tall (constitution F-001)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:02:40.869685Z"
+}

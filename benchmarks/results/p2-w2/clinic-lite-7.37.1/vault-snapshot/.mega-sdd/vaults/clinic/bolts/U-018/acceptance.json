@@ -1,0 +1,74 @@
+{
+ "unit_id": "U-018",
+ "executed_at": "2026-09-14T14:53:54.930168Z",
+ "status": "pass",
+ "head_sha": "6bf6e1d1ce6edef834f88fca0e63f4d40562ef33",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/WalkInDialog/index.test.tsx --reporter=verbose",
+   "expects": "creates a walk-in appointment with the staff channel",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/WalkInDialog/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/WalkInDialog/index.test.tsx > WalkInDialog > creates a walk-in appointment with the staff channel 1629ms\n \u2713 src/features/appointments/components/WalkInDia",
+   "output_tail": "rc/features/appointments/components/WalkInDialog/index.test.tsx > WalkInDialog > resets the selected time when the emergency override switch is turned off 1086ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:53:56\n   Duration  10.63s (transform 102ms, setup 139ms, collect 720ms, tests 8.93s, environment 472ms, prepare 76ms)\n\n(node:87112) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/WalkInDialog/index.test.tsx --reporter=verbose",
+   "expects": "allows a time outside the slot grid only with the emergency override",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/WalkInDialog/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/WalkInDialog/index.test.tsx > WalkInDialog > creates a walk-in appointment with the staff channel 1593ms\n \u2713 src/features/appointments/components/WalkInDia",
+   "output_tail": "src/features/appointments/components/WalkInDialog/index.test.tsx > WalkInDialog > resets the selected time when the emergency override switch is turned off 1076ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:54:07\n   Duration  10.52s (transform 96ms, setup 121ms, collect 736ms, tests 8.82s, environment 463ms, prepare 79ms)\n\n(node:87344) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/WalkInDialog/index.test.tsx --reporter=verbose",
+   "expects": "validates patient details before submitting",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/WalkInDialog/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/WalkInDialog/index.test.tsx > WalkInDialog > creates a walk-in appointment with the staff channel 1620ms\n \u2713 src/features/appointments/components/WalkInDia",
+   "output_tail": "rc/features/appointments/components/WalkInDialog/index.test.tsx > WalkInDialog > resets the selected time when the emergency override switch is turned off 1106ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:54:19\n   Duration  10.45s (transform 112ms, setup 148ms, collect 661ms, tests 8.83s, environment 420ms, prepare 96ms)\n\n(node:87543) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/WalkInDialog/index.test.tsx --reporter=verbose",
+   "expects": "keeps the dialog open and shows an error message when appointment creation fails",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/WalkInDialog/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/WalkInDialog/index.test.tsx > WalkInDialog > creates a walk-in appointment with the staff channel 1588ms\n \u2713 src/features/appointments/components/WalkInDia",
+   "output_tail": "rc/features/appointments/components/WalkInDialog/index.test.tsx > WalkInDialog > resets the selected time when the emergency override switch is turned off 1069ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:54:31\n   Duration  10.39s (transform 102ms, setup 148ms, collect 641ms, tests 8.81s, environment 393ms, prepare 69ms)\n\n(node:87772) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/WalkInDialog/index.test.tsx --reporter=verbose",
+   "expects": "does not call the create appointment endpoint when patient details are invalid",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/WalkInDialog/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/WalkInDialog/index.test.tsx > WalkInDialog > creates a walk-in appointment with the staff channel 1598ms\n \u2713 src/features/appointments/components/WalkInDia",
+   "output_tail": "rc/features/appointments/components/WalkInDialog/index.test.tsx > WalkInDialog > resets the selected time when the emergency override switch is turned off 1070ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:54:42\n   Duration  10.39s (transform 102ms, setup 124ms, collect 613ms, tests 8.85s, environment 410ms, prepare 80ms)\n\n(node:87975) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/WalkInDialog/index.test.tsx --reporter=verbose",
+   "expects": "resets the selected time when the emergency override switch is turned off",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/WalkInDialog/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/WalkInDialog/index.test.tsx > WalkInDialog > creates a walk-in appointment with the staff channel 1616ms\n \u2713 src/features/appointments/components/WalkInDia",
+   "output_tail": "src/features/appointments/components/WalkInDialog/index.test.tsx > WalkInDialog > resets the selected time when the emergency override switch is turned off 1091ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  21:54:54\n   Duration  10.35s (transform 96ms, setup 141ms, collect 625ms, tests 8.82s, environment 387ms, prepare 66ms)\n\n(node:88217) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:55:05.202674Z",
+ "duration_ms": 70271
+}

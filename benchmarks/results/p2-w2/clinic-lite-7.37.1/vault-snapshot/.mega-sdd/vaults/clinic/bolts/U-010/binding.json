@@ -1,0 +1,71 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "8af59196",
+ "unit": "U-010",
+ "generated_at": "2026-09-14T11:19:54+00:00",
+ "summary": {
+  "CONFIRMED": 5,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U010-A01",
+   "kind": "fs_must_exist",
+   "expect": "src/proxy.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-010.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/proxy.ts",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U010-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/proxy.test.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-010.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U010-A03",
+   "kind": "fs_must_exist",
+   "expect": "src/proxy.ts:7-37",
+   "source": ".mega-sdd/vaults/clinic/units/U-010.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/proxy.ts:7-37",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U010-01",
+   "kind": "fs_must_exist",
+   "expect": "src/proxy.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-010.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/proxy.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the Next.js 16 proxy guards every page"
+  },
+  {
+   "id": "C-U010-02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/proxy.test.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-010.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent",
+   "text": "no proxy test exists yet"
+  }
+ ]
+}

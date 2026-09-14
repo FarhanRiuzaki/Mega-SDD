@@ -1,0 +1,102 @@
+{
+  "status": "pass",
+  "gates": {
+    "toolchain": {
+      "ran": true,
+      "source": "detect",
+      "formatters": 2,
+      "linters": 1,
+      "typecheckers": 1
+    },
+    "format": {
+      "ran": true,
+      "results": [
+        {
+          "tool": "prettier",
+          "check_cmd": "npx prettier --check --ignore-unknown src/proxy.test.ts src/proxy.ts",
+          "pass": true,
+          "scoped": true,
+          "touched_files": 2
+        },
+        {
+          "tool": "editorconfig",
+          "check_cmd": "true  # baseline only \u2014 honored by the tools above",
+          "pass": true
+        }
+      ],
+      "fix_applied": false
+    },
+    "lint_typecheck": {
+      "ran": true,
+      "results": [
+        {
+          "tool": "eslint",
+          "check_cmd": "npx eslint .",
+          "pass": false,
+          "output_tail": "\n/Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3/src/app/layout.tsx\n  20:8  error  Unable to resolve path to module '@assets/iconify-icons/generated-icons.css'  import/no-unresolved\n\n\u2716 1 problem (1 error, 0 warnings)\n\nnpm warn Unknown project config \"auto-install-peers\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"shamefully-hoist\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"node-linker\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\n"
+        },
+        {
+          "tool": "tsc",
+          "check_cmd": "npx tsc --noEmit",
+          "pass": true
+        }
+      ],
+      "findings": 1
+    },
+    "secrets": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "engine": "gitleaks",
+        "findings": [],
+        "total": 0
+      }
+    },
+    "sast": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "skipped": false,
+        "findings": [],
+        "total": 0,
+        "blocking": false
+      }
+    },
+    "new_deps": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "new_deps": [],
+        "total_new": 0,
+        "blocking": false,
+        "warning": null
+      }
+    },
+    "dep_authorization": {
+      "ran": true,
+      "result": {
+        "unit": "U-010.md",
+        "enforced": true,
+        "allowed_new_deps": [],
+        "added_deps": [],
+        "unauthorized": [],
+        "finding": null,
+        "warning": null
+      }
+    }
+  },
+  "skips": [],
+  "not_run": [],
+  "config": {
+    "code_gates_enabled": true,
+    "no_code_gates_flag": false
+  },
+  "range": {
+    "base": "dcf69b50282925ba754bfe8ac6e601f5b4f6b644",
+    "head": "101b34534f1089529643fea2327eb1114d330f7d"
+  },
+  "written_by": "run-code-gates.sh",
+  "unit_id": "U-010",
+  "plugin_version": "7.37.1",
+  "written_at": "2026-09-14T11:28:48.333590Z"
+}

@@ -1,0 +1,149 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "121df3b7",
+ "unit": "U-007",
+ "generated_at": "2026-09-14T11:39:05+00:00",
+ "summary": {
+  "CONFIRMED": 12,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U007-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/v1/appointments/schedule/route.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-007.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U007-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/v1/appointments/schedule/route.test.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-007.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U007-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/v1/appointments/[id]/reassign/route.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-007.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U007-A04",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/v1/appointments/[id]/reassign/route.test.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-007.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U007-A05",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/route-handler.ts:19-41",
+   "source": ".mega-sdd/vaults/clinic/units/U-007.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/route-handler.ts:19-41",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U007-A06",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/server.ts:9-27",
+   "source": ".mega-sdd/vaults/clinic/units/U-007.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/server.ts:9-27",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U007-A07",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/auth.ts:134-152",
+   "source": ".mega-sdd/vaults/clinic/units/U-007.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/auth.ts:134-152",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U007-A08",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/jwt-permission/index.ts:29",
+   "source": ".mega-sdd/vaults/clinic/units/U-007.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/jwt-permission/index.ts:29",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U007-A09",
+   "kind": "symbol",
+   "expect": "src/libs/jwt-permission/index.ts:JWTPermissionChecker",
+   "source": ".mega-sdd/vaults/clinic/units/U-007.md:existing_interfaces",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/jwt-permission/index.ts:29",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file"
+  },
+  {
+   "id": "C-U007-01",
+   "kind": "symbol",
+   "expect": "src/libs/jwt-permission/index.ts:JWTPermissionChecker",
+   "source": ".mega-sdd/vaults/clinic/units/U-007.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/jwt-permission/index.ts:29",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file",
+   "text": "JWTPermissionChecker implements role checks"
+  },
+  {
+   "id": "C-U007-02",
+   "kind": "fs_must_exist",
+   "expect": "src/types/next-auth.d.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-007.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/types/next-auth.d.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the session exposes user id and roles"
+  },
+  {
+   "id": "C-U007-03",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/server.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-007.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/server.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "apiServer is the server-side fetcher"
+  }
+ ]
+}

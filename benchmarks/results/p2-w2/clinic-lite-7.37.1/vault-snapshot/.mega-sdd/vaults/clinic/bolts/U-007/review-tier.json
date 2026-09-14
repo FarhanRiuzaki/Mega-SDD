@@ -1,0 +1,32 @@
+{
+ "tier": "full",
+ "lenses": [
+  "spec",
+  "quality",
+  "security",
+  "standards"
+ ],
+ "signals_fired": [
+  "auth_globs",
+  "file_count",
+  "vocabulary",
+  "risk_field"
+ ],
+ "signals_evaluated": [
+  "auth_globs",
+  "manifest",
+  "file_count",
+  "vocabulary",
+  "constitution_b",
+  "risk_field"
+ ],
+ "target_files": 4,
+ "task_type": "create",
+ "implementer_model": "opus",
+ "effort": "high",
+ "unit_tier": "l",
+ "unit_id": "U-007",
+ "written_by": "resolve-review-tier.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:39:07.133523Z"
+}

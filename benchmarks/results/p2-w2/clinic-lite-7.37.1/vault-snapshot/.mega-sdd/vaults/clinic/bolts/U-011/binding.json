@@ -1,0 +1,93 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "8af59196",
+ "unit": "U-011",
+ "generated_at": "2026-09-14T11:19:54+00:00",
+ "summary": {
+  "CONFIRMED": 7,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U011-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(patient)/layout.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-011.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U011-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/PatientShell/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-011.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U011-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/PatientShell/index.test.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-011.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U011-A04",
+   "kind": "fs_must_exist",
+   "expect": "src/app/(blank-layout-pages)/layout.tsx:1-29",
+   "source": ".mega-sdd/vaults/clinic/units/U-011.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/(blank-layout-pages)/layout.tsx:1-29",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U011-A05",
+   "kind": "fs_must_exist",
+   "expect": "src/components/Providers.tsx:18-40",
+   "source": ".mega-sdd/vaults/clinic/units/U-011.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/components/Providers.tsx:18-40",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U011-01",
+   "kind": "fs_must_exist",
+   "expect": "src/components/Providers.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-011.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/components/Providers.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "Providers wraps the MUI theme and query client"
+  },
+  {
+   "id": "C-U011-02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(patient)",
+   "source": ".mega-sdd/vaults/clinic/units/U-011.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent",
+   "text": "no patient route group exists yet"
+  }
+ ]
+}

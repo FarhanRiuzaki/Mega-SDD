@@ -1,0 +1,183 @@
+{
+ "schema": 1,
+ "unit": "U-014",
+ "attempt": 1,
+ "head": "b322b3c02c9165efbcd4c67454e7e6a218a567bc",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/RescheduleForm/index.tsx",
+   "line": 304,
+   "title": "Failure-to-reuse: booked start times skip the toSlotTime normalisation",
+   "detail": "BookingWizard maps bookedStartTimes through toSlotTime because availableSlots compares HH:mm; this component passes raw values. Move toSlotTime into utils/slots and apply it in both.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/RescheduleForm/index.tsx",
+   "line": 74,
+   "title": "Duplication: third copy of the SummaryItem dt/dd primitive",
+   "detail": "Identical to ReassignDialog/index.tsx:229-238 and repeats BookingWizard DetailList/DetailItem; extract a shared SummaryList/SummaryItem.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/RescheduleForm/index.tsx",
+   "line": 68,
+   "title": "time-range formatting written again",
+   "detail": "Share one formatTimeRange helper.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/RescheduleForm/index.tsx",
+   "line": 319,
+   "title": "Untested failure paths: validation alert and availability error",
+   "detail": "Add tests for submit with no slot, availability 500, and new choice after a 409.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-5",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/RescheduleForm/index.tsx",
+   "line": 370,
+   "title": "redundant content = null branch",
+   "detail": "Simplify.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-6",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/RescheduleForm/index.tsx",
+   "line": 55,
+   "title": "now prop has no caller",
+   "detail": "Drop it.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-7",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/RescheduleForm/index.test.tsx",
+   "line": 224,
+   "title": "repeated body assertions",
+   "detail": "Lines 224-227 add nothing beyond line 223.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-8",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/RescheduleForm/index.tsx",
+   "line": 331,
+   "title": "upstream error message shown verbatim on a public page",
+   "detail": "Map rejection codes to fixed patient-safe text (the hook snackbar repeats it too).",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-9",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Minor",
+   "file": "src/app/(patient)/reschedule/[token]/page.tsx",
+   "line": 17,
+   "title": "token URL can leak via Referer and search indexing",
+   "detail": "Add referrer no-referrer and robots noindex/nofollow to metadata.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-10",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/RescheduleForm/index.tsx",
+   "line": 184,
+   "title": "Programmatic focus into the same aria-live region may double-announce",
+   "detail": "Scope the live region to a short announcement separate from the focusable heading, or verify with screen readers.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:02:22.984653Z"
+}

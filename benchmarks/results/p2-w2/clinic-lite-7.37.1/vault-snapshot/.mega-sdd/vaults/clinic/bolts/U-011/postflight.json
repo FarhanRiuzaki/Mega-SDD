@@ -1,0 +1,47 @@
+{
+ "unit_id": "U-011",
+ "scanned_at": "2026-09-14T15:02:40.722076Z",
+ "status": "pass",
+ "head_sha": "1f889d7e51e3d93b5b3e0d61f1aaccd91e958bca",
+ "written_by": "validate-bolt-artifacts.sh --recompute",
+ "rules": [
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/components/Providers.tsx",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/components/Providers.tsx"
+  },
+  {
+   "type": "FILE_PRESENCE_RULE",
+   "rule": "file src/app/(patient)/layout.tsx MUST exist after bolt",
+   "verdict": "pass",
+   "evidence": "src/app/(patient)/layout.tsx exists"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST render semantic header, main and footer landmarks with a keyboard-reachable navigation and visible focus (constitution F-001)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST NOT show a logo image or clinic name that the PRD does not provide (context.md OQ-CN-5)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST stay usable at a 375px viewport without horizontal scrolling (source: PRD \u00a7Clinic.2 NFR-001)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:02:40.868647Z"
+}

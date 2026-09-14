@@ -1,0 +1,104 @@
+{
+ "unit_id": "U-005",
+ "executed_at": "2026-09-14T11:51:57.023625Z",
+ "status": "pass",
+ "head_sha": "a0aef4a1e0aa557f163fa7a9c92e094dda044624",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/v1/appointments/route.test.ts --reporter=verbose",
+   "expects": "rejects an invalid booking payload with 400 before calling upstream",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/v1/appointments/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > rejects an invalid booking payload with 400 before calling upstream 8ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointmen",
+   "output_tail": "the payload before forwarding to upstream 0ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  18:51:58\n   Duration  1.19s (transform 56ms, setup 150ms, collect 89ms, tests 16ms, environment 533ms, prepare 72ms)\n\n(node:25473) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/v1/appointments/route.test.ts --reporter=verbose",
+   "expects": "forwards a valid online booking to the upstream appointments endpoint",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/v1/appointments/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > rejects an invalid booking payload with 400 before calling upstream 8ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointmen",
+   "output_tail": "the payload before forwarding to upstream 0ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  18:52:00\n   Duration  928ms (transform 55ms, setup 129ms, collect 70ms, tests 16ms, environment 369ms, prepare 58ms)\n\n(node:25549) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/v1/appointments/route.test.ts --reporter=verbose",
+   "expects": "rejects a staff-channel or override booking without the receptionist role",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/v1/appointments/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > rejects an invalid booking payload with 400 before calling upstream 9ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointmen",
+   "output_tail": "the payload before forwarding to upstream 0ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  18:52:02\n   Duration  945ms (transform 55ms, setup 126ms, collect 80ms, tests 17ms, environment 377ms, prepare 67ms)\n\n(node:25624) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/v1/appointments/route.test.ts --reporter=verbose",
+   "expects": "allows a receptionist to create a staff-channel override booking",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/v1/appointments/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > rejects an invalid booking payload with 400 before calling upstream 8ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointmen",
+   "output_tail": "the payload before forwarding to upstream 0ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  18:52:04\n   Duration  934ms (transform 51ms, setup 124ms, collect 70ms, tests 16ms, environment 381ms, prepare 76ms)\n\n(node:25698) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/v1/appointments/availability/route.test.ts --reporter=verbose",
+   "expects": "forwards doctorId and date to the upstream availability endpoint",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/v1/appointments/availability/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/availability/route.test.ts > GET /api/v1/appointments/availability > forwards doctorId and date to the upstream availability endpoint 7ms\n\n Test Files  1 passed (1)\n      Test",
+   "output_tail": " src/app/api/v1/appointments/availability/route.test.ts > GET /api/v1/appointments/availability > forwards doctorId and date to the upstream availability endpoint 7ms\n\n Test Files  1 passed (1)\n      Tests  1 passed (1)\n   Start at  18:52:06\n   Duration  879ms (transform 42ms, setup 125ms, collect 29ms, tests 9ms, environment 383ms, prepare 67ms)\n\n(node:25774) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/v1/appointments/route.test.ts --reporter=verbose",
+   "expects": "returns 400 when the request body is not valid JSON",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/v1/appointments/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > rejects an invalid booking payload with 400 before calling upstream 9ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointmen",
+   "output_tail": "the payload before forwarding to upstream 0ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  18:52:08\n   Duration  949ms (transform 60ms, setup 133ms, collect 82ms, tests 17ms, environment 391ms, prepare 66ms)\n\n(node:25850) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/v1/appointments/route.test.ts --reporter=verbose",
+   "expects": "rejects a staff-channel booking from a completely unauthenticated caller with 403 not 500",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/v1/appointments/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > rejects an invalid booking payload with 400 before calling upstream 9ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointmen",
+   "output_tail": "the payload before forwarding to upstream 0ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  18:52:10\n   Duration  932ms (transform 59ms, setup 129ms, collect 88ms, tests 17ms, environment 365ms, prepare 71ms)\n\n(node:25938) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/v1/appointments/route.test.ts --reporter=verbose",
+   "expects": "rejects an online booking with override true from a non-receptionist",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/v1/appointments/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > rejects an invalid booking payload with 400 before calling upstream 9ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointmen",
+   "output_tail": "the payload before forwarding to upstream 0ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  18:52:12\n   Duration  1.03s (transform 67ms, setup 135ms, collect 91ms, tests 18ms, environment 395ms, prepare 90ms)\n\n(node:26021) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/app/api/v1/appointments/route.test.ts --reporter=verbose",
+   "expects": "strips unknown fields from the payload before forwarding to upstream",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/app/api/v1/appointments/route.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > rejects an invalid booking payload with 400 before calling upstream 8ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointmen",
+   "output_tail": "the payload before forwarding to upstream 0ms\n \u2713 src/app/api/v1/appointments/route.test.ts > POST /api/v1/appointments > maps a failed upstream envelope to 400 0ms\n\n Test Files  1 passed (1)\n      Tests  9 passed (9)\n   Start at  18:52:14\n   Duration  929ms (transform 53ms, setup 127ms, collect 75ms, tests 17ms, environment 377ms, prepare 70ms)\n\n(node:26121) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:52:16.038273Z",
+ "duration_ms": 19014
+}

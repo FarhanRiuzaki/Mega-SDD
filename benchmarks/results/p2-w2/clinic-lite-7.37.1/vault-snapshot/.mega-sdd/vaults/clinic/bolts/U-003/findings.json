@@ -1,0 +1,64 @@
+{
+ "schema": 1,
+ "unit": "U-003",
+ "attempt": 1,
+ "head": "b1166a28ac967e1448c80dcc60dbbbe7349c8d3f",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/AppointmentStatusChip/index.tsx",
+   "line": 53,
+   "title": "delete: redundant `& .MuiChip-icon { color: inherit }` override",
+   "detail": "MUI Chip already sets the icon to inherit when the chip has a non-default color (node_modules/@mui/material/Chip/Chip.js:194-198); drop the line.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/AppointmentStatusChip/index.test.tsx",
+   "line": 89,
+   "title": "Existing-map guard only half-checks JENIS_PIC_LABELS",
+   "detail": "Use a full toEqual like the other maps; remove the redundant ACCOUNT_TYPE_LABELS.CASA check at line 78.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/AppointmentStatusChip/index.test.tsx",
+   "line": 55,
+   "title": "Label-map checks are hidden inside the chip render test",
+   "detail": "Move the APPOINTMENT_STATUS_LABELS / BOOKING_CHANNEL_LABELS equality checks into their own test.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 1,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:52:36.526363Z"
+}

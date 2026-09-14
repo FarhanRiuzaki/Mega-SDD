@@ -1,0 +1,60 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "08a68ef9",
+ "unit": "U-017",
+ "generated_at": "2026-09-14T11:54:04+00:00",
+ "summary": {
+  "CONFIRMED": 4,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U017-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/ReassignDialog/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-017.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U017-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/ReassignDialog/index.test.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-017.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U017-01",
+   "kind": "fs_must_exist",
+   "expect": "src/components/dialog/DeleteConfirmDialog.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-017.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/components/dialog/DeleteConfirmDialog.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the project has a confirm dialog pattern"
+  },
+  {
+   "id": "C-U017-02",
+   "kind": "fs_must_exist",
+   "expect": "src/features/appointments/hooks/useAppointments/index.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-017.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/appointments/hooks/useAppointments/index.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the appointments hooks exist"
+  }
+ ]
+}

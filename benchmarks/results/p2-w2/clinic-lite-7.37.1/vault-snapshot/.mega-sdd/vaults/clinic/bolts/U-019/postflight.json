@@ -1,0 +1,64 @@
+{
+ "unit_id": "U-019",
+ "scanned_at": "2026-09-14T15:24:05.022135Z",
+ "status": "pass",
+ "head_sha": "def8f8ccdd3812b8ad3615124f20346708c81778",
+ "written_by": "run-postflight-scan.sh",
+ "rules": [
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/components/table/BaseTable.tsx",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/components/table/BaseTable.tsx"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/data/navigation/verticalMenuData.tsx",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/data/navigation/verticalMenuData.tsx"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/data/navigation/horizontalMenuData.tsx",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/data/navigation/horizontalMenuData.tsx"
+  },
+  {
+   "type": "FILE_PRESENCE_RULE",
+   "rule": "file src/app/(dashboard)/staff/reception/page.tsx MUST exist after bolt",
+   "verdict": "pass",
+   "evidence": "src/app/(dashboard)/staff/reception/page.tsx exists"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST guard the page with ProtectedRoute requiring the receptionist role (constitution B-005)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST render status with AppointmentStatusChip and the booking channel with BOOKING_CHANNEL_LABELS (constitution F-002, A-005)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST keep the grid and the table keyboard-reachable with labelled controls (constitution F-001)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "directives": {
+  "total": 3,
+  "attested": 0,
+  "unverified": 3
+ },
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:24:05.159209Z"
+}

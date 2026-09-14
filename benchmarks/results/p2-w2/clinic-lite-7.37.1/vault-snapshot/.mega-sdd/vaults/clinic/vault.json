@@ -1,0 +1,622 @@
+{
+  "vault_version": "1.1",
+  "vault_layout": 3,
+  "generated_at": "2026-09-14T15:31:44.218599Z",
+  "title": "Clinic Appointment System",
+  "project_shape": "web-app",
+  "implementation_mode": "existing",
+  "prd_status": "draft",
+  "output_mode": "compact",
+  "mode_migrate_after": null,
+  "project_scale": "standard",
+  "prd_sha256": "34b026c22edebce30d2d5853edc5f8a58a3349891df4f96e482ed9f1e6465d0a",
+  "prd_path_at_generation": "PRD/prd-clinic.md",
+  "constitution_version": "1.0",
+  "constitution_hash": "52a8fd5c018a997b3137e60bb28b2dad59662de09f2de7e70254667a6b5fb8c1",
+  "source_documents": [
+    {
+      "type": "PRD",
+      "path": "PRD/prd-clinic.md",
+      "version": "2.0",
+      "date": "2026-06-12"
+    }
+  ],
+  "design_system_flags": {
+    "HAS_UI_COMPONENTS": true,
+    "HAS_TOKENS": true,
+    "HAS_A11Y": true,
+    "HAS_VOICE_BRAND": true
+  },
+  "design_system": {
+    "style": "clinical, trustworthy, anti-generic — brand color on high-signal elements only",
+    "palette": "primary teal-700 #0E7490 (white foreground, 5.36:1); accent/success green-700 #15803D (5.02:1); raw #0891B2 / #16A34A only for fills, charts and icon accents",
+    "typography": "humanist sans body with a real type scale; optional serif display headers",
+    "a11y_level": "WCAG 2.2 AA",
+    "source": "prd",
+    "provenance": "PRD §8.2 (tokens) + §8.3 (anti-generic ceiling) + §8.4 (accessibility floor)"
+  },
+  "entities": [
+    {
+      "name": "staff",
+      "purpose": "Clinic staff member (doctor or receptionist); owned by the auth schema per PRD §Clinic.4",
+      "doc": "context.md",
+      "fields_count": 8
+    },
+    {
+      "name": "patient",
+      "purpose": "Patient contact record captured at booking time (patients have no login)",
+      "doc": "context.md",
+      "fields_count": 5
+    },
+    {
+      "name": "service",
+      "purpose": "Visit type — consultation, follow-up or vaccination; price is display-only",
+      "doc": "context.md",
+      "fields_count": 4
+    },
+    {
+      "name": "appointment",
+      "purpose": "A scheduled patient visit with a doctor (booked / cancelled / completed)",
+      "doc": "context.md",
+      "fields_count": 13
+    }
+  ],
+  "flows": [
+    {
+      "id": "F-U-001",
+      "title": "Patient books appointment",
+      "type": "user",
+      "doc": "context.md",
+      "dod_count": 5
+    },
+    {
+      "id": "F-U-002",
+      "title": "Patient cancels appointment",
+      "type": "user",
+      "doc": "context.md",
+      "dod_count": 4
+    },
+    {
+      "id": "F-U-003",
+      "title": "Patient receives reminder",
+      "type": "user",
+      "doc": "context.md",
+      "dod_count": 4
+    },
+    {
+      "id": "F-U-004",
+      "title": "Patient reschedules appointment",
+      "type": "user",
+      "doc": "context.md",
+      "dod_count": 3
+    },
+    {
+      "id": "F-S-001",
+      "title": "Doctor views schedule",
+      "type": "system",
+      "doc": "context.md",
+      "dod_count": 4
+    },
+    {
+      "id": "F-S-002",
+      "title": "Receptionist manages conflicts",
+      "type": "system",
+      "doc": "context.md",
+      "dod_count": 4
+    }
+  ],
+  "adrs": [],
+  "open_questions": [
+    {
+      "tag": "OQ-CLINIC-001",
+      "priority": "P1",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "business",
+      "text": "Which patient-data-privacy regulation applies in our region (HIPAA / GDPR-equivalent), and what does it require for storage and email handling of patient name, email, phone and reason for visit? (PRD §6.1 Compliance; source: PRD §Clinic.6 Open Questions (scope-specific))",
+      "deferred_reason": "batched ask answered Defer by the benchmark runner (headless session, no stakeholder available) — units implement only PRD-stated handling and invent no regulation-specific behavior (constitution F-004); resurfaced after bolts",
+      "resolver_owner": "Product Owner + compliance **Deferred (plan)**: batched ask answered Defer by the benchmark runner (headless session, no stakeholder available) — units implement only PRD-stated handling and invent no regulation-specific behavior (constitution F-004); resurfaced after bolts",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:11:58.659641Z"
+    },
+    {
+      "tag": "OQ-CLINIC-002",
+      "priority": "P1",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "business",
+      "text": "Should patients see other patients' names in any schedule view? (privacy implications; source: PRD §Clinic.6 Open Questions (scope-specific))",
+      "deferred_reason": "batched ask answered Defer by the benchmark runner (headless session, no stakeholder available) — patient-facing views hide taken slots per PRD F-U-001 step 4 (constitution B-006), so no other patient's data is shown meanwhile; resurfaced after bolts",
+      "resolver_owner": "Product Owner **Deferred (plan)**: batched ask answered Defer by the benchmark runner (headless session, no stakeholder available) — patient-facing views hide taken slots per PRD F-U-001 step 4 (constitution B-006), so no other patient's data is shown meanwhile; resurfaced after bolts",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:11:58.659641Z"
+    },
+    {
+      "tag": "OQ-CN-1",
+      "priority": "P1",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "tech",
+      "resolution_mode": "recommend",
+      "classification_confidence": "medium",
+      "text": "The PRD §6.3 Technology Stack (Bun, PostgreSQL + Drizzle, Better Auth, shadcn/ui, Resend; see also §8.1 Component foundation with Schedule-X) is different from the codebase this project already runs on (Next.js 16 + MUI 7 + next-auth v4 + TanStack Query/Table, clinic data served by an upstream API behind the /api/v1 proxy, no database, pnpm). Which stack should the clinic features be built on?",
+      "deferred_reason": "runner defer (headless benchmark session, no stakeholder available) — the units proceed on the recorded recommendation as a working assumption; resurfaced in the delivery report",
+      "resolver_owner": "Engineering Lead (see recommendation) **Deferred (v1.1)**: runner defer (headless benchmark session, no stakeholder available) — the units proceed on the recorded recommendation as a working assumption; resurfaced in the delivery report",
+      "recommendation": "Build the clinic features on the existing starterkit — Next.js 16 App Router + MUI 7 + next-auth v4 + TanStack Query / TanStack Table + react-hook-form + zod, browser traffic through the same-origin /api/v1 proxy to the upstream API, tests on Vitest + RTL + MSW — and add NO new package.json dependencies (no Drizzle/PostgreSQL client, Better Auth, shadcn/ui, Resend, Schedule-X or croner) in this repository.",
+      "rationale": "implementation_mode is existing and the starterkit is the ground truth of this repository. Every PRD requirement except database/email ownership maps onto primitives that already exist: the proxy route factory, apiClient/apiServer, next-auth sessions with roles, ProtectedRoute, BaseTable on TanStack Table, zod + react-hook-form, the Vitest + MSW harness. Replacing auth, UI kit and ORM would rewrite the starterkit and is the hardest option to revert.",
+      "scan_citations": [
+        "package.json:29",
+        "package.json:40",
+        "package.json:41",
+        "package.json:52",
+        "src/libs/api/route-handler.ts:31",
+        "src/libs/api/client.ts:10",
+        "src/libs/auth.ts:39",
+        "CLAUDE.md:65"
+      ],
+      "fallback_if_wrong": "If the stakeholders mandate the PRD §6.3 stack, record the decision, run diff-vault and re-plan: the BFF route units and the auth-related units are replaced; data access is isolated in src/features/appointments/repositories so the UI units need only adapter changes.",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:13:47.761295Z"
+    },
+    {
+      "tag": "OQ-AR-1",
+      "priority": "P1",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "tech",
+      "resolution_mode": "recommend",
+      "classification_confidence": "medium",
+      "origin": "context.md#Data-model",
+      "text": "This codebase has no database, yet PRD §Clinic.4 puts key rules in the database (only one booked appointment per doctor and start time, atomic reschedule, each reminder sent exactly once) and the flows send confirmation, reminder and reassignment emails. Which upstream API provides the clinic data, enforces these rules and sends these emails — and at which endpoints?",
+      "deferred_reason": "runner defer (headless benchmark session, no stakeholder available) — the units proceed on the recorded recommendation as a working assumption; resurfaced in the delivery report",
+      "resolver_owner": "Engineering Lead (see recommendation) **Deferred (v1.1)**: runner defer (headless benchmark session, no stakeholder available) — the units proceed on the recorded recommendation as a working assumption; resurfaced in the delivery report",
+      "recommendation": "Treat the upstream API as the system of record: it persists staff, patients, services and appointments, enforces the (doctor_id, start_time) uniqueness for booked appointments and the atomic reschedule, issues and verifies the one-time email token, runs the idempotent reminder sweep (reminder_sent) and sends every email. This repository mirrors its paths under /api/v1/* per the house proxy convention — /v1/doctors, /v1/services, /v1/appointments, /v1/appointments/availability, /v1/appointments/schedule, /v1/appointments/token/{token}, /v1/appointments/{id}/cancel, /v1/appointments/{id}/reassign, /v1/reminders/sweep — and surfaces its error envelopes to the user.",
+      "rationale": "The repository has no database and no mail transport; the house architecture routes every browser call through thin /api/v1 proxies that forward to the upstream API with the session bearer, so the database-level rules of PRD §Clinic.4 can only be owned upstream. Mirroring the upstream path under /api/v1 is the documented convention.",
+      "scan_citations": [
+        "src/app/api/v1/users/route.ts:3",
+        "src/libs/api/server.ts:9",
+        "src/libs/api/route-handler.ts:19",
+        "CLAUDE.md:65"
+      ],
+      "fallback_if_wrong": "When the real upstream contract is published, adjust the paths in src/features/appointments/repositories/appointment.repository.ts and the /api/v1 route files; the hooks and UI keep their signatures.",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:13:47.761295Z"
+    },
+    {
+      "tag": "OQ-CN-2",
+      "priority": "P2",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "tech",
+      "resolution_mode": "blocking",
+      "classification_confidence": "low",
+      "text": "How are the §6.2 Performance targets (median appointment lookup under 200ms, reminder email within 5 minutes, 99% uptime) measured, and who owns them when the data lives behind an upstream API?",
+      "deferred_reason": "auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "resolver_owner": "Engineering Lead **Deferred (v1.1)**: auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:13:47.761295Z"
+    },
+    {
+      "tag": "OQ-CN-3",
+      "priority": "P2",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "business",
+      "text": "Which timezone do the 09:00–17:00 bookable hours and the 24-hour reminder use — the clinic's local time or the patient's own device time?",
+      "deferred_reason": "auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "resolver_owner": "Product Owner **Deferred (v1.1)**: auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:13:47.761295Z"
+    },
+    {
+      "tag": "OQ-DM-1",
+      "priority": "P2",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "business",
+      "origin": "context.md#Data-model",
+      "text": "A service's duration can be longer than the 15-minute slot. Does a longer visit (for example a 30-minute consultation) also block the following slot(s), or does only its start slot count as taken?",
+      "deferred_reason": "auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "resolver_owner": "Product Owner **Deferred (v1.1)**: auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:13:47.761295Z"
+    },
+    {
+      "tag": "OQ-FL-1",
+      "priority": "P2",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "business",
+      "origin": "context.md#F-U-002",
+      "text": "Where does the patient confirm a cancellation and see the confirmation page (F-U-002 steps 2 and 4)? The PRD only lists the cancel Route Handler and gives no page for these two screens.",
+      "deferred_reason": "auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "resolver_owner": "Design Lead **Deferred (v1.1)**: auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:13:47.761295Z"
+    },
+    {
+      "tag": "OQ-AR-2",
+      "priority": "P2",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "tech",
+      "resolution_mode": "blocking",
+      "classification_confidence": "low",
+      "origin": "context.md#F-S-001",
+      "text": "The staff navigation menu can only be restricted by permission names, but the PRD only defines the roles doctor and receptionist. Which permission names should control the Schedule and Reception menu entries? Until answered, the staff pages are protected by role and get no menu entry.",
+      "deferred_reason": "auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "resolver_owner": "Engineering Lead **Deferred (v1.1)**: auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:13:47.761295Z"
+    },
+    {
+      "tag": "OQ-CN-4",
+      "priority": "P2",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "business",
+      "origin": "context.md#Constraints",
+      "text": "The public booking page must be rate-limited (PRD §Clinic.3), but no limit is stated. How many booking attempts per visitor per time window are allowed, and should the limit be enforced by this app or by the upstream API / gateway?",
+      "deferred_reason": "auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "resolver_owner": "Product Owner + Engineering Lead **Deferred (v1.1)**: auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:13:47.761295Z"
+    },
+    {
+      "tag": "OQ-CLINIC-003",
+      "priority": "P2",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "business",
+      "text": "What is the cancellation window — any time up to the appointment, or N hours before? (Applies to reschedule too.) (source: PRD §Clinic.6 Open Questions (scope-specific))",
+      "deferred_reason": "auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "resolver_owner": "Product Owner **Deferred (v1.1)**: auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:13:47.761295Z"
+    },
+    {
+      "tag": "OQ-CLINIC-004",
+      "priority": "P2",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "business",
+      "text": "If a doctor calls in sick, how does the system handle their booked appointments (auto-notify + reassign, or manual)? (source: PRD §Clinic.6 Open Questions (scope-specific))",
+      "deferred_reason": "auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "resolver_owner": "Product Owner **Deferred (v1.1)**: auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:13:47.761295Z"
+    },
+    {
+      "tag": "OQ-CLINIC-005",
+      "priority": "P2",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "tech",
+      "resolution_mode": "recommend",
+      "classification_confidence": "medium",
+      "text": "Deployment target — Vercel (Bun beta runtime + Vercel Cron, Pro tier for sub-daily cron) or self-hosted (Node server + croner)? It determines the reminder-sweep trigger and the Bun-server posture. (source: PRD §Clinic.6 Open Questions (scope-specific))",
+      "deferred_reason": "auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "resolver_owner": "Engineering Lead (see recommendation) **Deferred (v1.1)**: auto-deferred (P2, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "recommendation": "Self-hosted: the repository already ships a Dockerfile, a docker-compose service and output 'standalone'. Trigger /api/cron/reminders from an external scheduler presenting CRON_SECRET, so no croner dependency is needed.",
+      "rationale": "The existing deployment artifacts target a self-hosted Node server; a secret-guarded Route Handler works unchanged for an external scheduler and for Vercel Cron, so the trigger choice does not change application code.",
+      "scan_citations": [
+        "Dockerfile:4",
+        "docker-compose.yml:2",
+        "next.config.ts:15"
+      ],
+      "fallback_if_wrong": "If Vercel is chosen, register the same /api/cron/reminders route under crons in vercel.json; the route handler is unchanged.",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:13:47.761295Z"
+    },
+    {
+      "tag": "OQ-CLINIC-006",
+      "priority": "P3",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "tech",
+      "resolution_mode": "recommend",
+      "classification_confidence": "medium",
+      "text": "Doctor schedule grid — confirm Schedule-X's current free-vs-premium view split is acceptable, or budget for FullCalendar Premium. (source: PRD §Clinic.6 Open Questions (scope-specific))",
+      "deferred_reason": "auto-deferred (P3, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "resolver_owner": "Engineering Lead (see recommendation) **Deferred (v1.1)**: auto-deferred (P3, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "recommendation": "Build the doctor schedule grid with the existing MUI + TanStack Table primitives; add neither Schedule-X nor FullCalendar.",
+      "rationale": "The only grid features the PRD asks for (today and week views, one column per doctor, drill-in details) are expressible with MUI layout primitives and the existing BaseTable; no licence question arises.",
+      "scan_citations": [
+        "src/components/table/BaseTable.tsx:62",
+        "package.json:29",
+        "package.json:34"
+      ],
+      "fallback_if_wrong": "If a richer calendar is required later, adopt Schedule-X (MIT core) behind the same component props.",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:13:47.761295Z"
+    },
+    {
+      "tag": "OQ-CN-5",
+      "priority": "P3",
+      "doc": "context.md",
+      "status": "deferred",
+      "category": "business",
+      "origin": "context.md#Constraints",
+      "text": "The branded patient header and footer need the clinic's name and logo (PRD §8.3), but neither is provided. Which clinic name and logo file should be shown? Until answered, the header shows the product name \"Clinic Appointment System\" as text.",
+      "deferred_reason": "auto-deferred (P3, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "resolver_owner": "Design Lead **Deferred (v1.1)**: auto-deferred (P3, express) — bukan blocker delivery pertama; muncul lagi di delivery report",
+      "defer_to": "stakeholder",
+      "deferred_at": "2026-09-14T11:13:47.761295Z"
+    }
+  ],
+  "open_questions_summary": {
+    "total": 15,
+    "by_priority": {
+      "P1": 4,
+      "P2": 9,
+      "P3": 2
+    },
+    "by_status": {
+      "open": 0,
+      "resolved": 0,
+      "deferred": 15,
+      "out_of_scope": 0
+    }
+  },
+  "changelog": [
+    {
+      "event": "units_generated",
+      "at": "2026-09-14T11:30:00Z",
+      "count": 19
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-CN-1",
+      "at": "2026-09-14T11:13:47Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-AR-1",
+      "at": "2026-09-14T11:13:47Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-CN-2",
+      "at": "2026-09-14T11:13:47Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-CN-3",
+      "at": "2026-09-14T11:13:47Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-DM-1",
+      "at": "2026-09-14T11:13:47Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-FL-1",
+      "at": "2026-09-14T11:13:48Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-AR-2",
+      "at": "2026-09-14T11:13:48Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-CN-4",
+      "at": "2026-09-14T11:13:48Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-CLINIC-003",
+      "at": "2026-09-14T11:13:48Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-CLINIC-004",
+      "at": "2026-09-14T11:13:48Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-CLINIC-005",
+      "at": "2026-09-14T11:13:48Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-CLINIC-006",
+      "at": "2026-09-14T11:13:48Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-CN-5",
+      "at": "2026-09-14T11:13:48Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-CLINIC-001",
+      "at": "2026-09-14T11:17:37Z",
+      "action": "B"
+    },
+    {
+      "event": "oq-deferred",
+      "id": "OQ-CLINIC-002",
+      "at": "2026-09-14T11:17:37Z",
+      "action": "B"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-010",
+      "commits": [
+        "101b34534f1089529643fea2327eb1114d330f7d"
+      ],
+      "at": "2026-09-14T11:39:37Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-002",
+      "commits": [
+        "d0cc5988506a42657f784c21a0e9feec5679bbcf",
+        "121df3b7f40662e9296d4f66c2c5b52652530ee8"
+      ],
+      "at": "2026-09-14T11:39:37Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-001",
+      "commits": [
+        "5fd9c1b7d23ac6208a4f6580ae33ce83da590eed"
+      ],
+      "at": "2026-09-14T11:41:05Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-008",
+      "commits": [
+        "e7e9ba952d1c4e82259a7cab27f7383357a62a4c"
+      ],
+      "at": "2026-09-14T11:41:30Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-003",
+      "commits": [
+        "b1166a28ac967e1448c80dcc60dbbbe7349c8d3f"
+      ],
+      "at": "2026-09-14T11:52:36Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-009",
+      "commits": [
+        "1705313e88a33d38b5a82f6c9b12c300591fc930"
+      ],
+      "at": "2026-09-14T11:54:57Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-005",
+      "commits": [
+        "8ff408721e9e5d756915c99175920ec10feba50c"
+      ],
+      "at": "2026-09-14T11:57:02Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-012",
+      "commits": [
+        "a0aef4a1e0aa557f163fa7a9c92e094dda044624"
+      ],
+      "at": "2026-09-14T12:00:26Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-004",
+      "commits": [
+        "ac7e9bd583cba38a0562e42ebe6aa36c928d1b4a"
+      ],
+      "at": "2026-09-14T14:13:16Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-016",
+      "commits": [
+        "f437fa0995df9ced40811e88b7b89be89258c689",
+        "12262bdfb6a055d6c93048000e85a9e29b1b1e8b"
+      ],
+      "at": "2026-09-14T14:13:17Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-017",
+      "commits": [
+        "472970e5609b68db97d0d0bdbbc4ed938ea4393f"
+      ],
+      "at": "2026-09-14T14:13:17Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-011",
+      "commits": [
+        "6bd8691415b0794cd291f54107112e14cc77f617"
+      ],
+      "at": "2026-09-14T14:13:18Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-007",
+      "commits": [
+        "e122613de08a99f27cb4f5346bd6eac0a9e6c8b0"
+      ],
+      "at": "2026-09-14T14:57:12Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-018",
+      "commits": [
+        "d1433eecb98ccc06dfae302d302d94d8845e10d1",
+        "f1c0025869872bc1919e52352a8f7598b2c4c5ab",
+        "6bf6e1d1ce6edef834f88fca0e63f4d40562ef33"
+      ],
+      "at": "2026-09-14T14:57:13Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-013",
+      "commits": [
+        "b1544b1f2e959a7c0ab35e6a44b9c3705b78cfe6"
+      ],
+      "at": "2026-09-14T14:57:13Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-014",
+      "commits": [
+        "b322b3c02c9165efbcd4c67454e7e6a218a567bc"
+      ],
+      "at": "2026-09-14T15:02:23Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-006",
+      "commits": [
+        "99a84808a84c845090b9d5984bcef7399628612f"
+      ],
+      "at": "2026-09-14T15:31:43Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-015",
+      "commits": [
+        "c6c1b5779fb5827b2da246d828692bac2e35ce7b"
+      ],
+      "at": "2026-09-14T15:31:43Z"
+    },
+    {
+      "event": "bolt_completed",
+      "unit": "U-019",
+      "commits": [
+        "db10a451f3afe4f840cd39a2ce00c6431d8ca46c",
+        "def8f8ccdd3812b8ad3615124f20346708c81778"
+      ],
+      "at": "2026-09-14T15:31:44Z"
+    }
+  ],
+  "author": "Farhan Riuzaki",
+  "stakeholders": [
+    "Product Owner — Product Team",
+    "Tech Lead (Full-stack) — Engineering Lead",
+    "UI/UX Designer — Design Lead",
+    "QA Lead — QA Lead"
+  ]
+}

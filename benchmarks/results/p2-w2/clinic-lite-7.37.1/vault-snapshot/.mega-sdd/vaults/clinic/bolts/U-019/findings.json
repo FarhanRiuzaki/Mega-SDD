@@ -1,0 +1,115 @@
+{
+ "schema": 1,
+ "unit": "U-019",
+ "attempt": 1,
+ "head": "def8f8ccdd3812b8ad3615124f20346708c81778",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/ReceptionBoard/index.tsx",
+   "line": 275,
+   "title": "Copy-paste: appointment card and grid helpers duplicated from DoctorSchedule",
+   "detail": "ButtonBase card at index.tsx:275-308 matches DoctorSchedule/index.tsx:238-271; dayOf/timeOf/patientNameOf (index.tsx:63, columns.tsx:26-28 vs DoctorSchedule/index.tsx:90-91,109), buildTimes (vs buildRows :95-101), the cells Map builder and the error/retry block are repeated. Extract a shared AppointmentCard + utils/schedule module; DoctorSchedule is outside this unit's target_files, so do that part as a follow-up refactor.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/ReceptionBoard/index.test.tsx",
+   "line": 164,
+   "title": "Failure paths and off-roster branch untested",
+   "detail": "No test covers the error state (ErrMsg + Try again, two-query refetch at index.tsx:349-352), a doctor with an appointment missing from the roster (buildDoctorRows index.tsx:77-89, UNKNOWN_DOCTOR), or the Previous/Next/Today controls.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/ReceptionBoard/index.tsx",
+   "line": 161,
+   "title": "Status text contradicts the grid when only the doctors query fails",
+   "detail": "statusText only checks schedule.isError; use schedule.isError",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/ReceptionBoard/index.tsx",
+   "line": 248,
+   "title": "shrink: lunch-boundary test computed twice plus mutable flag during render",
+   "detail": "compute lunchAt once via findIndex.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-5",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/ReceptionBoard/columns.tsx",
+   "line": 24,
+   "title": "Formatting helpers live in the columns file and index.tsx imports them from there",
+   "detail": "move timeOf/patientNameOf/timeRangeOf to a feature util.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-6",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/ReceptionBoard/index.tsx",
+   "line": 174,
+   "title": "New 488-line component mixes date navigation, grid, table and dialogs",
+   "detail": "extract ReceptionBoard/DoctorGrid.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:31:32.546844Z"
+}

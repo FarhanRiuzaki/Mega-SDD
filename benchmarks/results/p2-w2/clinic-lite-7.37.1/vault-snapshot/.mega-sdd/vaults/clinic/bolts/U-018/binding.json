@@ -1,0 +1,72 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "709d0990",
+ "unit": "U-018",
+ "generated_at": "2026-09-14T11:56:36+00:00",
+ "summary": {
+  "CONFIRMED": 5,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U018-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/WalkInDialog/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-018.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U018-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/WalkInDialog/index.test.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-018.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U018-01",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/components/UserFormDialog.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-018.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/users/components/UserFormDialog.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the project wires dialog forms with react-hook-form"
+  },
+  {
+   "id": "C-U018-02",
+   "kind": "fs_must_exist",
+   "expect": "src/features/appointments/components/SlotPicker/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-018.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/appointments/components/SlotPicker/index.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the slot picker exists"
+  },
+  {
+   "id": "C-U018-03",
+   "kind": "fs_must_exist",
+   "expect": "src/features/appointments/schemas/booking/index.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-018.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/appointments/schemas/booking/index.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the booking schema module exists"
+  }
+ ]
+}

@@ -1,0 +1,77 @@
+# Auto-derived by plan (v8 lite lane) — rename to modules.yaml to lock in.
+# Every cross-module depends_on edge in units/ is declared here via blocked_by.
+modules:
+  - id: M-clinic-core
+    name: "Clinic domain core"
+    description: "Domain types, zod schemas, slot rules, status display and the data-access layer (repository + TanStack Query hooks)."
+    vault_sections:
+      - context.md#Data-model
+      - context.md#Constraints
+    dod:
+      - "Types mirror PRD §Clinic.4 entities; schemas validate booking, walk-in, reschedule, cancel and reassign payloads"
+      - "Slot rules implement BR-001 / BR-002 and are unit-tested"
+    estimated_units: "4"
+    priority: P1
+    blocks: [M-clinic-bff, M-patient-booking, M-patient-self-service, M-staff]
+    blocked_by: []
+  - id: M-clinic-bff
+    name: "Clinic BFF route handlers"
+    description: "Same-origin Route Handlers that validate input, apply session/secret checks and forward to the upstream API."
+    vault_sections:
+      - context.md#F-U-001
+      - context.md#F-U-002
+      - context.md#F-U-003
+      - context.md#F-U-004
+      - context.md#F-S-001
+      - context.md#F-S-002
+    dod:
+      - "Every PRD §Clinic.3 Route Handler surface exists and rejects invalid or unauthorized requests"
+    estimated_units: "4"
+    priority: P1
+    blocks: []
+    blocked_by: [M-clinic-core]
+  - id: M-patient-booking
+    name: "Patient booking"
+    description: "Public patient shell, date/slot picker and the /book wizard."
+    vault_sections:
+      - context.md#F-U-001
+    dod:
+      - "A patient can book a free slot at /book without logging in (AC-001, AC-002)"
+    estimated_units: "3"
+    priority: P1
+    blocks: [M-patient-self-service, M-staff]
+    blocked_by: [M-clinic-core]
+  - id: M-patient-self-service
+    name: "Patient self-service"
+    description: "Token-authorized reschedule page."
+    vault_sections:
+      - context.md#F-U-004
+    dod:
+      - "A patient can reschedule via the email token (AC-006)"
+    estimated_units: "1"
+    priority: P1
+    blocks: []
+    blocked_by: [M-clinic-core, M-patient-booking]
+  - id: M-staff
+    name: "Staff surfaces"
+    description: "Staff login, doctor schedule, reception board with reassign and walk-in actions."
+    vault_sections:
+      - context.md#F-S-001
+      - context.md#F-S-002
+    dod:
+      - "Doctors see only their own schedule; receptionists see all and can reassign and create walk-ins (AC-005)"
+    estimated_units: "5"
+    priority: P1
+    blocks: []
+    blocked_by: [M-clinic-core, M-patient-booking]
+  - id: M-platform
+    name: "Platform wiring"
+    description: "Route protection for public patient pages and the brand primary color token."
+    vault_sections:
+      - context.md#Constraints
+    dod:
+      - "Public patient routes reachable anonymously; primary color is teal-700"
+    estimated_units: "2"
+    priority: P1
+    blocks: []
+    blocked_by: []

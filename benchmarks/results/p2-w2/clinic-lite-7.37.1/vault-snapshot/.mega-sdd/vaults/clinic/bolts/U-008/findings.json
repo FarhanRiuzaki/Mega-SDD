@@ -1,0 +1,47 @@
+{
+ "schema": 1,
+ "unit": "U-008",
+ "attempt": 1,
+ "head": "e7e9ba952d1c4e82259a7cab27f7383357a62a4c",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/app/api/cron/reminders/route.ts",
+   "line": 55,
+   "title": "shrink: the envelope-to-status mapping is a copy of respond()",
+   "detail": "Same line as respond() at src/libs/api/route-handler.ts:19-21; the copies can drift. Export respond and reuse it.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Important",
+   "file": "src/app/api/cron/reminders/route.ts",
+   "line": 52,
+   "title": "Architectural drift / authn: sweep forwarded upstream with no credential",
+   "detail": "`apiServer` gets its upstream bearer only from the user session (src/libs/api/server.ts:11, src/libs/api/base-fetcher.ts:35-37). The scheduler sends no next-auth cookie, so POST /v1/reminders/sweep goes upstream with no Authorization header: either upstream rejects it (reminders never send) or upstream accepts sweeps from anyone. Fix forward by sending a service credential via apiServer.post's options.headers, or confirm and document how upstream authenticates this endpoint.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 3,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:41:30.338469Z"
+}

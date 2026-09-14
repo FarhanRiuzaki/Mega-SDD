@@ -1,0 +1,34 @@
+{
+ "unit_id": "U-015",
+ "executed_at": "2026-09-14T15:24:41.489082Z",
+ "status": "pass",
+ "head_sha": "def8f8ccdd3812b8ad3615124f20346708c81778",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run staff/login/page --reporter=verbose",
+   "expects": "renders the existing credentials login view for staff",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run staff/login/page --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/(blank-layout-pages)/staff/login/page.test.tsx > StaffLoginPage > renders the existing credentials login view for staff 14ms\n \u2713 src/app/(blank-layout-pages)/staff/login/page.test.tsx > StaffLoginPage > sets the staff login page tit",
+   "output_tail": "the existing credentials login view for staff 14ms\n \u2713 src/app/(blank-layout-pages)/staff/login/page.test.tsx > StaffLoginPage > sets the staff login page title 0ms\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  22:24:42\n   Duration  1.01s (transform 42ms, setup 128ms, collect 80ms, tests 17ms, environment 425ms, prepare 72ms)\n\n(node:27012) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run staff/login/page --reporter=verbose",
+   "expects": "sets the staff login page title",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run staff/login/page --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/app/(blank-layout-pages)/staff/login/page.test.tsx > StaffLoginPage > renders the existing credentials login view for staff 14ms\n \u2713 src/app/(blank-layout-pages)/staff/login/page.test.tsx > StaffLoginPage > sets the staff login page tit",
+   "output_tail": "the existing credentials login view for staff 14ms\n \u2713 src/app/(blank-layout-pages)/staff/login/page.test.tsx > StaffLoginPage > sets the staff login page title 0ms\n\n Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  22:24:44\n   Duration  951ms (transform 52ms, setup 138ms, collect 67ms, tests 16ms, environment 388ms, prepare 60ms)\n\n(node:27111) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:24:45.883685Z",
+ "duration_ms": 4394
+}

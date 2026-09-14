@@ -1,0 +1,98 @@
+{
+ "schema": 1,
+ "unit": "U-011",
+ "attempt": 1,
+ "head": "6bd8691415b0794cd291f54107112e14cc77f617",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/components/PatientShell/index.tsx",
+   "line": 32,
+   "title": "yagni: one-item NAV_ITEMS + map + active-link logic makes the shell a client component",
+   "detail": "The active-state branch (:123-143) never runs in tests because usePathname is mocked to '/'. Render the single link inline and drop usePathname/'use client', or add a test covering the active state.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/app/(patient)/layout.tsx",
+   "line": 26,
+   "title": "Product name hardcoded 3 times across the two new files",
+   "detail": "Export PRODUCT_NAME once.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/app/(patient)/layout.tsx",
+   "line": 33,
+   "title": "async layout that awaits nothing",
+   "detail": "Drop async and the one-use variables.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/PatientShell/index.tsx",
+   "line": 88,
+   "title": "Header/footer are flat (border-only, no elevation) — weak depth cue",
+   "detail": "Consider a subtle theme elevation on the header.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-5",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/components/PatientShell/index.tsx",
+   "line": 32,
+   "title": "Nav has a single item, header composition is sparse",
+   "detail": "Revisit density as patient links are added.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 1,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:13:16.539792Z"
+}

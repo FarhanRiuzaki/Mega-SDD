@@ -1,0 +1,30 @@
+{
+ "schema": 1,
+ "unit": "U-006",
+ "attempt": 1,
+ "head": "99a84808a84c845090b9d5984bcef7399628612f",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/app/api/appointments/[id]/cancel/route.ts",
+   "line": 27,
+   "title": "shrink: validate-and-reject block copied again (now in 4 routes)",
+   "detail": "The `reject()` helper, the `req.json()` try/catch returning INVALID_JSON, the `safeParse` returning VALIDATION_ERROR and the inlined `res.success === false ? 400 : 200` mapping (cancel route.ts:27-57, token route.ts:30-58) are near-verbatim copies of src/app/api/v1/appointments/route.ts:32-72 and src/app/api/v1/appointments/[id]/reassign/route.ts:33-74. Extract `badRequest(code, message)` + `parseBody(req, schema)` + the envelope-status mapping into one shared module under src/libs/api/. route-handler.ts is frozen and target_files is whitelisted, so this needs a follow-up unit.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:31:32.434582Z"
+}

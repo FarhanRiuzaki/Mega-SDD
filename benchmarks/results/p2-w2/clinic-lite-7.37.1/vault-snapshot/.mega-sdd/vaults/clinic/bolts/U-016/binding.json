@@ -1,0 +1,127 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "08a68ef9",
+ "unit": "U-016",
+ "generated_at": "2026-09-14T11:54:04+00:00",
+ "summary": {
+  "CONFIRMED": 10,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U016-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/DoctorSchedule/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-016.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U016-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/DoctorSchedule/index.test.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-016.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U016-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/AppointmentDetailDialog/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-016.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U016-A04",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(dashboard)/staff/schedule/page.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-016.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U016-A05",
+   "kind": "fs_must_exist",
+   "expect": "src/app/(dashboard)/users/page.tsx:1-17",
+   "source": ".mega-sdd/vaults/clinic/units/U-016.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/(dashboard)/users/page.tsx:1-17",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U016-A06",
+   "kind": "fs_must_exist",
+   "expect": "src/components/rbac/ProtectedRoute.tsx:18-60",
+   "source": ".mega-sdd/vaults/clinic/units/U-016.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/components/rbac/ProtectedRoute.tsx:18-60",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U016-A07",
+   "kind": "symbol",
+   "expect": "src/components/rbac/ProtectedRoute.tsx:ProtectedRoute",
+   "source": ".mega-sdd/vaults/clinic/units/U-016.md:existing_interfaces",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/components/rbac/ProtectedRoute.tsx:28",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file"
+  },
+  {
+   "id": "C-U016-01",
+   "kind": "symbol",
+   "expect": "src/components/rbac/ProtectedRoute.tsx:ProtectedRoute",
+   "source": ".mega-sdd/vaults/clinic/units/U-016.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/components/rbac/ProtectedRoute.tsx:28",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file",
+   "text": "ProtectedRoute supports role requirements"
+  },
+  {
+   "id": "C-U016-02",
+   "kind": "fs_must_exist",
+   "expect": "src/components/misc/EmptyState.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-016.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/components/misc/EmptyState.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "an EmptyState component exists"
+  },
+  {
+   "id": "C-U016-03",
+   "kind": "fs_must_exist",
+   "expect": "src/features/appointments/hooks/useAppointments/index.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-016.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/appointments/hooks/useAppointments/index.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the appointments hooks exist"
+  }
+ ]
+}

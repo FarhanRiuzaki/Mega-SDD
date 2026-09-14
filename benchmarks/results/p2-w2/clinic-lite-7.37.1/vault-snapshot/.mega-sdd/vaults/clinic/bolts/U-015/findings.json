@@ -1,0 +1,64 @@
+{
+ "schema": 1,
+ "unit": "U-015",
+ "attempt": 1,
+ "head": "c6c1b5779fb5827b2da246d828692bac2e35ce7b",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Minor",
+   "file": "src/views/Login.tsx",
+   "line": 133,
+   "title": "Open redirect: unvalidated `redirectTo` now reachable via /staff/login",
+   "detail": "Pre-existing: `searchParams.get('redirectTo') ?? '/'` goes straight into `router.replace(redirectURL)` at line 136, so after sign-in `/staff/login?redirectTo=https://evil.example` sends the user off-site. The new page (page.tsx:30) renders the same view, giving staff a second entry point. Fix belongs in a unit that owns Login.tsx (this unit's Hard rules forbid editing it): accept only same-origin relative paths starting with `/`, not `//`, no scheme; fall back to `/`.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "standards",
+   "lenses": [
+    "standards"
+   ],
+   "severity": "Important",
+   "file": "src/app/(blank-layout-pages)/staff/login/page.test.tsx",
+   "line": 13,
+   "title": "Test imports `render`/`screen` directly from `@testing-library/react` instead of the house harness",
+   "detail": "Every other test in the repo (src/test/smoke.test.tsx:3, PatientShell/index.test.tsx:15, ReceptionBoard/index.test.tsx:22) imports render/screen (or renderWithProviders) from `@/test/utils`, per CLAUDE.md's harness description. Change to `import { render, screen } from '@/test/utils'`.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "design",
+   "lenses": [
+    "design"
+   ],
+   "severity": "Minor",
+   "file": "src/@layouts/BlankLayout.tsx",
+   "line": 30,
+   "title": "No <main> landmark on (blank-layout-pages) routes",
+   "detail": "Vendored template file, pre-existing, inherited debt only.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 2,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:31:32.490096Z"
+}

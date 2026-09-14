@@ -1,0 +1,59 @@
+{
+ "unit_id": "U-016",
+ "executed_at": "2026-09-14T14:12:38.244223Z",
+ "status": "pass",
+ "head_sha": "12262bdfb6a055d6c93048000e85a9e29b1b1e8b",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/DoctorSchedule/index.test.tsx --reporter=verbose",
+   "expects": "shows the signed-in doctor appointments for today",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/DoctorSchedule/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/DoctorSchedule/index.test.tsx > DoctorSchedule > shows the signed-in doctor appointments for today 283ms\n \u2713 src/features/appointments/components/DoctorS",
+   "output_tail": " doctor role 9ms\n \u2713 src/features/appointments/components/DoctorSchedule/index.test.tsx > /staff/schedule page > renders the schedule for a signed-in doctor 17ms\n\n Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  21:12:39\n   Duration  2.91s (transform 129ms, setup 183ms, collect 767ms, tests 1.01s, environment 557ms, prepare 86ms)\n\n(node:34433) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/DoctorSchedule/index.test.tsx --reporter=verbose",
+   "expects": "switches to the week view",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/DoctorSchedule/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/DoctorSchedule/index.test.tsx > DoctorSchedule > shows the signed-in doctor appointments for today 289ms\n \u2713 src/features/appointments/components/DoctorS",
+   "output_tail": "doctor role 10ms\n \u2713 src/features/appointments/components/DoctorSchedule/index.test.tsx > /staff/schedule page > renders the schedule for a signed-in doctor 16ms\n\n Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  21:12:43\n   Duration  2.47s (transform 125ms, setup 138ms, collect 569ms, tests 1.00s, environment 398ms, prepare 73ms)\n\n(node:34537) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/DoctorSchedule/index.test.tsx --reporter=verbose",
+   "expects": "opens appointment details with patient name and reason for visit",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/DoctorSchedule/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/DoctorSchedule/index.test.tsx > DoctorSchedule > shows the signed-in doctor appointments for today 277ms\n \u2713 src/features/appointments/components/DoctorS",
+   "output_tail": " doctor role 9ms\n \u2713 src/features/appointments/components/DoctorSchedule/index.test.tsx > /staff/schedule page > renders the schedule for a signed-in doctor 17ms\n\n Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  21:12:47\n   Duration  2.50s (transform 119ms, setup 145ms, collect 596ms, tests 995ms, environment 394ms, prepare 70ms)\n\n(node:34613) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/DoctorSchedule/index.test.tsx --reporter=verbose",
+   "expects": "shows an empty state when there are no appointments",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/DoctorSchedule/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/DoctorSchedule/index.test.tsx > DoctorSchedule > shows the signed-in doctor appointments for today 287ms\n \u2713 src/features/appointments/components/DoctorS",
+   "output_tail": " doctor role 9ms\n \u2713 src/features/appointments/components/DoctorSchedule/index.test.tsx > /staff/schedule page > renders the schedule for a signed-in doctor 20ms\n\n Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  21:12:50\n   Duration  2.55s (transform 105ms, setup 146ms, collect 624ms, tests 1.01s, environment 392ms, prepare 65ms)\n\n(node:34718) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "manual",
+   "desc": "Sign in as a doctor, open /staff/schedule: only your own appointments appear in today and week views; sign in as a user without the doctor role: the Access Denied panel is shown.",
+   "pending_manual": true
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:12:53.632548Z",
+ "duration_ms": 15388
+}

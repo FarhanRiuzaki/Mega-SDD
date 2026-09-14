@@ -1,0 +1,105 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "8af59196",
+ "unit": "U-001",
+ "generated_at": "2026-09-14T11:19:54+00:00",
+ "summary": {
+  "CONFIRMED": 8,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U001-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/types/index.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-001.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U001-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/schemas/booking/index.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-001.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U001-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/schemas/booking/index.test.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-001.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U001-A04",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/types/index.ts:1-29",
+   "source": ".mega-sdd/vaults/clinic/units/U-001.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/users/types/index.ts:1-29",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U001-A05",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/schemas/user.schema.ts:1-30",
+   "source": ".mega-sdd/vaults/clinic/units/U-001.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/users/schemas/user.schema.ts:1-30",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U001-01",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/types/index.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-001.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/users/types/index.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "feature types follow the users feature shape"
+  },
+  {
+   "id": "C-U001-02",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/schemas/user.schema.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-001.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/users/schemas/user.schema.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "schema files export schema, inferred type and defaults"
+  },
+  {
+   "id": "C-U001-03",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/query-params/index.test.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-001.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/query-params/index.test.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the folder-with-test module pattern is established"
+  }
+ ]
+}

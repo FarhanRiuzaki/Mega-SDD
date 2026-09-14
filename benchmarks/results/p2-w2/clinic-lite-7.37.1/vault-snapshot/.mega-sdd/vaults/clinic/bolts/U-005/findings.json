@@ -1,0 +1,98 @@
+{
+ "schema": 1,
+ "unit": "U-005",
+ "attempt": 1,
+ "head": "8ff408721e9e5d756915c99175920ec10feba50c",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/app/api/v1/appointments/route.ts",
+   "line": 72,
+   "title": "Envelope-to-status mapping re-implemented a third time",
+   "detail": "Copies the private respond() at src/libs/api/route-handler.ts:19-21 (also at src/app/api/cron/reminders/route.ts:55). Acceptable under the hard rule forbidding route-handler.ts edits; follow-up: export respond.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/app/api/v1/appointments/availability/route.test.ts",
+   "line": 25,
+   "title": "Availability test covers only the success case",
+   "detail": "Add a case where get resolves { success: false } and assert status 400.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Important",
+   "file": "src/app/api/v1/appointments/availability/route.ts",
+   "line": 16,
+   "title": "Input validation: public availability GET forwards every query param unchecked",
+   "detail": "forwardQuery: true sends Object.fromEntries(searchParams) (route-handler.ts:37) so any anonymous caller can send any parameter upstream to the endpoint B-006 covers, and date/doctorId are never format-checked (B-001). Fix: read only doctorId and date, validate with zod, 400 on failure, call apiServer.get directly.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Important",
+   "file": "src/libs/auth.ts",
+   "line": 120,
+   "title": "Authz: the receptionist gate trusts a role claim clients can forge (pre-existing bug)",
+   "detail": "`if (trigger === 'update' && session) return { ...token, ...session }` copies client-sent session data into the JWT; a signed-in non-receptionist can set roles ['receptionist'] and pass isReceptionist() at appointments/route.ts:38-43. Fix outside this unit: allow only harmless fields in the update path; until then the upstream must enforce its own receptionist check.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-5",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Minor",
+   "file": "src/app/api/v1/appointments/route.ts",
+   "line": 48,
+   "title": "CSRF: cookie-authorized state-changing POST has no Origin check",
+   "detail": "Reject mismatched Origin and require content-type application/json before parsing.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:57:01.724929Z"
+}

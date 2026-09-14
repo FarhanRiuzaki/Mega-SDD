@@ -1,0 +1,102 @@
+{
+  "status": "pass",
+  "gates": {
+    "toolchain": {
+      "ran": true,
+      "source": "detect",
+      "formatters": 2,
+      "linters": 1,
+      "typecheckers": 1
+    },
+    "format": {
+      "ran": true,
+      "results": [
+        {
+          "tool": "prettier",
+          "check_cmd": "npx prettier --check --ignore-unknown 'src/app/(patient)/layout.tsx' src/features/appointments/components/PatientShell/index.test.tsx src/features/appointments/components/PatientShell/index.tsx",
+          "pass": true,
+          "scoped": true,
+          "touched_files": 3
+        },
+        {
+          "tool": "editorconfig",
+          "check_cmd": "true  # baseline only \u2014 honored by the tools above",
+          "pass": true
+        }
+      ],
+      "fix_applied": false
+    },
+    "lint_typecheck": {
+      "ran": true,
+      "results": [
+        {
+          "tool": "eslint",
+          "check_cmd": "npx eslint .",
+          "pass": false,
+          "output_tail": "\n/Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3/src/app/layout.tsx\n  20:8  error  Unable to resolve path to module '@assets/iconify-icons/generated-icons.css'  import/no-unresolved\n\n/Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3/src/features/appointments/components/DoctorSchedule/index.tsx\n  209:13  error  Expected blank line before this statement  padding-line-between-statements\n\n/Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3/src/features/appointments/utils/slots/index.ts\n  31:3  error  Expected line before comment  lines-around-comment\n\n\u2716 3 problems (3 errors, 0 warnings)\n  2 errors and 0 warnings potentially fixable with the `--fix` option.\n\nnpm warn Unknown project config \"auto-install-peers\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"shamefully-hoist\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\nnpm warn Unknown project config \"node-linker\". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.\n"
+        },
+        {
+          "tool": "tsc",
+          "check_cmd": "npx tsc --noEmit",
+          "pass": true
+        }
+      ],
+      "findings": 1
+    },
+    "secrets": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "engine": "gitleaks",
+        "findings": [],
+        "total": 0
+      }
+    },
+    "sast": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "skipped": false,
+        "findings": [],
+        "total": 0,
+        "blocking": false
+      }
+    },
+    "new_deps": {
+      "ran": true,
+      "rc": 0,
+      "result": {
+        "new_deps": [],
+        "total_new": 0,
+        "blocking": false,
+        "warning": null
+      }
+    },
+    "dep_authorization": {
+      "ran": true,
+      "result": {
+        "unit": "U-011.md",
+        "enforced": true,
+        "allowed_new_deps": [],
+        "added_deps": [],
+        "unauthorized": [],
+        "finding": null,
+        "warning": null
+      }
+    }
+  },
+  "skips": [],
+  "not_run": [],
+  "config": {
+    "code_gates_enabled": true,
+    "no_code_gates_flag": false
+  },
+  "range": {
+    "base": "ac7e9bd583cba38a0562e42ebe6aa36c928d1b4a",
+    "head": "6bd8691415b0794cd291f54107112e14cc77f617"
+  },
+  "written_by": "run-code-gates.sh",
+  "unit_id": "U-011",
+  "plugin_version": "7.37.1",
+  "written_at": "2026-09-14T14:06:23.261478Z"
+}

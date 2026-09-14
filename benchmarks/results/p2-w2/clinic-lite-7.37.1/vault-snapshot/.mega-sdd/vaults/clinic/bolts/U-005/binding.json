@@ -1,0 +1,205 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "121df3b7",
+ "unit": "U-005",
+ "generated_at": "2026-09-14T11:39:04+00:00",
+ "summary": {
+  "CONFIRMED": 17,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U005-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/v1/doctors/route.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U005-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/v1/services/route.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U005-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/v1/appointments/availability/route.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U005-A04",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/v1/appointments/availability/route.test.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U005-A05",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/v1/appointments/route.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U005-A06",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/api/v1/appointments/route.test.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U005-A07",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/route-handler.ts:31-50",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/route-handler.ts:31-50",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U005-A08",
+   "kind": "fs_must_exist",
+   "expect": "src/app/api/v1/users/route.ts:1-4",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/api/v1/users/route.ts:1-4",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U005-A09",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/server.ts:9-27",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/server.ts:9-27",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U005-A10",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/auth.ts:39",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/auth.ts:39",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U005-A11",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/jwt-permission/index.ts:29",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/jwt-permission/index.ts:29",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U005-A12",
+   "kind": "symbol",
+   "expect": "src/libs/api/route-handler.ts:proxyGet",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:existing_interfaces",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/route-handler.ts:31",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file"
+  },
+  {
+   "id": "C-U005-A13",
+   "kind": "symbol",
+   "expect": "src/libs/jwt-permission/index.ts:JWTPermissionChecker",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:existing_interfaces",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/jwt-permission/index.ts:29",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file"
+  },
+  {
+   "id": "C-U005-01",
+   "kind": "symbol",
+   "expect": "src/libs/api/route-handler.ts:proxyGet",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/route-handler.ts:31",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file",
+   "text": "proxyGet exists in the route-handler factory"
+  },
+  {
+   "id": "C-U005-02",
+   "kind": "symbol",
+   "expect": "src/libs/jwt-permission/index.ts:JWTPermissionChecker",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/jwt-permission/index.ts:29",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file",
+   "text": "JWTPermissionChecker implements hasRole"
+  },
+  {
+   "id": "C-U005-03",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/server.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/server.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "apiServer is the server-side fetcher"
+  },
+  {
+   "id": "C-U005-04",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/auth.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-005.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/auth.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "next-auth options live in libs/auth.ts"
+  }
+ ]
+}

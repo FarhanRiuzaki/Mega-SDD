@@ -1,0 +1,71 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "8af59196",
+ "unit": "U-015",
+ "generated_at": "2026-09-14T11:19:54+00:00",
+ "summary": {
+  "CONFIRMED": 5,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U015-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/staff/login/page.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-015.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U015-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/staff/login/page.test.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-015.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U015-A03",
+   "kind": "fs_must_exist",
+   "expect": "src/app/(blank-layout-pages)/login/page.tsx:1-22",
+   "source": ".mega-sdd/vaults/clinic/units/U-015.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/(blank-layout-pages)/login/page.tsx:1-22",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U015-01",
+   "kind": "fs_must_exist",
+   "expect": "src/app/(blank-layout-pages)/login/page.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-015.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/(blank-layout-pages)/login/page.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the credentials login page exists"
+  },
+  {
+   "id": "C-U015-02",
+   "kind": "fs_must_exist",
+   "expect": "src/views/Login.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-015.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/views/Login.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the Login view exists"
+  }
+ ]
+}

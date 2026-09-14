@@ -1,0 +1,47 @@
+{
+ "unit_id": "U-009",
+ "scanned_at": "2026-09-14T15:02:40.722076Z",
+ "status": "pass",
+ "head_sha": "1f889d7e51e3d93b5b3e0d61f1aaccd91e958bca",
+ "written_by": "validate-bolt-artifacts.sh --recompute",
+ "rules": [
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/test/handlers.ts",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/test/handlers.ts"
+  },
+  {
+   "type": "FILE_PRESENCE_RULE",
+   "rule": "file src/features/appointments/repositories/appointment.repository.ts MUST exist after bolt",
+   "verdict": "pass",
+   "evidence": "src/features/appointments/repositories/appointment.repository.ts exists"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST keep repositories free of enqueueSnackbar and return the raw envelope (constitution C-003)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST build query keys with createQueryKeys and CRUD mutations with the crud-hooks factories where they fit (constitution C-003)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST call only apiClient from this client-side layer (constitution C-001)",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:02:40.865887Z"
+}

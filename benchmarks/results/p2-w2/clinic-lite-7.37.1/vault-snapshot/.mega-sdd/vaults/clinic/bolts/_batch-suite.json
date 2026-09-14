@@ -1,0 +1,11 @@
+{
+ "status": "green",
+ "head_sha": "a9745a5c130b0d8674d06429a4674b186a90802c",
+ "ran_at": "2026-09-14T15:32:18.223493Z",
+ "runner": "pnpm test",
+ "exit_code": 0,
+ "output_tail": "   \u2713 WalkInDialog > allows a time outside the slot grid only with the emergency override  1459ms\n   \u2713 WalkInDialog > validates patient details before submitting  2551ms\n   \u2713 WalkInDialog > keeps the dialog open and shows an error message when appointment creation fails  1672ms\n   \u2713 WalkInDialog > does not call the create appointment endpoint when patient details are invalid  2568ms\n   \u2713 WalkInDialog > resets the selected time when the emergency override switch is turned off  1113ms\n \u2713 src/features/appointments/components/BookingWizard/index.test.tsx (8 tests) 13883ms\n   \u2713 BookingWizard > walks through all steps and books with the online channel  2846ms\n   \u2713 BookingWizard > blocks the next step until the current step fields are valid  2336ms\n   \u2713 BookingWizard > announces the booking confirmation in a status region  1971ms\n   \u2713 BookingWizard > returns to the date step when the slot was taken meanwhile  1746ms\n   \u2713 BookingWizard > does not send an override flag in the booking request  1229ms\n   \u2713 BookingWizard > does not claim the confirmation email has already been sent  1186ms\n   \u2713 BookingWizard > keeps patient details filled in after a slot conflict returns to the date step  1445ms\n   \u2713 BookingWizard > does not persist patient data in localStorage or cookies  1122ms\n\n Test Files  26 passed (26)\n      Tests  152 passed (152)\n   Start at  22:32:00\n   Duration  17.00s (transform 989ms, setup 6.58s, collect 13.51s, tests 37.20s, environment 22.98s, prepare 2.06s)",
+ "written_by": "run-full-suite.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:32:18.224934Z"
+}

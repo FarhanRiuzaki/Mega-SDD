@@ -1,0 +1,132 @@
+{
+ "schema": 1,
+ "unit": "U-001",
+ "attempt": 1,
+ "head": "5fd9c1b7d23ac6208a4f6580ae33ce83da590eed",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/types/index.ts",
+   "line": 26,
+   "title": "duplicate: `TWorkingHours` has the same shape as U-002's `TimeWindow`",
+   "detail": "`TWorkingHours = { start; end }` matches `TimeWindow` at src/features/appointments/utils/slots/index.ts:28, committed before this unit. Two names for one type. Keep one source: move `TimeWindow` into types and import it in slots, or alias `export type TWorkingHours = TimeWindow`.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/schemas/booking/index.test.ts",
+   "line": 44,
+   "title": "Date/time format checks on the form schemas have no tests",
+   "detail": "`dateField` / `timeField` (index.ts:30-34) are the timezone-free contract but no test passes them a malformed value. Add rejection cases for bookingSchema / rescheduleSchema ('9:15', '09:15:00', '09:15Z', '2026-13-01', '15/09/2026') and assert the readable messages.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/schemas/booking/index.ts",
+   "line": 134,
+   "title": "duplicate: each payload type is declared twice (hand-written `T*` and inferred `*Values`)",
+   "detail": "Nothing uses the aliases; `satisfies z.ZodType<T>` only checks one direction so fields can drift. Pick one source.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/schemas/booking/index.test.ts",
+   "line": 110,
+   "title": "Test title doesn't match what it asserts",
+   "detail": "The cancel/reassign test also asserts rescheduleSchema rejects its defaults; split it out.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-5",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/schemas/booking/index.test.ts",
+   "line": 93,
+   "title": "No whitespace-only test for the payload schema's patient fields",
+   "detail": "Add a case with patient.name '  ' and reasonForVisit ' '.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-6",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Important",
+   "file": "src/features/appointments/schemas/booking/index.ts",
+   "line": 130,
+   "title": "Mass assignment: shared create schema lets callers set staff-only fields",
+   "detail": "createAppointmentPayloadSchema accepts bookingChannel 'staff' (line 130) and override (line 131); the PRD gives both only to the receptionist role. Any public create route that parses with this schema accepts a patient's own override. No route uses it yet, so nothing is exploitable at this commit. Fix: split patient/staff schemas, or have the create route check the receptionist role before accepting either field.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-7",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Minor",
+   "file": "src/features/appointments/schemas/booking/index.ts",
+   "line": 26,
+   "title": "Input validation: no length limit on unauthenticated free-text fields",
+   "detail": "requiredText only trims and checks min(1); add .max(n) limits for name, phone, reasonForVisit, ids and token.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:41:04.916056Z"
+}

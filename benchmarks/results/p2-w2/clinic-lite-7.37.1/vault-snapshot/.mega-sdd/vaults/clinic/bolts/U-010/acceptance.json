@@ -1,0 +1,104 @@
+{
+ "unit_id": "U-010",
+ "executed_at": "2026-09-14T11:28:48.943343Z",
+ "status": "pass",
+ "head_sha": "5f1ceced64c7603f0727a4650171a73cc99d8e05",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/proxy.test.ts --reporter=verbose",
+   "expects": "lets an anonymous visitor open the booking page",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/proxy.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the booking page 3ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open a reschedule link 0ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the staff ",
+   "output_tail": "irects to login on a refresh error even for the booking page 1ms\n \u2713 src/proxy.test.ts > proxy > lets a signed-in user open the patient pages without bouncing 0ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  18:28:49\n   Duration  852ms (transform 42ms, setup 130ms, collect 31ms, tests 11ms, environment 359ms, prepare 71ms)\n\n(node:88657) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/proxy.test.ts --reporter=verbose",
+   "expects": "lets an anonymous visitor open a reschedule link",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/proxy.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the booking page 3ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open a reschedule link 1ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the staff ",
+   "output_tail": "irects to login on a refresh error even for the booking page 1ms\n \u2713 src/proxy.test.ts > proxy > lets a signed-in user open the patient pages without bouncing 0ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  18:28:51\n   Duration  918ms (transform 43ms, setup 141ms, collect 29ms, tests 12ms, environment 378ms, prepare 74ms)\n\n(node:88743) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/proxy.test.ts --reporter=verbose",
+   "expects": "lets an anonymous visitor open the staff login page",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/proxy.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the booking page 3ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open a reschedule link 0ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the staff ",
+   "output_tail": "irects to login on a refresh error even for the booking page 1ms\n \u2713 src/proxy.test.ts > proxy > lets a signed-in user open the patient pages without bouncing 0ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  18:28:53\n   Duration  832ms (transform 43ms, setup 114ms, collect 33ms, tests 11ms, environment 360ms, prepare 68ms)\n\n(node:88834) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/proxy.test.ts --reporter=verbose",
+   "expects": "still redirects an anonymous visitor on a staff page to the login page",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/proxy.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the booking page 3ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open a reschedule link 0ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the staff ",
+   "output_tail": "irects to login on a refresh error even for the booking page 1ms\n \u2713 src/proxy.test.ts > proxy > lets a signed-in user open the patient pages without bouncing 0ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  18:28:55\n   Duration  868ms (transform 39ms, setup 128ms, collect 28ms, tests 11ms, environment 359ms, prepare 57ms)\n\n(node:88908) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/proxy.test.ts --reporter=verbose",
+   "expects": "bounces a signed-in user from the staff login page to home",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/proxy.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the booking page 3ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open a reschedule link 0ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the staff ",
+   "output_tail": "irects to login on a refresh error even for the booking page 1ms\n \u2713 src/proxy.test.ts > proxy > lets a signed-in user open the patient pages without bouncing 0ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  18:28:57\n   Duration  882ms (transform 41ms, setup 123ms, collect 32ms, tests 11ms, environment 358ms, prepare 77ms)\n\n(node:88981) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/proxy.test.ts --reporter=verbose",
+   "expects": "redirects an anonymous visitor on reschedule without a token or a substring collision to the login page",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/proxy.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the booking page 3ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open a reschedule link 0ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the staff ",
+   "output_tail": "irects to login on a refresh error even for the booking page 1ms\n \u2713 src/proxy.test.ts > proxy > lets a signed-in user open the patient pages without bouncing 0ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  18:28:59\n   Duration  861ms (transform 42ms, setup 113ms, collect 29ms, tests 12ms, environment 371ms, prepare 65ms)\n\n(node:89055) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/proxy.test.ts --reporter=verbose",
+   "expects": "redirects an anonymous visitor on a book prefixed but unrelated path to the login page",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/proxy.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the booking page 4ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open a reschedule link 1ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the staff ",
+   "output_tail": "irects to login on a refresh error even for the booking page 1ms\n \u2713 src/proxy.test.ts > proxy > lets a signed-in user open the patient pages without bouncing 0ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  18:29:01\n   Duration  859ms (transform 40ms, setup 127ms, collect 32ms, tests 13ms, environment 357ms, prepare 79ms)\n\n(node:89099) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/proxy.test.ts --reporter=verbose",
+   "expects": "still bounces a signed-in user from the login page to home",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/proxy.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the booking page 3ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open a reschedule link 1ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the staff ",
+   "output_tail": "irects to login on a refresh error even for the booking page 2ms\n \u2713 src/proxy.test.ts > proxy > lets a signed-in user open the patient pages without bouncing 0ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  18:29:03\n   Duration  869ms (transform 40ms, setup 120ms, collect 28ms, tests 13ms, environment 363ms, prepare 66ms)\n\n(node:89172) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/proxy.test.ts --reporter=verbose",
+   "expects": "still clears cookies and redirects to login on a refresh error even for the booking page",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/proxy.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the booking page 3ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open a reschedule link 0ms\n \u2713 src/proxy.test.ts > proxy > lets an anonymous visitor open the staff ",
+   "output_tail": "irects to login on a refresh error even for the booking page 1ms\n \u2713 src/proxy.test.ts > proxy > lets a signed-in user open the patient pages without bouncing 0ms\n\n Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  18:29:05\n   Duration  860ms (transform 40ms, setup 114ms, collect 30ms, tests 11ms, environment 379ms, prepare 57ms)\n\n(node:89246) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:29:06.907351Z",
+ "duration_ms": 17963
+}

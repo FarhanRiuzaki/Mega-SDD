@@ -1,0 +1,44 @@
+{
+ "unit_id": "U-017",
+ "executed_at": "2026-09-14T14:05:58.056961Z",
+ "status": "pass",
+ "head_sha": "f437fa0995df9ced40811e88b7b89be89258c689",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/ReassignDialog/index.test.tsx --reporter=verbose",
+   "expects": "lists only the other doctors as reassignment targets",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/ReassignDialog/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/ReassignDialog/index.test.tsx > ReassignDialog > lists only the other doctors as reassignment targets 308ms\n \u2713 src/features/appointments/components/Reas",
+   "output_tail": "\n \u2713 src/features/appointments/components/ReassignDialog/index.test.tsx > ReassignDialog > keeps the dialog open and shows the error when reassignment fails 149ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  21:05:59\n   Duration  2.19s (transform 82ms, setup 149ms, collect 517ms, tests 794ms, environment 384ms, prepare 77ms)\n\n(node:23893) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/ReassignDialog/index.test.tsx --reporter=verbose",
+   "expects": "reassigns the appointment to the chosen doctor",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/ReassignDialog/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/ReassignDialog/index.test.tsx > ReassignDialog > lists only the other doctors as reassignment targets 299ms\n \u2713 src/features/appointments/components/Reas",
+   "output_tail": "\n \u2713 src/features/appointments/components/ReassignDialog/index.test.tsx > ReassignDialog > keeps the dialog open and shows the error when reassignment fails 152ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  21:06:02\n   Duration  2.23s (transform 90ms, setup 133ms, collect 549ms, tests 792ms, environment 400ms, prepare 75ms)\n\n(node:23969) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/ReassignDialog/index.test.tsx --reporter=verbose",
+   "expects": "keeps the dialog open and shows the error when reassignment fails",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/ReassignDialog/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/ReassignDialog/index.test.tsx > ReassignDialog > lists only the other doctors as reassignment targets 312ms\n \u2713 src/features/appointments/components/Reas",
+   "output_tail": "\n \u2713 src/features/appointments/components/ReassignDialog/index.test.tsx > ReassignDialog > keeps the dialog open and shows the error when reassignment fails 151ms\n\n Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  21:06:05\n   Duration  2.22s (transform 87ms, setup 146ms, collect 544ms, tests 801ms, environment 387ms, prepare 70ms)\n\n(node:24074) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T14:06:08.323073Z",
+ "duration_ms": 10265
+}

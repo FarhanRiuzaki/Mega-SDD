@@ -1,0 +1,12 @@
+{
+ "schema": 1,
+ "unit": "U-012",
+ "attempt": 1,
+ "head": "a0aef4a1e0aa557f163fa7a9c92e094dda044624",
+ "spec_verdict": "pass",
+ "findings": [],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T12:00:26.471706Z"
+}

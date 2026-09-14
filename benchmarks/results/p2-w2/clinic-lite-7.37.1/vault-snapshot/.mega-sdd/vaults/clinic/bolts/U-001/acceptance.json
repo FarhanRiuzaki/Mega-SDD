@@ -1,0 +1,54 @@
+{
+ "unit_id": "U-001",
+ "executed_at": "2026-09-14T11:36:24.123366Z",
+ "status": "pass",
+ "head_sha": "121df3b7f40662e9296d4f66c2c5b52652530ee8",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/schemas/booking/index.test.ts --reporter=verbose",
+   "expects": "accepts a complete booking",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/schemas/booking/index.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/schemas/booking/index.test.ts > bookingSchema > accepts a complete booking 2ms\n \u2713 src/features/appointments/schemas/booking/index.test.ts > bookingSchema > rejects an invalid",
+   "output_tail": "atient and channel 1ms\n \u2713 src/features/appointments/schemas/booking/index.test.ts > walk-in and payload schemas > rejects blank cancel tokens and reassign doctors 0ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  18:36:25\n   Duration  1.02s (transform 42ms, setup 183ms, collect 51ms, tests 7ms, environment 433ms, prepare 72ms)\n\n(node:726) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/schemas/booking/index.test.ts --reporter=verbose",
+   "expects": "rejects an invalid email with a readable message",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/schemas/booking/index.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/schemas/booking/index.test.ts > bookingSchema > accepts a complete booking 2ms\n \u2713 src/features/appointments/schemas/booking/index.test.ts > bookingSchema > rejects an invalid",
+   "output_tail": "atient and channel 1ms\n \u2713 src/features/appointments/schemas/booking/index.test.ts > walk-in and payload schemas > rejects blank cancel tokens and reassign doctors 1ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  18:36:27\n   Duration  915ms (transform 48ms, setup 138ms, collect 51ms, tests 7ms, environment 378ms, prepare 69ms)\n\n(node:869) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/schemas/booking/index.test.ts --reporter=verbose",
+   "expects": "rejects whitespace-only name and reason",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/schemas/booking/index.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/schemas/booking/index.test.ts > bookingSchema > accepts a complete booking 2ms\n \u2713 src/features/appointments/schemas/booking/index.test.ts > bookingSchema > rejects an invalid",
+   "output_tail": "atient and channel 1ms\n \u2713 src/features/appointments/schemas/booking/index.test.ts > walk-in and payload schemas > rejects blank cancel tokens and reassign doctors 0ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  18:36:29\n   Duration  900ms (transform 44ms, setup 134ms, collect 41ms, tests 7ms, environment 374ms, prepare 84ms)\n\n(node:988) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/schemas/booking/index.test.ts --reporter=verbose",
+   "expects": "covers every booking field in exactly one wizard step",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/schemas/booking/index.test.ts --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/schemas/booking/index.test.ts > bookingSchema > accepts a complete booking 2ms\n \u2713 src/features/appointments/schemas/booking/index.test.ts > bookingSchema > rejects an invalid",
+   "output_tail": "tient and channel 1ms\n \u2713 src/features/appointments/schemas/booking/index.test.ts > walk-in and payload schemas > rejects blank cancel tokens and reassign doctors 0ms\n\n Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  18:36:31\n   Duration  917ms (transform 48ms, setup 133ms, collect 52ms, tests 7ms, environment 391ms, prepare 68ms)\n\n(node:1099) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:36:32.576420Z",
+ "duration_ms": 8452
+}

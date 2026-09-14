@@ -1,0 +1,59 @@
+{
+ "unit_id": "U-019",
+ "executed_at": "2026-09-14T15:24:05.518592Z",
+ "status": "pass",
+ "head_sha": "def8f8ccdd3812b8ad3615124f20346708c81778",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/ReceptionBoard/index.test.tsx --reporter=verbose",
+   "expects": "lists every doctor appointment for the selected date",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/ReceptionBoard/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/ReceptionBoard/index.test.tsx > ReceptionBoard > lists every doctor appointment for the selected date 413ms\n \u2713 src/features/appointments/components/Rece",
+   "output_tail": "st role 13ms\n \u2713 src/features/appointments/components/ReceptionBoard/index.test.tsx > /staff/reception page > renders the board for a signed-in receptionist 72ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  22:24:06\n   Duration  3.93s (transform 184ms, setup 182ms, collect 941ms, tests 1.88s, environment 561ms, prepare 76ms)\n\n(node:25475) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/ReceptionBoard/index.test.tsx --reporter=verbose",
+   "expects": "renders one schedule row per doctor",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/ReceptionBoard/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/ReceptionBoard/index.test.tsx > ReceptionBoard > lists every doctor appointment for the selected date 398ms\n \u2713 src/features/appointments/components/Rece",
+   "output_tail": "st role 13ms\n \u2713 src/features/appointments/components/ReceptionBoard/index.test.tsx > /staff/reception page > renders the board for a signed-in receptionist 70ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  22:24:11\n   Duration  3.55s (transform 175ms, setup 134ms, collect 759ms, tests 1.89s, environment 404ms, prepare 69ms)\n\n(node:25580) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/ReceptionBoard/index.test.tsx --reporter=verbose",
+   "expects": "opens the reassign dialog for a row",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/ReceptionBoard/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/ReceptionBoard/index.test.tsx > ReceptionBoard > lists every doctor appointment for the selected date 406ms\n \u2713 src/features/appointments/components/Rece",
+   "output_tail": "st role 12ms\n \u2713 src/features/appointments/components/ReceptionBoard/index.test.tsx > /staff/reception page > renders the board for a signed-in receptionist 73ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  22:24:16\n   Duration  3.55s (transform 173ms, setup 144ms, collect 762ms, tests 1.88s, environment 399ms, prepare 75ms)\n\n(node:25716) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/ReceptionBoard/index.test.tsx --reporter=verbose",
+   "expects": "opens the walk-in dialog from the board",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/ReceptionBoard/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/ReceptionBoard/index.test.tsx > ReceptionBoard > lists every doctor appointment for the selected date 396ms\n \u2713 src/features/appointments/components/Rece",
+   "output_tail": "st role 13ms\n \u2713 src/features/appointments/components/ReceptionBoard/index.test.tsx > /staff/reception page > renders the board for a signed-in receptionist 74ms\n\n Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  22:24:21\n   Duration  3.54s (transform 171ms, setup 141ms, collect 757ms, tests 1.87s, environment 397ms, prepare 67ms)\n\n(node:25822) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "manual",
+   "desc": "Sign in as a receptionist, open /staff/reception: every doctor's appointments for the chosen date appear in the grid and the table; a doctor-only user gets the Access Denied panel.",
+   "pending_manual": true
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T15:24:25.117226Z",
+ "duration_ms": 19598
+}

@@ -1,0 +1,44 @@
+{
+ "unit_id": "U-003",
+ "executed_at": "2026-09-14T11:47:52.391083Z",
+ "status": "pass",
+ "head_sha": "8ff408721e9e5d756915c99175920ec10feba50c",
+ "written_by": "run-acceptance-tests.sh",
+ "timeout_seconds": 120,
+ "entries": [
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/AppointmentStatusChip/index.test.tsx --reporter=verbose",
+   "expects": "renders the text label for every status",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/AppointmentStatusChip/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/AppointmentStatusChip/index.test.tsx > AppointmentStatusChip > renders the text label for every status 37ms\n \u2713 src/features/appointments/componen",
+   "output_tail": " src/features/appointments/components/AppointmentStatusChip/index.test.tsx > AppointmentStatusChip > renders the small size by default and honours size=\"medium\" 7ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:47:53\n   Duration  1.48s (transform 55ms, setup 129ms, collect 517ms, tests 53ms, environment 410ms, prepare 70ms)\n\n(node:18044) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/AppointmentStatusChip/index.test.tsx --reporter=verbose",
+   "expects": "renders a distinct icon for every status",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/AppointmentStatusChip/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/AppointmentStatusChip/index.test.tsx > AppointmentStatusChip > renders the text label for every status 34ms\n \u2713 src/features/appointments/componen",
+   "output_tail": " src/features/appointments/components/AppointmentStatusChip/index.test.tsx > AppointmentStatusChip > renders the small size by default and honours size=\"medium\" 5ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:47:56\n   Duration  1.59s (transform 61ms, setup 139ms, collect 526ms, tests 48ms, environment 450ms, prepare 67ms)\n\n(node:18170) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  {
+   "type": "test",
+   "command": "pnpm test:run src/features/appointments/components/AppointmentStatusChip/index.test.tsx --reporter=verbose",
+   "expects": "keeps existing label maps unchanged",
+   "rc": 0,
+   "retried": false,
+   "pass": true,
+   "output_head": "\n> nextjs-starter-kit@1.0.0 test:run /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n> vitest run src/features/appointments/components/AppointmentStatusChip/index.test.tsx --reporter=verbose\n\n\n RUN  v3.2.6 /Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-clinic-arm3\n\n \u2713 src/features/appointments/components/AppointmentStatusChip/index.test.tsx > AppointmentStatusChip > renders the text label for every status 35ms\n \u2713 src/features/appointments/componen",
+   "output_tail": " src/features/appointments/components/AppointmentStatusChip/index.test.tsx > AppointmentStatusChip > renders the small size by default and honours size=\"medium\" 4ms\n\n Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:47:59\n   Duration  1.54s (transform 60ms, setup 140ms, collect 517ms, tests 48ms, environment 452ms, prepare 88ms)\n\n(node:18331) Warning: `--localstorage-file` was provided without a valid path\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  }
+ ],
+ "expects_missing": 0,
+ "plugin_version": "7.37.1",
+ "written_at": "2026-09-14T11:48:00.817771Z",
+ "duration_ms": 8426
+}

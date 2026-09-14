@@ -1,0 +1,71 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.1",
+ "head": "121df3b7",
+ "unit": "U-012",
+ "generated_at": "2026-09-14T11:39:05+00:00",
+ "summary": {
+  "CONFIRMED": 5,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U012-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/SlotPicker/index.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-012.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U012-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/appointments/components/SlotPicker/index.test.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-012.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U012-A03",
+   "kind": "fs_must_exist",
+   "expect": "src/components/table/BaseTable.tsx:1-30",
+   "source": ".mega-sdd/vaults/clinic/units/U-012.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/components/table/BaseTable.tsx:1-30",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U012-01",
+   "kind": "fs_must_exist",
+   "expect": "src/@core/components/mui/TextField.tsx",
+   "source": ".mega-sdd/vaults/clinic/units/U-012.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/@core/components/mui/TextField.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "CustomTextField is the project's labelled input"
+  },
+  {
+   "id": "C-U012-02",
+   "kind": "fs_must_exist",
+   "expect": "src/features/appointments/utils/slots/index.ts",
+   "source": ".mega-sdd/vaults/clinic/units/U-012.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/appointments/utils/slots/index.ts",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "the slot rules module exists"
+  }
+ ]
+}
