@@ -1,0 +1,261 @@
+{
+ "session_start": "2026-09-11T05:04:39.922000+00:00",
+ "records": 1030,
+ "models": {
+  "claude-opus-5": 430,
+  "<synthetic>": 1
+ },
+ "endpoints": {
+  "2026-09-11T12:52:34+07:00": {
+   "gross_s": 2874.078,
+   "wait_s": 0,
+   "net_s": 2874.078,
+   "raw_tokens": 123589694,
+   "cw_tokens": 24810881.099999957,
+   "idle_ratio": 0.0,
+   "interaction_points": 0
+  },
+  "2026-09-11T12:55:32+07:00": {
+   "gross_s": 3052.078,
+   "wait_s": 258.381,
+   "net_s": 2793.697,
+   "raw_tokens": 124248062,
+   "cw_tokens": 24909616.49999996,
+   "idle_ratio": 0.08465740390645324,
+   "interaction_points": 1
+  }
+ },
+ "wait_events": [
+  [
+   "2026-09-11T05:54:04.528000+00:00",
+   "USER",
+   258.381
+  ]
+ ],
+ "phases": {
+  "segments": [
+   {
+    "label": "front-door / routing",
+    "start": "2026-09-11T05:04:39.922000+00:00",
+    "end": "2026-09-11T05:04:44.512000+00:00",
+    "gross_s": 4.59,
+    "wait_s": 0,
+    "net_s": 4.59,
+    "raw_tokens": 40524.0,
+    "cw_tokens": 57938.1
+   },
+   {
+    "label": "mega-sdd:mega-sdd",
+    "start": "2026-09-11T05:04:44.512000+00:00",
+    "end": "2026-09-11T05:05:02.518000+00:00",
+    "gross_s": 18.006,
+    "wait_s": 0,
+    "net_s": 18.006,
+    "raw_tokens": 455843.0,
+    "cw_tokens": 167781.70000000004
+   },
+   {
+    "label": "GROUND(script) ×3",
+    "start": "2026-09-11T05:05:02.518000+00:00",
+    "end": "2026-09-11T05:06:50.126000+00:00",
+    "gross_s": 107.608,
+    "wait_s": 0,
+    "net_s": 107.608,
+    "raw_tokens": 1405605.0,
+    "cw_tokens": 287833.89999999997
+   },
+   {
+    "label": "mega-sdd:orchestrate-flow",
+    "start": "2026-09-11T05:06:50.126000+00:00",
+    "end": "2026-09-11T05:07:08.380000+00:00",
+    "gross_s": 18.254,
+    "wait_s": 0,
+    "net_s": 18.254,
+    "raw_tokens": 682674.0,
+    "cw_tokens": 155157.1
+   },
+   {
+    "label": "mega-sdd:generate-intent",
+    "start": "2026-09-11T05:07:08.380000+00:00",
+    "end": "2026-09-11T05:07:29.609000+00:00",
+    "gross_s": 21.229,
+    "wait_s": 0,
+    "net_s": 21.229,
+    "raw_tokens": 846363.0,
+    "cw_tokens": 312249.10000000003
+   },
+   {
+    "label": "GROUND(script) ×2",
+    "start": "2026-09-11T05:07:29.609000+00:00",
+    "end": "2026-09-11T05:14:41.788000+00:00",
+    "gross_s": 432.179,
+    "wait_s": 0,
+    "net_s": 432.179,
+    "raw_tokens": 11735826.0,
+    "cw_tokens": 3457440.499999997
+   },
+   {
+    "label": "mega-sdd:bind-codebase",
+    "start": "2026-09-11T05:14:41.788000+00:00",
+    "end": "2026-09-11T05:22:50.994000+00:00",
+    "gross_s": 489.206,
+    "wait_s": 0,
+    "net_s": 489.206,
+    "raw_tokens": 16235523.0,
+    "cw_tokens": 3517757.7
+   },
+   {
+    "label": "mega-sdd:resolve-oq",
+    "start": "2026-09-11T05:22:50.994000+00:00",
+    "end": "2026-09-11T05:24:17.895000+00:00",
+    "gross_s": 86.901,
+    "wait_s": 0,
+    "net_s": 86.901,
+    "raw_tokens": 6084049.0,
+    "cw_tokens": 980787.2999999999
+   },
+   {
+    "label": "mega-sdd:generate-units",
+    "start": "2026-09-11T05:24:17.895000+00:00",
+    "end": "2026-09-11T05:25:56.015000+00:00",
+    "gross_s": 98.12,
+    "wait_s": 0,
+    "net_s": 98.12,
+    "raw_tokens": 10845851.0,
+    "cw_tokens": 2055668.8000000007
+   },
+   {
+    "label": "mega-sdd:resolve-oq",
+    "start": "2026-09-11T05:25:56.015000+00:00",
+    "end": "2026-09-11T05:46:41.103000+00:00",
+    "gross_s": 1245.088,
+    "wait_s": 0,
+    "net_s": 1245.088,
+    "raw_tokens": 63611070.0,
+    "cw_tokens": 10940793.800000008
+   },
+   {
+    "label": "mega-sdd:execute-bolts",
+    "start": "2026-09-11T05:46:41.103000+00:00",
+    "end": "2026-09-11T05:49:02.093000+00:00",
+    "gross_s": 140.99,
+    "wait_s": 0,
+    "net_s": 140.99,
+    "raw_tokens": 7571690.0,
+    "cw_tokens": 2179694.4999999995
+   },
+   {
+    "label": "bolt-implementer ×3",
+    "start": "2026-09-11T05:49:02.093000+00:00",
+    "end": "2026-09-11T12:52:34+07:00",
+    "gross_s": 211.907,
+    "wait_s": 0,
+    "net_s": 211.907,
+    "raw_tokens": 4074676.0,
+    "cw_tokens": 697778.6000000001
+   }
+  ],
+  "pre_code": {
+   "end": "2026-09-11T05:46:41.103000+00:00",
+   "gross_s": 2521.181,
+   "wait_s": 0,
+   "net_s": 2521.181,
+   "cw_tokens": 21933407.99999997
+  },
+  "bolt1": {
+   "start": "2026-09-11T05:46:41.103000+00:00",
+   "gross_s": 352.897,
+   "wait_s": 0,
+   "net_s": 352.897,
+   "cw_tokens": 2877473.099999998
+  },
+  "pre_code_share": 87.72138404037747
+ },
+ "bolt1_breakdown": {
+  "window_start": "2026-09-11T05:46:41.103000+00:00",
+  "window_end": "2026-09-11T12:52:34+07:00",
+  "gross_s": 352.897,
+  "wait_s": 0,
+  "net_s": 352.897,
+  "implementer": {
+   "count": 3,
+   "sum_s": 4.282,
+   "union_s": 4.282,
+   "units": [
+    "U-001",
+    "U-002",
+    "U-005"
+   ]
+  },
+  "panel": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "verifier": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "gate-script": {
+   "count": 5,
+   "sum_s": 2.44,
+   "union_s": 2.44,
+   "units": [
+    "U-001",
+    "U-002",
+    "U-005"
+   ]
+  },
+  "agent-other": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "bash-other": {
+   "count": 9,
+   "sum_s": 3.417,
+   "union_s": 3.4170000000000003,
+   "units": [
+    "U-001"
+   ]
+  },
+  "skill": {
+   "count": 1,
+   "sum_s": 1.368,
+   "union_s": 1.368,
+   "units": []
+  },
+  "ask": {
+   "count": 0,
+   "sum_s": 0,
+   "union_s": 0.0,
+   "units": []
+  },
+  "fix_rounds_from_redispatch": 0,
+  "implementer_per_unit": {
+   "U-001": 1,
+   "U-002": 1,
+   "U-005": 1
+  },
+  "tool_active_union_s": 14.518999999999997,
+  "caveat": "agent spans = main-lane blocking only; background dispatch runtime lives on the sidechain (counts exact, durations lower bound)"
+ },
+ "interaction": {
+  "2026-09-11T12:52:34+07:00": {
+   "ask_points": 0,
+   "user_wait_points": 0,
+   "idle_events": 0,
+   "interaction_points": 0
+  },
+  "2026-09-11T12:55:32+07:00": {
+   "ask_points": 0,
+   "user_wait_points": 1,
+   "idle_events": 0,
+   "interaction_points": 1
+  }
+ }
+}

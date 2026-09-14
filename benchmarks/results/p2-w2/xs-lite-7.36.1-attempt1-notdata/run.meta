@@ -1,0 +1,16 @@
+sid=b57f559c-ae70-4fb5-9259-0e606b06d02a
+arm=/Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-xs-lite
+prd=PRD/prd-company-profile.md
+model=opus
+flags=--lite
+transcript=/Users/<user>/.claude/projects/-Users-<user>-SunnyGo-2026-AIRND2026-Project-TRAINING-p0-xs-lite/b57f559c-ae70-4fb5-9259-0e606b06d02a.jsonl
+started_at=2026-09-11T05:04:38Z
+head_before=6f98c10
+plugin=Version: 7.36.1
+pid=53463
+ended_at=2026-09-11T06:08:12Z
+head_after=c7dd3cd (recovered from reflog; fixture reset for attempt 2)
+unit_commits=3
+first_unit_commit_iso=2026-09-11T12:52:34+07:00
+last_unit_commit_iso=2026-09-11T12:55:32+07:00
+not_data_reason=local network outage ~06:08Z (API ENOTFOUND) mid bolt-stage; partial: 3 unit commits
