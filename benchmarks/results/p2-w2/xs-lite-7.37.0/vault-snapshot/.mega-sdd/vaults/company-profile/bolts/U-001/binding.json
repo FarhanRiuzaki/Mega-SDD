@@ -1,0 +1,104 @@
+{
+  "schema": "unit-binding/1",
+  "generated_by": "write-unit-binding.sh@7.37.0",
+  "head": "3d4b9265",
+  "unit": "U-001",
+  "generated_at": "2026-09-14T09:57:49+00:00",
+  "summary": {
+    "CONFIRMED": 8,
+    "CONFLICT": 0,
+    "OQ": 0
+  },
+  "claims": [
+    {
+      "id": "C-U001-A01",
+      "kind": "fs_must_exist",
+      "expect": "src/proxy.ts",
+      "source": ".mega-sdd/vaults/company-profile/units/U-001.md:target_files",
+      "verdict": "CONFIRMED",
+      "state": "IMPLEMENTED",
+      "anchor": "src/proxy.ts",
+      "confidence": "high",
+      "evidence": "fs: present"
+    },
+    {
+      "id": "C-U001-A02",
+      "kind": "fs_must_not_exist",
+      "expect": "src/proxy.test.ts",
+      "source": ".mega-sdd/vaults/company-profile/units/U-001.md:target_files",
+      "verdict": "CONFIRMED",
+      "state": "NEW",
+      "anchor": null,
+      "confidence": "high",
+      "evidence": "fs: absent"
+    },
+    {
+      "id": "C-U001-A03",
+      "kind": "fs_must_exist",
+      "expect": "src/proxy.ts:11",
+      "source": ".mega-sdd/vaults/company-profile/units/U-001.md:## Anchors",
+      "verdict": "CONFIRMED",
+      "state": "IMPLEMENTED",
+      "anchor": "src/proxy.ts:11",
+      "confidence": "high",
+      "evidence": "fs: present"
+    },
+    {
+      "id": "C-U001-A04",
+      "kind": "fs_must_exist",
+      "expect": "src/proxy.ts:24",
+      "source": ".mega-sdd/vaults/company-profile/units/U-001.md:## Anchors",
+      "verdict": "CONFIRMED",
+      "state": "IMPLEMENTED",
+      "anchor": "src/proxy.ts:24",
+      "confidence": "high",
+      "evidence": "fs: present"
+    },
+    {
+      "id": "C-U001-A05",
+      "kind": "fs_must_exist",
+      "expect": "src/proxy.ts:28",
+      "source": ".mega-sdd/vaults/company-profile/units/U-001.md:## Anchors",
+      "verdict": "CONFIRMED",
+      "state": "IMPLEMENTED",
+      "anchor": "src/proxy.ts:28",
+      "confidence": "high",
+      "evidence": "fs: present"
+    },
+    {
+      "id": "C-U001-A06",
+      "kind": "symbol",
+      "expect": "src/proxy.ts:proxy",
+      "source": ".mega-sdd/vaults/company-profile/units/U-001.md:existing_interfaces",
+      "verdict": "CONFIRMED",
+      "state": "IMPLEMENTED",
+      "anchor": "src/proxy.ts:7",
+      "confidence": "high",
+      "evidence": "index: 1 hit(s) in expected file"
+    },
+    {
+      "id": "C-U001-01",
+      "kind": "symbol",
+      "expect": "src/proxy.ts:proxy",
+      "source": ".mega-sdd/vaults/company-profile/units/U-001.md:## Claims",
+      "verdict": "CONFIRMED",
+      "state": "IMPLEMENTED",
+      "anchor": "src/proxy.ts:7",
+      "confidence": "high",
+      "evidence": "index: 1 hit(s) in expected file",
+      "text": "proxy() hanya meloloskan /login dan /register tanpa sesi"
+    },
+    {
+      "id": "C-U001-02",
+      "kind": "fs_must_not_exist",
+      "expect": "src/proxy.test.ts",
+      "source": ".mega-sdd/vaults/company-profile/units/U-001.md:## Claims",
+      "verdict": "CONFIRMED",
+      "state": "NEW",
+      "anchor": null,
+      "confidence": "high",
+      "evidence": "fs: absent",
+      "text": "belum ada test untuk proxy"
+    }
+  ]
+}

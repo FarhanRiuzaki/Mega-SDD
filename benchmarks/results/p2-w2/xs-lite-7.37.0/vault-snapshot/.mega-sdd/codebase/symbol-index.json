@@ -1,0 +1,4746 @@
+{
+  "generated_by": "mega-sdd:build-symbol-index",
+  "generated_at": "2026-09-14T09:57:49Z",
+  "head_commit": "3d4b9265399d86121bb3044fce1ae4fcbfd71655",
+  "astgrep_version": "0.42.3",
+  "file_count": 310,
+  "symbol_count": 592,
+  "symbols": [
+    {
+      "name": "CustomInputHorizontal",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/custom-inputs/Horizontal.tsx",
+      "line": 82,
+      "signature": "CustomInputHorizontal = (props: CustomInputHorizontalProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "renderData",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/custom-inputs/Horizontal.tsx",
+      "line": 89,
+      "signature": "renderData = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "CustomCheckboxImg",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/custom-inputs/Image.tsx",
+      "line": 54,
+      "signature": "CustomCheckboxImg = (props: CustomInputImgProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "renderComponent",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/custom-inputs/Image.tsx",
+      "line": 61,
+      "signature": "renderComponent = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "CustomInputVertical",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/custom-inputs/Vertical.tsx",
+      "line": 80,
+      "signature": "CustomInputVertical = (props: CustomInputVerticalProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "renderComponent",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/custom-inputs/Vertical.tsx",
+      "line": 87,
+      "signature": "renderComponent = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "CustomInputHorizontalData",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/components/custom-inputs/types.ts",
+      "line": 11,
+      "signature": "type CustomInputHorizontalData = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "CustomInputHorizontalProps",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/components/custom-inputs/types.ts",
+      "line": 29,
+      "signature": "type CustomInputHorizontalProps = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "CustomInputVerticalData",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/components/custom-inputs/types.ts",
+      "line": 48,
+      "signature": "type CustomInputVerticalData = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "CustomInputVerticalProps",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/components/custom-inputs/types.ts",
+      "line": 55,
+      "signature": "type CustomInputVerticalProps = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "CustomInputImgData",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/components/custom-inputs/types.ts",
+      "line": 74,
+      "signature": "type CustomInputImgData = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "CustomInputImgProps",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/components/custom-inputs/types.ts",
+      "line": 80,
+      "signature": "type CustomInputImgProps = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "CustomizerProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@core/components/customizer/index.tsx",
+      "line": 51,
+      "signature": "type CustomizerProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "getLocalePath",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/customizer/index.tsx",
+      "line": 57,
+      "signature": "getLocalePath = (pathName: string, locale: string) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "DebouncedColorPickerProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@core/components/customizer/index.tsx",
+      "line": 66,
+      "signature": "type DebouncedColorPickerProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "DebouncedColorPicker",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/customizer/index.tsx",
+      "line": 72,
+      "signature": "DebouncedColorPicker = (props: DebouncedColorPickerProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Customizer",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/customizer/index.tsx",
+      "line": 99,
+      "signature": "Customizer = ({ breakpoint = 'lg', dir = 'ltr', disableDirection = false }: CustomizerProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleToggle",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/customizer/index.tsx",
+      "line": 147,
+      "signature": "handleToggle = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleChange",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/customizer/index.tsx",
+      "line": 152,
+      "signature": "handleChange = (field: keyof Settings | 'direction', value: Settings[keyof Settings] | Direction) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleMenuClose",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/customizer/index.tsx",
+      "line": 162,
+      "signature": "handleMenuClose = (event: MouseEvent | TouchEvent): void => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "CustomAvatarProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@core/components/mui/Avatar.tsx",
+      "line": 14,
+      "signature": "type CustomAvatarProps = AvatarProps & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "CustomBadgeProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@core/components/mui/Badge.tsx",
+      "line": 8,
+      "signature": "type CustomBadgeProps = BadgeProps & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "CustomBadge",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/mui/Badge.tsx",
+      "line": 23,
+      "signature": "CustomBadge = (props: CustomBadgeProps) => <Badge {...props} />",
+      "lang": "tsx"
+    },
+    {
+      "name": "CustomChipProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@core/components/mui/Chip.tsx",
+      "line": 11,
+      "signature": "type CustomChipProps = ChipProps & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "CustomChip",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/mui/Chip.tsx",
+      "line": 23,
+      "signature": "CustomChip = (props: CustomChipProps) => <Chip {...props} />",
+      "lang": "tsx"
+    },
+    {
+      "name": "CustomTabListProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@core/components/mui/TabList.tsx",
+      "line": 9,
+      "signature": "type CustomTabListProps = TabListProps & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "CustomTabList",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/mui/TabList.tsx",
+      "line": 62,
+      "signature": "CustomTabList = (props: CustomTabListProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "IconButtonWrapper",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/option-menu/index.tsx",
+      "line": 31,
+      "signature": "IconButtonWrapper = (props: Pick<OptionsMenuType, 'tooltipProps'> & { children: ReactElement }) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuItemWrapper",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/option-menu/index.tsx",
+      "line": 38,
+      "signature": "MenuItemWrapper = ({ children, option }: { children: ReactNode; option: OptionMenuItemType }) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "OptionMenu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/option-menu/index.tsx",
+      "line": 50,
+      "signature": "OptionMenu = (props: OptionsMenuType) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleToggle",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/option-menu/index.tsx",
+      "line": 63,
+      "signature": "handleToggle = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleClose",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/option-menu/index.tsx",
+      "line": 67,
+      "signature": "handleClose = (event: Event | SyntheticEvent) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "OptionDividerType",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/components/option-menu/types.ts",
+      "line": 14,
+      "signature": "type OptionDividerType = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "OptionMenuItemType",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/components/option-menu/types.ts",
+      "line": 23,
+      "signature": "type OptionMenuItemType = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "OptionType",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/components/option-menu/types.ts",
+      "line": 33,
+      "signature": "type OptionType = string | OptionDividerType | OptionMenuItemType",
+      "lang": "typescript"
+    },
+    {
+      "name": "OptionsMenuType",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/components/option-menu/types.ts",
+      "line": 35,
+      "signature": "type OptionsMenuType = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ScrollToTopProps",
+      "kind": "tsx-interface",
+      "file": "src/@core/components/scroll-to-top/index.tsx",
+      "line": 11,
+      "signature": "interface ScrollToTopProps {",
+      "lang": "tsx"
+    },
+    {
+      "name": "ScrollToTop",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/scroll-to-top/index.tsx",
+      "line": 23,
+      "signature": "ScrollToTop = (props: ScrollToTopProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleClick",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/components/scroll-to-top/index.tsx",
+      "line": 34,
+      "signature": "handleClick = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Settings",
+      "kind": "tsx-type-alias",
+      "file": "src/@core/contexts/settingsContext.tsx",
+      "line": 18,
+      "signature": "type Settings = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "UpdateSettingsOptions",
+      "kind": "tsx-type-alias",
+      "file": "src/@core/contexts/settingsContext.tsx",
+      "line": 30,
+      "signature": "type UpdateSettingsOptions = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "SettingsContextProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@core/contexts/settingsContext.tsx",
+      "line": 35,
+      "signature": "type SettingsContextProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/@core/contexts/settingsContext.tsx",
+      "line": 43,
+      "signature": "type Props = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "SettingsProvider",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/contexts/settingsContext.tsx",
+      "line": 53,
+      "signature": "SettingsProvider = (props: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "updateSettings",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/contexts/settingsContext.tsx",
+      "line": 82,
+      "signature": "updateSettings = (settings: Partial<Settings>, options?: UpdateSettingsOptions) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "updatePageSettings",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/contexts/settingsContext.tsx",
+      "line": 107,
+      "signature": "updatePageSettings = (settings: Partial<Settings>): (() => void) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "resetSettings",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/contexts/settingsContext.tsx",
+      "line": 114,
+      "signature": "resetSettings = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "useImageVariant",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/hooks/useImageVariant.ts",
+      "line": 13,
+      "signature": "useImageVariant = (",
+      "lang": "typescript"
+    },
+    {
+      "name": "useLayoutInit",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/hooks/useLayoutInit.ts",
+      "line": 14,
+      "signature": "useLayoutInit = (colorSchemeFallback: 'light' | 'dark') => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "useObjectCookie",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/hooks/useObjectCookie.ts",
+      "line": 7,
+      "signature": "useObjectCookie = <T>(key: string, fallback?: T | null): [T, (newVal: T) => void] => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "updateValue",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/hooks/useObjectCookie.ts",
+      "line": 14,
+      "signature": "updateValue = (newVal: T) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "useSettings",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/hooks/useSettings.tsx",
+      "line": 7,
+      "signature": "useSettings = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "menuItemStyles",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/styles/horizontal/menuItemStyles.ts",
+      "line": 10,
+      "signature": "menuItemStyles = (theme: Theme, iconClass: string): MenuItemStyles => ({",
+      "lang": "typescript"
+    },
+    {
+      "name": "menuRootStyles",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/styles/horizontal/menuRootStyles.ts",
+      "line": 4,
+      "signature": "menuRootStyles = (theme: Theme) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "menuItemStyles",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/styles/vertical/menuItemStyles.ts",
+      "line": 11,
+      "signature": "menuItemStyles = (verticalNavOptions: VerticalNavState, theme: Theme): MenuItemStyles => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "menuSectionStyles",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/styles/vertical/menuSectionStyles.ts",
+      "line": 11,
+      "signature": "menuSectionStyles = (verticalNavOptions: VerticalNavState, theme: Theme): MenuProps['menuSectionStyles'] => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "navigationCustomStyles",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/styles/vertical/navigationCustomStyles.ts",
+      "line": 10,
+      "signature": "navigationCustomStyles = (verticalNavOptions: VerticalNavState, theme: Theme) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ContentCompact",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/svg/ContentCompact.tsx",
+      "line": 4,
+      "signature": "ContentCompact = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "ContentWide",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/svg/ContentWide.tsx",
+      "line": 4,
+      "signature": "ContentWide = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "DirectionLtr",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/svg/DirectionLtr.tsx",
+      "line": 4,
+      "signature": "DirectionLtr = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "DirectionRtl",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/svg/DirectionRtl.tsx",
+      "line": 4,
+      "signature": "DirectionRtl = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LayoutCollapsed",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/svg/LayoutCollapsed.tsx",
+      "line": 4,
+      "signature": "LayoutCollapsed = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LayoutHorizontal",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/svg/LayoutHorizontal.tsx",
+      "line": 4,
+      "signature": "LayoutHorizontal = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LayoutVertical",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/svg/LayoutVertical.tsx",
+      "line": 4,
+      "signature": "LayoutVertical = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Logo",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/svg/Logo.tsx",
+      "line": 4,
+      "signature": "Logo = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "SkinDefault",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/svg/SkinBordered.tsx",
+      "line": 4,
+      "signature": "SkinDefault = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "SkinDefault",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/svg/SkinDefault.tsx",
+      "line": 4,
+      "signature": "SkinDefault = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "colorSchemes",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/theme/colorSchemes.ts",
+      "line": 7,
+      "signature": "colorSchemes = (skin: Skin): Theme['colorSchemes'] => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "customShadows",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/theme/customShadows.ts",
+      "line": 7,
+      "signature": "customShadows = (mode: SystemMode): Theme['customShadows'] => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "theme",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/theme/index.ts",
+      "line": 17,
+      "signature": "theme = (settings: Settings, mode: SystemMode, direction: Theme['direction']): Theme => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "accordion",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/theme/overrides/accordion.tsx",
+      "line": 7,
+      "signature": "accordion = (skin: Skin): Theme['components'] => ({",
+      "lang": "tsx"
+    },
+    {
+      "name": "autocomplete",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/theme/overrides/autocomplete.tsx",
+      "line": 10,
+      "signature": "autocomplete = (skin: Skin): Theme['components'] => ({",
+      "lang": "tsx"
+    },
+    {
+      "name": "iconStyles",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/theme/overrides/button.ts",
+      "line": 7,
+      "signature": "iconStyles = (size?: string) => ({",
+      "lang": "typescript"
+    },
+    {
+      "name": "card",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/theme/overrides/card.ts",
+      "line": 7,
+      "signature": "card = (skin: Skin): Theme['components'] => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "Icon",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/theme/overrides/checkbox.tsx",
+      "line": 7,
+      "signature": "Icon = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "IndeterminateIcon",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/theme/overrides/checkbox.tsx",
+      "line": 19,
+      "signature": "IndeterminateIcon = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "CheckedIcon",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/theme/overrides/checkbox.tsx",
+      "line": 34,
+      "signature": "CheckedIcon = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "dialog",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/theme/overrides/dialog.ts",
+      "line": 7,
+      "signature": "dialog = (skin: Skin): Theme['components'] => ({",
+      "lang": "typescript"
+    },
+    {
+      "name": "drawer",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/theme/overrides/drawer.ts",
+      "line": 7,
+      "signature": "drawer = (skin: Skin): Theme['components'] => ({",
+      "lang": "typescript"
+    },
+    {
+      "name": "overrides",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/theme/overrides/index.ts",
+      "line": 42,
+      "signature": "overrides = (skin: Skin) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "menu",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/theme/overrides/menu.ts",
+      "line": 7,
+      "signature": "menu = (skin: Skin): Theme['components'] => ({",
+      "lang": "typescript"
+    },
+    {
+      "name": "popover",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/theme/overrides/popover.ts",
+      "line": 7,
+      "signature": "popover = (skin: Skin): Theme['components'] => ({",
+      "lang": "typescript"
+    },
+    {
+      "name": "IconChecked",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/theme/overrides/radio.tsx",
+      "line": 7,
+      "signature": "IconChecked = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "UncheckedIcon",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/theme/overrides/radio.tsx",
+      "line": 20,
+      "signature": "UncheckedIcon = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "SelectIcon",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/theme/overrides/select.tsx",
+      "line": 7,
+      "signature": "SelectIcon = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "iconStyles",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@core/theme/overrides/select.tsx",
+      "line": 11,
+      "signature": "iconStyles = (theme: Theme) => ({",
+      "lang": "tsx"
+    },
+    {
+      "name": "snackbar",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/theme/overrides/snackbar.ts",
+      "line": 7,
+      "signature": "snackbar = (skin: Skin): Theme['components'] => ({",
+      "lang": "typescript"
+    },
+    {
+      "name": "shadows",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/theme/shadows.ts",
+      "line": 7,
+      "signature": "shadows = (mode: SystemMode): Theme['shadows'] => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "typography",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/theme/typography.ts",
+      "line": 4,
+      "signature": "typography = (fontFamily: string): Theme['typography'] =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "Layout",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/types.ts",
+      "line": 4,
+      "signature": "type Layout = 'vertical' | 'collapsed' | 'horizontal'",
+      "lang": "typescript"
+    },
+    {
+      "name": "Skin",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/types.ts",
+      "line": 6,
+      "signature": "type Skin = 'default' | 'bordered'",
+      "lang": "typescript"
+    },
+    {
+      "name": "Mode",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/types.ts",
+      "line": 8,
+      "signature": "type Mode = 'system' | 'light' | 'dark'",
+      "lang": "typescript"
+    },
+    {
+      "name": "SystemMode",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/types.ts",
+      "line": 10,
+      "signature": "type SystemMode = 'light' | 'dark'",
+      "lang": "typescript"
+    },
+    {
+      "name": "Direction",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/types.ts",
+      "line": 12,
+      "signature": "type Direction = 'ltr' | 'rtl'",
+      "lang": "typescript"
+    },
+    {
+      "name": "LayoutComponentWidth",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/types.ts",
+      "line": 14,
+      "signature": "type LayoutComponentWidth = 'compact' | 'wide'",
+      "lang": "typescript"
+    },
+    {
+      "name": "LayoutComponentPosition",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/types.ts",
+      "line": 16,
+      "signature": "type LayoutComponentPosition = 'fixed' | 'static'",
+      "lang": "typescript"
+    },
+    {
+      "name": "ChildrenType",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/types.ts",
+      "line": 18,
+      "signature": "type ChildrenType = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ThemeColor",
+      "kind": "typescript-type-alias",
+      "file": "src/@core/types.ts",
+      "line": 22,
+      "signature": "type ThemeColor = 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success'",
+      "lang": "typescript"
+    },
+    {
+      "name": "getSettingsFromCookie",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/utils/serverHelpers.ts",
+      "line": 14,
+      "signature": "getSettingsFromCookie = async (): Promise<Settings> => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "getMode",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/utils/serverHelpers.ts",
+      "line": 22,
+      "signature": "getMode = async () => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "getSystemMode",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/utils/serverHelpers.ts",
+      "line": 31,
+      "signature": "getSystemMode = async (): Promise<SystemMode> => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "getServerMode",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/utils/serverHelpers.ts",
+      "line": 40,
+      "signature": "getServerMode = async () => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "getSkin",
+      "kind": "typescript-arrow-binding",
+      "file": "src/@core/utils/serverHelpers.ts",
+      "line": 47,
+      "signature": "getSkin = async () => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/@layouts/BlankLayout.tsx",
+      "line": 16,
+      "signature": "type Props = ChildrenType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "BlankLayout",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@layouts/BlankLayout.tsx",
+      "line": 20,
+      "signature": "BlankLayout = (props: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "HorizontalLayoutProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@layouts/HorizontalLayout.tsx",
+      "line": 22,
+      "signature": "type HorizontalLayoutProps = ChildrenType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "HorizontalLayout",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@layouts/HorizontalLayout.tsx",
+      "line": 27,
+      "signature": "HorizontalLayout = (props: HorizontalLayoutProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LayoutWrapperProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@layouts/LayoutWrapper.tsx",
+      "line": 13,
+      "signature": "type LayoutWrapperProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LayoutWrapper",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@layouts/LayoutWrapper.tsx",
+      "line": 19,
+      "signature": "LayoutWrapper = (props: LayoutWrapperProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "VerticalLayoutProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@layouts/VerticalLayout.tsx",
+      "line": 19,
+      "signature": "type VerticalLayoutProps = ChildrenType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "VerticalLayout",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@layouts/VerticalLayout.tsx",
+      "line": 25,
+      "signature": "VerticalLayout = (props: VerticalLayoutProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/@layouts/components/horizontal/Footer.tsx",
+      "line": 22,
+      "signature": "type Props = ChildrenType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Footer",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@layouts/components/horizontal/Footer.tsx",
+      "line": 26,
+      "signature": "Footer = (props: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/@layouts/components/horizontal/Header.tsx",
+      "line": 25,
+      "signature": "type Props = ChildrenType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Header",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@layouts/components/horizontal/Header.tsx",
+      "line": 29,
+      "signature": "Header = (props: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LayoutContent",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@layouts/components/horizontal/LayoutContent.tsx",
+      "line": 21,
+      "signature": "LayoutContent = ({ children }: ChildrenType) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Navbar",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@layouts/components/horizontal/Navbar.tsx",
+      "line": 10,
+      "signature": "Navbar = ({ children }: ChildrenType) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/@layouts/components/vertical/Footer.tsx",
+      "line": 22,
+      "signature": "type Props = ChildrenType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Footer",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@layouts/components/vertical/Footer.tsx",
+      "line": 26,
+      "signature": "Footer = (props: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LayoutContent",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@layouts/components/vertical/LayoutContent.tsx",
+      "line": 18,
+      "signature": "LayoutContent = ({ children }: ChildrenType) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/@layouts/components/vertical/Navbar.tsx",
+      "line": 26,
+      "signature": "type Props = ChildrenType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Navbar",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@layouts/components/vertical/Navbar.tsx",
+      "line": 30,
+      "signature": "Navbar = (props: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledFooterProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@layouts/styles/horizontal/StyledFooter.tsx",
+      "line": 11,
+      "signature": "type StyledFooterProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledHeaderProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@layouts/styles/horizontal/StyledHeader.tsx",
+      "line": 14,
+      "signature": "type StyledHeaderProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledMainProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@layouts/styles/shared/StyledMain.tsx",
+      "line": 10,
+      "signature": "type StyledMainProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledFooterProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@layouts/styles/vertical/StyledFooter.tsx",
+      "line": 11,
+      "signature": "type StyledFooterProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledHeaderProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@layouts/styles/vertical/StyledHeader.tsx",
+      "line": 14,
+      "signature": "type StyledHeaderProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "RouterLinkProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/RouterLink.tsx",
+      "line": 13,
+      "signature": "type RouterLinkProps = LinkProps &",
+      "lang": "tsx"
+    },
+    {
+      "name": "HorizontalNavProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/horizontal-menu/HorizontalNav.tsx",
+      "line": 31,
+      "signature": "type HorizontalNavProps = HTMLAttributes<HTMLDivElement> & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "HorizontalNav",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/HorizontalNav.tsx",
+      "line": 47,
+      "signature": "HorizontalNav = (props: HorizontalNavProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "HorizontalMenuContextProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/horizontal-menu/Menu.tsx",
+      "line": 33,
+      "signature": "type HorizontalMenuContextProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/horizontal-menu/Menu.tsx",
+      "line": 58,
+      "signature": "type MenuProps = HorizontalMenuContextProps &",
+      "lang": "tsx"
+    },
+    {
+      "name": "Menu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/Menu.tsx",
+      "line": 65,
+      "signature": "Menu: ForwardRefRenderFunction<HTMLMenuElement, MenuProps> = (props, ref) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuButtonStylesProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/horizontal-menu/MenuButton.tsx",
+      "line": 18,
+      "signature": "type MenuButtonStylesProps = Partial<ChildrenType> & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "menuButtonStyles",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/MenuButton.tsx",
+      "line": 23,
+      "signature": "menuButtonStyles = (props: MenuButtonStylesProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuButton",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/MenuButton.tsx",
+      "line": 66,
+      "signature": "MenuButton: ForwardRefRenderFunction<HTMLAnchorElement, MenuButtonProps> = (",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuItemProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/horizontal-menu/MenuItem.tsx",
+      "line": 42,
+      "signature": "type MenuItemProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'prefix'> &",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuItem",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/MenuItem.tsx",
+      "line": 61,
+      "signature": "MenuItem: ForwardRefRenderFunction<HTMLLIElement, MenuItemProps> = (props, ref) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "getMenuItemStyles",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/MenuItem.tsx",
+      "line": 89,
+      "signature": "getMenuItemStyles = (element: MenuItemElement): CSSObject | undefined => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleClick",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/MenuItem.tsx",
+      "line": 107,
+      "signature": "handleClick = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "onClick",
+      "kind": "tsx-method",
+      "file": "src/@menu/components/horizontal-menu/MenuItem.tsx",
+      "line": 155,
+      "signature": "onClick(event: MouseEvent<HTMLAnchorElement>) {",
+      "lang": "tsx"
+    },
+    {
+      "name": "SubMenuProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/horizontal-menu/SubMenu.tsx",
+      "line": 73,
+      "signature": "type SubMenuProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'prefix'> &",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledSubMenuProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/horizontal-menu/SubMenu.tsx",
+      "line": 91,
+      "signature": "type StyledSubMenuProps = Pick<SubMenuProps, 'rootStyles' | 'disabled'> & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "HorizontalSubMenuContextProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/horizontal-menu/SubMenu.tsx",
+      "line": 98,
+      "signature": "type HorizontalSubMenuContextProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "SubMenu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/SubMenu.tsx",
+      "line": 125,
+      "signature": "SubMenu: ForwardRefRenderFunction<HTMLLIElement, SubMenuProps> = (props, ref) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleOnClick",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/SubMenu.tsx",
+      "line": 246,
+      "signature": "handleOnClick = (event: MouseEvent<HTMLAnchorElement, globalThis.MouseEvent>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleOnKeyUp",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/SubMenu.tsx",
+      "line": 251,
+      "signature": "handleOnKeyUp = (event: KeyboardEvent<HTMLAnchorElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "getSubMenuItemStyles",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/SubMenu.tsx",
+      "line": 259,
+      "signature": "getSubMenuItemStyles = (element: SubMenuItemElement): CSSObject | undefined => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleTreeClick",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/SubMenu.tsx",
+      "line": 279,
+      "signature": "handleTreeClick = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "onSubMenuOpen",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/SubMenu.tsx",
+      "line": 283,
+      "signature": "onSubMenuOpen = (event: { nodeId: string; parentId: string }) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "ref",
+      "kind": "tsx-method",
+      "file": "src/@menu/components/horizontal-menu/SubMenu.tsx",
+      "line": 440,
+      "signature": "ref(node: HTMLButtonElement) {",
+      "lang": "tsx"
+    },
+    {
+      "name": "onClick",
+      "kind": "tsx-method",
+      "file": "src/@menu/components/horizontal-menu/SubMenu.tsx",
+      "line": 443,
+      "signature": "onClick(event: MouseEvent<HTMLAnchorElement>) {",
+      "lang": "tsx"
+    },
+    {
+      "name": "SubMenuContentProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/horizontal-menu/SubMenuContent.tsx",
+      "line": 17,
+      "signature": "type SubMenuContentProps = HTMLAttributes<HTMLDivElement> &",
+      "lang": "tsx"
+    },
+    {
+      "name": "SubMenuContent",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/SubMenuContent.tsx",
+      "line": 26,
+      "signature": "SubMenuContent: ForwardRefRenderFunction<HTMLDivElement, SubMenuContentProps> = (props, ref) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "VerticalNavInHorizontalProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/horizontal-menu/VerticalNavInHorizontal.tsx",
+      "line": 9,
+      "signature": "type VerticalNavInHorizontalProps = ChildrenType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "VerticalNavInHorizontal",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/horizontal-menu/VerticalNavInHorizontal.tsx",
+      "line": 16,
+      "signature": "VerticalNavInHorizontal = (props: VerticalNavInHorizontalProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuSectionStyles",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/Menu.tsx",
+      "line": 39,
+      "signature": "type MenuSectionStyles = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "OpenSubmenu",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/Menu.tsx",
+      "line": 47,
+      "signature": "type OpenSubmenu = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "VerticalMenuContextProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/Menu.tsx",
+      "line": 54,
+      "signature": "type VerticalMenuContextProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/Menu.tsx",
+      "line": 86,
+      "signature": "type MenuProps = VerticalMenuContextProps &",
+      "lang": "tsx"
+    },
+    {
+      "name": "Menu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/Menu.tsx",
+      "line": 95,
+      "signature": "Menu: ForwardRefRenderFunction<HTMLMenuElement, MenuProps> = (props, ref) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuButtonStylesProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/MenuButton.tsx",
+      "line": 18,
+      "signature": "type MenuButtonStylesProps = Partial<ChildrenType> & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "menuButtonStyles",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/MenuButton.tsx",
+      "line": 26,
+      "signature": "menuButtonStyles = (props: MenuButtonStylesProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuButton",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/MenuButton.tsx",
+      "line": 64,
+      "signature": "MenuButton: ForwardRefRenderFunction<HTMLAnchorElement, MenuButtonProps> = (",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuItemProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/MenuItem.tsx",
+      "line": 35,
+      "signature": "type MenuItemProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'prefix'> &",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuItem",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/MenuItem.tsx",
+      "line": 54,
+      "signature": "MenuItem: ForwardRefRenderFunction<HTMLLIElement, MenuItemProps> = (props, ref) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "getMenuItemStyles",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/MenuItem.tsx",
+      "line": 83,
+      "signature": "getMenuItemStyles = (element: MenuItemElement): CSSObject | undefined => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleClick",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/MenuItem.tsx",
+      "line": 101,
+      "signature": "handleClick = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuSectionProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/MenuSection.tsx",
+      "line": 29,
+      "signature": "type MenuSectionProps = Partial<ChildrenType> &",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuSectionElement",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/MenuSection.tsx",
+      "line": 42,
+      "signature": "type MenuSectionElement = keyof MenuSectionStyles",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuSection",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/MenuSection.tsx",
+      "line": 63,
+      "signature": "MenuSection: ForwardRefRenderFunction<HTMLLIElement, MenuSectionProps> = (props, ref) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "getMenuSectionStyles",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/MenuSection.tsx",
+      "line": 71,
+      "signature": "getMenuSectionStyles = (element: MenuSectionElement): CSSObject | undefined => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "NavCollapseIconsProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/NavCollapseIcons.tsx",
+      "line": 14,
+      "signature": "type NavCollapseIconsProps = HTMLAttributes<HTMLSpanElement> & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "NavCollapseIcons",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/NavCollapseIcons.tsx",
+      "line": 22,
+      "signature": "NavCollapseIcons = (props: NavCollapseIconsProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleClick",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/NavCollapseIcons.tsx",
+      "line": 30,
+      "signature": "handleClick = (action: 'lock' | 'unlock') => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleClose",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/NavCollapseIcons.tsx",
+      "line": 42,
+      "signature": "handleClose = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledNavHeaderProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/NavHeader.tsx",
+      "line": 14,
+      "signature": "type StyledNavHeaderProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "NavHeader",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/NavHeader.tsx",
+      "line": 33,
+      "signature": "NavHeader = ({ children }: ChildrenType) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "SubMenuProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/SubMenu.tsx",
+      "line": 66,
+      "signature": "type SubMenuProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'prefix'> &",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledSubMenuProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/SubMenu.tsx",
+      "line": 85,
+      "signature": "type StyledSubMenuProps = Pick<SubMenuProps, 'rootStyles' | 'disabled'> & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "SubMenu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/SubMenu.tsx",
+      "line": 120,
+      "signature": "SubMenu: ForwardRefRenderFunction<HTMLLIElement, SubMenuProps> = (props, ref) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleSlideToggle",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/SubMenu.tsx",
+      "line": 223,
+      "signature": "handleSlideToggle = (): void => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleOnClick",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/SubMenu.tsx",
+      "line": 233,
+      "signature": "handleOnClick = (event: MouseEvent<HTMLAnchorElement, globalThis.MouseEvent>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleOnKeyUp",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/SubMenu.tsx",
+      "line": 238,
+      "signature": "handleOnKeyUp = (event: KeyboardEvent<HTMLAnchorElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "getSubMenuItemStyles",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/SubMenu.tsx",
+      "line": 246,
+      "signature": "getSubMenuItemStyles = (element: SubMenuItemElement): CSSObject | undefined => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleTreeClick",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/SubMenu.tsx",
+      "line": 272,
+      "signature": "handleTreeClick = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "onClick",
+      "kind": "tsx-method",
+      "file": "src/@menu/components/vertical-menu/SubMenu.tsx",
+      "line": 342,
+      "signature": "onClick(event: MouseEvent<HTMLAnchorElement>) {",
+      "lang": "tsx"
+    },
+    {
+      "name": "SubMenuContentProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/SubMenuContent.tsx",
+      "line": 18,
+      "signature": "type SubMenuContentProps = HTMLAttributes<HTMLDivElement> &",
+      "lang": "tsx"
+    },
+    {
+      "name": "SubMenuContent",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/SubMenuContent.tsx",
+      "line": 32,
+      "signature": "SubMenuContent: ForwardRefRenderFunction<HTMLDivElement, SubMenuContentProps> = (props, ref) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "VerticalNavProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/components/vertical-menu/VerticalNav.tsx",
+      "line": 36,
+      "signature": "type VerticalNavProps = HTMLAttributes<HTMLHtmlElement> & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "VerticalNav",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/VerticalNav.tsx",
+      "line": 51,
+      "signature": "VerticalNav = (props: VerticalNavProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleBackdropClick",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/VerticalNav.tsx",
+      "line": 144,
+      "signature": "handleBackdropClick = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleVerticalNavHover",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/VerticalNav.tsx",
+      "line": 150,
+      "signature": "handleVerticalNavHover = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleVerticalNavHoverOut",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/components/vertical-menu/VerticalNav.tsx",
+      "line": 159,
+      "signature": "handleVerticalNavHoverOut = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "HorizontalNavContextProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/contexts/horizontalNavContext.tsx",
+      "line": 9,
+      "signature": "type HorizontalNavContextProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "HorizontalNavProvider",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/contexts/horizontalNavContext.tsx",
+      "line": 16,
+      "signature": "HorizontalNavProvider = ({ children }: ChildrenType) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "VerticalNavState",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/contexts/verticalNavContext.tsx",
+      "line": 9,
+      "signature": "type VerticalNavState = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "VerticalNavContextProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/contexts/verticalNavContext.tsx",
+      "line": 23,
+      "signature": "type VerticalNavContextProps = VerticalNavState & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "VerticalNavProvider",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/contexts/verticalNavContext.tsx",
+      "line": 32,
+      "signature": "VerticalNavProvider = ({ children }: ChildrenType) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "useHorizontalMenu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/hooks/useHorizontalMenu.tsx",
+      "line": 10,
+      "signature": "useHorizontalMenu = (): HorizontalMenuContextProps => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "useHorizontalNav",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/hooks/useHorizontalNav.tsx",
+      "line": 7,
+      "signature": "useHorizontalNav = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "useMediaQuery",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/hooks/useMediaQuery.tsx",
+      "line": 6,
+      "signature": "useMediaQuery = (breakpoint?: string): boolean => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "listener",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/hooks/useMediaQuery.tsx",
+      "line": 18,
+      "signature": "listener = () => setMatches(media.matches)",
+      "lang": "tsx"
+    },
+    {
+      "name": "useVerticalMenu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/hooks/useVerticalMenu.tsx",
+      "line": 10,
+      "signature": "useVerticalMenu = (): VerticalMenuContextProps => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "useVerticalNav",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/hooks/useVerticalNav.tsx",
+      "line": 7,
+      "signature": "useVerticalNav = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledBackdropProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/styles/StyledBackdrop.tsx",
+      "line": 7,
+      "signature": "type StyledBackdropProps = Pick<VerticalNavProps, 'backdropColor'>",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledMenuLabelProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/styles/StyledMenuLabel.tsx",
+      "line": 7,
+      "signature": "type StyledMenuLabelProps = RootStylesType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledMenuPrefixProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/styles/StyledMenuPrefix.tsx",
+      "line": 7,
+      "signature": "type StyledMenuPrefixProps = RootStylesType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledMenuSectionLabelProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/styles/StyledMenuSectionLabel.tsx",
+      "line": 7,
+      "signature": "type StyledMenuSectionLabelProps = RootStylesType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledMenuSuffixProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/styles/StyledMenuSuffix.tsx",
+      "line": 7,
+      "signature": "type StyledMenuSuffixProps = RootStylesType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledHorizontalMenuItemProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/styles/horizontal/StyledHorizontalMenuItem.tsx",
+      "line": 14,
+      "signature": "type StyledHorizontalMenuItemProps = Pick<MenuItemProps, 'rootStyles' | 'disabled'> & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledHorizontalNavExpandIconProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/styles/horizontal/StyledHorizontalNavExpandIcon.tsx",
+      "line": 7,
+      "signature": "type StyledHorizontalNavExpandIconProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledVerticalMenuItemProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/styles/vertical/StyledVerticalMenuItem.tsx",
+      "line": 14,
+      "signature": "type StyledVerticalMenuItemProps = Pick<MenuItemProps, 'rootStyles' | 'disabled'> & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledVerticalMenuSectionProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/styles/vertical/StyledVerticalMenuSection.tsx",
+      "line": 11,
+      "signature": "type StyledVerticalMenuSectionProps = Pick<MenuSectionProps, 'rootStyles' | 'children'> & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledVerticalNavProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/styles/vertical/StyledVerticalNav.tsx",
+      "line": 11,
+      "signature": "type StyledVerticalNavProps = VerticalNavProps &",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledVerticalNavBgColorContainerProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/styles/vertical/StyledVerticalNavBgColorContainer.tsx",
+      "line": 7,
+      "signature": "type StyledVerticalNavBgColorContainerProps = Pick<VerticalNavProps, 'backgroundColor'>",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledVerticalNavContainerProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/styles/vertical/StyledVerticalNavContainer.tsx",
+      "line": 10,
+      "signature": "type StyledVerticalNavContainerProps = Pick<VerticalNavProps, 'width' | 'transitionDuration'>",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledVerticalNavExpandIconProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/styles/vertical/StyledVerticalNavExpandIcon.tsx",
+      "line": 8,
+      "signature": "type StyledVerticalNavExpandIconProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "ChevronRight",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/svg/ChevronRight.tsx",
+      "line": 4,
+      "signature": "ChevronRight = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Close",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/svg/Close.tsx",
+      "line": 4,
+      "signature": "Close = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "RadioCircle",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/svg/RadioCircle.tsx",
+      "line": 4,
+      "signature": "RadioCircle = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "RadioCircleMarked",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/svg/RadioCircleMarked.tsx",
+      "line": 4,
+      "signature": "RadioCircleMarked = (props: SVGAttributes<SVGElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "ChildrenType",
+      "kind": "typescript-type-alias",
+      "file": "src/@menu/types.ts",
+      "line": 7,
+      "signature": "type ChildrenType = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "BreakpointType",
+      "kind": "typescript-type-alias",
+      "file": "src/@menu/types.ts",
+      "line": 12,
+      "signature": "type BreakpointType = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl' | 'always'",
+      "lang": "typescript"
+    },
+    {
+      "name": "MenuItemExactMatchUrlProps",
+      "kind": "typescript-type-alias",
+      "file": "src/@menu/types.ts",
+      "line": 15,
+      "signature": "type MenuItemExactMatchUrlProps =",
+      "lang": "typescript"
+    },
+    {
+      "name": "MenuItemElement",
+      "kind": "typescript-type-alias",
+      "file": "src/@menu/types.ts",
+      "line": 30,
+      "signature": "type MenuItemElement = 'root' | 'button' | 'icon' | 'label' | 'prefix' | 'suffix'",
+      "lang": "typescript"
+    },
+    {
+      "name": "SubMenuItemElement",
+      "kind": "typescript-type-alias",
+      "file": "src/@menu/types.ts",
+      "line": 33,
+      "signature": "type SubMenuItemElement =",
+      "lang": "typescript"
+    },
+    {
+      "name": "MenuButtonProps",
+      "kind": "typescript-type-alias",
+      "file": "src/@menu/types.ts",
+      "line": 45,
+      "signature": "type MenuButtonProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'prefix'> &",
+      "lang": "typescript"
+    },
+    {
+      "name": "MenuItemStylesParams",
+      "kind": "typescript-type-alias",
+      "file": "src/@menu/types.ts",
+      "line": 51,
+      "signature": "type MenuItemStylesParams = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ElementStyles",
+      "kind": "typescript-type-alias",
+      "file": "src/@menu/types.ts",
+      "line": 60,
+      "signature": "type ElementStyles = CSSObject | ((params: MenuItemStylesParams) => CSSObject | undefined)",
+      "lang": "typescript"
+    },
+    {
+      "name": "MenuItemStyles",
+      "kind": "typescript-type-alias",
+      "file": "src/@menu/types.ts",
+      "line": 63,
+      "signature": "type MenuItemStyles = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "RenderExpandIconParams",
+      "kind": "typescript-type-alias",
+      "file": "src/@menu/types.ts",
+      "line": 76,
+      "signature": "type RenderExpandIconParams = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "RenderExpandedMenuItemIcon",
+      "kind": "typescript-type-alias",
+      "file": "src/@menu/types.ts",
+      "line": 84,
+      "signature": "type RenderExpandedMenuItemIcon = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "RootStylesType",
+      "kind": "typescript-type-alias",
+      "file": "src/@menu/types.ts",
+      "line": 93,
+      "signature": "type RootStylesType = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "RenderMenuIconParams",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/utils/menuUtils.tsx",
+      "line": 26,
+      "signature": "type RenderMenuIconParams = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "MenuItemElementProps",
+      "kind": "tsx-type-alias",
+      "file": "src/@menu/utils/menuUtils.tsx",
+      "line": 37,
+      "signature": "type MenuItemElementProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "confirmUrlInChildren",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/utils/menuUtils.tsx",
+      "line": 46,
+      "signature": "confirmUrlInChildren = (children: ChildrenType['children'], url: string): boolean => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "processMenuChildren",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/utils/menuUtils.tsx",
+      "line": 93,
+      "signature": "processMenuChildren = (children: ReactNode, mapFunction: (child: ReactNode) => ReactNode): ReactNode => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "mapHorizontalToVerticalMenu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/utils/menuUtils.tsx",
+      "line": 111,
+      "signature": "mapHorizontalToVerticalMenu = (children: ReactNode): ReactNode => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "renderMenuIcon",
+      "kind": "tsx-arrow-binding",
+      "file": "src/@menu/utils/menuUtils.tsx",
+      "line": 152,
+      "signature": "renderMenuIcon = (params: RenderMenuIconParams) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/app/(blank-layout-pages)/layout.tsx",
+      "line": 11,
+      "signature": "type Props = ChildrenType",
+      "lang": "tsx"
+    },
+    {
+      "name": "Layout",
+      "kind": "tsx-arrow-binding",
+      "file": "src/app/(blank-layout-pages)/layout.tsx",
+      "line": 13,
+      "signature": "Layout = async (props: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LoginPage",
+      "kind": "tsx-arrow-binding",
+      "file": "src/app/(blank-layout-pages)/login/page.tsx",
+      "line": 15,
+      "signature": "LoginPage = async () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "RegisterPage",
+      "kind": "tsx-arrow-binding",
+      "file": "src/app/(blank-layout-pages)/register/page.tsx",
+      "line": 15,
+      "signature": "RegisterPage = async () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Page",
+      "kind": "tsx-function",
+      "file": "src/app/(dashboard)/branches/page.tsx",
+      "line": 4,
+      "signature": "async function Page() {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Page",
+      "kind": "tsx-function",
+      "file": "src/app/(dashboard)/home/page.tsx",
+      "line": 4,
+      "signature": "function Page() {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Layout",
+      "kind": "tsx-arrow-binding",
+      "file": "src/app/(dashboard)/layout.tsx",
+      "line": 26,
+      "signature": "Layout = async (props: ChildrenType) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Page",
+      "kind": "tsx-function",
+      "file": "src/app/(dashboard)/permissions/page.tsx",
+      "line": 4,
+      "signature": "function Page() {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Page",
+      "kind": "tsx-function",
+      "file": "src/app/(dashboard)/profile/page.tsx",
+      "line": 6,
+      "signature": "function Page() {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Page",
+      "kind": "tsx-function",
+      "file": "src/app/(dashboard)/roles/page.tsx",
+      "line": 4,
+      "signature": "function Page() {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Page",
+      "kind": "tsx-function",
+      "file": "src/app/(dashboard)/users/[id]/page.tsx",
+      "line": 1,
+      "signature": "async function Page({",
+      "lang": "tsx"
+    },
+    {
+      "name": "Page",
+      "kind": "tsx-function",
+      "file": "src/app/(dashboard)/users/page.tsx",
+      "line": 4,
+      "signature": "function Page() {",
+      "lang": "tsx"
+    },
+    {
+      "name": "NotFoundPage",
+      "kind": "tsx-arrow-binding",
+      "file": "src/app/[...not-found]/page.tsx",
+      "line": 9,
+      "signature": "NotFoundPage = async () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "RootLayout",
+      "kind": "tsx-arrow-binding",
+      "file": "src/app/layout.tsx",
+      "line": 27,
+      "signature": "RootLayout = async (props: ChildrenType) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "generateIconsCSS",
+      "kind": "typescript-function",
+      "file": "src/assets/iconify-icons/bundle-icons-css.ts",
+      "line": 25,
+      "signature": "async function generateIconsCSS() {",
+      "lang": "typescript"
+    },
+    {
+      "name": "BundleScriptCustomSVGConfig",
+      "kind": "typescript-interface",
+      "file": "src/assets/iconify-icons/bundle-icons-css.ts",
+      "line": 32,
+      "signature": "interface BundleScriptCustomSVGConfig {",
+      "lang": "typescript"
+    },
+    {
+      "name": "BundleScriptCustomJSONConfig",
+      "kind": "typescript-interface",
+      "file": "src/assets/iconify-icons/bundle-icons-css.ts",
+      "line": 44,
+      "signature": "interface BundleScriptCustomJSONConfig {",
+      "lang": "typescript"
+    },
+    {
+      "name": "BundleScriptConfig",
+      "kind": "typescript-interface",
+      "file": "src/assets/iconify-icons/bundle-icons-css.ts",
+      "line": 53,
+      "signature": "interface BundleScriptConfig {",
+      "lang": "typescript"
+    },
+    {
+      "name": "organizeIconsList",
+      "kind": "typescript-function",
+      "file": "src/assets/iconify-icons/bundle-icons-css.ts",
+      "line": 250,
+      "signature": "function organizeIconsList(icons: string[]): Record<string, string[]> {",
+      "lang": "typescript"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-interface",
+      "file": "src/components/DetailViewHeader.tsx",
+      "line": 11,
+      "signature": "interface Props {",
+      "lang": "tsx"
+    },
+    {
+      "name": "DetailViewHeader",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/DetailViewHeader.tsx",
+      "line": 17,
+      "signature": "DetailViewHeader = ({ title, subtitle, actions }: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/components/DirectionalIcon.tsx",
+      "line": 9,
+      "signature": "type Props = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "DirectionalIcon",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/DirectionalIcon.tsx",
+      "line": 15,
+      "signature": "DirectionalIcon = (props: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "GateableItem",
+      "kind": "tsx-type-alias",
+      "file": "src/components/GenerateMenu.tsx",
+      "line": 27,
+      "signature": "type GateableItem = MenuRbacGate & { isSection?: boolean; children?: GateableItem[] }",
+      "lang": "tsx"
+    },
+    {
+      "name": "useMenuGate",
+      "kind": "tsx-function",
+      "file": "src/components/GenerateMenu.tsx",
+      "line": 37,
+      "signature": "function useMenuGate() {",
+      "lang": "tsx"
+    },
+    {
+      "name": "passesGate",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/GenerateMenu.tsx",
+      "line": 40,
+      "signature": "passesGate = ({ permissions, requireAll }: MenuRbacGate): boolean => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "isVisible",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/GenerateMenu.tsx",
+      "line": 47,
+      "signature": "isVisible = (item: GateableItem): boolean => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "toChip",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/GenerateMenu.tsx",
+      "line": 60,
+      "signature": "toChip = (node: ReactNode | ChipProps): ReactNode =>",
+      "lang": "tsx"
+    },
+    {
+      "name": "GenerateVerticalMenu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/GenerateMenu.tsx",
+      "line": 68,
+      "signature": "GenerateVerticalMenu = ({ menuData }: { menuData: VerticalMenuDataType[] }) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "renderMenuItems",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/GenerateMenu.tsx",
+      "line": 71,
+      "signature": "renderMenuItems = (data: VerticalMenuDataType[]) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "GenerateHorizontalMenu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/GenerateMenu.tsx",
+      "line": 138,
+      "signature": "GenerateHorizontalMenu = ({ menuData }: { menuData: HorizontalMenuDataType[] }) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "renderMenuItems",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/GenerateMenu.tsx",
+      "line": 141,
+      "signature": "renderMenuItems = (data: HorizontalMenuDataType[]) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/components/Link.tsx",
+      "line": 10,
+      "signature": "type Props = Omit<ComponentProps<typeof NextLink>, 'href' | 'onClick'> & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Link",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/Link.tsx",
+      "line": 15,
+      "signature": "Link = (props: Props, ref: ForwardedRef<HTMLAnchorElement>) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/components/Providers.tsx",
+      "line": 14,
+      "signature": "type Props = ChildrenType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Providers",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/Providers.tsx",
+      "line": 18,
+      "signature": "Providers = async (props: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "TCardStatistics",
+      "kind": "tsx-type-alias",
+      "file": "src/components/card-statistics/HorizontalWithSubtitle.tsx",
+      "line": 16,
+      "signature": "type TCardStatistics = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "HorizontalWithSubtitle",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/card-statistics/HorizontalWithSubtitle.tsx",
+      "line": 24,
+      "signature": "HorizontalWithSubtitle = (props: TCardStatistics) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LineChartSeries",
+      "kind": "tsx-interface",
+      "file": "src/components/charts/LineChart.tsx",
+      "line": 18,
+      "signature": "interface LineChartSeries {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LineChartProps",
+      "kind": "tsx-interface",
+      "file": "src/components/charts/LineChart.tsx",
+      "line": 23,
+      "signature": "interface LineChartProps {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LineChart",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/charts/LineChart.tsx",
+      "line": 51,
+      "signature": "LineChart = ({",
+      "lang": "tsx"
+    },
+    {
+      "name": "custom",
+      "kind": "tsx-method",
+      "file": "src/components/charts/LineChart.tsx",
+      "line": 85,
+      "signature": "custom(data: any) {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/components/dialog/DeleteConfirmDialog.tsx",
+      "line": 13,
+      "signature": "type Props = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "DeleteConfirmDialog",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/dialog/DeleteConfirmDialog.tsx",
+      "line": 23,
+      "signature": "DeleteConfirmDialog = ({",
+      "lang": "tsx"
+    },
+    {
+      "name": "DebouncedInput",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/form/DebounceInput.tsx",
+      "line": 10,
+      "signature": "DebouncedInput = ({",
+      "lang": "tsx"
+    },
+    {
+      "name": "Footer",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/horizontal/Footer.tsx",
+      "line": 5,
+      "signature": "Footer = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "FooterContent",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/horizontal/FooterContent.tsx",
+      "line": 15,
+      "signature": "FooterContent = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Header",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/horizontal/Header.tsx",
+      "line": 12,
+      "signature": "Header = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "RenderExpandIconProps",
+      "kind": "tsx-type-alias",
+      "file": "src/components/layout/horizontal/HorizontalMenu.tsx",
+      "line": 25,
+      "signature": "type RenderExpandIconProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "RenderVerticalExpandIconProps",
+      "kind": "tsx-type-alias",
+      "file": "src/components/layout/horizontal/HorizontalMenu.tsx",
+      "line": 29,
+      "signature": "type RenderVerticalExpandIconProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "RenderExpandIcon",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/horizontal/HorizontalMenu.tsx",
+      "line": 34,
+      "signature": "RenderExpandIcon = ({ level }: RenderExpandIconProps) => (",
+      "lang": "tsx"
+    },
+    {
+      "name": "RenderVerticalExpandIcon",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/horizontal/HorizontalMenu.tsx",
+      "line": 40,
+      "signature": "RenderVerticalExpandIcon = ({ open, transitionDuration }: RenderVerticalExpandIconProps) => (",
+      "lang": "tsx"
+    },
+    {
+      "name": "HorizontalMenu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/horizontal/HorizontalMenu.tsx",
+      "line": 46,
+      "signature": "HorizontalMenu = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "NavToggle",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/horizontal/NavToggle.tsx",
+      "line": 5,
+      "signature": "NavToggle = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleClick",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/horizontal/NavToggle.tsx",
+      "line": 11,
+      "signature": "handleClick = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "NavbarContent",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/horizontal/NavbarContent.tsx",
+      "line": 18,
+      "signature": "NavbarContent = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "StyledDivProps",
+      "kind": "tsx-type-alias",
+      "file": "src/components/layout/horizontal/Navigation.tsx",
+      "line": 18,
+      "signature": "type StyledDivProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Navigation",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/horizontal/Navigation.tsx",
+      "line": 39,
+      "signature": "Navigation = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "VerticalNavContent",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/horizontal/VerticalNavContent.tsx",
+      "line": 45,
+      "signature": "VerticalNavContent = ({ children }: ChildrenType) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "scrollMenu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/horizontal/VerticalNavContent.tsx",
+      "line": 55,
+      "signature": "scrollMenu = (container: any, isPerfectScrollbar: boolean) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LogoTextProps",
+      "kind": "tsx-type-alias",
+      "file": "src/components/layout/shared/Logo.tsx",
+      "line": 23,
+      "signature": "type LogoTextProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Logo",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/shared/Logo.tsx",
+      "line": 46,
+      "signature": "Logo = ({ color }: { color?: CSSProperties['color'] }) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "ModeDropdown",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/shared/ModeDropdown.tsx",
+      "line": 22,
+      "signature": "ModeDropdown = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleClose",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/shared/ModeDropdown.tsx",
+      "line": 33,
+      "signature": "handleClose = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleToggle",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/shared/ModeDropdown.tsx",
+      "line": 38,
+      "signature": "handleToggle = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleModeSwitch",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/shared/ModeDropdown.tsx",
+      "line": 42,
+      "signature": "handleModeSwitch = (mode: Mode) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "getModeIcon",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/shared/ModeDropdown.tsx",
+      "line": 50,
+      "signature": "getModeIcon = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "UserDropdown",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/shared/UserDropdown.tsx",
+      "line": 40,
+      "signature": "UserDropdown = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleDropdownOpen",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/shared/UserDropdown.tsx",
+      "line": 53,
+      "signature": "handleDropdownOpen = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleDropdownClose",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/shared/UserDropdown.tsx",
+      "line": 57,
+      "signature": "handleDropdownClose = (event?: MouseEvent<HTMLLIElement> | (MouseEvent | TouchEvent), url?: string) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleUserLogout",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/shared/UserDropdown.tsx",
+      "line": 69,
+      "signature": "handleUserLogout = async () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Footer",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/vertical/Footer.tsx",
+      "line": 5,
+      "signature": "Footer = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "FooterContent",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/vertical/FooterContent.tsx",
+      "line": 15,
+      "signature": "FooterContent = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "NavToggle",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/vertical/NavToggle.tsx",
+      "line": 6,
+      "signature": "NavToggle = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleClick",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/vertical/NavToggle.tsx",
+      "line": 10,
+      "signature": "handleClick = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Navbar",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/vertical/Navbar.tsx",
+      "line": 5,
+      "signature": "Navbar = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "NavbarContent",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/vertical/NavbarContent.tsx",
+      "line": 14,
+      "signature": "NavbarContent = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/components/layout/vertical/Navigation.tsx",
+      "line": 27,
+      "signature": "type Props = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Navigation",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/vertical/Navigation.tsx",
+      "line": 49,
+      "signature": "Navigation = (props: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "scrollMenu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/vertical/Navigation.tsx",
+      "line": 70,
+      "signature": "scrollMenu = (container: any, isPerfectScrollbar: boolean) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "RenderExpandIconProps",
+      "kind": "tsx-type-alias",
+      "file": "src/components/layout/vertical/VerticalMenu.tsx",
+      "line": 25,
+      "signature": "type RenderExpandIconProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/components/layout/vertical/VerticalMenu.tsx",
+      "line": 30,
+      "signature": "type Props = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "RenderExpandIcon",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/vertical/VerticalMenu.tsx",
+      "line": 34,
+      "signature": "RenderExpandIcon = ({ open, transitionDuration }: RenderExpandIconProps) => (",
+      "lang": "tsx"
+    },
+    {
+      "name": "VerticalMenu",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/layout/vertical/VerticalMenu.tsx",
+      "line": 40,
+      "signature": "VerticalMenu = ({ scrollMenu }: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "EmptyStateProps",
+      "kind": "tsx-interface",
+      "file": "src/components/misc/EmptyState.tsx",
+      "line": 5,
+      "signature": "interface EmptyStateProps {",
+      "lang": "tsx"
+    },
+    {
+      "name": "EmptyState",
+      "kind": "tsx-function",
+      "file": "src/components/misc/EmptyState.tsx",
+      "line": 12,
+      "signature": "function EmptyState({",
+      "lang": "tsx"
+    },
+    {
+      "name": "ErrMsgProps",
+      "kind": "tsx-interface",
+      "file": "src/components/misc/ErrMsg.tsx",
+      "line": 3,
+      "signature": "interface ErrMsgProps {",
+      "lang": "tsx"
+    },
+    {
+      "name": "ErrMsg",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/misc/ErrMsg.tsx",
+      "line": 7,
+      "signature": "ErrMsg = ({ message }: ErrMsgProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LoadingOverlayProps",
+      "kind": "tsx-interface",
+      "file": "src/components/misc/LoadingOverlay.tsx",
+      "line": 3,
+      "signature": "interface LoadingOverlayProps {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LoadingOverlay",
+      "kind": "tsx-function",
+      "file": "src/components/misc/LoadingOverlay.tsx",
+      "line": 7,
+      "signature": "function LoadingOverlay({ message = 'Loading...' }: LoadingOverlayProps) {",
+      "lang": "tsx"
+    },
+    {
+      "name": "markWelcomePending",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/misc/WelcomeToast.tsx",
+      "line": 10,
+      "signature": "markWelcomePending = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "WelcomeToast",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/misc/WelcomeToast.tsx",
+      "line": 15,
+      "signature": "WelcomeToast = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "CanProps",
+      "kind": "tsx-interface",
+      "file": "src/components/rbac/Can.tsx",
+      "line": 7,
+      "signature": "interface CanProps {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Can",
+      "kind": "tsx-function",
+      "file": "src/components/rbac/Can.tsx",
+      "line": 27,
+      "signature": "function Can({ perform, role, requireAll = false, fallback = null, children }: CanProps) {",
+      "lang": "tsx"
+    },
+    {
+      "name": "ProtectedRouteProps",
+      "kind": "tsx-interface",
+      "file": "src/components/rbac/ProtectedRoute.tsx",
+      "line": 18,
+      "signature": "interface ProtectedRouteProps {",
+      "lang": "tsx"
+    },
+    {
+      "name": "ProtectedRoute",
+      "kind": "tsx-function",
+      "file": "src/components/rbac/ProtectedRoute.tsx",
+      "line": 28,
+      "signature": "function ProtectedRoute({",
+      "lang": "tsx"
+    },
+    {
+      "name": "StepperCustomDot",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/stepper-dot/index.tsx",
+      "line": 10,
+      "signature": "StepperCustomDot = (props: StepIconProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "fuzzyFilter",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/table/BaseTable.tsx",
+      "line": 27,
+      "signature": "fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "BaseTableProps",
+      "kind": "tsx-interface",
+      "file": "src/components/table/BaseTable.tsx",
+      "line": 35,
+      "signature": "interface BaseTableProps<T extends Record<string, any>> {",
+      "lang": "tsx"
+    },
+    {
+      "name": "BaseTable",
+      "kind": "tsx-function",
+      "file": "src/components/table/BaseTable.tsx",
+      "line": 62,
+      "signature": "function BaseTable<T extends Record<string, any>>({",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleExport",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/table/BaseTable.tsx",
+      "line": 155,
+      "signature": "handleExport = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "TablePaginationComponent",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/table/Pagination.tsx",
+      "line": 5,
+      "signature": "TablePaginationComponent = ({ table }: { table: ReturnType<typeof useReactTable> }) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "ActionColumnConfig",
+      "kind": "tsx-type-alias",
+      "file": "src/components/table/createActionColumn.tsx",
+      "line": 8,
+      "signature": "type ActionColumnConfig<T> = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "createActionColumn",
+      "kind": "tsx-function",
+      "file": "src/components/table/createActionColumn.tsx",
+      "line": 34,
+      "signature": "function createActionColumn<T>({",
+      "lang": "tsx"
+    },
+    {
+      "name": "ModeChanger",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/theme/ModeChanger.tsx",
+      "line": 16,
+      "signature": "ModeChanger = ({ systemMode }: { systemMode: SystemMode }) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/components/theme/index.tsx",
+      "line": 34,
+      "signature": "type Props = ChildrenType & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "CustomThemeProvider",
+      "kind": "tsx-arrow-binding",
+      "file": "src/components/theme/index.tsx",
+      "line": 39,
+      "signature": "CustomThemeProvider = (props: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "mergedTheme",
+      "kind": "typescript-arrow-binding",
+      "file": "src/components/theme/mergedTheme.ts",
+      "line": 20,
+      "signature": "mergedTheme = (settings: Settings, mode: SystemMode, direction: Theme['direction']) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "Theme",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 23,
+      "signature": "interface Theme {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ThemeOptions",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 78,
+      "signature": "interface ThemeOptions {",
+      "lang": "typescript"
+    },
+    {
+      "name": "PaletteColor",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 135,
+      "signature": "interface PaletteColor {",
+      "lang": "typescript"
+    },
+    {
+      "name": "SimplePaletteColorOptions",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 142,
+      "signature": "interface SimplePaletteColorOptions {",
+      "lang": "typescript"
+    },
+    {
+      "name": "Palette",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 151,
+      "signature": "interface Palette {",
+      "lang": "typescript"
+    },
+    {
+      "name": "PaletteOptions",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 162,
+      "signature": "interface PaletteOptions {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ComponentNameToClassKey",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 175,
+      "signature": "interface ComponentNameToClassKey {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ComponentsPropsList",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 181,
+      "signature": "interface ComponentsPropsList {",
+      "lang": "typescript"
+    },
+    {
+      "name": "Components",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 187,
+      "signature": "interface Components {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ButtonPropsVariantOverrides",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 204,
+      "signature": "interface ButtonPropsVariantOverrides {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ButtonGroupPropsVariantOverrides",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 210,
+      "signature": "interface ButtonGroupPropsVariantOverrides {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ChipPropsVariantOverrides",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 216,
+      "signature": "interface ChipPropsVariantOverrides {",
+      "lang": "typescript"
+    },
+    {
+      "name": "PaginationPropsVariantOverrides",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 222,
+      "signature": "interface PaginationPropsVariantOverrides {",
+      "lang": "typescript"
+    },
+    {
+      "name": "PaginationItemPropsVariantOverrides",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 228,
+      "signature": "interface PaginationItemPropsVariantOverrides {",
+      "lang": "typescript"
+    },
+    {
+      "name": "TimelineDotPropsVariantOverrides",
+      "kind": "typescript-interface",
+      "file": "src/components/theme/types.ts",
+      "line": 234,
+      "signature": "interface TimelineDotPropsVariantOverrides {",
+      "lang": "typescript"
+    },
+    {
+      "name": "userTheme",
+      "kind": "typescript-arrow-binding",
+      "file": "src/components/theme/userTheme.ts",
+      "line": 19,
+      "signature": "userTheme = (/* settings: Settings */): Theme => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "PrimaryColorConfig",
+      "kind": "typescript-type-alias",
+      "file": "src/configs/primaryColorConfig.ts",
+      "line": 1,
+      "signature": "type PrimaryColorConfig = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "Navbar",
+      "kind": "typescript-type-alias",
+      "file": "src/configs/themeConfig.ts",
+      "line": 22,
+      "signature": "type Navbar = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "Footer",
+      "kind": "typescript-type-alias",
+      "file": "src/configs/themeConfig.ts",
+      "line": 30,
+      "signature": "type Footer = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "Config",
+      "kind": "typescript-type-alias",
+      "file": "src/configs/themeConfig.ts",
+      "line": 36,
+      "signature": "type Config = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "NextAuthProvider",
+      "kind": "tsx-arrow-binding",
+      "file": "src/context/NextAuthProvider.tsx",
+      "line": 7,
+      "signature": "NextAuthProvider = ({ children, ...rest }: SessionProviderProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "TanstackQueryProvider",
+      "kind": "tsx-function",
+      "file": "src/context/TanstackQueryProvider.tsx",
+      "line": 10,
+      "signature": "function TanstackQueryProvider({ children }: { children: ReactNode }) {",
+      "lang": "tsx"
+    },
+    {
+      "name": "horizontalMenuData",
+      "kind": "tsx-arrow-binding",
+      "file": "src/data/navigation/horizontalMenuData.tsx",
+      "line": 4,
+      "signature": "horizontalMenuData = (): HorizontalMenuDataType[] => [",
+      "lang": "tsx"
+    },
+    {
+      "name": "verticalMenuData",
+      "kind": "tsx-arrow-binding",
+      "file": "src/data/navigation/verticalMenuData.tsx",
+      "line": 4,
+      "signature": "verticalMenuData = (): VerticalMenuDataType[] => [",
+      "lang": "tsx"
+    },
+    {
+      "name": "createBranchColumns",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/branches/components/table/columns.tsx",
+      "line": 13,
+      "signature": "createBranchColumns = () => [",
+      "lang": "tsx"
+    },
+    {
+      "name": "TableBranchList",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/branches/components/table/index.tsx",
+      "line": 11,
+      "signature": "TableBranchList = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "useBranches",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/branches/hooks/useBranches.ts",
+      "line": 13,
+      "signature": "useBranches = (params: QueryParams = {}, options?: { enabled?: boolean }) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "useBranch",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/branches/hooks/useBranches.ts",
+      "line": 22,
+      "signature": "useBranch = (id: string) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "fetchBranches",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/branches/repositories/branch.repository.ts",
+      "line": 9,
+      "signature": "fetchBranches = async (params?: QueryParams) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "fetchBranch",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/branches/repositories/branch.repository.ts",
+      "line": 12,
+      "signature": "fetchBranch = async ({ id }: { id: string }) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "IBranch",
+      "kind": "typescript-interface",
+      "file": "src/features/branches/types/index.ts",
+      "line": 1,
+      "signature": "interface IBranch {",
+      "lang": "typescript"
+    },
+    {
+      "name": "TBranchList",
+      "kind": "typescript-type-alias",
+      "file": "src/features/branches/types/index.ts",
+      "line": 10,
+      "signature": "type TBranchList = IBranch[]",
+      "lang": "typescript"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/features/permissions/components/PermissionDetailDialog.tsx",
+      "line": 19,
+      "signature": "type Props = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "DetailRow",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/permissions/components/PermissionDetailDialog.tsx",
+      "line": 27,
+      "signature": "DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (",
+      "lang": "tsx"
+    },
+    {
+      "name": "PermissionDetailDialog",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/permissions/components/PermissionDetailDialog.tsx",
+      "line": 37,
+      "signature": "PermissionDetailDialog = ({ open, onClose, permissionId, onEdit }: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/features/permissions/components/PermissionFormDialog.tsx",
+      "line": 28,
+      "signature": "type Props = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "PermissionFormDialog",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/permissions/components/PermissionFormDialog.tsx",
+      "line": 35,
+      "signature": "PermissionFormDialog = ({ open, onClose, permissionId }: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "onSubmit",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/permissions/components/PermissionFormDialog.tsx",
+      "line": 86,
+      "signature": "onSubmit = async (values: FormValues) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "TablePermissionList",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/permissions/components/table/index.tsx",
+      "line": 34,
+      "signature": "TablePermissionList = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleDelete",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/permissions/components/table/index.tsx",
+      "line": 105,
+      "signature": "handleDelete = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "usePermissions",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/permissions/hooks/usePermissions.ts",
+      "line": 21,
+      "signature": "usePermissions = (params: QueryParams = {}, options?: { enabled?: boolean }) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "useGroupedPermissions",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/permissions/hooks/usePermissions.ts",
+      "line": 33,
+      "signature": "useGroupedPermissions = (options?: { enabled?: boolean }) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "usePermission",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/permissions/hooks/usePermissions.ts",
+      "line": 61,
+      "signature": "usePermission = (id: string) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "fetchPermissions",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/permissions/repositories/permissions.repository.ts",
+      "line": 9,
+      "signature": "fetchPermissions = async (params?: QueryParams) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "fetchPermission",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/permissions/repositories/permissions.repository.ts",
+      "line": 12,
+      "signature": "fetchPermission = async ({ id }: { id: string }) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "createPermission",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/permissions/repositories/permissions.repository.ts",
+      "line": 15,
+      "signature": "createPermission = async (body: TCreatePermissionPayload) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "updatePermission",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/permissions/repositories/permissions.repository.ts",
+      "line": 18,
+      "signature": "updatePermission = async ({ id, ...body }: TUpdatePermissionPayload & { id: string }) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "deletePermission",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/permissions/repositories/permissions.repository.ts",
+      "line": 21,
+      "signature": "deletePermission = async ({ id }: { id: string }) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "PermissionFormValues",
+      "kind": "typescript-type-alias",
+      "file": "src/features/permissions/schemas/permission.schema.ts",
+      "line": 10,
+      "signature": "type PermissionFormValues = z.infer<typeof permissionFormSchema>",
+      "lang": "typescript"
+    },
+    {
+      "name": "IPermission",
+      "kind": "typescript-interface",
+      "file": "src/features/permissions/types/index.ts",
+      "line": 1,
+      "signature": "interface IPermission {",
+      "lang": "typescript"
+    },
+    {
+      "name": "TPermissionList",
+      "kind": "typescript-type-alias",
+      "file": "src/features/permissions/types/index.ts",
+      "line": 9,
+      "signature": "type TPermissionList = IPermission[]",
+      "lang": "typescript"
+    },
+    {
+      "name": "PermissionGroup",
+      "kind": "typescript-type-alias",
+      "file": "src/features/permissions/types/index.ts",
+      "line": 11,
+      "signature": "type PermissionGroup = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "TCreatePermissionPayload",
+      "kind": "typescript-type-alias",
+      "file": "src/features/permissions/types/index.ts",
+      "line": 16,
+      "signature": "type TCreatePermissionPayload = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "TUpdatePermissionPayload",
+      "kind": "typescript-type-alias",
+      "file": "src/features/permissions/types/index.ts",
+      "line": 23,
+      "signature": "type TUpdatePermissionPayload = TCreatePermissionPayload",
+      "lang": "typescript"
+    },
+    {
+      "name": "ProfileForm",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/profile/components/ProfileForm.tsx",
+      "line": 23,
+      "signature": "ProfileForm = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "onSubmit",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/profile/components/ProfileForm.tsx",
+      "line": 39,
+      "signature": "onSubmit = async (values: FormValues) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "UpdatePasswordForm",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/profile/components/UpdatePasswordForm.tsx",
+      "line": 26,
+      "signature": "UpdatePasswordForm = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "toggle",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/profile/components/UpdatePasswordForm.tsx",
+      "line": 29,
+      "signature": "toggle = (key: keyof typeof shown) =>",
+      "lang": "tsx"
+    },
+    {
+      "name": "onSubmit",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/profile/components/UpdatePasswordForm.tsx",
+      "line": 44,
+      "signature": "onSubmit = async (values: FormValues) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "adornment",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/profile/components/UpdatePasswordForm.tsx",
+      "line": 53,
+      "signature": "adornment = (visible: boolean, onToggle: () => void) => ({",
+      "lang": "tsx"
+    },
+    {
+      "name": "useMyProfile",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/profile/hooks/useProfile.ts",
+      "line": 13,
+      "signature": "useMyProfile = () =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "useUpdateProfile",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/profile/hooks/useProfile.ts",
+      "line": 19,
+      "signature": "useUpdateProfile = () => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "useChangePassword",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/profile/hooks/useProfile.ts",
+      "line": 38,
+      "signature": "useChangePassword = () =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "fetchMyProfile",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/profile/repositories/profile.repository.ts",
+      "line": 5,
+      "signature": "fetchMyProfile = () => apiClient.get<IMyProfile>('/v1/users/me')",
+      "lang": "typescript"
+    },
+    {
+      "name": "updateProfile",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/profile/repositories/profile.repository.ts",
+      "line": 7,
+      "signature": "updateProfile = (body: TUpdateProfilePayload) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "changePassword",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/profile/repositories/profile.repository.ts",
+      "line": 10,
+      "signature": "changePassword = (body: TChangePasswordPayload) => apiClient.put<null>('/v1/users/change-password', body)",
+      "lang": "typescript"
+    },
+    {
+      "name": "PasswordFormValues",
+      "kind": "typescript-type-alias",
+      "file": "src/features/profile/schemas/password.schema.ts",
+      "line": 14,
+      "signature": "type PasswordFormValues = z.infer<typeof passwordFormSchema>",
+      "lang": "typescript"
+    },
+    {
+      "name": "ProfileFormValues",
+      "kind": "typescript-type-alias",
+      "file": "src/features/profile/schemas/profile.schema.ts",
+      "line": 9,
+      "signature": "type ProfileFormValues = z.infer<typeof profileFormSchema>",
+      "lang": "typescript"
+    },
+    {
+      "name": "IMyProfile",
+      "kind": "typescript-interface",
+      "file": "src/features/profile/types/index.ts",
+      "line": 1,
+      "signature": "interface IMyProfile {",
+      "lang": "typescript"
+    },
+    {
+      "name": "TUpdateProfilePayload",
+      "kind": "typescript-type-alias",
+      "file": "src/features/profile/types/index.ts",
+      "line": 7,
+      "signature": "type TUpdateProfilePayload = IMyProfile",
+      "lang": "typescript"
+    },
+    {
+      "name": "TChangePasswordPayload",
+      "kind": "typescript-type-alias",
+      "file": "src/features/profile/types/index.ts",
+      "line": 9,
+      "signature": "type TChangePasswordPayload = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "FormValues",
+      "kind": "tsx-type-alias",
+      "file": "src/features/roles/components/AssignPermissionDialog.tsx",
+      "line": 31,
+      "signature": "type FormValues = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "AssignPermissionsDialogProps",
+      "kind": "tsx-type-alias",
+      "file": "src/features/roles/components/AssignPermissionDialog.tsx",
+      "line": 35,
+      "signature": "type AssignPermissionsDialogProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "AssignPermissionsDialog",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/AssignPermissionDialog.tsx",
+      "line": 45,
+      "signature": "AssignPermissionsDialog = ({",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleClose",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/AssignPermissionDialog.tsx",
+      "line": 78,
+      "signature": "handleClose = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "onSubmit",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/AssignPermissionDialog.tsx",
+      "line": 83,
+      "signature": "onSubmit = async ({ permissionRows }: FormValues) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/features/roles/components/RoleDetailDialog.tsx",
+      "line": 17,
+      "signature": "type Props = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "DetailRow",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/RoleDetailDialog.tsx",
+      "line": 24,
+      "signature": "DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (",
+      "lang": "tsx"
+    },
+    {
+      "name": "RoleDetailDialog",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/RoleDetailDialog.tsx",
+      "line": 39,
+      "signature": "RoleDetailDialog = ({ open, roleId, onClose, onEdit }: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/features/roles/components/RoleFormDialog.tsx",
+      "line": 28,
+      "signature": "type Props = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "RoleFormDialog",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/RoleFormDialog.tsx",
+      "line": 38,
+      "signature": "RoleFormDialog = ({ open, onClose, roleId, onCreated }: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "onSubmit",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/RoleFormDialog.tsx",
+      "line": 88,
+      "signature": "onSubmit = async (values: FormValues) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "RolePermissionsTableProps",
+      "kind": "tsx-type-alias",
+      "file": "src/features/roles/components/RolePermissionsTable.tsx",
+      "line": 18,
+      "signature": "type RolePermissionsTableProps = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "isAllChecked",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/RolePermissionsTable.tsx",
+      "line": 26,
+      "signature": "isAllChecked = (rows: PermissionRow[]) =>",
+      "lang": "tsx"
+    },
+    {
+      "name": "isIndeterminate",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/RolePermissionsTable.tsx",
+      "line": 29,
+      "signature": "isIndeterminate = (rows: PermissionRow[]) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "TableSkeleton",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/RolePermissionsTable.tsx",
+      "line": 37,
+      "signature": "TableSkeleton = ({ columns }: { columns: number }) => (",
+      "lang": "tsx"
+    },
+    {
+      "name": "RolePermissionsTable",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/RolePermissionsTable.tsx",
+      "line": 62,
+      "signature": "RolePermissionsTable = ({",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleSelectAll",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/RolePermissionsTable.tsx",
+      "line": 71,
+      "signature": "handleSelectAll = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleToggle",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/RolePermissionsTable.tsx",
+      "line": 88,
+      "signature": "handleToggle = (rowIndex: number, action: string) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "TRoleColumnActions",
+      "kind": "tsx-type-alias",
+      "file": "src/features/roles/components/table/columns.tsx",
+      "line": 12,
+      "signature": "type TRoleColumnActions = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "createRoleColumns",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/table/columns.tsx",
+      "line": 16,
+      "signature": "createRoleColumns = ({ onView, onEdit, onDelete, onAssign }: TRoleColumnActions) => [",
+      "lang": "tsx"
+    },
+    {
+      "name": "TableRoleList",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/table/index.tsx",
+      "line": 22,
+      "signature": "TableRoleList = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleDelete",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/table/index.tsx",
+      "line": 46,
+      "signature": "handleDelete = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleRoleCreated",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/table/index.tsx",
+      "line": 55,
+      "signature": "handleRoleCreated = (newRoleId: string) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleAssignConfirm",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/roles/components/table/index.tsx",
+      "line": 69,
+      "signature": "handleAssignConfirm = async (payload: TAssignPermissionToRolePayload) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "useRoles",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/roles/hooks/useRoles.ts",
+      "line": 17,
+      "signature": "useRoles = (params: QueryParams = {}, options?: { enabled?: boolean }) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "useRole",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/roles/hooks/useRoles.ts",
+      "line": 26,
+      "signature": "useRole = (id: string) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "useAssignRolePermissions",
+      "kind": "typescript-function",
+      "file": "src/features/roles/hooks/useRoles.ts",
+      "line": 58,
+      "signature": "function useAssignRolePermissions() {",
+      "lang": "typescript"
+    },
+    {
+      "name": "fetchRoles",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/roles/repositories/role.repository.ts",
+      "line": 9,
+      "signature": "fetchRoles = async (params?: QueryParams) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "fetchRole",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/roles/repositories/role.repository.ts",
+      "line": 12,
+      "signature": "fetchRole = async ({ id }: { id: string }) => await apiClient.get<IRole>(`/v1/roles/${id}`)",
+      "lang": "typescript"
+    },
+    {
+      "name": "createRole",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/roles/repositories/role.repository.ts",
+      "line": 14,
+      "signature": "createRole = async (body: TCreateRolePayload) => apiClient.post<IRole>('/v1/roles', body)",
+      "lang": "typescript"
+    },
+    {
+      "name": "updateRole",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/roles/repositories/role.repository.ts",
+      "line": 16,
+      "signature": "updateRole = async ({ id, ...body }: TUpdateRolePayload & { id: string }) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "deleteRole",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/roles/repositories/role.repository.ts",
+      "line": 19,
+      "signature": "deleteRole = async ({ id }: { id: string }) => apiClient.delete<IRole>(`/v1/roles/${id}`)",
+      "lang": "typescript"
+    },
+    {
+      "name": "assignPermissions",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/roles/repositories/role.repository.ts",
+      "line": 21,
+      "signature": "assignPermissions = async (body: TAssignPermissionToRolePayload) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "RoleFormValues",
+      "kind": "typescript-type-alias",
+      "file": "src/features/roles/schemas/role.schema.ts",
+      "line": 9,
+      "signature": "type RoleFormValues = z.infer<typeof roleFormSchema>",
+      "lang": "typescript"
+    },
+    {
+      "name": "IRole",
+      "kind": "typescript-interface",
+      "file": "src/features/roles/types/index.ts",
+      "line": 3,
+      "signature": "interface IRole {",
+      "lang": "typescript"
+    },
+    {
+      "name": "TRoleList",
+      "kind": "typescript-type-alias",
+      "file": "src/features/roles/types/index.ts",
+      "line": 13,
+      "signature": "type TRoleList = IRole[]",
+      "lang": "typescript"
+    },
+    {
+      "name": "TCreateRolePayload",
+      "kind": "typescript-type-alias",
+      "file": "src/features/roles/types/index.ts",
+      "line": 15,
+      "signature": "type TCreateRolePayload = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "TUpdateRolePayload",
+      "kind": "typescript-type-alias",
+      "file": "src/features/roles/types/index.ts",
+      "line": 21,
+      "signature": "type TUpdateRolePayload = TCreateRolePayload",
+      "lang": "typescript"
+    },
+    {
+      "name": "TAssignPermissionToRolePayload",
+      "kind": "typescript-type-alias",
+      "file": "src/features/roles/types/index.ts",
+      "line": 23,
+      "signature": "type TAssignPermissionToRolePayload = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "IRolePermission",
+      "kind": "typescript-type-alias",
+      "file": "src/features/roles/types/index.ts",
+      "line": 29,
+      "signature": "type IRolePermission = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "PermissionCell",
+      "kind": "typescript-type-alias",
+      "file": "src/features/roles/types/index.ts",
+      "line": 35,
+      "signature": "type PermissionCell = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "PermissionRow",
+      "kind": "typescript-type-alias",
+      "file": "src/features/roles/types/index.ts",
+      "line": 41,
+      "signature": "type PermissionRow = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "splitPermName",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/roles/utils/index.ts",
+      "line": 5,
+      "signature": "splitPermName = (name: string): { module: string; action: string } => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "resolveFullName",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/roles/utils/index.ts",
+      "line": 21,
+      "signature": "resolveFullName = (p: IPermission): string => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "buildPermissionRows",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/roles/utils/index.ts",
+      "line": 35,
+      "signature": "buildPermissionRows = (",
+      "lang": "typescript"
+    },
+    {
+      "name": "collectCheckedIds",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/roles/utils/index.ts",
+      "line": 74,
+      "signature": "collectCheckedIds = (rows: PermissionRow[]): string[] =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "deriveActionColumns",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/roles/utils/index.ts",
+      "line": 84,
+      "signature": "deriveActionColumns = (rows: PermissionRow[]): string[] => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/features/users/components/UserDetailDialog.tsx",
+      "line": 19,
+      "signature": "type Props = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "DetailRow",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/users/components/UserDetailDialog.tsx",
+      "line": 26,
+      "signature": "DetailRow = ({ label, value }: { label: string; value: React.ReactNode }) => (",
+      "lang": "tsx"
+    },
+    {
+      "name": "UserDetailDialog",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/users/components/UserDetailDialog.tsx",
+      "line": 41,
+      "signature": "UserDetailDialog = ({ open, userId, onClose, onEdit }: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Props",
+      "kind": "tsx-type-alias",
+      "file": "src/features/users/components/UserFormDialog.tsx",
+      "line": 24,
+      "signature": "type Props = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "UserFormDialog",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/users/components/UserFormDialog.tsx",
+      "line": 30,
+      "signature": "UserFormDialog = ({ open, onClose, userId }: Props) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "onSubmit",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/users/components/UserFormDialog.tsx",
+      "line": 91,
+      "signature": "onSubmit = async (values: FormValues) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "createUserColumns",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/users/components/table/columns.tsx",
+      "line": 10,
+      "signature": "createUserColumns = ({ onView, onEdit, onDelete }: TBaseColumnActions<IUser>) => [",
+      "lang": "tsx"
+    },
+    {
+      "name": "TableUserList",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/users/components/table/index.tsx",
+      "line": 21,
+      "signature": "TableUserList = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleDelete",
+      "kind": "tsx-arrow-binding",
+      "file": "src/features/users/components/table/index.tsx",
+      "line": 35,
+      "signature": "handleDelete = () => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "useUsers",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/users/hooks/useUsers.ts",
+      "line": 14,
+      "signature": "useUsers = (params: QueryParams = {}) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "useUser",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/users/hooks/useUsers.ts",
+      "line": 22,
+      "signature": "useUser = (id: string) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "fetchUsers",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/users/repositories/user.repository.ts",
+      "line": 9,
+      "signature": "fetchUsers = async (params?: QueryParams) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "fetchUser",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/users/repositories/user.repository.ts",
+      "line": 12,
+      "signature": "fetchUser = async ({ id }: { id: string }) => await apiClient.get<IUser>(`/v1/users/${id}`)",
+      "lang": "typescript"
+    },
+    {
+      "name": "createUser",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/users/repositories/user.repository.ts",
+      "line": 14,
+      "signature": "createUser = async (body: TCreateUserPayload) => apiClient.post<IUser>('/v1/users', body)",
+      "lang": "typescript"
+    },
+    {
+      "name": "updateUser",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/users/repositories/user.repository.ts",
+      "line": 16,
+      "signature": "updateUser = async ({ id, ...body }: TUpdateUserPayload & { id: string }) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "deleteUser",
+      "kind": "typescript-arrow-binding",
+      "file": "src/features/users/repositories/user.repository.ts",
+      "line": 19,
+      "signature": "deleteUser = async ({ id }: { id: string }) => apiClient.delete<IUser>(`/v1/users/${id}`)",
+      "lang": "typescript"
+    },
+    {
+      "name": "UserFormValues",
+      "kind": "typescript-type-alias",
+      "file": "src/features/users/schemas/user.schema.ts",
+      "line": 19,
+      "signature": "type UserFormValues = z.infer<typeof createUserSchema>",
+      "lang": "typescript"
+    },
+    {
+      "name": "IUser",
+      "kind": "typescript-interface",
+      "file": "src/features/users/types/index.ts",
+      "line": 1,
+      "signature": "interface IUser {",
+      "lang": "typescript"
+    },
+    {
+      "name": "TUserList",
+      "kind": "typescript-type-alias",
+      "file": "src/features/users/types/index.ts",
+      "line": 17,
+      "signature": "type TUserList = IUser[]",
+      "lang": "typescript"
+    },
+    {
+      "name": "TCreateUserPayload",
+      "kind": "typescript-type-alias",
+      "file": "src/features/users/types/index.ts",
+      "line": 19,
+      "signature": "type TCreateUserPayload = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "TUpdateUserPayload",
+      "kind": "typescript-type-alias",
+      "file": "src/features/users/types/index.ts",
+      "line": 29,
+      "signature": "type TUpdateUserPayload = Omit<TCreateUserPayload, 'password'> & { id: string }",
+      "lang": "typescript"
+    },
+    {
+      "name": "useQueryParams",
+      "kind": "typescript-arrow-binding",
+      "file": "src/hooks/nuqs/useQueryParams.ts",
+      "line": 20,
+      "signature": "useQueryParams = () => useQueryStates(queryParamsParsers)",
+      "lang": "typescript"
+    },
+    {
+      "name": "currentYear",
+      "kind": "typescript-arrow-binding",
+      "file": "src/hooks/nuqs/useYearParam.ts",
+      "line": 5,
+      "signature": "currentYear = () => new Date().getFullYear()",
+      "lang": "typescript"
+    },
+    {
+      "name": "useYearParam",
+      "kind": "typescript-arrow-binding",
+      "file": "src/hooks/nuqs/useYearParam.ts",
+      "line": 11,
+      "signature": "useYearParam = () =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "usePermissions",
+      "kind": "typescript-function",
+      "file": "src/hooks/rbac/usePermission.ts",
+      "line": 9,
+      "signature": "function usePermissions() {",
+      "lang": "typescript"
+    },
+    {
+      "name": "useAuthorization",
+      "kind": "typescript-function",
+      "file": "src/hooks/rbac/usePermission.ts",
+      "line": 45,
+      "signature": "function useAuthorization() {",
+      "lang": "typescript"
+    },
+    {
+      "name": "useAccessToken",
+      "kind": "typescript-function",
+      "file": "src/hooks/rbac/usePermission.ts",
+      "line": 59,
+      "signature": "function useAccessToken() {",
+      "lang": "typescript"
+    },
+    {
+      "name": "useTableDialogState",
+      "kind": "typescript-function",
+      "file": "src/hooks/useTableDialogState.ts",
+      "line": 8,
+      "signature": "function useTableDialogState<T>() {",
+      "lang": "typescript"
+    },
+    {
+      "name": "RequestOptions",
+      "kind": "typescript-type-alias",
+      "file": "src/libs/api/base-fetcher.ts",
+      "line": 5,
+      "signature": "type RequestOptions = RequestInit & {",
+      "lang": "typescript"
+    },
+    {
+      "name": "FetcherConfig",
+      "kind": "typescript-type-alias",
+      "file": "src/libs/api/base-fetcher.ts",
+      "line": 9,
+      "signature": "type FetcherConfig = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "createFetcher",
+      "kind": "typescript-function",
+      "file": "src/libs/api/base-fetcher.ts",
+      "line": 29,
+      "signature": "function createFetcher({ baseURL, getSession, onError }: FetcherConfig) {",
+      "lang": "typescript"
+    },
+    {
+      "name": "getHeaders",
+      "kind": "typescript-function",
+      "file": "src/libs/api/base-fetcher.ts",
+      "line": 30,
+      "signature": "async function getHeaders(customHeaders?: HeadersInit): Promise<HeadersInit> {",
+      "lang": "typescript"
+    },
+    {
+      "name": "buildURL",
+      "kind": "typescript-function",
+      "file": "src/libs/api/base-fetcher.ts",
+      "line": 42,
+      "signature": "function buildURL(path: string, params?: Record<string, string>): string {",
+      "lang": "typescript"
+    },
+    {
+      "name": "request",
+      "kind": "typescript-function",
+      "file": "src/libs/api/base-fetcher.ts",
+      "line": 56,
+      "signature": "async function request<T>(path: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {",
+      "lang": "typescript"
+    },
+    {
+      "name": "WithId",
+      "kind": "typescript-type-alias",
+      "file": "src/libs/api/crud-hooks.ts",
+      "line": 19,
+      "signature": "type WithId = { id: string }",
+      "lang": "typescript"
+    },
+    {
+      "name": "makeCreateMutation",
+      "kind": "typescript-function",
+      "file": "src/libs/api/crud-hooks.ts",
+      "line": 21,
+      "signature": "function makeCreateMutation<TData, TVars>(config: {",
+      "lang": "typescript"
+    },
+    {
+      "name": "makeUpdateMutation",
+      "kind": "typescript-function",
+      "file": "src/libs/api/crud-hooks.ts",
+      "line": 40,
+      "signature": "function makeUpdateMutation<TData, TVars extends WithId>(config: {",
+      "lang": "typescript"
+    },
+    {
+      "name": "makeDeleteMutation",
+      "kind": "typescript-function",
+      "file": "src/libs/api/crud-hooks.ts",
+      "line": 63,
+      "signature": "function makeDeleteMutation<TData, TVars extends WithId>(config: {",
+      "lang": "typescript"
+    },
+    {
+      "name": "buildListParams",
+      "kind": "typescript-function",
+      "file": "src/libs/api/query-params/index.ts",
+      "line": 9,
+      "signature": "function buildListParams(params?: QueryParams): Record<string, string> {",
+      "lang": "typescript"
+    },
+    {
+      "name": "getSearchParam",
+      "kind": "typescript-function",
+      "file": "src/libs/api/query-params/index.ts",
+      "line": 20,
+      "signature": "function getSearchParam(request: Request, name: string, fallback?: string): string | undefined {",
+      "lang": "typescript"
+    },
+    {
+      "name": "Ctx",
+      "kind": "typescript-type-alias",
+      "file": "src/libs/api/route-handler.ts",
+      "line": 16,
+      "signature": "type Ctx<P> = { params: Promise<P> }",
+      "lang": "typescript"
+    },
+    {
+      "name": "PathBuilder",
+      "kind": "typescript-type-alias",
+      "file": "src/libs/api/route-handler.ts",
+      "line": 17,
+      "signature": "type PathBuilder<P> = string | ((params: P) => string)",
+      "lang": "typescript"
+    },
+    {
+      "name": "respond",
+      "kind": "typescript-function",
+      "file": "src/libs/api/route-handler.ts",
+      "line": 19,
+      "signature": "function respond<T>(res: ApiResponse<T>) {",
+      "lang": "typescript"
+    },
+    {
+      "name": "resolvePath",
+      "kind": "typescript-function",
+      "file": "src/libs/api/route-handler.ts",
+      "line": 23,
+      "signature": "function resolvePath<P>(buildPath: PathBuilder<P>, params: P): string {",
+      "lang": "typescript"
+    },
+    {
+      "name": "readParams",
+      "kind": "typescript-function",
+      "file": "src/libs/api/route-handler.ts",
+      "line": 27,
+      "signature": "async function readParams<P>(ctx?: Ctx<P>): Promise<P> {",
+      "lang": "typescript"
+    },
+    {
+      "name": "proxyGet",
+      "kind": "typescript-function",
+      "file": "src/libs/api/route-handler.ts",
+      "line": 31,
+      "signature": "function proxyGet<T, P = Record<string, string>>(",
+      "lang": "typescript"
+    },
+    {
+      "name": "proxyPost",
+      "kind": "typescript-function",
+      "file": "src/libs/api/route-handler.ts",
+      "line": 43,
+      "signature": "function proxyPost<T, P = Record<string, string>>(buildPath: PathBuilder<P>) {",
+      "lang": "typescript"
+    },
+    {
+      "name": "proxyPut",
+      "kind": "typescript-function",
+      "file": "src/libs/api/route-handler.ts",
+      "line": 52,
+      "signature": "function proxyPut<T, P = Record<string, string>>(buildPath: PathBuilder<P>) {",
+      "lang": "typescript"
+    },
+    {
+      "name": "proxyDelete",
+      "kind": "typescript-function",
+      "file": "src/libs/api/route-handler.ts",
+      "line": 61,
+      "signature": "function proxyDelete<T, P = Record<string, string>>(buildPath: PathBuilder<P>) {",
+      "lang": "typescript"
+    },
+    {
+      "name": "refreshAccessToken",
+      "kind": "typescript-function",
+      "file": "src/libs/auth.ts",
+      "line": 11,
+      "signature": "async function refreshAccessToken(token: JWT): Promise<JWT> {",
+      "lang": "typescript"
+    },
+    {
+      "name": "authorize",
+      "kind": "typescript-method",
+      "file": "src/libs/auth.ts",
+      "line": 57,
+      "signature": "async authorize(credentials) {",
+      "lang": "typescript"
+    },
+    {
+      "name": "jwt",
+      "kind": "typescript-method",
+      "file": "src/libs/auth.ts",
+      "line": 100,
+      "signature": "async jwt({ token, user, trigger, session }): Promise<JWT> {",
+      "lang": "typescript"
+    },
+    {
+      "name": "session",
+      "kind": "typescript-method",
+      "file": "src/libs/auth.ts",
+      "line": 134,
+      "signature": "async session({ session, token }) {",
+      "lang": "typescript"
+    },
+    {
+      "name": "SelectOption",
+      "kind": "typescript-type-alias",
+      "file": "src/libs/constants.ts",
+      "line": 2,
+      "signature": "type SelectOption = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "normalize",
+      "kind": "typescript-arrow-binding",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 9,
+      "signature": "normalize = (value: string) => value.trim().toLowerCase()",
+      "lang": "typescript"
+    },
+    {
+      "name": "wildcardsFor",
+      "kind": "typescript-function",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 15,
+      "signature": "function wildcardsFor(permission: string): string[] {",
+      "lang": "typescript"
+    },
+    {
+      "name": "JWTPermissionChecker",
+      "kind": "typescript-class",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 29,
+      "signature": "class JWTPermissionChecker {",
+      "lang": "typescript"
+    },
+    {
+      "name": "constructor",
+      "kind": "typescript-method",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 33,
+      "signature": "constructor(permissions: string[] = [], roles: string[] = []) {",
+      "lang": "typescript"
+    },
+    {
+      "name": "can",
+      "kind": "typescript-method",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 42,
+      "signature": "can(permission: string): boolean {",
+      "lang": "typescript"
+    },
+    {
+      "name": "canAny",
+      "kind": "typescript-method",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 55,
+      "signature": "canAny(permissions: string[]): boolean {",
+      "lang": "typescript"
+    },
+    {
+      "name": "canAll",
+      "kind": "typescript-method",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 62,
+      "signature": "canAll(permissions: string[]): boolean {",
+      "lang": "typescript"
+    },
+    {
+      "name": "hasRole",
+      "kind": "typescript-method",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 69,
+      "signature": "hasRole(role: string): boolean {",
+      "lang": "typescript"
+    },
+    {
+      "name": "hasAnyRole",
+      "kind": "typescript-method",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 76,
+      "signature": "hasAnyRole(roles: string[]): boolean {",
+      "lang": "typescript"
+    },
+    {
+      "name": "hasAllRoles",
+      "kind": "typescript-method",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 83,
+      "signature": "hasAllRoles(roles: string[]): boolean {",
+      "lang": "typescript"
+    },
+    {
+      "name": "canPerform",
+      "kind": "typescript-method",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 90,
+      "signature": "canPerform(resource: string, action: string): boolean {",
+      "lang": "typescript"
+    },
+    {
+      "name": "getPermissions",
+      "kind": "typescript-method",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 97,
+      "signature": "getPermissions(): string[] {",
+      "lang": "typescript"
+    },
+    {
+      "name": "getRoles",
+      "kind": "typescript-method",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 104,
+      "signature": "getRoles(): string[] {",
+      "lang": "typescript"
+    },
+    {
+      "name": "isSuperAdmin",
+      "kind": "typescript-method",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 111,
+      "signature": "isSuperAdmin(): boolean {",
+      "lang": "typescript"
+    },
+    {
+      "name": "createJWTChecker",
+      "kind": "typescript-function",
+      "file": "src/libs/jwt-permission/index.ts",
+      "line": 119,
+      "signature": "function createJWTChecker(permissions: string[], roles: string[]): JWTPermissionChecker {",
+      "lang": "typescript"
+    },
+    {
+      "name": "makeQueryClient",
+      "kind": "typescript-arrow-binding",
+      "file": "src/libs/query-client.ts",
+      "line": 3,
+      "signature": "makeQueryClient = () =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "getQueryClient",
+      "kind": "typescript-function",
+      "file": "src/libs/query-client.ts",
+      "line": 18,
+      "signature": "function getQueryClient() {",
+      "lang": "typescript"
+    },
+    {
+      "name": "createQueryKeys",
+      "kind": "typescript-function",
+      "file": "src/libs/query-keys/index.ts",
+      "line": 8,
+      "signature": "function createQueryKeys(resource: string) {",
+      "lang": "typescript"
+    },
+    {
+      "name": "QueryKeys",
+      "kind": "typescript-type-alias",
+      "file": "src/libs/query-keys/index.ts",
+      "line": 17,
+      "signature": "type QueryKeys = ReturnType<typeof createQueryKeys>",
+      "lang": "typescript"
+    },
+    {
+      "name": "ApexChartWrapperProps",
+      "kind": "tsx-type-alias",
+      "file": "src/libs/styles/AppReactApexCharts.tsx",
+      "line": 14,
+      "signature": "type ApexChartWrapperProps = Props & {",
+      "lang": "tsx"
+    },
+    {
+      "name": "AppReactApexCharts",
+      "kind": "tsx-arrow-binding",
+      "file": "src/libs/styles/AppReactApexCharts.tsx",
+      "line": 107,
+      "signature": "AppReactApexCharts = (props: ApexChartWrapperProps) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "proxy",
+      "kind": "typescript-function",
+      "file": "src/proxy.ts",
+      "line": 7,
+      "signature": "async function proxy(request: Request) {",
+      "lang": "typescript"
+    },
+    {
+      "name": "envelope",
+      "kind": "typescript-arrow-binding",
+      "file": "src/test/handlers.ts",
+      "line": 6,
+      "signature": "envelope = <T>(data: T, total = Array.isArray(data) ? data.length : 1) => ({",
+      "lang": "typescript"
+    },
+    {
+      "name": "setMockSession",
+      "kind": "typescript-function",
+      "file": "src/test/mocks.ts",
+      "line": 40,
+      "signature": "function setMockSession(session: Session | null) {",
+      "lang": "typescript"
+    },
+    {
+      "name": "resetMockSession",
+      "kind": "typescript-function",
+      "file": "src/test/mocks.ts",
+      "line": 44,
+      "signature": "function resetMockSession() {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ResizeObserverStub",
+      "kind": "typescript-class",
+      "file": "src/test/setup.ts",
+      "line": 55,
+      "signature": "class ResizeObserverStub {",
+      "lang": "typescript"
+    },
+    {
+      "name": "observe",
+      "kind": "typescript-method",
+      "file": "src/test/setup.ts",
+      "line": 56,
+      "signature": "observe() {}",
+      "lang": "typescript"
+    },
+    {
+      "name": "unobserve",
+      "kind": "typescript-method",
+      "file": "src/test/setup.ts",
+      "line": 57,
+      "signature": "unobserve() {}",
+      "lang": "typescript"
+    },
+    {
+      "name": "disconnect",
+      "kind": "typescript-method",
+      "file": "src/test/setup.ts",
+      "line": 58,
+      "signature": "disconnect() {}",
+      "lang": "typescript"
+    },
+    {
+      "name": "makeQueryClient",
+      "kind": "tsx-function",
+      "file": "src/test/utils.tsx",
+      "line": 12,
+      "signature": "function makeQueryClient() {",
+      "lang": "tsx"
+    },
+    {
+      "name": "AllProviders",
+      "kind": "tsx-function",
+      "file": "src/test/utils.tsx",
+      "line": 21,
+      "signature": "function AllProviders({ children }: { children: ReactNode }) {",
+      "lang": "tsx"
+    },
+    {
+      "name": "renderWithProviders",
+      "kind": "tsx-function",
+      "file": "src/test/utils.tsx",
+      "line": 36,
+      "signature": "function renderWithProviders(ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {",
+      "lang": "tsx"
+    },
+    {
+      "name": "LoginResponseData",
+      "kind": "typescript-interface",
+      "file": "src/types/common.ts",
+      "line": 1,
+      "signature": "interface LoginResponseData {",
+      "lang": "typescript"
+    },
+    {
+      "name": "RefreshToken",
+      "kind": "typescript-type-alias",
+      "file": "src/types/common.ts",
+      "line": 16,
+      "signature": "type RefreshToken = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "PaginationMeta",
+      "kind": "typescript-type-alias",
+      "file": "src/types/common.ts",
+      "line": 23,
+      "signature": "type PaginationMeta = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ResponseMeta",
+      "kind": "typescript-type-alias",
+      "file": "src/types/common.ts",
+      "line": 30,
+      "signature": "type ResponseMeta = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ApiResponse",
+      "kind": "typescript-type-alias",
+      "file": "src/types/common.ts",
+      "line": 36,
+      "signature": "type ApiResponse<T> = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "QueryParams",
+      "kind": "typescript-interface",
+      "file": "src/types/common.ts",
+      "line": 44,
+      "signature": "interface QueryParams {",
+      "lang": "typescript"
+    },
+    {
+      "name": "TBaseColumnActions",
+      "kind": "typescript-type-alias",
+      "file": "src/types/common.ts",
+      "line": 50,
+      "signature": "type TBaseColumnActions<T> = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "BaseItem",
+      "kind": "typescript-interface",
+      "file": "src/types/common.ts",
+      "line": 56,
+      "signature": "interface BaseItem {",
+      "lang": "typescript"
+    },
+    {
+      "name": "MenuRbacGate",
+      "kind": "typescript-type-alias",
+      "file": "src/types/menuTypes.ts",
+      "line": 20,
+      "signature": "type MenuRbacGate = {",
+      "lang": "typescript"
+    },
+    {
+      "name": "VerticalMenuItemDataType",
+      "kind": "typescript-type-alias",
+      "file": "src/types/menuTypes.ts",
+      "line": 26,
+      "signature": "type VerticalMenuItemDataType = Omit<",
+      "lang": "typescript"
+    },
+    {
+      "name": "VerticalSubMenuDataType",
+      "kind": "typescript-type-alias",
+      "file": "src/types/menuTypes.ts",
+      "line": 38,
+      "signature": "type VerticalSubMenuDataType = Omit<VerticalSubMenuProps, 'children' | 'icon' | 'prefix' | 'suffix'> &",
+      "lang": "typescript"
+    },
+    {
+      "name": "VerticalSectionDataType",
+      "kind": "typescript-type-alias",
+      "file": "src/types/menuTypes.ts",
+      "line": 45,
+      "signature": "type VerticalSectionDataType = Omit<VerticalMenuSectionProps, 'children'> &",
+      "lang": "typescript"
+    },
+    {
+      "name": "VerticalMenuDataType",
+      "kind": "typescript-type-alias",
+      "file": "src/types/menuTypes.ts",
+      "line": 50,
+      "signature": "type VerticalMenuDataType = VerticalMenuItemDataType | VerticalSubMenuDataType | VerticalSectionDataType",
+      "lang": "typescript"
+    },
+    {
+      "name": "HorizontalMenuItemDataType",
+      "kind": "typescript-type-alias",
+      "file": "src/types/menuTypes.ts",
+      "line": 53,
+      "signature": "type HorizontalMenuItemDataType = Omit<",
+      "lang": "typescript"
+    },
+    {
+      "name": "HorizontalSubMenuDataType",
+      "kind": "typescript-type-alias",
+      "file": "src/types/menuTypes.ts",
+      "line": 65,
+      "signature": "type HorizontalSubMenuDataType = Omit<HorizontalSubMenuProps, 'children' | 'icon' | 'prefix' | 'suffix'> &",
+      "lang": "typescript"
+    },
+    {
+      "name": "HorizontalMenuDataType",
+      "kind": "typescript-type-alias",
+      "file": "src/types/menuTypes.ts",
+      "line": 72,
+      "signature": "type HorizontalMenuDataType = HorizontalMenuItemDataType | HorizontalSubMenuDataType",
+      "lang": "typescript"
+    },
+    {
+      "name": "Session",
+      "kind": "typescript-interface",
+      "file": "src/types/next-auth.d.ts",
+      "line": 5,
+      "signature": "interface Session extends Omit<DefaultSession, 'name'> {",
+      "lang": "typescript"
+    },
+    {
+      "name": "User",
+      "kind": "typescript-interface",
+      "file": "src/types/next-auth.d.ts",
+      "line": 12,
+      "signature": "interface User {",
+      "lang": "typescript"
+    },
+    {
+      "name": "JWT",
+      "kind": "typescript-interface",
+      "file": "src/types/next-auth.d.ts",
+      "line": 26,
+      "signature": "interface JWT {",
+      "lang": "typescript"
+    },
+    {
+      "name": "JWTPayload",
+      "kind": "typescript-interface",
+      "file": "src/types/rbac.type.ts",
+      "line": 2,
+      "signature": "interface JWTPayload {",
+      "lang": "typescript"
+    },
+    {
+      "name": "User",
+      "kind": "typescript-interface",
+      "file": "src/types/rbac.type.ts",
+      "line": 23,
+      "signature": "interface User {",
+      "lang": "typescript"
+    },
+    {
+      "name": "Permission",
+      "kind": "typescript-interface",
+      "file": "src/types/rbac.type.ts",
+      "line": 29,
+      "signature": "interface Permission {",
+      "lang": "typescript"
+    },
+    {
+      "name": "Role",
+      "kind": "typescript-interface",
+      "file": "src/types/rbac.type.ts",
+      "line": 42,
+      "signature": "interface Role {",
+      "lang": "typescript"
+    },
+    {
+      "name": "UserSession",
+      "kind": "typescript-interface",
+      "file": "src/types/rbac.type.ts",
+      "line": 55,
+      "signature": "interface UserSession {",
+      "lang": "typescript"
+    },
+    {
+      "name": "formatDate",
+      "kind": "typescript-arrow-binding",
+      "file": "src/utils/dateFormatter.ts",
+      "line": 12,
+      "signature": "formatDate = (date: string | Date, formatStr: string = 'DD MMM YYYY') => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "formatDateWithTime",
+      "kind": "typescript-arrow-binding",
+      "file": "src/utils/dateFormatter.ts",
+      "line": 21,
+      "signature": "formatDateWithTime = (date: string | Date) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "formatRelativeTime",
+      "kind": "typescript-arrow-binding",
+      "file": "src/utils/dateFormatter.ts",
+      "line": 30,
+      "signature": "formatRelativeTime = (date: string | Date) => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "getInitials",
+      "kind": "typescript-arrow-binding",
+      "file": "src/utils/helpers.ts",
+      "line": 2,
+      "signature": "getInitials = (string: string) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "formatNumber",
+      "kind": "typescript-arrow-binding",
+      "file": "src/utils/helpers.ts",
+      "line": 12,
+      "signature": "formatNumber = (value: number | string, locale = 'id-ID'): string => {",
+      "lang": "typescript"
+    },
+    {
+      "name": "ensurePrefix",
+      "kind": "typescript-arrow-binding",
+      "file": "src/utils/helpers.ts",
+      "line": 21,
+      "signature": "ensurePrefix = (str: string, prefix: string) => (str.startsWith(prefix) ? str : `${prefix}${str}`)",
+      "lang": "typescript"
+    },
+    {
+      "name": "withoutSuffix",
+      "kind": "typescript-arrow-binding",
+      "file": "src/utils/helpers.ts",
+      "line": 22,
+      "signature": "withoutSuffix = (str: string, suffix: string) =>",
+      "lang": "typescript"
+    },
+    {
+      "name": "withoutPrefix",
+      "kind": "typescript-arrow-binding",
+      "file": "src/utils/helpers.ts",
+      "line": 24,
+      "signature": "withoutPrefix = (str: string, prefix: string) => (str.startsWith(prefix) ? str.slice(prefix.length) : str)",
+      "lang": "typescript"
+    },
+    {
+      "name": "ErrorType",
+      "kind": "tsx-type-alias",
+      "file": "src/views/Login.tsx",
+      "line": 70,
+      "signature": "type ErrorType = {",
+      "lang": "tsx"
+    },
+    {
+      "name": "FormData",
+      "kind": "tsx-type-alias",
+      "file": "src/views/Login.tsx",
+      "line": 79,
+      "signature": "type FormData = z.infer<typeof schema>",
+      "lang": "tsx"
+    },
+    {
+      "name": "Login",
+      "kind": "tsx-arrow-binding",
+      "file": "src/views/Login.tsx",
+      "line": 81,
+      "signature": "Login = ({ mode }: { mode: SystemMode }) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleClickShowPassword",
+      "kind": "tsx-arrow-binding",
+      "file": "src/views/Login.tsx",
+      "line": 122,
+      "signature": "handleClickShowPassword = () => setIsPasswordShown(show => !show)",
+      "lang": "tsx"
+    },
+    {
+      "name": "onSubmit",
+      "kind": "tsx-arrow-binding",
+      "file": "src/views/Login.tsx",
+      "line": 124,
+      "signature": "onSubmit: SubmitHandler<FormData> = async (data: FormData) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "NotFound",
+      "kind": "tsx-arrow-binding",
+      "file": "src/views/NotFound.tsx",
+      "line": 31,
+      "signature": "NotFound = ({ mode }: { mode: SystemMode }) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "Register",
+      "kind": "tsx-arrow-binding",
+      "file": "src/views/Register.tsx",
+      "line": 58,
+      "signature": "Register = ({ mode }: { mode: SystemMode }) => {",
+      "lang": "tsx"
+    },
+    {
+      "name": "handleClickShowPassword",
+      "kind": "tsx-arrow-binding",
+      "file": "src/views/Register.tsx",
+      "line": 84,
+      "signature": "handleClickShowPassword = () => setIsPasswordShown(show => !show)",
+      "lang": "tsx"
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.0",
+ "head": "9315a701",
+ "unit": "U-005",
+ "generated_at": "2026-09-14T10:23:32+00:00",
+ "summary": {
+  "CONFIRMED": 12,
+  "CONFLICT": 0,
+  "OQ": 1
+ },
+ "claims": [
+  {
+   "id": "C-U005-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/repositories/contact.repository.ts",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U005-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/hooks/useContact.ts",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U005-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/components/ContactForm/index.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U005-A04",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/components/ContactForm/index.test.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U005-A05",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/kontak/page.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U005-A06",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/repositories/user.repository.ts:14",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/features/users/repositories/user.repository.ts:14",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U005-A07",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/client.ts:10",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/libs/api/client.ts:10",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U005-A08",
+   "kind": "fs_must_exist",
+   "expect": "src/test/utils.tsx:36",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/test/utils.tsx:36",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U005-A09",
+   "kind": "fs_must_exist",
+   "expect": "src/test/handlers.ts:72",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/test/handlers.ts:72",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U005-01",
+   "kind": "symbol",
+   "expect": "src/libs/api/client.ts:apiClient",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Claims",
+   "verdict": "OQ",
+   "state": "UNKNOWN",
+   "anchor": null,
+   "confidence": "medium",
+   "evidence": "index: symbol not found anywhere",
+   "text": "apiClient memanggil proxy same-origin /api dan throw saat respons tidak ok"
+  },
+  {
+   "id": "C-U005-02",
+   "kind": "symbol",
+   "expect": "src/test/utils.tsx:renderWithProviders",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/test/utils.tsx:36",
+   "confidence": "high",
+   "evidence": "index: 1 hit(s) in expected file",
+   "text": "harness test menyediakan renderWithProviders"
+  },
+  {
+   "id": "C-U005-03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/kontak",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent",
+   "text": "belum ada halaman kontak"
+  },
+  {
+   "id": "C-U005-04",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/components",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent",
+   "text": "belum ada komponen form kontak"
+  }
+ ]
+}

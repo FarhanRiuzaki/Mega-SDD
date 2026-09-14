@@ -1,0 +1,11 @@
+1096995 2026-09-14T17:33:05+07:00 docs(U-002): bolt report
+8f149e0 2026-09-14T17:32:58+07:00 feat(U-005): Buat Halaman Kontak dengan form kirim pesan
+67d0b24 2026-09-14T17:31:39+07:00 feat(U-002): Buat konfigurasi konten profil dan Halaman Beranda
+0ebad32 2026-09-14T17:24:20+07:00 chore(sdd): evidence U-004 — panel clear, postflight + acceptance pass
+9315a70 2026-09-14T17:22:01+07:00 chore(sdd): evidence U-001 — panel clear, postflight + acceptance pass
+1e5af06 2026-09-14T17:16:12+07:00 style(U-004): format contact.schema.ts (L0 gate 1 fix)
+d24c960 2026-09-14T17:08:53+07:00 docs(U-004): bolt report
+3629a3b 2026-09-14T17:05:42+07:00 feat(U-004): Buat schema pesan kontak dan route handler penyimpanan
+302055e 2026-09-14T17:05:24+07:00 fix(mega-sdd): move route-group anchor out of U-002/U-003 Anchors
+eb28608 2026-09-14T17:03:08+07:00 feat(U-001): Loloskan halaman profil publik di route guard proxy
+3d4b926 2026-09-14T16:57:19+07:00 chore(mega-sdd): plan vault company-profile (lite lane)

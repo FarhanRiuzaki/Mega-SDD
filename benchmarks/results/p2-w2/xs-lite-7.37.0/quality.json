@@ -1,0 +1,105 @@
+{
+ "arm": "/Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-xs-lite",
+ "vault": ".mega-sdd/vaults/company-profile",
+ "units_total": 5,
+ "units": {
+  "U-001": {
+   "status": "success",
+   "retries": 0,
+   "acceptance": "pass",
+   "postflight": "pass",
+   "findings": {
+    "Minor": 1
+   },
+   "spec_verdict": "pass",
+   "panel_attempt": 1,
+   "jit": {
+    "CONFIRMED": 8,
+    "CONFLICT": 0,
+    "OQ": 0
+   }
+  },
+  "U-002": {
+   "status": "success",
+   "retries": 0,
+   "jit": {
+    "CONFIRMED": 9,
+    "CONFLICT": 0,
+    "OQ": 0
+   }
+  },
+  "U-003": {
+   "status": null,
+   "retries": 0
+  },
+  "U-004": {
+   "status": "success",
+   "retries": 0,
+   "acceptance": "pass",
+   "postflight": "pass",
+   "findings": {
+    "Minor": 4
+   },
+   "spec_verdict": "pass",
+   "panel_attempt": 1,
+   "jit": {
+    "CONFIRMED": 10,
+    "CONFLICT": 0,
+    "OQ": 1
+   }
+  },
+  "U-005": {
+   "status": "success",
+   "retries": 0,
+   "jit": {
+    "CONFIRMED": 12,
+    "CONFLICT": 0,
+    "OQ": 1
+   }
+  }
+ },
+ "done": 4,
+ "quarantined": 0,
+ "halts": {},
+ "fix_rounds_total(retries)": 0,
+ "acceptance_units": "2/2",
+ "acceptance_entries": {
+  "executed": 2,
+  "passed": 2,
+  "failed": 0,
+  "pending_manual": 0
+ },
+ "postflight_units": "2/2",
+ "panel_findings": {
+  "Critical": 0,
+  "Important": 0,
+  "Minor": 5
+ },
+ "panel_findings_status": {
+  "advisory": 5
+ },
+ "jit_units": 4,
+ "jit_conflict_units": 0,
+ "conflict_at_dispatch": 0.0,
+ "jit_claims": {
+  "CONFIRMED": 39,
+  "CONFLICT": 0,
+  "OQ": 2
+ },
+ "oq": {
+  "P1/deferred": 1,
+  "P2/deferred": 4
+ },
+ "oq_total": 5,
+ "run": {
+  "sid": "6d47224d-270e-47b6-9463-5e61f5441540",
+  "plugin": "Version: 7.37.0",
+  "flags": "--lite",
+  "total_cost_usd": 40.76557615,
+  "num_turns": 216,
+  "result_subtype": "success",
+  "unit_commits": "7",
+  "first_unit_commit": "2026-09-14T17:03:08+07:00",
+  "last_unit_commit": "2026-09-14T17:33:05+07:00"
+ }
+}

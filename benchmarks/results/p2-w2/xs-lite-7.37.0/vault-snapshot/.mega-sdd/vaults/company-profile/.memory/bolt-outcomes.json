@@ -1,0 +1,6 @@
+{
+  "bolts": [
+    {"unit_id": "U-001", "run_at": "2026-09-14T10:03:08Z", "task_type": "extend", "status": "completed", "duration_ms": 314116},
+    {"unit_id": "U-004", "run_at": "2026-09-14T10:16:12Z", "task_type": "create", "status": "completed", "duration_ms": 584441}
+  ]
+}

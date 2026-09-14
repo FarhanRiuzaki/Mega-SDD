@@ -1,0 +1,47 @@
+{
+ "unit_id": "U-004",
+ "scanned_at": "2026-09-14T10:24:27.510649Z",
+ "status": "pass",
+ "head_sha": "0ebad328bfe0991c6c41f4f517f478cd0362d88d",
+ "written_by": "validate-bolt-artifacts.sh --recompute",
+ "rules": [
+  {
+   "type": "DO_NOT_ADD_DEPS",
+   "rule": "DO NOT add new package.json dependencies",
+   "verdict": "pass",
+   "evidence": "no added lines in package.json"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/libs/api/server.ts",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/libs/api/server.ts"
+  },
+  {
+   "type": "DO_NOT_MODIFY",
+   "rule": "DO NOT modify src/libs/api/route-handler.ts",
+   "verdict": "pass",
+   "evidence": "bolt commits did not touch src/libs/api/route-handler.ts"
+  },
+  {
+   "type": "FILE_PRESENCE_RULE",
+   "rule": "file src/app/api/v1/contact-messages/route.ts MUST exist after bolt",
+   "verdict": "pass",
+   "evidence": "src/app/api/v1/contact-messages/route.ts exists"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST validate name, email and message with the zod schema on the server before calling apiServer",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  },
+  {
+   "type": "directive",
+   "rule": "MUST reach the upstream only through apiServer inside the route handler",
+   "verdict": "directive_unverified",
+   "evidence": "generic directive \u2014 not machine-checkable; re-run with --attest-directives=\"<who/why>\" after controller/panel review"
+  }
+ ],
+ "plugin_version": "7.37.0",
+ "written_at": "2026-09-14T10:24:27.602266Z"
+}

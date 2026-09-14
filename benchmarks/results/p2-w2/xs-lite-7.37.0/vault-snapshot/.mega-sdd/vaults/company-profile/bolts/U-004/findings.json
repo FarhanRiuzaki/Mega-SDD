@@ -1,0 +1,81 @@
+{
+ "schema": 1,
+ "unit": "U-004",
+ "attempt": 1,
+ "head": "1e5af0618f68d5314464136367c657cc8f25f06b",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/app/api/v1/contact-messages/route.test.ts",
+   "line": 75,
+   "title": "Success-path test only loosely checks the forwarded upstream envelope",
+   "detail": "The happy-path assertion only checks `{ success: true }`, so a route that fabricated its own success envelope instead of returning apiServer's result verbatim (as the spec requires) would still pass; tighten to `toEqual` against the stubbed upstream reply (`code: 'CREATED'`, `data.id: 1` + forwarded fields).",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-2",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/app/api/v1/contact-messages/route.test.ts",
+   "line": 80,
+   "title": "No test pins that only allowlisted fields are forwarded upstream",
+   "detail": "`toMatchObject(validPayload)` passes even if extra keys are sent upstream, so a future switch to a passthrough schema or spreading the raw `body` would go uncaught despite the spec requiring exactly `{name,email,message,created_at}`; add a case posting extra keys (e.g. `id`, `isAdmin`) and assert `Object.keys(sent).sort()` equals `['created_at','email','message','name']`.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-3",
+   "lens": "quality",
+   "lenses": [
+    "quality"
+   ],
+   "severity": "Minor",
+   "file": "src/app/api/v1/contact-messages/route.test.ts",
+   "line": 159,
+   "title": "Malformed-JSON test does not assert the distinguishing error code",
+   "detail": "It asserts only `success: false`, so the dedicated `INVALID_JSON` branch at src/app/api/v1/contact-messages/route.ts:39 is not distinguished from a validation failure; add `code: 'INVALID_JSON'` to the `toMatchObject`.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  },
+  {
+   "id": "F-4",
+   "lens": "security",
+   "lenses": [
+    "security"
+   ],
+   "severity": "Minor",
+   "file": "src/app/api/v1/contact-messages/route.ts",
+   "line": 56,
+   "title": "Upstream error text returned verbatim to anonymous callers",
+   "detail": "On `res.success === false` the route returns the upstream's `code` and `message` unchanged (src/libs/api/server.ts:22-23 copies `error.message` through); existing proxy routes behave the same, but this is the first route reachable by anonymous visitors, so internal upstream error text (e.g. a database message) would be shown publicly. Fix-forward: return a fixed message such as `{ success:false, code:'SUBMIT_FAILED', message:'Pesan gagal dikirim, coba lagi', data:null }` and log the upstream code server-side only.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.0",
+ "written_at": "2026-09-14T10:21:59.058468Z"
+}

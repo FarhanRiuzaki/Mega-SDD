@@ -1,0 +1,138 @@
+{
+  "schema": "unit-binding/1",
+  "generated_by": "write-unit-binding.sh@7.37.0",
+  "head": "3d4b9265",
+  "unit": "U-004",
+  "generated_at": "2026-09-14T09:57:49+00:00",
+  "summary": {
+    "CONFIRMED": 10,
+    "CONFLICT": 0,
+    "OQ": 1
+  },
+  "claims": [
+    {
+      "id": "C-U004-A01",
+      "kind": "fs_must_not_exist",
+      "expect": "src/features/contact/schemas/contact.schema.ts",
+      "source": ".mega-sdd/vaults/company-profile/units/U-004.md:target_files",
+      "verdict": "CONFIRMED",
+      "state": "NEW",
+      "anchor": null,
+      "confidence": "high",
+      "evidence": "fs: absent"
+    },
+    {
+      "id": "C-U004-A02",
+      "kind": "fs_must_not_exist",
+      "expect": "src/features/contact/types/index.ts",
+      "source": ".mega-sdd/vaults/company-profile/units/U-004.md:target_files",
+      "verdict": "CONFIRMED",
+      "state": "NEW",
+      "anchor": null,
+      "confidence": "high",
+      "evidence": "fs: absent"
+    },
+    {
+      "id": "C-U004-A03",
+      "kind": "fs_must_not_exist",
+      "expect": "src/app/api/v1/contact-messages/route.ts",
+      "source": ".mega-sdd/vaults/company-profile/units/U-004.md:target_files",
+      "verdict": "CONFIRMED",
+      "state": "NEW",
+      "anchor": null,
+      "confidence": "high",
+      "evidence": "fs: absent"
+    },
+    {
+      "id": "C-U004-A04",
+      "kind": "fs_must_not_exist",
+      "expect": "src/app/api/v1/contact-messages/route.test.ts",
+      "source": ".mega-sdd/vaults/company-profile/units/U-004.md:target_files",
+      "verdict": "CONFIRMED",
+      "state": "NEW",
+      "anchor": null,
+      "confidence": "high",
+      "evidence": "fs: absent"
+    },
+    {
+      "id": "C-U004-A05",
+      "kind": "fs_must_exist",
+      "expect": "src/libs/api/server.ts:9",
+      "source": ".mega-sdd/vaults/company-profile/units/U-004.md:## Anchors",
+      "verdict": "CONFIRMED",
+      "state": "IMPLEMENTED",
+      "anchor": "src/libs/api/server.ts:9",
+      "confidence": "high",
+      "evidence": "fs: present"
+    },
+    {
+      "id": "C-U004-A06",
+      "kind": "fs_must_exist",
+      "expect": "src/libs/api/route-handler.ts:19",
+      "source": ".mega-sdd/vaults/company-profile/units/U-004.md:## Anchors",
+      "verdict": "CONFIRMED",
+      "state": "IMPLEMENTED",
+      "anchor": "src/libs/api/route-handler.ts:19",
+      "confidence": "high",
+      "evidence": "fs: present"
+    },
+    {
+      "id": "C-U004-A07",
+      "kind": "fs_must_exist",
+      "expect": "src/features/users/schemas/user.schema.ts:3",
+      "source": ".mega-sdd/vaults/company-profile/units/U-004.md:## Anchors",
+      "verdict": "CONFIRMED",
+      "state": "IMPLEMENTED",
+      "anchor": "src/features/users/schemas/user.schema.ts:3",
+      "confidence": "high",
+      "evidence": "fs: present"
+    },
+    {
+      "id": "C-U004-A08",
+      "kind": "fs_must_exist",
+      "expect": "src/app/api/v1/users/route.ts:1",
+      "source": ".mega-sdd/vaults/company-profile/units/U-004.md:## Anchors",
+      "verdict": "CONFIRMED",
+      "state": "IMPLEMENTED",
+      "anchor": "src/app/api/v1/users/route.ts:1",
+      "confidence": "high",
+      "evidence": "fs: present"
+    },
+    {
+      "id": "C-U004-01",
+      "kind": "symbol",
+      "expect": "src/libs/api/server.ts:apiServer",
+      "source": ".mega-sdd/vaults/company-profile/units/U-004.md:## Claims",
+      "verdict": "OQ",
+      "state": "UNKNOWN",
+      "anchor": null,
+      "confidence": "medium",
+      "evidence": "index: symbol not found anywhere",
+      "text": "apiServer adalah fetcher server yang mengembalikan envelope ApiResponse"
+    },
+    {
+      "id": "C-U004-02",
+      "kind": "fs_must_not_exist",
+      "expect": "src/app/api/v1/contact-messages",
+      "source": ".mega-sdd/vaults/company-profile/units/U-004.md:## Claims",
+      "verdict": "CONFIRMED",
+      "state": "NEW",
+      "anchor": null,
+      "confidence": "high",
+      "evidence": "fs: absent",
+      "text": "belum ada route contact-messages"
+    },
+    {
+      "id": "C-U004-03",
+      "kind": "fs_must_not_exist",
+      "expect": "src/features/contact/schemas",
+      "source": ".mega-sdd/vaults/company-profile/units/U-004.md:## Claims",
+      "verdict": "CONFIRMED",
+      "state": "NEW",
+      "anchor": null,
+      "confidence": "high",
+      "evidence": "fs: absent",
+      "text": "belum ada schema kontak"
+    }
+  ]
+}

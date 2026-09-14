@@ -1,0 +1,116 @@
+{
+ "schema": "unit-binding/1",
+ "generated_by": "write-unit-binding.sh@7.37.0",
+ "head": "d24c960e",
+ "unit": "U-002",
+ "generated_at": "2026-09-14T10:13:14+00:00",
+ "summary": {
+  "CONFIRMED": 9,
+  "CONFLICT": 0,
+  "OQ": 0
+ },
+ "claims": [
+  {
+   "id": "C-U002-A01",
+   "kind": "fs_must_not_exist",
+   "expect": "src/configs/companyProfile.ts",
+   "source": ".mega-sdd/vaults/company-profile/units/U-002.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U002-A02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/views/company-profile/Beranda/index.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-002.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U002-A03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/views/company-profile/Beranda/index.test.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-002.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U002-A04",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/beranda/page.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-002.md:target_files",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent"
+  },
+  {
+   "id": "C-U002-A05",
+   "kind": "fs_must_exist",
+   "expect": "src/views/Register.tsx:1",
+   "source": ".mega-sdd/vaults/company-profile/units/U-002.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/views/Register.tsx:1",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U002-A06",
+   "kind": "fs_must_exist",
+   "expect": "src/test/utils.tsx:36",
+   "source": ".mega-sdd/vaults/company-profile/units/U-002.md:## Anchors",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/test/utils.tsx:36",
+   "confidence": "high",
+   "evidence": "fs: present"
+  },
+  {
+   "id": "C-U002-01",
+   "kind": "fs_must_exist",
+   "expect": "src/app/(blank-layout-pages)/layout.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-002.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "IMPLEMENTED",
+   "anchor": "src/app/(blank-layout-pages)/layout.tsx",
+   "confidence": "high",
+   "evidence": "fs: present",
+   "text": "layout blank untuk halaman tanpa sesi sudah ada"
+  },
+  {
+   "id": "C-U002-02",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/beranda",
+   "source": ".mega-sdd/vaults/company-profile/units/U-002.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent",
+   "text": "belum ada halaman beranda"
+  },
+  {
+   "id": "C-U002-03",
+   "kind": "fs_must_not_exist",
+   "expect": "src/configs/companyProfile.ts",
+   "source": ".mega-sdd/vaults/company-profile/units/U-002.md:## Claims",
+   "verdict": "CONFIRMED",
+   "state": "NEW",
+   "anchor": null,
+   "confidence": "high",
+   "evidence": "fs: absent",
+   "text": "belum ada konfigurasi konten profil"
+  }
+ ]
+}

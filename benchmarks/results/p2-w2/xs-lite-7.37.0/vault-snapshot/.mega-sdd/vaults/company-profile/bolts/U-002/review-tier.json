@@ -1,0 +1,28 @@
+{
+ "tier": "standard",
+ "lenses": [
+  "spec",
+  "quality",
+  "standards"
+ ],
+ "signals_fired": [
+  "file_count"
+ ],
+ "signals_evaluated": [
+  "auth_globs",
+  "manifest",
+  "file_count",
+  "vocabulary",
+  "constitution_b",
+  "risk_field"
+ ],
+ "target_files": 4,
+ "task_type": "create",
+ "implementer_model": "sonnet",
+ "effort": "high",
+ "unit_tier": "m",
+ "unit_id": "U-002",
+ "written_by": "resolve-review-tier.sh",
+ "plugin_version": "7.37.0",
+ "written_at": "2026-09-14T10:13:14.685787Z"
+}

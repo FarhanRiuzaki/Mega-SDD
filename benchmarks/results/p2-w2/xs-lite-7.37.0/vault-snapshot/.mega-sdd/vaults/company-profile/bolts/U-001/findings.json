@@ -1,0 +1,30 @@
+{
+ "schema": 1,
+ "unit": "U-001",
+ "attempt": 1,
+ "head": "eb286089c22e9e21585762e4a4c6441e5a88c625",
+ "spec_verdict": "pass",
+ "findings": [
+  {
+   "id": "F-1",
+   "lens": "spec",
+   "lenses": [
+    "spec"
+   ],
+   "severity": "Minor",
+   "file": "src/proxy.test.ts",
+   "line": 1,
+   "title": "Missing `// @vitest-environment node` pragma called for by Implementation step 2",
+   "detail": "The spec explicitly asks for this pragma, but adding it makes the suite fail (`window is not defined` at src/test/setup.ts:41, a global setupFile outside this unit's target_files), so the omission is justified by the codebase; still worth flagging back to the spec since the literal instruction is unachievable within scope.",
+   "status": "advisory",
+   "resolution": null,
+   "first_seen_round": 1,
+   "last_seen_round": 1,
+   "confidence": "normal"
+  }
+ ],
+ "dropped_no_evidence": 0,
+ "written_by": "merge-panel-findings.sh",
+ "plugin_version": "7.37.0",
+ "written_at": "2026-09-14T10:19:21.283383Z"
+}

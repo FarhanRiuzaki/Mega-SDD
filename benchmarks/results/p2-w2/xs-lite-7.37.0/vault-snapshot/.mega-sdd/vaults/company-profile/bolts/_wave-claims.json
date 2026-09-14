@@ -1,0 +1,106 @@
+{
+ "schema": "unit-claims/1",
+ "head": "9315a701",
+ "generated_by": "derive-unit-claims.sh@7.37.0",
+ "generated_at": "2026-09-14T10:23:32+00:00",
+ "units": [
+  "U-005"
+ ],
+ "claims": [
+  {
+   "id": "C-U005-A01",
+   "unit": "U-005",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/repositories/contact.repository.ts",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:target_files"
+  },
+  {
+   "id": "C-U005-A02",
+   "unit": "U-005",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/hooks/useContact.ts",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:target_files"
+  },
+  {
+   "id": "C-U005-A03",
+   "unit": "U-005",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/components/ContactForm/index.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:target_files"
+  },
+  {
+   "id": "C-U005-A04",
+   "unit": "U-005",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/components/ContactForm/index.test.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:target_files"
+  },
+  {
+   "id": "C-U005-A05",
+   "unit": "U-005",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/kontak/page.tsx",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:target_files"
+  },
+  {
+   "id": "C-U005-A06",
+   "unit": "U-005",
+   "kind": "fs_must_exist",
+   "expect": "src/features/users/repositories/user.repository.ts:14",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Anchors"
+  },
+  {
+   "id": "C-U005-A07",
+   "unit": "U-005",
+   "kind": "fs_must_exist",
+   "expect": "src/libs/api/client.ts:10",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Anchors"
+  },
+  {
+   "id": "C-U005-A08",
+   "unit": "U-005",
+   "kind": "fs_must_exist",
+   "expect": "src/test/utils.tsx:36",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Anchors"
+  },
+  {
+   "id": "C-U005-A09",
+   "unit": "U-005",
+   "kind": "fs_must_exist",
+   "expect": "src/test/handlers.ts:72",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Anchors"
+  },
+  {
+   "id": "C-U005-01",
+   "unit": "U-005",
+   "kind": "symbol",
+   "expect": "src/libs/api/client.ts:apiClient",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Claims",
+   "text": "apiClient memanggil proxy same-origin /api dan throw saat respons tidak ok"
+  },
+  {
+   "id": "C-U005-02",
+   "unit": "U-005",
+   "kind": "symbol",
+   "expect": "src/test/utils.tsx:renderWithProviders",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Claims",
+   "text": "harness test menyediakan renderWithProviders"
+  },
+  {
+   "id": "C-U005-03",
+   "unit": "U-005",
+   "kind": "fs_must_not_exist",
+   "expect": "src/app/(blank-layout-pages)/kontak",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Claims",
+   "text": "belum ada halaman kontak"
+  },
+  {
+   "id": "C-U005-04",
+   "unit": "U-005",
+   "kind": "fs_must_not_exist",
+   "expect": "src/features/contact/components",
+   "source": ".mega-sdd/vaults/company-profile/units/U-005.md:## Claims",
+   "text": "belum ada komponen form kontak"
+  }
+ ]
+}
