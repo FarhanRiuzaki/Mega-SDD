@@ -12,6 +12,11 @@
 #       construction, idle_ratio measures model+tool time only.
 #   - Permissions: an explicit --allowedTools allowlist (never the global bypass).
 #   - Model pinned (default opus = parity with both P5 arms).
+#   - Headless failure mode (2026-09-14, lite 7.37.0 arm): the controller ended its
+#     turn while two implementers ran; `claude -p` waited exactly 10 min, killed the
+#     remaining agents and exited with a `success` result — DONE never reached. The
+#     system prompt now forbids ending the turn while background work runs; the chain
+#     scripts add a same-session `--resume` guard keyed on .mega-sdd/CONSISTENCY-REPORT.md.
 # Everything else is the plain runbook: no --classic / --lean / --lite, the front
 # door decides. Transcript lands in ~/.claude/projects/<encoded-cwd>/<sid>.jsonl —
 # that file + `git log` in the arm are the ONLY inputs to research/2026-08-04-p5-extract.py.
@@ -31,7 +36,7 @@ SID="$(python3 -c 'import uuid;print(uuid.uuid4())')"
 ENC="$(python3 -c 'import sys,re;print(re.sub(r"[^A-Za-z0-9]", "-", sys.argv[1]))' "$(cd "$ARM" && pwd -P)")"
 TRANSCRIPT="$HOME/.claude/projects/$ENC/$SID.jsonl"
 PROMPT="jalankan mega-sdd${FLAGS:+ $FLAGS} dari $PRD sampai semua unit selesai (DONE), lalu jalankan /mega-sdd:analyze di akhir."
-SYS="Benchmark run on a disposable fixture (v8 P0 measurement, research/2026-09-10-v8-autonomous-runbook.md §1). The human owner is not present and AskUserQuestion is unavailable in this session. Whenever the mega-sdd chain would ask the user something (front-door confirmation, batched OQ, scope, toolchain, halts that wait for a human), choose the MOST CONSERVATIVE option yourself (the one easiest to revert: defer, keep vault, do not invent UI, do not widen scope), write one line '[ASSUMED-BY-RUNNER: <question> -> <choice>: <reason>]' in your reply, and CONTINUE the chain. Never stop to wait for a human. Do not skip or loosen any gate, validator, acceptance test or review — a failing gate is fixed by fixing the code, never by editing evidence files."
+SYS="Benchmark run on a disposable fixture (v8 P0 measurement, research/2026-09-10-v8-autonomous-runbook.md §1). The human owner is not present and AskUserQuestion is unavailable in this session. Whenever the mega-sdd chain would ask the user something (front-door confirmation, batched OQ, scope, toolchain, halts that wait for a human), choose the MOST CONSERVATIVE option yourself (the one easiest to revert: defer, keep vault, do not invent UI, do not widen scope), write one line '[ASSUMED-BY-RUNNER: <question> -> <choice>: <reason>]' in your reply, and CONTINUE the chain. Never stop to wait for a human. Do not skip or loosen any gate, validator, acceptance test or review — a failing gate is fixed by fixing the code, never by editing evidence files. NEVER end your turn while any background implementer, panel lens or task is still running — this is a headless session: an ended turn exits the process 10 minutes later and the chain dies (v8 P2 lite 7.37.0 arm, 2026-09-14). Wait for background results with a blocking poll and only end the turn after /mega-sdd:analyze has run."
 ALLOWED="Bash,Read,Write,Edit,MultiEdit,Glob,Grep,Skill,Agent,ToolSearch,TodoWrite,NotebookEdit,WebFetch"
 {
   echo "sid=$SID"; echo "arm=$ARM"; echo "prd=$PRD"; echo "model=$MODEL"; echo "flags=$FLAGS"; echo "transcript=$TRANSCRIPT"
