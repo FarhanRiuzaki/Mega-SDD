@@ -1,0 +1,58 @@
+90289e6 2026-09-15T18:05:02+07:00 chore(sdd): analyze — CONSISTENCY-REPORT overall PASS (9 PASS / 0 FAIL / 13 SKIP)
+b3d2882 2026-09-15T18:04:38+07:00 chore(sdd): detect-drift — 19 findings queued in PENDING-SYNC (DRIFT-01 = U-004 quarantine root cause)
+6033dd3 2026-09-15T17:49:32+07:00 chore(sdd): evidence batch — full-suite gate green (370/370) + run-boundary postflight recompute
+4bd9f96 2026-09-15T17:22:55+07:00 chore(sdd): bolts summary — 20/22 done, U-004 quarantined, U-010 skipped
+fc52eba 2026-09-15T17:22:41+07:00 chore(sdd): evidence U-004 — quarantined (review_critical_unresolved); U-010 skipped
+9a9ef56 2026-09-15T17:21:54+07:00 chore(sdd): evidence U-021 — Build the reception board page (/staff/reception)
+5d2572c 2026-09-15T17:20:49+07:00 chore(sdd): evidence U-015 — Build the /book multi-step booking wizard
+9463dc4 2026-09-15T17:15:57+07:00 chore(sdd): evidence U-022 — Add role-gated Clinic menu entries in both menu orientations
+a013ce4 2026-09-15T17:14:48+07:00 chore(sdd): evidence U-008 — verifier round 3 merged (gate clear)
+0708f05 2026-09-15T17:13:33+07:00 style(U-015): apply prettier formatting from the L0 format gate
+8c558a0 2026-09-15T17:13:11+07:00 chore(sdd): evidence U-008 — Add the public booking proxy routes (doctors, services, availability, booking, token)
+52c2ce2 2026-09-15T17:10:27+07:00 chore(sdd): evidence U-017 — Build the /reschedule/[token] page
+b9bbeab 2026-09-15T17:09:43+07:00 feat(U-015): Build the /book multi-step booking wizard
+57c2a5a 2026-09-15T17:08:50+07:00 feat(U-021): Build the reception board page (/staff/reception)
+17776af 2026-09-15T17:05:52+07:00 feat(U-022): Add role-gated Clinic menu entries in both menu orientations
+a652f13 2026-09-15T17:04:32+07:00 fix(U-008): Add the public booking proxy routes (doctors, services, availability, booking, token)
+0cdf58a 2026-09-15T16:59:31+07:00 chore(sdd): evidence U-020 — Build the staff walk-in / phone appointment dialog with emergency override
+3297de9 2026-09-15T16:58:18+07:00 chore(sdd): evidence U-018 — Build the doctor schedule page (/staff/schedule) with appointment details
+7bd9620 2026-09-15T16:57:04+07:00 style(U-017): apply prettier formatting from the L0 format gate
+d68a77f 2026-09-15T16:55:03+07:00 feat(U-017): Build the /reschedule/[token] page
+9d92fb2 2026-09-15T16:52:17+07:00 chore(sdd): evidence U-016 — Add cancel-by-token (route handler + confirmation page)
+b8eef0d 2026-09-15T16:52:09+07:00 feat(U-020): Build the staff walk-in / phone appointment dialog with emergency override
+41bf622 2026-09-15T16:47:12+07:00 feat(U-018): Build the doctor schedule page (/staff/schedule) with appointment details
+48aa562 2026-09-15T16:45:27+07:00 chore(sdd): evidence U-019 — Build the reassign-to-another-doctor dialog
+8899041 2026-09-15T16:45:27+07:00 chore(sdd): evidence U-014 — Build the appointment status chip and the schedule grid
+2da9e6e 2026-09-15T16:45:26+07:00 chore(sdd): evidence U-013 — Build the accessible availability calendar and time-slot picker
+610135c 2026-09-15T16:41:13+07:00 feat(U-016): Add cancel-by-token (route handler + confirmation page)
+f3f76ed 2026-09-15T16:39:43+07:00 fix(U-008): Add the public booking proxy routes (doctors, services, availability, booking, token)
+6c8a0af 2026-09-15T16:29:59+07:00 chore(sdd): evidence U-012 — Add the CRON_SECRET-protected reminder sweep trigger route
+8a504db 2026-09-15T16:26:57+07:00 feat(U-014): Build the appointment status chip and the schedule grid
+f91b57f 2026-09-15T16:26:45+07:00 feat(U-019): Build the reassign-to-another-doctor dialog
+65fef6f 2026-09-15T16:26:45+07:00 feat(U-013): Build the accessible availability calendar and time-slot picker
+f7d7d52 2026-09-15T16:14:23+07:00 chore(sdd): scoped gitleaks ignore for a verified U-012 test-fixture false positive
+a63b8fc 2026-09-15T16:08:06+07:00 style(U-008): apply prettier formatting from the L0 format gate
+81f990c 2026-09-15T16:08:06+07:00 chore(sdd): evidence U-006 — Open the patient pages in the route guard and redirect /staff/login
+956d734 2026-09-15T16:07:07+07:00 chore(sdd): evidence U-005 — Apply the AA-safe clinic brand colors (teal-700 primary, green-700 accent)
+645a141 2026-09-15T16:03:12+07:00 feat(U-012): Add the CRON_SECRET-protected reminder sweep trigger route
+57c72a9 2026-09-15T16:03:10+07:00 chore(sdd): evidence U-001 — recertify after U-005 extended constants/index.ts
+9113e4d 2026-09-15T16:00:35+07:00 feat(U-008): Add the public booking proxy routes (doctors, services, availability, booking, token)
+8e94780 2026-09-15T15:59:52+07:00 chore(sdd): evidence U-009 — Add the public booking repository and TanStack Query hooks
+4ad635b 2026-09-15T15:58:39+07:00 feat(U-006): Open the patient pages in the route guard and redirect /staff/login
+ce15a15 2026-09-15T15:56:50+07:00 feat(U-005): Apply the AA-safe clinic brand colors (teal-700 primary, green-700 accent)
+755dedc 2026-09-15T15:54:13+07:00 chore(sdd): evidence U-011 — Add the staff appointments repository and TanStack Query hooks
+bad5322 2026-09-15T15:53:14+07:00 chore(sdd): evidence U-002 — Implement slot and bookable-date rules (BR-001, taken-slot hiding)
+b3a27f0 2026-09-15T15:42:51+07:00 feat(U-011): Add the staff appointments repository and TanStack Query hooks
+a0231a4 2026-09-15T15:42:36+07:00 feat(U-002): Implement slot and bookable-date rules (BR-001, taken-slot hiding)
+272d4ca 2026-09-15T15:41:31+07:00 feat(U-009): Add the public booking repository and TanStack Query hooks
+13672df 2026-09-15T15:36:21+07:00 chore(sdd): evidence U-001 — Add clinic appointment domain types, role constants and zod schemas
+943b597 2026-09-15T15:34:47+07:00 chore(sdd): evidence U-003 — Add zod body validation and shared envelope helpers to the proxy route factory
+394dadd 2026-09-15T15:34:46+07:00 chore(sdd): evidence U-007 — Build the branded public page shell (header, main landmark, footer)
+3c5379b 2026-09-15T15:27:47+07:00 style(U-003): apply prettier formatting from the L0 format gate
+aa85db7 2026-09-15T15:27:47+07:00 style(U-001): apply prettier formatting from the L0 format gate
+1cf3a15 2026-09-15T15:20:34+07:00 feat(U-007): Build the branded public page shell (header, main landmark, footer)
+1b9c6f9 2026-09-15T15:19:25+07:00 feat(U-004): Add a server-side role guard for route handlers
+597b3cc 2026-09-15T15:19:00+07:00 feat(U-001): Add clinic appointment domain types, role constants and zod schemas
+026d81e 2026-09-15T15:18:03+07:00 feat(U-003): Add zod body validation and shared envelope helpers to the proxy route factory
+9c7ebda 2026-09-15T15:11:50+07:00 chore(sdd): persist lane: lite in .mega-sdd/config.yaml
+17596bb 2026-09-15T15:06:09+07:00 docs(sdd): plan clinic vault (context, constitution) + 22 units [lite]

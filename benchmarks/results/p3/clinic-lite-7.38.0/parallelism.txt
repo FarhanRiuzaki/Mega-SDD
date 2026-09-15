@@ -1,0 +1,56 @@
+bolt-stage: first dispatch 08:13:00Z · last code commit 10:13:33Z (120.5 m gross) · last evidence 10:22:41Z
+other agents: {'other:Explore': 1, 'adv': 5, 'impl': 24, 'lens': 83, 'other:general-purpose': 1}
+
+unit   deps                     ready  disp   implEnd cmt1   cmtN   panel1 panelN evid   |  wait  impl  →cmt  panel  cmt→evid  n_disp status
+U-001  —                             —    0.0   11.3    6.0   14.8   17.6   22.4   23.3 |     —  11.3   6.0   4.8   8.6   1   comp
+U-002  U-001                      23.3   22.1   32.2   29.6   29.6   36.3   38.2   40.2 |  -1.2  10.1   7.4   2.0  10.6   1   comp
+U-003  —                             —    0.0    9.0    5.0   14.8   18.0   20.6   21.8 |     —   9.0   5.0   2.6   7.0   1   comp
+U-004  —                             —    0.1   25.7    6.4    6.4   14.8   18.1  129.7 |     —  25.6   6.3   3.3 123.3   2   comp,comp
+U-005  U-001                      23.3   39.3   46.1   43.8   43.8   47.8   52.2   50.2 |  15.9   6.8   4.5   4.4   6.3   1   comp
+U-006  —                             —   39.5   47.7   45.6   45.6   50.3   53.5   55.1 |     —   8.2   6.2   3.3   9.4   1   comp
+U-007  —                             —    0.2   12.3    7.6    7.6   15.3   19.0   21.8 |     —  12.1   7.4   3.6  14.2   1   comp
+U-008  U-001,U-003                23.3   39.3  114.2   47.6  111.5   59.6  119.6  120.2 |  16.0  74.9   8.2  60.0   8.7   3   comp,comp,comp
+U-009  U-001                      23.3   22.3   32.3   28.5   28.5   38.3   43.9   46.9 |  -1.1  10.1   6.3   5.6  18.4   1   comp
+U-010  U-001,U-003,U-004         129.7      —      —      —      —      —      —  129.7 |     —     —     —     —     —   0   
+U-011  U-001                      23.3   22.2   31.9   29.8   29.8   36.4   40.7   41.2 |  -1.1   9.7   7.6   4.4  11.4   1   comp
+U-012  U-003                      21.8   39.4   54.2   50.2   50.2   62.5   70.1   77.0 |  17.6  14.8  10.8   7.6  26.8   1   comp
+U-013  U-002                      40.2   62.2   77.4   73.7   73.7   81.8   86.4   92.4 |  22.0  15.1  11.5   4.6  18.7   1   comp
+U-014  U-001,U-002,U-005          50.2   62.3   77.5   73.9   73.9   82.2   86.1   92.4 |  12.1  15.2  11.7   3.9  18.5   1   comp
+U-015  U-001,U-002,U-007,U-009,U-013   92.4   93.0  120.9  116.7  120.5  121.9  127.1  127.8 |   0.6  27.9  23.7   5.1   7.3   1   comp
+U-016  U-001,U-003,U-007,U-009    46.9   62.3   91.2   88.2   88.2   93.2   97.8   99.3 |  15.5  28.9  25.9   4.7  11.1   1   comp
+U-017  U-002,U-007,U-009,U-013    92.4   93.0  103.3  102.0  104.1  105.4  109.1  117.4 |   0.6  10.2   9.0   3.7  13.4   1   comp
+U-018  U-011,U-014                92.4   83.4   97.4   94.2   94.2   99.4  103.5  105.3 |  -9.1  14.1  10.8   4.1  11.1   1   comp
+U-019  U-011                      41.2   62.4   79.2   73.7   73.7   82.7   84.9   92.4 |  21.2  16.8  11.4   2.3  18.7   1   comp
+U-020  U-001,U-002,U-009,U-011,U-013   92.4   83.4  101.3   99.1   99.1  102.5  106.1  106.5 |  -9.0  17.9  15.7   3.6   7.4   1   comp
+U-021  U-011,U-014,U-018,U-019,U-020  106.5  106.2  121.5  115.8  115.8  123.1  128.3  128.9 |  -0.3  15.2   9.6   5.2  13.1   1   comp
+U-022  —                             —  105.1  115.8  112.9  112.9  118.3  121.8  122.9 |     —  10.8   7.8   3.5  10.1   1   comp
+
+concurrency aktual (time-weighted over 129.7 net min, first dispatch → last evidence):
+  implementers running : 0: 33.0 m (25 %) · 1: 7.6 m (6 %) · 2: 17.8 m (14 %) · 3: 19.4 m (15 %) · 4: 51.9 m (40 %)
+  impl+lens agents     : 0: 13.5 m (10 %) · 1: 7.2 m (6 %) · 2: 8.0 m (6 %) · 3: 20.9 m (16 %) · 4: 36.8 m (28 %) · 5: 12.3 m (9 %) · 6: 8.1 m (6 %) · 7: 5.0 m (4 %) · 8: 6.9 m (5 %) · 9: 4.4 m (3 %) · 10: 2.7 m (2 %) · 11: 0.5 m (0 %) · 12: 1.1 m (1 %) · 13: 1.4 m (1 %) · 14: 0.9 m (1 %)
+  mean implementers in flight = 2.38; implementer-minutes = 308.8
+
+dispatch bursts (≤3 min apart = one burst):
+  burst  1 @    0.0 m : U-001, U-003, U-004, U-007
+  burst  2 @   22.1 m : U-004, U-002, U-011, U-009
+  burst  3 @   39.3 m : U-005, U-008, U-012, U-006
+  burst  4 @   62.2 m : U-013, U-014, U-016, U-019
+  burst  5 @   81.5 m : U-008, U-018, U-020
+  burst  6 @   93.0 m : U-015, U-017
+  burst  7 @  105.0 m : U-008, U-022, U-021
+
+controller-thread script calls after first dispatch (count · Σ min):
+  detect-after-helper(p0_post.sh)+detect-after.sh   15 ·    5.0
+  detect-after-helper(p0_post.sh)+detect-after.sh+merge-panel-findings.sh    6 ·    2.8
+  run-code-gates.sh                         2 ·    1.1
+  merge-panel-findings.sh                  10 ·    0.2
+  run-acceptance-tests.sh+run-postflight-scan.sh    1 ·    0.1
+  derive-ready-units.sh                     5 ·    0.1
+  build-dispatch-prompt.sh+derive-ready-units.sh+derive-unit-claims.sh+resolve-review-tier.sh+run-preflight-scan.sh+validate-handoff-binding-units.sh+write-unit-binding.sh    2 ·    0.1
+  run-analyze.sh                            1 ·    0.1
+  build-dispatch-prompt.sh+build-symbol-index.sh+derive-unit-claims.sh+merge-panel-findings.sh+resolve-review-tier.sh+run-preflight-scan.sh+validate-handoff-binding-units.sh+write-unit-binding.sh    1 ·    0.1
+  build-dispatch-prompt.sh+build-symbol-index.sh+derive-ready-units.sh+derive-unit-claims.sh+resolve-review-tier.sh+run-preflight-scan.sh+validate-handoff-binding-units.sh+write-unit-binding.sh    1 ·    0.1
+  render-html.sh+validate-bolt-artifacts.sh    1 ·    0.0
+  build-dispatch-prompt.sh+derive-unit-claims.sh+resolve-review-tier.sh+run-preflight-scan.sh+validate-handoff-binding-units.sh+write-unit-binding.sh    1 ·    0.0
+  validate-bolt-artifacts.sh                1 ·    0.0
+  build-symbol-index.sh+derive-unit-claims.sh+merge-panel-findings.sh+validate-handoff-binding-units.sh+write-unit-binding.sh    1 ·    0.0

@@ -7,9 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
-## [Unreleased] — kandidat 8.0.0 (MAJOR): goal §3 P3 item 1/2/4/5 — migrasi layout-3, alias tiga fase classic dengan satu baris KENAPA, re-key sync/drift/delta/graph ke binding per unit, degradasi disengaja tercatat; tag 8.0.0 menunggu empat kriteria ship dinilai (runbook §3: DILARANG tag sebelum dinilai)
+## [8.0.0] - 2026-09-15 — MAJOR: lane `--lite` (OPT-IN, bukan default — kriteria (a)/(b) gagal pada run bersih, angka di Notes), migrasi layout-3, alias tiga fase classic dengan satu baris KENAPA, re-key sync/drift/delta/graph ke binding per unit, degradasi disengaja tercatat
 
 Program otonom v8 §3 / P3 (`research/2026-09-15-v8-p3-report.md §5`). Semua perubahan di bawah ini inert pada lane classic + vault layout-2 (validator PASS di sana; chain classic byte-identik) — aktif hanya pada `lane: lite` / vault layout-3.
+
+### Notes — kriteria ship 8.0.0 (MEASURED, headless `claude -p`, opus, n=1 per arm; endpoint DONE = max(gate unit terakhir, B2); `benchmarks/scripts/p3-ship-verdict.py` → `benchmarks/results/p3/ship-verdict.json`)
+
+Aturan (runbook §3 + §3-lanjutan owner 2026-09-15): `--lite` jadi DEFAULT hanya bila pada RUN BERSIH (0 outage, 0 resume di fase terukur) **(a)** xs DONE ≤60 m **DAN (b)** klinik in-flight implementer rata-rata ≥2,5 dari cap 4 DAN waktu bolt-stage tanpa implementer <20 % dengan acceptance penuh + Critical 0. Kriteria (ii)–(iv) tidak berubah.
+
+| Kriteria | Angka 8.0.0 (`--lite`, cache 7.38.0) | Pembanding | Verdict |
+|---|---|---|---|
+| (a) xs DONE ≤ 60 m | **1h11m02s** (run #2, bersih; PRE-CODE 17m05s, bolt-stage 54 m dengan in-flight 0,93 / idle 56 %) | classic 7.34.0 1h27m35s · lite 7.37.1 1h10m54s | **FAIL** (MISS 11m02s) |
+| (b) klinik in-flight ≥2,5 · idle <20 % · acceptance penuh · Critical 0 | **2,38 · 25 % · 21/21 · Critical 4 (3 resolved, 1 karantina U-004)**; DONE 3h15m13s (bersih), bolt-stage 120,5 m | classic 7.35.0 1,09 · 47 % · 5 Critical · 4h43m33s; lite 7.37.1 1,46 · 45 % · 3h13m24s | **FAIL** (tipis; arah benar) |
+| (ii) acceptance + P1 findings ≤ classic | xs 5/5 · 0/10/17 (Important 10 > 7 classic — disclosed, n=1) · klinik 21/21 · 4/30/89 vs 5/46/91 | — | **PASS** klinik (STRICT); xs PASS Critical-only |
+| (iii) C-set + S-series + blackbox hijau | suite dua tree 267 file (1 merah lokal = stub-env Xcode mesin runner), CI GitHub hijau per commit | — | **PASS** |
+| (iv) migrasi layout-3 idempoten + full JIT re-bind wajib | `tests/migrate-paths/test-vault-layout3-migration.sh` m1–m11, `tests/v8-layout3/test-rebind-units.sh` a–g | — | **PASS** |
+
+**Konsekuensi:** 8.0.0 di-tag dengan `--lite` **opt-in** (flag `--lite` / config `lane: lite`); lane classic tetap default sepanjang 8.x. Yang terukur membaik (classic → 8.0.0 lite): xs time-to-first-code 47m27s → 23m05s, DONE 1h27m → 1h11m, biaya $77 → $50; klinik DONE 4h44m → 3h15m, in-flight 1,09 → 2,38, idle 47 % → 25 %, biaya $260 → $199, conflict-at-dispatch 14,3 % → 0 %. Yang belum: xs controller tidak konsisten mem-pipeline (n=2 terbelah), klinik PRE-CODE memburuk (`plan` 56 m untuk 22 unit) dan DAG plan kedalaman 5 mengikat critical path — bedah lengkap di `research/2026-09-15-v8-p3-report.md §5/§2f`; lever berikutnya diukur di xs dulu (8.0.x/9.0).
 
 ### Added
 - **`migrate-paths --vault-layout=3 [--vault=<dir>]` (goal item 1)** — vetted core `scripts/migrate-vault-layout3.sh`: layout-2 → `context.md` (frontmatter `vault_layout: 3`, section H2 kontrak layout-3; H2 grouping milik doc yang dilipat → label bold supaya slice parser tidak putus — `derive-vault-json` sebelum == sesudah pada entities/flows/adrs/oqs, dibuktikan di fixture klinik), arsip verbatim empat doc + `binding.md`/`binding.json`/`claims-ledger.json` ke `_meta/archive/layout2/` (git mv), split binding per unit via `binding_refs` → `bolts/U-XXX/binding-migrated.json` (claim + blok CONFLICT + resolusi manusia + OQ ref) — **bukan** `binding.json` (satu writer), rewrite NAME-only `vault_source`/VAULT-DIFF, dry-run default, idempoten, dirty-tree refusal, legacy 7-file ditolak dengan pointer ke rung layout-2, dan pesan WAJIB "full JIT re-bind required" (`rebind-units.sh --units=all`). Pin `tests/migrate-paths/test-vault-layout3-migration.sh` m1–m11.

@@ -1,0 +1,7 @@
+arm clinic-lite-7.38.0 sid 8cf730af start 07:07:28Z
+  DONE_code    3h06m04s  last code commit  style(U-015): apply prettier formatting from the L0 format gate
+  DONE_p5      3h06m04s  last type(U-*) commit (P0/P2 tables)  style(U-015): apply prettier formatting from the L0 format g
+  DONE_gate    3h15m13s  last unit gate pass (postflight/acceptance/panel merge) for U-015
+  B2 suite     3h09m17s  run-full-suite.sh result (batch gate, reported separately)
+  EXCLUDED       53m28s  first drift/analyze/html/emit call (never in DONE)
+  gate calls seen for last-code unit: {'run-acceptance-tests.sh': '10:22:41', 'run-postflight-scan.sh': '10:22:41', 'merge-panel-findings.sh': '10:20:49'}

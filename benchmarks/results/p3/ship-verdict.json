@@ -1,0 +1,170 @@
+{
+ "criteria": {
+  "a": {
+   "value_min": 71.03,
+   "threshold_min": 60,
+   "pass": false,
+   "clean": true,
+   "readable": true
+  },
+  "b": {
+   "mean_inflight": 2.38,
+   "idle0_pct": 25,
+   "acceptance_units": "21/21",
+   "critical": 4,
+   "clean": true,
+   "readable": true,
+   "pass": false
+  },
+  "ii": {
+   "xs": {
+    "acceptance_ok": true,
+    "critical_ok": true,
+    "important_ok": false,
+    "classic": {
+     "acceptance_units": "5/5",
+     "critical": 0,
+     "important": 7,
+     "minor": 20
+    },
+    "pass_strict": false,
+    "pass_critical_only": true,
+    "pass": false
+   },
+   "clinic": {
+    "acceptance_ok": true,
+    "critical_ok": true,
+    "important_ok": true,
+    "classic": {
+     "acceptance_units": "21/21",
+     "critical": 5,
+     "important": 46,
+     "minor": 91
+    },
+    "pass_strict": true,
+    "pass_critical_only": true,
+    "pass": true
+   }
+  }
+ },
+ "xs": {
+  "arm": "xs",
+  "dir": "benchmarks/results/p3/xs-lite-7.38.0-run2",
+  "meta_present": true,
+  "dirty_keys": [],
+  "ended": "2026-09-15T06:03:06Z",
+  "done": {
+   "DONE_code": 56.31666666666667,
+   "DONE_p5": 56.31666666666667,
+   "DONE_gate": 71.03333333333333,
+   "B2": 68.35,
+   "EXCLUDED": 16.533333333333335,
+   "DONE": 71.03333333333333
+  },
+  "clean": true,
+  "tail_events": [],
+  "par": {
+   "mean_inflight": 0.93,
+   "impl_minutes": 46.9,
+   "idle0_min": 28.5,
+   "idle0_pct": 56,
+   "window_min": 50.6,
+   "bolt_stage_to_last_code_min": 37.3
+  },
+  "quality": {
+   "acceptance_units": "5/5",
+   "postflight_units": "5/5",
+   "critical": 0,
+   "important": 10,
+   "minor": 17,
+   "quarantined": 0,
+   "retries": 0,
+   "done": 5,
+   "units_total": 5,
+   "jit": null
+  },
+  "cost": {
+   "usd": 49.66,
+   "result_events": 1,
+   "distinct_values": [
+    49.661236
+   ]
+  },
+  "ii": {
+   "acceptance_ok": true,
+   "critical_ok": true,
+   "important_ok": false,
+   "classic": {
+    "acceptance_units": "5/5",
+    "critical": 0,
+    "important": 7,
+    "minor": 20
+   },
+   "pass_strict": false,
+   "pass_critical_only": true,
+   "pass": false
+  }
+ },
+ "clinic": {
+  "arm": "clinic",
+  "dir": "benchmarks/results/p3/clinic-lite-7.38.0",
+  "meta_present": true,
+  "dirty_keys": [],
+  "ended": "2026-09-15T11:06:35Z",
+  "done": {
+   "DONE_code": 186.06666666666666,
+   "DONE_p5": 186.06666666666666,
+   "DONE_gate": 195.21666666666667,
+   "B2": 189.28333333333333,
+   "EXCLUDED": 53.46666666666667,
+   "DONE": 195.21666666666667
+  },
+  "clean": true,
+  "tail_events": [
+   "resume_1=2026-09-15T10:48:36Z (+26.0 m after DONE)"
+  ],
+  "par": {
+   "mean_inflight": 2.38,
+   "impl_minutes": 308.8,
+   "idle0_min": 33.0,
+   "idle0_pct": 25,
+   "window_min": 129.7,
+   "bolt_stage_to_last_code_min": 120.5
+  },
+  "quality": {
+   "acceptance_units": "21/21",
+   "postflight_units": "21/21",
+   "critical": 4,
+   "important": 30,
+   "minor": 89,
+   "quarantined": 1,
+   "retries": 9,
+   "done": 20,
+   "units_total": 22,
+   "jit": null
+  },
+  "cost": {
+   "usd": 213.75,
+   "result_events": 2,
+   "distinct_values": [
+    198.559876,
+    15.195099
+   ]
+  },
+  "ii": {
+   "acceptance_ok": true,
+   "critical_ok": true,
+   "important_ok": true,
+   "classic": {
+    "acceptance_units": "21/21",
+    "critical": 5,
+    "important": 46,
+    "minor": 91
+   },
+   "pass_strict": true,
+   "pass_critical_only": true,
+   "pass": true
+  }
+ },
+ "verdict": "--lite OPT-IN \u2014 (a) xs DONE 71.0 m > 60 m; (b) clinic in-flight 2.38 / idle 25 % / acceptance 21/21 / Critical 4"
+}

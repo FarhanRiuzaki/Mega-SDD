@@ -22,6 +22,14 @@ PASS by absence).
 import json, os, re, sys
 
 
+def _dt(s):
+    import datetime
+    s = (s or "").strip()
+    if not s:
+        raise ValueError("empty")
+    return datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
+
+
 def hms_to_min(s):
     m = re.match(r"(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$", s.strip())
     if not m:
@@ -134,10 +142,33 @@ def arm_report(name, d, classic):
     meta = read_meta(d)
     r["meta_present"] = meta is not None
     dirty = sorted(k for k in (meta or {}) if re.match(r"(resume_\d+|outage_\d+)", k))
-    r["clean"] = (meta is not None) and not dirty
     r["dirty_keys"] = dirty
     r["ended"] = (meta or {}).get("ended_at")
     r["done"] = read_done(d)
+    # clean = no outage/resume INSIDE the measured phase (owner rule C). A resume whose
+    # timestamp is AFTER start + DONE (the EXCLUDED tail: drift / analyze / html) does not
+    # contaminate the measured numbers — it is listed as `tail_events`, never hidden.
+    tail = []; inside = []
+    try:
+        t0 = _dt((meta or {}).get("started_at"))
+    except Exception:
+        t0 = None
+    done_min = (r["done"] or {}).get("DONE") if r["done"] else None
+    for k in dirty:
+        v = (meta or {}).get(k, "")
+        if not re.match(r"resume_\d+$|outage_\d+_last_ok$|outage_\d+_first_api_error$", k):
+            continue
+        try:
+            tv = _dt(v)
+        except Exception:
+            inside.append(k); continue
+        if t0 is not None and done_min is not None and (tv - t0).total_seconds() / 60.0 > done_min:
+            tail.append("%s=%s (+%.1f m after DONE)" % (k, v, (tv - t0).total_seconds() / 60.0 - done_min))
+        else:
+            inside.append(k)
+    r["clean"] = (meta is not None) and not inside
+    r["tail_events"] = tail
+    r["dirty_keys"] = inside
     r["par"] = read_par(d)
     r["quality"] = read_quality(d)
     r["cost"] = read_cost(d)
@@ -212,8 +243,9 @@ def main():
     for r in (xs, cl):
         if not r:
             continue
-        print("%-7s dir=%s clean=%s%s ended=%s" % (r["arm"], r["dir"], r["clean"],
-              (" dirty=" + ",".join(r["dirty_keys"])) if r["dirty_keys"] else "", r["ended"]))
+        print("%-7s dir=%s clean=%s%s%s ended=%s" % (r["arm"], r["dir"], r["clean"],
+              (" dirty=" + ",".join(r["dirty_keys"])) if r["dirty_keys"] else "",
+              (" tail-after-DONE=" + "; ".join(r["tail_events"])) if r.get("tail_events") else "", r["ended"]))
         if r["done"]:
             print("        DONE=max(gate %.1f m, B2 %s) = %.1f m · DONE_code %s m" %
                   (r["done"]["DONE_gate"] or -1, ("%.1f m" % r["done"]["B2"]) if r["done"].get("B2") is not None else "—",
