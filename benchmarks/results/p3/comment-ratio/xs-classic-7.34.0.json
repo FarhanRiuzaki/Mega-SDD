@@ -1,0 +1,196 @@
+{
+ "aggregate": {
+  "repo": "../TRAINING/p0-xs-arm",
+  "base": "6f98c10",
+  "head": "HEAD",
+  "files": 16,
+  "code": 1009,
+  "comment": 371,
+  "blank": 266,
+  "docblock": 38,
+  "provenance": 122,
+  "source_anchor": 0,
+  "ratio": 0.368,
+  "ratio_ex_prov": 0.247,
+  "docblock_share": 0.102,
+  "median_file_ratio": 0.368
+ },
+ "files": [
+  {
+   "code": 2,
+   "comment": 20,
+   "blank": 2,
+   "docblock": 7,
+   "provenance": 11,
+   "source_anchor": 0,
+   "file": "src/libs/public-routes/index.ts",
+   "ratio": 10.0,
+   "ratio_ex_prov": 4.5
+  },
+  {
+   "code": 4,
+   "comment": 23,
+   "blank": 3,
+   "docblock": 0,
+   "provenance": 3,
+   "source_anchor": 0,
+   "file": "src/features/contact/repositories/contact.repository.ts",
+   "ratio": 5.75,
+   "ratio_ex_prov": 5.0
+  },
+  {
+   "code": 7,
+   "comment": 24,
+   "blank": 4,
+   "docblock": 5,
+   "provenance": 3,
+   "source_anchor": 0,
+   "file": "src/features/contact/hooks/useContactMessage.ts",
+   "ratio": 3.429,
+   "ratio_ex_prov": 3.0
+  },
+  {
+   "code": 25,
+   "comment": 33,
+   "blank": 5,
+   "docblock": 9,
+   "provenance": 3,
+   "source_anchor": 0,
+   "file": "src/features/contact/schemas/contact.schema.ts",
+   "ratio": 1.32,
+   "ratio_ex_prov": 1.2
+  },
+  {
+   "code": 42,
+   "comment": 31,
+   "blank": 11,
+   "docblock": 6,
+   "provenance": 3,
+   "source_anchor": 0,
+   "file": "src/app/api/v1/contact-messages/route.ts",
+   "ratio": 0.738,
+   "ratio_ex_prov": 0.667
+  },
+  {
+   "code": 29,
+   "comment": 16,
+   "blank": 12,
+   "docblock": 0,
+   "provenance": 11,
+   "source_anchor": 0,
+   "file": "src/proxy.ts",
+   "ratio": 0.552,
+   "ratio_ex_prov": 0.172
+  },
+  {
+   "code": 51,
+   "comment": 23,
+   "blank": 7,
+   "docblock": 0,
+   "provenance": 15,
+   "source_anchor": 0,
+   "file": "src/configs/companyProfileConfig.ts",
+   "ratio": 0.451,
+   "ratio_ex_prov": 0.157
+  },
+  {
+   "code": 68,
+   "comment": 25,
+   "blank": 9,
+   "docblock": 0,
+   "provenance": 3,
+   "source_anchor": 0,
+   "file": "src/app/(blank-layout-pages)/kontak/page.tsx",
+   "ratio": 0.368,
+   "ratio_ex_prov": 0.324
+  },
+  {
+   "code": 108,
+   "comment": 31,
+   "blank": 15,
+   "docblock": 7,
+   "provenance": 3,
+   "source_anchor": 0,
+   "file": "src/features/contact/components/ContactForm/index.tsx",
+   "ratio": 0.287,
+   "ratio_ex_prov": 0.259
+  },
+  {
+   "code": 80,
+   "comment": 22,
+   "blank": 9,
+   "docblock": 0,
+   "provenance": 15,
+   "source_anchor": 0,
+   "file": "src/app/(blank-layout-pages)/beranda/page.tsx",
+   "ratio": 0.275,
+   "ratio_ex_prov": 0.087
+  },
+  {
+   "code": 72,
+   "comment": 19,
+   "blank": 27,
+   "docblock": 0,
+   "provenance": 15,
+   "source_anchor": 0,
+   "file": "src/app/(blank-layout-pages)/beranda/page.test.tsx",
+   "ratio": 0.264,
+   "ratio_ex_prov": 0.056
+  },
+  {
+   "code": 75,
+   "comment": 18,
+   "blank": 10,
+   "docblock": 0,
+   "provenance": 10,
+   "source_anchor": 0,
+   "file": "src/app/(blank-layout-pages)/tentang-kami/page.tsx",
+   "ratio": 0.24,
+   "ratio_ex_prov": 0.107
+  },
+  {
+   "code": 140,
+   "comment": 30,
+   "blank": 50,
+   "docblock": 3,
+   "provenance": 3,
+   "source_anchor": 0,
+   "file": "src/app/api/v1/contact-messages/route.test.ts",
+   "ratio": 0.214,
+   "ratio_ex_prov": 0.193
+  },
+  {
+   "code": 74,
+   "comment": 15,
+   "blank": 29,
+   "docblock": 0,
+   "provenance": 11,
+   "source_anchor": 0,
+   "file": "src/libs/public-routes/index.test.ts",
+   "ratio": 0.203,
+   "ratio_ex_prov": 0.054
+  },
+  {
+   "code": 143,
+   "comment": 26,
+   "blank": 42,
+   "docblock": 1,
+   "provenance": 3,
+   "source_anchor": 0,
+   "file": "src/features/contact/components/ContactForm/index.test.tsx",
+   "ratio": 0.182,
+   "ratio_ex_prov": 0.161
+  },
+  {
+   "code": 89,
+   "comment": 15,
+   "blank": 31,
+   "docblock": 0,
+   "provenance": 10,
+   "source_anchor": 0,
+   "file": "src/app/(blank-layout-pages)/tentang-kami/page.test.tsx",
+   "ratio": 0.169,
+   "ratio_ex_prov": 0.056
+  }
+ ]
+}
