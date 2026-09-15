@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
-## [Unreleased] — kandidat 8.0.1: masukan tim #4 (komentar over-verbose di generated code) — aturan gaya, bukan gate
+## [8.0.1] - 2026-09-15 — masukan tim #4: komentar menjelaskan KENAPA, bukan APA (aturan gaya, bukan gate; MEASURED −54 % ex-provenance) + R2-clamp untuk anchor whole-file
 
 Program otonom v8 §5 masukan tim #4 (`research/2026-09-15-v8-p3-report.md §6`). Diagnosa dulu (grep + ukur), baru aturan: penyebab #1 = trailer provenance yang diwajibkan prompt implementer (33–59 % baris komentar; hanya baris marker yang dibaca gate `provenance_missing`) — **TIDAK disentuh di rilis ini** (proposal-first ke owner: trailer padat = marker + `Unit:`); #2 = default model tanpa aturan; #3 = pack `laravel-base-26` "prefer PHPDoc blocks"; rubrik panel BUKAN penyebab (0 kemunculan).
 

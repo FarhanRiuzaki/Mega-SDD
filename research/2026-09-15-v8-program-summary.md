@@ -69,7 +69,7 @@ Program v8 memotong **tiga fase model pra-kode (intent → bind → units) jadi 
 - **Alias tiga fase classic** (`generate-intent`/`bind-codebase`/`generate-units` → FATAL KENAPA di lane lite / layout-3) hidup satu major; cabut di 9.0 setelah usage review (gateway telemetry).
 - **Dual-read layout 3/2/legacy** satu minor cycle; legacy 7-file dicabut setelahnya; `migrate-paths --vault-layout=3` tetap dry-run default.
 - **Degradasi layout-3 yang disengaja**: drift Architecture prose tidak terdeteksi (tidak ada section-nya) — kalau lapangan butuh, itu fitur 9.0 dengan bukti.
-- **Masukan tim #4** (komentar): aturan KENAPA-bukan-APA di implementer + pack + proposal trailer padat, ukur −40 % rasio pada xs — 8.0.x/8.1.0 (P3 §6).
+- **Masukan tim #4** (komentar): aturan KENAPA-bukan-APA SHIPPED 8.0.1 (ex-provenance −54 % MEASURED, P3 §6d); sisa = **proposal owner: trailer provenance padat (marker + `Unit:`)** — 70 % baris komentar sekarang adalah trailer; gate `provenance_missing` hanya membaca baris marker, jadi ini keputusan bentuk, bukan gate.
 - **Penyerial sisa bolt-stage** kalau klinik 8.0.0 masih <2,5 in-flight: bedah ulang dengan metode P3 §2 (bukan lever baru).
 - **P4 field run Windows+Falcon** (angka resmi; `test-spawn-ceilings.sh` jalur JIT) — hanya owner/tim di kantor.
 - Seam handoff D4 (`metrics` flow-style di execute-bolts → detect-drift), sel xs→sonnet yang tidak pernah terpicu di fixture, `units/_index.md` refresh status setelah bolts, skema `blockers[]` — kelas parser mini-YAML.
@@ -101,7 +101,7 @@ Program v8 memotong **tiga fase model pra-kode (intent → bind → units) jadi 
 2. *"Kontrak ditulis berkali-kali."* — Sekarang satu fase (`plan`) nulis satu `context.md` + unit; handoff YAML antar fase hilang; `binding.md` 17 KB yang cuma 4 field-nya dibaca, hilang. Yang tetap besar adalah badan unit (±100 KB untuk 19 unit) — itu memang kontrak yang dibaca implementer, bukan lemak.
 3. *"Lambat & berat."* — Lihat tabel: 3-screen waktu ke kode pertama −51 %, selesai −19 %, biaya −36 %; klinik selesai −31 %, biaya −18 %, token cost-weighted −44 %, implementer paralel rata-rata 1,1 → 2,4 dari 4 slot. Yang sengaja nggak kami sentuh: gate per unit (L0, postflight, acceptance, panel 3–5 lens). Itu yang bikin Critical turun 5 → 0.
 
-**Komentar di generated code yang kebanyakan (feedback #4):** sudah dibedah, belum diubah (supaya angka di atas nggak tercemar). Separuh baris komentar itu ternyata header provenance yang diwajibkan plugin sendiri, bukan model yang cerewet — perbaikannya masuk 8.0.x/8.1.0.
+**Komentar di generated code yang kebanyakan (feedback #4):** dibedah dulu, lalu diubah di 8.0.1 dan DIUKUR di skenario 3-screen yang sama: komentar non-header turun **−54 %** (rasio 0,205 → 0,094), docblock pengulang signature 19 % → 0 %, komentar KENAPA (aturan bisnis, workaround, asumsi) tetap ada, acceptance 5/5, Critical 0. Yang masih tersisa hampir seluruhnya header provenance 5–8 baris per file yang diwajibkan plugin sendiri (70 % baris komentar sekarang) — memadatkannya jadi 2 baris = keputusan owner (gate cuma membaca baris pertama), bukan model yang cerewet.
 
 **Kalau mau coba:** update plugin (`claude plugin marketplace update` lalu `claude plugin update mega-sdd@mega-sdd`), project lama layout-2 bisa dimigrasi dengan `/mega-sdd:migrate-paths --vault-layout=3` (dry-run dulu, lihat apa yang berubah, baru `--apply`; setelah itu wajib `scripts/rebind-units.sh --units=all` sekali). Audit "kode masih sinkron sama spec?" di lane lite = `sync --full-bind`. Lane classic tetap ada sepanjang 8.x.
 
