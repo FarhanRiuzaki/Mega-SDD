@@ -1,0 +1,7 @@
+arm xs-lite-8.0.1-trailer sid d96d1a68 start 16:28:15Z
+  DONE_code      48m35s  last code commit  feat(U-005): Build the Kontak page with its contact form
+  DONE_p5        48m35s  last type(U-*) commit (P0/P2 tables)  feat(U-005): Build the Kontak page with its contact form
+  DONE_gate      59m20s  last unit gate pass (postflight/acceptance/panel merge) for U-005
+  B2 suite       55m06s  run-full-suite.sh result (batch gate, reported separately)
+  EXCLUDED       20m13s  first drift/analyze/html/emit call (never in DONE)
+  gate calls seen for last-code unit: {'run-postflight-scan.sh': '17:21:00', 'run-acceptance-tests.sh': '17:21:00', 'merge-panel-findings.sh': '17:27:36'}

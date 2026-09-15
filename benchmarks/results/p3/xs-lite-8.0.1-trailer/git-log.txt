@@ -1,0 +1,11 @@
+b60aaec 2026-09-16T00:43:06+07:00 chore(sdd): drift gate + consistency analysis for company-profile
+d857cc9 2026-09-16T00:28:44+07:00 chore(sdd): evidence U-003, U-005 + batch summary — all 5 units done
+ec7e3e1 2026-09-16T00:22:10+07:00 chore(sdd): evidence U-001, U-002, U-004 — bolts reviewed clean
+1ee509e 2026-09-16T00:16:51+07:00 feat(U-005): Build the Kontak page with its contact form
+caef039 2026-09-16T00:13:28+07:00 feat(U-003): Add the Tentang Kami page
+67af3ad 2026-09-16T00:08:35+07:00 chore(mega-sdd): pre-dispatch anchor fixes in company-profile units
+6e50ede 2026-09-16T00:03:18+07:00 style(U-002): apply repo prettier formatting to U-002 files
+6d5c3e7 2026-09-15T23:57:31+07:00 feat(U-002): Add the static company-profile config and the Beranda page
+7b18996 2026-09-15T23:55:40+07:00 feat(U-004): Validate contact messages server-side and forward them to the upstream store
+91fab51 2026-09-15T23:54:33+07:00 feat(U-001): Open Beranda, Tentang Kami and Kontak to anonymous visitors in the route guard
+70fcd1e 2026-09-15T23:49:32+07:00 chore(mega-sdd): plan company-profile vault (lite lane)

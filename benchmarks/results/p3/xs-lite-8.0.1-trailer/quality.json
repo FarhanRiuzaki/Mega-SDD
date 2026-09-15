@@ -1,0 +1,133 @@
+{
+ "arm": "/Users/<user>/SunnyGo/2026/AIRND2026/Project/TRAINING/p0-xs-lite",
+ "vault": ".mega-sdd/vaults/company-profile",
+ "units_total": 5,
+ "units": {
+  "U-001": {
+   "status": "success",
+   "retries": 0,
+   "acceptance": "pass",
+   "postflight": "pass",
+   "findings": {
+    "Minor": 2
+   },
+   "spec_verdict": "pass",
+   "panel_attempt": 1,
+   "jit": {
+    "CONFIRMED": 8,
+    "CONFLICT": 0,
+    "OQ": 0
+   }
+  },
+  "U-002": {
+   "status": "success",
+   "retries": 0,
+   "acceptance": "pass",
+   "postflight": "pass",
+   "findings": {
+    "Important": 2,
+    "Minor": 1
+   },
+   "spec_verdict": "pass",
+   "panel_attempt": 1,
+   "jit": {
+    "CONFIRMED": 9,
+    "CONFLICT": 0,
+    "OQ": 0
+   }
+  },
+  "U-003": {
+   "status": "success",
+   "retries": 0,
+   "acceptance": "pass",
+   "postflight": "pass",
+   "findings": {
+    "Minor": 3,
+    "Important": 1
+   },
+   "spec_verdict": "pass",
+   "panel_attempt": 1,
+   "jit": {
+    "CONFIRMED": 6,
+    "CONFLICT": 0,
+    "OQ": 1
+   }
+  },
+  "U-004": {
+   "status": "success",
+   "retries": 0,
+   "acceptance": "pass",
+   "postflight": "pass",
+   "findings": {
+    "Minor": 5
+   },
+   "spec_verdict": "pass",
+   "panel_attempt": 1,
+   "jit": {
+    "CONFIRMED": 12,
+    "CONFLICT": 0,
+    "OQ": 1
+   }
+  },
+  "U-005": {
+   "status": "success",
+   "retries": 0,
+   "acceptance": "pass",
+   "postflight": "pass",
+   "findings": {
+    "Important": 2,
+    "Minor": 4
+   },
+   "spec_verdict": "pass",
+   "panel_attempt": 1,
+   "jit": {
+    "CONFIRMED": 13,
+    "CONFLICT": 0,
+    "OQ": 1
+   }
+  }
+ },
+ "done": 5,
+ "quarantined": 0,
+ "halts": {},
+ "fix_rounds_total(retries)": 0,
+ "acceptance_units": "5/5",
+ "acceptance_entries": {
+  "executed": 6,
+  "passed": 6,
+  "failed": 0,
+  "pending_manual": 3
+ },
+ "postflight_units": "5/5",
+ "panel_findings": {
+  "Critical": 0,
+  "Important": 5,
+  "Minor": 15
+ },
+ "panel_findings_status": {
+  "advisory": 20
+ },
+ "jit_units": 5,
+ "jit_conflict_units": 0,
+ "conflict_at_dispatch": 0.0,
+ "jit_claims": {
+  "CONFIRMED": 48,
+  "CONFLICT": 0,
+  "OQ": 3
+ },
+ "oq": {
+  "P2/deferred": 3
+ },
+ "oq_total": 3,
+ "run": {
+  "sid": "d96d1a68-ae57-4e40-a3b8-95108954dc04",
+  "plugin": "Version: 8.0.1",
+  "flags": "--lite",
+  "total_cost_usd": 50.69072079999997,
+  "num_turns": 197,
+  "result_subtype": "success",
+  "unit_commits": "6",
+  "first_unit_commit": "2026-09-15T23:54:33+07:00",
+  "last_unit_commit": "2026-09-16T00:16:51+07:00"
+ }
+}

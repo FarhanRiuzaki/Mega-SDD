@@ -1,0 +1,55 @@
+session_start=2026-09-15T16:28:11.586000+00:00  records=819  models={'claude-opus-5': 318}
+
+endpoint 2026-09-15T23:54:33+07:00
+  gross wall-clock : 0h26m21s
+  human-wait       : 0.0 min (0 events)
+  net machine time : 0h26m21s
+  raw tokens       : 35,887,349
+  cost-weighted    : 10,778,925
+
+endpoint 2026-09-16T00:16:51+07:00
+  gross wall-clock : 0h48m39s
+  human-wait       : 0.0 min (0 events)
+  net machine time : 0h48m39s
+  raw tokens       : 58,446,646
+  cost-weighted    : 15,400,340
+
+wait events:
+  2026-09-15T17:42:34.400000+00:00 IDLE    13.2 min
+
+phase decomposition (v8 P0) — endpoint 2026-09-15T23:54:33+07:00
+  segment                                 gross      wait        net      raw tok       cw tok
+  front-door / routing                 0h00m04s     0.0m   0h00m04s       40,683       81,799
+  mega-sdd:mega-sdd                    0h00m15s     0.0m   0h00m15s      347,617      164,795
+  GROUND(script)                       0h00m05s     0.0m   0h00m05s      164,031       34,404
+  mega-sdd:orchestrate-flow            0h00m06s     0.0m   0h00m06s      186,278       67,172
+  GROUND(script)                       0h00m21s     0.0m   0h00m21s      825,354      157,604
+  mega-sdd:plan                        0h00m50s     0.0m   0h00m50s    1,442,288      558,555
+  GROUND(script) ×2                    0h18m45s     0.0m   0h18m45s   22,646,826    7,267,300
+  mega-sdd:execute-bolts               0h02m01s     0.0m   0h02m01s    8,848,712    2,247,954
+  bolt-implementer ×3                  0h03m50s     0.0m   0h03m50s    1,385,560      199,342
+  (sum of segment nets)                                     0h26m21s
+  PRE-CODE  (start → first bolts dispatch 2026-09-15T16:48:41.301000+00:00): net 0h20m29s, cw 8,331,629
+  BOLT-1    (dispatch → first unit commit):         net 0h05m51s, cw 2,447,297
+  pre-code share of net time-to-first-code: 77.8%  (v8 P0 kill-criterion: < 25% ⇒ stop at P1)
+
+BOLT-1 breakdown (v8 P0)
+  window 2026-09-15T16:48:41.301000+00:00 → 2026-09-15T23:54:33+07:00  gross 0h05m51s · wait 0.0m · net 0h05m51s
+  class                               count        sum      union  units
+  implementer dispatches                  3   0h24m29s   0h09m57s  U-001,U-002,U-004
+  review-panel lenses                     0   0h00m00s   0h00m00s  
+  resolution-verifier (fix rounds)        0   0h00m00s   0h00m00s  
+  gate/validator scripts                  5   0h09m53s   0h09m53s  U-001,U-003
+  other Agent dispatches                  0   0h00m00s   0h00m00s  
+  other Bash calls                        4   0h00m03s   0h00m03s  U-001
+  Skill dispatches                        1   0h00m01s   0h00m01s  
+  AskUserQuestion                         0   0h00m00s   0h00m00s  
+  fix rounds (implementer re-dispatch per unit − 1): 0   per-unit dispatches: {'U-001': 1, 'U-004': 1, 'U-002': 1}
+  tool-active union (all non-ask spans): 0h10m09s  = 173% of BOLT-1 net; the remainder is controller reasoning/reading between tool calls
+  CAVEAT: Agent spans measure MAIN-LANE blocking time only. A background dispatch (execute-bolts waves, parallel panel lenses) returns its tool_result at once and does its work on the sidechain, so implementer/panel 'sum' here is a LOWER BOUND of their runtime; the COUNTS and the per-unit re-dispatch (fix rounds) are exact. Gate scripts and other Bash calls are foreground and exact.
+
+interaction points (v8 W1 budget: 3-screen ≤2, clinic ≤3)
+  to 2026-09-15T23:54:33+07:00: ASK 0 + mid-run USER waits 0 = 0 interaction point(s); 0 idle event(s) >10min
+  to 2026-09-16T00:16:51+07:00: ASK 0 + mid-run USER waits 0 = 0 interaction point(s); 0 idle event(s) >10min
+
+json written: /Users/<user>/SunnyGo/2026/AIRND2026/Project/mega-sdd-github/benchmarks/results/p3/xs-lite-8.0.1-trailer/extract.json

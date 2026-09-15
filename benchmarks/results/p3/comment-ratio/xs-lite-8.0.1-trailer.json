@@ -1,0 +1,229 @@
+{
+ "aggregate": {
+  "repo": "../TRAINING/p0-xs-lite",
+  "base": "6f98c10",
+  "head": "HEAD",
+  "files": 19,
+  "code": 892,
+  "comment": 91,
+  "blank": 250,
+  "docblock": 0,
+  "provenance": 38,
+  "source_anchor": 0,
+  "ratio": 0.102,
+  "ratio_ex_prov": 0.059,
+  "docblock_share": 0.0,
+  "median_file_ratio": 0.118
+ },
+ "files": [
+  {
+   "code": 4,
+   "comment": 4,
+   "blank": 3,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/features/contact/repositories/contact.repository.ts",
+   "ratio": 1.0,
+   "ratio_ex_prov": 0.5
+  },
+  {
+   "code": 4,
+   "comment": 4,
+   "blank": 2,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/libs/public-routes/index.ts",
+   "ratio": 1.0,
+   "ratio_ex_prov": 0.5
+  },
+  {
+   "code": 11,
+   "comment": 5,
+   "blank": 6,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/app/(blank-layout-pages)/beranda/page.tsx",
+   "ratio": 0.455,
+   "ratio_ex_prov": 0.273
+  },
+  {
+   "code": 11,
+   "comment": 5,
+   "blank": 6,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/app/(blank-layout-pages)/tentang-kami/page.tsx",
+   "ratio": 0.455,
+   "ratio_ex_prov": 0.273
+  },
+  {
+   "code": 9,
+   "comment": 4,
+   "blank": 3,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/features/contact/hooks/useContactMessage.ts",
+   "ratio": 0.444,
+   "ratio_ex_prov": 0.222
+  },
+  {
+   "code": 29,
+   "comment": 6,
+   "blank": 14,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/proxy.ts",
+   "ratio": 0.207,
+   "ratio_ex_prov": 0.138
+  },
+  {
+   "code": 30,
+   "comment": 5,
+   "blank": 11,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/app/api/v1/contact-messages/route.ts",
+   "ratio": 0.167,
+   "ratio_ex_prov": 0.1
+  },
+  {
+   "code": 24,
+   "comment": 4,
+   "blank": 5,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/features/contact/schemas/contact.schema.ts",
+   "ratio": 0.167,
+   "ratio_ex_prov": 0.083
+  },
+  {
+   "code": 16,
+   "comment": 2,
+   "blank": 5,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/libs/public-routes/index.test.ts",
+   "ratio": 0.125,
+   "ratio_ex_prov": 0.0
+  },
+  {
+   "code": 51,
+   "comment": 6,
+   "blank": 8,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/app/(blank-layout-pages)/kontak/page.tsx",
+   "ratio": 0.118,
+   "ratio_ex_prov": 0.078
+  },
+  {
+   "code": 63,
+   "comment": 7,
+   "blank": 7,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/features/company-profile/components/HomeView/index.tsx",
+   "ratio": 0.111,
+   "ratio_ex_prov": 0.079
+  },
+  {
+   "code": 70,
+   "comment": 7,
+   "blank": 8,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/features/company-profile/components/AboutView/index.tsx",
+   "ratio": 0.1,
+   "ratio_ex_prov": 0.071
+  },
+  {
+   "code": 43,
+   "comment": 4,
+   "blank": 4,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/configs/companyProfileConfig.ts",
+   "ratio": 0.093,
+   "ratio_ex_prov": 0.047
+  },
+  {
+   "code": 66,
+   "comment": 6,
+   "blank": 26,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/features/company-profile/components/AboutView/index.test.tsx",
+   "ratio": 0.091,
+   "ratio_ex_prov": 0.061
+  },
+  {
+   "code": 95,
+   "comment": 8,
+   "blank": 13,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/features/contact/components/ContactForm/index.tsx",
+   "ratio": 0.084,
+   "ratio_ex_prov": 0.063
+  },
+  {
+   "code": 62,
+   "comment": 4,
+   "blank": 22,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/features/company-profile/components/HomeView/index.test.tsx",
+   "ratio": 0.065,
+   "ratio_ex_prov": 0.032
+  },
+  {
+   "code": 134,
+   "comment": 5,
+   "blank": 45,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/features/contact/components/ContactForm/index.test.tsx",
+   "ratio": 0.037,
+   "ratio_ex_prov": 0.022
+  },
+  {
+   "code": 55,
+   "comment": 2,
+   "blank": 27,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/proxy.test.ts",
+   "ratio": 0.036,
+   "ratio_ex_prov": 0.0
+  },
+  {
+   "code": 115,
+   "comment": 3,
+   "blank": 35,
+   "docblock": 0,
+   "provenance": 2,
+   "source_anchor": 0,
+   "file": "src/app/api/v1/contact-messages/route.test.ts",
+   "ratio": 0.026,
+   "ratio_ex_prov": 0.009
+  }
+ ]
+}
