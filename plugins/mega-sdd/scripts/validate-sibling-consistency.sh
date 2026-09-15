@@ -65,7 +65,7 @@ for arg in "$@"; do
   case "$arg" in
     --cwd=*) CWD="${arg#*=}" ;;
     --quiet) QUIET=1 ;;
-    *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
+    *) echo "STATUS: ERROR unknown arg: $arg — usage: --cwd=<project-root> [--cross-cutting|--fanout-parity] [--quiet]"; echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
 
@@ -404,7 +404,7 @@ for arg in "$@"; do
     --cwd=*) CWD="${arg#*=}" ;;
     --file-path=*) : ;;
     --quiet) QUIET=1 ;;
-    *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
+    *) echo "STATUS: ERROR unknown arg: $arg — usage: --cwd=<project-root> [--cross-cutting|--fanout-parity] [--quiet]"; echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
 
@@ -635,7 +635,7 @@ for arg in "$@"; do
   case "$arg" in
     --cwd=*) CWD="${arg#*=}" ;;
     --quiet) QUIET=1 ;;
-    *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
+    *) echo "STATUS: ERROR unknown arg: $arg — usage: --cwd=<project-root> [--cross-cutting|--fanout-parity] [--quiet]"; echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
 

@@ -55,9 +55,11 @@ Run the generate-units candidate walk (`../generate-units/SKILL.md` Steps 2 → 
 |---|---|---|
 | 1 | `validate-unit-spec.sh --cwd=<root> --vault=<vault>` | `unit_underspecified` / `hard_rule_unparseable` / `prd_source_unresolvable` / `render_test_missing` — fix the unit, re-run; advisories (`xs_body_advisory`, `vault_source_advisory`) = trim |
 | 2 | `validate-flow-coverage.sh --cwd=<root>` | BLOCKING gate (state file FAIL blocks execute-bolts): add the missing per-step artifact units |
-| 3 | `validate-sibling-consistency.sh --cwd=<root> --vault=<vault>` | fix the divergent sibling |
+| 3 | `validate-sibling-consistency.sh --cwd=<root>` (project-wide; NO `--vault=` — unknown args are `exit 2` + a `STATUS: ERROR` first line) | fix the divergent sibling |
 | 4 | `validate-plan-coverage.sh --cwd=<root> --prd=<prd> --vault=<vault>` | exit 1 → halt `plan_coverage_gap` (the gaps ARE the finding: add a unit / raise an OQ quoting the heading / move it under an explicit Out-of-scope heading — never patch the census) |
 | 5 | `derive-vault-json.sh --vault=<vault> --event='{"event":"units_generated","at":"<iso>","count":<n>}'` | exit 2 fix md · exit 4 `memory_in_use` |
+
+**Read every validator's exit code directly.** Run each on its own line and do not pipe it (`… 2>&1 | tail -N; echo $?` reports `tail`'s 0, not the validator's — a usage error then reads as PASS; live case xs lite 8.0.0 run: `ERROR: unknown arg` followed by `rc=0`). If you must pipe, take `${PIPESTATUS[0]}`. Every validator prints its verdict as a `STATUS:` first line on stdout, so a wrong invocation is visible even through a pipe.
 
 Under the lite lane the `execute-bolts` hop is refused by `validate-preflight.sh --predictive` while `.plan-coverage-state.json` is missing or FAIL — so a coverage gap is never "carried into bolts".
 
