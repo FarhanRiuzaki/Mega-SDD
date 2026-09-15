@@ -42,16 +42,17 @@ Halt / self-report / rollback / provenance / atomic contracts: carried by your s
 
 ## Provenance values (per-dispatch)
 
-The VALUES the agent fills into the agent-carried trailer shape (its system
-prompt §Provenance trailer) in every modified file:
+The per-dispatch provenance record. The agent's TWO-line trailer (its system prompt
+§Provenance trailer) copies ONLY unit_id + provenance_path; every other value stays
+here, validated, and the trailer points at this file:
 
 ```
 Provenance values:
   unit_id: U-001
+  provenance_path: .mega-sdd/vaults/v1/bolts/U-001/dispatch-prompt.md
   claims: (none cited)
   anchors_consulted: (none)
-  hard_rules_active:
-    - DO NOT modify app/Kernel.php
+  hard_rules_active: 1 mechanical rule(s) — text verbatim in ## Hard rules of this file
 ```
 
 ## Acceptance-test provenance NOTE

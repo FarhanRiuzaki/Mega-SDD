@@ -63,20 +63,21 @@ Halt / self-report / rollback / provenance / atomic contracts: carried by your s
 
 > At `--unit-tier=xs` this preamble is dropped — the agent-carried trailer shape needs only the values, which ride the header (context-enrichment.md §XS emission).
 
-The VALUES the agent fills into the agent-carried trailer shape (its system
-prompt §Provenance trailer) in every modified file:
+The per-dispatch provenance record. The agent's TWO-line trailer (its system prompt
+§Provenance trailer) copies ONLY `unit_id` + `provenance_path`; every other value stays here,
+validated, and the trailer points at this file (8.0.3):
 
 ```
 Provenance values:
   unit_id: U-XXX
+  provenance_path: <vault>/bolts/U-XXX/dispatch-prompt.md   # what the trailer's line 2 points at
   vault_sha256: <hash>
-  claims: C-NNN "<claim text>" (one line per implemented claim)
-  anchors_consulted: <list>
-  hard_rules_active:            # rule TEXT verbatim, one entry per rule — NOT ids
-    - <rule text exactly as the unit's `## Hard rules` states it>
+  claims: C-NNN "<claim text>" (one line per implemented claim → the bolt-report `claims:` line)
+  anchors_consulted: <list>   # with ANCHOR STALE flags — an implementer signal, kept
+  hard_rules_active: <N> mechanical rule(s) — text verbatim in ## Hard rules of this file   # count since 8.0.3, NOT ids
 ```
 
-> **`hard_rules_active` carries verbatim TEXT, decided 2026-07-31** (`context-enrichment.md §Re-decided amendments`, row 2). Unit Hard rules have no ids; minting them would fork a second identity model from `_lib/postflight_rules.py`, which is what the B1 gate matches against. This template said `<list of rule IDs>` and `agents/bolt-implementer.md §Provenance trailer` said the same — both are corrected, because the implementer was being told to stamp ids into a mandatory trailer while its only sanctioned source hands it text, and post-flight verifies trailer PRESENCE only, so the mismatch would land as a malformed-but-present trailer no gate catches.
+> **`hard_rules_active` is a COUNT since 8.0.3** — the verbatim list duplicated the `## Hard rules` section this same file carries, and its only consumer (the trailer's `Hard Rules active:` line) is gone. **Still no ids, decided 2026-07-31** (`context-enrichment.md §Re-decided amendments`, row 2). Unit Hard rules have no ids; minting them would fork a second identity model from `_lib/postflight_rules.py`, which is what the B1 gate matches against. This template said `<list of rule IDs>` and `agents/bolt-implementer.md §Provenance trailer` said the same — both are corrected, because the implementer was being told to stamp ids into a mandatory trailer while its only sanctioned source hands it text, and post-flight verifies trailer PRESENCE only, so the mismatch would land as a malformed-but-present trailer no gate catches.
 
 > **The order-3 legacy-dispatch element is REMOVED (2026-07-31 — path closed, not
 > unimplemented).** It used to say: on the order-3 fallback, Read

@@ -61,9 +61,10 @@ Halt / self-report / rollback / provenance / atomic contracts: carried by your s
 ```
 Provenance values:
   unit_id: U-005
+  provenance_path: .mega-sdd/vaults/v1/bolts/U-005/dispatch-prompt.md
   claims: (none cited)
   anchors_consulted: (none)
-  hard_rules_active: (none)
+  hard_rules_active: 0 mechanical rule(s) — text verbatim in ## Hard rules of this file
 ```
 
 ## Acceptance-test provenance NOTE

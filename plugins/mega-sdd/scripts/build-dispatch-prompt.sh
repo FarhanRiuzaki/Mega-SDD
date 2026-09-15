@@ -1322,12 +1322,14 @@ t1.append("")
 t1.append("## Provenance values (per-dispatch)")
 t1.append("")
 if UNIT_TIER != "xs":
-    t1.append("The VALUES the agent fills into the agent-carried trailer shape (its system")
-    t1.append("prompt §Provenance trailer) in every modified file:")
+    t1.append("The per-dispatch provenance record. The agent's TWO-line trailer (its system prompt")
+    t1.append("§Provenance trailer) copies ONLY unit_id + provenance_path; every other value stays")
+    t1.append("here, validated, and the trailer points at this file:")
     t1.append("")
 t1.append("```")
 t1.append("Provenance values:")
 t1.append("  unit_id: %s" % unit_id)
+t1.append("  provenance_path: %s" % os.path.relpath(os.path.join(VAULT, "bolts", unit_id, "dispatch-prompt.md"), CWD).replace(os.sep, "/"))
 if vault_sha256:
     t1.append("  vault_sha256: %s" % vault_sha256)
 PROV_CLAIM_SLOT = len(t1)            # claims are filled in after binding.md loads
@@ -1347,15 +1349,12 @@ if anchor_rows:
               % (anchors_fresh, len(anchor_rows)))
 else:
     t1.append("  anchors_consulted: (none)")
-if HARD_RULE_LINES:
-    # The unit's Hard rules carry NO ids (they are mechanical productions), so the
-    # template's "<list of rule IDs>" is satisfied with the VERBATIM rule text —
-    # synthesizing ids here would fork from the B1 engine's own identity model.
-    t1.append("  hard_rules_active:")
-    for r in HARD_RULE_LINES:
-        t1.append("    - %s" % r)
-else:
-    t1.append("  hard_rules_active: (none)")
+# 8.0.3: the verbatim `hard_rules_active:` list was dropped from this block — it duplicated the
+# unit's `## Hard rules` section that this same file already carries verbatim, and its only
+# consumer (the trailer's `Hard Rules active:` line) is gone. The COUNT stays so the record
+# says how many mechanical rules the B1 engine (postflight_rules.py, shared lexer) extracted;
+# the text is in `## Hard rules` above. No ids are ever minted (identity model unchanged).
+t1.append("  hard_rules_active: %d mechanical rule(s) — text verbatim in ## Hard rules of this file" % len(HARD_RULE_LINES))
 if HARD_RULE_V2:
     t1.append("  hard_rules_v2_ast_rules: %d ast-grep rule block(s) in ## Hard rules" % len(HARD_RULE_V2))
 t1.append("```")
@@ -3225,7 +3224,7 @@ def blen(s):
 # THE CLAIM ID, NOT THE CONFIDENCE LABEL. bolt-dispatch-prompt.md §Provenance
 # values specifies `claims: C-NNN "<claim text>"`, one line per implemented
 # claim, and this block is the ONLY sanctioned source for the agent's mandated
-# trailer `Implements claim: C-NNN "<claim text>"`. Emitting `- HIGH "notes"`
+# bolt-report `claims:` line (the code trailer no longer carries claims — 8.0.2/8.0.3). Emitting `- HIGH "notes"`
 # left the agent two options — omit the id, or back-derive one from
 # `binding_refs` — and the second is exactly the fabrication this block exists to
 # prevent. Post-flight only checks a trailer is PRESENT, so a malformed-but-
