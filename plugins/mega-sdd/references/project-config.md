@@ -37,9 +37,15 @@ model_tiers:
                              # session model, no model param passed) | auto (router: the same
                              # resolve-review-tier signals pick haiku/sonnet/opus per unit +
                              # one-step failure cascade) | haiku | sonnet | opus (hard pin)
-parallel_max: 4              # execute-bolts --parallel wave cap (Claude Code's own default is 20
+parallel_max: 4              # execute-bolts in-flight implementer cap (Claude Code's own default is 20
                              # concurrent subagents — one bolt-implementer is ~80 turns; 4 keeps
-                             # a fleet Windows laptop responsive)
+                             # a fleet Windows laptop responsive). v8 P3 (7.38.0): SCRIPT-READ, not
+                             # prose-only — `_lib/vault_layouts.parallel_max()` (top-level key, first
+                             # match, absent/non-integer → 4) feeds the in-run dispatch gate
+                             # (hooks/pre-tool-use): on the lite lane a unit whose postflight +
+                             # acceptance passed but whose panel has not merged yet is "panel-pending",
+                             # and the gate lets the next dispatch through only while ≤ parallel_max
+                             # such units exist (execute-bolts references/batch-and-fanout.md).
 code_gates: true           # false → skip the L0 toolchain + SAST gates (execute-bolts references/code-gates.md).
                            #   The secret scan and new-dep existence check ALWAYS run — no key disables them.
 gateguard: true            # false → disable the LOCKED-file deny-once investigation gate (PreToolUse

@@ -44,6 +44,22 @@ Expected chain (Mode D):
 
 End of run: `<vault>/SYNC-REPORT.md` (per-phase outcomes + closing staleness verification `stale=0 ✅`) and, because the rename needs a human direction call, `<vault>/PENDING-SYNC.md` with one open item.
 
+### Act 3 on the lite lane / a layout-3 vault (v8 P3, 8.0)
+
+A plan-born project (`--lite` / config `lane: lite`, vault = `context.md`, units bound PER UNIT at dispatch → `bolts/U-XXX/binding.json`, no `binding.md`, no codebase-map — the symbol index is the freshness substrate) reaches the same Mode D position on the same two channels, but the state engine renders the **re-keyed chain**:
+
+| Phase | What you should see |
+|---|---|
+| `scripts/derive-changed-paths.sh --vault <vault>` | changed set = git delta since the index stamp ∪ working tree ∪ journal rows → `<vault>/.sync-changed-paths.txt` (no map to refresh — a script, zero model tokens) |
+| `detect-drift --scope=@<vault>/.sync-changed-paths.txt` | as on the classic lane; Architecture-prose drift is NOT detectable on layout-3 (deliberate degradation, CHANGELOG 8.0.0) — the rename still surfaces as `name drift` from the Data-model / Flows sections |
+| `scripts/rebind-units.sh --cwd . --vault <vault> --paths=@<vault>/.sync-changed-paths.txt` | ONLY the units whose `target_files` ∪ `## Anchors` ∪ per-unit binding anchors intersect the changed set are re-verdicted by the SAME JIT writers (`derive-unit-claims` → `write-unit-binding` → `validate-handoff-binding-units --units=`); exit 0 = nothing affected, 4 = re-bound (read `gate`); a CONFLICT closes the gate for the affected units exactly as at dispatch — never auto-resolved |
+| `plan --reconcile` | `task_type` / `status` follow the per-unit binding evidence; nothing duplicated (never `generate-units`, which reads the layout-2 docs and FATALs here: `units_folded_into_plan`) |
+| `execute-bolts --all --lite` | only stale/new units re-run |
+
+Full audit on this lane = `scripts/rebind-units.sh --units=all` (the meaning of `sync --full-bind`). `bind-codebase` on a per-unit-bound vault is a preflight FATAL with a one-line KENAPA (`bind_folded_into_bolts`).
+
+**Replay (fixture-driven, CI):** `bash tests/v8-layout3/test-state-sync-lite.sh` — both channels reach `maintenance_sync` with the 5-hop chain above, hop 1 and hop 3 are executed on the fixture (only the touched unit is re-bound, sibling untouched), the classic layout-2 chain is proven unchanged as a control, and the "re-run → in sync" criterion below holds (stamp == HEAD + no journal → not `maintenance_sync`). Replayed 2026-09-15 on 8.0.0-candidate: 6/6 PASS.
+
 ## Act 4 — clear the queue (when you're ready)
 
 Open `PENDING-SYNC.md`: the rename drift asks *vault stale (code is right) vs code regressed (vault is right)*. Decide → `UPDATE_VAULT` drafts the patch with git provenance (`f6e5d4 "rename to failed_attempts" — <teammate>, <date>`); ACCEPT applies it, bumps the vault version, regenerates `vault.json` under the lock. Or run with `--auto-apply=safe` next time to auto-apply this exact class.
