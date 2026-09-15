@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [Unreleased] — kandidat 8.0.1: masukan tim #4 (komentar over-verbose di generated code) — aturan gaya, bukan gate
+
+Program otonom v8 §5 masukan tim #4 (`research/2026-09-15-v8-p3-report.md §6`). Diagnosa dulu (grep + ukur), baru aturan: penyebab #1 = trailer provenance yang diwajibkan prompt implementer (33–59 % baris komentar; hanya baris marker yang dibaca gate `provenance_missing`) — **TIDAK disentuh di rilis ini** (proposal-first ke owner: trailer padat = marker + `Unit:`); #2 = default model tanpa aturan; #3 = pack `laravel-base-26` "prefer PHPDoc blocks"; rubrik panel BUKAN penyebab (0 kemunculan).
+
+### Changed
+- **Aturan "komentar menjelaskan KENAPA, bukan APA"** di `agents/bolt-implementer.md` (Iron Rule 6 — style, bukan gate): ditulis hanya untuk aturan bisnis non-obvious + sumbernya, workaround + alasannya, batasan regulasi, asumsi yang tak terlihat dari kode, `TODO` yang menunjuk OQ/unit; dilarang docblock pengulang signature (`getUser`, getter/setter/constructor, `@param` nama+tipe), narasi `// Step 1`, narasi langkah tes, header pengulang nama file. **Daftar lindung** (tidak pernah disapu): trailer provenance (gate-read), `// source: <path>:<line>` di e2e (`build-uat-e2e --check`), komentar sitasi/anchor yang dibaca validator, header lisensi/compliance yang diwajibkan pack.
+- `references/framework-conventions/_universal.md` — section baru **Comment conventions (universal default)** dengan aturan + daftar lindung + sikap panel; `laravel-base-26.md` — baris "PHPDoc over inline comments — prefer PHPDoc blocks" (pemicu hadiah docblock yang terukur) diganti: PHPDoc HANYA di permukaan yang dikonsumsi toolchain (Larastan generics, `@property` model).
+- Rubrik panel sebagai penegas, bukan penghitung: `agents/code-quality-reviewer.md` menilai komentar-APA sebagai **Minor** (`comment-what:`) dan TIDAK PERNAH melaporkan "missing comment/docblock"; `agents/standards-reviewer.md` melarang temuan "missing docblock". Tidak ada validator penghitung komentar (F.5). Pin: `tests/comment-diet/test-comment-why-rule.sh` a–h.
+
+### Notes
+- Ukur sebelum ship (F.4): rasio komentar/kode per file hasil bolt pada skenario xs yang sama (`benchmarks/scripts/p3-comment-ratio.py`, before = `benchmarks/results/p3/comment-ratio/`), target −40 % TANPA kehilangan kelas KENAPA, acceptance hijau, panel Critical 0, spot-check 3 file — angka masuk di sini sebelum tag 8.0.1.
+
 ## [8.0.0] - 2026-09-15 — MAJOR: lane `--lite` (OPT-IN, bukan default — kriteria (a)/(b) gagal pada run bersih, angka di Notes), migrasi layout-3, alias tiga fase classic dengan satu baris KENAPA, re-key sync/drift/delta/graph ke binding per unit, degradasi disengaja tercatat
 
 Program otonom v8 §3 / P3 (`research/2026-09-15-v8-p3-report.md §5`). Semua perubahan di bawah ini inert pada lane classic + vault layout-2 (validator PASS di sana; chain classic byte-identik) — aktif hanya pada `lane: lite` / vault layout-3.

@@ -28,6 +28,7 @@ When these disagree, the surrounding code wins — flag the pack mismatch as an 
 ## What you are forbidden to report
 
 - Anything a formatter auto-fixes (whitespace, quotes, import order, line length).
+- "Missing docblock / missing comment / undocumented method" — never a finding (implementer rule: comments explain WHY, never WHAT; a pack's docblock line applies only to surfaces the toolchain consumes). WHAT-comment noise belongs to the quality lens as Minor, not here.
 - Anything a configured linter rule already covers — that is machine territory; your job is what rules cannot express.
 - Generic best practice that no pack rule or sibling file establishes for THIS project. You enforce this project's conventions, not your training-data preferences.
 

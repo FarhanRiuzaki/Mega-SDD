@@ -146,7 +146,7 @@ class ProductDataTable extends BaseDataTable
 - **Eager loading mandatory** — use `with(['rel1', 'rel2.nested'])` in service queries. Larastan flags N+1 patterns at PHPStan level 5.
 - **PHPUnit 11, NOT Pest** — use `php artisan make:test --phpunit {Name}` (Feature) or `--unit`. Feature tests dominate. Golden file tests for generator (`tests/golden/`).
 - **Casts via `casts()` method** [v11+/v12] — when adding casts to NEW Models, use `protected function casts(): array { return [...]; }`. When MODIFYING existing Models, match the sibling Model's style (some legacy still use `$casts` property — don't migrate without coordination).
-- **PHPDoc over inline comments** — prefer PHPDoc blocks. Inline comments only when something genuinely complex needs explanation.
+- **Comments explain WHY, never WHAT** (team feedback #4) — PHPDoc ONLY where the toolchain consumes it (Larastan generics on relations/collections, `@property` on models for IDE contracts); never a docblock that restates the signature or copies `@param` name + type on getters/setters/constructors/plain methods, never `// Step 1` narration. Inline comments only for a non-obvious business rule + its source, a workaround + its reason, a regulatory constraint, or a `TODO` pointing at an OQ/unit.
 - **Enum keys TitleCase** — PHP backed enums use `FavoritePerson`, `BestLake`, `Monthly` casing for cases (NOT SCREAMING_SNAKE).
 - **PSR-12 via Pint** — run `vendor/bin/pint --dirty` before commit. No manual formatting.
 
