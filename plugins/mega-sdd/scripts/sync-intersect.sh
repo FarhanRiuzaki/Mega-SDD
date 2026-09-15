@@ -129,17 +129,57 @@ changed = sorted({q for q in (norm(e) for e in entries) if q})
 # way scripts/build-graph.sh parses the same field (split on '+', keep
 # code-ish pieces, strip the :line suffix).
 bj_path = os.path.join(vault, "binding.json")
-try:
-    with open(bj_path, encoding="utf-8") as f:
-        bj = json.load(f)
-except (OSError, ValueError) as e:
-    die("unreadable/unparseable binding.json at %s (%s)" % (bj_path, e))
-if not isinstance(bj, dict) or not isinstance(bj.get("claims"), list):
-    die("binding.json has no claims[] list (%s)" % bj_path)
+claims = None
+if os.path.isfile(bj_path):
+    try:
+        with open(bj_path, encoding="utf-8") as f:
+            bj = json.load(f)
+    except (OSError, ValueError) as e:
+        die("unreadable/unparseable binding.json at %s (%s)" % (bj_path, e))
+    if not isinstance(bj, dict) or not isinstance(bj.get("claims"), list):
+        die("binding.json has no claims[] list (%s)" % bj_path)
+    claims = list(bj["claims"])
+else:
+    # v8 P3 re-key (spec 2026-09-10 §4 row "sync short-circuit"): a plan-born /
+    # layout-3 vault is bound PER UNIT — the anchor set is the union of every
+    # bolts/U-*/binding.json claims[].anchor (same grammar as the whole-vault
+    # file), plus the units' `## Anchors` tokens (step 2b below). Fail-closed
+    # stays: a vault with NO per-unit binding at all has nothing the intersect
+    # can prove against → exit 2 → the caller runs the full JIT re-bind.
+    import glob as _glob
+    per_unit = sorted(_glob.glob(os.path.join(vault, "bolts", "U-*", "binding.json")))
+    if not per_unit:
+        die("no binding.json at %s and no bolts/U-*/binding.json (unbound layout-3 vault) — nothing to intersect against; full JIT re-bind required" % vault)
+    claims = []
+    for ub in per_unit:
+        try:
+            with open(ub, encoding="utf-8") as f:
+                ud = json.load(f)
+        except (OSError, ValueError) as e:
+            die("unreadable/unparseable %s (%s)" % (ub, e))
+        if not isinstance(ud, dict) or not isinstance(ud.get("claims"), list):
+            die("%s has no claims[] list" % ub)
+        claims.extend(ud["claims"])
+    bj_path = "%s/bolts/U-*/binding.json (%d unit(s))" % (vault, len(per_unit))
 
 targets = set()
 basenames = set()  # slash-less anchor pieces — matched by basename (header)
-for c in bj["claims"]:
+ANCHOR_TOKEN_RE = re.compile(r"(?<![\w:/])((?:(?:[\w.\-]+|\([\w.\-]+\)|\[[\w.\-]+\]|@[\w.\-]+)/)*[\w.\-]+\.[A-Za-z]\w{0,7})(?::\d+(?:-\d+)?)?\b")
+for up in sorted(glob.glob(os.path.join(vault, "units", "U-*.md"))):
+    # units' `## Anchors` tokens join the anchor set on EVERY layout (a unit anchor is
+    # a verified read of the code the same way a binding anchor is)
+    try:
+        with open(up, encoding="utf-8", errors="replace") as f:
+            _ut = f.read()
+    except OSError:
+        continue
+    _sec = re.search(r"(?ims)^##[ \t]+Anchors\b[^\n]*\n(.*?)(?=^##[ \t]|\Z)", _ut)
+    if _sec:
+        for _am in ANCHOR_TOKEN_RE.finditer(_sec.group(1)):
+            _p = norm(_am.group(1))
+            if _p and "/" in _p:
+                targets.add(_p)
+for c in claims:
     if not isinstance(c, dict):
         die("binding.json claims[] entry is not an object (%s)" % bj_path)
     anc = c.get("anchor")

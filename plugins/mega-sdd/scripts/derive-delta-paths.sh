@@ -80,7 +80,16 @@ while [ $# -gt 0 ]; do case "$1" in
 esac; done
 [ -n "$VAULT" ] || { echo "FAIL: --vault is required (fail-closed: propose a FULL re-bind)" >&2; exit 2; }
 [ -d "$VAULT" ] || { echo "FAIL: vault dir not found: $VAULT (fail-closed: propose a FULL re-bind)" >&2; exit 2; }
-[ -f "$VAULT/binding.json" ] || { echo "NO-BINDING: $VAULT/binding.json absent — unbound vault, no scoped hop (caller proposes the normal chain)" >&2; exit 3; }
+# v8 P3 re-key (spec 2026-09-10 §4 row "diff-vault"): a plan-born / layout-3 vault has no
+# whole-vault binding.json — it is bound PER UNIT (bolts/U-*/binding.json) and its docs
+# are ONE context.md, so the literal in VAULT-DIFF is `context.md#<section>` and the
+# affected set is the UNITS whose context_source / vault_source touch that section.
+# Fail-closed stays: neither a whole-vault binding nor any per-unit binding → exit 3.
+if [ ! -f "$VAULT/binding.json" ]; then
+  if [ -f "$VAULT/context.md" ] && ls "$VAULT"/bolts/U-*/binding.json >/dev/null 2>&1; then :; else
+    echo "NO-BINDING: $VAULT/binding.json absent and no bolts/U-*/binding.json — unbound vault, no scoped hop (caller proposes the normal chain)" >&2; exit 3
+  fi
+fi
 
 V_CWD="$CWD" V_VAULT="$VAULT" python3 <<'PYEOF'
 import json, os, re, sys
@@ -119,7 +128,7 @@ def norm(p):
 # vault (v7 Fase 3 default) the script died at "no vault-doc literal" and the
 # delta lane always fell to a FULL re-bind — fail-closed, never silent, but the
 # whole T09 scoped hop was dead (caught by the 2026-09-10 consumer census).
-VAULT_DOC_RE = r"(?<![\w/.-])((?:0\d-[a-z0-9-]+|vault|model|flows|constraints)\.md)\b"
+VAULT_DOC_RE = r"(?<![\w/.-])((?:0\d-[a-z0-9-]+|vault|model|flows|constraints|context)\.md)\b"
 
 # 1. Touched vault docs <- VAULT-DIFF.md diff sections. FENCE-STRIPPED,
 # SECTION-BASED (round-hardened): fenced blocks are removed FIRST so a quoted
@@ -146,6 +155,73 @@ if not touched_docs:
 
 # 2. Affected claims <- binding.json claims[].vault_source doc in touched set.
 bj_path = os.path.join(vault, "binding.json")
+if not os.path.isfile(bj_path):
+    # ── layout-3 branch (v8 P3): affected = UNITS whose context_source / vault_source
+    # names a touched `context.md#<anchor>` (a bare `context.md` literal with no anchor
+    # = every unit that cites context.md — conservative over-inclusion is the safe
+    # direction); paths = those units' target_files ∪ `## Anchors` tokens ∪ their
+    # bolts/U-XXX/binding.json claim anchors. Zero affected units → fail-closed (exit 2 →
+    # the caller runs the full re-bind), never an empty "scoped" hop.
+    import glob as _glob
+    anchors_touched = set()
+    for sec in re.split(r"(?m)^## ", defenced)[1:]:
+        heading = sec.split("\n", 1)[0].strip().lower()
+        if heading.startswith("summary") or heading.startswith("unchanged"):
+            continue
+        anchors_touched |= set(re.findall(r"context\.md#([\w.\-]+)", sec))
+    bare = "context.md" in touched_docs and not anchors_touched
+    ANCHOR_TOKEN_RE = re.compile(r"(?<![\w:/])((?:(?:[\w.\-]+|\([\w.\-]+\)|\[[\w.\-]+\]|@[\w.\-]+)/)*[\w.\-]+\.[A-Za-z]\w{0,7})(?::\d+(?:-\d+)?)?\b")
+    affected_units = []
+    for up in sorted(_glob.glob(os.path.join(vault, "units", "U-*.md"))):
+        uid = os.path.basename(up)[:-3]
+        try:
+            with open(up, encoding="utf-8", errors="replace") as f:
+                ut = f.read()
+        except OSError as e:
+            die("cannot read unit %s (%s)" % (up, e))
+        fmm = re.match(r"\A---[ \t]*\n(.*?)\n---[ \t]*(?:\n|\Z)", ut, re.S)
+        fm = fmm.group(1) if fmm else ""
+        refs = re.findall(r"context\.md(?:#([\w.\-]+))?", fm)
+        if not refs:
+            continue
+        if bare or any(r and r in anchors_touched for r in refs):
+            ps = set()
+            for pm in re.finditer(r"(?m)^\s+-?\s*(?:path|file)\s*:\s*(.+?)\s*$", fm):
+                q = norm(pm.group(1))
+                if q: ps.add(q)
+            secm = re.search(r"(?ims)^##[ \t]+Anchors\b[^\n]*\n(.*?)(?=^##[ \t]|\Z)", ut)
+            if secm:
+                for am in ANCHOR_TOKEN_RE.finditer(secm.group(1)):
+                    q = norm(am.group(1))
+                    if q and "/" in q: ps.add(q)
+            ubp = os.path.join(vault, "bolts", uid, "binding.json")
+            if os.path.isfile(ubp):
+                try:
+                    for c in json.load(open(ubp, encoding="utf-8")).get("claims", []):
+                        anc = c.get("anchor")
+                        if not anc or anc in ("—", "n/a"): continue
+                        for piece in re.split(r"\s*\+\s*", str(anc)):
+                            piece = piece.strip()
+                            if ":" in piece or "/" in piece or re.search(r"\.[A-Za-z0-9]+$", piece):
+                                q = norm(re.sub(r":\d+(-\d+)?$", "", piece))
+                                if q and "/" in q: ps.add(q)
+                except (OSError, ValueError) as e:
+                    die("unreadable/unparseable %s (%s)" % (ubp, e))
+            affected_units.append((uid, ps))
+    if not affected_units:
+        die("touched context.md section(s) %s matched zero units' context_source/vault_source" % (sorted(anchors_touched) or ["<bare>"]))
+    paths = set()
+    for _, ps in affected_units: paths |= ps
+    out = os.path.join(vault, ".delta-changed-paths.txt")
+    try:
+        with open(out, "w", encoding="utf-8") as f:
+            for q in sorted(paths): f.write(q + "\n")
+    except OSError as e:
+        die("cannot write %s (%s)" % (out, e))
+    print(json.dumps({"touched_docs": sorted(touched_docs), "touched_anchors": sorted(anchors_touched),
+                      "affected_units": [u for u, _ in affected_units], "affected_claims": 0, "anchorless_claims": 0,
+                      "paths": len(paths), "out": out, "layout": 3}, ensure_ascii=False))
+    sys.exit(0)
 try:
     with open(bj_path, encoding="utf-8") as f:
         bj = json.load(f)

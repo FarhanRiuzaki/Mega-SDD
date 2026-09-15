@@ -1,6 +1,6 @@
 ---
 name: detect-drift
-version: 3.1.5
+version: 3.2.0
 context: fork
 description: Non-interactive drift diagnostic — compares a mode=existing vault against the live codebase; writes DRIFT-REPORT.md, queues direction calls to PENDING-SYNC.md (never prompts). Use when the user says "drift detect", "vault vs code", "check codebase against vault", "cek code vs vault", "is the code in sync?", or paraphrases.
 ---
@@ -53,7 +53,7 @@ Log the scope explicitly — `Scope hint received: <scope.id|changed-paths(N)>` 
 
 **Step 0.5 — Drift scope (MANDATORY).** `full` (default) | `schema-only` (entities + constraints) | `flows-only` (flows + endpoints + jobs) | `decisions-only` (ADRs vs code) | `single-doc`. Persist `DRIFT_SCOPE`.
 
-**Step 1 — Read vault** (by scope): `schema-only`→`model.md`; `flows-only`→`flows.md`+`vault.md ## Architecture`; `decisions-only`→`vault.md ## Decisions`; `full`→every vault doc. Build an internal model: entities (with field signatures), flow IDs (with steps), endpoints, ADRs (with constraints).
+**Step 1 — Read vault** (by scope): `schema-only`→`model.md`; `flows-only`→`flows.md`+`vault.md ## Architecture`; `decisions-only`→`vault.md ## Decisions`; `full`→every vault doc. **Layout-3 (`context.md`, v8 — resolve through `_lib/vault_md.resolve_doc` / `v3_section`, never a hand mapping):** `model.md`→`## Data model`, `flows.md`→`## Flows`, `## Decisions` as-is; **`## Architecture` exists on a MIGRATED vault only** (migrate-paths `--vault-layout=3` keeps it) — a plan-born vault has no Architecture prose, so the Architecture-prose compare of `flows-only`/`full` is **skipped and named in the report** (`Architecture prose: n/a on a plan-born layout-3 vault`), never silently reported as "no drift". This is the deliberate 8.0 degradation (spec 2026-09-10 §4): teams that relied on Architecture-prose drift (Host-AS400, multifinance) keep it via the classic lane / a migrated vault, and the KB PRD-kontrak is the richer substrate there. Per-unit binding (`bolts/U-XXX/binding.json`) replaces `binding.md` on this layout: the `constitution_hash` check of `references/constitution-drift.md` reads `vault.json` (`constitution_hash`) — there is no binding.md to compare against — and a CONFLICT queued to `PENDING-SYNC.md` is cited as `bolts/U-XXX/binding.json §<claim-id>` (unit-scoped), not `binding.md §CONFLICT-N`. Build an internal model: entities (with field signatures), flow IDs (with steps), endpoints, ADRs (with constraints).
 
 **Step 1.5 — Framework detection.** REUSE FIRST: when `.mega-sdd/codebase/codebase-map.md` exists with a §7 Framework block at confidence ≥ medium AND its `last_scanned_commit` matches git HEAD, adopt that framework verbatim (log `Framework from codebase-map §7: <name> (<confidence>)`) — don't re-parse manifests the scan already parsed. Map absent/stale/low-confidence → detect from manifest: `composer.json`→PHP (Laravel/Symfony), `package.json`→Node (Next/Nest/Express), `Gemfile`→Ruby, `go.mod`→Go, `requirements.txt`/`pyproject.toml`→Python, `pom.xml`/`build.gradle`→Java/Spring, `Cargo.toml`→Rust, `pubspec.yaml`→Flutter. Use the detected framework's default scope dirs (no confirmation — forked / non-interactive). Ambiguous (monorepo / multi-framework) → emit the `drift_framework_mismatch` blocker (see `references/auto-and-chain.md`) rather than asking which subproject.
 

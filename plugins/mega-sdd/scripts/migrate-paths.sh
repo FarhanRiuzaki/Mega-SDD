@@ -46,6 +46,7 @@ for arg in "$@"; do
     --auto-confirm)   : ;;  # no-op: confirm lives in the command
     --vault-layout)   VAULT_LAYOUT="__ALL__" ;;
     --vault-layout=*) VAULT_LAYOUT="${arg#*=}" ;;
+    --vault=*)        VL_ONE="${arg#*=}" ;;   # with --vault-layout=3: one vault dir
     --apply)          VL_APPLY=1 ;;
     -h|--help)        sed -n '2,31p' "$0"; exit 0 ;;
     *) echo "migrate-paths: unknown argument: $arg" >&2; exit 2 ;;
@@ -56,6 +57,37 @@ done
 # Resolve BEFORE cd — $0 may be a relative path from the caller's cwd.
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
 cd "$ROOT"
+
+# ==========================================================================
+# --vault-layout=3 rung (v8 P3, spec 2026-09-10 §7 P3): layout-2 four-file
+# vault(s) → layout-3 `context.md`. The transform lives in ONE vetted script
+# (migrate-vault-layout3.sh: dry-run default, archive to _meta/archive/layout2/,
+# per-unit binding split to binding-migrated.json, NAME-only ref rewrite,
+# derive-vault-json, mandatory "full JIT re-bind required"); this front door
+# only selects the vault set (--vault=<dir> for one, else every layout-2 vault
+# under .mega-sdd/vaults/) and is idempotent (nothing layout-2 left → no-op).
+# ==========================================================================
+if [ "$VAULT_LAYOUT" = "3" ]; then
+  VL3=()
+  if [ -n "${VL_ONE:-}" ]; then
+    [ -d "$VL_ONE" ] || { echo "migrate-paths: vault dir not found: $VL_ONE" >&2; exit 2; }
+    VL3+=("${VL_ONE%/}")
+  else
+    for d in ./.mega-sdd/vaults/*/; do
+      [ -d "$d" ] || continue
+      [ -f "${d}vault.md" ] && [ ! -f "${d}context.md" ] && VL3+=("${d%/}")
+    done
+  fi
+  if [ ${#VL3[@]} -eq 0 ]; then
+    echo "migrate-paths: no layout-2 vaults to migrate (already layout-3, or none under .mega-sdd/vaults/) — no-op."
+    exit 0
+  fi
+  RC3=0
+  for V in "${VL3[@]}"; do
+    bash "${SCRIPT_DIR}/migrate-vault-layout3.sh" --vault="$V" --cwd="." $([ "$VL_APPLY" -eq 1 ] && echo --apply) || RC3=$?
+  done
+  exit $RC3
+fi
 
 # run CMD... — echo under --dry-run, execute otherwise. ALL mutations route here.
 run() {

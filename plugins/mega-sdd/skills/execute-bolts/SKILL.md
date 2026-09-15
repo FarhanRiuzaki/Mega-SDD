@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.51.0
+version: 2.52.0
 description: Executes units into code commits (bolts) via the superpowers bridge or vendored fallback, with Hard Rule pre/post-flight scans that HALT on violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -29,6 +29,7 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
   - `--worktree` — isolate each bolt in a git worktree.
   - `--max-retries=N` — default 3.
   - `--dry-run` — walk steps, do not commit.
+  - `--rebind=@<paths-file>` (v8 P3, 8.0 — lane lite / layout-3 only) — re-verdict, without dispatching anything, every unit whose `target_files` ∪ `## Anchors` ∪ per-unit binding anchors intersect the listed changed paths: **Run** `bash <plugin-root>/scripts/rebind-units.sh --cwd=<root> --vault=<vault> --paths=@<file>` (exit 0 = nothing affected · 4 = re-bound, read `gate` · 2/3 = fail-closed → `--units=all`). It is the sync/delta lane's re-bind hop on this layout (the state engine renders it; `bind-codebase --paths=@…` FATALs `bind_folded_into_bolts` here); the CONFLICT gate it writes is the same `.validation-blockers.json` every dispatch meets.
   - `--force` — re-execute completed units / proceed on a dirty tree.
   - `--auto` — non-interactive (emit handoff YAML).
   - `--per-squad` — fan out across all squads in `_meta/squads.yaml` (main-thread loop, depth-1, NO squad subagent) — procedure in `references/batch-and-fanout.md` + `references/squad-subagent.md`.

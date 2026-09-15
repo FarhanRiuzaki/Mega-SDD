@@ -1,6 +1,6 @@
 ---
 name: plan
-version: 1.0.0
+version: 1.1.0
 description: v8 lite-lane PLAN — ONE model phase turns a PRD into the layout-3 vault (`context.md` flows + DBML + NFR + OQ, `constitution.md`, `vault.json`) AND the atomic units (`units/U-*.md` + `_index.md`) with `prd_source`/`context_source` citations, then raises ONE batched ask for P1 business OQs. Runs only on the lite lane (`--lite`, or config lane=lite; the classic chain keeps generate-intent → bind → generate-units). Use when the chain routes here or the user says "plan PRD ini", "rencanakan dari PRD", "plan this PRD", "PRD langsung ke units", or paraphrases.
 ---
 
@@ -36,6 +36,7 @@ Identical to `generate-intent` + `generate-units`, restated because they are the
 - `--scope=<id>` — one scope of a multi-scope PRD (`scopes:` block); picker + halts as generate-intent Step 0.9 (`../generate-intent/references/setup-flow.md`).
 - `--max-complexity=small|medium|large` · `--strict-deps` (default) · `--collision-policy=` · `--no-constitution` · `--regenerate` · `--auto` — semantics identical to the owning skill (generate-units / generate-intent).
 - `--lite` — accepted (the lane marker; the front door forwards it).
+- `--reconcile` — the sync-lane hop on a layout-3 vault (v8 P3, 8.0; replaces `generate-units --reconcile`, which FATALs `units_folded_into_plan` here). NO new units and NO rewrite of `context.md`: for each unit read `bolts/U-XXX/binding.json` (the JIT writer's evidence, refreshed by `scripts/rebind-units.sh` just before this hop) and apply the SAME task_type rules generate-units `--reconcile` applies to the layout-2 State Map — a `fs_must_not_exist` claim resolved `KEEP_CODE` (the file landed out of band) flips `create` → `extend` (every target present → `verify`); a `fs_must_exist` claim now CONFLICT/MISSING with `KEEP_VAULT` flips `extend` → `create`; unresolved CONFLICTs are left for `resolve-oq --binding` and the unit stays gated. Rewrite ONLY `task_type` (+ a `reconciled: <ISO> from bolts/U-XXX/binding.json` note in the unit body), regenerate `units/_index.md`, run `derive-vault-json.sh`, and list every flip in chat with its claim id. A unit whose binding is absent is reported as `not re-bound — run rebind-units.sh`, never guessed.
 
 ## Procedure (inline skeleton = authoritative; detail → `references/plan-procedure.md`)
 

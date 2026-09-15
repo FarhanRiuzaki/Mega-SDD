@@ -144,6 +144,7 @@ def sha256(path):
 nodes, node_ids, edges = {}, set(), []
 src_hashes = {}
 GLOBS = [".mega-sdd/vaults/*/vault.json", ".mega-sdd/vaults/*/binding.json",
+         ".mega-sdd/vaults/*/bolts/U-*/binding.json",   # v8 P3: per-unit JIT bindings (layout-3 / lite)
          ".mega-sdd/vaults/*/units/*.md", ".mega-sdd/vaults/*/_meta/modules.yaml",
          ".mega-sdd/knowledge-base/**/*.md",
          # v6.20.0 code layer — the scan's function map is graph input, so it must
@@ -398,6 +399,42 @@ for vault_json in sorted(glob.glob(os.path.join(mega, "vaults", "*", "vault.json
                 if flow_target:
                     add_edge(cid, flow_target, "covers", "VERIFIED", relp(bj_path), "claims[].vault_source")
                 # else: cannot resolve to a known flow node -> OMIT (Resolution 1)
+
+    # v8 P3 re-key (spec 2026-09-10 §4 row "graph"): a plan-born / layout-3 vault is
+    # bound PER UNIT — every bolts/U-XXX/binding.json (the JIT writer's evidence) adds
+    # its claims as claim nodes + `implements` edges to code anchors, the same shape the
+    # whole-vault file produces, so the impact lens traces a lite vault's claims to code.
+    # The unit id rides in the node attrs; a repaired stale range keeps its `repair` record.
+    for ub in sorted(glob.glob(os.path.join(vdir, "bolts", "U-*", "binding.json"))):
+        try:
+            ubj = json.load(open(ub, encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        u_local = os.path.basename(os.path.dirname(ub))
+        for c in ubj.get("claims", []) or []:
+            if not isinstance(c, dict) or not c.get("id"):
+                continue
+            cid = f"{vid}:{c['id']}"
+            _attrs = {"verdict": c.get("verdict"), "state": c.get("state"), "unit": u_local, "kind": c.get("kind")}
+            if c.get("resolution"):
+                _attrs["resolution"] = c.get("resolution")
+            if c.get("repair"):
+                _attrs["repair"] = c.get("repair")
+            add_node(cid, "claim", c["id"], _attrs, relp(ub), "claims[]")
+            anc = c.get("anchor")
+            if anc and anc not in ("—", "n/a", None):
+                for piece in re.split(r'\s*\+\s*', str(anc)):
+                    piece = piece.strip()
+                    if not piece:
+                        continue
+                    if ":" in piece or "/" in piece or re.search(r'\.(php|py|ts|js|rb|go|java|cs|ex)$', piece):
+                        aid = anchor_id(piece)
+                        if not aid:
+                            continue
+                        line_part = piece[len(aid):].lstrip(":")
+                        add_node(aid, "code_anchor", aid, {"line": line_part} if line_part else {}, relp(ub), "claims[].anchor")
+                        conf = c.get("confidence") or c.get("verdict") or "VERIFIED"
+                        add_edge(cid, aid, "implements", conf, relp(ub), "claims[].anchor")
 
     # modules.yaml: module nodes + blocks edges
     # Resolution 2: module id is used bare, verbatim (e.g. M-auth), no namespacing

@@ -734,8 +734,40 @@ def _lane():
     return "standard"
 
 
+def _layout3_vault_present():
+    """A plan-born (layout-3) vault exists under .mega-sdd/vaults/ — its docs are ONE
+    context.md and its verdicts live per unit; the classic three phases have nothing to
+    read or write there."""
+    import glob as _g
+    return bool(_g.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "context.md")))
+
+
+def _lite_requested():
+    """lane lite by config OR `--lite` on this dispatch (the front door forwards the
+    flag to every hop; the config write is the durable form, the flag the immediate one)."""
+    return _lane() == "lite" or bool(re.search(r"(?:^|\s)--lite(?:\s|$)", _args))
+
+
+def _folded():
+    """The three classic phases are FOLDED on the lite lane / a layout-3 vault (v8 P3 →
+    8.0.0, spec 2026-09-10 §7 P3, owner amendment: the alias must say WHY in one line —
+    it is a message to the team that gave the feedback, not a bare redirect). The
+    demotion ladder holds: these skills keep resolving on the classic lane for the whole
+    8.x cycle; removal is a 9.0 decision after a usage review."""
+    return _lite_requested() or _layout3_vault_present()
+
+
 if name == "bind-codebase":
-    if not has_vault():
+    if _folded():
+        fatal = {"check_id": "bind_folded_into_bolts",
+                 "on_fail": ("KENAPA: di lane lite / vault layout-3, bind-codebase dilipat ke JIT bind saat dispatch "
+                             "execute-bolts — verdict ditulis per unit (`bolts/U-XXX/binding.json`) tepat ketika unit itu "
+                             "dibangun, bukan sebagai fase terpisah untuk seluruh vault (feedback tim: fase bind terasa "
+                             "tidak perlu karena tidak ada yang membaca verdict-nya sebelum bolt). Jalankan "
+                             "`execute-bolts --all --lite`; audit sinkronisasi penuh = `scripts/rebind-units.sh --units=all` "
+                             "(atau `sync --full-bind`). Lane classic tetap tersedia sepanjang 8.x: hapus `lane: lite` dari "
+                             ".mega-sdd/config.yaml pada vault layout-2.")}
+    elif not has_vault():
         fatal = {"check_id": "binding_input_vault_missing",
                  "on_fail": "bind-codebase needs a vault (.mega-sdd/vaults/<vault>/) — run generate-intent first."}
     elif not express and not has_codebase_map():
@@ -750,16 +782,33 @@ elif name == "plan":
     # v8 P2: plan runs on the lite lane ONLY (the classic chain keeps
     # generate-intent → bind → generate-units); off-lane = fatal, never a
     # silent second writer of the vault.
-    if _lane() != "lite":
+    if not _lite_requested():
         fatal = {"check_id": "plan_off_lane",
                  "on_fail": "plan runs on the lite lane only — pass --lite on the front door / chain, or set `lane: lite` in .mega-sdd/config.yaml; the default lane uses generate-intent → bind-codebase → generate-units."}
     checks.append({"check": "plan_lane_lite", "status": "FAIL" if fatal else "PASS"})
 
 elif name == "generate-units":
-    if not has_bound_or_vault():
+    if _folded():
+        fatal = {"check_id": "units_folded_into_plan",
+                 "on_fail": ("KENAPA: di lane lite / vault layout-3, generate-units dilipat ke `plan` — units lahir bersama "
+                             "context.md dari PRD yang sama dalam SATU fase (kontrak tidak ditulis berkali-kali: vault → bind → "
+                             "units dulu menulis ulang hal yang sama tiga kali). Jalankan `plan <prd> --lite --regenerate` "
+                             "(unit belum ada) atau `plan --reconcile` (kode bergerak; task_type mengikuti bukti "
+                             "`bolts/U-XXX/binding.json`). Lane classic tetap tersedia sepanjang 8.x.")}
+    elif not has_bound_or_vault():
         fatal = {"check_id": "units_input_vault_missing",
                  "on_fail": "generate-units needs a (bound-)vault — run generate-intent (and bind-codebase) first."}
     checks.append({"check": "units_input_complete", "status": "FAIL" if fatal else "PASS"})
+
+elif name == "generate-intent":
+    if _lite_requested():
+        fatal = {"check_id": "intent_folded_into_plan",
+                 "on_fail": ("KENAPA: di lane lite, generate-intent dilipat ke `plan` — PRD → context.md (satu file, section "
+                             "Flows/Data model/Constraints/Open Questions) + units ditulis SEKALI, satu batched ask di ujung; "
+                             "vault 4-file + fase bind + fase units yang menulis ulang kontrak yang sama tidak ada lagi di lane "
+                             "ini. Jalankan `plan <prd> --lite --mode=existing|new`. Lane classic tetap tersedia sepanjang 8.x: "
+                             "hapus `lane: lite` dari .mega-sdd/config.yaml.")}
+    checks.append({"check": "intent_lane", "status": "FAIL" if fatal else "PASS"})
 
 elif name == "execute-bolts":
     if not has_units():

@@ -833,11 +833,23 @@ def probe_binding(vdir):
     out = {
         "binding_md": os.path.isfile(os.path.join(vdir, "binding.md")),
         "binding_json": os.path.isfile(os.path.join(vdir, "binding.json")),
+        # v8 P3: a plan-born / layout-3 vault is "bound" PER UNIT — the JIT bind
+        # writes bolts/U-XXX/binding.json at dispatch (no whole-vault binding.md
+        # ever exists). The sync lane keys on this count where it used to key on
+        # binding_md alone (spec 2026-09-10 §4 row "re-bind").
+        "unit_bindings": 0,
         "head": None,
         "conflicts_active": 0,
         "conflicts_resolved": 0,
         "resolution_actions": {},
     }
+    bdir = os.path.join(vdir, "bolts")
+    try:
+        out["unit_bindings"] = sum(
+            1 for u in os.listdir(bdir)
+            if u.startswith("U-") and os.path.isfile(os.path.join(bdir, u, "binding.json")))
+    except OSError:
+        out["unit_bindings"] = 0
     if not out["binding_md"]:
         return out
     try:
@@ -1290,12 +1302,30 @@ def derive(probes):
     # a bind --paths chain that FATALs on the missing map — classic falls
     # through to the scan-first repair rows instead).
     if (cmap["present"] or (sindex["present"] and spine == "express")) \
-            and binding["binding_md"] and (
+            and (binding["binding_md"] or binding.get("unit_bindings", 0) > 0) and (
         change_signal["dirty_journal_rows"] > 0
         or change_signal["map_stamp_matches_head"] == "no"
         or change_signal["index_stamp_matches_head"] == "no"
     ):
         vp = vault["path"]
+        if derived["lane"] == "lite" or vault.get("has_context_md"):
+            # v8 P3 (spec 2026-09-10 §4): the lite / layout-3 vault has no
+            # whole-vault binding to re-bind — the re-bind hop is the per-unit
+            # JIT writer scoped to the changed set (rebind-units.sh: units whose
+            # target_files ∪ ## Anchors ∪ per-unit binding anchors intersect;
+            # exit 0 = nothing affected, 4 = re-bound, read `gate`), and unit
+            # reconcile is `plan --reconcile` (task_type follows the per-unit
+            # binding evidence), never generate-units. Hop 1 stays as on the
+            # classic lane (changed set + drift).
+            first = ("scan-codebase --changed-only" if cmap["present"]
+                     else "scripts/derive-changed-paths.sh --vault %s" % vp)
+            return finish("maintenance_sync", [
+                first,
+                "detect-drift --scope=@%s/.sync-changed-paths.txt" % vp,
+                "scripts/rebind-units.sh --cwd . --vault %s --paths=@%s/.sync-changed-paths.txt" % (vp, vp),
+                "plan --reconcile",
+                "execute-bolts --all --lite",
+            ])
         if cmap["present"]:
             # Map-bearing project: today's chain, unchanged — scan
             # --changed-only refreshes the map AND writes the changed set.

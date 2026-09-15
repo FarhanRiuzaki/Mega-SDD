@@ -708,7 +708,11 @@ print(
     # without the missing input). scan-codebase ast-grep is WARN-only (never
     # FATAL). State recomputed each invocation → self-clears (no deadlock).
     case "${SKILL_NAME:-}" in
-      mega-sdd:bind-codebase|mega-sdd:generate-units|mega-sdd:execute-bolts|mega-sdd:scan-codebase)
+      mega-sdd:bind-codebase|mega-sdd:generate-units|mega-sdd:execute-bolts|mega-sdd:scan-codebase|mega-sdd:generate-intent|mega-sdd:plan)
+        # v8 P3 (8.0.0): generate-intent + plan join the list — the alias FATALs
+        # (intent/units/bind folded on the lite lane / a layout-3 vault, one-line
+        # KENAPA) and plan_off_lane are gates, not prose; the classic lane on a
+        # layout-2 vault is byte-identical (the validator PASSes there).
         PREFLIGHT="${SCRIPT_DIR_RPR}/../scripts/validate-preflight.sh"
         if [ -x "$PREFLIGHT" ]; then
           # P2: the dispatch args ride along (b64; decoded inside the script's
