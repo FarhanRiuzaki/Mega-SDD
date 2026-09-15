@@ -1,0 +1,14 @@
+0d5ead6 2026-09-15T11:29:30+07:00 chore(sdd): analyze — CONSISTENCY-REPORT overall PASS
+2183c24 2026-09-15T11:29:12+07:00 chore(sdd): detect-drift report — 6 findings queued in PENDING-SYNC (0 critical)
+79065c9 2026-09-15T11:17:44+07:00 chore(sdd): evidence batch — _summary.md, batch suite, gate state
+88987e3 2026-09-15T11:16:27+07:00 chore(sdd): evidence U-005 — bolt-report, findings ledger, gate evidence
+dec7780 2026-09-15T11:13:07+07:00 chore(sdd): evidence U-003 — bolt-report, findings ledger, gate evidence
+b8d105c 2026-09-15T11:09:53+07:00 feat(U-005): Buat form kontak (repository, hook, komponen) dan Halaman Kontak
+c9449b1 2026-09-15T11:07:00+07:00 chore(sdd): evidence U-004 — bolt-report, findings ledger, gate evidence
+3ba6e1f 2026-09-15T11:06:12+07:00 chore(sdd): evidence U-002 — bolt-report, findings ledger, gate evidence
+6f2ffc1 2026-09-15T11:05:10+07:00 feat(U-003): Buat Halaman Tentang Kami
+813bf77 2026-09-15T11:00:56+07:00 chore(sdd): evidence U-001 — bolt-report, findings ledger, gate evidence
+ecaae13 2026-09-15T10:53:25+07:00 feat(U-004): Buat schema zod dan route POST /api/v1/contact-messages dengan validasi sisi server
+25647fb 2026-09-15T10:53:15+07:00 feat(U-002): Buat file konfigurasi konten profil dan Halaman Beranda
+82683a8 2026-09-15T10:52:46+07:00 feat(U-001): Buka tiga halaman profil publik di guard route src/proxy.ts
+7b6832c 2026-09-15T10:45:51+07:00 docs(mega-sdd): plan company-profile vault (context, constitution, 5 units)
