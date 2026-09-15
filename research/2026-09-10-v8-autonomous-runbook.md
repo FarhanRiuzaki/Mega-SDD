@@ -102,6 +102,44 @@ Amendemen owner untuk P3 (di atas goal P3 runbook §3):
 
 ---
 
+## §3-lanjutan (amendemen owner) + §5 masukan tim #4 (2026-09-15, VERBATIM — berlaku di atas goal P3 runbook §3 dan amendemen P3 di atas; item F = §5 masukan tim #4)
+
+Lanjut §3 P3 per research/2026-09-15-v8-p3-report.md §5 dan research/2026-09-10-v8-autonomous-runbook.md.
+
+LANGKAH 0 — simpan pesan ini verbatim ke runbook sebagai "§3-lanjutan (amendemen owner)" + "§5 masukan tim #4", supaya survive lintas sesi/compaction. Baru mulai.
+
+A. BACA HASIL CHAIN D
+benchmarks/results/p3/xs-lite-7.38.0-run2 + clinic-lite-7.38.0: run.meta (resume/outage), done-endpoints.txt, parallelism.txt, quality.json, biaya Σ total_cost_usd. Semua penilaian pakai DONE = max(gate unit terakhir, B2).
+
+B. KRITERIA (i) DIREVISI TERBUKA — alasan: angka <=2h / <=60m sejak awal proxy untuk "pipeline tax habis"; sekarang tax-nya bisa diukur langsung, jadi pakai yang langsung. Ini keputusan owner beralasan, bukan menggeser gawang.
+--lite JADI DEFAULT di 8.0.0 kalau pada RUN BERSIH:
+ (a) xs DONE <= 60m; DAN
+ (b) klinik: rata-rata in-flight >= 2.5 dari cap 4 DAN waktu bolt-stage tanpa implementer < 20% (P2: 45%), dengan acceptance 21/21 dan Critical 0.
+- (b) terpenuhi tapi wall klinik 2h-2h30m => --lite TETAP default; sisa waktu itu kerja implementasi nyata, bukan pajak pipeline. Tulis wall apa adanya di CHANGELOG.
+- (b) TIDAK terpenuhi (in-flight < 2.5 atau idle >= 20%) => --lite opt-in walau wall kebetulan <= 2h; berarti masih ada penyerial yang belum ketemu.
+- Kriteria kualitas, moat, dan migrasi idempoten TIDAK berubah.
+- Verdict (b) DINILAI DARI KLINIK SAJA. xs 5-6 unit hampir tanpa headroom paralel — xs hanya menilai (a). Jangan over-read xs.
+
+C. STOPPING RULE OUTAGE (ini sudah outage ke-4, jangan bakar biaya tak terbatas)
+Run "bersih" = nol outage API dan nol resume di tengah fase yang diukur (dibuktikan run.meta). Maksimal 3 percobaan per skenario; percobaan tercemar diarsipkan sebagai bukan-data (preseden P0). Kalau 3x berturut tercemar: BERHENTI mengukur skenario itu, laporkan angka terbaik dengan label TERCEMAR, nilai kriteria dari skenario yang bersih saja. Kalau dua-duanya tidak bersih: 8.0.0 rilis dengan --lite opt-in + alasan "measurement environment unfit", BUKAN "fitur gagal".
+
+D. KALAU KLINIK MASIH in-flight < 2.5 SETELAH FIX 7.38.0
+Jangan tambah lever baru di sesi itu. Bedah lagi penyerial sisanya dengan metode yang sama (timestamp overlap per wave, siapa blokir siapa, gate mana yang menahan), tulis temuannya, baru putuskan. Metode ini sudah terbukti sekali.
+
+E. TUTUP 8.0.0
+Bump manifests + [Unreleased] -> [8.0.0]; sisa docs 1:1 (project-config parallel_max, test state-engine sync lite, skenario-12); suite dua tree + CI hijau; push GitHub; lalu summary program §4 runbook + section "untuk tim" (bahasa manusia, angka before/after, jawaban atas tiga feedback tim). SCM PENDING terus dicatat.
+
+F. §5 — MASUKAN TIM #4: comment over-verbose di generated code. DIKERJAKAN SETELAH keputusan ship (mengubah bentuk output codegen sekarang mencemari arm pengukuran). Target rilis 8.0.x/8.1.0.
+ 1. Diagnosa dulu lewat grep, jangan asumsi — siapa yang menyuruh ATAU MENGHADIAHI komentar: agents/bolt-implementer.md; framework-conventions/*; build-dispatch-prompt.sh; agents/code-quality-reviewer.md + standards-reviewer.md (kalau "missing docs/comment" jadi kelas temuan, implementer sedang dihadiahi over-comment — ini akar sebenarnya); unit template/schema. Output: tabel permukaan x kalimat pemicu x file:line.
+ 2. Aturan baru (masuk implementer + pack + rubrik panel): komentar menjelaskan KENAPA, bukan APA. Dilarang mengulang signature (getUser, setStatus, getter/setter, constructor) dan docblock yang cuma menyalin nama+tipe parameter. TETAP ditulis: aturan bisnis non-obvious + sumbernya, workaround + alasannya, batasan regulasi, asumsi yang tak terlihat dari kode, TODO yang menunjuk OQ/unit.
+ 3. DAFTAR LINDUNG (jangan disapu, load-bearing gate): `// source: <path>` di e2e Playwright (build-uat-e2e --check menolak tanpa itu); komentar sitasi/anchor yang dibaca validator mana pun; header lisensi/compliance kalau pack mewajibkan. Ragu => grep dulu; nol pembaca baru boleh dipangkas.
+ 4. Ukur sebelum ship: comment-lines/code-lines per file hasil bolt (before vs after, skenario xs sama) + delta token dispatch + delta token saat file dibaca ulang di unit berikutnya. Target rasio turun >=40% TANPA kehilangan komentar kelas "KENAPA"; acceptance hijau, panel Critical 0, spot-check 3 file.
+ 5. Rambu: ini perubahan gaya output, bukan gate. Jangan tambah validator penghitung komentar. Kalau #1 menunjukkan penyebab utamanya rubrik panel, perbaiki rubriknya dulu dan ukur lagi — mungkin cukup itu saja.
+
+RAMBU STANDING: satu commit per langkah; suite dua tree + CI + moat (C-set, S-series) hijau per commit; parity-proof sebelum delete; angka berlabel MEASURED/EST; bukti yang membalik rencana => berhenti dan tulis, jangan paksakan; biaya per run dicatat; akhiri sesi dengan laporan + baris NEXT SESSION.
+
+---
+
 ## Status runner (ditambah per sesi, kronologis)
 
 - 2026-09-10 sesi 3dc71eb1 — kontrak disimpan; §1 dimulai (arm baseline 7.34.0 default pada fixture repo).
@@ -125,3 +163,4 @@ Amendemen owner untuk P3 (di atas goal P3 runbook §3):
 - 2026-09-15 sesi 015iaR6m (lanjutan 2) — CI 7.38.0 hijau (run 34922064845 pada `51a12e4`); cache plugin 7.38.0 (diff vs tree rilis = 0). **xs lite 7.38.0 run P3 #1 diluncurkan 02:49:14Z** (sid `709e4506`, fixture `p0-xs-lite` reset @ `6f98c10`, chain scratchpad `p3-chain-xs.sh` dengan net_wait + guard + resume guard; hasil → `benchmarks/results/p3/xs-lite-7.38.0`). Sambil menunggu: goal §3 item 1/2/4 (migrasi layout-3, alias, re-key) dibangun di repo — run memakai cache, bukan tree. SCM PENDING.
 - 2026-09-15 sesi 015iaR6m (lanjutan 3) — goal §3 item 1 (migrate `--vault-layout=3`), 2 (alias KENAPA sebagai FATAL preflight + hook), 4 (rebind-units.sh + re-key state engine / sync-intersect / derive-delta-paths / graph / plan --reconcile / detect-drift), 5 (degradasi di CHANGELOG `[Unreleased]`) DIBANGUN + dipin, belum di-tag (8.0.0 menunggu empat kriteria dinilai). xs lite 7.38.0 run #1 masih berjalan (sid 709e4506). SCM PENDING.
 - 2026-09-15 sesi 015iaR6m (lanjutan 4) — xs lite 7.38.0 run #1 = DATA bolt-stage (dispatch→commit kode terakhir 22,8 m vs 45,3 m; in-flight 1,57 vs 0,98; 5/5; 0 CONFLICT; $50,32) tapi PRE-CODE tercemar outage API (putus ke-4; chain resume sesi sama) → kriteria (i) belum dinilai. **Chain d** (xs re-run #2 sid `e9984ef4` 04:33Z → klinik SEKALI otomatis) berjalan; goal §3 item 1/2/4/5 di `64e85fd` CI hijau. Sesi ini ditutup (konteks); sesi berikutnya = nilai empat kriteria dari hasil chain d, tag 8.0.0 (--lite default HANYA bila xs ≤60 m DAN klinik ≤2 h terukur), summary program §4. SCM PENDING sejak 53406cc.
+- 2026-09-15 sesi 015iaR6m (lanjutan 5, setelah compaction) — owner mengirim **§3-lanjutan + §5 masukan tim #4** (disimpan verbatim di atas): kriteria (i) direvisi terbuka ((a) xs DONE ≤60 m; (b) klinik in-flight ≥2,5/4 DAN idle tanpa implementer <20 % dengan acceptance penuh + Critical 0 — (b) dinilai dari klinik saja), stopping rule outage (run bersih = 0 outage + 0 resume; maks 3 percobaan/skenario; dua-duanya kotor → opt-in dengan alasan "measurement environment unfit"), D (klinik masih <2,5 → bedah lagi, jangan lever baru), E (tutup 8.0.0), F (masukan tim #4 komentar over-verbose — SETELAH keputusan ship). Chain d berjalan: xs run #2 sid `e9984ef4` di PLAN pada 04:44Z tanpa outage. SCM PENDING.
