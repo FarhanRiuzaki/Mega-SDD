@@ -143,11 +143,17 @@ def arm_report(name, d, classic):
     r["cost"] = read_cost(d)
     q = r["quality"]
     if q and classic:
-        r["ii"] = {"acceptance_ok": frac_ok(q["acceptance_units"]) and frac_ok(classic["acceptance_units"]) or
-                   (frac_ok(q["acceptance_units"])),
-                   "p1_ok": (q["critical"] + q["important"]) <= (classic["critical"] + classic["important"]),
+        # (ii) "acceptance pass rate + P1 findings ≤ arm classic" — two readings reported side by
+        # side, never collapsed: STRICT = the P2 precedent (Critical AND Important each ≤ classic,
+        # research/2026-09-11-v8-p2-report.md §5 verdict 1); CRITICAL = Critical only (the owner's
+        # (b) quality bar names "Critical 0"). The verdict line prints both; the report says which.
+        r["ii"] = {"acceptance_ok": frac_ok(q["acceptance_units"]),
+                   "critical_ok": q["critical"] <= classic["critical"],
+                   "important_ok": q["important"] <= classic["important"],
                    "classic": classic}
-        r["ii"]["pass"] = r["ii"]["acceptance_ok"] and r["ii"]["p1_ok"]
+        r["ii"]["pass_strict"] = r["ii"]["acceptance_ok"] and r["ii"]["critical_ok"] and r["ii"]["important_ok"]
+        r["ii"]["pass_critical_only"] = r["ii"]["acceptance_ok"] and r["ii"]["critical_ok"]
+        r["ii"]["pass"] = r["ii"]["pass_strict"]
     else:
         r["ii"] = None
     return r
@@ -222,8 +228,9 @@ def main():
         if r["cost"]:
             print("        cost $%.2f over %d result event(s)" % (r["cost"]["usd"], r["cost"]["result_events"]))
         if r["ii"]:
-            print("        (ii) vs classic %s %d/%d/%d → %s" % (r["ii"]["classic"]["acceptance_units"], r["ii"]["classic"]["critical"],
-                  r["ii"]["classic"]["important"], r["ii"]["classic"]["minor"], "PASS" if r["ii"]["pass"] else "FAIL"))
+            print("        (ii) vs classic %s %d/%d/%d → STRICT (Critical AND Important ≤) %s · CRITICAL-only %s" % (
+                  r["ii"]["classic"]["acceptance_units"], r["ii"]["classic"]["critical"], r["ii"]["classic"]["important"],
+                  r["ii"]["classic"]["minor"], "PASS" if r["ii"]["pass_strict"] else "FAIL", "PASS" if r["ii"]["pass_critical_only"] else "FAIL"))
     print("(a) %s" % A); print("(b) %s" % B); print("VERDICT: %s" % verdict)
     if out:
         json.dump(rep, open(out, "w"), indent=1)

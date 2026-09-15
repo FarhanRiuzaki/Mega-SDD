@@ -1,0 +1,20 @@
+8204c25 2026-09-15T13:00:54+07:00 chore(sdd): record runner assumptions in bolts/_summary.md
+1273867 2026-09-15T12:58:37+07:00 chore(sdd): detect-drift report + PENDING-SYNC queue + analyze CONSISTENCY-REPORT (PASS)
+308f75f 2026-09-15T12:44:38+07:00 chore(sdd): evidence refresh — bolt-report target_hashes normalized, gate-recomputed postflight, summary html
+8cdfd6f 2026-09-15T12:43:12+07:00 chore(sdd): evidence U-005 — preflight/binding/L0/postflight/acceptance/panel ledger/bolt-report
+986da4b 2026-09-15T12:43:12+07:00 chore(sdd): evidence U-003 — preflight/binding/L0/postflight/acceptance/panel ledger/bolt-report
+1c08605 2026-09-15T12:29:55+07:00 feat(U-005): Buat Halaman Kontak dengan form kirim pesan
+84feb3d 2026-09-15T12:27:06+07:00 feat(U-003): Buat Halaman Tentang Kami dari file konfigurasi
+9acb533 2026-09-15T12:22:28+07:00 chore(sdd): evidence U-004 — preflight/binding/L0/postflight/acceptance/panel ledger/bolt-report
+3bc1872 2026-09-15T12:22:28+07:00 chore(sdd): evidence U-002 — preflight/binding/L0/postflight/acceptance/panel ledger/bolt-report
+a298960 2026-09-15T12:22:28+07:00 chore(sdd): evidence U-001 — preflight/binding/L0/postflight/acceptance/panel ledger/bolt-report
+078f2be 2026-09-15T12:15:07+07:00 chore(sdd): single-quote acceptance -t patterns in pending units U-003, U-005
+422e1f0 2026-09-15T12:15:07+07:00 fix(U-004): single-quote acceptance -t patterns
+4a431e0 2026-09-15T12:15:07+07:00 fix(U-002): single-quote acceptance -t patterns
+9e0f1d5 2026-09-15T12:15:07+07:00 fix(U-001): single-quote acceptance -t patterns
+48c3758 2026-09-15T12:07:15+07:00 fix(U-001): anchor range repaired by JIT bind (R2-clamp src/proxy.ts:36-38 -> 36-37)
+5497ade 2026-09-15T12:07:15+07:00 style(U-004): apply repo prettier formatting (L0 format fix)
+cda40c1 2026-09-15T11:59:24+07:00 feat(U-004): Buat endpoint POST /api/v1/contact-messages dengan validasi server
+c60dba5 2026-09-15T11:59:11+07:00 feat(U-002): Buat file konfigurasi konten profil dan Halaman Beranda
+2d7afa1 2026-09-15T11:56:36+07:00 feat(U-001): Buka akses tanpa login untuk /beranda, /tentang-kami, /kontak di proxy.ts
+a101bb3 2026-09-15T11:52:01+07:00 chore(sdd): plan company-profile vault + units (lite lane)

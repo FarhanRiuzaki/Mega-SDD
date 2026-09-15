@@ -1,0 +1,7 @@
+arm xs-lite-7.38.0-run2 sid e9984ef4 start 04:33:36Z
+  DONE_code      56m19s  last code commit  feat(U-005): Buat Halaman Kontak dengan form kirim pesan
+  DONE_p5        56m19s  last type(U-*) commit (P0/P2 tables)  feat(U-005): Buat Halaman Kontak dengan form kirim pesan
+  DONE_gate    1h11m02s  last unit gate pass (postflight/acceptance/panel merge) for U-005
+  B2 suite     1h08m21s  run-full-suite.sh result (batch gate, reported separately)
+  EXCLUDED       16m32s  first drift/analyze/html/emit call (never in DONE)
+  gate calls seen for last-code unit: {'run-postflight-scan.sh': '05:35:09', 'run-acceptance-tests.sh': '05:35:09', 'merge-panel-findings.sh': '05:44:38'}

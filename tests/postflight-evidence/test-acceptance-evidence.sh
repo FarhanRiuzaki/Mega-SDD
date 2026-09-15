@@ -216,5 +216,30 @@ d = json.load(open(sys.argv[1])); cmds = [e["command"] for e in d["entries"]]
 assert 'echo -t "hello world"' in cmds and 'echo "a b"' in cmds, cmds
 PYC
 
+echo "── v8 P3 D5: YAML double-quoted scalar with ESCAPED inner quotes is unescaped ──"
+# xs lite 7.38.0 run #2 (U-004): plan wrote `command: "pnpm test:run x -t \"name\""` — the D2
+# unwrap handed the shell a literal \"name\" (two words, quotes kept) → vitest matched nothing →
+# false acceptance FAIL; the controller spent ~8 min + 4 fix commits re-quoting every unit.
+# printf makes the word split visible: unfixed → ["hello][world"], fixed → [hello world].
+PE="$WORK/pe"; mk_project "$PE" "$(cat <<'YAML'
+  - type: test
+    command: "printf '[%s]' \\"hello world\\""
+    expects: "[hello world]"
+  - type: test
+    command: 'printf ''[%s]'' ''a b'''
+    expects: "[a b]"
+YAML
+)"$'\n' "Unit: U-001
+SDD-Acceptance: v5"
+OUT=$(bash "$RAT" --cwd="$PE" --unit=U-001 </dev/null 2>&1); RC=$?
+[ $RC -eq 0 ] && [ "$(jget "$(AJ "$PE")" '["status"]')" = "pass" ] \
+  && ok "double-quoted scalar: \\\" inside becomes a real quote (one shell word); single-quoted '' pair becomes one quote" \
+  || fail "D5 unescape broken rc=$RC status=$(jget "$(AJ "$PE")" '["status"]' 2>/dev/null): $OUT"
+python3 - "$(AJ "$PE")" <<'PYC' && ok "entries record the UNESCAPED command (what the shell ran)" || fail "D5: recorded command still carries YAML escapes"
+import json, sys
+d = json.load(open(sys.argv[1])); cmds = [e["command"] for e in d["entries"]]
+assert 'printf \'[%s]\' "hello world"' in cmds and "printf '[%s]' 'a b'" in cmds, cmds
+PYC
+
 echo
 [ "$FAILED" -eq 0 ] && { echo "test-acceptance-evidence: ALL PASS"; exit 0; } || { echo "test-acceptance-evidence: FAILURES"; exit 1; }

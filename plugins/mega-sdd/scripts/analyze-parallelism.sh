@@ -172,7 +172,9 @@ def scalar(fm, key):
         return ""
     v = v.split("  #", 1)[0].strip()  # strip trailing inline comment
     if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":  # v8 P2 D2: unwrap whole pairs only
-        return v[1:-1]
+        q = v[0]; v = v[1:-1]
+        # v8 P3 D5: YAML escapes inside the pair (parity with run-acceptance-tests.sh)
+        return v.replace('\\"', '"').replace("\\\\", "\\") if q == '"' else v.replace("''", "'")
     return v
 
 

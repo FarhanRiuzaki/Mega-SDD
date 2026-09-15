@@ -146,7 +146,14 @@ def parse_acceptance_entries(full_text):
             # matching pair — `pnpm test:run -t "x y"` used to lose its closing quote
             # (sh: unexpected EOF) and fail the unit's acceptance for a parser artefact.
             if len(v) >= 2 and v[0] == v[-1] and v[0] in "'\"":
+                q = v[0]
                 v = v[1:-1]
+                # v8 P3 D5 (2026-09-15, xs lite 7.38.0 run #2): a YAML double-quoted scalar
+                # carries its inner quotes ESCAPED — `"pnpm test:run x -t \"name\""` — and the
+                # unwrap above handed the shell a literal `\"name\"` (vitest -t matched nothing →
+                # a false acceptance fail that cost the controller 4 fix commits). Unescape the
+                # YAML double-quoted escapes (`\"` `\\`) and the single-quoted `''` pair.
+                v = v.replace('\\"', '"').replace("\\\\", "\\") if q == '"' else v.replace("''", "'")
             if k in ("type", "kind", "command", "expects", "desc", "ears"):
                 cur.setdefault("type" if k == "kind" else k, v)
     if cur:
