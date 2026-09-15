@@ -9,6 +9,15 @@
 #
 # Verdicts (fail-closed, never CONFIRMED-by-absence):
 #   fs_must_exist      path exists (and line range fits when `:N[-M]`) → CONFIRMED/IMPLEMENTED · else CONFLICT
+#                      stale line-range (v8 P3, owner amendment #4 — research/2026-09-15-v8-p3-report.md §5): a range that
+#                      no longer fits is REPAIRED only against the anchor's authoring snapshot (the commit that
+#                      introduced that anchor token into the unit file) and only when the content is byte-identical:
+#                        R1-shift  the authored lines are found verbatim (uniquely) at another offset → range moved
+#                        R2-clamp  the file is unchanged since authoring AND the range overshoots EOF by exactly one
+#                                  line (the trailing-newline miscount; the live P2 class) → range clamped to EOF
+#                      anything else (content changed, no unique match, overshoot > 1, no snapshot) stays CONFLICT.
+#                      A repair is recorded on the claim (`repair: {from,to,rule,reference,content_sha256}`) AND the
+#                      unit's `## Anchors` line is rewritten to the repaired token (idempotent: the next bind sees it fit).
 #   fs_must_not_exist  path absent → CONFIRMED/NEW · else CONFLICT (already exists)
 #   symbol             symbol-index lookup: in the expected file → CONFIRMED/IMPLEMENTED (anchor file:line);
 #                      only elsewhere → CONFLICT (collision; anchors listed); nowhere → OQ; index absent → OQ (reason)
@@ -27,7 +36,7 @@ if [ -z "$RESOLVE" ]; then [ -n "$CLAIMS" ] && [ -f "$CLAIMS" ] || { echo "usage
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HEAD8="$(git -C "$CWD" rev-parse --short=8 HEAD 2>/dev/null || echo nogit)"
 V_CWD="$CWD" V_VAULT="$VAULT" V_UNIT="$UNIT" V_CLAIMS="$CLAIMS" V_VERDICTS="$VERDICTS" V_RESOLVE="$RESOLVE" V_BY="$BY" V_HEAD="$HEAD8" V_LIB="$SCRIPT_DIR/_lib" python3 <<'PYEOF'
-import json, os, re, sys
+import hashlib, json, os, re, subprocess, sys
 from datetime import datetime, timezone
 E = os.environ; cwd = os.path.abspath(E["V_CWD"]); vault = E["V_VAULT"]; unit = E["V_UNIT"]
 sys.path.insert(0, E["V_LIB"])
@@ -73,30 +82,93 @@ if os.path.isfile(idx_path):
     try: index = json.load(open(idx_path, encoding="utf-8")).get("symbols", [])
     except Exception: index = None
 
-def fs_exists(expect):
+def _git(*args):
+    try:
+        r = subprocess.run(["git", "-C", cwd] + list(args), capture_output=True, text=True, timeout=30)
+        return r.stdout if r.returncode == 0 else None
+    except Exception:
+        return None
+
+def _read_lines(path):
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f: return f.read().splitlines()
+    except OSError:
+        return None
+
+def _sha(lines):
+    return hashlib.sha256("\n".join(lines).encode("utf-8", "replace")).hexdigest()[:12]
+
+def anchor_snapshot(unit_rel, token):
+    """The commit that INTRODUCED `token` into the unit file — the anchor's authoring snapshot:
+    walk the unit's commits newest→oldest while the token is present; the oldest of that run
+    introduced it. None = the token exists only in the working tree (authored against the
+    CURRENT files, so the current file IS the snapshot)."""
+    log = _git("log", "--format=%H", "--", unit_rel)
+    if log is None: return None
+    intro = None
+    for sha in log.split():
+        content = _git("show", "%s:%s" % (sha, unit_rel))
+        if content is None or token not in content: break
+        intro = sha
+    return intro
+
+def _lines_at(sha, rel):
+    if sha is None: return _read_lines(os.path.join(cwd, rel))
+    txt = _git("show", "%s:%s" % (sha, rel))
+    return txt.splitlines() if txt is not None else None
+
+def fs_exists(expect, source=""):
+    """(ok, why, repair) — repair is set ONLY when a stale range was moved to content-identical
+    lines (v8 P3 amendment #4: sha match or nothing; changed content stays CONFLICT)."""
     m = re.match(r"^(.+?):(\d+)(?:-(\d+))?$", expect)
     path = os.path.join(cwd, m.group(1) if m else expect)
-    if not os.path.exists(path): return False, "absent"
-    if m and os.path.isfile(path):
-        n = sum(1 for _ in open(path, encoding="utf-8", errors="replace"))
-        hi = int(m.group(3) or m.group(2))
-        if hi > n: return False, "line %d beyond EOF (%d lines)" % (hi, n)
-    return True, "present"
+    if not os.path.exists(path): return False, "absent", None
+    if not (m and os.path.isfile(path)): return True, "present", None
+    rel, lo, hi = m.group(1), int(m.group(2)), int(m.group(3) or m.group(2))
+    cur = _read_lines(path) or []; n = len(cur)
+    if hi <= n: return True, "present", None
+    # ── stale line-range: repair only against the authoring snapshot, content-identical ──
+    unit_rel = (source or "").split(":")[0]
+    if not (source or "").endswith("## Anchors") or not unit_rel or not os.path.isfile(os.path.join(cwd, unit_rel)):
+        return False, "line %d beyond EOF (%d lines)" % (hi, n), None
+    snap = anchor_snapshot(unit_rel, expect)
+    ref = _lines_at(snap, rel)
+    if ref is None:
+        return False, "line %d beyond EOF (%d lines); no authoring snapshot of %s — not repairable" % (hi, n, rel), None
+    ref_sha = (snap or "worktree")[:8]
+    if hi <= len(ref):
+        # R1 — shift: the authored block exists verbatim, uniquely, at another offset
+        block = ref[lo - 1:hi]; L = len(block)
+        hits = [i for i in range(0, max(0, n - L + 1)) if cur[i:i + L] == block]
+        if len(hits) == 1:
+            s = hits[0] + 1
+            to = "%s:%d%s" % (rel, s, ("-%d" % (s + L - 1)) if m.group(3) else "")
+            return True, "repaired: authored lines %d-%d found verbatim at %d-%d (content sha %s, snapshot %s)" % (lo, hi, s, s + L - 1, _sha(block), ref_sha), \
+                   {"from": expect, "to": to, "rule": "R1-shift", "reference": ref_sha, "content_sha256": _sha(block)}
+        return False, "line %d beyond EOF (%d lines); authored content not found verbatim (%d match(es)) — not repairable" % (hi, n, len(hits)), None
+    if cur == ref and hi == n + 1 and lo <= n:
+        # R2 — clamp: file byte-identical to the snapshot, overshoot of exactly one line
+        to = ("%s:%d-%d" % (rel, lo, n)) if m.group(3) else ("%s:%d" % (rel, n))
+        return True, "repaired: file unchanged since authoring (content sha %s, snapshot %s), range overshot EOF by 1 — clamped to %s" % (_sha(cur), ref_sha, to.split(":")[1]), \
+               {"from": expect, "to": to, "rule": "R2-clamp", "reference": ref_sha, "content_sha256": _sha(cur)}
+    return False, "line %d beyond EOF (%d lines); content differs from the authoring snapshot or overshoot > 1 — not repairable" % (hi, n), None
 
 def norm(p): return p.replace("\\", "/").lstrip("./")
 
-verdicts = []
+verdicts = []; repairs = []
 for c in mine:
     v = {"id": c["id"], "kind": c["kind"], "expect": c["expect"], "source": c["source"],
          "verdict": None, "state": None, "anchor": None, "confidence": None, "evidence": None}
     if c.get("text"): v["text"] = c["text"]
     k = c["kind"]
     if k == "fs_must_exist":
-        ok, why = fs_exists(c["expect"])
+        ok, why, rep = fs_exists(c["expect"], c.get("source", ""))
         v.update(verdict="CONFIRMED" if ok else "CONFLICT", state="IMPLEMENTED" if ok else "MISSING",
-                 anchor=c["expect"] if ok else None, confidence="high", evidence="fs: %s" % why)
+                 anchor=(rep["to"] if rep else c["expect"]) if ok else None, confidence="high", evidence="fs: %s" % why)
+        if rep:
+            v["repair"] = rep; repairs.append((c.get("source", ""), rep))
     elif k == "fs_must_not_exist":
-        ok, why = fs_exists(c["expect"])
+        ok, why, _ = fs_exists(c["expect"])
         v.update(verdict="CONFLICT" if ok else "CONFIRMED", state="ALREADY_EXISTS" if ok else "NEW",
                  anchor=c["expect"] if ok else None, confidence="high", evidence="fs: %s" % why)
     elif k == "symbol":
@@ -128,6 +200,27 @@ for c in mine:
 doc = {"schema": "unit-binding/1", "generated_by": GEN, "head": E["V_HEAD"], "unit": unit,
        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
        "summary": {k: sum(1 for x in verdicts if x["verdict"] == k) for k in ENUM}, "claims": verdicts}
+if repairs:
+    doc["repairs"] = [dict(r, source=src) for src, r in repairs]
+    # rewrite the repaired token in the unit's `## Anchors` section ONLY (first exact occurrence;
+    # a following digit or dash is not part of the token), atomically — the next bind sees it fit.
+    by_unit = {}
+    for src, r in repairs: by_unit.setdefault(src.split(":")[0], []).append(r)
+    for unit_rel, reps in by_unit.items():
+        up = os.path.join(cwd, unit_rel)
+        try: txt = open(up, encoding="utf-8").read()
+        except OSError: continue
+        sec = re.search(r"(?ims)^##[ \t]+Anchors\b[^\n]*\n(.*?)(?=^##[ \t]|\Z)", txt)
+        if not sec: continue
+        body = sec.group(1); new_body = body
+        for r in reps:
+            new_body = re.sub(re.escape(r["from"]) + r"(?![\w-])", r["to"].replace("\\", "\\\\"), new_body, count=1)
+        if new_body != body:
+            tmpu = up + ".tmp.%d" % os.getpid()
+            with open(tmpu, "w", encoding="utf-8") as f: f.write(txt[:sec.start(1)] + new_body + txt[sec.end(1):])
+            os.replace(tmpu, up)
 write(doc)
-print(json.dumps({"unit": unit, "claims": len(verdicts), **doc["summary"], "out": os.path.relpath(out, cwd)}))
+print(json.dumps({"unit": unit, "claims": len(verdicts), **doc["summary"], "repaired": len(repairs),
+                  "repairs": [{"from": r["from"], "to": r["to"], "rule": r["rule"]} for _, r in repairs],
+                  "out": os.path.relpath(out, cwd)}))
 PYEOF

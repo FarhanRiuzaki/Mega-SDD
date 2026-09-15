@@ -58,8 +58,8 @@ grep -qF 'overlap rail above is applied HERE regardless' "$BF" && ok "overlap ra
 grep -q 'STALE — discard it and re-derive' "$BF" && ok "a plan disagreeing with units/ is discarded, never dispatched from" || fail "stale-plan discard rail missing"
 
 note "== 2a: same-tree wave concurrency is SPECIFIED, not hand-waved (review-round rails) =="
-grep -qF 'bounded by an in-flight cap (default **5**' "$BF" && ok "--all wave dispatch carries a concrete in-flight cap (default 5)" || fail "in-flight cap missing from --all"
-grep -qF 'default **5** concurrent' "${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/squad-subagent.md" && ok "--per-squad cap made concrete (same bound, both procedures)" || fail "squad-subagent cap still 'sensible' (no number)"
+grep -qF 'bounded by an in-flight cap (`config.yaml parallel_max:`, default **4**' "$BF" && ok "--all wave dispatch carries a concrete in-flight cap (parallel_max, default 4 — v8 P3 re-pin: the old 'default 5' was doc drift vs SKILL.md/project-config.md)" || fail "in-flight cap missing from --all"
+grep -qF 'default **4** concurrent' "${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/squad-subagent.md" && ok "--per-squad cap made concrete (same bound, both procedures)" || fail "squad-subagent cap still 'sensible' (no number)"
 grep -qF -- '--base=<its-commit>^ --head=<its-commit>' "$BF" && ok "per-unit gate range under a wave = the unit's OWN commit (identity-anchored, never wave-base..wave-head)" || fail "per-unit gate range rule missing"
 grep -qF 'dispatch only units not yet completed' "$BF" && ok "consumed waves skip completed units (resume-safe)" || fail "completed-skip rule missing from wave consumption"
 grep -qF 'index.lock' "${ROOT}/plugins/mega-sdd/agents/bolt-implementer.md" && ok "implementer contract: transient index.lock is retried, never BLOCKED" || fail "index.lock retry contract missing from the implementer body"

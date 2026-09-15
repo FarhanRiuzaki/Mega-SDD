@@ -931,6 +931,25 @@ if IN_RUN:
         inflight = set(vault_layouts.inflight_units(os.environ["PROJECT_ROOT"]))
     except Exception:
         inflight = set()
+# v8 P3 (research/2026-09-15-v8-p3-report.md §2): a unit whose detect-after
+# already PASSED (postflight + acceptance newer than its dispatch-prompt, L0
+# record script-written) but whose blind panel has not merged yet is
+# PANEL-PENDING, not evidence-missing — under lane lite the dependent / sibling
+# dispatch must not wait for that ledger (the measured serializer: 45 % of the
+# clinic bolt-stage with zero implementers running). Dropped for the in-run
+# verdict ONLY, ONLY the panel_evidence_missing class, and ONLY while at most
+# parallel_max units are pending (pipeline depth ≤ cap — more than the cap
+# means the controller is outrunning its review obligation, so the full F-07
+# verdict applies again). The run boundary (Skill entry, Stop hook) still
+# enforces every ledger. Fail-CLOSED on a helper failure (empty set).
+panel_pending = set()
+if IN_RUN:
+    try:
+        _pp = vault_layouts.panel_pending_units(os.environ["PROJECT_ROOT"])
+        if 0 < len(_pp) <= vault_layouts.parallel_max(os.environ["PROJECT_ROOT"]):
+            panel_pending = set(_pp)
+    except Exception:
+        panel_pending = set()
 def live_issues(d):
     """The issues that still gate under the current mode."""
     iss = (d or {}).get("issues", []) or []
@@ -1034,8 +1053,10 @@ if d and d.get("status") == "FAIL" and live_issues(d):
 # review-tier.json (7.11.0+) must carry a script-merged findings.json (tier ≠
 # minimal) and a script-written l0-results.json. Legacy bolts are advisory.
 d = L(".bolt-panel-state.json")
-if d and d.get("status") == "FAIL" and live_issues(d):
-    iss = live_issues(d)
+_panel_iss = [i for i in live_issues(d or {}) if not (
+    i.get("halt_type") == "panel_evidence_missing" and i.get("unit_id") in panel_pending)]
+if d and d.get("status") == "FAIL" and _panel_iss:
+    iss = _panel_iss
     units = ", ".join(sorted({i.get("unit_id", "?") for i in iss})[:8])
     kinds = ", ".join(sorted({i.get("halt_type", "?") for i in iss}))
     fails.append(("panel-evidence", "panel-evidence scan found %d dispatched bolt(s) without script-written review evidence (%s; %s). The blind lens panel and the L0 gates caught every real defect of the field run — they are not optional: merge the panel with `bash <plugin>/scripts/merge-panel-findings.sh --vault=<vault> --unit=U-XXX --head=<sha> --round=N --spec-verdict=… --lens=…` and record L0 with `bash <plugin>/scripts/run-code-gates.sh --cwd=<root> --base=<bolt-base> --head=<bolt-head> --unit=<unit.md> --write`. Keterangan: bolt yang di-dispatch dengan review-tier.json wajib punya ledger panel hasil merge skrip dan rekaman L0 hasil skrip — bukan tulisan tangan. State: %s/.bolt-panel-state.json" % (len(iss), units, kinds, md)))

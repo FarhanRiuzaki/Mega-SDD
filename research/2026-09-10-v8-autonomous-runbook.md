@@ -84,6 +84,24 @@ Amendemen owner untuk P2 (berlaku di atas goal P2 yang ada di research/2026-09-1
 
 ---
 
+## Amendemen owner untuk P3 (2026-09-15, VERBATIM — berlaku di atas goal P3 runbook §3)
+
+Amendemen owner untuk P3 (di atas goal P3 runbook §3):
+
+1. PRIORITAS #1 P3 = DIAGNOSA PARALELISME, bukan lever baru. Dari angka P0 vs P2: bolt-stage klinik hanya turun ~25% padahal wave paralel aktif. Bedah stream.jsonl klinik P2 per wave: berapa unit per wave, berapa yang benar-benar concurrent (timestamp overlap), apa yang menyerialkan (depends_on chain / parallel_max efektif / kontensi gate-L0 / panel). Output: tabel wave × unit × start-end × concurrency aktual + akar penyebab. Kalau penyebabnya dependency graph yang terlalu ketat di generate/plan, itu fix di PLAN (unit independence), bukan di bolts. Ukur ulang klinik SEKALI setelah fix — ini satu-satunya re-run klinik yang dianggarkan di P3.
+
+2. VERIFIKASI DEFINISI DONE sebelum apa pun: pastikan DONE = sampai commit kode terakhir + gate-nya, konsisten di kedua arm, dan TIDAK memasukkan lane DOCS/emit yang opt-in. Kalau ternyata masuk, perbaiki definisi, ukur ulang xs sekali, dan tulis koreksinya terang-terangan di laporan (bukan diam-diam menurunkan angka).
+
+3. SHIP RULE TIDAK BERGESER: kriteria (i) gagal di P2 => 8.0.0 tetap --lite opt-in. Kalau diagnosa #1 menghasilkan fix terukur yang membawa klinik <=2h DAN xs <=60m dengan kualitas tidak memburuk, barulah --lite boleh jadi default — dan itu diukur, bukan diproyeksikan. Kalau tidak tercapai, tetap tag 8.0.0 dengan --lite opt-in + tulis angka kegagalannya di CHANGELOG, jangan tunda rilis.
+
+4. STALE LINE-RANGE ANCHOR (kelas baru dari P2): auto-repair di gate DISETUJUI dengan syarat — perbaikan hanya boleh menggeser range ke lokasi yang isinya identik secara konten (hash cocok); kalau konten berubah, tetap CONFLICT, jangan "diperbaiki". Tambah test kelas ini ke S-series.
+
+5. BIAYA: P0+P2 sudah $781. P3 dianggarkan maks 1 re-run klinik + 1-2 re-run xs. Iterasi pakai xs. Catat biaya per run.
+
+6. Sisanya persis goal P3 (migrasi layout-3, alias, dual-read, re-key sync/drift/delta, docs 1:1, empat kriteria ship diukur, summary program + section "untuk tim"). SCM PENDING terus dicatat di tiap laporan.
+
+---
+
 ## Status runner (ditambah per sesi, kronologis)
 
 - 2026-09-10 sesi 3dc71eb1 — kontrak disimpan; §1 dimulai (arm baseline 7.34.0 default pada fixture repo).
@@ -102,3 +120,4 @@ Amendemen owner untuk P2 (berlaku di atas goal P2 yang ada di research/2026-09-1
 - 2026-09-14 sesi 982dfc2f (lanjutan 3) — 7.37.1 dirilis (CI hijau); lite 7.37.0 = DATA lever PLAN (PRE-CODE −41 %) tapi DONE gagal oleh mode harness headless (end_turn + 10 menit → exit); klinik `--lite` 7.37.1 jalan 10:35Z, 8/19 unit DONE lalu jaringan putus 12:04Z (ketiga kalinya); owner: "jalanin sampe selesai" → sesi klinik di-resume 13:50Z (chain-g, net-aware), wall DONE net di luar outage. Sisa: klinik selesai → xs lite DONE di 7.37.1 → tiga verdict + laporan. SCM PENDING.
 - 2026-09-14 sesi 982dfc2f (lanjutan 4) — **klinik `--lite` 7.37.1 SELESAI** (di-resume setelah outage; 19/19 unit, acceptance 19/19, 0 karantina, conflict-at-dispatch 0 %, analyze PASS, $176,72): DONE 3h01m26s NET (−34 % vs 4h34m44s), ttfc 50m17s (−37 %). **Tiga verdict ditulis (§5): context-rot PASS (ambang revert tidak terpicu) · conflict-at-dispatch 0 % (< 20 %, query-index tidak perlu diperkuat) · budget MISS (klinik 3,0 h > band 2–2,5 h; xs > 60 m) dengan arah benar.** Sisa P2: angka DONE xs lite 7.37.1 (chain h berjalan) → P2 ditutup; P3 di sesi baru dengan catatan kriteria ship (i) belum lolos → 8.0.0 `--lite` opt-in. SCM PENDING.
 - 2026-09-14/15 sesi 982dfc2f (penutup) — xs lite 7.37.1 = DATA (DONE 1h03m49s, −29 % vs lite 7.36.1; MISS ≤60 m tinggal 3m49s; satu turn tanpa resume — launcher anti-end_turn bekerja). **§2 P2 DITUTUP**: goal item 1–8 terpenuhi; verdict §5: context-rot PASS (ambang revert tidak terpicu), conflict-at-dispatch 5,3 % bind pertama / 0 % final (< 20 %), budget MISS (klinik 3h01m net −34 %, xs 1h04m) → 8.0.0 `--lite` opt-in kecuali P3 membawa lever terukur. Total biaya run P2 $521,39 ($425,25 DATA). Sesi berikutnya = §3 P3 di sesi baru. SCM PENDING sejak 53406cc (scm tidak resolve dari luar kantor).
+- 2026-09-15 sesi 015iaR6m — owner mengirim **6 amendemen P3** (disimpan verbatim di atas): prioritas #1 diagnosa paralelisme klinik dari stream.jsonl (tabel wave × unit × start-end × concurrency + akar penyebab; fix di PLAN bila DAG terlalu ketat; klinik re-run maks 1×); #2 verifikasi definisi DONE (kode terakhir + gate, tanpa lane DOCS/emit opt-in; koreksi terang-terangan); #3 ship rule tetap ((i) gagal → `--lite` opt-in; default hanya bila klinik ≤2 h DAN xs ≤60 m TERUKUR); #4 auto-repair stale line-range anchor DISETUJUI bersyarat hash-identik + test S-series; #5 biaya maks 1 klinik + 1–2 xs; #6 sisanya = goal §3. **§3 P3 dimulai** di sesi ini. SCM PENDING sejak 53406cc.

@@ -31,4 +31,17 @@ grep -qF 'Wave boundary = review boundary' "$EB/references/batch-and-fanout.md" 
   && pass "c: default wave barrier sentence intact; lite clause names the readiness script and the blocking rules" || fail "c: batch-and-fanout prose"
 grep -q 'lane lite (v8 W2) + `unit_tier: xs`: the fix-round budget is 1' "$EB/references/review-panel.md" && pass "d: xs fix-round budget 1 under lite, then quarantine" || fail "d: review-panel prose"
 grep -q 'w2_model_cell: xs→sonnet' "$EB/SKILL.md" && grep -q 'Lane lite (v8 W2 measured cell)' "$EB/SKILL.md" && pass "e: xs→sonnet cell under lite recorded in the bolt-report, override chain intact" || fail "e: SKILL model routing prose"
+# v8 P3 (research/2026-09-15-v8-p3-report.md §2): per-unit pipelining rules + the cap doc drift (5 → parallel_max 4)
+grep -q 'P3 pipelining rules' "$EB/references/batch-and-fanout.md" && grep -q 'panel_pending_units' "$EB/references/batch-and-fanout.md" \
+  && grep -q 'never batch the panels of a slice' "$EB/references/batch-and-fanout.md" && grep -q 'top up dispatch to the cap' "$EB/references/batch-and-fanout.md" \
+  && pass "f: lite clause carries the P3 pipelining rules (panel per unit, top-up to cap, panel-pending gate semantics)" || fail "f: batch-and-fanout P3 prose"
+grep -q 'default \*\*4\*\* concurrent' "$EB/references/batch-and-fanout.md" && grep -q 'default \*\*4\*\* concurrent' "$EB/references/squad-subagent.md" \
+  && ! grep -q 'default \*\*5\*\* concurrent' "$EB/references/batch-and-fanout.md" "$EB/references/squad-subagent.md" \
+  && pass "g: in-flight cap documented as parallel_max default 4 in both references (no 5 left)" || fail "g: cap doc drift"
+python3 - "$S/_lib" <<'EOF3' && pass "h: vault_layouts.panel_pending_units + parallel_max are importable with the documented defaults" || fail "h: vault_layouts P3 predicates"
+import sys, os, tempfile; sys.path.insert(0, sys.argv[1]); import vault_layouts
+d = tempfile.mkdtemp(); assert vault_layouts.parallel_max(d) == 4 and vault_layouts.panel_pending_units(d) == []
+os.makedirs(os.path.join(d, ".mega-sdd")); open(os.path.join(d, ".mega-sdd", "config.yaml"), "w").write("lane: lite\nparallel_max: 2   # cap\n")
+assert vault_layouts.parallel_max(d) == 2
+EOF3
 echo; [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"; exit $rc

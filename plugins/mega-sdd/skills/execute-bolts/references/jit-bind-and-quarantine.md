@@ -26,6 +26,7 @@ script; the model's only judgment is the ladder E3 verdict on `text` claims.
      claims from `.mega-sdd/codebase/symbol-index.json` (in the expected file →
      CONFIRMED; only elsewhere → CONFLICT collision; nowhere → OQ; index absent
      → OQ with the reason). Nothing for the model to do.
+   - **Stale line-range anchors are repaired by the writer, never by hand (v8 P3, owner amendment #4; `research/2026-09-15-v8-p3-report.md §5`).** A `## Anchors` range that no longer fits the file is re-verdicted against the anchor's *authoring snapshot* (the commit that introduced that token into the unit file): **R1-shift** when the authored lines exist verbatim, uniquely, at another offset; **R2-clamp** when the file is byte-identical to the snapshot and the range overshoots EOF by exactly one line (the trailing-newline miscount — the live P2 class, clinic U-008 / xs U-006). Both record `repair: {from, to, rule, reference, content_sha256}` on the claim (+ `repairs[]` in `binding.json`) and rewrite the unit's `## Anchors` token, so the next bind sees it fit. Changed content, a non-unique match, an overshoot > 1, or no snapshot ⇒ **CONFLICT as before** — resolve via `resolve-oq --binding` (KEEP_CODE + a hand-corrected anchor is still the human path for those). Never pre-empt the writer by editing an anchor to make a claim pass.
    - For each `text` claim run the express-bind ladder E3 VERBATIM
      (`bind-codebase/references/express-bind.md §Step E3`: index → targeted
      Read → collision sweep two legs → bounded grep → KB → ungrounded ⇒

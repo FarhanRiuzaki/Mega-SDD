@@ -126,5 +126,69 @@ else
   ok "D2 in-run Agent dispatch is NOT held by B2"
 fi
 
+echo "── G: panel-pending is not evidence-missing (v8 P3, the measured serializer) ──"
+# U-002: a REAL dispatch (dispatch-prompt) keyed by review-tier.json, whose detect-after
+# already passed (postflight + acceptance PASS, newer than the prompt; L0 record
+# script-written) but whose panel ledger has not merged yet. Under the pre-P3 gate
+# this unit's panel_evidence_missing denied EVERY next bolt-implementer dispatch —
+# research/2026-09-15-v8-p3-report.md §2 (45 % of the clinic bolt-stage idle).
+mkdir -p "$V/bolts/U-002" "$V/lens-inputs/U-002"
+echo "dispatch" > "$V/bolts/U-002/dispatch-prompt.md"
+# risk: critical → tier full (a `minimal` tier owes only the L0 record, never a ledger)
+printf -- '---\nunit_id: U-002\ntask_type: create\nrisk: critical\ntarget_files:\n  - path: src/b.js\n    operation: create\n---\n# U-002\n\n## Acceptance\n' > "$V/units/U-002.md"
+bash "$PLUGIN/scripts/resolve-review-tier.sh" --unit="$V/units/U-002.md" --write >/dev/null 2>&1 \
+  || bad "G0 resolve-review-tier --write failed (fixture precondition)"
+grep -q '"tier": *"full"' "$V/bolts/U-002/review-tier.json" 2>/dev/null || bad "G0 review-tier.json not full (fixture precondition): $(cat "$V/bolts/U-002/review-tier.json" 2>/dev/null | head -c 120)"
+printf '{"written_by":"run-code-gates.sh","plugin_version":"test","gates":[]}\n' > "$V/lens-inputs/U-002/l0-results.json"
+sleep 1
+echo '{"status":"pass","rules":[]}' > "$V/bolts/U-002/postflight.json"
+echo '{"status":"pass","entries":[]}' > "$V/bolts/U-002/acceptance.json"
+OUT_S=$(drive "$(skill_payload)")
+printf '%s' "$OUT_S" | grep -q 'panel-evidence' \
+  && ok "G1 Skill entry (run mode) still denies: U-002 owes its panel ledger at the run boundary" \
+  || bad "G1 run-mode gate lost the panel-evidence issue: $(printf '%s' "$OUT_S" | head -c 200)"
+OUT_A=$(drive "$(agent_payload mega-sdd:bolt-implementer)")
+if printf '%s' "$OUT_A" | grep -q 'panel-evidence'; then
+  bad "G2 in-run Agent dispatch DENIED by a sibling's PENDING panel — the P3 serializer is back: $(printf '%s' "$OUT_A" | head -c 200)"
+else
+  ok "G2 in-run Agent dispatch is NOT held by U-002's pending panel (panel_pending_units)"
+fi
+# bound: more panel-pending units than parallel_max → the full F-07 verdict applies again
+printf 'parallel_max: 1\n' > "$F/.mega-sdd/config.yaml"
+printf -- '---\nunit_id: U-003\ntask_type: create\nrisk: critical\ntarget_files:\n  - path: src/c.js\n    operation: create\n---\n# U-003\n\n## Acceptance\n' > "$V/units/U-003.md"
+( cd "$F" && echo "c" > src/c.js && git add src/c.js .mega-sdd \
+  && git -c user.email=t@t -c user.name=t commit -q -m "feat(U-003): bolt
+
+Unit: U-003" )
+mkdir -p "$V/bolts/U-003" "$V/lens-inputs/U-003"; echo "# report" > "$V/bolts/U-003/bolt-report.md"
+echo "dispatch" > "$V/bolts/U-003/dispatch-prompt.md"
+bash "$PLUGIN/scripts/resolve-review-tier.sh" --unit="$V/units/U-003.md" --write >/dev/null 2>&1 || bad "G3 precondition: review-tier U-003"
+printf '{"written_by":"run-code-gates.sh","plugin_version":"test","gates":[]}\n' > "$V/lens-inputs/U-003/l0-results.json"
+sleep 1
+echo '{"status":"pass","rules":[]}' > "$V/bolts/U-003/postflight.json"
+echo '{"status":"pass","entries":[]}' > "$V/bolts/U-003/acceptance.json"
+OUT_A=$(drive "$(agent_payload mega-sdd:bolt-implementer)")
+printf '%s' "$OUT_A" | grep -q 'panel-evidence' \
+  && ok "G3 two panel-pending units over parallel_max=1 → in-run dispatch denied (pipeline depth ≤ cap)" \
+  || bad "G3 over-cap panel-pending set was dropped — the bound is not enforced: $(printf '%s' "$OUT_A" | head -c 200)"
+rm -f "$F/.mega-sdd/config.yaml"
+# the L0 record is never pending: remove U-002's l0-results → l0_evidence_missing denies in-run too
+rm -f "$V/lens-inputs/U-002/l0-results.json"
+OUT_A=$(drive "$(agent_payload mega-sdd:bolt-implementer)")
+printf '%s' "$OUT_A" | grep -q 'panel-evidence' \
+  && ok "G4 a missing L0 record (l0_evidence_missing) still denies the in-run dispatch" \
+  || bad "G4 l0_evidence_missing was dropped as panel-pending: $(printf '%s' "$OUT_A" | head -c 200)"
+printf '{"written_by":"run-code-gates.sh","plugin_version":"test","gates":[]}\n' > "$V/lens-inputs/U-002/l0-results.json"
+# a hand-written ledger is not a merged panel: the unit stays panel-pending only while NO findings.json exists;
+# once a (script-merged) ledger lands the obligation is met and nothing is pending
+printf '{"schema":1,"written_by":"merge-panel-findings.sh","findings":[]}\n' > "$V/bolts/U-002/findings.json"
+printf '{"schema":1,"written_by":"merge-panel-findings.sh","findings":[]}\n' > "$V/bolts/U-003/findings.json"
+OUT_A=$(drive "$(agent_payload mega-sdd:bolt-implementer)")
+if printf '%s' "$OUT_A" | grep -q 'panel-evidence'; then
+  bad "G5 merged ledgers present but the in-run dispatch is still denied by panel-evidence: $(printf '%s' "$OUT_A" | head -c 200)"
+else
+  ok "G5 merged ledgers close the obligation — in-run dispatch free of panel-evidence"
+fi
+
 echo
 [ "$fail" -eq 0 ] && { echo "PASS agent-dispatch-gate"; exit 0; } || { echo "agent-dispatch-gate FAILED"; exit 1; }

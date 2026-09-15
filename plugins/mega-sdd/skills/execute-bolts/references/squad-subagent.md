@@ -40,7 +40,7 @@ units — depth-1 AND parallel, no tradeoff. This is the same mechanism as
 4. **Dispatch the per-unit panel flow from the MAIN THREAD** (the per-unit flow
    in `superpowers-bridge.md`). Parallelize by dispatching **independent units —
    including units from different squads — concurrently** (multiple `bolt-implementer`
-   Agent calls in one message), bounded by an in-flight cap (default **5** concurrent
+   Agent calls in one message), bounded by an in-flight cap (`parallel_max`, default **4** concurrent
    implementers — the same bound `--all --parallel` uses, `batch-and-fanout.md §--all`;
    a wider set dispatches in cap-sized slices). **Independent =
    no `depends_on` edge AND pairwise-disjoint `target_files`** — cross-squad units
