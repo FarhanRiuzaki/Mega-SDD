@@ -1,0 +1,35 @@
+bolt-stage: first dispatch 11:42:38Z · last code commit 14:01:40Z (139.0 m gross) · last evidence 14:07:56Z
+other agents: {'adv': 2, 'impl': 6, 'lens': 19, 'other:general-purpose': 1}
+
+unit   deps                     ready  disp   implEnd cmt1   cmtN   panel1 panelN evid   |  wait  impl  →cmt  panel  cmt→evid  n_disp status
+U-001  —                             —    0.0   13.6    8.3    8.3   19.7   23.4  123.1 |     —  13.6   8.3   3.6 114.8   1   comp
+U-002  U-001                     123.1   19.5   52.5   23.9   23.9  120.1  123.1  124.0 | -103.5  32.9   4.4   3.0 100.1   1   fail
+U-003  —                             —    0.1    9.5    6.2    6.2   20.3   23.3  123.1 |     —   9.5   6.2   3.1 116.8   1   comp
+U-004  U-003                     123.1   19.6  137.3  132.3  139.0  139.2  142.9  145.3 | -103.5 117.7 112.7   3.7   6.3   2   fail,comp
+U-005  —                             —    0.1    5.7    2.9    2.9   20.8   23.9  123.1 |     —   5.6   2.8   3.1 120.2   1   comp
+
+concurrency aktual (time-weighted over 145.3 net min, first dispatch → last evidence):
+  implementers running : 0: 85.7 m (59 %) · 1: 17.2 m (12 %) · 2: 36.7 m (25 %) · 3: 5.6 m (4 %)
+  impl+lens agents     : 0: 79.0 m (54 %) · 1: 20.1 m (14 %) · 2: 33.4 m (23 %) · 3: 7.9 m (5 %) · 4: 1.6 m (1 %) · 5: 0.6 m (0 %) · 6: 0.8 m (1 %) · 7: 0.2 m (0 %) · 8: 0.3 m (0 %) · 9: 0.2 m (0 %) · 10: 0.7 m (0 %) · 11: 0.2 m (0 %) · 12: 0.2 m (0 %) · 13: 0.2 m (0 %)
+  mean implementers in flight = 0.74; implementer-minutes = 107.5
+
+dispatch bursts (≤3 min apart = one burst):
+  burst  1 @    0.0 m : U-001, U-003, U-005
+  burst  2 @   19.5 m : U-002, U-004
+  burst  3 @  124.3 m : U-004
+
+controller-thread script calls after first dispatch (count · Σ min):
+  run-acceptance-tests.sh+run-code-gates.sh+run-postflight-scan.sh+validate-reuse-duplication.sh    4 ·    2.8
+  derive-vault-json.sh                      4 ·    2.3
+  run-acceptance-tests.sh+run-code-gates.sh+run-postflight-scan.sh    1 ·    1.0
+  run-full-suite.sh                         1 ·    0.7
+  merge-panel-findings.sh                   2 ·    0.6
+  run-acceptance-tests.sh+run-full-suite.sh+run-postflight-scan.sh    1 ·    0.2
+  run-analyze.sh                            1 ·    0.0
+  derive-vault-json.sh+merge-panel-findings.sh+validate-bolt-artifacts.sh+validate-sibling-consistency.sh+validate-ui-quality.sh    1 ·    0.0
+  build-symbol-index.sh+derive-ready-units.sh+derive-unit-claims.sh+query-symbol-index.sh+validate-handoff-binding-units.sh+write-unit-binding.sh    1 ·    0.0
+  derive-vault-json.sh+merge-panel-findings.sh+validate-bolt-artifacts.sh    1 ·    0.0
+  render-html.sh+validate-bolt-artifacts.sh    1 ·    0.0
+  build-dispatch-prompt.sh+derive-ready-units.sh    1 ·    0.0
+  resolve-review-tier.sh+run-preflight-scan.sh    1 ·    0.0
+  query-symbol-index.sh                     2 ·    0.0

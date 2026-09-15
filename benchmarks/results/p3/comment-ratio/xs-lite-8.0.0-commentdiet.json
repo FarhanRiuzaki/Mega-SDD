@@ -1,0 +1,207 @@
+{
+ "aggregate": {
+  "repo": "../TRAINING/p0-xs-lite",
+  "base": "6f98c10",
+  "head": "HEAD",
+  "files": 17,
+  "code": 860,
+  "comment": 269,
+  "blank": 239,
+  "docblock": 0,
+  "provenance": 188,
+  "source_anchor": 0,
+  "ratio": 0.313,
+  "ratio_ex_prov": 0.094,
+  "docblock_share": 0.0,
+  "median_file_ratio": 0.424
+ },
+ "files": [
+  {
+   "code": 4,
+   "comment": 17,
+   "blank": 4,
+   "docblock": 0,
+   "provenance": 13,
+   "source_anchor": 0,
+   "file": "src/features/contact-messages/hooks/useContactMessages.ts",
+   "ratio": 4.25,
+   "ratio_ex_prov": 1.0
+  },
+  {
+   "code": 4,
+   "comment": 17,
+   "blank": 3,
+   "docblock": 0,
+   "provenance": 13,
+   "source_anchor": 0,
+   "file": "src/features/contact-messages/repositories/contact-message.repository.ts",
+   "ratio": 4.25,
+   "ratio_ex_prov": 1.0
+  },
+  {
+   "code": 11,
+   "comment": 16,
+   "blank": 6,
+   "docblock": 0,
+   "provenance": 11,
+   "source_anchor": 0,
+   "file": "src/app/(blank-layout-pages)/beranda/page.tsx",
+   "ratio": 1.455,
+   "ratio_ex_prov": 0.455
+  },
+  {
+   "code": 11,
+   "comment": 14,
+   "blank": 6,
+   "docblock": 0,
+   "provenance": 9,
+   "source_anchor": 0,
+   "file": "src/app/(blank-layout-pages)/tentang-kami/page.tsx",
+   "ratio": 1.273,
+   "ratio_ex_prov": 0.455
+  },
+  {
+   "code": 12,
+   "comment": 14,
+   "blank": 4,
+   "docblock": 0,
+   "provenance": 12,
+   "source_anchor": 0,
+   "file": "src/features/contact-messages/schemas/contact-message.schema.ts",
+   "ratio": 1.167,
+   "ratio_ex_prov": 0.167
+  },
+  {
+   "code": 27,
+   "comment": 16,
+   "blank": 10,
+   "docblock": 0,
+   "provenance": 12,
+   "source_anchor": 0,
+   "file": "src/app/api/v1/contact-messages/route.ts",
+   "ratio": 0.593,
+   "ratio_ex_prov": 0.148
+  },
+  {
+   "code": 32,
+   "comment": 15,
+   "blank": 16,
+   "docblock": 0,
+   "provenance": 11,
+   "source_anchor": 0,
+   "file": "src/views/company-profile/Home/index.test.tsx",
+   "ratio": 0.469,
+   "ratio_ex_prov": 0.125
+  },
+  {
+   "code": 29,
+   "comment": 13,
+   "blank": 14,
+   "docblock": 0,
+   "provenance": 8,
+   "source_anchor": 0,
+   "file": "src/proxy.ts",
+   "ratio": 0.448,
+   "ratio_ex_prov": 0.172
+  },
+  {
+   "code": 33,
+   "comment": 14,
+   "blank": 15,
+   "docblock": 0,
+   "provenance": 9,
+   "source_anchor": 0,
+   "file": "src/views/company-profile/About/index.test.tsx",
+   "ratio": 0.424,
+   "ratio_ex_prov": 0.152
+  },
+  {
+   "code": 49,
+   "comment": 20,
+   "blank": 10,
+   "docblock": 0,
+   "provenance": 13,
+   "source_anchor": 0,
+   "file": "src/app/(blank-layout-pages)/kontak/page.tsx",
+   "ratio": 0.408,
+   "ratio_ex_prov": 0.143
+  },
+  {
+   "code": 51,
+   "comment": 16,
+   "blank": 6,
+   "docblock": 0,
+   "provenance": 11,
+   "source_anchor": 0,
+   "file": "src/configs/companyProfileConfig.ts",
+   "ratio": 0.314,
+   "ratio_ex_prov": 0.098
+  },
+  {
+   "code": 42,
+   "comment": 11,
+   "blank": 23,
+   "docblock": 0,
+   "provenance": 8,
+   "source_anchor": 0,
+   "file": "src/test/proxy.test.ts",
+   "ratio": 0.262,
+   "ratio_ex_prov": 0.071
+  },
+  {
+   "code": 79,
+   "comment": 18,
+   "blank": 10,
+   "docblock": 0,
+   "provenance": 11,
+   "source_anchor": 0,
+   "file": "src/views/company-profile/Home/index.tsx",
+   "ratio": 0.228,
+   "ratio_ex_prov": 0.089
+  },
+  {
+   "code": 102,
+   "comment": 22,
+   "blank": 14,
+   "docblock": 0,
+   "provenance": 13,
+   "source_anchor": 0,
+   "file": "src/features/contact-messages/components/ContactForm/index.tsx",
+   "ratio": 0.216,
+   "ratio_ex_prov": 0.088
+  },
+  {
+   "code": 98,
+   "comment": 14,
+   "blank": 9,
+   "docblock": 0,
+   "provenance": 9,
+   "source_anchor": 0,
+   "file": "src/views/company-profile/About/index.tsx",
+   "ratio": 0.143,
+   "ratio_ex_prov": 0.051
+  },
+  {
+   "code": 151,
+   "comment": 19,
+   "blank": 52,
+   "docblock": 0,
+   "provenance": 13,
+   "source_anchor": 0,
+   "file": "src/features/contact-messages/components/ContactForm/index.test.tsx",
+   "ratio": 0.126,
+   "ratio_ex_prov": 0.04
+  },
+  {
+   "code": 125,
+   "comment": 13,
+   "blank": 37,
+   "docblock": 0,
+   "provenance": 12,
+   "source_anchor": 0,
+   "file": "src/app/api/v1/contact-messages/route.test.ts",
+   "ratio": 0.104,
+   "ratio_ex_prov": 0.008
+  }
+ ]
+}

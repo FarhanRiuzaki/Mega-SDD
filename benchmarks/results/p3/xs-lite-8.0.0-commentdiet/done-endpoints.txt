@@ -1,0 +1,7 @@
+arm xs-lite-8.0.0-commentdiet sid 879dde0b start 11:15:45Z
+  DONE_code    2h45m54s  last code commit  style(U-004): apply L0 prettier fix to kontak page
+  DONE_p5      2h45m54s  last type(U-*) commit (P0/P2 tables)  style(U-004): apply L0 prettier fix to kontak page
+  DONE_gate    2h50m53s  last unit gate pass (postflight/acceptance/panel merge) for U-004
+  B2 suite     2h46m07s  run-full-suite.sh result (batch gate, reported separately)
+  EXCLUDED       21m17s  first drift/analyze/html/emit call (never in DONE)
+  gate calls seen for last-code unit: {'run-postflight-scan.sh': '14:01:52', 'run-acceptance-tests.sh': '14:01:52', 'merge-panel-findings.sh': '14:06:39'}

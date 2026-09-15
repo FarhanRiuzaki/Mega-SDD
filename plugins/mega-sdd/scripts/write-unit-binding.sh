@@ -146,12 +146,19 @@ def fs_exists(expect, source=""):
             return True, "repaired: authored lines %d-%d found verbatim at %d-%d (content sha %s, snapshot %s)" % (lo, hi, s, s + L - 1, _sha(block), ref_sha), \
                    {"from": expect, "to": to, "rule": "R1-shift", "reference": ref_sha, "content_sha256": _sha(block)}
         return False, "line %d beyond EOF (%d lines); authored content not found verbatim (%d match(es)) — not repairable" % (hi, n, len(hits)), None
-    if cur == ref and hi == n + 1 and lo <= n:
-        # R2 — clamp: file byte-identical to the snapshot, overshoot of exactly one line
+    if cur == ref and lo <= n and (hi == n + 1 or lo == 1):
+        # R2 — clamp: file byte-identical to the snapshot AND either an overshoot of exactly one
+        # line (the trailing-newline miscount, P2 class) OR a WHOLE-FILE anchor (lo == 1): lines
+        # past EOF never existed, so lines 1..n ARE the content the author read — hash-identical
+        # by construction (8.0.1, xs lite 8.0.0 run: 4/5 units hit `login/page.tsx:1-25` on an
+        # unchanged 22-line file → 4 false CONFLICTs, all KEEP_CODE with zero code change).
+        # A partial range overshooting by >1 (e.g. 30-45 on 40 lines) stays CONFLICT: the
+        # intended block is ambiguous.
         to = ("%s:%d-%d" % (rel, lo, n)) if m.group(3) else ("%s:%d" % (rel, n))
-        return True, "repaired: file unchanged since authoring (content sha %s, snapshot %s), range overshot EOF by 1 — clamped to %s" % (_sha(cur), ref_sha, to.split(":")[1]), \
+        why = "range overshot EOF by 1" if hi == n + 1 else "whole-file range overshot EOF by %d" % (hi - n)
+        return True, "repaired: file unchanged since authoring (content sha %s, snapshot %s), %s — clamped to %s" % (_sha(cur), ref_sha, why, to.split(":")[1]), \
                {"from": expect, "to": to, "rule": "R2-clamp", "reference": ref_sha, "content_sha256": _sha(cur)}
-    return False, "line %d beyond EOF (%d lines); content differs from the authoring snapshot or overshoot > 1 — not repairable" % (hi, n), None
+    return False, "line %d beyond EOF (%d lines); content differs from the authoring snapshot, or a partial range overshoots by > 1 — not repairable" % (hi, n), None
 
 def norm(p): return p.replace("\\", "/").lstrip("./")
 

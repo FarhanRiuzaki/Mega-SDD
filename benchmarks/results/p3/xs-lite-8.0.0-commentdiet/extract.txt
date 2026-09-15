@@ -1,0 +1,61 @@
+session_start=2026-09-15T11:15:41.519000+00:00  records=793  models={'claude-opus-5': 332, '<synthetic>': 2}
+
+endpoint 2026-09-15T18:45:33+07:00
+  gross wall-clock : 0h29m51s
+  human-wait       : 0.0 min (0 events)
+  net machine time : 0h29m51s
+  raw tokens       : 50,058,584
+  cost-weighted    : 11,481,054
+
+endpoint 2026-09-15T21:01:40+07:00
+  gross wall-clock : 2h45m58s
+  human-wait       : 87.5 min (5 events)
+  net machine time : 1h18m27s
+  raw tokens       : 89,597,247
+  cost-weighted    : 21,251,746
+
+wait events:
+  2026-09-15T12:35:07.164000+00:00 IDLE    23.5 min
+  2026-09-15T12:51:05.233000+00:00 IDLE    15.9 min
+  2026-09-15T13:06:51.794000+00:00 IDLE    15.8 min
+  2026-09-15T13:39:29.281000+00:00 IDLE    19.4 min
+  2026-09-15T13:59:56.389000+00:00 IDLE    13.0 min
+  2026-09-15T14:20:08.941000+00:00 IDLE    11.9 min
+
+phase decomposition (v8 P0) — endpoint 2026-09-15T18:45:33+07:00
+  segment                                 gross      wait        net      raw tok       cw tok
+  front-door / routing                 0h00m05s     0.0m   0h00m05s       81,760      117,588
+  mega-sdd:mega-sdd                    0h00m14s     0.0m   0h00m14s      347,574      141,432
+  GROUND(script) ×4                    0h01m23s     0.0m   0h01m23s    1,100,154      208,597
+  mega-sdd:orchestrate-flow            0h00m06s     0.0m   0h00m06s      202,131       62,698
+  GROUND(script)                       0h00m06s     0.0m   0h00m06s      213,859       48,808
+  mega-sdd:plan                        0h01m34s     0.0m   0h01m34s    1,240,511      513,976
+  GROUND(script) ×2                    0h18m24s     0.0m   0h18m24s   22,450,349    6,066,865
+  mega-sdd:execute-bolts               0h03m01s     0.0m   0h03m01s   13,414,076    2,689,390
+  mega-sdd:resolve-oq                  0h02m00s     0.0m   0h02m00s    9,799,839    1,471,708
+  bolt-implementer ×3                  0h02m54s     0.0m   0h02m54s    1,208,331      159,990
+  (sum of segment nets)                                     0h29m51s
+  PRE-CODE  (start → first bolts dispatch 2026-09-15T11:37:36.276000+00:00): net 0h21m54s, cw 7,159,966
+  BOLT-1    (dispatch → first unit commit):         net 0h07m56s, cw 4,321,089
+  pre-code share of net time-to-first-code: 73.4%  (v8 P0 kill-criterion: < 25% ⇒ stop at P1)
+
+BOLT-1 breakdown (v8 P0)
+  window 2026-09-15T11:37:36.276000+00:00 → 2026-09-15T18:45:33+07:00  gross 0h07m56s · wait 0.0m · net 0h07m56s
+  class                               count        sum      union  units
+  implementer dispatches                  3   0h28m41s   0h13m37s  U-001,U-003,U-005
+  review-panel lenses                     0   0h00m00s   0h00m00s  
+  resolution-verifier (fix rounds)        0   0h00m00s   0h00m00s  
+  gate/validator scripts                 11   0h00m06s   0h00m06s  U-001,U-003,U-005
+  other Agent dispatches                  0   0h00m00s   0h00m00s  
+  other Bash calls                       12   0h00m06s   0h00m06s  U-001,U-002,U-003,U-005
+  Skill dispatches                        2   0h00m01s   0h00m01s  
+  AskUserQuestion                         0   0h00m00s   0h00m00s  
+  fix rounds (implementer re-dispatch per unit − 1): 0   per-unit dispatches: {'U-005': 1, 'U-003': 1, 'U-001': 1}
+  tool-active union (all non-ask spans): 0h13m55s  = 175% of BOLT-1 net; the remainder is controller reasoning/reading between tool calls
+  CAVEAT: Agent spans measure MAIN-LANE blocking time only. A background dispatch (execute-bolts waves, parallel panel lenses) returns its tool_result at once and does its work on the sidechain, so implementer/panel 'sum' here is a LOWER BOUND of their runtime; the COUNTS and the per-unit re-dispatch (fix rounds) are exact. Gate scripts and other Bash calls are foreground and exact.
+
+interaction points (v8 W1 budget: 3-screen ≤2, clinic ≤3)
+  to 2026-09-15T18:45:33+07:00: ASK 0 + mid-run USER waits 0 = 0 interaction point(s); 0 idle event(s) >10min
+  to 2026-09-15T21:01:40+07:00: ASK 0 + mid-run USER waits 0 = 0 interaction point(s); 5 idle event(s) >10min
+
+json written: /Users/<user>/SunnyGo/2026/AIRND2026/Project/mega-sdd-github/benchmarks/results/p3/xs-lite-8.0.0-commentdiet/extract.json

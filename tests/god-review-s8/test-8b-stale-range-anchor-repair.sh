@@ -11,7 +11,12 @@
 #   R2 clamp  the file is byte-identical to the authoring snapshot AND the range overshoots
 #             EOF by exactly one line (the trailing-newline miscount, the P2 class) → clamped
 #   CONFLICT  content of the range changed (no unique verbatim match) — stays CONFLICT
-#   CONFLICT  overshoot > 1 line on an unchanged file — not the P2 class, never clamped
+#   CONFLICT  a PARTIAL range (lo > 1) overshooting by > 1 line on an unchanged file — the
+#             intended block is ambiguous, never clamped
+#   R2 clamp  (8.0.1) a WHOLE-FILE range (lo == 1) overshooting by > 1 on a byte-identical file →
+#             clamped: lines past EOF never existed, lines 1..n ARE what the author read (xs lite
+#             8.0.0 run: 4/5 units hit `login/page.tsx:1-25` on an unchanged 22-line file = 4 false
+#             CONFLICTs, all KEEP_CODE with zero code change)
 #   idempotent: a second bind repairs nothing (anchors already rewritten)
 #   parity: check-anchor-freshness.sh sees the rewritten anchors as fresh
 # Run: bash tests/god-review-s8/test-8b-stale-range-anchor-repair.sh </dev/null
@@ -23,7 +28,7 @@ F="$WORK/proj"; V="$F/.mega-sdd/vaults/v"; mkdir -p "$V/units" "$F/src"
 G() { git -C "$F" -c user.email=t@t -c user.name=t "$@"; }
 ( cd "$F" && git init -q . )
 lines() { local n=$1 f=$2; : > "$f"; local i; for i in $(seq 1 "$n"); do echo "line $i of $(basename "$f")" >> "$f"; done; }
-lines 28 "$F/src/a.txt"; lines 10 "$F/src/b.txt"; lines 10 "$F/src/c.txt"; lines 28 "$F/src/d.txt"
+lines 28 "$F/src/a.txt"; lines 10 "$F/src/b.txt"; lines 10 "$F/src/c.txt"; lines 28 "$F/src/d.txt"; lines 22 "$F/src/e.txt"
 cat > "$V/units/U-001.md" <<'MD'
 ---
 id: U-001
@@ -44,7 +49,8 @@ acceptance_test:
 - src/a.txt:1-29 — whole file (author counted the trailing newline: 29 on a 28-line file)
 - src/b.txt:8-10 — a block that will move UP by two lines (lines deleted above it → range past EOF)
 - src/c.txt:2-4 — a block whose content will change
-- src/d.txt:1-40 — an overshoot of 12 lines (hallucinated range)
+- src/d.txt:5-40 — a PARTIAL range overshooting by 12 lines (ambiguous block)
+- src/e.txt:1-25 — a WHOLE-FILE range overshooting by 3 on an unchanged 22-line file (the 8.0.0 field shape)
 MD
 G add -A >/dev/null; G commit -qm "docs(sdd): plan vault (authoring snapshot)"
 # the code moves on: b LOSES its two top lines (the authored block 8-10 now lives at 6-8 and the
@@ -81,11 +87,17 @@ Cc="$(claim src/c.txt)"
 echo "$Cc" | python3 -c 'import json,sys; c=json.load(sys.stdin); assert "repair" not in c and c["anchor"]=="src/c.txt:2-4", c' \
   && ok "changed content inside a fitting range: no repair attempted, anchor untouched (range-fit verdict unchanged)" || bad "c.txt touched: $Cc"
 
-# ── CONFLICT: d.txt 1-40 on a 28-line file — overshoot 12, never clamped ──
+# ── CONFLICT: d.txt 5-40 on a 28-line file — PARTIAL range, overshoot 12, never clamped ──
 Dc="$(claim src/d.txt)"
 echo "$Dc" | python3 -c 'import json,sys; c=json.load(sys.stdin); assert c["verdict"]=="CONFLICT" and "repair" not in c and "not repairable" in c["evidence"], c' \
-  && ok "overshoot > 1 on an unchanged file → CONFLICT (not the P2 class; nothing clamped), evidence says why" || bad "d.txt: $Dc"
-grep -q '^- src/d.txt:1-40 —' "$V/units/U-001.md" && ok "CONFLICT anchor left verbatim in the unit" || bad "d.txt anchor was rewritten"
+  && ok "partial range overshooting > 1 on an unchanged file → CONFLICT (ambiguous block; nothing clamped), evidence says why" || bad "d.txt: $Dc"
+grep -q '^- src/d.txt:5-40 —' "$V/units/U-001.md" && ok "CONFLICT anchor left verbatim in the unit" || bad "d.txt anchor was rewritten"
+
+# ── R2 (8.0.1): e.txt 1-25 on an unchanged 22-line file — whole-file range, clamped ──
+Ec="$(claim src/e.txt)"
+echo "$Ec" | python3 -c 'import json,sys; c=json.load(sys.stdin); assert c["verdict"]=="CONFIRMED" and c["anchor"]=="src/e.txt:1-22" and c["repair"]["rule"]=="R2-clamp" and c["repair"]["from"]=="src/e.txt:1-25" and "whole-file" in c["evidence"], c' \
+  && ok "R2 (8.0.1): whole-file 1-25 on an unchanged 22-line file → CONFIRMED, clamped to 1-22 (overshoot 3 — the xs 8.0.0 field shape)" || bad "e.txt whole-file clamp: $Ec"
+grep -q '^- src/e.txt:1-22 — a WHOLE-FILE' "$V/units/U-001.md" && ok "R2 (8.0.1): unit ## Anchors line rewritten to 1-22" || bad "e.txt unit rewrite: $(grep 'src/e.txt' "$V/units/U-001.md")"
 
 # ── content changed AND range overshoots: no verbatim match anywhere → CONFLICT ──
 # the repaired anchors are committed FIRST (their authoring snapshot = this commit, where
