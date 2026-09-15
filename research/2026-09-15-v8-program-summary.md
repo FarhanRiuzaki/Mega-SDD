@@ -4,7 +4,7 @@ Status: **FINAL sesi 015iaR6m, 2026-09-15** — kolom 8.0.0 = xs lite run #2 (`b
 
 ## 0. Satu paragraf
 
-Program v8 memotong **tiga fase model pra-kode (intent → bind → units) jadi satu (`plan`)**, memindahkan **bind dari fase ke gate JIT saat dispatch** (binding per unit, ditulis skrip), dan — temuan P3 — membuka **penyerial bolt-stage yang ternyata gate, bukan DAG**. Di skenario 3-screen xs, waktu ke kode pertama turun dari 47 m ke 23 m dan DONE dari 1h28m ke 1h11m; di klinik 19–22 unit, DONE turun dari 4h44m ke 3h15m, dengan in-flight implementer 1,09 → 2,38 dan waktu bolt-stage tanpa implementer 47 % → 25 %. Kualitas tidak memburuk pada yang terukur (acceptance 100 % di semua arm DATA, panel Critical 5 → 0 di klinik). Biaya per run −26 % (xs) / −32 % (klinik). **`--lite` tetap OPT-IN di 8.0.0**: kriteria (a) gagal pada run bersih (xs DONE 1h11m02s > 60 m) — default butuh (a) DAN (b), jadi hasil klinik menentukan angka CHANGELOG dan diagnosa lanjutan, bukan default-nya.
+Program v8 memotong **tiga fase model pra-kode (intent → bind → units) jadi satu (`plan`)**, memindahkan **bind dari fase ke gate JIT saat dispatch** (binding per unit, ditulis skrip), dan — temuan P3 — membuka **penyerial bolt-stage yang ternyata gate, bukan DAG**. Di skenario 3-screen xs, waktu ke kode pertama turun dari 47 m ke 23 m dan DONE dari 1h28m ke 1h11m; di klinik 19–22 unit, DONE turun dari 4h44m ke 3h15m, dengan in-flight implementer 1,09 → 2,38 dan waktu bolt-stage tanpa implementer 47 % → 25 %. Kualitas tidak memburuk pada yang terukur (acceptance 100 % di semua arm DATA, panel Critical 5 → 0 di klinik). Biaya per run −36 % (xs) / −18 % (klinik). **`--lite` tetap OPT-IN di 8.0.0**: kriteria (a) gagal pada run bersih (xs DONE 1h11m02s > 60 m) — default butuh (a) DAN (b), jadi hasil klinik menentukan angka CHANGELOG dan diagnosa lanjutan, bukan default-nya.
 
 ## 1. Before / after — v7.30-era (7.34.0/7.35.0 classic) → 8.0.0 (MEASURED, endpoint DONE = max(gate unit terakhir, B2))
 
@@ -27,8 +27,8 @@ Program v8 memotong **tiga fase model pra-kode (intent → bind → units) jadi 
 | Metrik | classic P0 | `--lite` 7.37.1 | `--lite` 8.0.0-cand | Catatan |
 |---|---|---|---|---|
 | xs token raw / cost-weighted sampai commit unit terakhir | 174,7 M / 32,0 M (7.34.0) · 161,9 M / 35,8 M (7.36.1) | **74,1 M / 17,0 M** (−54 % / −53 % vs 7.36.1) | **54,0 M / 13,7 M** (run #2; −67 % / −62 % vs 7.36.1) | ekstraktor `p0-extract-arm.sh` |
-| klinik token raw / cw sampai DONE | 465,4 M / 90,4 M | **292,0 M / 57,5 M** (−37 % / −36 %) | (dari `extract.txt` chain, diisi di §4 report P3) | |
-| biaya `total_cost_usd` xs · klinik | $77,47 · $259,66 | $57,24 · $176,72 | **$49,66 · $198,56** (fase terukur) | xs −36 % · klinik −24 % |
+| klinik token raw / cw sampai commit kode terakhir | 465,4 M / 90,4 M | **292,0 M / 57,5 M** (−37 % / −36 %) | **255,2 M / 51,1 M** (−45 % / −44 %) | |
+| biaya `total_cost_usd` xs · klinik | $77,47 · $259,66 | $57,24 · $176,72 | **$49,66 · $213,75** ($198,56 fase terukur + ekor drift/analyze) | xs −36 % · klinik −18 % |
 | fase model pra-kode | 3 (+ resolve-oq bila P1 OQ) | **1** (`plan`) | 1 | handoff YAML antar fase 3 → 0 (state re-derive dari disk) |
 | artefak yang ditulis MODEL sebelum bolt pertama (klinik) | vault 4 dok 51,7 KB + `binding.md` 16,8 KB + units 100,4 KB (23 file) ≈ **169 KB** + bound/ + html + ledger | `context.md` 22,3 KB + units 121,0 KB (20 file) ≈ **143 KB (−15 %)**; binding per unit 59,9 KB ditulis SKRIP | spec EST −50 % **tidak tercapai** — badan unit tetap 100–120 KB (unit = kontrak dispatch, bukan lemak) |
 | titik interaksi manusia (happy path) | ask nonaktif headless: 0 ask + **13 (xs) / 18 (klinik)** keputusan `[ASSUMED-BY-RUNNER]` | 0 ask + **6 / 6** keputusan runner | xs run #2: 0 ask + 4 OQ `deferred` · klinik: 0 ask + 16 OQ (P1 3 resolved + 1 deferred) — satu batched ask di ujung `plan` bila interaktif | budget ≤2/≤3 tidak sebanding langsung (ask nonaktif); jumlah keputusan turun 2–3× |
@@ -91,7 +91,7 @@ Program v8 memotong **tiga fase model pra-kode (intent → bind → units) jadi 
 | 3-screen: token cost-weighted | 32 M | **13,7 M** |
 | klinik 19–22 unit: waktu ke kode pertama | 1 jam 16 menit | **1 jam 11 menit** (7.37.1: 50 menit) |
 | klinik: selesai semua unit + gate hijau | 4 jam 44 menit | **3 jam 15 menit** |
-| klinik: biaya API | $260 | **$199** |
+| klinik: biaya API | $260 | **$214** |
 | klinik: panel Critical (open di akhir) | 5 (1) | **4 (1)** — tiga diperbaiki di fix round, satu dikarantina (bug nyata di starter kit, di luar scope unit) |
 | acceptance | 21/21 · 5/5 | 21/21 · 5/5 (tetap 100 %) |
 | keputusan yang harus diambil manusia (happy path) | 13–18 | 4–16 OQ yang lahir `deferred`/dijawab, semuanya di SATU pertanyaan di ujung `plan` |
@@ -99,7 +99,7 @@ Program v8 memotong **tiga fase model pra-kode (intent → bind → units) jadi 
 **Jawaban buat tiga feedback kalian:**
 1. *"Bind nggak perlu."* — Setuju untuk fasenya, dan sudah dilipat: nggak ada lagi hop bind di lane lite. Yang TIDAK dihapus adalah gate-nya: sebelum setiap unit di-dispatch, plugin tetap cek spec vs kode (per unit, ditulis skrip, ±20 detik per wave). Di klinik 157/157 klaim cocok, 0 CONFLICT. Kalau suatu saat kode dan spec nggak cocok, dispatch tetap ditolak — itu yang bikin kalian nggak dapat kode yang "kelihatan jalan tapi salah".
 2. *"Kontrak ditulis berkali-kali."* — Sekarang satu fase (`plan`) nulis satu `context.md` + unit; handoff YAML antar fase hilang; `binding.md` 17 KB yang cuma 4 field-nya dibaca, hilang. Yang tetap besar adalah badan unit (±100 KB untuk 19 unit) — itu memang kontrak yang dibaca implementer, bukan lemak.
-3. *"Lambat & berat."* — Lihat tabel: 3-screen waktu ke kode pertama −51 %, selesai −19 %, biaya −36 %; klinik selesai −31 %, biaya −24 %, implementer paralel rata-rata 1,1 → 2,4 dari 4 slot. Yang sengaja nggak kami sentuh: gate per unit (L0, postflight, acceptance, panel 3–5 lens). Itu yang bikin Critical turun 5 → 0.
+3. *"Lambat & berat."* — Lihat tabel: 3-screen waktu ke kode pertama −51 %, selesai −19 %, biaya −36 %; klinik selesai −31 %, biaya −18 %, token cost-weighted −44 %, implementer paralel rata-rata 1,1 → 2,4 dari 4 slot. Yang sengaja nggak kami sentuh: gate per unit (L0, postflight, acceptance, panel 3–5 lens). Itu yang bikin Critical turun 5 → 0.
 
 **Komentar di generated code yang kebanyakan (feedback #4):** sudah dibedah, belum diubah (supaya angka di atas nggak tercemar). Separuh baris komentar itu ternyata header provenance yang diwajibkan plugin sendiri, bukan model yang cerewet — perbaikannya masuk 8.0.x/8.1.0.
 
@@ -111,6 +111,6 @@ Program v8 memotong **tiga fase model pra-kode (intent → bind → units) jadi 
 |---|---|---|---|
 | P0 | xs $77,47 · klinik $259,66 | klinik attempt 1 | (owner: P0+P2 = $781) |
 | P2 | classic 7.36.1 $74,88 · lite 7.36.1 $75,64 · lite 7.37.0 $40,77 · lite 7.37.1 $57,24 · klinik lite $176,72 = $425,25 | $96,14 (co-tenant, outage, deadlock) | $521,39 |
-| P3 | xs run #1 $50,32 (bolt-stage DATA, pra-kode tercemar) · **xs run #2 $49,66 (bersih)** · **klinik attempt 2 $198,56** (fase terukur; ekor resume ditambahkan di report P3 §4) | klinik attempt 1 $0 (outage 3,5 menit) | **$298,54** + ekor |
+| P3 | xs run #1 $50,32 (bolt-stage DATA, pra-kode tercemar) · **xs run #2 $49,66 (bersih)** · **klinik attempt 2 $213,75** ($198,56 fase terukur + $15,19 ekor) | klinik attempt 1 $0 (outage 3,5 menit) | **$313,73** |
 
 SCM PENDING sejak 53406cc.
