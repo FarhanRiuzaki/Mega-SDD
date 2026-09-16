@@ -163,6 +163,13 @@ Prinsip: **aturan generik ditulis SEKALI** (Rule 6 + `_universal.md`); pack hany
 
 ---
 
+## 7b. Amandemen setelah keputusan owner (spec `docs/superpowers/specs/2026-09-16-code-style-playbook-design.md`, 2026-09-16)
+
+- OPEN-1 **ya**, OPEN-2 **ikuti kode sekitar**, OPEN-3 T2 droppable dengan floor = bullet pertama, OPEN-5 paragraf di `## Code organization` — semua mendarat di 8.1.0.
+- **`_universal.md` TIDAK membawa `## Code style`** (koreksi §5/§6 di atas): aturan generik sudah agent-carried (Rule 6); slice universal = kirim ulang Rule 6 di tiap dispatch tanpa pack + menyeret prosa pack ke golden corpus framework-less. R2 = 24 pack saja.
+- Skeleton **4 slot**, bukan 5 — "bahasa komentar" generik → Rule 6. Cap bullet **≤ 1 600 B** (MEASURED spring.md 1 554 B; estimasi 400–800 B di §3 terlalu rendah karena bullet `read by` adalah muatannya).
+- Kanal terpasang: `code_style_slice` prioritas 7b (`build-dispatch-prompt.sh`), pin `tests/comment-diet/test-code-style-slice.sh`; golden dispatch-parity di-regen (hanya baris omission).
+
 ## 8. Ringkasan file yang disentuh riset ini
 
 - `research/2026-09-16-team-feedback-java-code-style.md` — dokumen tim verbatim + header provenance (baru).
