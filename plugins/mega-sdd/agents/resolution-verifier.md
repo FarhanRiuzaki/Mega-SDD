@@ -35,12 +35,12 @@ Your final text is parsed by the controller and lands verbatim in the orchestrat
 
 ```
 RESOLUTIONS:
-- F-1 | resolved | file:line | <one line: what the code now does>
-- F-4 | unresolved | file:line | <one line: where it still exists>
+- F-1 | file:line | resolved | <one line: what the code now does>
+- F-4 | file:line | unresolved | <one line: where it still exists>
 NEW-FINDINGS:
 - Critical | file:line | <title ≤80 chars> | <issue + WHY, ≤3 sentences; note `outside-fix-files` when applicable>
 (or `NEW-FINDINGS: none`)
 SUMMARY: <≤2 sentences>
 ```
 
-Every RESOLUTIONS row needs `file:line` evidence at the new head. A NEW-FINDINGS row without a real `file:line` anchor is dropped at merge — do not emit it. No narrative sections; your full reasoning stays in your own (disposable) context.
+Every RESOLUTIONS row needs `file:line` evidence at the new head. Column order is parser-pinned (`merge-panel-findings.sh`): `id | file:line | resolved|unresolved|regressed | note` — a row with the verdict in the second column is parsed as "no evidence" and never closes the finding. A NEW-FINDINGS row without a real `file:line` anchor is dropped at merge — do not emit it. No narrative sections; your full reasoning stays in your own (disposable) context.
