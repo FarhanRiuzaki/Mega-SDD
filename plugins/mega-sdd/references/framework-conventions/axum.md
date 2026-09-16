@@ -1,7 +1,7 @@
 ---
 framework: axum
 framework_version_range: "0.7 — 0.8"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_signature:
   package_manifest: Cargo.toml
@@ -96,6 +96,15 @@ HARD_RULE: A custom error type implementing IntoResponse MUST be defined and use
   rule_type: CUSTOM
   rationale: Consistent error responses require a single AppError type; returning heterogeneous errors or unwrapping in handlers produces unstructured 500s
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: rustdoc `///` (item) and `//!` (module/crate) — **read by**: `cargo doc`; the `missing_docs` lint ONLY when the crate root sets `#![warn(missing_docs)]`/`deny` (it is allow-by-default) — then every `pub` item needs a doc line; clippy's `missing_docs_in_private_items` is pedantic and off. A binary crate (this web service) usually has NO reader: a `///` block only on a `pub` item of a library crate consumers use, or where the name hides the contract. Doc-tests inside `///` are code — keep them only when they run.
+- **Skip**: handlers whose extractor signature says it (`async fn create_order(State(app): State<AppState>, Json(body): Json<CreateOrder>)`); private items with self-explanatory names; a trivial `new()`; derived trait impls; `# Arguments`/`# Returns` sections that repeat the signature and types.
+- **Write**: a `pub` item's contract when `missing_docs` or a consumer reads it; ownership, lifetime or `Send`/`Sync` assumptions the types do not show; the initialization order of shared state (`State<AppState>` built in `Router::with_state`); a `# Panics`/`# Errors` section for behaviour the signature hides; the reason for every `unsafe` block (mandatory).
+- **Names carry the meaning**: Rust idiom — predicates `is_active`/`has_role`/`can_retry`, verb-first functions (`calculate_total`, `fetch_orders`), plural collections (`active_orders`), conversions `into_x`/`as_x`/`to_x`, newtypes named for the domain (`OrderId`); never `data`, `temp`, `obj`, `handle`, `process`.
 
 ## Security idioms
 
