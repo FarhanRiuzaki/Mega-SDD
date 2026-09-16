@@ -1,7 +1,7 @@
 ---
 framework: dotnet
 framework_version_range: ".NET 6+ (LTS 8.x baseline)"
-last_verified_against: 2026-06-24
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_signature:
   package_manifest: "*.csproj"
@@ -117,6 +117,15 @@ HARD_RULE: Project files MUST enable nullable reference types
 - `System.Random` for security-sensitive values (use `System.Security.Cryptography.RandomNumberGenerator`)
 - Public mutable fields on a type (expose properties instead)
 - Hardcoded connection strings or secrets in source / committed `appsettings.json`
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: XML doc comments (`///` with `<summary>`) — **read by**: the compiler when the project sets `<GenerateDocumentationFile>true</GenerateDocumentationFile>` — then every public member without one raises **CS1591** (an error under `TreatWarningsAsErrors` unless `<NoWarn>1591</NoWarn>`); IntelliSense of every consumer of a class library or NuGet package (the `.xml` ships beside the `.dll`); DocFX when docs are built; StyleCop `SA1600` when configured. A console/worker app usually has NO reader: a full block only on the public API of a library consumers use, or where the name hides the contract.
+- **Skip**: private/internal members with self-explanatory names; auto-properties, records and DTOs whose names say it; constructors that only assign dependencies; `override`s whose contract is on the interface/base; `<param>`/`<returns>` that restate the signature; test methods (the name is the sentence).
+- **Write**: a public library member's contract when the XML file ships; thread-safety and `IDisposable` ownership; an exception a caller must expect (`<exception cref>`); a `<remarks>` on a non-obvious contract (ordering, idempotency, culture/time-zone assumptions).
+- **Names carry the meaning**: predicates `IsActive`, `HasRole`, `CanRetry`; verb-first methods (`CalculateTotal`, `FetchPendingOrders`) with the `Async` suffix on `Task`-returning ones; plural collections (`activeOrders`); interfaces `IOrderRepository`; never `data`, `temp`, `obj`, `handle`, `process`, `Manager` unless it is the pattern's name.
 
 ## Security idioms
 
