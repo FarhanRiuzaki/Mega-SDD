@@ -176,7 +176,7 @@ _validate_pack() {
   # _universal's principle-only prose and downgrades a BLOCKING gate to SKIP with
   # no diagnostic. Any `## ` header in the pack that is not in the recognized set
   # but is a near-miss of a gate-driving header is a violation.
-  local _known_headers="File location standards|Naming standards|Idioms|Hard Rules emitted|Testing conventions|Deep-scan file hints|Authz mapping|UI detection|Reuse discovery|Flow-artifact derivation|Conditional scaffold artifacts|Cross-cutting concerns|Relation derivation|UI quality signatures|Entity source globs|Entity matching tokens|Test patterns|Contents"
+  local _known_headers="File location standards|Naming standards|Idioms|Hard Rules emitted|Testing conventions|Deep-scan file hints|Authz mapping|UI detection|Reuse discovery|Flow-artifact derivation|Conditional scaffold artifacts|Cross-cutting concerns|Relation derivation|UI quality signatures|Entity source globs|Entity matching tokens|Test patterns|Code style|Contents"
   local _gate_stems="Flow.artifact|Cross.cutting|Relation deriv|UI quality|Entity source|Entity match|Test pattern|Scaffold|Deep.scan|Authz|Reuse"
   local _hdr _hname
   while IFS= read -r _hdr; do

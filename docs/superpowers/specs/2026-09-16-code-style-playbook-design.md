@@ -26,8 +26,8 @@ Pack section = **stack delta only**. Generic rule lives ONCE in `agents/bolt-imp
 > Consumed by `build-dispatch-prompt.sh` (T2 `code_style_slice`, priority 7b — `- ` bullets
 > only; MOST-SPECIFIC pack wins, no chain merge; ladder all → first two → first bullet, the
 > first bullet is the floor) for `bolt-implementer`, and by the controller inside the
-> standards-lens slice. A STYLE rule, never a gate (F.5). ≤ 6 bullets, ≤ 1 200 bytes of
-> bullets, at most ONE bad/good pair, ONLY what is specific to this stack.
+> standards-lens slice. A STYLE rule, never a gate (F.5). ≤ 6 bullets, ≤ 1 600 bytes of
+> bullets (cap MEASURED on the first filled pack: spring.md = 1 5xx B — the read-by bullet is the payload), at most ONE bad/good pair, ONLY what is specific to this stack.
 
 - **Doc-comment tool**: <tool> — **read by**: <CONCRETE toolchain consumers + the config that turns them on, or `none by default`>. A full block only where one of these reads it, or on public API that crosses a module/team boundary.
 - **Skip**: <this stack's vocabulary for members that never get a doc block>.
@@ -58,7 +58,7 @@ Authoring rules: `read by` facts are **web-verified at authoring** (install-deps
 - `## Before reporting back: self-review`: **Comments** check (delete test; doc blocks only where read / boundary-crossing; no name needed a comment).
 `references/framework-conventions/_universal.md §Comment conventions`: mirror of the three additions; the per-stack bullet now points at `## Code style` as the pack's home.
 `agents/code-quality-reviewer.md` comment-what shapes: `@param`/`@return`/`@throws` restating the signature; a doc block on a non-public member with a self-explanatory name. "Missing docs" stays never-a-finding.
-Pins: `tests/comment-diet/test-comment-why-rule.sh` n–s.
+Pins: `tests/comment-diet/test-comment-why-rule.sh` n–u.
 
 ## 5. Pack kit (commit 2)
 
@@ -66,7 +66,7 @@ Pins: `tests/comment-diet/test-comment-why-rule.sh` n–s.
 - `README.md` (packs): §Adding a new pack step 2 names the section + the web-verify rule; Files table unchanged.
 - `_lint.md`: "Recommended now, REQUIRED from 8.2.0 (R2)" paragraph after Check 3; `validate-pack.sh` `_known_headers` gains `Code style` (Check 3b typo lint — no new violation class in R1).
 - `spring.md`: filled section (§2), `last_verified_against: 2026-09-16`.
-- Pin: `tests/per-stack-packs/test-code-style-section.sh` — every pack that carries the section has the 4 bold labels + `read by`, ≤ 6 bullets, ≤ 1 200 bytes of bullets; `spring.md` MUST carry it; `_template.md` carries the skeleton; `_universal.md` MUST NOT; `validate-pack.sh spring.md` clean; registry stays fresh.
+- Pin: `tests/per-stack-packs/test-code-style-section.sh` — every pack that carries the section has the 4 bold labels + `read by`, ≤ 6 bullets, ≤ 1 600 bytes of bullets; `spring.md` MUST carry it; `_template.md` carries the skeleton; `_universal.md` MUST NOT; `validate-pack.sh spring.md` clean; registry stays fresh.
 
 ## 6. Release + measurement
 

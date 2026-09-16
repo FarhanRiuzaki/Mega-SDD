@@ -78,6 +78,23 @@ What violates this framework's idioms (anti-patterns that bolts must NOT generat
 - <Anti-pattern 2 — e.g., "Business logic in `routes/*.php` (use Controllers or Actions)">
 - <Anti-pattern 3 — e.g., "Direct `$_POST` / `$_GET` access (use Request object)">
 
+## Code style (self-documenting)   <!-- stack DELTA over Iron Rule 6 / _universal §Comment conventions — never restate the generic rule -->
+
+> Consumed by `build-dispatch-prompt.sh` (T2 `code_style_slice`, priority 7b — `- ` bullets only;
+> MOST-SPECIFIC pack wins, no chain merge; ladder all → first two → first bullet, and the first
+> bullet is the floor) for `bolt-implementer`, and by the controller inside the standards-lens
+> slice. A STYLE rule, never a gate (F.5: no comment-counting validator, no HARD_RULE on
+> comments). ≤ 6 bullets, ≤ 1 600 bytes of bullets, at most ONE bad/good pair, and ONLY what is
+> specific to this stack — the generic rule (WHY not WHAT, the delete test, minimality, the
+> protect-list, comment language = surrounding code) is agent-carried and must not be repeated.
+> Every `read by` fact is web-verified at authoring (bump `last_verified_against:`); optional in
+> 8.1.0, REQUIRED from 8.2.0 (`_lint.md` Check 3d). `_universal.md` never carries this section.
+
+- **Doc-comment tool**: <Javadoc | PHPDoc | JSDoc/TSDoc | docstring | YARD | Go doc comment | rustdoc `///` | XML doc `///`> — **read by**: <the CONCRETE toolchain consumers in this stack + the config that turns them on, or `none by default`>. A full block only where one of these reads it, or on public API that crosses a module/team boundary.
+- **Skip**: <this stack's vocabulary for members that never get a doc block — visibility keywords, generated accessors, trivial constructors, overrides whose contract lives on the interface/base, tags that restate the signature>.
+- **Write**: <the non-obvious contract in this stack's terms — side effects, thread-safety, exceptions the name does not imply, units/nullability the types do not carry>.
+- **Names carry the meaning**: <2–3 stack-idiomatic examples — boolean predicate form, verb-first methods, plural collections, the vague names to avoid>.
+
 ## Security idioms
 
 > Consumed by the execute-bolts review panel: the controller passes this section to the

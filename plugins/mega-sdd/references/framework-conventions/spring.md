@@ -1,7 +1,7 @@
 ---
 framework: spring
 framework_version_range: "3.x (Boot)"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_signature:
   package_manifest: pom.xml
@@ -130,6 +130,15 @@ HARD_RULE: Multi-step write operations MUST be wrapped in a `@Transactional` ser
 - `WebSecurityConfigurerAdapter` (removed in Spring 6 / Boot 3.x — use `SecurityFilterChain` bean)
 - `System.out.println()` for logging (use SLF4J `LoggerFactory.getLogger()` / `@Slf4j` Lombok)
 - Hardcoded credentials or secrets in source code (use `application.yml` + environment variables or Spring Vault)
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16 (Checkstyle docs; springdoc `SpringDocJavadocConfiguration`).
+
+- **Doc-comment tool**: Javadoc — **read by**: Checkstyle `MissingJavadocMethod` when a `checkstyle.xml` is configured (default scope `public`, `@Override` exempt, accessors exempt only with `allowMissingPropertyJavadoc=true`); springdoc when `therapi-runtime-javadoc` + its `-scribe` annotation processor are on the classpath (`springdoc.enable-javadoc` default on — Javadoc becomes the OpenAPI description); the Javadoc jar of a published library. None present → a full block only on public API consumed outside this module, or where the name hides the contract.
+- **Skip**: `private`/package-private methods with a self-explanatory name; getters/setters and Lombok accessors (`@Getter`/`@Setter`/`@Data`); `record` components; trivial constructors; `@Override` methods whose contract is on the interface; `@param`/`@return`/`@throws` that restate the signature (a checked exception is already in the `throws` clause).
+- **Write**: the public method whose name hides the contract — a retention window, a side effect, thread-safety, an unchecked exception a caller must handle (`reserveInventory(Order)` holds stock 15 min unless `confirmReservation` is called — that sentence IS the Javadoc).
+- **Names carry the meaning**: booleans read as a question (`isValid`, `hasPermission`, `canRetry`); methods start with the verb (`calculateTotalPrice`, `fetchActiveOrders`); collections are plural (`activeUsers`); `data`, `temp`, `obj`, `handle`, `process` are not names; `Manager` only when the pattern is genuinely called that (`EntityManager`).
 
 ## Security idioms
 
