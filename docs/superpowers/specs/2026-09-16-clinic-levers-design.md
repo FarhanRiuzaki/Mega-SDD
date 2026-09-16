@@ -28,3 +28,11 @@
 ## 4. Deliberately not done
 
 Building any lever before its xs measurement; raising `parallel_max` (measured: the cap was never the limiter — 3 root units idle 39–221 min); touching the panel/F-07 gate (0 rejections in 7.38.0); a hook for top-up (cost, not moat).
+
+## 5. Measurement log
+
+| # | Run | Tree / cache | Result | Verdict |
+|---|---|---|---|---|
+| 1 | `benchmarks/results/p3/xs-lite-8.3.0-levers-run1` — xs lite, `p0-xs-lite` reset `6f98c10`, launch 2026-09-16T05:16:38Z, sid `9d218fcf` | 8.3.0 (cache verified) | `plan` **25m08s** for 7 units (clinic 7.38.0: 56 m for 22; xs run #2 plan ≈ 20 m for 5); PRE-CODE 28m26s; first code 05:51Z; 5/7 units with full evidence, U-003/U-005 one fix round each; **L1 used**: `derive-ready-units.sh` 7×, `dispatch_plan` cited 5× in the stream; **L2 fired live**: `dag_shape_advisory` = hub U-004 (3 dependents), depth 3 (within budget); cost attempt-1 process **$42.32** (resume cost not captured — no result event) | **TERCEMAR — NOT DATA for (a)/wall**: local network outage #8 at 06:43Z with U-006 in flight (same-session resume 06:53Z), then the harness restart ~07:05Z killed the resumed session (U-006 committed without evidence, U-007 never dispatched). `parallelism.txt` over the truncated window (in-flight 0.57, idle 64 %) is meaningless and not reported as a lever result. Attempt count for the scenario: 1 of 3. |
+
+Next clean attempt requires the arm to be free (the owner was exploring `p0-xs-lite` with `pnpm dev` at the time — a run resets that tree to `6f98c10`).

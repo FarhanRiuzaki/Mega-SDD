@@ -1,0 +1,7 @@
+arm xs-lite-8.3.0-levers-run1 sid 9d218fcf start 05:16:44Z
+  DONE_code    1h47m36s  last code commit  feat(U-006): Build Tentang Kami page with team list
+  DONE_p5      1h47m36s  last type(U-*) commit (P0/P2 tables)  feat(U-006): Build Tentang Kami page with team list
+  DONE_gate           —  last unit gate pass (postflight/acceptance/panel merge) for U-006
+  B2 suite            —  run-full-suite.sh result (batch gate, reported separately)
+  EXCLUDED       27m40s  first drift/analyze/html/emit call (never in DONE)
+  gate calls seen for last-code unit: {}
