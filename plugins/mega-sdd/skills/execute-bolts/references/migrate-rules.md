@@ -1,6 +1,6 @@
 # Hard Rule grammar migration (v1 → v2)
 
-Invoke the Hard Rule grammar migration helper via Bash + the execute-bolts references. Until 5.x this procedure lived in `commands/migrate-rules.md` (the detector script's output text defers to it as the transform's spec); the surface cull relocated it here — invoke by phrase through the front door (`/mega-sdd` → "migrate hard rules").
+Invoke the Hard Rule grammar migration helper via Bash + the execute-bolts references — by phrase through the front door (`/mega-sdd` → "migrate hard rules"). The detector script's output text defers to this file as the transform's spec.
 
 Flags: `<vault-path> [--dry-run] [--auto-confirm] [--to=v2]`.
 

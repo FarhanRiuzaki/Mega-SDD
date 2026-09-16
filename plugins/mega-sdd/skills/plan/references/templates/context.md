@@ -22,18 +22,18 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/context"]
 
 # <Project Name> — Context
 
-> **TL;DR**: <what the product is · primary audience · one line>. The ONE vault doc of the v8 lite lane: flows (Mermaid + DoD), data model (DBML), constraints (NFR), open questions — every claim cites PRD §<X.Y>.
+> **TL;DR**: <what the product is · primary audience · one line>. The ONE vault doc of the lite lane: flows (Mermaid + DoD), data model (DBML), constraints (NFR), open questions — every claim cites PRD §<X.Y>.
 > **Read when**: you implement a unit (units cite `context_source: context.md#<anchor>`), review a flow, or resolve an OQ.
 
 > **Note**: placeholders shown in English. At runtime, render prose in the PRD's language (Tier-1 tokens stay English).
 
-<!-- HARD-HEADER CONTRACT (v8 layout-3): the four H2 anchors `## Flows`,
+<!-- HARD-HEADER CONTRACT (layout-3): the four H2 anchors `## Flows`,
      `## Data model`, `## Constraints`, `## Open Questions` are EXACT strings —
      derive-vault-json.sh / derive-claims-ledger.sh exit 2 naming the missing
      one. `## Decisions` and `## Overview` are OPTIONAL: present ONLY when the
      source carries them (an architect's D-NNN record; a PRD Background). NEVER
      write `## Architecture`, `## Glossary`, `## Sources`, `## Last updated`,
-     `## Phase context`, `## Source documents` — zero readers, killed in v8
+     `## Phase context`, `## Source documents` — zero readers
      (spec 2026-09-10 §2). An H2 is a section BOUNDARY: any sub-grouping inside a
      section (flow types, entity descriptions, NFR classes) uses H3/H4, never H2.
      Section grammar is byte-identical to layout-2 (_lib/vault_md.py). -->
@@ -184,7 +184,7 @@ Ref: <table>.<fk_field> > <other_table>.id  // many-to-one
 > - `[tech / <scan|recommend|blocking>]` or `[business]` bracket is MANDATORY
 >   (bracket-first is the only category source); `[conf: high|medium|low]` on tech.
 > - business ⇒ `resolution_mode: blocking`; P1 business OQs are the ONLY items
->   of the single batched ask at the end of PLAN (W1). On `project_scale: xs`,
+>   of the single batched ask at the end of PLAN. On `project_scale: xs`,
 >   medium-priority OQs are BORN `**Deferred (plan)**:` (never asked, resurfaced
 >   in the final report). Sort P1 → P2 → P3.
 

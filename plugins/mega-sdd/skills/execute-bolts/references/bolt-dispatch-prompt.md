@@ -4,7 +4,7 @@ Canonical prompt template for the bolt-subagent dispatch. Implements the 10 AI-e
 
 **This template is POPULATED BY `scripts/build-dispatch-prompt.sh`, not by the controller.** (Sections added after this template was frozen — `### Existing symbols (REUSE — extend, don't recreate)`, the 3b symbol slice — are specified in `context-enrichment.md §Symbol slice` and emitted by the builder like every other section; this file stays the marker-line owner.) The builder emits the sections below into `<vault>/bolts/U-XXX/dispatch-prompt.md`; the controller only invokes it and pastes the returned `inline_core` pointer into the Agent call (SKILL.md §Step 4.5). Several literal strings here are **marker lines matched byte-for-byte by `scripts/validate-dispatch-prompt.sh`** — `Design tokens:`, `Design system:`, `Pattern:`, `File:` — so re-wording one silently disarms the check that asserts it landed. Sections whose input is absent are OMITTED, never emitted empty or placeholder-filled.
 
-**Token budget**: T2 ≤10KB, T3 reference-only. Total dispatch prompt ≤9KB target; `cap_hard` is the `dispatch_prompt_too_large` conjunction's size term. Canonical budget numbers live in `context-enrichment.md` §running budget tracker (`cap_hard=12288`, `cap_target=9216`, `cap_t1=12288`, `cap_t2=10240`); the figures in this template MUST match that source. **`cap_t1` was 2048 and is now 12288** — amended 2026-07-31 from 123 measured builder runs (T1 max 10 874 B; the builder's non-unit-body scaffolding alone floors at 2 385 B, so 2048 was satisfiable only when pack content was missing). It is a REPORTING THRESHOLD, not a bound: T1 is never truncated and the unit body is verbatim, so crossing it means a unit too big to be one bolt. Read `context-enrichment.md ## AMENDMENT 2026-07-31` before quoting any budget figure.
+**Token budget**: T2 ≤10KB, T3 reference-only. Total dispatch prompt ≤9KB target; `cap_hard` is the `dispatch_prompt_too_large` conjunction's size term. Canonical budget numbers live in `context-enrichment.md` §running budget tracker (`cap_hard=12288`, `cap_target=9216`, `cap_t1=12288`, `cap_t2=10240`); the figures in this template MUST match that source. **`cap_t1` is 12288** — derived from 123 measured builder runs (T1 max 10 874 B; the builder's non-unit-body scaffolding alone floors at 2 385 B). It is a REPORTING THRESHOLD, not a bound: T1 is never truncated and the unit body is verbatim, so crossing it means a unit too big to be one bolt. Read `context-enrichment.md ## AMENDMENT 2026-07-31` before quoting any budget figure.
 
 ## Contents
 
@@ -50,12 +50,12 @@ TIER 1 — Always read (never truncated; cap_t1 is a reporting threshold, not a 
 Halt / self-report / rollback / provenance / atomic contracts: carried by your system prompt (agents/bolt-implementer.md, mega-sdd v<plugin.json version at dispatch>)
 
 > **Assembly note (builder):** `<plugin.json version at dispatch>` is filled from
-> `<plugin_root>/.claude-plugin/plugin.json` (NOT `<plugin_root>/plugin.json` — this
-> template said so for a long time and no such file exists) under the resolved plugin
+> `<plugin_root>/.claude-plugin/plugin.json` (NOT `<plugin_root>/plugin.json` — no such
+> file exists) under the resolved plugin
 > root. The builder shells out to `resolve-plugin-root.sh` once, and skips even that
 > when the caller passes `--plugin-root`. The line is logged as-is to `dispatch-prompt.md`: a forensic
 > reader resolves the exact contract text by name + version (agent files are
-> versioned in the plugin cache and git — the M-09 sole-copy trade, deterministic
+> versioned in the plugin cache and git — the sole-copy trade, deterministic
 > resolution). The constants themselves are NEVER re-embedded here — the
 > bolt-implementer system prompt is their single prompt-side source and cannot be
 > truncated by the T2 budget.
@@ -66,7 +66,7 @@ Halt / self-report / rollback / provenance / atomic contracts: carried by your s
 
 The per-dispatch provenance record. The agent's TWO-line trailer (its system prompt
 §Provenance trailer) copies ONLY `unit_id` + `provenance_path`; every other value stays here,
-validated, and the trailer points at this file (8.0.3):
+validated, and the trailer points at this file:
 
 ```
 Provenance values:
@@ -75,21 +75,19 @@ Provenance values:
   vault_sha256: <hash>
   claims: C-NNN "<claim text>" (one line per implemented claim → the bolt-report `claims:` line)
   anchors_consulted: <list>   # with ANCHOR STALE flags — an implementer signal, kept
-  hard_rules_active: <N> mechanical rule(s) — text verbatim in ## Hard rules of this file   # count since 8.0.3, NOT ids
+  hard_rules_active: <N> mechanical rule(s) — text verbatim in ## Hard rules of this file   # a count, NOT ids
   hard_rules_v2_ast_rules: <N> ast-grep rule block(s) in ## Hard rules   # only when v2 blocks exist
 ```
 
-> **`hard_rules_active` is a COUNT since 8.0.3** — the verbatim list duplicated the `## Hard rules` section this same file carries, and its only consumer (the trailer's `Hard Rules active:` line) is gone. **Still no ids, decided 2026-07-31** (`context-enrichment.md §Re-decided amendments`, row 2). Unit Hard rules have no ids; minting them would fork a second identity model from `_lib/postflight_rules.py`, which is what the B1 gate matches against. This template said `<list of rule IDs>` and `agents/bolt-implementer.md §Provenance trailer` said the same — both are corrected, because the implementer was being told to stamp ids into a mandatory trailer while its only sanctioned source hands it text, and post-flight verifies trailer PRESENCE only, so the mismatch would land as a malformed-but-present trailer no gate catches.
+> **`hard_rules_active` is a COUNT, not a list** — a verbatim list would duplicate the `## Hard rules` section this same file carries, and nothing consumes it. **No ids either** (`context-enrichment.md §Re-decided amendments`, row 2). Unit Hard rules have no ids; minting them would fork a second identity model from `_lib/postflight_rules.py`, which is what the B1 gate matches against — and telling the implementer to stamp ids into a mandatory trailer while its only sanctioned source hands it text would land as a malformed-but-present trailer no gate catches, because post-flight verifies trailer PRESENCE only.
 
-> **The order-3 legacy-dispatch element is REMOVED (2026-07-31 — path closed, not
-> unimplemented).** It used to say: on the order-3 fallback, Read
-> `agents/bolt-implementer.md` and inline its §Halt vocabulary / §Self-report /
-> §Rollback hints / §Provenance trailer verbatim, because a generic superpowers
-> executor's system prompt carries none of them. The builder never implemented it
-> and has no flag for it — it always emits the single `## Contracts (agent-carried)`
-> pointer line above. Rather than leave a template element with no implementation
-> and a contracts line that would assert something FALSE on that path, the path
-> itself is closed: **`build-dispatch-prompt.sh` and `agents/bolt-implementer.md`
+> **The order-3 legacy-dispatch element is REMOVED (path closed, not
+> unimplemented).** There is no fallback that inlines the agent's §Halt vocabulary /
+> §Self-report / §Rollback hints / §Provenance trailer for a generic superpowers
+> executor: the builder has no flag for it — it always emits the single
+> `## Contracts (agent-carried)` pointer line above. A template element with no
+> implementation and a contracts line that would assert something FALSE on that
+> path is not kept; the path itself is closed: **`build-dispatch-prompt.sh` and `agents/bolt-implementer.md`
 > ship in the SAME plugin tree and resolve from the SAME `resolve-plugin-root.sh`
 > root that fills the version on the contracts line** — so "the builder ran but the
 > first-class agents are unavailable" is not a reachable state. If the Agent tool
@@ -186,12 +184,12 @@ TIER 2 — Conditional context (target ≤10KB total)
 
 ## Constitution clauses (cited in this unit, resolved in the constitution §C)
 
-<HEADING FIXED 2026-07-31. The old `(referenced by your vault_source)` heading described
- a selector that has never existed — `vault_source` is a scalar and nothing keys a clause
- to a vault section — so the section told the subagent its clause came from its vault
- source when it came from a token match in its own body, contradicting the provenance line
- inside the same section. A heading is a claim about provenance and gets the same
- discipline as any other. The selector is the three-way intersection in
+<HEADING IS LOAD-BEARING. A `(referenced by your vault_source)` heading would describe
+ a selector that does not exist — `vault_source` is a scalar and nothing keys a clause
+ to a vault section — telling the subagent its clause came from its vault source when it
+ came from a token match in its own body, contradicting the provenance line inside the
+ same section. A heading is a claim about provenance and gets the same discipline as any
+ other. The selector is the three-way intersection in
  `context-enrichment.md §TIER 2 — Constitution clauses`.>
 
 <for each id that (1) appears in this unit outside fenced code blocks and inline code
@@ -252,21 +250,21 @@ Anti-kuno tells (a match in your output = defect): <modern-baseline.md §Anti-ku
 >
 > **Style row: use style-principles.md's OWN column names.** That file's header is
 > `| Style | Best For | Avoid For | CSS Keywords |` — there is NO traits column and NO
-> anti-patterns column. The retired `Style traits:` / `Style anti-patterns:` lines
-> relabelled a PRODUCT-SUITABILITY list as a DESIGN-DEFECT list while citing the file
+> anti-patterns column. `Style traits:` / `Style anti-patterns:` lines would
+> relabel a PRODUCT-SUITABILITY list as a DESIGN-DEFECT list while citing the file
 > by section, telling the implementer that a style's "anti-patterns" are "creative
-> portfolios, entertainment, playful brands". The source was real and the assertion
-> was invented — invariant #5 in its subtlest form — and because the `design-reviewer`
-> lens judges against THIS SAME section, implementer and reviewer would have shared a
+> portfolios, entertainment, playful brands". The source is real and the assertion
+> invented — invariant #5 in its subtlest form — and because the `design-reviewer`
+> lens judges against THIS SAME section, implementer and reviewer would share a
 > contract `style-principles.md` does not state. Want a real traits vocabulary? Add
 > the columns to the generator's source; never rename another file's columns.
 >
 > **Marker line, not prose.** `Design system:` is matched byte-for-byte by
-> `validate-dispatch-prompt.sh` (`DESIGN_SYSTEM_RE = ^\s*Design system\s*:`). The older
-> `Design system (vault):` spelling in this template could NEVER match that gate — the
-> builder emits the marker-compatible form above, and the greenfield design slice now
-> clears `design_system_not_injected` where the old spelling would not have. Do not
-> re-insert the parenthetical; it is the vault's `design_system` block either way.
+> `validate-dispatch-prompt.sh` (`DESIGN_SYSTEM_RE = ^\s*Design system\s*:`). A
+> `Design system (vault):` spelling could NEVER match that gate — the builder emits
+> the marker-compatible form above, which is what lets the greenfield design slice
+> clear `design_system_not_injected`. Do not insert a parenthetical; it is the
+> vault's `design_system` block either way.
 
 **Anti-halu rails:**
 - The palette/typography lines are the SOURCE for your tokens — never invent a second palette or pairing.
@@ -281,7 +279,7 @@ Anti-kuno tells (a match in your output = defect): <modern-baseline.md §Anti-ku
 - [<HIGH | MEDIUM | LOW | OQ>] <claim text>
   └─ Source: <binding citation OR KB inference OR heuristic default>
 
-<TAXONOMY — one enum, decided 2026-07-31, identical in both spec files. `OQ` was added
+<TAXONOMY — one enum, identical in both spec files. `OQ` was added
  here because the builder emits it for an `OQ-*` binding_ref and an open question carries
  no confidence; rendering it LOW would assert a low-confidence ANSWER where there is none.
  The LABEL is the EVIDENCE-QUALITY axis and reads the binding's `## Implementation State
@@ -363,4 +361,4 @@ The budget dict, the priority-ordered T2 section list, the per-section truncatio
 
 ## Logging
 
-`scripts/build-dispatch-prompt.sh` writes the assembled prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md`. The file is **contractual, not merely provenance** — `validate-dispatch-prompt.sh` globs exactly that path and has no other input, so if it stopped being written the advisory check would go dark. That validator is ADVISORY and runs under the analyze skill (`run-analyze.sh` V16) — no hook fires it per bolt (the PostToolUse leg died in v7.5.0 №C/№D). **The controller has no refresh step and must not be given one:** a rule that duplicates a dispatcher rots, and `plugins/mega-sdd/CLAUDE.md`'s *gates > rules > hooks* runs one way only.
+`scripts/build-dispatch-prompt.sh` writes the assembled prompt to `<vault>/bolts/U-XXX/dispatch-prompt.md`. The file is **contractual, not merely provenance** — `validate-dispatch-prompt.sh` globs exactly that path and has no other input, so if it stopped being written the advisory check would go dark. That validator is ADVISORY and runs under the analyze skill (`run-analyze.sh` V16) — no hook fires it per bolt. **The controller has no refresh step and must not be given one:** a rule that duplicates a dispatcher rots, and `plugins/mega-sdd/CLAUDE.md`'s *gates > rules > hooks* runs one way only.

@@ -52,7 +52,7 @@ Narrate (chat, halts, recommendations) in **natural Indonesian-English mix — t
 generate-intent → (bind-codebase --express if brownfield — claim-scoped, zero map load; scan-codebase is ON-DEMAND / classic-spine only) → generate-units → execute-bolts
 ```
 
-Lite lane (`--lite` / config `lane: lite`, v8 P2, opt-in): `plan` (PRD → `context.md` + units, ONE batched ask at the end) → `execute-bolts --all --lite` (JIT bind per wave, W2 readiness). Default lane unchanged.
+Lite lane (`--lite` / config `lane: lite`, v8 P2, opt-in): `plan` (PRD → `context.md` + units, ONE batched ask at the end) → `execute-bolts --all --lite` (JIT bind per wave, unit-level readiness). Default lane unchanged.
 
 Legacy-rebuild upstream lane (code is the only spec):
 
@@ -87,4 +87,4 @@ When the doc's title/scope matches an existing vault's source → revision (diff
 
 ## Reference
 
-Pipeline-stage reading guide + upgrade/compatibility → repo docs (`docs/mega-sdd/reading-map.md`, `docs/mega-sdd/upgrade-from-old-version.md` — maintainer-facing, moved out of the shipped references/ in v7.4.0).
+Pipeline-stage reading guide + upgrade/compatibility → repo docs (`docs/mega-sdd/reading-map.md`, `docs/mega-sdd/upgrade-from-old-version.md` — maintainer-facing, not shipped in references/).

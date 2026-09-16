@@ -45,7 +45,7 @@ WITHOUT it is listed as `bypass_commits[]` in `_batch-suite.json` (written by `r
 trailer is the **B4 commit-key**: it stamps the acceptance contract into
 the commit AT COMMIT TIME — the gate (`validate-bolt-artifacts.sh --acceptance-scan`)
 requires fresh passing `acceptance.json` evidence ONLY for commits carrying it, so a
-legacy pre-v5 bolt (no trailer) can never retro-block (the same
+legacy bolt (no trailer) can never retro-block (the same
 read-obligation-at-commit discipline B1 applies via `unit_text()`; a retro edit cannot
 add or erase the key without rewriting history).
 

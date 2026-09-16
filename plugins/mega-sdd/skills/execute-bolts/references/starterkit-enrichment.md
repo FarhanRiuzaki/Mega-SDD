@@ -74,7 +74,7 @@ The starterkit-ABSENT fallback (codebase-map.md §6 pattern signatures → the `
 
 ## Starterkit slice: §patterns wiring
 
-The §patterns block is wired independently of `starterkit_relevance` — it triggers on `target_files` match against pack-discovered locations. (Closes the regression where the §patterns block was built but never injected, so the bolt was told "follow starterkit conventions" without being told what they ARE.)
+The §patterns block is wired independently of `starterkit_relevance` — it triggers on `target_files` match against pack-discovered locations. (The block must be injected, not only built — otherwise the bolt is told "follow starterkit conventions" without being told what they ARE.)
 
 ```
 IF starterkit_context.patterns exists AND unit.target_files is non-empty:
@@ -172,14 +172,14 @@ FOR each (category, source_list) in [
 
 ## Slice truncation order
 
-This is the tier-**8a** `starterkit_slice` rung ladder of the `context-enrichment.md` cascade (tier 8 also carries `map_patterns` at 8b and `design_slice` at 8c — all three now have rows) — the builder steps ONE rung per pass and re-measures, it does not run the list to completion. If the slice exceeds the T2 budget (design_tokens is MID-priority):
+This is the tier-**8a** `starterkit_slice` rung ladder of the `context-enrichment.md` cascade (tier 8 also carries `map_patterns` at 8b and `design_slice` at 8c — all three have rows) — the builder steps ONE rung per pass and re-measures, it does not run the list to completion. If the slice exceeds the T2 budget (design_tokens is MID-priority):
 1. Truncate `slice.libs[]` — keep top 10 by relevance score (overlap count with target_files).
 2. If still over → truncate `slice.code_examples.<category>.content` to first 50 lines; mark `truncated: true` (controller/view/component alike).
 3. If still over → truncate `slice.ui_ux.idioms[]` to top 3.
 4. If still over → compact `slice.ui_ux.design_tokens` — keep `colors` + `fonts`, drop `spacing` detail to `spacing=<scale-name|default>`. **design_tokens is MID-priority: compacted/dropped only AFTER libs + idioms, and BEFORE code_examples (step 5). NEVER first-dropped.** (The `Design tokens:` line is retained as long as any token survives, so validate-dispatch-prompt.sh still sees it.)
 5. If still over → drop `slice.code_examples` entirely (patterns metadata still preserved).
 6. If still over → drop the remaining `slice.ui_ux.design_tokens` line.
-7. If still over → the slice is at its drop floor; the halt decision **delegates to the ONE global halt check** in `context-enrichment.md §Halt path` (`dispatch_prompt_too_large` requires the full three-way conjunction — this step never halts on its own, or the slice being tight would fire a halt the global condition rejects). **Re-decided and KEPT 2026-07-31:** one halt, one definition, one place is the right shape; the danger was only ever that the global halt could not fire, and that was fixed where it belonged — `context-enrichment.md ## AMENDMENT 2026-07-31` re-derives the cap numbers from 123 measured runs and proves the conjunction reachable on four units.
+7. If still over → the slice is at its drop floor; the halt decision **delegates to the ONE global halt check** in `context-enrichment.md §Halt path` (`dispatch_prompt_too_large` requires the full three-way conjunction — this step never halts on its own, or the slice being tight would fire a halt the global condition rejects). **Re-decided and KEPT** (`context-enrichment.md §Re-decided amendments` row 5): one halt, one definition, one place is the right shape; `context-enrichment.md ## AMENDMENT 2026-07-31` re-derives the cap numbers from 123 measured runs and proves the conjunction reachable on four units.
 
 **Un-budgeted by this ladder:** `### UI design quality heuristics` (the injected `ui-design-heuristics.md` body, measured ≥4 826 B) has **no rung** — no step drops or trims it, and the builder does not invent an 8th step to do so. Adding one is a spec amendment, not a builder change. Measured consequence, so it is not a theoretical concern: on a UI-bearing unit the tier-8 drop floor cannot fall below that block, and the whole priorities-1-to-8 floor was measured at **6 374 B** on such a unit versus 746–947 B on non-UI units — 47 % of `cap_t2` that no cascade rung can reclaim.
 
@@ -263,7 +263,7 @@ Inject the body of `plugins/mega-sdd/references/ui-design-heuristics.md` here (s
 design-quality guidance — visual hierarchy, every state shown, value formatting, accessibility,
 consistency). This is HOOK/DISPATCH-INJECTED TEXT the bolt subagent reads inline — it is NOT a
 prose instruction to invoke the `frontend-design` skill (prose-only Skill-invoke wire-ups
-historically no-op'd). The deterministic validate-dispatch-prompt.sh asserts the design tokens +
+no-op). The deterministic validate-dispatch-prompt.sh asserts the design tokens +
 view exemplar above actually landed.
 </IF>
 ```

@@ -2,7 +2,7 @@
 
 Loaded by `execute-bolts` SKILL.md pre-flight 3.9 / 3.10 ONLY when one of them
 triggers (3.9: the run is lite — front-door `--lite` or `derived.lane: lite` — OR a unit in the wave carries `## Claims` /
-`existing_interfaces`; 3.10: a DEFER-class halt fires on a unit). A default v7
+`existing_interfaces`; 3.10: a DEFER-class halt fires on a unit). A default classic
 greenfield wave never reads this file. Spec: `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md`
 Appendix F2–F4 (JIT bind) and F6c (quarantine); audit
 `research/2026-09-10-p0-interaction-audit.md` §C (which halts wait for a human).
@@ -26,7 +26,7 @@ script; the model's only judgment is the ladder E3 verdict on `text` claims.
      claims from `.mega-sdd/codebase/symbol-index.json` (in the expected file →
      CONFIRMED; only elsewhere → CONFLICT collision; nowhere → OQ; index absent
      → OQ with the reason). Nothing for the model to do.
-   - **Stale line-range anchors are repaired by the writer, never by hand (v8 P3, owner amendment #4; `research/2026-09-15-v8-p3-report.md §5`).** A `## Anchors` range that no longer fits the file is re-verdicted against the anchor's *authoring snapshot* (the commit that introduced that token into the unit file): **R1-shift** when the authored lines exist verbatim, uniquely, at another offset; **R2-clamp** when the file is byte-identical to the snapshot and EITHER the range overshoots EOF by exactly one line (the trailing-newline miscount — the live P2 class, clinic U-008 / xs U-006) OR the range is a whole-file anchor (`<file>:1-N`, any overshoot — lines past EOF never existed, so lines 1..n ARE what the author read; 8.0.1, the xs lite 8.0.0 class: `login/page.tsx:1-25` on an unchanged 22-line file). Both record `repair: {from, to, rule, reference, content_sha256}` on the claim (+ `repairs[]` in `binding.json`) and rewrite the unit's `## Anchors` token, so the next bind sees it fit. Changed content, a non-unique match, a PARTIAL range (start > 1) overshooting by more than one line, or no snapshot ⇒ **CONFLICT as before** — resolve via `resolve-oq --binding` (KEEP_CODE + a hand-corrected anchor is still the human path for those). Never pre-empt the writer by editing an anchor to make a claim pass.
+   - **Stale line-range anchors are repaired by the writer, never by hand (`research/2026-09-15-v8-p3-report.md §5`).** A `## Anchors` range that no longer fits the file is re-verdicted against the anchor's *authoring snapshot* (the commit that introduced that token into the unit file): **R1-shift** when the authored lines exist verbatim, uniquely, at another offset; **R2-clamp** when the file is byte-identical to the snapshot and EITHER the range overshoots EOF by exactly one line (the trailing-newline miscount — the live class: clinic U-008 / xs U-006) OR the range is a whole-file anchor (`<file>:1-N`, any overshoot — lines past EOF never existed, so lines 1..n ARE what the author read; e.g. `login/page.tsx:1-25` on an unchanged 22-line file). Both record `repair: {from, to, rule, reference, content_sha256}` on the claim (+ `repairs[]` in `binding.json`) and rewrite the unit's `## Anchors` token, so the next bind sees it fit. Changed content, a non-unique match, a PARTIAL range (start > 1) overshooting by more than one line, or no snapshot ⇒ **CONFLICT** — resolve via `resolve-oq --binding` (KEEP_CODE + a hand-corrected anchor is still the human path for those). Never pre-empt the writer by editing an anchor to make a claim pass.
    - For each `text` claim run the express-bind ladder E3 VERBATIM
      (`bind-codebase/references/express-bind.md §Step E3`: index → targeted
      Read → collision sweep two legs → bounded grep → KB → ungrounded ⇒
@@ -57,7 +57,7 @@ script; the model's only judgment is the ladder E3 verdict on `text` claims.
 
 Only three halts may stop the run and wait for a human: `binding_conflict` /
 `bind_conflict`, `hard_rule_violated`, and OQ P1 business — plus one exception the
-owner kept blocking as CONFLICT-like (2026-09-10): `bolt_introduces_locked_drift`
+owner kept blocking as CONFLICT-like: `bolt_introduces_locked_drift`
 (a bolt touched a LOCKED entity; pure-pause, override-only, never proposed). Every other
 DEFER-class halt on a unit (L0 trio, B1–B4 evidence, `review_critical_unresolved`,
 `test_fail` after the retry budget, `ambiguous_spec`, `anchor_missing`,

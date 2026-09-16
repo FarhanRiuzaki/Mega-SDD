@@ -53,7 +53,7 @@ blocker:
 
 Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt halts with an eligible halt type, dispatch an AI fix-proposer subagent → render the proposal via `AskUserQuestion` → on accept, apply the fix + re-execute → on reject, the chain pauses.
 
-**Eligible halt types** (default propose-and-confirm; configurable per `~/.mega-sdd/config.yaml` `halt_auto_propose` (user-scope; relocated from the removed memory dir in v7.3.0)):
+**Eligible halt types** (default propose-and-confirm; configurable per `~/.mega-sdd/config.yaml` `halt_auto_propose` (user-scope)):
 - `test_fail` (after the default 3 retries via `--max-retries`).
 - `hard_rule_violated` (with framework-pack provenance evidence).
 - `pbt_property_violated` (counterexample preserved in postflight).
@@ -71,7 +71,7 @@ Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt ha
 - `hard_rule_unanchored` — config issue.
 - `ambiguous_spec` — human interpretation call (subagent-emitted; pure-pause).
 - `scope_creep_detected` — the unit's scope is wrong or the plan drifted; human restructures.
-- `review_critical_unresolved` — a Critical (or a still-❌ spec lens) survived the retry budget; human reviews the code (W1: the unit is QUARANTINED and the question rides the final report — not a mid-run pause).
+- `review_critical_unresolved` — a Critical (or a still-❌ spec lens) survived the retry budget; human reviews the code (the unit is QUARANTINED and the question rides the final report — not a mid-run pause).
 - `bolt_introduces_locked_drift` — LOCKED behavior is a human decision by definition; override-only (the fix-proposer template refuses LOCKED files).
 - `verify_unit_writable` — config issue.
 
@@ -160,4 +160,4 @@ blocker:
 
 **Framework absent fallback:** if `properties:` is non-empty but no PBT framework is detected (e.g. a bare PHP project without Eris) → skip test emission + validation; log an advisory note in bolt-report.md ("PBT framework not detected; properties documented as advisory only"); the bolt proceeds per `acceptance_test`.
 
-**`--no-pbt` opt-out:** skips PBT validation entirely (preserves pre-v2.4 behaviour). Useful when CI lacks a PBT framework, for a one-off bolt run, or when the user explicitly wants example-test-only validation.
+**`--no-pbt` opt-out:** skips PBT validation entirely (example-test-only behaviour). Useful when CI lacks a PBT framework, for a one-off bolt run, or when the user explicitly wants example-test-only validation.

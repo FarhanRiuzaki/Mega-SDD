@@ -1,7 +1,7 @@
 # Unit grammar cheatsheet — what each validator PARSES (read this, never the validator source)
 
-> L3a of `docs/superpowers/specs/2026-09-16-clinic-levers-design.md` (8.3.0, MEASUREMENT PENDING). MEASURED on
-> the clinic lite 7.38.0 run (`research/2026-09-15-v8-p3-report.md §2f`): ±10 of the 56 plan minutes went to
+> L3a of `docs/superpowers/specs/2026-09-16-clinic-levers-design.md` (MEASUREMENT PENDING). MEASURED on
+> the clinic lite run (`research/2026-09-15-v8-p3-report.md §2f`): ±10 of the 56 plan minutes went to
 > the model reading `validate-*.sh` / `_lib/*.py` to learn the grammar. Every regex below is copied VERBATIM
 > from the named file and pinned by `tests/v8-plan/test-plan-precode-diet.sh` (a regex that no longer appears
 > in its file fails the suite — this sheet cannot drift silently). Semantics live in

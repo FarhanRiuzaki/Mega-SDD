@@ -124,9 +124,9 @@ The steps below are **executed by `scripts/run-preflight-scan.sh`** (the determi
    Lock semantics (DO_NOT_MODIFY) stay v1 per the mapping table.
 4. The script records `{type: v2_ast_grep, rule: <id>, matched_files: [{path, sha256}]}`
    into the unit-level `<vault>/bolts/U-XXX/preflight.json` `rules[]` array — the
-   unified schema owned by `hard-rule-scan.md` §`preflight.json` format (the per-rule
-   `{rule_id, rule_yaml, snapshot_paths, snapshot_sha256, snapshot_at}` shape
-   previously documented here diverged from that schema and is superseded).
+   unified schema owned by `hard-rule-scan.md` §`preflight.json` format (no per-rule
+   `{rule_id, rule_yaml, snapshot_paths, snapshot_sha256, snapshot_at}` shape — that
+   schema is the only one).
 
 ### Post-flight (per `execute-bolts/SKILL.md` Post-flight validation)
 
@@ -177,7 +177,7 @@ User confirms per unit. v1 rules preserved as `<!-- v1: ... -->` HTML comments f
 
 ## Backward compatibility
 
-- v2.1 units with v1 rules → execute-bolts v1.4 parser still works (v1 path preserved)
+- Units with v1 rules → the v1 parser still works (v1 path preserved)
 - Newly-generated units emit v1 productions by default (binding-suggested `DO NOT modify …` etc.); v2 blocks are authored/migrated deliberately for pattern rules only
 - Mixed-grammar units → halt `hard_rule_mixed_grammar` (user must migrate first)
 - `--hard-rule-grammar=v1|v2` flag forces grammar; default `auto` (detect from rule YAML presence)
@@ -189,6 +189,6 @@ ast-grep matches AST patterns; it does NOT do dataflow analysis, and it is STATE
 ## References
 
 - ast-grep docs: https://ast-grep.github.io/
-- AST engine: ast-grep only — the tree-sitter lane (+ `tree-sitter-integration.md`) was removed in 7.4.0; query glossary under `scan-codebase/queries/astgrep/`, engine resolver `scripts/probe-scan-engine.sh`
+- AST engine: ast-grep only (no tree-sitter lane); query glossary under `scan-codebase/queries/astgrep/`, engine resolver `scripts/probe-scan-engine.sh`
 - Design spec: `docs/superpowers/specs/2026-05-20-tech-oq-autoresolve-design.md` §6 (v1 grammar)
 - Design spec: `docs/superpowers/specs/2026-05-21-tech-upgrades-iter6-design.md` §4.2
