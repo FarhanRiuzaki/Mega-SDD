@@ -1,7 +1,7 @@
 ---
 framework: rails
 framework_version_range: "7.x — 8.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_signature:
   package_manifest: Gemfile
@@ -147,6 +147,15 @@ HARD_RULE: Business logic MUST NOT be placed directly in controller actions; com
   rule_type: CUSTOM
   rationale: Fat controllers are untestable in isolation and tightly couple HTTP concerns with domain logic; the fat-model/skinny-controller pattern is core Rails convention
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: `#` doc comments (YARD/RDoc) — **read by**: RuboCop `Style/Documentation` ONLY when the project's `.rubocop.yml` enables it (the cop is `Enabled: false` in RuboCop's current default config) — then every top-level class/module needs a one-line comment; YARD/RDoc render comments only for a published gem/engine. Nothing in Rails reads a comment: routes, validations and associations are code. A full block only where one of these reads it, or on public API consumed outside this app.
+- **Skip**: models whose associations/validations are the documentation; controllers whose actions follow REST names; migrations; jobs/mailers with self-explanatory names; specs (the description string is the sentence); YARD `@param`/`@return` repeating what Sorbet/RBS already type.
+- **Write**: a scope's non-obvious filter (soft delete, tenant); a callback's side effect (`after_commit` enqueues a job); a concern's assumption about its includer; a workaround for an ActiveRecord edge; the class comment when `Style/Documentation` is enabled.
+- **Names carry the meaning**: predicates end in `?` (`active?`, `verified?`, `can_retry?`), bang methods only when they raise; verb-first methods (`calculate_total`, `fetch_pending_orders`); plural collections/scopes (`active_users`); never `data`, `temp`, `obj`, `handle`, `process`.
 
 ## Security idioms
 

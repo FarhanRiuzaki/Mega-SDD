@@ -1,7 +1,7 @@
 ---
 framework: sinatra
 framework_version_range: "3.x — 4.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_signature:
   package_manifest: Gemfile
@@ -107,6 +107,15 @@ HARD_RULE: `halt` MUST be used for early response termination inside a route blo
   rule_type: CUSTOM
   rationale: Sinatra processes the return value of the route block, not a `return` inside a helper called from the block; using `return` silently produces incorrect behavior when called from a nested method context
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: `#` doc comments (YARD/RDoc) — **read by**: RuboCop `Style/Documentation` ONLY when a `.rubocop.yml` enables it (`Enabled: false` in RuboCop's current default config); YARD/RDoc render comments for a published gem; nothing in Sinatra reads a comment — routes, filters and helpers are code. A full block only where one of these reads it, or on public API consumed outside this app.
+- **Skip**: route blocks whose verb + path say it; helpers with self-explanatory names; `before`/`after` filters; `set :x` settings; specs; YARD `@param`/`@return` repeating an obvious contract.
+- **Write**: a filter's short-circuit (`halt`) contract; a helper's session/cookie side effect; a `configure` block's environment assumption; a workaround for a Rack middleware ordering edge.
+- **Names carry the meaning**: predicates end in `?` (`authorized?`, `expired?`); verb-first helpers (`render_error`, `fetch_orders`); plural collections (`pending_jobs`); never `data`, `temp`, `obj`, `handle`, `process`.
 
 ## Security idioms
 
