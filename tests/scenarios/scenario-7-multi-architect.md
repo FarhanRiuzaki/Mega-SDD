@@ -3,6 +3,8 @@
 **Time**: 60 minutes total (20 min per architect)
 **When to use**: Project where PRD is shared across multiple IT architects (BE, MW, FE) — each architect generates their own vault for their scope only
 
+This walkthrough follows the classic chain (the DEFAULT for every 8.x release); the opt-in `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
+
 **Prerequisites**:
 - Mega-sdd v7.4+ (multi-scope picker)
 - Canonical PRD with `scopes:` frontmatter (or legacy PRD via retrofit bridge)
@@ -198,7 +200,7 @@ User says "PRD updated — diff the vault" (routes to diff-vault) → revisions 
 ## Common questions
 
 **Q: What if architect FE invokes `--scope=BE` flag?**
-A: Mega-sdd halts `scope_not_declared_in_prd` IF cwd doesn't have BE manifest signals; otherwise proceeds with BE scope (architect is explicitly overriding role). Useful for architect doing cross-scope review.
+A: Mega-sdd proceeds — BE is a declared scope; only an undeclared id halts `scope_not_declared_in_prd` (cwd manifests are irrelevant). Useful for architect doing cross-scope review.
 
 **Q: How do BE and FE architects coordinate on the locked contract `be-fe-orders-api`?**
 A: Outside mega-sdd. Both vaults reference the contract section in PRD. When contract changes:
@@ -207,7 +209,7 @@ A: Outside mega-sdd. Both vaults reference the contract section in PRD. When con
 3. Both architects run `/mega-sdd --resume` → diff-vault detects PRD change → revisions applied per-scope
 
 **Q: What if PRD has no scopes frontmatter?**
-A: Retrofit bridge fires (per `scope-picker.md` step 2). AI proposes scope partitioning. User accepts or rejects per scope. Retrofit written to `<prd>.retrofit.md` (preserves original).
+A: Retrofit bridge fires (per `scope-picker.md` step 2). AI proposes scope partitioning. User accepts or rejects per scope. Retrofit written to `<prd>.retrofit.md` (preserves original). Interactive runs only — the express `--auto` chain treats it as single-scope and offers the retrofit lane in its delivery report.
 
 **Q: Can one architect own multiple scopes?**
 A: Yes. PRD `scopes:` can have same person in multiple `pics` arrays. Architect runs mega-sdd once per scope they own; gets multiple vaults.

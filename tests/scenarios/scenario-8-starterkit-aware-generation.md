@@ -126,7 +126,7 @@ cd <your-starterkit-repo>
 cat .mega-sdd/codebase/starterkit-context.yaml
 ```
 
-Expected outcomes for `base-laravel-26`:
+Expected outcomes for `laravel-base-26`:
 - `auth.lib` correctly identifies auth lib in use
 - `authz.lib` == `spatie/permission` (if Spatie is installed)
 - `ui_ux.notification_lib` == `sweetalert2` (per standing user pref)

@@ -5,6 +5,8 @@
 
 This is mega-sdd's biggest scenario. Real-world example: legacy PHP trade-finance system → modern Laravel rebuild.
 
+The KB-born rebuild is classic-only: `plan` does not accept `--kb`.
+
 > **The concept guide** for this whole journey — why each act exists, plus the handoff (doc-pack + UAT evidence) and life-after-rebuild (sync) acts this walkthrough only touches — is [`docs/mega-sdd/revamp-journey.md`](../../docs/mega-sdd/revamp-journey.md).
 
 ## Prerequisites
@@ -131,7 +133,7 @@ For legacy rebuild, typical answers:
 Vault written to `.mega-sdd/vaults/<slug>/`. Expect ~30 OQs (lots of business + regulatory questions from the module PRDs' `[OPEN]` items).
 
 ```
-✓ Phase 2 of 5: generate-intent → 30 OQs (12 P1 business, 10 P2 tech, 8 P3)
+✓ Phase 2 of 5: generate-intent → status: completed, items: 30 OQs (12 P1 business, 10 P2 tech, 8 P3), blocked: 12
   + Auto-Classification Review section in vault.md (5 tech OQs flagged for review)
 ```
 
@@ -142,7 +144,7 @@ Often the biggest time in legacy rebuild — stakeholders need to decide:
 - Which regulatory constraints still apply
 - How to handle data migration cutover
 
-The chain halts on P1 business OQs and invokes the resolve-oq skill (or say "jawab OQ list" / "resolve open questions" to enter it yourself). It walks each P1 with KB-derived recommendations:
+On the express default the chain asks the P1 business OQs itself (batched, ≤4 per prompt) and continues; on `--classic` it halts and invokes the resolve-oq skill (or say "jawab OQ list" / "resolve open questions" to enter it yourself). Either way each P1 is walked with KB-derived recommendations:
 
 ```
 OQ-CN-005 [P1] [business / blocking]:
@@ -162,16 +164,14 @@ OQ-CN-005 [P1] [business / blocking]:
   Confidence: HIGH
   
   Options:
-    1. NO — fix typo (recommended)
-    2. YES — preserve legacy bug
-    3. Defer to operations team
+    [1] NO — fix typo (recommended)
+    [2] Skip
+    [3] Defer
+    [4] Out of scope
+    — Other: free text (e.g. "YES — preserve legacy bug")
 ```
 
-Pick; the resolution lands in the vault. Resume:
-
-```
-/mega-sdd --resume
-```
+Pick; the resolution lands in the vault and the express chain continues on its own (on `--classic`, resume with `/mega-sdd --resume`).
 
 ## Step 5 — Phase 3: Bind (~15 min, express spine)
 
@@ -220,7 +220,7 @@ Modules:
 ▶ Phase 5 of 5: invoking execute-bolts --all --parallel
   Squad partition: single squad (no _meta/squads.yaml declared); intra-squad parallel
   
-  Wave 1 (7 parallel): U-001 U-008 U-015 U-022 U-030 U-038 U-045
+  Wave 1 (7 parallel — `parallel_max: 7` in .mega-sdd/config.yaml; the default cap is 4): U-001 U-008 U-015 U-022 U-030 U-038 U-045
   ✓ Wave 1 complete in 12 min
   Wave 2 (7 parallel): U-002 U-009 U-016 U-023 U-031 U-039 U-046
   ✓ Wave 2 complete in 14 min
@@ -232,7 +232,7 @@ Modules:
 
 📋 Final summary:
    Phases: 5/5 completed
-   Quality: HIGH grounding throughout
+   Quality: HIGH grounding throughout   (--classic only — comes from the auto lint pass)
 ```
 
 ## Step 8 — Verify
@@ -241,7 +241,7 @@ Modules:
 cd ~/projects/rebuild-target
 
 git log --oneline | wc -l
-# ~50 commits (baseline + 47 bolts + maybe a few resolve-oq commits)
+# ~48 commits (baseline + 47 bolts; resolve-oq edits the vault — commit those yourself)
 
 php artisan migrate
 ./vendor/bin/phpunit

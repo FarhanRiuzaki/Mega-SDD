@@ -5,6 +5,8 @@
 
 You'll start with just a sentence ("build a clinic appointment system") and end with committed code + passing tests.
 
+This walkthrough follows the classic chain (the DEFAULT for every 8.x release); the opt-in `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
+
 ## Prerequisites
 
 - Mega-sdd installed ([install check](README.md#before-you-start--install-check))
@@ -77,12 +79,12 @@ After Q&A, mega-sdd writes vault to `.mega-sdd/vaults/clinic-app/` (or similar s
 
 You'll see chat output:
 ```
-✓ Phase 1 of 3: generate-intent → 9 OQs (3 P1 business, 4 P2 tech, 2 P3 refinement)
+✓ Phase 1 of 3: generate-intent → status: completed, items: 9 OQs (3 P1 business, 4 P2 tech, 2 P3 refinement), blocked: 3
 ```
 
 ## Step 4 — Phase 1.5: Resolve P1 business OQs
 
-If any P1 business OQs exist, mega-sdd pauses chain with:
+On the express default the chain asks the P1 business OQs itself (batched, ≤4 per prompt) and continues; on `--classic` it pauses with `oq_business_p1_unresolved` — say "resolve open questions", then `/mega-sdd --resume`. The classic pause looks like:
 
 ```
 ⏸ Phase 1 paused: 2 P1 business OQs need resolution.
@@ -91,7 +93,7 @@ If any P1 business OQs exist, mega-sdd pauses chain with:
 Say "resolve open questions" to walk these interactively.
 ```
 
-Say "resolve open questions" (or let the halted chain invoke resolve-oq itself). Walks each P1 OQ:
+Either way, each P1 OQ is walked like this:
 
 ```
 OQ-FL-002 [P1] [business / blocking]:
@@ -104,12 +106,14 @@ OQ-FL-002 [P1] [business / blocking]:
   Confidence: HIGH
   
   Options:
-    1. No — show "Booked" only (recommended)
-    2. Yes — show names
-    3. Defer (revisit later)
+    [1] No — show "Booked" only (recommended)
+    [2] Skip
+    [3] Defer
+    [4] Out of scope
+    — Other: free text (e.g. "Yes — show names")
 ```
 
-Pick (1). The resolution lands in the vault (`constraints.md ## Open Questions`, status: resolved). Resume:
+Pick (1). The resolution lands in the vault (`constraints.md ## Open Questions`, status: resolved). On the express default the chain simply continues; on `--classic`, resume:
 
 ```
 /mega-sdd --resume
@@ -123,10 +127,10 @@ After OQ resolution, mega-sdd generates atomic units. For clinic system, expect 
 
 ```
 ▶ Phase 2 of 3: invoking generate-units
-✓ Phase 2 of 3: generate-units → 14 units
+✓ Phase 2 of 3: generate-units → status: completed, items: 14 units, blocked: 0
 ```
 
-Mega-sdd auto-invokes lint + analyze. Each unit:
+On `--classic` the chain also auto-runs lint + analyze here; on the express default ask "lint units" on demand. Each unit:
 - Atomic (~1 PR-sized commit; <300 LOC)
 - Has Anchors citing Next.js patterns
 - Has acceptance_test (Vitest/Playwright)
@@ -153,13 +157,15 @@ Mega-sdd auto-runs `execute-bolts --all --parallel` (single squad in this scenar
 
 ```
 ▶ Phase 3 of 3: invoking execute-bolts (using wave plan)
-  Wave 1 (5 parallel): U-001 U-002 U-003 U-004 U-005
+  Wave 1 (4 parallel): U-001 U-002 U-003 U-004
   ✓ Wave 1 complete in 4 min
-  Wave 2 (5 parallel): U-006 U-007 U-008 U-009 U-010
-  ✓ Wave 2 complete in 5 min
-  Wave 3 (4 parallel): U-011 U-012 U-013 U-014
-  ✓ Wave 3 complete in 4 min
-✓ Phase 3 of 3: execute-bolts → 14/14 bolts complete (0 halts, 13 min total)
+  Wave 2 (4 parallel): U-005 U-006 U-007 U-008
+  ✓ Wave 2 complete in 4 min
+  Wave 3 (4 parallel): U-009 U-010 U-011 U-012
+  ✓ Wave 3 complete in 3 min
+  Wave 4 (2 parallel): U-013 U-014
+  ✓ Wave 4 complete in 2 min
+✓ Phase 3 of 3: execute-bolts → status: completed, items: 14/14 bolts, blocked: 0 (13 min total)
 ```
 
 Total wall-clock for execution: ~13 minutes (vs ~40 min sequential).

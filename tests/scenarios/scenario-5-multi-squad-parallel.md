@@ -3,7 +3,7 @@
 **Time**: ~45 minutes
 **Goal**: Partition work across multiple dev teams (squads); each squad runs independently in parallel.
 
-For projects where multiple teams co-develop on the same vault. Each squad gets its share of units; squads run as independent Claude subagents in parallel; cross-squad coupling forced through explicit interface contracts.
+For projects where multiple teams co-develop on the same vault. Each squad gets its share of units; the main-thread controller loops over squads and dispatches independent units' `bolt-implementer` agents concurrently (depth-1; no squad subagent exists); cross-squad coupling forced through explicit interface contracts.
 
 ## When to use multi-squad mode
 
@@ -80,14 +80,14 @@ Squad partition:
   squad-be:           7 units (backend logic, models, migrations, API)
   squad-fe-web:       6 units (Blade views, forms, Tailwind, JS)
   squad-integrations: 3 units (email, SWIFT messaging adapter, LDAP)
-  squad-unassigned:   2 units (admin utilities; check squads.yaml)
+  squad: default —    2 units (warning; they still execute)
 
-Interface notes generated:
+Interface index emitted (`interfaces/_index.md`); the three notes below are authored by the architects:
   - api-patient-booking.md         (consumed by squad-fe; produced by squad-be)
   - api-doctor-schedule.md         (consumed by squad-fe; produced by squad-be)
   - email-reminder-payload.md      (consumed by squad-integrations; produced by squad-be)
 
-⚠️ 2 units in squad-unassigned — refine squads.yaml or accept as default squad
+⚠️ 2 unrouted units assigned squad: default — refine squads.yaml or accept
 ```
 
 Two unassigned units flag — review squads.yaml; either add new squad or extend existing partition.
@@ -107,8 +107,11 @@ squad: squad-be                            # ← assigned by partition rules
 task_type: create
 target_files:
   - path: app/Http/Controllers/Api/AppointmentController.php
+    operation: create
   - path: routes/api.php
+    operation: modify
   - path: tests/Feature/AppointmentApiTest.php
+    operation: create
 produces_interfaces:                        # ← cross-squad contract
   - api-patient-booking                    # consumed by squad-fe
 ---
@@ -138,12 +141,12 @@ When `auto` invokes `execute-bolts`, multi-squad mode auto-fires:
 
 ```
 ▶ Phase 4 of 4: invoking execute-bolts --per-squad --parallel
-  Spawning 3 Claude subagents (one per declared squad):
-    • squad-be subagent (background)
-    • squad-fe-web subagent (background)
-    • squad-integrations subagent (background)
+  Fan-out over 3 squads (main-thread loop; N implementer agents in flight):
+    • squad-be
+    • squad-fe-web
+    • squad-integrations
   
-  Each subagent runs in parallel; filters units by squad: field.
+  The controller iterates squads and filters units by squad: field; independent units dispatch concurrently.
   
   Pre-flight check: all consumed interfaces have status: ?
     api-patient-booking: status: draft → squad-fe-web HALTS on cross_squad_interface_draft
@@ -165,11 +168,11 @@ In a separate session (or as squad-be lead):
 # .mega-sdd/vaults/<slug>/interfaces/api-patient-booking.md frontmatter:
 ---
 id: api-patient-booking
-producer_squad: squad-be
-consumer_squads: [squad-fe-web]
+producer: squad-be
+consumers: [squad-fe-web]
+kind: api
 status: locked        # ← was: draft
-locked_at: 2026-05-21T14:30:00Z
-locked_by: backend-team-lead
+# locked_at / locked_by: optional, your own bookkeeping
 contract:
   endpoint: POST /api/appointments
   request: { patient_id, doctor_id, service_id, start_time }
@@ -186,21 +189,21 @@ After locking all 3 interfaces, resume the chain:
 /mega-sdd --resume
 ```
 
-Frontend + integrations subagents proceed:
+Frontend + integrations squads proceed:
 
 ```
 ▶ Phase 4 of 4: invoking execute-bolts --per-squad --parallel (resumed)
-  squad-be subagent: continuing... 7 bolts processed
-  squad-fe-web subagent: 6 bolts queued; consumer interfaces NOW locked → execute
-  squad-integrations subagent: 3 bolts queued; execute
+  squad-be: continuing... 7 bolts processed
+  squad-fe-web: 6 bolts queued; consumer interfaces NOW locked → execute
+  squad-integrations: 3 bolts queued; execute
   
-  All 3 subagents running in PARALLEL (concurrent)...
+  Independent units across all 3 squads dispatch concurrently (main-thread loop, depth-1)...
   
-✓ squad-be subagent: 7/7 bolts complete (wave-1: 5 parallel, wave-2: 2 sequential)
-✓ squad-fe-web subagent: 6/6 bolts complete (wave-1: 4 parallel, wave-2: 2 sequential)
-✓ squad-integrations subagent: 3/3 bolts complete (wave-1: 3 parallel)
+✓ squad-be: 7/7 bolts complete (wave-1: 5 parallel, wave-2: 2 sequential)
+✓ squad-fe-web: 6/6 bolts complete (wave-1: 4 parallel, wave-2: 2 sequential)
+✓ squad-integrations: 3/3 bolts complete (wave-1: 3 parallel)
 
-✓ Phase 4 of 4: execute-bolts → 16/16 complete (squad-unassigned 2 deferred per warning)
+✓ Phase 4 of 4: execute-bolts → status: completed, items: 18/18 bolts, blocked: 0 (2 units ran as squad: default)
 ```
 
 ## Step 6 — Verify per squad
@@ -223,10 +226,10 @@ M-booking          7 units    7/7 done    completed
 M-auth             3 units    3/3 done    completed
 M-reminders        3 units    3/3 done    completed
 M-admin-schedule   3 units    3/3 done    completed
-M-utility          2 units    0/2 done    deferred (unassigned squad)
+M-utility          2 units    2/2 done    completed (squad: default)
 ```
 
-Two units in M-utility stayed deferred — either refine squads.yaml + re-run, or accept and run them sequentially solo.
+Two units in M-utility ran under `squad: default` (a warning, not a halt) — refine squads.yaml if they belong to a team.
 
 ## Real-world workflow
 
@@ -245,7 +248,7 @@ cd ~/projects/clinic-app
 ```
 
 The pipeline supports BOTH:
-- **Single-machine** `--per-squad` (spawns N subagents in parallel; faster for solo dev)
+- **Single-machine** `--per-squad` (main-thread loop over squads; independent units' implementer agents run concurrently — faster for solo dev)
 - **Multi-machine** `--squad=<id>` (each dev runs their squad's slice; standard merge workflow)
 
 ## Common pitfalls
@@ -290,13 +293,13 @@ Fix: refine `_meta/squads.yaml`. One squad's match should be more specific (e.g.
 
 ### cross_squad_interface_draft halt
 
-Consumer subagent waiting; producer hasn't locked the interface yet.
+Consumer squad's units wait; producer hasn't locked the interface yet (under `--deep`, the default, the chain first retries with backoff 30/60/120 s ×3 before stopping).
 
-Fix: producer squad reviews + locks (`status: draft` → `status: locked`); add `locked_at` + `locked_by` metadata. Consumer subagent resumes via `--resume`.
+Fix: producer squad reviews + locks (`status: draft` → `status: locked`); optional: your own `locked_at`/`locked_by` notes. The consumer squad resumes via `--resume`.
 
-### Squad-unassigned units
+### Unrouted units (`squad: default`)
 
-Units that didn't match any partition rule. Either:
+Units that didn't match any partition rule get `squad: default` (a warning, not a halt) and still execute. To route them:
 - Refine squads.yaml to claim them (add new owns_* rule)
 - Assign them explicitly: edit unit frontmatter `squad: <existing-squad-id>`
 - Or run them with `execute-bolts --all` after the squad fan-out
@@ -306,7 +309,7 @@ Units that didn't match any partition rule. Either:
 - Multi-squad mode partitions atomic units across teams via `_meta/squads.yaml`
 - Cross-squad direct deps FORBIDDEN — must route through interface notes
 - Interface lock gate prevents premature consumer coupling to draft producer contracts
-- `--per-squad --parallel` spawns N Claude subagents for solo-dev parallelism
+- `--per-squad --parallel` loops squads on the main thread and dispatches independent units' implementer agents concurrently (no squad subagent)
 - `--squad=<id>` lets each dev team run their slice independently on their own machine
 - Same vault + atomic units + parallel execution = lower merge conflict risk
 

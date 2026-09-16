@@ -6,7 +6,7 @@
 
 ## What you'll learn
 
-- mega-sdd uses a curated catalog (19 rows: role × tier) for subagent dispatches
+- mega-sdd uses a curated catalog (15 rows: role × tier) for subagent dispatches
 - 2 ways to override: CLI flag, project config
 - When to escalate (opus) vs. when to drop (haiku)
 
@@ -15,7 +15,7 @@
 By default mega-sdd picks tier per role per `plugins/mega-sdd/references/model-tiers.md`:
 
 - 2 roles default **opus**: `code-quality-reviewer`, `security-reviewer` (reviewer lenses stay frontmatter-pinned — see the Scope note under Example 1)
-- 11 roles default **sonnet**: deep-scan extractors, `extract-intelligence-module` (per-module PRD-kontrak extraction; synthesis runs on the MAIN thread — no dispatched role), `implementer`, `spec-reviewer`, the remaining panel lenses, etc.
+- 12 roles default **sonnet**: deep-scan extractors, `extract-intelligence-module` (per-module PRD-kontrak extraction; synthesis runs on the MAIN thread — no dispatched role), `implementer`, `spec-reviewer`, `resolution-verifier`, `extract-intelligence-verify`, the remaining panel lenses, etc.
 - 0 roles default **haiku** — the haiku rung lives in per-unit routing (`bolt-implementer` on a verify-only unit), not in the catalog (the 7.13.0 cull removed the dead haiku rows)
 - 1 role is **inherit**: `bolt-implementer` (operator-tiered — see Example 5)
 
@@ -141,5 +141,5 @@ handoff metadata.model_tiers + model_tier_sources blocks have the provenance tra
 
 ## See also
 
-- `plugins/mega-sdd/references/model-tiers.md` — full catalog (14 rows × tier + rationale; numbering gaps are retired rows)
+- `plugins/mega-sdd/references/model-tiers.md` — full catalog (15 rows × tier + rationale; numbering gaps are retired rows)
 - `docs/mega-sdd/reading-map.md` — Stage 7 cross-cutting (where overrides live)

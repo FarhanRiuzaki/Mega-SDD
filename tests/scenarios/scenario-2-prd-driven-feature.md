@@ -5,6 +5,8 @@
 
 You'll use the [sample clinic PRD](sample-prd-clinic.md) on an existing Next.js project. Mega-sdd will scan the codebase, bind PRD claims against it, and generate units that respect existing patterns.
 
+This walkthrough follows the classic chain (the DEFAULT for every 8.x release); the opt-in `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
+
 ## Prerequisites
 
 - Mega-sdd installed ([install check](README.md#before-you-start--install-check))
@@ -57,7 +59,7 @@ Mega-sdd extracts vault from PRD. Most info auto-parsed; minimal Q&A. Outputs:
 - ~8 OQs (per PRD's "Open questions" section + auto-classifier additions)
 
 ```
-✓ Phase 1 of 4: generate-intent → vault: 9 OQs (4 P1 business, 3 P2 tech, 2 P3)
+✓ Phase 1 of 4: generate-intent → status: completed, items: 9 OQs (4 P1 business, 3 P2 tech, 2 P3), blocked: 4
 ```
 
 ## Step 4 — Resolve P1 business OQs
@@ -70,13 +72,13 @@ OQ-001 [P1] [business / blocking]:
   
   ⚠️ High-stakes business OQ. Review carefully.
   
-  No confident recommendation (no project memory for this domain yet).
+  No confident recommendation (no citable source in the vault / KB for this domain).
   
   Options:
-    1. Yes — HIPAA-compliant (US clinic)
-    2. Yes — GDPR-compliant (EU clinic)
-    3. No — non-regulated jurisdiction
-    4. Defer to legal team
+    [1] Skip
+    [2] Defer
+    [3] Out of scope
+    — Other: your answer (e.g. "GDPR-compliant, EU clinic")
 ```
 
 Pick based on your context.
@@ -95,7 +97,7 @@ Then binding:
 
 ```
 ▶ Phase 2 of 4: invoking bind-codebase --express
-✓ Phase 2 of 4: bind-codebase → 28 claims, 0 conflicts
+✓ Phase 2 of 4: bind-codebase → status: completed, items: 28 claims, blocked: 0 conflicts
   Implementation State Map:
     NEW: 22 (greenfield additions for new feature)
     IMPLEMENTED: 4 (existing User model, Auth middleware)
@@ -111,7 +113,7 @@ Two PARTIAL_FIELDS_MISSING claims signal the field-level diff the binding pass c
 
 ```
 ▶ Phase 3 of 4: invoking generate-units
-✓ Phase 3 of 4: generate-units → 12 units
+✓ Phase 3 of 4: generate-units → status: completed, items: 12 units, blocked: 0
 
 Module breakdown:
   M-auth (3 units)         — extends existing User model for patient role
@@ -126,7 +128,7 @@ Inspect units that extend existing code:
 cat .mega-sdd/vaults/<slug>/units/U-001.md
 ```
 
-You'll see:
+You'll see (illustrative — a Laravel-shaped unit; on the Next.js sample expect `src/db/schema.ts`, a drizzle migration and `tests/…test.ts`):
 
 ```markdown
 ---
@@ -155,16 +157,7 @@ target_files:
 - database/migrations/2014_10_12_create_users_table.php:14 — base schema
 
 ## Hard rules
-\`\`\`yaml
-id: do-not-modify-existing-users-cols
-language: php
-rule:
-  pattern: $$$
-  inside:
-    file: database/migrations/2014_10_12_create_users_table.php
-fix: forbidden
-message: Base users table is locked; new fields go in separate migration
-\`\`\`
+- DO NOT modify database/migrations/2014_10_12_create_users_table.php
 ```
 
 The unit knows exactly what fields to ADD (phone, role) while preserving existing (email, password). Bolt won't accidentally rewrite the base table.
@@ -181,7 +174,7 @@ The unit knows exactly what fields to ADD (phone, role) while preserving existin
   ✓ Wave 3 complete
   Wave 4 (2 sequential): U-004 U-012
   ✓ Wave 4 complete
-✓ Phase 4 of 4: execute-bolts → 12/12 complete (0 halts; 8 min total)
+✓ Phase 4 of 4: execute-bolts → status: completed, items: 12/12 bolts, blocked: 0 (8 min total)
 ```
 
 Atomic git commits, one per unit. Each commit:
@@ -210,7 +203,7 @@ Want the tool-agnostic `AGENTS.md` export (project shape, test commands, convent
 
 ## Common pitfalls
 
-### Phase 3 halts on bind_conflict
+### Phase 2 halts on bind_conflict
 
 PRD says X, code says Y, mega-sdd can't reconcile automatically.
 
@@ -224,17 +217,16 @@ blocker:
       - id: C-007
         vault_claim: "Staff auth uses Better Auth sessions"
         codebase_reality: "Auth uses Auth.js / NextAuth (existing pattern)"
-        suggested_resolutions:
-          - KEEP_CODE — preserve existing NextAuth session auth
-          - KEEP_VAULT — migrate to Better Auth
-          - SPLIT — keep NextAuth for now; migrate to Better Auth in a follow-up
+        suggested_action: KEEP_CODE
 ```
+
+The actions at the walk: KEEP_CODE — preserve existing NextAuth session auth; KEEP_VAULT — migrate to Better Auth; SPLIT — keep NextAuth for now, migrate to Better Auth in a follow-up.
 
 Say "resolve open questions --binding" (routes to resolve-oq; a converging `--deep` chain also enters it itself). Walks each conflict interactively. Pick KEEP_VAULT if PRD trumps code; KEEP_CODE if existing pattern is canonical; SPLIT for nuanced cases.
 
 After resolution: `/mega-sdd --resume`.
 
-### Phase 5 halts on hard_rule_violated
+### Phase 4 halts on hard_rule_violated
 
 A bolt modified a locked file. Detect-after: the bolt commit already landed; the post-flight scan halts the run and the B1 gate blocks every further `execute-bolts` until the flagged commit is fixed-forward or reverted.
 
@@ -248,13 +240,14 @@ blocker:
 ```
 
 Options:
-1. Revert: `git checkout database/migrations/2014_10_12_create_users_table.php` + re-run unit
+1. Revert: `git revert <bolt-commit>` (or fix forward), then re-run the post-flight scan
 2. Edit unit: change Hard Rule OR move logic to new migration
-3. Force: say "execute bolts U-001 --force" (accepts risk)
+
+There is no accept-risk path — the B1 gate stays closed until a passing `postflight.json` is recorded.
 
 ### grounding_confidence: LOW units
 
-If the chain lint pass shows LOW units, review them before bolts. Reasons:
+If the lint pass (`--classic` auto; express: say "lint units") shows LOW units, review them before bolts. Reasons:
 - Vault claim too vague
 - Codebase-map gaps (some files not indexed)
 - Anchors point to non-existent file

@@ -18,7 +18,7 @@ Halts are mega-sdd's safety net — they fire when anti-hallucination rails dete
 | `hard_rule_unparseable` | Bolt's Hard Rule has bad syntax | execute-bolts pre-flight |
 | `cross_squad_interface_draft` | Consumer waiting for producer to lock interface | execute-bolts --per-squad |
 | `module_blocked_by` | Prerequisite module not complete | execute-bolts --module=X |
-| `oq_business_p1_unresolved` | P1 business OQ blocking downstream | bind-codebase (strict mode) |
+| `oq_business_p1_unresolved` | P1 business OQ blocking downstream | orchestrate-flow oq_gate (after generate-intent) |
 | `quality_gate_failed` | a module's per-module quality gate failed twice | extract-intelligence |
 
 Each halt provides a YAML `blocker` artifact with `next_action` field telling you exactly what to do.
@@ -51,10 +51,10 @@ Find the `## Hard rules` section. Add a too-strict rule:
 ```yaml
 id: response-shape-strict
 language: php
+files: ["**/app/Http/Controllers/Api/LoginController.php"]
 rule:
   pattern: |
     return response()->json($$$);
-fix: forbidden-when-modified
 message: ALL response() calls are locked  # ← intentionally over-strict
 ```
 
@@ -67,7 +67,7 @@ execute-bolts U-001
 ### The halt fires
 
 ```
-▶ Invoking U-001 via superpowers...
+▶ Dispatching bolt-implementer for U-001…
   Pre-flight: 2 Hard Rules parsed, snapshots taken
   Bolt: implementing nama field validation...
   Acceptance test: passing
@@ -108,20 +108,21 @@ Remove the over-strict rule OR scope it more narrowly:
 ```yaml
 id: response-shape-strict-success
 language: php
+files: ["**/app/Http/Controllers/Api/LoginController.php"]
 rule:
   pattern: |
     return response()->json(['token' => $$$]);
-fix: forbidden-when-modified
 message: 200-success response shape (with token key) is locked
 ```
 
 Now the rule only locks the success path; new 401 error is allowed.
 
-Resume bolt:
+Commit the rule edit, re-run the post-flight scan, and the gate opens (the bolt commit already landed — no re-execution needed):
 
 ```bash
-execute-bolts U-001
-# Re-runs pre/post-flight; rule passes; commits
+git commit -am "fix(U-001): correct hard rule"
+bash <plugin>/scripts/run-postflight-scan.sh --cwd=. --unit=U-001   # → status: pass
+/mega-sdd --resume
 ```
 
 ### Option B: Revert the bolt's code change (rare)
@@ -129,15 +130,15 @@ execute-bolts U-001
 If bolt actually went wrong + rule was correct:
 
 ```bash
-git checkout app/Http/Controllers/Api/LoginController.php
-# Or just the offending hunks via git checkout -p
+git revert <bolt-commit>   # or fix forward
+bash <plugin>/scripts/run-postflight-scan.sh --cwd=. --unit=U-001
 
 # Re-think the unit's task — maybe Migration notes were wrong
 # Edit unit body, then:
 execute-bolts U-001
 ```
 
-### Option C: Force commit + accept risk (last resort)
+### Option C: Skip the scan for THIS run (broken tool / known false positive) — BLOCKING stays blocking
 
 If you know the rule was wrong but don't want to edit it:
 
@@ -145,18 +146,19 @@ If you know the rule was wrong but don't want to edit it:
 execute-bolts U-001 --force-skip-postflight
 ```
 
-⚠️ Warning logged to memory. Use sparingly — bypasses the safety rail.
+⚠️ Any use is logged in the handoff YAML + `_summary.md`. Use sparingly — DISCOURAGED; BLOCKING remains BLOCKING.
 
-### Option D: Skip this unit + continue chain
+### Option D: Revert the bolt, then resume
 
 If unit isn't critical:
 
 ```bash
-git checkout app/Http/Controllers/Api/LoginController.php   # revert
-/mega-sdd --resume    # continues from next unit
+git revert <bolt-commit>
+bash <plugin>/scripts/run-postflight-scan.sh --cwd=. --unit=U-001
+/mega-sdd --resume    # the unit is re-dispatched
 ```
 
-`/mega-sdd --resume` skips a reverted unit on its own.
+After the revert + a passing post-flight scan, `/mega-sdd --resume` re-dispatches the unit.
 
 ## Scenario walkthrough — `bind_conflict`
 
@@ -177,13 +179,11 @@ blocker:
       - id: C-007
         vault_claim: "Auth uses Bearer tokens"
         codebase_reality: "Auth uses session cookies (Laravel default)"
-        suggested_resolutions:
-          - KEEP_VAULT — migrate code to Bearer auth (high effort)
-          - KEEP_CODE — preserve session auth; update vault
-          - DEFER — flag as future work; mark this claim deferred
-          - SPLIT — Sanctum for /api/*; sessions for web
+        suggested_action: SPLIT
   next_action: "Run resolve-oq --binding"
 ```
+
+The four actions at the walk: KEEP_VAULT — migrate code to Bearer auth (high effort); KEEP_CODE — preserve session auth, update vault; DEFER — flag as future work; SPLIT — Sanctum for /api/*, sessions for web.
 
 ### Recovery
 
@@ -207,13 +207,13 @@ CONFLICT C-007:
   Confidence: HIGH
   
   Options:
-    1. SPLIT (recommended) — Sanctum API + session web
-    2. KEEP_VAULT — migrate all to Bearer (high effort)
-    3. KEEP_CODE — preserve session auth; update vault
-    4. DEFER — handle later
+    [S] SPLIT (recommended) — Sanctum API + session web
+    [K] KEEP_VAULT — migrate all to Bearer (high effort)
+    [C] KEEP_CODE — preserve session auth; update vault
+    [D] DEFER — handle later
 ```
 
-Pick (1). The resolution lands in the vault (binding annotation + `constraints.md ## Open Questions`). Resume:
+Pick [S]. The resolution lands in binding.md (Resolution line; DEFER → binding.md Open Questions table). Resume:
 
 ```
 /mega-sdd --resume
@@ -262,7 +262,7 @@ cat .mega-sdd/knowledge-base/.extract-census-state.json
 # Completeness-gate state (present once validate-extract-census.sh has run)
 ```
 
-If the PRD is actually good enough: accept with QA notes recorded (loses some rigor). If not: check whether the module's `source_files` actually carry the logic — a mis-split census proposal means **Re-scope**, not another re-prompt.
+If the PRD is good enough, answer **Re-prompt** with that note as the extra direction — there is no accept-as-is option. If not: check whether the module's `source_files` actually carry the logic — a mis-split census proposal means **Re-scope**, not another re-prompt.
 
 There is NO auto-resume after Abort: the next `extract-intelligence` run starts again from the census (idempotent — module PRDs that already passed stay on disk, and the completeness gate recomputes coverage from the artifacts, never from the conversation).
 
@@ -320,13 +320,13 @@ Same halt fires after `--resume`. You haven't fixed the underlying issue. Read t
 execute-bolts U-XXX --force-skip-postflight
 ```
 
-⚠️ Bypasses safety rail. Use ONLY when you've manually verified the code change is intentional + acceptable. Logged to memory for audit.
+⚠️ Bypasses safety rail. Use ONLY when you've manually verified the code change is intentional + acceptable. Logged in the handoff YAML + `_summary.md`; BLOCKING remains BLOCKING.
 
 ---
 
 # Additional halt walkthroughs
 
-These 10 high-frequency halt walkthroughs cover the gap between the original 3 walkthroughs above and the halt families in `references/halt-families/` (per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`). These complement the universal recovery patterns documented above — each walkthrough shows the trigger, halt envelope, and recovery options.
+These 14 high-frequency halt walkthroughs cover the gap between the original 3 walkthroughs above and the halt families in `references/halt-families/` (per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`). These complement the universal recovery patterns documented above — each walkthrough shows the trigger, halt envelope, and recovery options.
 
 ## Scenario walkthrough — `handoff_missing`
 
@@ -352,7 +352,7 @@ Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol §hand
 
 ## Scenario walkthrough — `artifact_missing`
 
-**When you'll see it.** A sub-skill emits a handoff YAML with `artifacts: [paths]` listing files that don't exist on disk (because the producer crashed mid-write OR fabricated paths). Orchestrator's step `b.vii` existence-checks every path BEFORE consuming.
+**When you'll see it.** A sub-skill emits a handoff YAML with `artifacts: [paths]` listing files that don't exist on disk (because the producer crashed mid-write OR fabricated paths). The handoff validator (step `b.script`) existence-checks every path BEFORE consuming.
 
 **Example halt envelope:**
 
@@ -389,7 +389,7 @@ execute-bolts U-007 --rollback   # applies rollback_hints[] in reverse order
 execute-bolts U-007              # fresh re-run from clean slate
 ```
 
-Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol §partial_state_corrupt`; `execute-bolts/SKILL.md §Saga compensating actions`.
+Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol §partial_state_corrupt`; `execute-bolts/SKILL.md §Partial-state, resume + saga rollback` (+ `references/partial-state-and-saga.md`).
 
 ## Scenario walkthrough — `oq_blocker`
 
@@ -432,11 +432,11 @@ options: ["supersede", "keep_vault", "capture_both"]
 2. Reducing the unit's `vault_source` array to fewer sections
 3. (Last resort) editing the constitution to merge or shorten clauses
 
-Cross-refs: `execute-bolts/SKILL.md §Step 4.5.a.5 T2 Section Priority + Truncation`.
+Cross-refs: `execute-bolts/references/context-enrichment.md §T2 section priority + truncation cascade`.
 
 ## Scenario walkthrough — `provenance_missing`
 
-**When you'll see it.** Bolt subagent committed code without the provenance trailer (`# mega-sdd: unit=U-XXX bolt=<sha>`). Post-flight scan catches this.
+**When you'll see it.** Bolt subagent committed code without the provenance trailer (two lines: `Generated by mega-sdd execute-bolts <version>` / `Unit: U-XXX · provenance: <bolts/U-XXX/dispatch-prompt.md>`). Post-flight scan catches this.
 
 **Recovery:** edit each modified file to add the trailer; amend the bolt commit:
 
@@ -447,7 +447,7 @@ git commit --amend --no-edit
 execute-bolts U-007 --resume   # post-flight will pass now
 ```
 
-Cross-refs: `bolt-dispatch-prompt.md §Provenance trailer`.
+Cross-refs: `agents/bolt-implementer.md §Provenance trailer`.
 
 ## Scenario walkthrough — `bind_conflict_constitution_violation`
 
@@ -472,7 +472,7 @@ details:
 
 ## Scenario walkthrough — `cross_squad_dep_invalid`
 
-**When you'll see it.** A unit declares `consumes_interface: <ref>` from a different squad, but the producer squad hasn't locked that interface yet OR the ref points to a non-existent interface.
+**When you'll see it.** A unit's `depends_on` points at a unit in another squad (cross-squad coupling must route through `consumes_interfaces`; a not-yet-locked interface is `cross_squad_interface_draft`, a dangling ref is `interface_ref_missing`).
 
 **Recovery:**
 
@@ -484,10 +484,10 @@ execute-bolts U-<producer-unit> --squad=producer-squad
 /mega-sdd --converge --max-cycles=3
 
 # Option C: fix the ref if it points to wrong interface
-# Edit unit's consumes_interface field; re-run generate-units --refresh
+# Edit unit's consumes_interfaces field; re-run generate-units --refresh
 ```
 
-Cross-refs: `generate-units/references/cross-squad-interfaces.md`.
+Cross-refs: `generate-units/references/decomposition-rails.md §Squad assignment` + `generate-intent/references/squad-partition.md`.
 
 ---
 
@@ -575,13 +575,14 @@ which <tool>                  # verify path
 
 The `quality_gate_failed` halt carries a `subtype:` discriminator. Recovery forks on subtype.
 
-### `type: pdf_render_failed` (emit-fsd)
+### `subtype: pdf_render_failed` (emit-fsd)
 
 ```yaml
 blocker:
-  type: pdf_render_failed
+  type: quality_gate_failed
   source_skill: emit-fsd
   details:
+    subtype: pdf_render_failed
     md2pdf_stderr_tail: "md2pdf: pandoc HTML render failed"
 ```
 
@@ -602,7 +603,7 @@ Internal bug — fsd-template.md has a slot marker that section-mapping.md has n
 /mega-sdd:emit fsd --sections=1,2,3,4,5,6,7,8,10  # skip section 9 (or whichever is failing)
 ```
 
-### `type: starterkit_metrics_inconsistent` (orchestrate-flow / generate-units)
+### `subtype: starterkit_metrics_inconsistent` (orchestrate-flow / generate-units)
 
 generate-units emitted `units_with_starterkit_rules > 0` BUT scan-codebase's starterkit-context.yaml flags `partial: true`. Rules may cite incomplete framework conventions.
 
@@ -649,7 +650,7 @@ generate-intent ./prd.md --scope=FE
 # Option 2: edit PRD frontmatter to add missing scope
 # Add to PRD frontmatter:
 #   scopes:
-#     - id: BE
+#     BE:
 #       name: Backend
 # Then re-run
 generate-intent ./prd.md --scope=BE
@@ -667,7 +668,7 @@ blocker:
     user_action: rejected
 ```
 
-Recovery: user explicitly rejected the AI retrofit (auto-add scopes block). 3 paths:
+Recovery (interactive path only — the express `--auto` chain records `scope_inferred: single` instead): user explicitly rejected the AI retrofit (auto-add scopes block). 3 paths:
 
 ```bash
 # Option 1: manually edit PRD frontmatter to add scopes block
@@ -689,14 +690,14 @@ blocker:
   source_skill: generate-intent
   details:
     overall_confidence: LOW
-    retrofit_preview_path: "<project>/.mega-sdd/retrofit-preview.md"
+    retrofit_preview_path: "<prd>.retrofit.md"
 ```
 
 Recovery: AI retrofit subagent unsure about scope inference. User reviews:
 
 ```bash
 # Inspect what retrofit proposes
-cat <project>/.mega-sdd/retrofit-preview.md
+cat <prd>.retrofit.md
 
 # Then choose:
 # (a) Accept anyway despite LOW confidence — re-run and accept at the interactive prompt:
@@ -773,7 +774,7 @@ cat <vault>/DRIFT-REPORT.md
 detect-drift
 
 # OPTION: if constitution clause itself is wrong (rare), update it:
-# Edit <vault>/_meta/constitution.md §B-007
+# Edit <vault>/constitution.md §B-007
 # Re-run: detect-drift
 # (Constitution edits require sign-off per CLAUDE.md governance)
 ```
@@ -829,7 +830,7 @@ blocker:
     drift_evidence: "added field `last_login_ip` without locking constitution amendment"
 ```
 
-Recovery (propose-and-confirm override path):
+Recovery (override-only):
 
 ```bash
 # Option 1: revert bolt changes (locked entity protected by design)
@@ -837,9 +838,9 @@ git diff HEAD <vault>/bolts/U-007/preflight.json   # see what bolt wrote
 git checkout <pre-bolt-state>
 
 # Option 2: amend constitution to allow drift (requires explicit user approval)
-# Edit <vault>/_meta/constitution.md — explicitly mark src/auth/User.php as UNLOCKED for this field
+# Edit <vault>/constitution.md — explicitly mark src/auth/User.php as UNLOCKED for this field
 # Re-run bolt:
-execute-bolts U-007 --force   # audit-logged
+execute-bolts U-007 --force   # re-executes the completed unit
 ```
 
 ### `self_assessment_missing`

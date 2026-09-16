@@ -2,8 +2,10 @@
 
 Step-by-step walkthroughs for common mega-sdd use cases. Use these if you're **new to mega-sdd** and want a guided first experience.
 
+These walkthroughs follow the classic chain (the DEFAULT for every 8.x release); the opt-in `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
+
 Each scenario:
-- Takes 5-30 minutes wall-clock
+- Takes 5–60 minutes wall-clock (legacy rebuilds vary with the census)
 - Includes sample inputs you can copy-paste
 - Shows expected outputs at each phase
 - Covers common pitfalls + recovery paths

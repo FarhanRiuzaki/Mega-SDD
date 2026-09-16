@@ -3,6 +3,8 @@
 **Time**: ~20 minutes
 **Goal**: Add a missing field to an existing model. Demonstrates PARTIAL_FIELDS_MISSING auto-detection — the "PRD says (nip, nama, password), code has (nip, password), skill should know to add `nama`" use case.
 
+This walkthrough follows the classic chain (the DEFAULT for every 8.x release); the opt-in `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
+
 ## Prerequisites
 
 - Mega-sdd v7.4+
@@ -106,7 +108,7 @@ After `bind-codebase` completes:
 
 ```
 ▶ Phase 2 of 4: invoking bind-codebase
-✓ Phase 2 of 4: bind-codebase → 2 claims, 0 conflicts
+✓ Phase 2 of 4: bind-codebase → status: completed, items: 2 claims, blocked: 0 conflicts
   Implementation State Map:
     C-001 (POST /api/login endpoint exists)            | CONFIRMED | IMPLEMENTED | LoginController.php:12 | high
     C-002 (POST /api/login accepts {nip, nama, password}) | CONFIRMED | PARTIAL_FIELDS_MISSING | LoginController.php:15 | high
@@ -119,7 +121,7 @@ The KEY moment: bind-codebase detected that **endpoint exists but is missing the
 
 ```
 ▶ Phase 3 of 4: invoking generate-units
-✓ Phase 3 of 4: generate-units → 1 unit
+✓ Phase 3 of 4: generate-units → status: completed, items: 1 unit, blocked: 0
 ```
 
 Inspect the unit:
@@ -174,26 +176,13 @@ match stored user.name (case-insensitive).
 
 ## Hard rules
 \`\`\`yaml
-id: do-not-modify-token-generation
-language: php
-rule:
-  pattern: |
-    $token = $user->createToken($$$);
-  inside:
-    file: app/Http/Controllers/Api/LoginController.php
-  not:
-    matches:
-      pattern: $$$createToken('login')$$$
-message: Token generation logic locked
-\`\`\`
-
-\`\`\`yaml
 id: response-shape-locked
 language: php
+files: ["**/app/Http/Controllers/Api/LoginController.php"]
 rule:
-  pattern: |
-    return response()->json(['error' => $$$], 401);
-fix: forbidden-when-modified
+  pattern: "response()->json(['error' => $MSG], $CODE)"
+  not:
+    pattern: "response()->json(['error' => 'Invalid credentials'], 401)"
 message: 401 response format preserved (security: no field disclosure)
 \`\`\`
 
@@ -234,21 +223,20 @@ The unit is COMPLETE and CONTEXTUAL. Bolt knows:
 
 ```
 ▶ Phase 4 of 4: invoking execute-bolts
-  Pre-flight: snapshot LoginController.php sha256, snapshot token gen pattern
+  Pre-flight: parse hard rules (v2 ast-grep), snapshot LoginController.php sha256
   Running superpowers TDD...
   ✓ Test added (tests/Feature/LoginExtensionTest.php)
   ✓ Implementation: nama field validated in LoginController.php
-  Post-flight: Hard Rule do-not-modify-token-generation → PASS (token gen unchanged)
   Post-flight: response-shape-locked → PASS (401 response preserved)
-  ✓ Commit: "feat: validate nama field on POST /api/login (extend)"
-✓ Phase 4 of 4: execute-bolts → 1/1 complete
+  ✓ Commit: "feat(U-001): Add nama field to login endpoint"
+✓ Phase 4 of 4: execute-bolts → status: completed, items: 1/1 bolts, blocked: 0
 ```
 
 ## Step 5 — Verify
 
 ```bash
 git log --oneline -2
-# baseline + "feat: validate nama field on POST /api/login (extend)"
+# baseline + "feat(U-001): Add nama field to login endpoint"
 
 git diff HEAD~1 app/Http/Controllers/Api/LoginController.php
 # Should show:
@@ -296,7 +284,7 @@ brew install ast-grep
 #   "generate units --refresh"
 ```
 
-### Hard rule violation in pre-flight
+### Hard rule violation at post-flight
 
 If you wrote your unit's Hard rules manually and bolt fails:
 
@@ -311,7 +299,7 @@ blocker:
 
 Either:
 - Adjust Hard Rule (rule too strict)
-- Revert code change (`git checkout app/Http/Controllers/Api/LoginController.php`)
+- Revert: `git revert <bolt-commit>` (or fix forward), then re-run the post-flight scan
 - Edit unit + re-run bolt
 
 ### Existing tests fail after extension

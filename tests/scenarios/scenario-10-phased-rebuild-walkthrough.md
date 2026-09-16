@@ -4,12 +4,14 @@
 **When to use:** legacy codebase rebuild you want to land module-by-module instead of all at once
 **Prerequisites:** plugin v7.6+; existing legacy codebase OR willingness to use sample
 
+The KB-born rebuild is classic-only: `plan` does not accept `--kb`.
+
 > Concept guide for the whole journey (including hand-off + sync after the last tranche): [`docs/mega-sdd/revamp-journey.md`](../../docs/mega-sdd/revamp-journey.md).
 
 ## What you'll learn
 
 - How the census proposes the module split — **module is the phasing unit**
-- Where the recommended rebuild order lives (KB README module quick-reference, derived from `depends_on`)
+- Where the recommended rebuild order lives (KB README module quick-reference, derived from `rebuild_after`)
 - How to scope each vault to the module(s) you're building NOW (and keep the rest honest as OQs)
 - Why `--phase=N` survives only for pre-existing numbered-tree KBs
 
@@ -44,7 +46,7 @@ flowchart TD
 
 The census script enumerates the code files (logs/backups/data excluded by construction) and proposes a module split; with >1 module proposed you confirm the split once (**Pakai pecahan ini** / **Ubah** / **Stop**), then one `domain-extractor` agent extracts each module — the field replay measured the census itself at 0.13s, and a single-module legacy runs on the main thread with zero dispatches.
 
-Output: `.mega-sdd/knowledge-base/` with `census.json` + `modules/<domain>.prd.md` (one PRD-kontrak per module) + `README.md` — whose **module quick-reference table carries the recommended rebuild order** (from `depends_on`). That table IS the phase plan.
+Output: `.mega-sdd/knowledge-base/` with `census.json` + `modules/<domain>.prd.md` (one PRD-kontrak per module) + `README.md` — whose **module quick-reference table carries the recommended rebuild order** (from `rebuild_after`). That table IS the phase plan.
 
 Verify:
 ```bash
@@ -97,7 +99,7 @@ NEW vault at `.mega-sdd/vaults/<slug-2>/` scoped to the next module(s); out-of-s
 
 ## Pass criteria
 
-- KB README module quick-reference table present, one row per module, with recommended rebuild order (derived from `depends_on`)
+- KB README module quick-reference table present, one row per module, with recommended rebuild order (derived from `rebuild_after`)
 - Each tranche's vault is a distinct `.mega-sdd/vaults/` subdirectory
 - Out-of-scope modules appear as explicit constraints/OQs in the scoped vault (never silently dropped)
 - `--phase=N` against a PRD-kontrak KB logs "PRD-kontrak KB has no phase lane (module = phasing unit); flag ignored" and proceeds — never halts

@@ -5,6 +5,8 @@
 
 This scenario assumes **nothing**. If you've never opened Claude Code — or never used an AI coding tool at all — start here. If Claude Code is already installed and working, skip to [Scenario 1](scenario-1-greenfield-from-idea.md).
 
+This walkthrough follows the classic chain (the DEFAULT for every 8.x release); the opt-in `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
+
 ## What you'll need
 
 - A computer running **macOS, Linux, or Windows** (on Windows, WSL is the smoothest path — see the [platform support table](../../plugins/mega-sdd/references/tooling-install.md)).
@@ -110,7 +112,7 @@ If it pauses mid-run, that's a **halt** — a deliberate safety stop, not a cras
 | **PRD** | A requirements document — "what we want built". Mega-sdd accepts one, or just a sentence. |
 | **Vault** | The structured spec mega-sdd writes from your PRD/idea, with every claim cited to its source. |
 | **Open Question (OQ)** | Anything the spec can't prove becomes a question for you — never a silent guess. |
-| **Binding** | (Brownfield only) Checking the spec against your *real* code before generating tasks. |
+| **Binding** | (Brownfield only) Checking the spec against your *real* code before generating tasks (classic lane; the opt-in `--lite` lane binds every unit just-in-time at dispatch). |
 | **Unit** | One small, well-defined task — about one pull request of work. |
 | **Bolt** | An executed unit: code + passing tests, committed to git. |
 | **Halt** | A deliberate pause when something genuinely needs a human. Resume with `--resume`. |
