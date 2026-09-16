@@ -1,7 +1,7 @@
 ---
 framework: remix
 framework_version_range: "2.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_priority: 50  # P2 matcher: lower wins — starterkit variants/meta-frameworks precede their substrates
 detection_signature:
@@ -110,6 +110,15 @@ HARD_RULE: `app/root.tsx` MUST export a default component rendering `<html>`, `<
   rule_type: LOCATION_RULE
   rationale: Remix requires root.tsx as the shell of the entire application; omitting Outlet breaks all child route rendering
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: TSDoc/JSDoc — **read by**: `none by default` — Remix reads no comment (`meta`, `links`, `handle` exports carry route metadata); TypeScript types carry the contract; `eslint-plugin-jsdoc` when configured; in a JavaScript project with `checkJs` JSDoc types ARE the type system. A full block only where one of these reads it, or on a module consumed outside this app.
+- **Skip**: route modules whose file path + `loader`/`action` exports say it; components whose props type + name say it; getters/setters/constructors; `@param`/`@returns` repeating TypeScript types; a comment that repeats the export name.
+- **Write**: an `action`'s side effect or redirect contract (what mutates, where it lands); a `loader`'s caching-header choice; why a component defers (`defer`/`Await`) or streams; a workaround for a nested-route revalidation edge.
+- **Names carry the meaning**: predicates `isSubmitting`, `hasError`, `canRetry`; verb-first services (`createOrder`, `fetchPendingInvoices`); plural collections (`activeOrders`); `handleX`/`onX` is the event idiom and `handle` the route export — not vague names here; never `data`, `temp`, `obj`.
 
 ## Security idioms
 

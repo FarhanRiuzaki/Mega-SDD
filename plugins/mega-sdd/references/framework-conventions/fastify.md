@@ -1,7 +1,7 @@
 ---
 framework: fastify
 framework_version_range: "4.x — 5.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_signature:
   package_manifest: package.json
@@ -99,6 +99,15 @@ HARD_RULE: process.env MUST NOT be accessed outside src/config/ or the app entry
   rule_type: CUSTOM
   rationale: Direct process.env access in services or route handlers makes config untestable and breaks 12-factor isolation
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: JSDoc/TSDoc — **read by**: the TypeScript checker in JavaScript projects with `checkJs` (JSDoc types ARE the type system there); `eslint-plugin-jsdoc` when configured; `@fastify/swagger` builds OpenAPI from the route `schema` (`schema.description`, `schema.summary`), never from comments — API documentation lives in the schema object. A full block only where one of these reads it, or on public API consumed outside this plugin.
+- **Skip**: route handlers whose `schema` + URL say it; plugins with a self-explanatory name; getters/setters/constructors; `@param`/`@returns` repeating TypeScript types; a comment that restates `schema.description`.
+- **Write**: the JSDoc types a `checkJs` project needs; a plugin's encapsulation/decoration contract (what it decorates, when it must be registered); a hook's ordering assumption (`onRequest` vs `preHandler`); a reply serialization side effect.
+- **Names carry the meaning**: predicates `isAuthenticated`, `hasScope`, `canRetry`; verb-first services (`createOrder`, `fetchPendingInvoices`); plural collections (`activeSessions`); plugins named for what they decorate (`authPlugin`, `dbPlugin`); never `data`, `temp`, `obj`, `handle`, `process`.
 
 ## Security idioms
 

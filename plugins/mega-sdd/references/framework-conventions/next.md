@@ -1,7 +1,7 @@
 ---
 framework: next
 framework_version_range: "14.x — 15.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_priority: 50  # P2 matcher: lower wins — starterkit variants/meta-frameworks precede their substrates
 detection_signature:
@@ -119,6 +119,15 @@ HARD_RULE: The root layout MUST be app/layout.tsx and MUST include <html> and <b
   rule_type: LOCATION_RULE
   rationale: Next.js requires a root layout that wraps all routes and supplies the html/body shell
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: TSDoc/JSDoc — **read by**: `none by default` — Next.js reads no comment (metadata comes from `export const metadata`, config from `next.config`); TypeScript types carry the contract; `eslint-plugin-jsdoc` when configured; in a JavaScript project with `checkJs` JSDoc types ARE the type system. A full block only where one of these reads it, or on a component/hook consumed outside this app (a shared package).
+- **Skip**: components whose props type + name say it; route handlers and Server Actions whose file path + verb say it; `page`/`layout`/`loading` files; getters/setters/constructors; `@param`/`@returns` repeating TypeScript types; a comment that repeats the component name.
+- **Write**: why a component is a Client Component (the state, effect or browser API behind `"use client"`); a Server Action's side effect or revalidation contract (`revalidatePath`); a non-obvious `fetch` caching choice (`no-store`, `revalidate`); a workaround for an App Router constraint.
+- **Names carry the meaning**: predicates `isOpen`, `hasError`, `canSubmit`; hooks `useX` named for what they return (`useOrders`, `useDebouncedValue`); `handleX`/`onX` is the event idiom, not a vague name; verb-first actions (`createOrder`, `updateProfile`); plural collections (`activeOrders`); never `data`, `temp`, `obj`.
 
 ## Security idioms
 

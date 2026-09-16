@@ -1,7 +1,7 @@
 ---
 framework: express
 framework_version_range: "4.x — 5.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_signature:
   package_manifest: package.json
@@ -99,6 +99,15 @@ HARD_RULE: process.env MUST NOT be accessed outside src/config/ or the app entry
   rule_type: CUSTOM
   rationale: Direct process.env access in services/controllers makes config untestable and breaks 12-factor isolation
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: JSDoc — **read by**: the TypeScript checker when the project type-checks JavaScript (`checkJs` in `tsconfig.json` or `// @ts-check`) — there `/** @param {import('express').Request} req */`, `@type`, `@typedef` and `@import` ARE the type system, so a typed block is a WHY; `eslint-plugin-jsdoc` (`require-jsdoc`, `publicOnly`) when configured; nothing in Express reads a comment. In a TypeScript project the types carry it and JSDoc adds only prose. A full block only where one of these reads it, or on public API consumed outside this module.
+- **Skip**: `(req, res, next)` handlers whose router path + name say it; middleware with a self-explanatory name; getters/setters/constructors; `@param`/`@returns` that repeat a TypeScript type; a `@description` that restates the function name.
+- **Write**: the JSDoc types a `checkJs` project needs; a middleware's ordering/short-circuit contract (`next(err)` semantics); the 4-arity requirement of an error handler; a side effect not visible in the handler (queue push, cache write).
+- **Names carry the meaning**: predicates `isAuthenticated`, `hasRole`, `canRetry`; verb-first handlers/services (`createOrder`, `fetchPendingInvoices`); plural collections (`activeSessions`); middleware as `requireX`/`ensureX` (`requireAuth`); never `data`, `temp`, `obj`, `handle`, `process`.
 
 ## Security idioms
 

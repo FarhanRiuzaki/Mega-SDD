@@ -1,7 +1,7 @@
 ---
 framework: nuxt
 framework_version_range: "3.x — 4.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_priority: 50  # P2 matcher: lower wins — starterkit variants/meta-frameworks precede their substrates
 detection_signature:
@@ -116,6 +116,15 @@ HARD_RULE: process.env MUST NOT be accessed in components, composables, or pages
   forbidden_patterns: [ "process.env." ]
   rationale: process.env is not available in the browser bundle; useRuntimeConfig() is the Nuxt-safe isomorphic accessor
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: TSDoc/JSDoc — **read by**: `none by default` — Nuxt reads no comment (`definePageMeta`, `useSeoMeta`, `nuxt.config` carry metadata); `vue-tsc`/TypeScript types carry the contract; `eslint-plugin-jsdoc` when configured; in a JavaScript project with `checkJs` JSDoc types ARE the type system. A full block only where one of these reads it, or on a composable/component consumed outside this app (a layer or module).
+- **Skip**: components whose `defineProps` type + name say it; pages/layouts whose path says it; auto-imported composables with a self-explanatory `useX` name; `server/api/*` handlers whose path + method say it; `@param`/`@returns` repeating TypeScript types.
+- **Write**: why a composable runs client-only (`import.meta.client`) or why `useAsyncData` carries a given `key`; a route middleware's redirect/short-circuit contract; a plugin's ordering dependency (`dependsOn`); a hydration workaround.
+- **Names carry the meaning**: predicates `isOpen`, `hasError`, `canSubmit`; composables `useX` named for what they return (`useOrders`); verb-first server handlers/services (`createOrder`); plural collections (`activeOrders`); `handleX`/`onX` is the event idiom; `data` is the `useFetch` idiom — never reuse it for anything else; never `temp`, `obj`.
 
 ## Security idioms
 

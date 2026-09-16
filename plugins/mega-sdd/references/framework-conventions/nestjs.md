@@ -1,7 +1,7 @@
 ---
 framework: nestjs
 framework_version_range: "10.x — 11.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_priority: 50  # P2 matcher: lower wins — starterkit variants/meta-frameworks precede their substrates
 detection_signature:
@@ -111,6 +111,15 @@ HARD_RULE: Modules that expose providers to other modules MUST list those provid
   rule_type: CUSTOM
   rationale: A provider not in exports[] cannot be injected by importing modules — causes runtime DI errors
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: TSDoc/JSDoc — **read by**: `@nestjs/swagger` ONLY through its CLI plugin with `introspectComments: true` (then a property's or handler's comment becomes the OpenAPI `description`) — by default OpenAPI comes from decorators (`@ApiProperty`, `@ApiOperation`), never from comments; `eslint-plugin-jsdoc` when configured; TypeScript types carry the contract, so `@param`/`@returns` add nothing. A full block only where one of these reads it, or on public API consumed outside this module.
+- **Skip**: controllers/services/providers whose decorators + typed signature say it; DTOs whose `class-validator` decorators are the doc; modules; getters/setters/constructors; `@param`/`@returns` repeating TypeScript types; a comment that repeats `@ApiOperation({ summary })`.
+- **Write**: a provider's lifecycle/scope assumption (`Scope.REQUEST`, `OnModuleInit` ordering); a guard/interceptor's short-circuit contract; a transactional or event side effect not visible in the method; the description external consumers read when comment introspection is on.
+- **Names carry the meaning**: predicates `isActive`, `hasRole`, `canRetry`; verb-first service methods (`createOrder`, `fetchPendingInvoices`); plural collections (`activeUsers`); providers by role (`OrdersService`, `AuthGuard`); never `data`, `temp`, `obj`, `handle`, `process`.
 
 ## Security idioms
 

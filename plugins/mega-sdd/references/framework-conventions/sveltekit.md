@@ -1,7 +1,7 @@
 ---
 framework: sveltekit
 framework_version_range: "2.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_priority: 50  # P2 matcher: lower wins — starterkit variants/meta-frameworks precede their substrates
 detection_signature:
@@ -125,6 +125,15 @@ HARD_RULE: The handle hook MUST be exported from src/hooks.server.ts
   pattern: 'export\s+(?:async\s+)?function\s+handle|export\s+const\s+handle'
   rationale: SvelteKit only calls the handle hook when exported with the name `handle` from hooks.server.ts; a differently-named export is never invoked
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: TSDoc/JSDoc — **read by**: `svelte-check`/TypeScript — in a JavaScript project the JSDoc types in the component script block and in `.js` files ARE the type system (`/** @type {import('./$types').PageLoad} */` is the idiom SvelteKit's own docs use); `eslint-plugin-jsdoc` when configured; nothing else in SvelteKit reads a comment. A full block only where one of these reads it, or on a module consumed outside this app (a library).
+- **Skip**: `+page`/`+layout`/`+server` files whose path + export say it; components whose props type + name say it; form actions named in `actions`; `@param`/`@returns` repeating TypeScript types; a comment that repeats the export name.
+- **Write**: the `$types` JSDoc a JavaScript project needs; a `load` function's dependency/invalidation contract (`depends`, `invalidate`); a form action's redirect or side effect; why something is browser-only (`browser` guard) or `ssr = false`.
+- **Names carry the meaning**: predicates `isOpen`, `hasError`, `canSubmit`; verb-first services (`createOrder`); plural collections (`activeOrders`); stores named for their value (`currentUser`); `handleX`/`onX` is the event idiom; `data` is reserved for the `load` result prop — never reuse it; never `temp`, `obj`.
 
 ## Security idioms
 
