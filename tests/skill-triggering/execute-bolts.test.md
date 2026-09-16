@@ -44,13 +44,13 @@
 - **Prompt:** `/mega-sdd:execute-bolts --per-squad`
 - **Expect:** halt with informative message; suggest `--all` or `generate-intent` to add squad config
 
-### BH5 (v1.1+): --per-squad fans out subagents
+### BH5 (v1.1+): --per-squad runs every squad from the main thread
 - **Setup:** vault with 3 declared squads, units assigned across squads (e.g., 4 BE + 3 FE + 2 integrations)
 - **Prompt:** `/mega-sdd:execute-bolts --per-squad`
 - **Expect:**
-  - 3 Agent() dispatches with run_in_background: true
-  - Each subagent prompted with its squad ID and filter instructions per references/squad-subagent.md
-  - Parent consolidates results into per-squad table after all complete
+  - NO squad-level subagent: the controller stays in the main thread and walks each squad's units through the per-unit panel flow directly (depth-1 — `references/batch-and-fanout.md §--per-squad` + `references/squad-subagent.md`); only `bolt-implementer` / review-lens agents are dispatched, one per unit / lens
+  - Independent units from different squads dispatch concurrently, bounded by `parallel_max`
+  - The controller consolidates the report into a per-squad table after all units complete (N squads, M units, K commits, halts with squad attribution)
 
 ### BH6 (v1.1+): --squad=<id> filters and runs single squad
 - **Setup:** vault with 3 squads; user runs on their FE laptop
@@ -65,7 +65,7 @@
 ### BH8 (v1.1+): --per-squad combined with --parallel
 - **Setup:** vault with 2 squads; each has internally independent units
 - **Prompt:** `/mega-sdd:execute-bolts --per-squad --parallel`
-- **Expect:** 2 squad-level subagents, each internally using subagent-driven-development for parallel unit dispatch; no resource collision (different working sets)
+- **Expect:** still no squad-level subagent — the main-thread loop dispatches independent units (across BOTH squads) concurrently as `bolt-implementer` agents in one message, bounded by `parallel_max` (independent = no `depends_on` edge AND pairwise-disjoint `target_files`); no resource collision (different working sets); the report is one consolidated per-squad table
 
 ## Hard Rule pre-flight + post-flight (v1.2+, Iter 3)
 

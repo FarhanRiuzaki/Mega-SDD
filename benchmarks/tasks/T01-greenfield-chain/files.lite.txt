@@ -1,37 +1,37 @@
-# T01 lite arm (v8 P1.f, 2026-09-10; amended 7.34.0 debt #6): the --lite lane on a GREENFIELD run
-# adds exactly ONE commanded read over files.optimized.txt — execute-bolts pre-flight 3.9 fires on
-# every wave under --lite and its procedure now lives in references/jit-bind-and-quarantine.md
-# (moved out of SKILL.md so the default v7 arm stops paying for it). The three JIT scripts are
-# script-run (no read); the ladder-E3 reference (bind-codebase/references/express-bind.md) loads ONLY
-# when a text claim exists, which a create-only wave never has. Published as MEASURED per release.
+# T01 lite arm — the 8.x `--lite` lane on a GREENFIELD PRD run: front door → plan → execute-bolts --all --lite
+# (spec 2026-09-10-v8-fused-pipeline-design.md; CHANGELOG 8.0.0). Derived 2026-09-16 (doc-audit v8, re-pinned by
+# the 8.4.0 debt gate) from the SKILL.md bodies: commanded reads only, same rule as files.optimized.txt — scripts
+# are RUN, not read; `[SECTION:]` = whole file counted as an UPPER BOUND. The pre-8.4.0 list still traced the
+# classic chain (generate-intent → bind → units) plus the JIT-bind reference, which the lite lane never reads —
+# it measured the wrong arm. plan reads generate-intent's vault-core / generation-guide / self-check /
+# ai-consumer-guide and generate-units' grammar references (unit-schema, task-typing, decomposition rails,
+# validation passes, adversarial prompt) as its Tier-3 pointers; the lite execute-bolts hop adds
+# jit-bind-and-quarantine.md. Published as MEASURED per release.
 plugins/mega-sdd/skills/using-mega-sdd/SKILL.md
+plugins/mega-sdd/commands/mega-sdd.md
 plugins/mega-sdd/skills/orchestrate-flow/SKILL.md
 plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md
-plugins/mega-sdd/references/model-tiers.md [SECTION:Catalog]
-plugins/mega-sdd/references/output-language.md [SECTION:Prompt-surfaces]
-plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md
-plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md
-plugins/mega-sdd/commands/mega-sdd.md
 plugins/mega-sdd/skills/orchestrate-flow/references/factory-routing.md
 plugins/mega-sdd/skills/orchestrate-flow/references/factory-ledger-contract.md
 plugins/mega-sdd/skills/orchestrate-flow/references/checkpoint-protocol.md
-plugins/mega-sdd/skills/generate-intent/SKILL.md
+plugins/mega-sdd/references/model-tiers.md [SECTION:Catalog]
+plugins/mega-sdd/references/output-language.md [SECTION:Prompt-surfaces]
+plugins/mega-sdd/skills/plan/SKILL.md
+plugins/mega-sdd/skills/plan/references/plan-procedure.md
+plugins/mega-sdd/skills/plan/references/templates/context.md
+plugins/mega-sdd/skills/plan/references/unit-grammar-cheatsheet.md
 plugins/mega-sdd/skills/generate-intent/references/vault-core.md
 plugins/mega-sdd/skills/generate-intent/references/generation-guide.md [SECTION:Step3+templates+readability]
 plugins/mega-sdd/skills/generate-intent/references/self-check.md
-plugins/mega-sdd/skills/generate-intent/references/auto-and-handoff.md
-plugins/mega-sdd/skills/generate-intent/references/detection-and-shapes.md
-plugins/mega-sdd/skills/generate-intent/references/templates/vault.md
-plugins/mega-sdd/skills/generate-intent/references/templates/model.md
-plugins/mega-sdd/skills/generate-intent/references/templates/flows.md
-plugins/mega-sdd/skills/generate-intent/references/templates/constraints.md
+plugins/mega-sdd/skills/generate-intent/references/templates/ai-consumer-guide.md
 plugins/mega-sdd/skills/generate-units/SKILL.md
 plugins/mega-sdd/skills/generate-units/references/unit-schema.md
 plugins/mega-sdd/skills/generate-units/references/templates/unit.md
-plugins/mega-sdd/skills/generate-units/references/modules-schema.md
+plugins/mega-sdd/skills/generate-units/references/task-typing.md
+plugins/mega-sdd/skills/generate-units/references/decomposition-rails.md [SECTION:dependency-graph]
+plugins/mega-sdd/skills/generate-units/references/validation-passes.md
 plugins/mega-sdd/skills/generate-units/references/adversarial-test-prompt.md
 plugins/mega-sdd/skills/generate-units/references/auto-and-memory.md [SECTION:scope-propagation+_index]
-plugins/mega-sdd/skills/generate-units/references/decomposition-rails.md [SECTION:dependency-graph]
 plugins/mega-sdd/skills/execute-bolts/SKILL.md
 plugins/mega-sdd/skills/execute-bolts/references/jit-bind-and-quarantine.md
 plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md

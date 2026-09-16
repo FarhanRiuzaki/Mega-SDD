@@ -3,7 +3,7 @@
 #
 # Seeds the blackbox fixture (leave-request mini-app: legacy PHP src + PRD) into
 # a fresh git repo so a LIVE Claude Code session can exercise the real skills
-# end-to-end (/mega-sdd:auto, scan-codebase, generate-intent, bind, bolts, ...).
+# end-to-end (/mega-sdd front door → scan-codebase, generate-intent, bind, bolts, ...).
 #
 # Usage: seed-playground.sh [target-dir] [--force]
 #   target-dir  default /tmp/mega-sdd-playground
@@ -37,6 +37,6 @@ echo "PASS: playground seeded at $TARGET"
 echo
 echo "Next steps (live session):"
 echo "  cd $TARGET"
-echo "  # brownfield lane: /mega-sdd:auto  (detects legacy code, no PRD parse needed)"
-echo "  # PRD lane:        /mega-sdd:auto docs/PRD-leave.md"
+echo "  # brownfield lane: /mega-sdd  (front door: detects legacy code, no PRD parse needed)"
+echo "  # PRD lane:        /mega-sdd docs/PRD-leave.md   (add --lite for the plan → bolts lane)"
 echo "  # disposable — rm -rf $TARGET when done, or reseed with --force"

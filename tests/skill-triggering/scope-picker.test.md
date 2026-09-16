@@ -118,7 +118,7 @@ cd ~/test-projects/order-be/
 **Setup**:
 - cwd: `~/test-projects/order-be/`
 - PRD: `tests/scenarios/sample-prd-multi-scope.md`
-- Run Test 1 first (which records scope=BE to memory)
+- Run Test 1 first (its vault.json now carries `scope: BE` + `prd_sha256` — the pipeline record; there is no side memory)
 
 **Invocation**:
 ```bash
@@ -128,18 +128,18 @@ cd ~/test-projects/order-be/
 
 **Expected**:
 - generate-intent reads scopes; multi-scope detected
-- Memory lookup: PRD sha256 found → last scope BE
+- Existing-vault lookup: a vault in this project carries the same `prd_sha256` + `scope: BE` → suggest BE
 - AskUserQuestion fires with shortened prompt:
   ```
   ▶ PRD ./...md recognized (last scope: BE)
   ❓ Same scope this run?
-     [Enter] BE (default after 5s; confirm-once)
+     [Enter] BE (recommended — confirm-once)
      [2/3/4] Different scope
      [5] Cancel
   ```
-- On Enter (or 5s timeout): silent default to BE
+- On Enter: BE accepted without re-picking (AskUserQuestion has no timer — nothing defaults silently)
 
-**Pass criteria**: Confirm-once UX fires; BE silently defaulted; 5s timeout works.
+**Pass criteria**: Confirm-once UX fires; Enter accepts BE; no timeout exists or is claimed.
 
 ---
 

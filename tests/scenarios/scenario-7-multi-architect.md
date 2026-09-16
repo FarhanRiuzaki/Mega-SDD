@@ -138,7 +138,7 @@ Expected:
 ▶ PRD ./prd.md recognized (sha256: abc123..., last scope: BE 2026-05-23)
 
 ❓ Same scope this run?
-   [Enter] BE (default after 5s; confirm-once)
+   [Enter] BE (recommended — confirm-once)
    [2/3/4] Different scope
    [5] Cancel
 ```
