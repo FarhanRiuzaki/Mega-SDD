@@ -32,7 +32,7 @@ A `.mega-sdd/` dir in the CWD is a STATUS signal only (one session-start notice 
 
 **Gateway marker:** announce lines end with `` `mega-sdd-trace:<skill>` ``; every subagent dispatch prompt carries one `mega-sdd-trace:<skill>` line. Verbatim, no variants (docs/gateway-contract.md).
 
-**Hard gate:** `bind-codebase` BLOCKS unit generation while `binding.md` has unresolved CONFLICT entries.
+**Hard gate:** `bind-codebase` BLOCKS unit generation while `binding.md` has unresolved CONFLICT entries (classic lane; on the lite lane the same CONFLICT closes the unit's gate at `execute-bolts` dispatch — `binding_conflict`).
 
 ## Output language
 
@@ -72,7 +72,7 @@ Multi-PRD lane (a project that grows PRD-by-PRD — PRD 1 ships, PRD 2 adds an e
 - **Ticket-scale chat delta** to an owned vault ("tambah kolom X di form Y" — no doc) → the delta lane: `diff-vault --from-prompt` (scoped patch → claim-scoped re-bind → `--reconcile` units; the `delta_too_large` cap forces an epic-in-disguise to the next row).
 - **New epic** on top of shipped work → **new vault** via `generate-intent`, then `bind-codebase` **brownfield** against the codebase that now contains PRD 1 (+ the project constitution) — the binding gate catches contradictions with shipped reality.
 - **Code moved** → `sync`.
-When the doc's title/scope matches an existing vault's source → revision (diff-vault); a new feature area → new vault; several owning vaults plausible → **ASK** (evolve-in-place vs new-epic diverge hard). `.mega-sdd/project.md` (the project index) lists every vault + status so PRD N knows what shipped; `.mega-sdd/constitution.md` (project-scope, inherited by every vault) keeps PRD 2..N from contradicting PRD 1's locked decisions.
+When the doc's title/scope matches an existing vault's source → revision (diff-vault); a new feature area → new vault; several owning vaults plausible → **ASK** (evolve-in-place vs new-epic diverge hard). the front-door status view (`/mega-sdd` with no argument — derive-state) lists every vault + its position so PRD N knows what shipped; `.mega-sdd/constitution.md` (project-scope, inherited by every vault) keeps PRD 2..N from contradicting PRD 1's locked decisions.
 
 ## Phase ownership
 

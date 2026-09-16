@@ -3,7 +3,7 @@
   "unit": "U-002",
   "prompt_path": "@PROJ@/.mega-sdd/vaults/v1/bolts/U-002/dispatch-prompt.md",
   "t1_bytes": @N@,
-  "t2_bytes": 5427,
+  "t2_bytes": 5448,
   "total_bytes": @N@,
   "file_bytes": @N@,
   "truncations": [],

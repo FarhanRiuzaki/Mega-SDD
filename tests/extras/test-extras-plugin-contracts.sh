@@ -83,7 +83,9 @@ CORE=$(awk 'BEGIN{dash=0;body=0}
   /ANCHOR-CORE ends/{exit}
   {print}' "$P/skills/using-mega-sdd/SKILL.md")
 n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
-[ "$n" -eq 3844 ] && ok "core anchor unchanged ($n B — extras adds nothing to it)" || fail "core anchor changed: $n B (baseline 3844)"
+# 8.4.0 re-baseline (spec 2026-09-16-doc-audit-debt-gate-design.md §3): the Hard-gate line now carries the lite-lane
+# qualifier (binding_conflict at execute-bolts dispatch) — +125 B, still under the 4030 cap.
+[ "$n" -eq 3969 ] && ok "core anchor unchanged ($n B — extras adds nothing to it)" || fail "core anchor changed: $n B (baseline 3969)"
 printf '%s' "$CORE" | grep -qi "extras\|slice" && fail "extras/slice leaked into the core anchor" || ok "no extras/slice mention in the core anchor"
 has "$P/references/paths.md" ".mega-sdd/slices/" && ok "core paths.md lists the slices/ artifact home" || fail "paths.md lacks the slices/ row"
 grep -q 'mega-sdd-extras.*built' "$P/CLAUDE.md" && ok "core CLAUDE.md clause records extras as built" || fail "CLAUDE.md clause still says demand-only"

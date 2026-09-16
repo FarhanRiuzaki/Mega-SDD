@@ -101,6 +101,8 @@ Live state files at the `.mega-sdd/` root (writers in parentheses):
 - `codebase/framework-conventions/` — resolved framework packs
 - `.cache/pack-resolver/` — derived cache (see §Derived caches)
 - `.stop-scan-stamp` — Stop-hook turn-gate stamp (see §Derived caches)
+- `_diagnostics/kb-skipped-artifacts.md` — generate-intent `--kb` log of the `[INFERRED][ARTIFACT]` KB entries it skipped (diagnostic record for the human; no script reads it)
+- `vaults/<v>/.mega-sdd/vault-diffs/<ISO8601>.patch` — diff-vault revision patch, one per applied revision (forensic record; no script reads it)
 
 Plus ~35 `.*-state.json` validator/gate state files (one per validator; written by their deterministic writers, re-derived at gates).
 

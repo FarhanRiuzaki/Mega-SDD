@@ -3,7 +3,7 @@
 > **Purpose.** Injected as inline context into a `ui_ux`-relevance bolt dispatch prompt
 > (execute-bolts Step 4.5.b-starterkit.inject). It is the `frontend-design` bridge as
 > INJECTED TEXT — NOT a prose instruction to invoke the `frontend-design` skill (prose-only
-> Skill-invoke wire-ups historically no-op'd; see `plugins/mega-sdd/CLAUDE.md` Fork A).
+> Skill-invoke wire-ups historically no-op'd; see the enforcement doctrine in `plugins/mega-sdd/CLAUDE.md`).
 >
 > **Stack-agnostic.** This file names NO framework, templating language, or CSS library. It
 > describes WHAT a production-grade view must achieve; the concrete HOW (layout extend,

@@ -10,7 +10,7 @@
 # tokens and (b) a view/component code exemplar — not just the controller-only
 # skeleton. The enrichment lives in skill prose (execute-bolts T2 slice builder);
 # this deterministic validator is what makes that prose durable (prose-only
-# wire-ups historically no-op'd 4x — see plugins/mega-sdd/CLAUDE.md Fork A).
+# wire-ups historically no-op'd 4x — see the enforcement doctrine in plugins/mega-sdd/CLAUDE.md).
 #
 # TECH-AGNOSTIC: this validator hardcodes NO stack signature (no .blade/@section/
 # Laravel literals in logic — comments only). The ONE stack-specific question

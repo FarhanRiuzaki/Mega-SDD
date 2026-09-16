@@ -59,6 +59,9 @@ preview_url: ""            # dev-server base URL (e.g. http://localhost:5173) �
 # unit_granularity: fine   # ABSENT = default (medium) unit size in generate-units; `coarse` = story-sized units
                            #   (600 LOC / 8 files, 7.20.0 — same as `--max-complexity=large`), `fine` = smaller.
                            #   Precedence: flag > config > default.
+defaults:
+  emit_agents_md: true       # false → the chain's final `emit-agents-md` hop is skipped (written by
+                             #   migrate-paths' scaffold; read by the emit-agents-md skill body — prose-read, no script)
 ```
 
 Related-but-separate config surfaces (different scopes, documented where they live):

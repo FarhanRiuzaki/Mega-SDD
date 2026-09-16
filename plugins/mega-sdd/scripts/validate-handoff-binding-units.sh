@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# validate-handoff-binding-units.sh — Iter 67.6 [HOOK-VALIDATE] walking-skeleton slice 1.
+# validate-handoff-binding-units.sh — [HOOK-VALIDATE] walking-skeleton slice 1.
 #
-# Per plugins/mega-sdd/CLAUDE.md §Fork A scope. Audit response 2026-05-27 §F.
+# Per the enforcement doctrine in plugins/mega-sdd/CLAUDE.md (a blocking gate is a
+# deterministic validator wired to a hook; prose enforces nothing).
 #
 # Validates the binding → units handoff boundary on two axes:
 #   1. OQ-ID + CONFLICT-ID *propagation* — every LIVE ID declared in the binding doc must

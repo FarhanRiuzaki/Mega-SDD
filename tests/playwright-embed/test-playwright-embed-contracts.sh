@@ -76,7 +76,9 @@ n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
 # 7.29.1 re-baseline (RECORDED — leftover sweep): the dead "memory review" side lane
 # (lane removed v7.3.0) left the anchor and the emit verb gained its |html|summary
 # args: 3846 → 3844. Still a shrink; the 4030 cap stands.
-[ "$n" -eq 3844 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3844, 7.17.0: +register natural di baris narrate — spec 2026-08-31-natural-register.md; under the 4030 cap)"
+# 8.4.0 re-baseline (spec 2026-09-16-doc-audit-debt-gate-design.md §3): the Hard-gate line now carries the lite-lane
+# qualifier (binding_conflict at execute-bolts dispatch) — +125 B, still under the 4030 cap.
+[ "$n" -eq 3969 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3969, 7.17.0: +register natural di baris narrate — spec 2026-08-31-natural-register.md; under the 4030 cap)"
 # C1b: the COMPACT-mode extraction ('## Hard rule' awk, session-start:150-153 —
 # no frontmatter strip) is pinned separately: a line matching /^## Hard rule/ or
 # 'ANCHOR-CORE ends' inside the frontmatter would move THIS region without
@@ -87,7 +89,7 @@ CCORE=$(awk 'BEGIN{take=0}
   take==1{print}' "$UMS")
 cn=$(printf '%s' "$CCORE" | wc -c | tr -d ' ')
 # v7.0.0 re-baseline: the M/L-scoped Hard rule block grew (tier-S prohibitions).
-[ "$cn" -eq 1494 ] && ok "C1b compact-core byte length unchanged ($cn)" || fail "C1b compact core changed: $cn bytes (baseline 1494, 7.17.0 register line)"
+[ "$cn" -eq 1619 ] && ok "C1b compact-core byte length unchanged ($cn)" || fail "C1b compact core changed: $cn bytes (baseline 1619, 7.17.0 register line)"
 # C2: no slice mention above the marker (both variants)
 printf '%s' "$CORE" | grep -qi "slice" && fail "C2 'slice' leaked into the anchor core" || ok "C2 anchor core slice-free"
 printf '%s' "$CCORE" | grep -qi "slice" && fail "C2b 'slice' leaked into the compact core" || ok "C2b compact core slice-free"

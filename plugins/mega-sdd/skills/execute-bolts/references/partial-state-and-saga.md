@@ -45,7 +45,7 @@ The bolt subagent classifies each significant step into one of these when emitti
 
 ## Resume-time integrity check + `partial_state_corrupt` halt
 
-Before consuming partial-state, attempt a JSON parse. On parse failure → emit halt `partial_state_corrupt` with details `{partial_state_path: <absolute>, parse_error: <first 200 chars of exception>, corrupt_backup_path: "<path>.corrupt-<ISO8601>"}`; ALWAYS STOP. Resolution: rename the corrupt file to the suggested `.corrupt-<ISO8601>` path for forensics; re-run `--resume` (will start fresh now that the corrupt file is moved aside) OR run without `--resume` to restart the bolt batch.
+Before consuming partial-state, attempt a JSON parse. On parse failure → emit `partial_state_corrupt` with details `{partial_state_path: <absolute>, parse_error: <first 200 chars of exception>, corrupt_backup_path: "<path>.corrupt-<ISO8601>"}`. This is a **C1 self-resolve** per the registry (`plugins/mega-sdd/references/halt-protocol.md`, halt-families/bolts.md §partial_state_corrupt — script-layer enforced by `scripts/ground.sh` at M/L entry): the corrupt file is moved aside to the `.corrupt-<ISO8601>` path for forensics and the unit starts fresh; the chain never stops on it. The envelope is the record of what happened, not a request for a human.
 
 **Malformed rollback_hints check:** if the v2.0 file parses but `rollback_hints[]` entries are missing required fields OR reference an unknown `step_type` → emit halt `partial_state_corrupt` with details `{..., malformed_hints: [<entry indices + reason>]}` (reuses the same halt envelope; no new halt type). Resolution: inspect `bolt-report.md` to reconstruct hints OR proceed with `--resume` (forward-only, no rollback) accepting the risk.
 
