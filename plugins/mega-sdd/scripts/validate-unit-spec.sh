@@ -1085,6 +1085,99 @@ for up in sorted(all_units):
     checked_files.append(os.path.relpath(up, cwd))
     merged.extend(validate_unit(up))
 
+
+# ─── L2 (8.3.0, spec 2026-09-16-clinic-levers-design.md §2) — dag_shape_advisory ──
+# ADVISORY, never an issue / status / exit code. MEASURED on clinic lite 7.38.0
+# (research/2026-09-15-v8-p3-report.md §2f): once the panel barrier was gone the
+# plan DAG bound the wall — critical path U-001→U-002→U-013→U-020→U-021 (5 hops)
+# ≈ 120 m ≈ the whole bolt-stage; hub units (U-001/U-002/U-013) and fat units
+# (U-008 74.9 m impl, 2 fix rounds) decided DONE. The owner's amendment #1
+# ("kalau penyebabnya DAG, fix di PLAN") lands here: name the path, the hubs and
+# the split candidates so `plan` reshapes BEFORE presenting. Thresholds: depth > 4
+# hops, hub = >= 3 direct dependents, split candidate = > 6 implementation steps
+# or > 4 target files. MEASUREMENT PENDING (xs first, then the clinic once).
+def _dag_shape_advisory(unit_paths):
+    deps, steps, tfs = {}, {}, {}
+    for up in unit_paths:
+        try:
+            t = open(up, encoding="utf-8", errors="replace").read().lstrip("\ufeff")
+        except OSError:
+            continue
+        if not t.startswith("---"):
+            continue
+        end = t.find("\n---", 3)
+        if end <= 0:
+            continue
+        fm, body = t[3:end], t[end + 4:]
+        m = re.search(r"(?m)^id:\s*[\"']?(U-[A-Za-z0-9_-]+)", fm)
+        uid = m.group(1) if m else (os.path.basename(up)[:-3] if os.path.basename(up).startswith("U-") else os.path.basename(os.path.dirname(up)))
+        d = []
+        dm = re.search(r"(?m)^depends_on:[ \t]*(\[[^\]]*\])?[ \t]*\n((?:[ \t]+-[^\n]*\n?)*)", fm + "\n")
+        if dm:
+            if dm.group(1):
+                d = [x.strip().strip("'\"") for x in dm.group(1)[1:-1].split(",") if x.strip()]
+            else:
+                d = [re.sub(r"^[ \t]+-[ \t]*", "", ln).strip().strip("'\"") for ln in dm.group(2).splitlines() if ln.strip()]
+        deps[uid] = [x for x in d if x.startswith("U-")]
+        sb = _section_body(r"Implementation steps", body) or ""
+        steps[uid] = sum(1 for ln in sb.splitlines() if re.match(r"^\s*\d+[.)]\s", ln))
+        tfs[uid] = len(_tf_paths(fm))
+    if not deps:
+        return None
+    # longest path (in hops = nodes) — DAG only; a cycle is generate-units' halt, not ours
+    memo, onstack = {}, set()
+    def longest(u):
+        if u in memo:
+            return memo[u]
+        if u in onstack:
+            return ([u], True)
+        onstack.add(u)
+        best, cyc = [u], False
+        for d in deps.get(u, []):
+            if d not in deps:
+                continue
+            path, c = longest(d)
+            cyc = cyc or c
+            if len(path) + 1 > len(best):
+                best = [u] + path
+        onstack.discard(u)
+        memo[u] = (best, cyc)
+        return memo[u]
+    crit, cyclic = [], False
+    for u in sorted(deps):
+        path, c = longest(u)
+        cyclic = cyclic or c
+        if len(path) > len(crit):
+            crit = path
+    dependents = {u: 0 for u in deps}
+    for u, ds in deps.items():
+        for d in ds:
+            if d in dependents:
+                dependents[d] += 1
+    hubs = [{"unit_id": u, "dependents": n} for u, n in sorted(dependents.items()) if n >= 3]
+    split = [{"unit_id": u, "steps": steps[u], "target_files": tfs[u]}
+             for u in sorted(deps) if steps[u] > 6 or tfs[u] > 4]
+    depth = len(crit)
+    if depth <= 4 and not hubs and not split:
+        return None
+    return {
+        "depth": depth, "depth_budget": 4,
+        "critical_path": crit if depth > 4 else [],
+        "hubs": hubs, "split_candidates": split,
+        "cycle_suspected": cyclic,
+        "rule": ("advisory (never a halt): depth > 4 hops → shorten the critical path (merge or reorder); "
+                 "hub >= 3 direct dependents → split unless it is a true foundation (schema/migration); "
+                 "> 6 steps or > 4 target_files → split the unit; the DAG bounds the bolt-stage wall "
+                 "once the panel barrier is gone (research 2026-09-15 §2f)"),
+    }
+
+
+dag_adv = None
+try:
+    dag_adv = _dag_shape_advisory(all_units)
+except Exception:
+    dag_adv = None   # advisory only — never let a shape probe break the validator
+
 status = "PASS" if not merged else "FAIL"
 focal_rel = os.path.relpath(focal_path, cwd) if focal_path else None
 state = {
@@ -1115,6 +1208,9 @@ state = {
     # v8 P1 F1(e) (2026-09-10): xs body diet per unit — advisory only (see
     # xs_body_over); an empty list means every xs-class unit is within budget.
     "xs_body_advisory": xs_adv,
+    # L2 (8.3.0): DAG shape (depth / hubs / split candidates) — advisory only (see
+    # _dag_shape_advisory); None means the DAG is within the plan rails.
+    "dag_shape_advisory": dag_adv,
     "next_action": (
         ("Unit spec passes integrity checks."
          if status == "PASS"
@@ -1123,6 +1219,8 @@ state = {
            if vs_adv else "")
         + (f" Advisory: {len(xs_adv)} xs-class unit(s) exceed the xs body diet (Goal 1 line · Context <= 2 sentences · Anti-patterns/Out of scope sourced; see xs_body_advisory) — trim the body, never a halt."
            if xs_adv else "")
+        + (f" Advisory: DAG shape — depth {dag_adv['depth']} hops (budget 4), {len(dag_adv['hubs'])} hub(s), {len(dag_adv['split_candidates'])} split candidate(s) (see dag_shape_advisory) — reshape in plan before dispatch, never a halt."
+           if dag_adv else "")
     ),
 }
 
