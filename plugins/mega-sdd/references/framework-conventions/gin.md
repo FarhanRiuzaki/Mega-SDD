@@ -1,7 +1,7 @@
 ---
 framework: gin
 framework_version_range: "1.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_signature:
   package_manifest: go.mod
@@ -98,6 +98,15 @@ HARD_RULE: Public reusable library code MUST reside under pkg/ — not mixed int
   rule_type: LOCATION_RULE
   rationale: Mixing public library code in internal/ makes reuse impossible; pkg/ signals intentional external API
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: Go doc comments (`// Name …` directly above the declaration; rendered by `go doc`/pkg.go.dev) — **read by**: `revive` (`exported` and `package-comments` are in its default rule set) and staticcheck `ST1020`–`ST1022` (off by default) — but only when `.golangci.yml` enables them: golangci-lint's standard set (errcheck, govet, ineffassign, staticcheck, unused) does NOT flag a missing comment; `swag` reads `// @Summary`-style annotations ONLY when the project generates OpenAPI with it. So an exported identifier gets its one-sentence `// Name …` when the project lints for it or exports the package; otherwise only where the name hides the contract.
+- **Skip**: unexported functions with a self-explanatory name; handlers ``func(c *gin.Context)`` whose route registration says it; getters (Go has no `Get` prefix); struct fields whose name + type say it; `// returns an error` on a signature that returns `error`; test functions (the name is the sentence).
+- **Write**: the exported identifier's doc sentence when a linter or consumer reads it; goroutine/channel ownership and `ctx` cancellation contracts; a middleware's `c.Abort()`/`c.Next()` semantics; a side effect not visible in the handler.
+- **Names carry the meaning**: Go idiom — short receiver names, `user.Name()` not `GetName()`, predicates `IsActive`/`HasRole`/`CanRetry`, verb-first functions (`CalculateTotal`, `FetchOrders`), plural slices (`activeOrders`), interfaces by behaviour (`OrderStore`, `Notifier`); never `data`, `temp`, `obj`, `handle`, `process`.
 
 ## Security idioms
 
