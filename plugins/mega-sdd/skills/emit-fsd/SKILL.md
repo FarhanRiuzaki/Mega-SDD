@@ -59,7 +59,7 @@ Run `bash <plugin-root>/scripts/build-fsd-core.sh --vault=<vault> --cwd=<project
 - **Exit 2:** usage / vault / template problem — fix the invocation; nothing was written.
 - The model NEVER edits builder-derived section content except to DELETE a row that is provably wrong (delete/reformat-only authority — a RULE, not a gate: Step 4.6 catches an unresolvable PATH, not a plausibly-cited invented row; adding one is fabrication regardless). NEVER replace a `[Pending — …]` marker with invented content.
 - NEVER Read `.citation-map.json` directly — `build-citation-map.sh --check-drift` (inside the builder) is its only sanctioned reader.
-- **Layout-3 vault (`context.md`):** every vault doc name resolves to a `context.md` H2 section (`_lib/vault_md.resolve_doc`), and §1/§2 are quoted VERBATIM from the PRD pinned in `vault.json.prd_path_at_generation` (cited `<prd> §<heading>` + line range; a section the PRD lacks renders `[Pending — PRD §… tidak ada di <prd> — tidak dikarang]`). Layout-2/legacy never reads the PRD (7.37.0, pin `tests/v8-layout3/test-docs-resource.sh`).
+- **Layout-3 vault (`context.md`):** every vault doc name resolves to a `context.md` H2 section (`_lib/vault_md.resolve_doc`), and §1/§2 are quoted VERBATIM from the PRD pinned in `vault.json.prd_path_at_generation` (cited `<prd> §<heading>` + line range; a section the PRD lacks renders `[Pending — PRD §… tidak ada di <prd> — tidak dikarang]`). Layout-2/legacy never reads the PRD (pin `tests/v8-layout3/test-docs-resource.sh`).
 
 ### Step 4.5: Post-emission unfilled-slot scan
 

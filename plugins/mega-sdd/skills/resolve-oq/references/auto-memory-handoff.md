@@ -25,7 +25,7 @@ The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip 
 What stays interactive even with `--auto`:
 
 - **Per-OQ choice** (Resolve / OOS / Defer / Skip) — captures stakeholder answers; never auto-decides.
-- **Resolution destination** — still a human decision, now made ON the single prompt: the auto-classified target rides the answer option's description, and the override channel is "Other" (a bare `→ <file>.md` accepts the recommendation and re-lands it) plus the Step 2c diff summary. The override target is VALIDATED before any write against the vault's own document filenames for its layout (`interactive-walk.md` §"Reading the Other free text" step 1) — a miss is not an override, is narrated, and never re-prompts. The separate confirm-the-destination round trip is gone; the human's control over it — and the pre-write check that used to ride it — is not.
+- **Resolution destination** — still a human decision, now made ON the single prompt: the auto-classified target rides the answer option's description, and the override channel is "Other" (a bare `→ <file>.md` accepts the recommendation and re-lands it) plus the Step 2c diff summary. The override target is VALIDATED before any write against the vault's own document filenames for its layout (`interactive-walk.md` §"Reading the Other free text" step 1) — a miss is not an override, is narrated, and never re-prompts.
 - **Cross-cutting OQ landing** — same mechanism: the primary doc + cross-ref plan are disclosed in the option the human picks.
 - **LOCKED vault unlock confirmation** — audit-significant.
 
@@ -35,11 +35,11 @@ When this skill is invoked without `--auto`, behavior is the standard interactiv
 
 ## Non-interactive auto-accept mode
 
-Enables `resolve-oq` to be invoked automatically by `orchestrate-flow --converge` without prompting the user, using recommendations grounded in KB / vault / codebase evidence (v7.3.0: the memory recommendation source was removed with the memory lane — grounded sources only).
+Enables `resolve-oq` to be invoked automatically by `orchestrate-flow --converge` without prompting the user, using recommendations grounded in KB / vault / codebase evidence (grounded sources only).
 
 ### Flags
 
-- `--auto-accept` — skip `AskUserQuestion`; auto-pick the recommendation when available (renamed from `--auto-accept-from-memory` in v7.3.0; the old spelling no longer exists)
+- `--auto-accept` — skip `AskUserQuestion`; auto-pick the recommendation when available
 - `--confidence-min=N` (default 0.80) — minimum recommendation confidence to auto-accept (≥0.80 standard)
 - `--non-interactive` — combined alias for `--auto-accept --confidence-min=0.80` + suppresses any informational prompts
 

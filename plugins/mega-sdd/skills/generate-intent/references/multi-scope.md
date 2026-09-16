@@ -1,12 +1,12 @@
 # Multi-scope Vault — Scope Tagging Schema
 
-> Relocated **verbatim** from `vault-contract.md §Multi-scope vault` (same directory; that file keeps a conditional pointer). Load when the PRD declares a `scopes:` block or `--scope=<id>` is passed.
+> Load when the PRD declares a `scopes:` block or `--scope=<id>` is passed.
 
 ## §Multi-scope vault — Scope tagging schema
 
 When `generate-intent` runs with `--scope=<id>` flag OR canonical PRD has `scopes:` block, the vault is tagged with scope metadata. Single-scope PRDs without scopes block use current single-vault schema (no scope tagging).
 
-> **W5 patch-lane:** `title` / `scope` / `scope_metadata` / `prd_sha256` / `prd_path_at_generation` are AUTHORED fields — supply them in the `--patch` JSON consumed by `scripts/derive-vault-json.sh` at Step 3.8 (never hand-write vault.json). The deriver carries them forward verbatim on every later derive; `prd_sha256` is the at-generation pin `diff-vault` compares against and is NEVER recomputed by the script.
+> **Patch-lane:** `title` / `scope` / `scope_metadata` / `prd_sha256` / `prd_path_at_generation` are AUTHORED fields — supply them in the `--patch` JSON consumed by `scripts/derive-vault-json.sh` at Step 3.8 (never hand-write vault.json). The deriver carries them forward verbatim on every later derive; `prd_sha256` is the at-generation pin `diff-vault` compares against and is NEVER recomputed by the script.
 
 ### vault.json extension
 

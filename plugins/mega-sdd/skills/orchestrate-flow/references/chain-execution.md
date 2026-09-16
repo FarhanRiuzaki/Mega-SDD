@@ -55,7 +55,7 @@ Per `plugins/mega-sdd/references/model-tiers.md` override syntax. Resolves model
 
 a. **Read CLI flags from invocation**: collect all `--model-tier=<role>:<tier>` flags into `cli_overrides`.
 b. **Read `<project>/.mega-sdd/config.yaml`**: parse `model_tiers:` section if present; build `project_overrides`.
-c. (v7.3.0: the user-scope preferences source is removed — project `config.yaml model_tiers:` is the single override source.)
+c. Project `config.yaml model_tiers:` is the single override source (there is no user-scope preferences source).
 d. **Compute final resolved tier per role** (precedence: CLI > project > catalog):
    - For each role mentioned in any override source: cli → project → catalog default (read from `plugins/mega-sdd/references/model-tiers.md §Catalog`).
 e. **Emit final `model_tiers:` dict in handoff metadata** for all downstream skills:
@@ -88,7 +88,7 @@ h. **No file writes** — purely resolution; resolved tiers live in handoff meta
 
 ## Plan/Act gating
 
-iter_type defaults to **PATCH** (no classifier exists — v7), which routes to the PATCH branch below (Direct Act, overridable by `--plan`). Branch:
+iter_type defaults to **PATCH** (no classifier exists), which routes to the PATCH branch below (Direct Act, overridable by `--plan`). Branch:
 
 - **iter_type=PATCH** → Direct Act mode. Continue. (Default; overridable by `--plan` → Plan mode first.)
 - **iter_type=MINOR** → Act mode default. If `--plan` → Plan mode first; else continue in Act.
@@ -103,7 +103,7 @@ Stale-plan check: if `.plan-pending` exists from a prior session AND > 24h old �
 
 ## Chain optimization via binding provenance
 
-**Express-lane short-circuit (P2 — evaluated FIRST):** if the prior `binding.md` frontmatter carries `binding_metadata.retrieval` (an express bind), this whole optimization is INAPPLICABLE — express stamps `no-snapshot` unconditionally because it reads no map, and the express-spine chains contain no `scan-codebase` hop to remove or retain in the first place. Applying the `no-snapshot` branch below to an express binding would re-add the demoted scan phase to every express chain — the exact resurrect-vector P2 closes. Skip to the preflight loop.
+**Express-lane short-circuit (evaluated FIRST):** if the prior `binding.md` frontmatter carries `binding_metadata.retrieval` (an express bind), this whole optimization is INAPPLICABLE — express stamps `no-snapshot` unconditionally because it reads no map, and the express-spine chains contain no `scan-codebase` hop to remove or retain in the first place. Applying the `no-snapshot` branch below to an express binding would re-add the demoted scan phase to every express chain — the exact resurrect-vector P2 closes. Skip to the preflight loop.
 
 Otherwise (classic lane): after the chain is built, if it includes `scan-codebase` AND `<vault-path>/binding.md` already exists from a recent bind-codebase run, read the binding header for `binding_metadata.codebase_map_provenance` (written by bind-codebase per its SKILL.md):
 
@@ -141,7 +141,7 @@ next_action: "Install ast-grep (brew install ast-grep / cargo install ast-grep �
 
 ## First-run pre-flight (execute-bolts)
 
-Removed v7.4.0: the first-class agents ship in the plugin tree, so there is no
+The first-class agents ship in the plugin tree, so there is no
 superpowers/vendored dependency to probe — nothing halts here. A broken Agent
 tool surfaces at dispatch time (superpowers-bridge.md §Dispatch order).
 
@@ -153,7 +153,7 @@ tool surfaces at dispatch time (superpowers-bridge.md §Dispatch order).
 > gate) and every emit row (already opt-in via `--with-fsd`) are NOT profile-conditioned.
 
 
-Per the command-sprawl-audit consolidation restoring "single command" philosophy. Inside a `--deep` chain (OR `--auto` mode), the orchestrator AUTOMATICALLY runs these diagnostics at appropriate phases — user does NOT run these separately. The operative procedures for `lint-units` / `analyze-parallelism` / `list-modules` live in `references/diagnostics-procedures.md` (relocated from their 5.x command files in the surface cull):
+Inside a `--deep` chain (OR `--auto` mode), the orchestrator AUTOMATICALLY runs these diagnostics at appropriate phases — user does NOT run these separately. The operative procedures for `lint-units` / `analyze-parallelism` / `list-modules` live in `references/diagnostics-procedures.md`:
 
 | Phase | Auto-runs | Output integration |
 |---|---|---|
@@ -169,7 +169,7 @@ Per the command-sprawl-audit consolidation restoring "single command" philosophy
 
 These diagnostics run TRANSPARENTLY — chat output includes their summaries inline with phase progress lines. User does NOT need to know they exist as separate commands.
 
-`enrich-semantics` was removed in v7 Fase 2 — a `kb_flow_staging_missing` advisory (validate-kb.sh) is remediated by a scoped `extract-intelligence` re-run (`references/diagnostics-procedures.md §enrich-semantics`).
+`enrich-semantics` is a removal tombstone — a `kb_flow_staging_missing` advisory (validate-kb.sh) is remediated by a scoped `extract-intelligence` re-run (`references/diagnostics-procedures.md §enrich-semantics`).
 
 **Manual override**: each diagnostic remains runnable on demand for debugging/one-off use — the user asks by phrase through the front door ("lint units", "cek parallelism", "status module") and the orchestrator runs the matching procedure from `references/diagnostics-procedures.md`. Auto-invocations skip when the user explicitly disables via `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags on the front door / `orchestrate-flow`.
 

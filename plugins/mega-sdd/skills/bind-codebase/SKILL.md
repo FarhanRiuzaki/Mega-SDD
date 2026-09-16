@@ -8,7 +8,7 @@ description: Validate a vault against codebase-map.md (+ KB secondary), producin
 
 The brownfield anti-hallucination keystone. Refuses to let unit generation proceed against an ungrounded vault.
 
-> **Non-interactive by contract (fork-ready).** This skill **NEVER calls `AskUserQuestion`** and never prompts on any path — the former `--auto` behavior is the *only* behavior. Inputs resolve deterministically from `$ARGUMENTS`/CWD (§Inputs **Step 0**); an unresolvable, ambiguous, or out-of-glob-root required input emits the `bind_inputs_missing` blocker, never a prompt. Conflict resolution — the KEEP_VAULT / KEEP_CODE / DEFER / SPLIT choice and any vault patch it implies — belongs to `resolve-oq`; bind writes verdicts and re-derives them on the next re-bind. This contract holds whether the body runs inline or as a forked subagent. The `context: fork` frontmatter flip is deliberately NOT taken yet: it is gated on an interactive run (Precondition 0 — the detect-drift token before/after per `plugins/mega-sdd/CLAUDE.md`). The former second blocker — the depth-2 `Agent` probe for the phase-advisor pass — died with the advisor's removal in v7.4.0: bind dispatches no agent.
+> **Non-interactive by contract (fork-ready).** This skill **NEVER calls `AskUserQuestion`** and never prompts on any path — the former `--auto` behavior is the *only* behavior. Inputs resolve deterministically from `$ARGUMENTS`/CWD (§Inputs **Step 0**); an unresolvable, ambiguous, or out-of-glob-root required input emits the `bind_inputs_missing` blocker, never a prompt. Conflict resolution — the KEEP_VAULT / KEEP_CODE / DEFER / SPLIT choice and any vault patch it implies — belongs to `resolve-oq`; bind writes verdicts and re-derives them on the next re-bind. This contract holds whether the body runs inline or as a forked subagent. The `context: fork` frontmatter flip is deliberately NOT taken yet: it is gated on an interactive run (Precondition 0 — the detect-drift token before/after per `plugins/mega-sdd/CLAUDE.md`). Bind dispatches no agent.
 
 **Announce at start:** "I'm using the bind-codebase skill to validate the vault against the codebase map. `mega-sdd-trace:bind-codebase`"
 
@@ -86,8 +86,7 @@ The brownfield anti-hallucination keystone. Refuses to let unit generation proce
 **Run** `scripts/derive-binding-json.sh --vault <vault>` — its PHASE 0 stamps
 the do-not-hand-edit banner + the keterangan enum legend into `binding.md`
 (static, idempotent, parser-invisible — the legend gloss text single-sources
-in that script; the model never types either block; merged from the former
-stamp-binding-boilerplate.sh in v7 Fase 2), then it runs the deterministic
+in that script; the model never types either block), then it runs the deterministic
 generator: `binding.json` is derived FROM `binding.md` (never hand-written —
 the State Map rows, Confirmed Claims list, CONFLICT blocks, and
 `binding_metadata` frontmatter you wrote in Step 4 are the single source of
@@ -157,4 +156,4 @@ Clean binding → `generate-units <vault>/` (the bound-vault is the nested `<vau
 - `references/auto-memory-handoff.md` — extract-census preflight, snapshot reuse, scope propagation, handoff YAML.
 - `references/conflict-resolution.md` — per-conflict-type recovery + the bind ↔ resolve-oq interaction.
 - `references/express-bind.md` — the `--express` claim-scoped retrieval lane (ledger + index + targeted Reads, zero map load, fail-closed ladder, honest fallback).
-- `references/handoff-validation.md` — the manual binding→units handoff-integrity surface (`validate-handoff-binding-units.sh`): drop types + per-type resolution; relocated from `commands/validate-handoff.md` in the surface cull.
+- `references/handoff-validation.md` — the manual binding→units handoff-integrity surface (`validate-handoff-binding-units.sh`): drop types + per-type resolution.

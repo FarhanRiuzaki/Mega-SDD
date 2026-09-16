@@ -1,6 +1,6 @@
 # Chain diagnostics — operative procedures
 
-The advisory diagnostics the chain auto-runs (classic spine; skipped lean/express — `chain-execution.md §Auto-integrated diagnostics`) and their on-demand form. Until 5.x these procedures lived in `commands/{lint-units,analyze-parallelism,list-modules,enrich-semantics}.md`; the surface cull relocated them here VERBATIM in contract — the typed `/mega-sdd:<name>` forms no longer resolve. On-demand invocation is by phrase through the front door (`/mega-sdd` → "lint units" / "cek parallelism" / "status module"); the orchestrator runs the matching procedure below.
+The advisory diagnostics the chain auto-runs (classic spine; skipped lean/express — `chain-execution.md §Auto-integrated diagnostics`) and their on-demand form. The typed `/mega-sdd:<name>` forms do not resolve. On-demand invocation is by phrase through the front door (`/mega-sdd` → "lint units" / "cek parallelism" / "status module"); the orchestrator runs the matching procedure below.
 
 All are ADVISORY diagnostics: read-only over the pipeline artifacts (the sole exception — `list-modules --mark-dod` mutates `modules.yaml` interactively — is called out in its section). None is a gate; none may block a chain.
 
@@ -66,7 +66,7 @@ These are NOT in the validator — run them here, per unit, from the loaded cont
 - **Binding consistency** (when `binding.md` exists) — `task_type` matches the Implementation State Map (`IMPLEMENTED` at `confidence: high` → `verify`, not `create`; IMPLEMENTED at medium/low is treated as UNKNOWN per task-typing — do NOT flag its `create`/probe-derived type; `PARTIAL_FIELDS_* →` Migration notes match the `field_diff` ADD/KEEP/REMOVE).
 - **Signature-rule anchoring** — a `SIGNATURE_RULE function <name>` references a symbol present in the codebase map (else `hard_rule_unanchored` warning).
 - **Body/prose quality (SOFT)** — `## Goal`, `## Context (read first)` with a `vault_source` citation, `## Implementation steps` with directive prose, `## Anti-patterns`, `## Out of scope` present; `## Migration notes` ABSENT for `create`/`verify`.
-- **Merge-candidate advisory (cohesion, 7.20.0)** — flag every LINEAR `depends_on` chain of ≥2 units where ALL of: (a) same `module:`; (b) `task_type: create|extend` only (verify units are no-code and cheap — never counted); (c) `target_files` ≤ 2 per unit; (d) no `## Hard rules`; (e) no `properties:` (PBT); (f) the chain is self-contained — no unit OUTSIDE the chain `depends_on` a MIDDLE unit (a dependent on the chain's head/tail is fine; merging must not reshape the DAG for anyone else). Emit: `merge_candidate: U-00X..U-00Z — N unit kecil berantai se-module; merge = 1 bolt + 1 panel, gabungan diperkirakan masih ≤ threshold. Remedy: --regenerate --max-complexity=large, atau edit manual lalu re-run lint.` **ADVISORY forever — never a halt, never an auto-merge** (propose-first); it feeds Step 4 recommendations like any other finding. Rationale + the sprint-subagent rejection it replaces: `research/2026-09-01-sprint-subagent-granularity.md`.
+- **Merge-candidate advisory (cohesion)** — flag every LINEAR `depends_on` chain of ≥2 units where ALL of: (a) same `module:`; (b) `task_type: create|extend` only (verify units are no-code and cheap — never counted); (c) `target_files` ≤ 2 per unit; (d) no `## Hard rules`; (e) no `properties:` (PBT); (f) the chain is self-contained — no unit OUTSIDE the chain `depends_on` a MIDDLE unit (a dependent on the chain's head/tail is fine; merging must not reshape the DAG for anyone else). Emit: `merge_candidate: U-00X..U-00Z — N unit kecil berantai se-module; merge = 1 bolt + 1 panel, gabungan diperkirakan masih ≤ threshold. Remedy: --regenerate --max-complexity=large, atau edit manual lalu re-run lint.` **ADVISORY forever — never a halt, never an auto-merge** (propose-first); it feeds Step 4 recommendations like any other finding. Rationale + the sprint-subagent rejection it replaces: `research/2026-09-01-sprint-subagent-granularity.md`.
 
 ### Step 4 — Summary metrics + recommendations
 
@@ -145,7 +145,7 @@ The user always holds control — they remove a dep only if they confirm it's un
 
 ## list-modules
 
-Display module progress + DoD status for the current vault. The read-only rollup — per-module unit completion (from `bolt-outcomes.json`), DoD marked-count, `blocked_by` resolution, and status label — is a single script mode: `scripts/query-graph.sh --modules` (the former list-modules.sh, merged in v7 Fase 2). This procedure runs it for the display, and owns the **interactive `--mark-dod` flow** (which mutates `modules.yaml` and may re-run DoD test commands — neither belongs in the read-only script).
+Display module progress + DoD status for the current vault. The read-only rollup — per-module unit completion (from `bolt-outcomes.json`), DoD marked-count, `blocked_by` resolution, and status label — is a single script mode: `scripts/query-graph.sh --modules`. This procedure runs it for the display, and owns the **interactive `--mark-dod` flow** (which mutates `modules.yaml` and may re-run DoD test commands — neither belongs in the read-only script).
 
 Flags: `[vault-path] [--module=<id>] [--mark-dod=<module>] [--format=table|json]`.
 
@@ -184,4 +184,4 @@ The script's DoD column reflects the **marked** state only (a `dod:` item writte
 
 ## enrich-semantics
 
-**REMOVED (v7 Fase 2).** The staged-input retrofit helper (`enrich-workflows-staging.sh`) is deleted; the `kb_flow_staging_missing` advisory remains (the kb flows surface of validate-kb.sh) and the remediation is a scoped re-run of `extract-intelligence` on the affected domain, reviewed as usual. Historical procedure: git.
+**REMOVED.** The staged-input retrofit helper (`enrich-workflows-staging.sh`) is deleted; the `kb_flow_staging_missing` advisory remains (the kb flows surface of validate-kb.sh) and the remediation is a scoped re-run of `extract-intelligence` on the affected domain, reviewed as usual. Historical procedure: git.

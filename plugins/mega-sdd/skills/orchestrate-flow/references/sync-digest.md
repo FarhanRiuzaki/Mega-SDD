@@ -23,7 +23,7 @@ Written by the sync chain whenever an autonomous run defers a human decision. Se
       (provenance: a1b2c3 "hotfix rounding" — <author>, <date>)
 ```
 
-Consumers: the `/mega-sdd` status view (Lane 0 — PENDING-SYNC presence) points HERE when open items exist (the session-start line stopped reading it in v7.5.0); `resolve-oq --binding` marks the CONFLICT entries resolved as it goes.
+Consumers: the `/mega-sdd` status view (Lane 0 — PENDING-SYNC presence) points HERE when open items exist; `resolve-oq --binding` marks the CONFLICT entries resolved as it goes.
 
 ## SYNC-REPORT.md — the run report (overwrite)
 

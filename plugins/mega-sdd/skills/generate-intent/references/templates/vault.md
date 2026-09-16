@@ -28,7 +28,7 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/vault"]
 
 **This vault covers:** <1-line summary — legacy numbered-tree KB only: from suggested-phasing.md §Phase N, first sentence wins. PRD-kontrak KB / non-KB: "Single-phase project".>
 
-<!-- HARD-HEADER CONTRACT (v7 layout-2): the three H2 anchors below —
+<!-- HARD-HEADER CONTRACT (layout-2): the three H2 anchors below —
      `## Overview`, `## Architecture`, `## Decisions` — are EXACT strings.
      derive-vault-json.sh and derive-claims-ledger.sh exit 2 naming the missing
      header when one is absent (DOC_CODE re-keys from filename to section).

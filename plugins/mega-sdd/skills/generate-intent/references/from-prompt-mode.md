@@ -2,7 +2,7 @@
 
 This document specifies the `--from-prompt` mode of `generate-intent`. When the user invokes `generate-intent --from-prompt "<brief>"` (or the agent infers free-text intent), this mode runs adaptive Q&A (≤10 questions) to fill brief gaps before producing the vault.
 
-This was previously a standalone skill `from-prompt`; it is now absorbed as a mode of `generate-intent`. See `generate-intent/SKILL.md` for invocation rules.
+This is a mode of `generate-intent`. See `generate-intent/SKILL.md` for invocation rules.
 
 # From-Prompt — Brief to Seed-PRD elaboration
 

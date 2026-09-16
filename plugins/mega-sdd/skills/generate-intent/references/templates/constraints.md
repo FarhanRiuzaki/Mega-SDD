@@ -99,7 +99,7 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/constraints"]
 > - Every non-constraints-native OQ carries `[origin: <file>#<anchor>]` naming
 >   where the question arose (e.g. `[origin: flows.md#F-U-002]`,
 >   `[origin: vault.md#Architecture]`) — the locality that per-doc placement
->   used to give for free. Constraints-native OQs need no origin.
+>   would otherwise give for free. Constraints-native OQs need no origin.
 > - The `[tech / <mode>]` / `[business]` bracket is MANDATORY per OQ (bracket-
 >   first is the only category source — there is no roll-up fallback here).
 > - Sort P1 → P2 → P3. Priority + conf + resolution annotations per

@@ -82,7 +82,7 @@ For each OQ in the queue:
 
 ### Step 2a — Display
 
-Show the user (**human framing FIRST, technical detail demoted — 7.21.1**, spec 2026-09-02 §Amendemen; field evidence: the owner failed to parse a verbatim jargon OQ they themselves knew the answer to):
+Show the user (**human framing FIRST, technical detail demoted**, spec 2026-09-02 §Amendemen; field evidence: the owner failed to parse a verbatim jargon OQ they themselves knew the answer to):
 
 ```
 [{i}/{N}] {OQ tag}  {priority}  {category}
@@ -90,7 +90,7 @@ Show the user (**human framing FIRST, technical detail demoted — 7.21.1**, spe
   Yang udah ketahuan: {fakta yang kode UDAH kasih tau — meaning-first, citation di kurung}
   Yang belum: {gap persisnya — "belum ketahuan dari kode: …"}
   Kenapa penting: {P-level dijelasin sebagai dampak — apa yang ke-blok / kehitung salah kalau ga dijawab}
-  Contoh: {SATU skenario konkret NETRAL yang mengilustrasikan pertanyaannya (7.22.0 — lihat rail contoh di bawah); skip bila tidak derivable}
+  Contoh: {SATU skenario konkret NETRAL yang mengilustrasikan pertanyaannya (lihat rail contoh di bawah); skip bila tidak derivable}
   Maksudnya: {apa yang SEBENARNYA diminta dari user — keputusan/aturan/informasi apa; satu kalimat}
   ── detail teknis ──
   Doc: {doc filename} → {section anchor if available}
@@ -318,7 +318,7 @@ permitted at any branch:
    basename and compare it, character for character, against the vault's document filenames
    — layout-3: `context.md`; layout-2: `vault.md`, `model.md`, `flows.md`, `constraints.md`; legacy: `00-index.md` …
    `06-constraints.md`. Nothing else is a legal destination (no directory, no
-   path outside `VAULT_DIR`, no invented filename, no near-miss spelling). The collapse removed the
+   path outside `VAULT_DIR`, no invented filename, no near-miss spelling). There is no
    pre-write "confirm/override the destination?" prompt, so this check — not the post-write
    narration — is what catches a bad target.
    - **Hit** → that file becomes the resolution destination, overriding the auto-classification.

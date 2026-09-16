@@ -1,6 +1,6 @@
 # Vault Core — the drafting contract (§schema + §OQ-conventions + §id-stability)
 
-Shared definitions referenced by all `mega-sdd` skills — the DRAFTING CORE split out of `vault-contract.md` (v7 Fase 4 R2: this is the half every OQ/schema consumer needs; the conditional overlays — §Starterkit-binding (`--scan` only), §Multi-scope — stay in `vault-contract.md`). **Single source of truth** — when this file changes, every skill that references it inherits the change.
+Shared definitions referenced by all `mega-sdd` skills — the DRAFTING CORE split out of `vault-contract.md` (this is the half every OQ/schema consumer needs; the conditional overlays — §Starterkit-binding (`--scan` only), §Multi-scope — stay in `vault-contract.md`). **Single source of truth** — when this file changes, every skill that references it inherits the change.
 
 > **Maintenance rule**: edits to this file are breaking changes for sibling skills. Bump the affected skill versions + CHANGELOG entry whenever you touch this file.
 
@@ -124,7 +124,7 @@ A multi-step workflow (wizard, maker→checker, multi-page form) **stages** its 
 - **Source of truth.** `extract-intelligence` captures staging in the KB workflow file's `## 3a. Staged inputs` section as a `stages:` YAML block (see `extract-intelligence/references/prd-kontrak-template.md §Staged inputs` — the PRD-kontrak grammar carries the block inside §3 Flow; legacy numbered-tree KBs carry it as the workflow file's `## 3a`). Each stage cites its own `_source` anchor.
 - **Preservation rule (generate-intent).** When a KB workflow domain has a `stages:` block, generate-intent MUST copy it **verbatim** into the matching `flows.md` flow entry (`**Stages**` block), emit the corresponding Mermaid `stateDiagram`, and stamp the flow with `_kb_source: [modules/<domain>.prd.md]` (legacy numbered-tree KB: `20-workflows/<file>.md`). It MUST NOT re-flatten the staging into prose. (The flow body itself is the Mermaid `stateDiagram` / flowchart — never a prose Steps list, per the Mermaid-flows hard rule; the `stages:` block is authoritative for the staged fields.)
 - **Enriched-stages preservation.** The KB `stages:` block MAY carry an enriched form: `input_fields` as objects (`{name, mutability, visibility, conditional}`) instead of bare strings, plus per-stage delta fields (`new_fields_vs_prior`, `hidden_fields_vs_prior`, `promoted_to_mutable_vs_prior`, `dynamic_disclosures`) — see `extract-intelligence/references/prd-kontrak-template.md §Staged inputs`. "Verbatim" **includes these**: generate-intent MUST preserve whichever form the KB used and MUST NOT downgrade enriched `input_fields` objects to bare strings (a silent drop of the maker→checker field-promotion / show-hide intent the extractor captured). generate-intent does not itself *act on* the delta semantics — those are consumed at UI/bolt time per the UI/UX-design-intelligence integration (`docs/superpowers/specs/2026-06-05-ui-ux-design-intelligence-integration-design.md`); carrying them through unmodified is precisely what makes that downstream consumption possible. Bare-string KBs are unaffected (nothing to preserve).
-- **Back-reference (`_kb_source`).** This field is the deterministic link from a vault flow to its originating KB workflow — the analog of an OQ tag. `validate-vault-flow-staging.sh` follows it: if the cited KB workflow has a `stages:` block and the vault flow does not, it raises a `vault_flow_staging_drop` finding, surfaced as **advisory** via `analyze` (v4 Hybrid demoted this from a hard-block — it no longer blocks execute-bolts). No KB present, or no `_kb_source` on the flow (legacy vault) → the check **skips** (backward-compatible by construction; pre-staging vaults never trip it).
+- **Back-reference (`_kb_source`).** This field is the deterministic link from a vault flow to its originating KB workflow — the analog of an OQ tag. `validate-vault-flow-staging.sh` follows it: if the cited KB workflow has a `stages:` block and the vault flow does not, it raises a `vault_flow_staging_drop` finding, surfaced as **advisory** via `analyze` (demoted from a hard-block — it no longer blocks execute-bolts). No KB present, or no `_kb_source` on the flow (legacy vault) → the check **skips** (backward-compatible by construction; pre-staging vaults never trip it).
 - **Advisory at the source.** the kb flows surface (`validate-kb.sh --surface=flows`) raises an advisory `kb_flow_staging_missing` (never status-flipping) when a workflow KB file looks multi-step but carries no `stages:` block, retro-fit staging by re-running `extract-intelligence` for that module.
 
 > **Walking-skeleton scope:** only the staged-input dimension is enforced. The `conditions:` field captures per-transition guards best-effort; richer conditional / role-matrix / transition-guard enforcement is Fork-B-future.
@@ -141,7 +141,7 @@ Every writer regenerates by **running the script** — never by editing the JSON
 
 ### Concurrency contract (closes audit D3-012)
 
-The exclusive advisory file lock on `<vault>/vault.json.lock` is acquired **BY `scripts/derive-vault-json.sh` itself** — a single implementation, no per-skill lock dance. This prevents data corruption from concurrent-tab / concurrent-session writes that previously raced silently. Lock semantics: atomic `O_EXCL` create, bounded backoff + retry, release on all exit paths — the plugin's single advisory-lock pattern (this section is its canonical spec since v7.3.0).
+The exclusive advisory file lock on `<vault>/vault.json.lock` is acquired **BY `scripts/derive-vault-json.sh` itself** — a single implementation, no per-skill lock dance. This prevents data corruption from concurrent-tab / concurrent-session writes. Lock semantics: atomic `O_EXCL` create, bounded backoff + retry, release on all exit paths — the plugin's single advisory-lock pattern (this section is its canonical spec).
 
 **Writers (each invokes the script; none touches the lock directly):**
 - `generate-intent` Step 3.8 (initial derive, `--patch`) · `plan` (lite lane, initial derive) · `migrate-paths` layout rungs
@@ -183,7 +183,7 @@ next_action:
 
 ### OQ status tracking
 
-OQ entries in vault.json support status-tracking fields. **Status vocabulary is ONE closed set: `open | resolved | out_of_scope | deferred`** (G3 — the legacy `pending` / `out-of-scope` spellings are retired from the contract; the deriver and `open_questions_summary.by_status` use only this set). The full OQ entry shape:
+OQ entries in vault.json support status-tracking fields. **Status vocabulary is ONE closed set: `open | resolved | out_of_scope | deferred`** (the legacy `pending` / `out-of-scope` spellings are retired from the contract; the deriver and `open_questions_summary.by_status` use only this set). The full OQ entry shape:
 
 ```yaml
 open_questions:
@@ -203,7 +203,7 @@ open_questions:
     out_of_scope_reason: <text>
 ```
 
-**Backwards compatibility:** OQ entries without a `status` field are treated as `status: open` by all skills (legacy `pending` values in pre-W5 manifests read the same way). Existing v1.0.x vaults load unchanged; the next derive rewrites them into the unified vocabulary from the markdown checkboxes.
+**Backwards compatibility:** OQ entries without a `status` field are treated as `status: open` by all skills (legacy `pending` values read the same way). Existing vaults load unchanged; the next derive rewrites them into the unified vocabulary from the markdown checkboxes.
 
 ## §OQ-conventions — Open Question tagging
 
@@ -353,7 +353,7 @@ For `resolution_mode: recommend`:
 - Every OQ with `resolution_mode: hard_rule` MUST have `hard_rule` populated (grammar enforced at execute-bolts pre-flight).
 - `classification_confidence` MUST be one of `high | medium | low`.
 
-**Backwards compatibility**: OQs without a `category` field → treated as `business` by all skills. OQs with `category: business` and no `resolution_mode` → defaults to `blocking`. Existing v1.0–v1.5 vaults load unchanged.
+**Backwards compatibility**: OQs without a `category` field → treated as `business` by all skills. OQs with `category: business` and no `resolution_mode` → defaults to `blocking`. Existing vaults load unchanged.
 
 
 ## §constitution — Project-Facing Rules
@@ -456,7 +456,7 @@ Constitution version pinned to vault:
 
 ### Backward compatibility
 
-- v3.9 vaults without `constitution.md` → skill detects absence; auto-routes to user prompt "constitution.md missing; create from PRD constraints? Y/n"
+- Vaults without `constitution.md` → skill detects absence; auto-routes to user prompt "constitution.md missing; create from PRD constraints? Y/n"
 - Existing vault file structure unchanged (layout-3: `context.md`; layout-2: 4 files; legacy: 7); constitution is an additive file
 - Tools that hardcoded the file count → graceful fallback (treat missing constitution as empty list)
 

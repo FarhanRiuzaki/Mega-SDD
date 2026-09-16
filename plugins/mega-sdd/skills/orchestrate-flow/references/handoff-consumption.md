@@ -17,7 +17,7 @@ This gate runs per sub-skill in the chain loop, between dispatch and propagation
 
 Per sub-skill, after it exits. Any failure emits the named halt and STOPS the chain.
 
-1. **b.script** — ONE deterministic validator call (replaces the prose-executed b.0 presence / b.i type-check / b.ii–b.iii parse+required / b.vii artifact checks — M-04)
+1. **b.script** — ONE deterministic validator call (replaces the prose-executed b.0 presence / b.i type-check / b.ii–b.iii parse+required / b.vii artifact checks)
 2. **b.iv** CONDITIONAL fields present when condition met → `invalid_handoff` (prose — needs chain-start runtime state the script does not have)
 3. **b.ix** Cross-metric consistency → `quality_gate_failed` (prose — needs upstream cached state)
 4. Pass → propagate (step c); the confidence floor stays in the consumption loop below
@@ -45,9 +45,9 @@ bash "$PLUGIN_ROOT/scripts/validate-handoff-yaml.sh" \
 - **exit 0** → all deterministic checks pass; proceed to b.iv. Print nothing.
 - **exit non-zero** → read `.mega-sdd/.handoff-validation-state.json` (ONLY on failure) and surface its halt envelope **verbatim**; STOP chain. The state file carries `halt_type` ∈ `handoff_missing` (no `handoff:` block, OR multiple blocks with CONFLICTING `emitted_by` — same-emitter duplicates validate the producer's LAST block; includes a 300-char response tail) / `invalid_handoff` (YAML parse failure, REQUIRED field missing, or `status: halted` with an empty/absent blockers envelope) / `handoff_type_mismatch` (a present field fails its TYPE annotation, incl. the conditional-object shapes and the `next_action.confidence` `[0,1]` range) / `artifact_missing` (a listed `artifacts:` path does not exist) / `bolt_artifacts_missing` / `scope_args_missing` (the L9 seam), plus `retry_count` + the C1→C2 escalation fields.
 
-**The orchestrator does NOT load the handoff-contract reference to validate** (M-04 — the per-field "lookup TYPE annotation in handoff-contract §<field>" prose forced a full contract load on every hop). The TYPE annotations there are the AUTHORING source the script encodes; the script is the runtime check. Producer self-fix stays as before: the PreToolUse handoff gate auto-allows re-invoking the producer named in the FAIL state.
+**The orchestrator does NOT load the handoff-contract reference to validate** (the per-field "lookup TYPE annotation in handoff-contract §<field>" prose would force a full contract load on every hop). The TYPE annotations there are the AUTHORING source the script encodes; the script is the runtime check. Producer self-fix stays as before: the PreToolUse handoff gate auto-allows re-invoking the producer named in the FAIL state.
 
-> Retired with the prose type-check: the `--legacy-type-bypass` migration flag (its home was the prose loop). The script's annotation-absent behavior is warn-only for unknown fields — a present field with a KNOWN annotation is still hard-checked; unknown extra fields never fail the handoff.
+> The script's annotation-absent behavior is warn-only for unknown fields — a present field with a KNOWN annotation is still hard-checked; unknown extra fields never fail the handoff.
 
 ## b.iv — Conditional fields (prose)
 
@@ -106,7 +106,7 @@ emit final summary:
 Anti-halu invariants (consumer side):
 - Orchestrator MUST surface blocker YAMLs verbatim. No paraphrasing.
 - Orchestrator MUST NOT invoke `next_action.suggested_skill` if status is `paused` or `halted`. Chain pauses; user resumes manually.
-- Skills WITHOUT handoff emission (pre-v2.0) → treat completion as `status: completed` with `next_action: null`; chain stops after that skill (acceptable degraded behavior).
+- Skills WITHOUT handoff emission → treat completion as `status: completed` with `next_action: null`; chain stops after that skill (acceptable degraded behavior).
 
 ## See also
 

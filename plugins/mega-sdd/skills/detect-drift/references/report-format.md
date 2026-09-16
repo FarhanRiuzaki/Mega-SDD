@@ -5,7 +5,7 @@
 - Per-finding examples (decisions, schema, flow)
 - Vault write-back protocol (Step 5.5)
 
-Loaded by `detect-drift` Steps 4–6. The report IS the artifact. Since v3.0.0 detect-drift is forked + non-interactive: Step 5 **queues** direction calls to `PENDING-SYNC.md` (no walkthrough); only the `--auto-apply=safe` class is written back. `DRIFT-ACTIONS.md` and the batch-confirm ACCEPT UX are **deprecated (v3.0.0)** — no step writes them anymore; historical copies may exist in old vaults.
+Loaded by `detect-drift` Steps 4–6. The report IS the artifact. detect-drift is forked + non-interactive: Step 5 **queues** direction calls to `PENDING-SYNC.md` (no walkthrough); only the `--auto-apply=safe` class is written back. `DRIFT-ACTIONS.md` and the batch-confirm ACCEPT UX are **deprecated (v3.0.0)** — no step writes them anymore; historical copies may exist in old vaults.
 
 ## DRIFT-REPORT.md structure
 
@@ -104,7 +104,7 @@ API contracts vs route definitions, same per-finding shape.
 
 ## Suggested next actions
 
-Per finding: Finding ID + severity + entity/field; source-claim mutability tier (kb_locked / kb_intent / kb_artifact / vault_locked / inferred); and the **resolution path**. detect-drift is forked + non-interactive (v3.0.0): findings are **queued to `PENDING-SYNC.md`**, never resolved inline. There is **no `resolve-oq --drift` mode** — resolve-oq resolves normal vault OQs (including any drift-CREATED `OQ-DC-N` stub, per §3.5) and does NOT consume drift findings. The resolution path is one of:
+Per finding: Finding ID + severity + entity/field; source-claim mutability tier (kb_locked / kb_intent / kb_artifact / vault_locked / inferred); and the **resolution path**. detect-drift is forked + non-interactive: findings are **queued to `PENDING-SYNC.md`**, never resolved inline. There is **no `resolve-oq --drift` mode** — resolve-oq resolves normal vault OQs (including any drift-CREATED `OQ-DC-N` stub, per §3.5) and does NOT consume drift findings. The resolution path is one of:
 
 1. **Human triage of `PENDING-SYNC.md`** (§3.7) — the default; a person picks the direction (fix code vs update vault) per finding.
 2. **Re-run `/mega-sdd:sync`** — re-walks drift end-to-end through the Mode D chain (scan → drift → re-bind → reconcile → execute).

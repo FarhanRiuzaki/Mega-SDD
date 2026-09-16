@@ -6,7 +6,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
 
 ## Procedure
 
-1. **Load and parse binding.md** — AND (v8 P1, spec 2026-09-10 App. F4) every `<vault>/bolts/U-*/binding.json` whose `claims[]` carry `verdict: CONFLICT` without a `resolution` (JIT bind at dispatch): each such claim is a conflict to walk, presented as `unit · claim id · text · expect · evidence`. Its resolution is written back ONLY via `bash <plugin>/scripts/write-unit-binding.sh --cwd=<root> --vault=<vault> --unit=U-XXX --resolve=<claim-id>=KEEP_VAULT|KEEP_CODE|SPLIT|DEFER --by=user` (DEFER = the `[D]` option: the CONFLICT is downgraded to an OQ the unit carries, the unit's gate opens) — the file is hook-guarded evidence; never Edit it. Expect sections in binding.md:
+1. **Load and parse binding.md** — AND (spec 2026-09-10 App. F4) every `<vault>/bolts/U-*/binding.json` whose `claims[]` carry `verdict: CONFLICT` without a `resolution` (JIT bind at dispatch): each such claim is a conflict to walk, presented as `unit · claim id · text · expect · evidence`. Its resolution is written back ONLY via `bash <plugin>/scripts/write-unit-binding.sh --cwd=<root> --vault=<vault> --unit=U-XXX --resolve=<claim-id>=KEEP_VAULT|KEEP_CODE|SPLIT|DEFER --by=user` (DEFER = the `[D]` option: the CONFLICT is downgraded to an OQ the unit carries, the unit's gate opens) — the file is hook-guarded evidence; never Edit it. Expect sections in binding.md:
    - "## Confirmed Claims" (no action needed — informational)
    - "## Conflicts (N) — BLOCKING" carrying one `### CONFLICT-N` detail block per conflict (heading + `- **Vault claim**:` / `- **Codebase reality**:` / `- **Claim**:` lines — the only conflict carrier)
    - "## Open Questions (N)" — auto-propagated deferred OQs that couldn't be auto-resolved
@@ -21,7 +21,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    Choose action:
      [K] KEEP_VAULT  — vault is correct; code patch will be required later (the CONFLICT re-raises on re-bind until the code change lands — by design)
      [C] KEEP_CODE   — vault is wrong; patch vault inline to match code (vault edited this session)
-     [D] DEFER       — downgrade CONFLICT to OQ; gate binding TERBUKA, unit tetap digenerate membawa OQ-nya (execute-bolts prompt di "TBD: OQ-XXX" sebelum bolt final; P1 business menghentikan bolt) (classic `binding.md` conflicts only — the per-unit `binding.json` writer accepts KEEP_VAULT / KEEP_CODE / SPLIT)
+     [D] DEFER       — downgrade CONFLICT to OQ; gate binding TERBUKA, unit tetap digenerate membawa OQ-nya (execute-bolts prompt di "TBD: OQ-XXX" sebelum bolt final; P1 business menghentikan bolt) (on the lite lane the per-unit writer records it: `write-unit-binding.sh --resolve=<claim-id>=DEFER`)
      [S] SPLIT       — break vault claim into sub-claims (user provides splits; each sub-claim re-binds separately)
    ```
 
@@ -35,7 +35,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    ONLY on the heading-line marker or the
    dedicated Resolution line — a marker anywhere else (prose, a legacy table) does
    NOT clear the gate. Ensure the detail block carries its `- **Claim**: C-NNN` line
-   (legacy blocks resolved before the W2 grammar may lack it — ADD it during
+   (legacy blocks may lack it — ADD it during
    write-back from the conflict's claim context; a bounded self-heal). Legacy note:
    pre-P2 bindings may still carry a summary table — ignore it; never update it
    (the gate never read it). Then **Run**
@@ -73,7 +73,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
 4. **Write back.** All resolutions persist to:
    - `binding.md` — detail headings + Resolution lines (+ `- **Claim**:` lines) per the write-back grammar above (the detail blocks are the only surface written)
    - `binding.json` — refreshed by running `scripts/derive-binding-json.sh --vault <vault>` after the markdown write (script-derived from `binding.md`; never edited by hand)
-   - `vault.json` — **Run** `scripts/derive-vault-json.sh --vault <vault> --event '{"event":"resolve-oq-binding","at":"<iso>","summary":"N conflicts resolved, M OQs resolved"}'` (+ `--patch <tmp-patch>` — a temp FILE carrying the DEFER-demoted `defer_to: binding` OQ entries per the table above; `--patch` never takes inline JSON). Run it AFTER `derive-binding-json.sh` (the W2 ordering — binding.json first, then the vault manifest event). Script-derived; never edited by hand
+   - `vault.json` — **Run** `scripts/derive-vault-json.sh --vault <vault> --event '{"event":"resolve-oq-binding","at":"<iso>","summary":"N conflicts resolved, M OQs resolved"}'` (+ `--patch <tmp-patch>` — a temp FILE carrying the DEFER-demoted `defer_to: binding` OQ entries per the table above; `--patch` never takes inline JSON). Run it AFTER `derive-binding-json.sh` (binding.json first, then the vault manifest event). Script-derived; never edited by hand
    - `vault.json` changelog (`--event` append per outcome) — each resolution recorded durably (survives re-binds)
 
 5. **Hand-off (S4 — differs per action mix; a blanket re-bind LOOPS on KEEP_VAULT).**

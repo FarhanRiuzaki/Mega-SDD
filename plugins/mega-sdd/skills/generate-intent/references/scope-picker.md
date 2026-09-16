@@ -43,7 +43,7 @@ Reference for `generate-intent` Step 0.9 scope detection + filtering. Companion 
    - vault.json: scope, scope_metadata, prd_sha256
    - vault.md: scope header + sibling scopes notes + locked contracts
 
-6. The scope choice is persisted in the vault itself (step 5: vault.json `scope` + `prd_sha256`) — no side record (v7.3.0).
+6. The scope choice is persisted in the vault itself (step 5: vault.json `scope` + `prd_sha256`) — no side record.
 ```
 
 ## Smart default heuristic

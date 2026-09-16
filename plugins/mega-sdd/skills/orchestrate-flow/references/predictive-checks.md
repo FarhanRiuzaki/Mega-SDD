@@ -29,7 +29,7 @@
 
 ## Purpose
 
-Catalog of lightweight checks that detect known halt preconditions BEFORE invoking the skill. Per spec §4.2: "Instead of 'scan-codebase halted on dep_missing 8 minutes in', user sees 'before chain starts: tree-sitter not installed; install or use --engine=regex'." (historical wording — the AST engine is ast-grep since v7.4.0)
+Catalog of lightweight checks that detect known halt preconditions BEFORE invoking the skill. Per spec §4.2: "Instead of 'scan-codebase halted on dep_missing 8 minutes in', user sees 'before chain starts: tree-sitter not installed; install or use --engine=regex'." (historical wording — the AST engine is ast-grep)
 
 ---
 
@@ -155,7 +155,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 
 - **check_id: `vault_present_for_oq`**
   command: `test -f <vault-path>/vault.json && { test -f <vault-path>/constraints.md || test -f <vault-path>/06-constraints.md; }`
-  expected: vault.json + the OQ doc of the vault's layout exist (layout-2 `constraints.md`; legacy `06-constraints.md` — no layout ever had `03-open-questions.md`, fixed 7.29.1)
+  expected: vault.json + the OQ doc of the vault's layout exist (layout-2 `constraints.md`; legacy `06-constraints.md` — no layout ever had `03-open-questions.md`)
   on_fail: "resolve-oq requires a vault with vault.json + the OQ doc (constraints.md, or 06-constraints.md on the legacy layout). Run generate-intent first."
   fatal: yes
   predicts_halt: (chain order error)
@@ -163,7 +163,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 - **check_id: `oq_status_field_present`**
   command: `python3 -c "import json; v=json.load(open('<vault-path>/vault.json')); exit(0 if any('status' in oq for oq in v.get('open_questions', [])) else 1)"`
   expected: at least one OQ entry has status field (schema)
-  on_fail: "vault.json open_questions[] entries lack 'status' field (pre-v1.1 schema). resolve-oq cannot track Resolve/Out-of-Scope/Defer outcomes without status field. Regenerate vault via generate-intent --regenerate."
+  on_fail: "vault.json open_questions[] entries lack 'status' field (old schema). resolve-oq cannot track Resolve/Out-of-Scope/Defer outcomes without status field. Regenerate vault via generate-intent --regenerate."
   fatal: no
   predicts_halt: (no halt; degraded interactive walk)
 
@@ -215,7 +215,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 
 ## Cold-halt anticipation checks
 
-An earlier audit flagged ~33 halts firing cold (no anticipating predictive-check). Most are runtime-only (cannot statically predict). These 4 feasible static checks cover the previously-uncovered halts:
+Most halts are runtime-only (cannot statically predict). These 4 feasible static checks cover the ones that would otherwise fire cold (no anticipating predictive-check):
 
 - **check_id: `units_depends_on_dag_acyclic`** (anticipates `cycle_detected`)
   command: `python3 -c "import json, glob; from collections import defaultdict; g=defaultdict(list); [g[d.get('id','')].extend(d.get('depends_on',[])) for f in glob.glob('<vault-path>/units/U-*.md') for d in [{}]]; print('ok')"` (skeleton — actual implementation parses YAML frontmatter from each unit's depends_on and runs DAG cycle detection)
@@ -298,7 +298,7 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
 
 ## Read protocol (Step 5)
 
-> **IMPLEMENTED by `scripts/validate-preflight.sh --predictive`** (the merged predictive mode, v7 Fase 2) — the orchestrator runs the script (`--predictive --cwd --chain`), never this loop by hand; the loop below is the maintainer's spec of what the script does, and this catalog is the script's declared source of truth.
+> **IMPLEMENTED by `scripts/validate-preflight.sh --predictive`** — the orchestrator runs the script (`--predictive --cwd --chain`), never this loop by hand; the loop below is the maintainer's spec of what the script does, and this catalog is the script's declared source of truth.
 
 ```
 For each skill in proposed chain:

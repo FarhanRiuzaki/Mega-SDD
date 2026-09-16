@@ -25,7 +25,7 @@ Mirror the recommend-mode discipline:
 5. **No fabrication.** If context sources don't yield a confident recommendation → omit recommendation; no pre-fill.
 6. **High-stakes warning.** Business-OQ recommendations carry a "review carefully — high-stakes domain" prefix in description (regulatory / finance / edge case markers).
 7. **Meaning-first narration (7.21.1).** When rationale / probe findings are surfaced to the user, lead with the business meaning in common ID/EN ("hasilnya dipakai modul credit analysis buat hitung skor"); the `file:line` / SP-name evidence follows in parentheses — never a bare citation dump as the sentence body (display rules: `interactive-walk.md` Step 2a).
-8. **Keterangan shape — 4 bagian, urutan dipaku (7.22.0).** The slot-`[1]` description reads, in plain everyday language: `<jawaban singkat> — dasar: <bukti meaning-first (citation)>. Kalau dipilih: <apa yang berubah / di mana jawaban landing>. Kalau ternyata salah: <fallback 1 kalimat>.` This is the mandated FORM of invariants 1–3 plus the SKILL's destination disclosure — not new obligations; a recommendation whose description is a bare answer or a citation dump violates this shape.
+8. **Keterangan shape — 4 bagian, urutan dipaku.** The slot-`[1]` description reads, in plain everyday language: `<jawaban singkat> — dasar: <bukti meaning-first (citation)>. Kalau dipilih: <apa yang berubah / di mana jawaban landing>. Kalau ternyata salah: <fallback 1 kalimat>.` This is the mandated FORM of invariants 1–3 plus the SKILL's destination disclosure — not new obligations; a recommendation whose description is a bare answer or a citation dump violates this shape.
 
 ## Context sources (priority order)
 
@@ -35,7 +35,7 @@ When building a recommendation for an OQ, consult these sources in order. First 
 
 If a knowledge-base exists at the path derive-state resolves (`knowledge_base:` in config.yaml, else `.mega-sdd/knowledge-base/` → `docs/knowledge-base/` → `docs/mega-sdd/knowledge-base/` → `old-reference/knowledge-base/`):
 
-- **Modern grammar (7.6.0+, checked FIRST):** per-module PRD-kontrak files at `<kb>/modules/*.prd.md` — match the OQ tag/text against each module's claim rows (§1 scope, §4 rules) and their inline `file:line` citations. **In KB mode the OQ's HOME MODULE is probed first** (the OQ lives in that file's §6); citation: `<kb>/modules/<module>.prd.md §<section>` + the claim's own `file:line`.
+- **Modern grammar (checked FIRST):** per-module PRD-kontrak files at `<kb>/modules/*.prd.md` — match the OQ tag/text against each module's claim rows (§1 scope, §4 rules) and their inline `file:line` citations. **In KB mode the OQ's HOME MODULE is probed first** (the OQ lives in that file's §6); citation: `<kb>/modules/<module>.prd.md §<section>` + the claim's own `file:line`.
 - Legacy grammar (back-compat): match against `10-domains/*` domain files
 - E.g., `OQ-AR-7` (architecture, error envelope) → look in `10-domains/*` for error-related entries
 - `OQ-FL-3` (flows, payment) → look in `10-domains/20-import-lc-payment.md` or similar
@@ -65,7 +65,7 @@ If `codebase-map.md` present:
 
 ### 4. No-context fallback (no recommendation)
 
-If NONE of sources 1-3 yield a confident answer → DO NOT recommend. Fall back to v0.5 interactive walk without `(recommended)` label.
+If NONE of sources 1-3 yield a confident answer → DO NOT recommend. Fall back to the interactive walk without `(recommended)` label.
 
 **Critical**: silent fallback is better than fabricated recommendation. NEVER invent a recommendation from "industry best practice" or LLM prior knowledge without citation.
 
@@ -167,7 +167,7 @@ On user selection:
   - vault.json OQ entry: `resolution: <answer>`, `resolution_source: recommendation`, `recommendation_citation: <citation>`
 
 - **Answered via "Other" WHILE a `(recommended)` option was on the prompt (OVERRIDE)** — since the
-  alternatives no longer own a slot, an override arrives as free text (often one of the alternatives
+  alternatives do not own a slot, an override arrives as free text (often one of the alternatives
   listed in the question text, typed back). The branch is keyed on *a recommendation existing and
   being declined*, not on the channel: "Other" is also the ONLY answer channel on the
   no-recommendation shape, so keying it on the channel alone would book every unsourced-OQ answer as

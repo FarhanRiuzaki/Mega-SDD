@@ -81,7 +81,7 @@ fixes for twice).
    `binding-contract.md` (vault section → claim type) is the sweep's checklist —
    every category with vault content MUST yield ≥1 claim or an explicit
    this-category-is-empty note in the bind summary. Skipping the sweep narrows
-   what gets VERIFIED — the exact cut the v6 mandate forbids.
+   what gets VERIFIED — the exact cut the express-spine mandate forbids.
 3. **Scope (scoped vaults).** Read `vault.json`; when it carries `scope` /
    `scope_metadata`, constrain claim validation to the scope's sections and
    propagate `scope_metadata` into the `binding.md` header + the handoff `scope:`

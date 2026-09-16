@@ -1,6 +1,6 @@
 # Convergence Loops — Auto-Recovery Cycling
 
-Formalizes iteration cycles between skills that were previously manual (`--resume` driven) — the "cycling agent" pattern. In `--deep` mode, eligible halts auto-resolve via grounded (KB/vault/codebase) recommendations and re-run, up to `--max-cycles`. Every other halt follows its taxonomy class (`halt-taxonomy.md`: always-stop = human required; self-resolve C1 = handled without stopping; soft = warn-only).
+Formalizes iteration cycles between skills — the "cycling agent" pattern. In `--deep` mode, eligible halts auto-resolve via grounded (KB/vault/codebase) recommendations and re-run, up to `--max-cycles`. Every other halt follows its taxonomy class (`halt-taxonomy.md`: always-stop = human required; self-resolve C1 = handled without stopping; soft = warn-only).
 
 ## Contents
 
@@ -51,7 +51,7 @@ loop until clean OR max-cycles reached:
       - resolver returns success or "needs manual"
 
     if resolver success:
-      # The resolver's emitted next_action decides the next hop (round-2 Batch A2) — a
+      # The resolver's emitted next_action decides the next hop — a
       # resolver may route BACK to the halted skill (retry model) or FORWARD past it:
       if resolver's next_action routes BACK to the halted skill
          (e.g. bind_conflict resolved via KEEP_CODE/SPLIT → re-run bind-codebase):
@@ -142,7 +142,7 @@ Cycle counter respects `--max-cycles` (default 3). One cycle = 1 propose + 1 use
 
 **Cycle escalation**: if same halt fires twice on same bolt with different proposed fixes → escalate to `bolt_repeated_partial_failure` (always-stop). Prevents propose-and-confirm from looping on a structurally-broken unit.
 
-**Configuration** (`~/.mega-sdd/config.yaml` — user-scope; relocated from the removed memory dir in v7.3.0):
+**Configuration** (`~/.mega-sdd/config.yaml` — user-scope):
 ```yaml
 halt_auto_propose:
   test_fail: propose

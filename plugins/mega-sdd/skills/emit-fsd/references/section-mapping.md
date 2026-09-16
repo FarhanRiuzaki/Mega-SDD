@@ -5,12 +5,12 @@
 > builder runs every rule below in one spawn and writes `FSD.md` pre-filled;
 > the model reviews (delete/reformat-only authority) and never re-derives a
 > section by hand. Editing a rule here MUST be mirrored in the builder — the
-> two are one contract (the 2a routing-table lesson: this file DOCUMENTS what
+> two are one contract (this file DOCUMENTS what
 > the script executes).
 > Every slot in `fsd-template.md` MUST have an extraction rule here.
 >
-> **§6 amendment (5e):** the old "de-dup if both sources mention same
-> constraint (prefer constitution)" was model judgment; the builder instead
+> **§6 — no de-dup across sources:** "de-dup if both sources mention same
+> constraint (prefer constitution)" would be model judgment; the builder
 > emits BOTH sources under labeled sub-blocks (`_Dari 02-functional §NFR:_` /
 > `_Dari constitution [LOCKED]:_`) — over-complete + labeled is deterministic,
 > and a duplicate is not fabrication.
@@ -138,7 +138,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 - From 02-functional NFR section: extract per sub-category
 - From the 06-constraints table: keyword-route each row (performance/latency/throughput · security/auth/encrypt · availability/uptime/sla; ID + EN keywords) into the matching slot
 - From constitution.md: filter LOCKED clauses by category tag; extract clause body
-- ~~De-dup if both sources mention same constraint (prefer constitution.md as canonical)~~ **AMENDED (5e, see header):** both sources are emitted under labeled sub-blocks — deterministic, duplicates are not fabrication
+- No de-dup if both sources mention same constraint (see header): both sources are emitted under labeled sub-blocks — deterministic, duplicates are not fabrication
 
 **Citation:** `[¹] vault/02-functional.md §NFR` AND/OR `[²] vault/constraints.md` AND/OR `[³] vault/_meta/constitution.md §LOCKED:<category>`
 **Missing source:** per sub-category emit `(not specified)` line; do NOT halt.
@@ -237,13 +237,6 @@ Each FSD section in `fsd-template.md` has a `{{section-N-citations}}` slot (10 t
 
 **Halt path:** a citation whose path resolves to no existing file is caught deterministically at SKILL.md Step 4.6 — `build-citation-map.sh` exits 1 → halt `quality_gate_failed:citation_unresolvable` (never a prose-trusted defensive check). A slot with no extraction rule at all remains `quality_gate_failed:template_slot_unfilled` (Step 4.5).
 
-**Previously:** `fsd-template.md` declared 10 `{{section-N-citations}}` slot markers but `section-mapping.md` had NO extraction rule for them. Result before fix:
-- Best case: skill body halt `template_slot_unfilled` on every FSD emit (defensive)
-- Worst case: literal `{{section-1-citations}}` placeholder ships to PDF
-- Worst-worst case: bolt subagent invents content to fill the slot (anti-halu rail break)
-
-Closed by the extraction rule above.
-
 ## Citation map schema
 
 `<vault>/fsd/.citation-map.json` — SCRIPT-WRITTEN by `scripts/build-citation-map.sh` (SKILL.md Step 4.6); the model never authors or edits this file:
@@ -271,7 +264,7 @@ Closed by the extraction rule above.
 }
 ```
 
-Schema 2.0 notes (v1.4.0 — every hash originates from `hashlib.sha256` over actual file bytes inside the script):
+Schema 2.0 notes (every hash originates from `hashlib.sha256` over actual file bytes inside the script):
 
 - `source_path` keeps the AS-CITED display form; `resolved_path` (new) is the project-root-relative path the hash was actually computed over (resolution order: `vault/`-prefix → vault → project → codebase-map).
 - An unresolvable citation gets `source_sha256: null` + `unresolved: true` (and the script exits 1 → `citation_unresolvable` halt).

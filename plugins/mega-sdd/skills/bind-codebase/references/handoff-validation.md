@@ -1,6 +1,6 @@
 # Handoff-integrity validation (binding→units) — the manual surface
 
-The deterministic handoff-integrity validator, invoked manually. This ships ONE slice — binding→units OQ-ID propagation (+ the CONFLICT slices below). Vault→binding and units→bolts boundaries are expansion candidates if this slice proves out. Until 5.x this procedure lived in `commands/validate-handoff.md`; the surface cull relocated it here — invoke by phrase through the front door (`/mega-sdd` → "validate handoff") or run the script directly.
+The deterministic handoff-integrity validator, invoked manually. This ships ONE slice — binding→units OQ-ID propagation (+ the CONFLICT slices below). Vault→binding and units→bolts boundaries are expansion candidates if this slice proves out. Invoke by phrase through the front door (`/mega-sdd` → "validate handoff") or run the script directly.
 
 ## What it does
 
@@ -91,5 +91,5 @@ The procedure invokes `plugins/mega-sdd/scripts/validate-handoff-binding-units.s
 - ✅ Binding-doc presence backstop (`binding_missing` — units citing conflicts with zero binding docs fail closed)
 - ✅ Binding freshness RECERTIFY (`binding_stale_recertify` — `binding_metadata.head` vs non-unit-attributed commits in `<head>..HEAD` ∩ binding.json anchor paths; out-of-pipeline commits only — bolt commits ride B1/B3; migration-safe ladder for legacy artifacts)
 - ❌ Binding → units Hard Rule propagation (slice 3)
-- ➡ Vault → binding coverage: the dedicated validator was removed in v7 (advisory-only; the claims ledger + analyze cover the surface)
+- ➡ Vault → binding coverage: no dedicated validator (advisory-only; the claims ledger + analyze cover the surface)
 - ❌ Units → bolts traceability (slice 5; partially covered by the bolt-orphans/postflight gates)

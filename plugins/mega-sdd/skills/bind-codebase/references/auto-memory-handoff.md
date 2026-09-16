@@ -22,7 +22,7 @@ PLUGIN_ROOT="$([ -n "$RESOLVER" ] && bash "$RESOLVER" "$DERIVED" || echo "$DERIV
 [ -n "$PLUGIN_ROOT" ] || PLUGIN_ROOT="$DERIVED"
 
 bash "$PLUGIN_ROOT/scripts/validate-extract-census.sh" --kb-dir="<kb-dir>" --quiet
-# M-05: branch on the exit code; read <kb-dir>/.extract-census-state.json ONLY on non-zero
+# branch on the exit code; read <kb-dir>/.extract-census-state.json ONLY on non-zero
 ```
 
 Interpret the verdict (per `extract-intelligence/SKILL.md §Step 5`):

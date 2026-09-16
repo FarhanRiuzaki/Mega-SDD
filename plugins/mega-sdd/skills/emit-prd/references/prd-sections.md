@@ -5,7 +5,7 @@
 > `scripts/build-prd-core.sh`** — it pre-fills those slots and leaves the
 > genuinely-synthetic ones (`section-1-*` narrative, reverse-mode `section-2-actors-table`,
 > diagram-less `journey-<slug>` slots) as `{{…}}` markers for the model (layout-2/legacy; on layout-3
-> `section-1-*` is filled verbatim from the PRD — 7.37.0). Editing a mechanical rule
+> `section-1-*` is filled verbatim from the PRD). Editing a mechanical rule
 > here MUST be mirrored in the builder — the two are one contract. This file is the PRD doc-pack's
 > **section map** for the shared emission engine
 > (`plugins/mega-sdd/references/emission-engine.md §What a doc-pack supplies`).

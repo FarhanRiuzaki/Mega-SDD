@@ -58,7 +58,7 @@ Verify every doc has:
 - [ ] The counts in the PASS line (`E entities, F flows, A adrs, Q oqs`) match the doc counts you generated (DBML `Table` blocks, `F-*-NNN` headings, `D-NNN` headings, checkbox OQs).
 - [ ] The authored patch carried every field the model owns: metadata + `source_documents` + `design_system_flags` (matching the Step 3 conditional-generation values) [+ `design_system`] [+ scope block] + the per-OQ recommend/scan records (Step 3.5) — the validator's `oq_recommend_underspecified` is the tripwire for a recommend-OQ whose JSON-only fields went missing.
 
-**Consumer guide & implementation notes (P2a — the guide is the sole carrier of the generic protocol):**
+**Consumer guide & implementation notes (the guide is the sole carrier of the generic protocol):**
 - [ ] `<OUTPUT_DIR>/_meta/ai-consumer-guide.md` exists (the Step-3 `cp` Run installed it — copied from the shipped template, never model-rendered).
 - [ ] `vault.md` carries the `_meta/ai-consumer-guide.md` pointer and does NOT restate the halt-YAML examples — a `blocker:` / `resolver_route:` fence in vault.md is a regression (the halt protocol, parallel-work guidance, and companion-skills routing live in the guide only).
 - [ ] `vault.md ## Glossary` (when present — omitted at `project_scale: xs`) carries product-specific terms only + the pointer to the guide's Standard-terms table — no re-emitted generic rows (ADR/DBML/DoD/FK/NFR/OQ/RTO/RPO/SLO or design-system terms).

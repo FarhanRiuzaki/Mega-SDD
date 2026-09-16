@@ -1,6 +1,6 @@
 # UAT Template — Bank-Style User Acceptance Test Script
 
-> **Canonical structure: 4 sections + the §5 automated-evidence annex (6.10.0).** Consumed by `emit-uat/SKILL.md` Step 3 (assembly).
+> **Canonical structure: 4 sections + the §5 automated-evidence annex.** Consumed by `emit-uat/SKILL.md` Step 3 (assembly).
 > Table / scenario-scaffold / RTM / berita-acara content comes VERBATIM from the script-written fragment
 > `<vault>/uat/.uat-scaffold.md` (`build-uat-scaffold.sh`); the `{{section-N-narrative}}` slots and the §2
 > step rows (replacing each `<!-- uat-steps:UAT-NNN -->` marker) are the ONLY model-written content

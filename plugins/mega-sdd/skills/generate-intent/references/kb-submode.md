@@ -32,7 +32,7 @@ free-text; only input parsing differs.
 Two KB grammars exist on disk; detect ONCE, deterministically:
 
 - `<kb>/census.json` present (or `<kb>/modules/*.prd.md` exists) →
-  **PRD-kontrak grammar** (extract-intelligence v2 — census-contracted,
+  **PRD-kontrak grammar** (census-contracted,
   one PRD per module).
 - Otherwise → **legacy numbered-tree grammar** (`00-overview/` …
   `99-rebuild-architecture/`). Pre-existing KBs keep working unchanged.
@@ -79,7 +79,7 @@ KB consumption correctness is unchanged whether the check confirms/warns/skips.
 6. **README `## ERD` / `## System Flow`** (multi-module) seed
    `vault.md ## Architecture` boundaries + `flows.md` skeletons — the rebuild shape,
    with legacy shape as reference only.
-7. **`<kb>/decisions/ADR-*.md` with `Status: accepted`** (7.14.0, architecture
+7. **`<kb>/decisions/ADR-*.md` with `Status: accepted`** (architecture
    advisor — `plugins/mega-sdd/references/architecture-advisor.md`): a recorded
    human decision is a legitimate input document (same source class as a PRD) —
    its `## Claims` block flows into the vault with the ADR as the citation, and
@@ -91,7 +91,7 @@ KB consumption correctness is unchanged whether the check confirms/warns/skips.
 ## Consumption — legacy numbered-tree grammar
 
 1. Read the KB README (`Reengineering Opportunities` + `Mutability Tier
-   Distribution`); no tier markers at all (pre-v1.4 KB) → treat all claims as
+   Distribution`); no tier markers at all (an older KB) → treat all claims as
    `[INTENT]`.
 2. Read `99-rebuild-architecture/data-mutation-policy.md` (ERD freedom;
    absent → all-`[INTENT]`).
@@ -119,7 +119,7 @@ KB consumption correctness is unchanged whether the check confirms/warns/skips.
 | `[INFERRED][INTENT]` | Vault body with note "INFERRED — confirm in dev"; outcome already captured | `flows.md` with `[INFERRED]` annotation |
 | `[INFERRED][ARTIFACT]` | Skip the vault entry entirely; log to `_diagnostics/kb-skipped-artifacts.md` | Diagnostic only |
 | `[OPEN][?]` | Vault `Open Question` — answering resolves both axes | `constraints.md ## Open Questions` |
-| §6 entry already `[x]`-resolved (KB-stage resolution via resolve-oq KB mode, 7.21.0) | Vault OQ born PRE-RESOLVED — the tag, the stakeholder answer, and its `Resolved (stakeholder, <date>)` provenance carried verbatim; the deriver maps `[x]` → `resolved` automatically | `constraints.md ## Open Questions` as `[x]`; a §6 `[~]` carries over as out-of-scope |
+| §6 entry already `[x]`-resolved (KB-stage resolution via resolve-oq KB mode) | Vault OQ born PRE-RESOLVED — the tag, the stakeholder answer, and its `Resolved (stakeholder, <date>)` provenance carried verbatim; the deriver maps `[x]` → `resolved` automatically | `constraints.md ## Open Questions` as `[x]`; a §6 `[~]` carries over as out-of-scope |
 
 ## ERD freedom
 

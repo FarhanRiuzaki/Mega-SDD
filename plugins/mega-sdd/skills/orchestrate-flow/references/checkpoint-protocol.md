@@ -1,6 +1,6 @@
 # Checkpoint Protocol
 
-> **Status (8.3.0):** declared contract — no skill or script emits per-step checkpoints at HEAD and no skill accepts `--resume-from`; `--resume` is CWD-driven only (SKILL.md Step 9). Kept as the target design.
+> **Status:** declared contract — no skill or script emits per-step checkpoints at HEAD and no skill accepts `--resume-from`; `--resume` is CWD-driven only (SKILL.md Step 9). Kept as the target design.
 
 `orchestrate-flow` writes per-step checkpoint files enabling **mid-skill resume** — not just inter-skill resume but also "bind-codebase crashed at claim 45 of 100 → resume at claim 46".
 
@@ -79,13 +79,13 @@ For `--auto` mode invocations (via orchestrate-flow), resume is automatic on `/m
 4. Skill resumes mid-execution from its checkpoint cursor (SUB-STEP granularity).
 5. After the skill completes, the chain continues per the handoff YAML protocol.
 
-> **Two-level resume (AUDIT L7):** checkpoints resume a skill's *sub-step*; they do NOT pick the phase. A *completed* phase (artifacts present) is skipped by the orchestrator regardless of any stale checkpoint, so chain-level "no state file" and skill-level checkpoint resume never conflict. Full precedence table → handoff-contract.md §Resume mechanics.
+> **Two-level resume:** checkpoints resume a skill's *sub-step*; they do NOT pick the phase. A *completed* phase (artifacts present) is skipped by the orchestrator regardless of any stale checkpoint, so chain-level "no state file" and skill-level checkpoint resume never conflict. Full precedence table → handoff-contract.md §Resume mechanics.
 
 ## Rotation policy (per ITER6-OQ-7 resolved)
 
 - Keep checkpoints for last 3 runs in `<vault>/.internal/checkpoints/`
 - Older checkpoints moved to `<vault>/.internal/checkpoints-archive/`
-- Archive older than 180 days may be deleted manually (v7.3.0: the memory maintenance command was removed)
+- Archive older than 180 days may be deleted manually
 - "Run" boundaries detected by timestamp gaps >5 minutes between checkpoints
 
 ## Integration with handoff YAML
@@ -113,7 +113,7 @@ Resume command: /mega-sdd --resume (re-enters chain at bind-codebase claim-46)
 ## Backward compatibility
 
 - Skills without checkpoint emission → resume continues to work via CWD-driven cursor (base behavior)
-- v3.0 skills emit checkpoints; orchestrator reads them when present
+- Skills that emit checkpoints → orchestrator reads them when present
 - Old vaults without `.internal/checkpoints/` directory → created lazily on first checkpoint emission
 
 ## Privacy + cleanup
