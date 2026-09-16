@@ -1,7 +1,7 @@
 ---
 framework: django
 framework_version_range: "4.2 — 5.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 extends: _universal
 pack_tier: full
@@ -137,6 +137,15 @@ HARD_RULE: INSTALLED_APPS MUST list every app whose models, signals, or manageme
   rule_type: CUSTOM
   rationale: Apps omitted from INSTALLED_APPS have their models invisible to the ORM and their migrations unapplied
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: docstrings (PEP 257) — **read by**: ruff `D*` (pydocstyle) ONLY when `select` includes `D` (off in ruff's default `E`/`F` set); Sphinx `autodoc` when the project builds docs; Django itself reads `help_text`/`verbose_name`, never a docstring, and a management command shows its `help = "…"`, not the class docstring. A full docstring only where one of these reads it, or on public API consumed outside this app.
+- **Skip**: models whose fields are the documentation; views/viewsets whose name + `queryset`/`serializer_class` say it; `Meta` classes; admin registrations; migrations; tests (the test name is the sentence); `:param x:` lines that repeat a type hint.
+- **Write**: a manager/queryset method's non-obvious filter (soft delete, tenant scoping); a signal receiver's side effect; a management command's irreversible effect; the docstring a Sphinx page or DRF schema renders for external callers.
+- **Names carry the meaning**: predicates `is_active`, `has_permission`, `can_retry`; verb-first functions (`calculate_total`, `fetch_pending_orders`); plural querysets (`active_users`); managers named for their filter (`ActiveManager`); never `data`, `temp`, `obj`, `handle`, `process`.
 
 ## Security idioms
 

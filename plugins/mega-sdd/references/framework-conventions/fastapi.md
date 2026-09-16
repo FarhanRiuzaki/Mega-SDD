@@ -1,7 +1,7 @@
 ---
 framework: fastapi
 framework_version_range: "0.110+"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_signature:
   package_manifest: pyproject.toml
@@ -94,6 +94,15 @@ HARD_RULE: Router modules MUST be in app/routers/ or app/api/ and declare a modu
   pattern: 'router\s*=\s*APIRouter'
   rationale: Consistent instance naming enables include_router() to import `from .routers.items import router` across all modules without structural exceptions
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: docstrings (PEP 257) — **read by**: FastAPI itself — a path-operation function's docstring becomes the OpenAPI `description` (Markdown) whenever `description=` is not passed, so on an endpoint it is API surface, not a comment; Pydantic fields document themselves through `Field(description=…)`, not docstrings; ruff `D*` ONLY when `select` includes `D`; Sphinx `autodoc` when docs are built. A full docstring on an endpoint only when consumers need what the route + models do not say; elsewhere only where a reader exists or on public API consumed outside this module.
+- **Skip**: dependencies and services whose type hints carry the contract; Pydantic models (fields + `Field(description=…)` are the doc); routers whose prefix + tags say it; tests; `:param:`/`:return:` lines repeating type hints; a docstring that restates `summary=`.
+- **Write**: the endpoint description external consumers read — side effects, idempotency, rate limits, async completion; a dependency's caching/lifetime assumption; a background task's retry or side-effect contract.
+- **Names carry the meaning**: predicates `is_active`, `has_scope`, `can_retry`; verb-first functions (`create_order`, `fetch_pending_invoices`); plural collections (`active_users`); dependencies as nouns (`current_user`, `db_session`); never `data`, `temp`, `obj`, `handle`, `process`.
 
 ## Security idioms
 

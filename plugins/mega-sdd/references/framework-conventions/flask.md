@@ -1,7 +1,7 @@
 ---
 framework: flask
 framework_version_range: "3.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_signature:
   package_manifest: pyproject.toml
@@ -114,6 +114,15 @@ HARD_RULE: Config MUST load secrets and credentials from environment variables, 
   rule_type: CUSTOM
   rationale: Hard-coded secrets leak in version control; environment variables support 12-factor app deployment and CI override
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: docstrings (PEP 257) — **read by**: `none by default` — Flask reads no docstring; ruff `D*` ONLY when `select` includes `D`; Sphinx `autodoc` when docs are built; apispec-based generators (flask-smorest, flasgger) lift view docstrings into OpenAPI ONLY when installed. A full docstring only where one of these reads it, or on public API consumed outside this blueprint.
+- **Skip**: view functions whose route decorator + name say it; blueprints and the `create_app` factory; CLI commands (`help=` carries the text); tests; `:param:`/`:return:` lines repeating type hints.
+- **Write**: a view's non-obvious side effect or session assumption; an extension's init-order constraint inside `create_app`; a request hook's early-return contract; the OpenAPI description when an apispec generator is installed.
+- **Names carry the meaning**: predicates `is_active`, `has_permission`, `can_retry`; verb-first functions (`calculate_total`, `fetch_orders`); plural collections (`pending_orders`); blueprints named for the resource (`orders_bp`); never `data`, `temp`, `obj`, `handle`, `process`.
 
 ## Security idioms
 
