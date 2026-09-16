@@ -1,0 +1,7 @@
+arm xs-lite-8.3.0-levers-run4 sid a78b3b16 start 16:30:58Z
+  DONE_code      17m45s  last code commit  feat(U-006): Build the public Kontak page with the contact form
+  DONE_p5        17m45s  last type(U-*) commit (P0/P2 tables)  feat(U-006): Build the public Kontak page with the contact f
+  DONE_gate      26m31s  last unit gate pass (postflight/acceptance/panel merge) for U-006
+  B2 suite       27m06s  run-full-suite.sh result (batch gate, reported separately)
+  EXCLUDED        4m04s  first drift/analyze/html/emit call (never in DONE)
+  gate calls seen for last-code unit: {'run-acceptance-tests.sh': '16:52:45', 'run-postflight-scan.sh': '16:52:45', 'merge-panel-findings.sh': '16:57:29'}
