@@ -114,7 +114,7 @@ HARD_RULE: Public reusable library code MUST reside under pkg/ — not mixed int
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — `c.BodyParser(&req)` (v2) / `c.Bind().Body(&req)` (v3) into a struct with `validate:"..."` tags, then run the validator — or configure `fiber.Config{StructValidator: ...}` so validation fires on bind; the bypass is BodyParser alone (it only decodes, never validates) or raw `c.Query()`/`c.FormValue()` reads that no tag ever sees.

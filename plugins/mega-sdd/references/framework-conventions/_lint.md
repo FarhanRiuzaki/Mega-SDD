@@ -12,7 +12,7 @@ The pack's YAML frontmatter (between the first two `---` lines) must contain ALL
   - `dependency_marker:` — the string the CLI searches for within the manifest (e.g. `laravel/framework`, `django`)
 - `framework_version_range:` — the version range the pack was verified against (e.g. `"10.x — 12.x"`)
 
-Optional but recommended: `last_verified_against:`, `maintainer:`, `detection_signature.version_regex:`, `extends:`.
+Optional but recommended: `last_verified_against:`, `maintainer:`, `detection_signature.version_regex:`, `extends:`. Also read by the script: `pack_tier:` (`full`/`thin` — drives `_registry.md` status and the tier-aware `--all` gate) and `detection_priority:` (bare integer, lower wins in the GROUND matcher; default 100).
 
 ## Check 2 — Required-always sections
 
@@ -25,7 +25,7 @@ Every pack MUST contain ALL six of the following `## ` headings (in any order):
 5. `## Testing conventions` — test runner, test file location, naming, and fixture conventions
 6. `## Code style (self-documenting)` — the stack's code-style DELTA over Iron Rule 6 (since 8.2.0; shape in Check 6)
 
-A pack that omits any of these is incomplete and MUST NOT be loaded into the registry.
+A pack that omits any of these is incomplete: `--all` blocks a `pack_tier: full` pack on it and `--registry` marks it `partial`.
 
 ## Check 3 — Conditional sections (present or opted-out)
 
@@ -36,9 +36,17 @@ The following sections MUST be present if the framework has the capability. A pa
 - `## UI detection` — REQUIRED when the stack renders server- or client-side UI. Opt-out with `_(N/A: API-only / no UI)_` if the framework is API-only.
 - `## Reuse discovery` — REQUIRED when the stack has reusable first-party code (helpers, models, services, commands). Opt-out with `_(N/A: no conventional reuse locations)_` only for minimal/micro frameworks.
 
+## Check 3b — gate-driving header near-miss lint
+
+Any `## ` header that is not in the recognized set but resembles one of the gate-driving sections (Flow-artifact derivation, Cross-cutting, Relation derivation, UI quality, Entity source globs, Entity matching, Test patterns, Conditional scaffold, Deep-scan file hints, Authz mapping, Reuse discovery) is a violation — the resolver matches exact names, so a typo would silently SKIP a gate.
+
+## Check 3c — `extends:` placeholder
+
+`extends:` must not carry an unrewritten `<placeholder>`.
+
 ## Check 6 — `## Code style (self-documenting)` shape (REQUIRED since 8.2.0; the header itself is Check 2)
 
-The stack's code-style DELTA over Iron Rule 6 (`agents/bolt-implementer.md`): four bold slots — **Doc-comment tool** + **read by**, **Skip**, **Write**, **Names carry the meaning** — ≤ 6 bullets, ≤ 1 600 bytes of bullets, `read by` naming concrete toolchain consumers (or `none by default`), every fact web-verified at authoring (bump `last_verified_against:`). The script checks that all five labels are present and that no template placeholder (`<the … >`, `<tool>`) survives; bullet count and byte cap are pinned by `tests/per-stack-packs/test-code-style-section.sh`. Consumed by the dispatch builder as the T2 `code_style_slice` (most-specific pack wins, no chain merge). `_universal.md` MUST NOT carry it — the generic rule is agent-carried. Spec: `docs/superpowers/specs/2026-09-16-code-style-playbook-design.md`.
+The stack's code-style DELTA over Iron Rule 6 (`agents/bolt-implementer.md`): four bold slots — **Doc-comment tool** + **read by**, **Skip**, **Write**, **Names carry the meaning** — 4–6 bullets, ≤ 1 600 bytes of bullets, `read by` naming concrete toolchain consumers (or `none by default`), every fact web-verified at authoring (bump `last_verified_against:`). The script checks that all five labels are present and that no template placeholder (`<the … >`, `<tool>`) survives; bullet count and byte cap are pinned by `tests/per-stack-packs/test-code-style-section.sh`. Consumed by the dispatch builder as the T2 `code_style_slice` (most-specific pack wins, no chain merge). `_universal.md` MUST NOT carry it — the generic rule is agent-carried. Spec: `docs/superpowers/specs/2026-09-16-code-style-playbook-design.md`.
 
 ## Check 4 — Valid YAML in hint-section fenced blocks
 
@@ -52,7 +60,7 @@ A pack's BODY (everything after the frontmatter closing `---`) MUST NOT contain 
 
 The token map below is the machine-readable source for this check. The script reads the `## Cross-framework token map` section, determines the pack's `framework:` value, and greps the body for every OTHER framework's tokens. Any match outside a "contrast example" fence is a violation.
 
-Rationale: a token leak indicates the pack was copy-edited from another framework's pack and not properly cleaned, or the author accidentally documented the wrong stack's idioms. Leaks confuse the bind-codebase binding step.
+Rationale: a token leak indicates the pack was copy-edited from another framework's pack and not properly cleaned, or the author accidentally documented the wrong stack's idioms. Leaks confuse every pack consumer (the classic bind step, the validators, the dispatch builder).
 
 ---
 

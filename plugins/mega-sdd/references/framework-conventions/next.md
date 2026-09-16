@@ -132,7 +132,7 @@ HARD_RULE: The root layout MUST be app/layout.tsx and MUST include <html> and <b
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — `zod` parse at the server boundary: inside every Server Action (`formData` → schema) and Route Handler (`await request.json()` → schema); the bypass is trusting the payload shape because "the form only sends these fields" — client-side validation is not validation, both surfaces are directly callable.

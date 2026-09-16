@@ -11,7 +11,7 @@ extends: null
 
 # Universal Good-Practice Convention Pack
 
-Always applies — loaded by `bind-codebase` step 2.8 either ALONE (when no framework detected) or MERGED WITH a framework-specific pack (framework rules take precedence on conflict).
+Always applies — the resolver's fallback chain tail on every lane (`resolve-framework-pack.sh`: `<pack>.md _universal.md`, most-specific wins) and, on the classic lane, loaded by `bind-codebase` step 2.8 either ALONE (when no framework detected) or MERGED WITH a framework-specific pack (framework rules take precedence on conflict).
 
 These are universal good practices that hold across most backend frameworks and database systems. Use as baseline when no framework-specific guidance exists.
 
@@ -59,7 +59,7 @@ Document the denormalization rationale in `data-mutation-policy.md` per-locked-f
 
 ### Departures from legacy (mandatory section)
 
-`suggested-erd.md` MUST list:
+The ERD (README `## ERD` in the PRD-kontrak; `suggested-erd.md` in a legacy KB) MUST list:
 
 1. **Denormalization fixes** — what legacy denormalized, how rebuild normalizes
 2. **Naming standardization** — legacy abbreviated/cryptic names → rebuild full descriptive names

@@ -7,7 +7,7 @@ detection_signature:
   package_manifest: <filename>          # composer.json | package.json | Gemfile | pyproject.toml | go.mod | Cargo.toml
   dependency_marker: <string>           # e.g., "laravel/framework", "django", "rails", "express"
   version_regex: <regex>                # optional — extract major version from manifest
-extends: <other-pack-or-null>           # optional — pack inheritance (e.g., nestjs extends typescript-universal)
+extends: <other-pack-or-null>           # optional — pack inheritance (e.g., laravel-base-26 extends laravel; most packs extend _universal)
 ---
 
 # <Framework Display Name> Convention Pack
@@ -51,13 +51,13 @@ extends: <other-pack-or-null>           # optional — pack inheritance (e.g., n
 
 ## Hard Rules emitted
 
-These rules merge into `binding.md` §Suggested Unit Hard Rules when this pack is loaded.
+These rules merge into `binding.md` §Suggested Unit Hard Rules on the classic lane (`bind-codebase` 2.9); on every lane the dispatch builder filters the glob-matched records into the bolt's T2 `framework_pack_rules`.
 
 ```
 HARD_RULE: <human-readable rule statement>
   path_glob: <e.g., app/Models/*.php>
-  rule_type: NAMING_RULE | LOCATION_RULE | SIGNATURE_RULE | DEP_RULE | CUSTOM
-  ast_grep_pattern: <YAML rule reference, or empty if NAMING_RULE>
+  rule_type: NAMING_RULE | LOCATION_RULE | SIGNATURE_RULE | DEP_RULE | LOCK_RULE | SECURITY | PERFORMANCE | CUSTOM
+  pattern: <regex — or `required_pattern:` / `forbidden_pattern:` / `case_style:`, the keys the dispatch builder renders; a rule that needs an AST match carries a real ast-grep `rule:` body (promoted as a v2 fence)>
   rationale: <1-sentence why>
 ```
 
@@ -84,7 +84,7 @@ What violates this framework's idioms (anti-patterns that bolts must NOT generat
 > MOST-SPECIFIC pack wins, no chain merge; ladder all → first two → first bullet, and the first
 > bullet is the floor) for `bolt-implementer`, and by the controller inside the standards-lens
 > slice. A STYLE rule, never a gate (F.5: no comment-counting validator, no HARD_RULE on
-> comments). ≤ 6 bullets, ≤ 1 600 bytes of bullets, at most ONE bad/good pair, and ONLY what is
+> comments). 4–6 bullets, ≤ 1 600 bytes of bullets, at most ONE bad/good pair, and ONLY what is
 > specific to this stack — the generic rule (WHY not WHAT, the delete test, minimality, the
 > protect-list, comment language = surrounding code) is agent-carried and must not be repeated.
 > Every `read by` fact is web-verified at authoring (bump `last_verified_against:`). REQUIRED since
@@ -98,9 +98,10 @@ What violates this framework's idioms (anti-patterns that bolts must NOT generat
 ## Security idioms
 
 > Consumed by the execute-bolts review panel: the controller passes this section to the
-> `security-reviewer` lens as the pack security slice, and `bolt-implementer` receives it
-> through the T2 framework-pack rules — so generated code is born with the stack's
-> security idioms, not retrofitted. Keep bullets PROJECT-ACTIONABLE and stack-correct:
+> `security-reviewer` lens as the pack security slice, and `bolt-implementer` receives ONLY the idioms
+> that also carry a `HARD_RULE` row (the T2 framework-pack rules read `## Hard Rules emitted`,
+> never this section) — so a mechanically expressible idiom MUST get its row below to be
+> born into generated code, not retrofitted. Keep bullets PROJECT-ACTIONABLE and stack-correct:
 > name the mechanism and the dangerous bypass, not generic advice the model already knows.
 > An idiom that is mechanically expressible ALSO gets a HARD_RULE row in
 > `## Hard Rules emitted` (the existing merge machinery — never a parallel rules channel).
@@ -142,12 +143,12 @@ Extends `references/framework-conventions/_universal.md` §ERD Quality Rails:
 > input-accepting state-transition step in `flows.md` maps to a REQUIRED code
 > artifact. The validator is tech-agnostic: it reads these signatures, never
 > hardcodes a stack. A pack that omits this section → the validator writes
-> `status: SKIP` (graceful, never errors). NOTE: `target_files` is parsed from a
-> unit's `## Target files` fenced block, NOT a frontmatter field.
+> `status: SKIP` (graceful, never errors). NOTE: `target_files` is read from BOTH the unit
+> frontmatter `target_files:` list (canonical) and the `## Target files` body block (union).
 
 ```yaml
 endpoint_kinds:
-  - flow_signal: <regex matching an input-accepting transition step in 04-flows.
+  - flow_signal: <regex matching an input-accepting transition step in the vault flows (`context.md` on layout-3, `flows.md` on layout-2).
                   The validator splits each flow into per-step BLOCKS (a numbered
                   `N.` line plus its indented sub-bullets) and matches the regex
                   against the whole block — so a signal that appears in a step's
@@ -240,6 +241,8 @@ detail_view_render:
      $m = {Model}::factory()->create();
      $this->get(route('{resource}.show', $m))->assertOk()->assertSee((string) $m->{display_field});>
   test_glob: <glob where that render test lives, e.g. tests/Feature/**/*Test.php>
+  # Only `detail_view_glob` is machine-parsed (validate-unit-spec.sh); `detail_view_render.template` is read by
+  # generate-units when it authors the acceptance test; `test_glob` has no consumer today.
 ```
 
 ## UI quality signatures
@@ -347,7 +350,7 @@ relation_derivation:
     # declared in the unit body (e.g. `branch_id` => a `branch()` accessor). A missing
     # accessor is a `missing_relations[]` finding. FK columns are recognized by the
     # universal `<name>_id` shape (see `_universal.md` §Naming standards FK row).
-    accessor_template: '<optional — how the accessor renders, e.g. {camelSingular}()>'
+    accessor_form: <call | attribute | any — `call` matches `accessor(` (paren-call ORMs), `attribute` the bare name (attribute-style ORMs); default `any` = permissive word match. This is the ONLY key validate-sibling-consistency.sh reads here>
 ```
 
 ## Toolchain   <!-- OPTIONAL — override for L0 code gates -->

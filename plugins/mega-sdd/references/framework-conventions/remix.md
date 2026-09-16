@@ -123,7 +123,7 @@ HARD_RULE: `app/root.tsx` MUST export a default component rendering `<html>`, `<
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — `zod` (or `conform`) parses `request.formData()` and `params` inside every `action`/`loader`; the bypass is reading `formData.get('x')` and trusting it — actions are plain HTTP endpoints anyone can POST to, regardless of what the `<Form>` renders.

@@ -109,7 +109,7 @@ HARD_RULE: A custom error type implementing IntoResponse MUST be defined and use
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — `Json<T>` / `Query<T>` extractors deserialize via serde, but type-checking is not validation: pair with the `validator` crate (`#[derive(Validate)]` + a `ValidatedJson`-style wrapper extractor that calls `.validate()` in `FromRequest`); the bypass is treating a successful deserialize as "validated", or reading raw request bytes that skip extractors entirely.

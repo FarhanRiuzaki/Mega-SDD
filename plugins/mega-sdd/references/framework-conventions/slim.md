@@ -111,7 +111,7 @@ HARD_RULE: Middleware MUST be applied via $app->add() or $group->add() / route->
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Slim ships none; validate `$request->getParsedBody()` with Respect\Validation (or a validation middleware) inside the Action before it reaches the domain layer — handing the parsed body straight to a service is unvalidated input.

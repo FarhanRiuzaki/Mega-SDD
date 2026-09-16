@@ -150,7 +150,7 @@ HARD_RULE: INSTALLED_APPS MUST list every app whose models, signals, or manageme
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Django forms (`forms.Form`/`ModelForm`) and DRF serializers (`serializer.is_valid(raise_exception=True)`) are the boundary; reading `request.POST`/`request.data` directly into the ORM skips validation entirely.

@@ -127,7 +127,7 @@ HARD_RULE: Config MUST load secrets and credentials from environment variables, 
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Flask validates nothing by itself; the boundary is Flask-WTF/WTForms (`form.validate_on_submit()`) or marshmallow schemas — passing `request.form`/`request.get_json()` straight into queries or model constructors is unvalidated input.

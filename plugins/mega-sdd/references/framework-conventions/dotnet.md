@@ -67,7 +67,7 @@ Conventions for general .NET / C# projects (console apps, worker services, class
 
 ## Hard Rules emitted
 
-These rules merge into `binding.md` §Suggested Unit Hard Rules when this pack is loaded.
+These rules merge into `binding.md` §Suggested Unit Hard Rules on the classic lane (`bind-codebase` 2.9); on every lane the dispatch builder filters the glob-matched records into the bolt's T2 `framework_pack_rules`.
 
 ```
 HARD_RULE: Interface types MUST be named `I` + PascalCase
@@ -130,7 +130,7 @@ HARD_RULE: Project files MUST enable nullable reference types
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom. Web-only concerns (XSS, CSRF,
 > HTTP auth enforcement, file uploads) live in the `aspnetcore` pack that extends this.
 

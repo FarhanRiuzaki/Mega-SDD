@@ -138,7 +138,7 @@ HARD_RULE: The handle hook MUST be exported from src/hooks.server.ts
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — form actions and `+server.ts` handlers validate `await request.formData()` / `request.json()` with `zod` (or `sveltekit-superforms`); the bypass is reading form fields and trusting them — actions and endpoints are plain HTTP surfaces anyone can POST to directly.

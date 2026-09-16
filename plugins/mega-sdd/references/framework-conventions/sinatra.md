@@ -120,7 +120,7 @@ HARD_RULE: `halt` MUST be used for early response termination inside a route blo
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Sinatra validates nothing; `params` is raw user input — validate through dry-validation/dry-schema contracts (or explicit guard clauses that `halt 400`) before anything touches the data layer.

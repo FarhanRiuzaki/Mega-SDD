@@ -137,7 +137,7 @@ HARD_RULE: Domain error types MUST implement actix_web::ResponseError to produce
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — `web::Json<T>` / `web::Query<T>` extractors deserialize via serde, but type-checking is not validation: pair with the `validator` crate (`#[derive(Validate)]` + `#[validate(...)]` fields, calling `.validate()` or using `actix-web-validator` wrappers); the bypass is treating a successful deserialize as "validated", or reading raw `web::Payload` bytes that skip extractors entirely.

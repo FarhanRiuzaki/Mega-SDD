@@ -143,7 +143,7 @@ HARD_RULE: Multi-step write operations MUST be wrapped in a `@Transactional` ser
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Bean Validation (`@Valid`/`@Validated`) on `@RequestBody` DTOs carrying constraint annotations; a controller binding to an unannotated DTO — or omitting `@Valid` — gets zero validation.

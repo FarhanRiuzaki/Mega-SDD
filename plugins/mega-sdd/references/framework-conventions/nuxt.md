@@ -129,7 +129,7 @@ HARD_RULE: process.env MUST NOT be accessed in components, composables, or pages
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Nitro server routes validate with `readValidatedBody(event, schema.parse)` / `getValidatedQuery(event, …)` backed by `zod`; the bypass is plain `readBody(event)` with the shape trusted as-is — `server/api/` routes are directly callable regardless of what the UI sends.

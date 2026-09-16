@@ -112,7 +112,7 @@ HARD_RULE: process.env MUST NOT be accessed outside src/config/ or the app entry
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — `zod`/`joi`/`express-validator` in a validation middleware at the route boundary (before the controller); a handler that reads `req.body.x` / `req.query.x` with no validation layer in the chain is the defect — Express validates nothing by itself.

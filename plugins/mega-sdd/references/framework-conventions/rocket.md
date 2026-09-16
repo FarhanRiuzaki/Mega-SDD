@@ -108,7 +108,7 @@ HARD_RULE: JSON request bodies MUST be received as Json<T> where T derives serde
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — `FromForm` structs with `#[field(validate = ...)]` validators run before the handler body, and `Json<T>` rejects malformed bodies with a 422; the bypass is accepting raw `Data`/`String` parameters or `&str` segments that skip typed parsing — keep every input behind a form/guard/`Json` type so failed validation never reaches the handler.

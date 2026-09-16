@@ -160,7 +160,7 @@ HARD_RULE: Business logic MUST NOT be placed directly in controller actions; com
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — model validations (`validates`) plus Strong Parameters at the controller boundary; writes via `update_column`/`update_attribute`/`save(validate: false)` skip validations and are the bypass to flag.

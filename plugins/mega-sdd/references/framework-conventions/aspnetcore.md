@@ -66,7 +66,7 @@ Conventions for ASP.NET Core 6+ web projects — Web API (controllers or Minimal
 
 ## Hard Rules emitted
 
-These rules merge into `binding.md` §Suggested Unit Hard Rules when this pack is loaded.
+These rules merge into `binding.md` §Suggested Unit Hard Rules on the classic lane (`bind-codebase` 2.9); on every lane the dispatch builder filters the glob-matched records into the bolt's T2 `framework_pack_rules`.
 
 ```
 HARD_RULE: Web controllers MUST end with the `Controller` suffix
@@ -119,7 +119,7 @@ HARD_RULE: Endpoints serving non-public data MUST carry `[Authorize]` (or `.Requ
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom. Base crypto/secrets/SQL idioms
 > are inherited from `dotnet.md`.
 

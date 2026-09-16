@@ -124,7 +124,7 @@ HARD_RULE: Modules that expose providers to other modules MUST list those provid
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — global `ValidationPipe` + `class-validator` decorators on DTO classes; the bypass is a DTO-less `@Body()` (typed `any` or a bare interface) — class-validator only runs against decorated classes, so such a handler accepts anything.

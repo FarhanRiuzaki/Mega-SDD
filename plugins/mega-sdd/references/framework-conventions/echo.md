@@ -112,7 +112,7 @@ HARD_RULE: Public reusable library code MUST reside under pkg/ — not mixed int
 ## Security idioms
 
 > Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` via T2 framework-pack rules. Stack-correct, mechanism-named —
+> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — `c.Bind(&req)` then `c.Validate(&req)` against `validate:"..."` tags via the registered `e.Validator`; the bypass is calling `Bind` without `Validate` — Echo does NOT auto-validate on bind — or reading raw `c.QueryParam()`/`c.FormValue()` strings that no tag ever sees.
