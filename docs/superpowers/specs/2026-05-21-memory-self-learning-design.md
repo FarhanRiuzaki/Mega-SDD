@@ -1,3 +1,5 @@
+> **Superseded by 8.x (stamped 2026-09-16, doc-audit v8):** the memory / self-learning lane was removed in 7.3.0 (nothing writes `.mega-sdd/memory/`); the only live vault-memory artifact is `<vault>/.memory/bolt-outcomes.json` (`references/paths.md`). Rekaman sejarah — tidak ditulis ulang.
+
 # Memory & Self-Learning Layer — Iter 5
 
 **Status**: Proposed (design only; awaiting execution kickoff)

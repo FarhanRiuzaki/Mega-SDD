@@ -1,3 +1,5 @@
+> **Superseded by 8.x (stamped 2026-09-16, doc-audit v8):** architecture baseline still current, but the vendored superpowers bridge was removed in 7.4.0 and the pipeline shape since 8.0.0 (classic default + opt-in `--lite` plan → bolts) is in `2026-09-10-v8-fused-pipeline-design.md`. Rekaman sejarah — tidak ditulis ulang.
+
 # Mega-SDD v4 — Lean Core (design + execution spec)
 
 **Date:** 2026-06-04

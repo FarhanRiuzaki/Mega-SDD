@@ -1,3 +1,5 @@
+> **Superseded by 8.x (stamped 2026-09-16, doc-audit v8):** TOKEN-COST-REPORT / telemetry were removed in 7.3.0; the surviving levers are the code paths themselves; measurement lives in `benchmarks/`. Rekaman sejarah — tidak ditulis ulang.
+
 # Spec — token + latency optimization
 
 **Date:** 2026-07-30 · **Research:** `research/2026-07-30-token-audit-end-to-end.md`

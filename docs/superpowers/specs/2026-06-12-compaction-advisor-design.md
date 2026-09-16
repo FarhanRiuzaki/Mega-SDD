@@ -1,3 +1,5 @@
+> **Superseded by 8.x (stamped 2026-09-16, doc-audit v8):** the PreCompact hook + telemetry it depends on were removed in 7.3.0 (`hooks/hooks.json` has SIX events, none of them PreCompact). Rekaman sejarah — tidak ditulis ulang.
+
 # Compaction advisor + PreCompact snapshot — ECC-adoption Batch 2
 
 **Date:** 2026-06-12 · **Research:** ECC review (skills/strategic-compact, hooks/memory-persistence)

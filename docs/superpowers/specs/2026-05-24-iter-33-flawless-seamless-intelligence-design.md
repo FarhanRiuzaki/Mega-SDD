@@ -1,3 +1,5 @@
+> **Superseded by 8.x (stamped 2026-09-16, doc-audit v8):** its memory/telemetry sections describe the lane removed in 7.3.0; orchestration + handoffs now per `skills/orchestrate-flow/` (and the 8.x `--lite` 2-hop lane, spec 2026-09-10). Rekaman sejarah — tidak ditulis ulang.
+
 # Iter 33 — Flawless Seamless Intelligence (Orchestrator + Handoffs)
 
 **Status:** Design approved 2026-05-24

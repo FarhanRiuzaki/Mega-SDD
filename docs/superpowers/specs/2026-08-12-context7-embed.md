@@ -1,3 +1,5 @@
+> **Superseded by 8.x (stamped 2026-09-16, doc-audit v8):** its slice-design consumer moved to the separate plugin `mega-sdd-extras` (7.4.0 / spec 2026-09-06); the context7 MCP bundle itself remains live (`plugins/mega-sdd/.mcp.json`). Rekaman sejarah — tidak ditulis ulang.
+
 # Context7 embed — second bundled MCP server + implementer consult wiring
 
 **Date:** 2026-08-12

@@ -1,3 +1,5 @@
+> **Superseded by 8.x (stamped 2026-09-16, doc-audit v8):** v1 design — the vendored superpowers bridge (removed 7.4.0), `run-hook.sh` dispatch (removed 7.5.0) and the 7-file vault (read-only since layout-2) no longer exist; the live contract is `plugins/mega-sdd/CLAUDE.md` + `references/paths.md`. Rekaman sejarah — tidak ditulis ulang.
+
 # Mega-SDD Revamp — Design Spec
 
 **Date:** 2026-05-13

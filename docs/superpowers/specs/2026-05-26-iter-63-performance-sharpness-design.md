@@ -1,3 +1,5 @@
+> **Superseded by 8.x (stamped 2026-09-16, doc-audit v8):** the telemetry corpus it designs was removed in 7.3.0; measurement now lives in `benchmarks/` (static context traces + headless arms). Rekaman sejarah — tidak ditulis ulang.
+
 # Iter 63 Performance + Sharpness Design — v4.0.0-Candidate Refactor (Sub-Project 1)
 
 **Status:** Design approved 2026-05-26. **AUDIT-CORRECTED 2026-05-27 → Iter 67.5 Fork A scope lock.**

@@ -1,3 +1,5 @@
+> **Superseded by 8.x (stamped 2026-09-16, doc-audit v8):** the `/mega-sdd:slice` verb + in-core slice-design skill were removed in 7.4.0 and revived as the SEPARATE plugin `mega-sdd-extras` (`/mega-sdd-extras:slice`, spec 2026-09-06); the Playwright MCP bundle + UAT evidence parts remain live. Rekaman sejarah — tidak ditulis ulang.
+
 # Playwright embed — MCP bundling, /slice verb, UAT automated-evidence lane, interactive design lens
 
 **Date:** 2026-08-12

@@ -1,3 +1,5 @@
+> **Superseded by 8.x (stamped 2026-09-16, doc-audit v8):** the memory/learning lane was removed in 7.3.0; nothing here is wired at HEAD. Rekaman sejarah — tidak ditulis ulang.
+
 # Learning Loop — closing the wasted-output gaps (v4.15)
 
 **Status: SHIPPED** · Builds on the memory layer (`skills/memory/`) and the Living Vault spec (`2026-06-10-living-vault-continuous-sync-design.md`).
