@@ -17,6 +17,7 @@ Canonical prompt template for the bolt-subagent dispatch. Implements the 10 AI-e
 - Anti-context (negative space = freedom + protection)
 - Upstream bolts (depends_on chain — 1-line summary each)
 - Framework pack rules (filtered by your target_files glob match)
+- Code style (from the active pack §Code style — stack delta over Iron Rule 6)
 - Constitution clauses (cited in this unit, resolved in the constitution §C)
 - KB anti-patterns (filtered by your domain tags)
 - T2.3 — Starterkit context (relevant slice)
@@ -170,6 +171,17 @@ TIER 2 — Conditional context (target ≤10KB total)
 <for each rule in framework pack where rule.path_glob matches any unit.target_files:>
 - <rule-id> (from <pack>.md §<section>)
   └─ <rule body>
+
+## Code style (from <pack>.md §Code style — stack delta over Iron Rule 6; a style rule, not a gate)
+
+<the `- ` bullets of the FIRST `## Code style (self-documenting)` section in the resolved pack
+ chain — most-specific pack wins, NO chain merge (one owner per delta); `_universal.md` never
+ carries one. Ladder all → first two → first bullet; the first bullet (doc-comment tool + who
+ READS it) is the floor because it prevents an L0 lint collision, the same reason 7a keeps its
+ top-1 rule. Absent → section OMITTED and recorded; the generic comment rule stays agent-carried
+ (bolt-implementer Iron Rule 6). Spec: `2026-09-16-code-style-playbook-design.md §3`.>
+- <bullet verbatim>
+(+N more — Tier 3: read the full pack §Code style)
 
 ## Constitution clauses (cited in this unit, resolved in the constitution §C)
 

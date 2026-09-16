@@ -2035,6 +2035,67 @@ else:
              % _chain_desc())
 
 
+# ── Priority 7b — code style slice (stack DELTA over Iron Rule 6) ────────────
+# Spec: docs/superpowers/specs/2026-09-16-code-style-playbook-design.md §3.
+# The generic comment rule is AGENT-CARRIED (bolt-implementer.md Iron Rule 6);
+# a pack's `## Code style (self-documenting)` carries only THIS stack's delta —
+# the doc-comment tool + who READS it (the L0 lint-collision preventer: RuboCop
+# Style/Documentation, revive `exported`, CS1591 … demand doc comments the
+# generic "don't comment" rule would strip), the skip/write vocabulary, the
+# idiomatic names. MOST-SPECIFIC pack wins, NO chain merge (one owner per
+# delta); `_universal.md` never carries the section (it would re-send Rule 6 on
+# every packless dispatch). Ladder: all bullets → first two → first bullet
+# (FLOOR — the read-by line is kept for the same reason priority 7a keeps its
+# top-1 rule). A style rule, never a gate: nothing here is validated post-flight.
+def _cs_bullets_of(body):
+    out = []
+    for ln in body.splitlines():
+        s = ln.strip()
+        if not s or s.startswith(">"):
+            continue                                 # blockquote = authoring note
+        if ln.startswith("- ") or ln.startswith("* "):
+            out.append(s[2:].strip())
+        elif out and ln[:1] in (" ", "\t"):
+            out[-1] = out[-1] + " " + s              # indented continuation line
+    return out
+
+
+_cs_hits = pack_section("Code style")
+_cs_pack = _cs_hits[0][0] if _cs_hits else None
+_cs_bullets = _cs_bullets_of(_cs_hits[0][1]) if _cs_hits else []
+
+
+def _render_code_style(n):
+    if not _cs_bullets:
+        return ""
+    head = ("## Code style (from %s §Code style — stack delta over Iron Rule 6; a style rule, not a gate)\n\n"
+            % _cs_pack)
+    body = ["- %s" % b for b in _cs_bullets[:n]]
+    if len(_cs_bullets) > n:
+        body.append("(+%d more — Tier 3: read the full pack §Code style)" % (len(_cs_bullets) - n))
+    return head + "\n".join(body)
+
+
+if _cs_bullets:
+    _lv = [_render_code_style(len(_cs_bullets))]
+    _rl = []
+    if len(_cs_bullets) > 2:
+        _lv.append(_render_code_style(2))
+        _rl.append("first two bullets (doc-comment tool + read-by, skip)")
+    if len(_cs_bullets) > 1:
+        _lv.append(_render_code_style(1))
+        _rl.append("first bullet only (doc-comment tool + read-by) — drop floor: kept always")
+    add_section("code_style_slice", 7, _lv, _rl)
+elif PACK_UNRESOLVED:
+    omit("code_style_slice",
+         "%s — the pack `## Code style` delta is UNKNOWN, not absent; the section is missing "
+         "because the resolver failed, not because the packs are silent" % PACK_UNRESOLVED_NOTE)
+else:
+    omit("code_style_slice",
+         "no `## Code style` section in the resolved pack chain (%s) — omitted, never padded; "
+         "the generic comment rule is agent-carried (bolt-implementer.md Iron Rule 6)" % _chain_desc())
+
+
 # ── Priority 9 — constitution clauses (NEVER truncated) ──────────────────────
 # SELECTOR: the three-way intersection of context-enrichment.md §TIER 2
 # (amended + narrowed 2026-07-31). The pre-2b prose ("ONLY clauses referenced in
@@ -3158,7 +3219,7 @@ if UNIT_TIER == "xs":
     # reviewer still hold ONE byte-identical (now floor-level) contract; the
     # ui-quality gate itself is untouched. Floors are never "" for these
     # sections, so a design contract line always survives.
-    for _k in ("framework_pack_rules", "design_slice", "starterkit_slice"):
+    for _k in ("framework_pack_rules", "code_style_slice", "design_slice", "starterkit_slice"):
         _sec = SECTIONS.get(_k)
         if _sec is not None and len(_sec.levels) > 1 and not _sec.at_floor():
             _sec.level = len(_sec.levels) - 1
@@ -3186,7 +3247,7 @@ if UNIT_TIER == "xs":
 # property here — two builders must produce identical bytes from identical input.
 
 # EMIT ORDER is the TEMPLATE's order, which is NOT the priority order.
-EMIT_ORDER = ["depends_on_summaries", "framework_pack_rules", "constitution_clauses",
+EMIT_ORDER = ["depends_on_summaries", "framework_pack_rules", "code_style_slice", "constitution_clauses",
               "kb_anti_patterns", "historical_memory", "reuse_slice", "symbol_slice",
               "map_patterns", "starterkit_slice", "design_slice", "confidence_labels",
               "validation_hints"]
@@ -3200,6 +3261,7 @@ CASCADE_ORDER = sorted(
     SECTIONS.values(),
     key=lambda s: (s.priority,
                    {"reuse_slice": 0, "symbol_slice": 1,
+                    "framework_pack_rules": 0, "code_style_slice": 1,     # tier 7 = 7a/7b (8.1.0)
                     "starterkit_slice": 0, "map_patterns": 1, "design_slice": 2}.get(s.key, 0),
                    s.key))
 

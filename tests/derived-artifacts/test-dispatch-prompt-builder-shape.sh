@@ -540,6 +540,7 @@ for m in \
   '## Confidence labels per claim' \
   '## Constitution clauses' \
   '## Framework pack rules' \
+  '## Code style (from' \
   '## Design system' \
   '## Reuse candidates' \
   'Design tokens:' \
@@ -549,7 +550,7 @@ for m in \
 do
   [ "$(cntF "$m" "$PR_BARE")" = "0" ] || D_MISS="$D_MISS [$m]"
 done
-[ -z "$D_MISS" ] && ok "D3: ZERO marker lines for absent sections (16 markers checked)" \
+[ -z "$D_MISS" ] && ok "D3: ZERO marker lines for absent sections (17 markers checked)" \
                  || fail "D3: fabricated marker(s) present:$D_MISS"
 
 $PY - "$WORK/bare.json" <<'PY' && ok "D4: all 10 absent sections listed in sections_omitted with a cited, input-naming reason" || fail "D4: an absent section is unlisted or its reason does not cite the missing input"
@@ -580,6 +581,11 @@ assert not bad, "reason does not cite the missing input: %s" % bad
 # carry a non-empty reason — never a silent drop.
 if "framework_pack_rules" in om:
     assert om["framework_pack_rules"].strip(), "empty reason for framework_pack_rules"
+# code_style_slice (8.1.0) is env-dependent the same way (pack chain): when omitted its
+# reason must name the chain or the resolver failure, never be empty.
+if "code_style_slice" in om:
+    assert om["code_style_slice"].strip(), "empty reason for code_style_slice"
+    assert ("chain" in om["code_style_slice"]) or ("UNRESOLVED" in om["code_style_slice"]), om["code_style_slice"]
 assert all(o["reason"].strip() for o in d["sections_omitted"]), "an omission carries an empty reason"
 PY
 

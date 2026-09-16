@@ -131,6 +131,7 @@ Every absent or unresolvable input is recorded here rather than invented (invari
 - t1.anti_context.do_not_modify.data_mutation_policy: no <kb>/99-rebuild-architecture/data-mutation-policy.md under @PROJ@ (searched .mega-sdd/, docs/, old-reference/ knowledge-base roots) — this source contributes nothing; the unit `## Hard rules` half is NOT relabelled to stand in for it
 - depends_on_summaries: unit has no depends_on entries
 - framework_pack_rules: no pack rule path_glob matched this unit's target_files (chain: _universal.md) — the 'keep top 1' floor is vacuous on an empty set, no rule invented
+- code_style_slice: no `## Code style` section in the resolved pack chain (_universal.md) — omitted, never padded; the generic comment rule is agent-carried (bolt-implementer.md Iron Rule 6)
 - constitution_clauses: no constitution.md in @PROJ@/.mega-sdd/vaults/v1 (absence IS the --no-constitution opt-out)
 - reuse_slice: reuse-index.yaml absent at @PROJ@/.mega-sdd/codebase/reuse-index.yaml (the T1 pointer line is omitted too)
 - symbol_slice: symbol-index.json absent at @PROJ@/.mega-sdd/codebase/symbol-index.json (run scripts/build-symbol-index.sh; exit 3 there = ast-grep not installed)

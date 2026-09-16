@@ -115,6 +115,6 @@ PROVENANCE — omissions (audit trail; NOT part of the T1/T2 byte accounting)
 
 Every absent or unresolvable input is recorded here rather than invented (invariant #5).
 
-- absent inputs (keys only — full reasons on stdout sections_omitted / --explain): confidence_labels, constitution_clauses, depends_on_summaries, design_slice.system, framework_pack_rules, map_patterns, provenance.vault_sha256, reuse_slice, starterkit_slice, symbol_slice, t1.anti_context.do_not_modify, t1.anti_context.do_not_modify.data_mutation_policy, t1.reuse_index_line, t3.kb_pointer
+- absent inputs (keys only — full reasons on stdout sections_omitted / --explain): code_style_slice, confidence_labels, constitution_clauses, depends_on_summaries, design_slice.system, framework_pack_rules, map_patterns, provenance.vault_sha256, reuse_slice, starterkit_slice, symbol_slice, t1.anti_context.do_not_modify, t1.anti_context.do_not_modify.data_mutation_policy, t1.reuse_index_line, t3.kb_pointer
 - unit_tier_xs: payload cuts per size-weighted spec §1b (design_slice->floor, validation_hints) — unit body verbatim, constitution + every gate uncut; per-key reasons on stdout sections_omitted (--explain)
 - (structural, every project — historical_memory, kb_anti_patterns; reasons on stdout sections_omitted)

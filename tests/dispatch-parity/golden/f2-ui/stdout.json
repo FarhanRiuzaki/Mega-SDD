@@ -42,6 +42,10 @@
       "reason": "no pack rule path_glob matched this unit's target_files (chain: _universal.md) \u2014 the 'keep top 1' floor is vacuous on an empty set, no rule invented"
     },
     {
+      "section": "code_style_slice",
+      "reason": "no `## Code style` section in the resolved pack chain (_universal.md) \u2014 omitted, never padded; the generic comment rule is agent-carried (bolt-implementer.md Iron Rule 6)"
+    },
+    {
       "section": "constitution_clauses",
       "reason": "no constitution.md in @PROJ@/.mega-sdd/vaults/v1 (absence IS the --no-constitution opt-out)"
     },
