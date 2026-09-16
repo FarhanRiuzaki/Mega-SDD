@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [8.2.1] - 2026-09-16 — rail probe jaringan terbatas (hang 72 menit `curl --retry 40` di F.4) + kit pengukuran run Java tim
+
+### Added
+- **Rail bounded-probe di PreToolUse** (spec `docs/superpowers/specs/2026-09-16-bounded-network-probes.md`; bentuk sama dengan wave commit rail F-16): `curl … --retry N` / `wget --tries|-t N` dengan N ≥ 4 **ditolak selama ada bolt in-flight** (klasifikasi `PROBE_HAZARD` di interpreter parse yang sudah jalan — nol spawn tambahan untuk perintah biasa; satu pembacaan in-flight dibagi dengan wave rail; string berkutip dan heredoc diabaikan; plugin-dev tree bebas; keterangan Indonesia). Bukti lapangan MEASURED: run `xs-lite-8.0.0-commentdiet` U-004 menjalankan `curl --retry 40 --retry-delay 3 --retry-connrefused --max-time 120` ke dev server yang tidak pernah dinyalakan — 72 menit hilang (12:08→13:20Z), wall run jadi BUKAN DATA. `run-acceptance-tests.sh` sudah membatasi perintah acceptance (120 s + satu retry) — celahnya = Bash implementer sendiri. Tidak ada gate baru di unit spec (0 hit `--retry` di semua snapshot vault P3).
+- **Aturan implementer** (`agents/bolt-implementer.md` langkah 5): probe jaringan sendiri dibatasi `--max-time ≤ 60`, `--retry ≤ 3`; server yang tidak jalan = `NEEDS_CONTEXT` (sebut perintah + port), bukan loop tunggu; entri acceptance `type: manual` dicatat pending, bukan "diverifikasi" dengan polling.
+- **Kit pengukuran run Java tim** `benchmarks/runbooks/team-java-run-kit.md` — gate bukti playbook code style: update plugin, run, `p3-comment-ratio.py` per kelas, dua angka manual, data run lama untuk kolom before. Status MENUNGGU TIM.
+
+### Notes
+- Pin: `tests/wave-rail/test-bounded-probe-rail.sh` (6 bentuk ditolak menyebut unit in-flight, 8 bentuk lolos termasuk pesan commit yang memuat `--retry 40`, hazard ganda → satu deny wave rail, jendela tertutup saat postflight mendarat, plugin-dev bebas, kontrak implementer + runner acceptance tetap 120 s); `test-wave-commit-rail.sh` regresi hijau.
+- Sisa dari lanjutan 13 §3 laporan P3: (2) lever klinik §2f = butuh run pengukuran berbayar (xs dulu, lalu klinik) → keputusan owner; (4) P4 field run Windows+Falcon = owner/tim di kantor; (5) push scm = VPN kantor (`Could not resolve host: git.example.com` dari luar, dicoba 2026-09-16).
+
 ## [8.2.0] - 2026-09-16 — playbook code style R2: `## Code style (self-documenting)` di 25/25 pack + section jadi WAJIB di lint pack + satu fakta dikoreksi
 
 Kelanjutan 8.1.0 (spec `docs/superpowers/specs/2026-09-16-code-style-playbook-design.md` §6 R2). Semua pack kini membawa delta stack-nya; `_universal.md` tetap tanpa section (aturan generik = Iron Rule 6, agent-carried). Satu commit per keluarga bahasa, lint wajib dinyalakan di commit terakhir (keputusan OPEN-4).
