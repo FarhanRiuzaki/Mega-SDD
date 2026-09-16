@@ -65,7 +65,7 @@ Format:
 
 When `binding.md` §Suggested Unit Hard Rules contains rules sourced from framework pack (introduced by bind-codebase Step 2.8), emit each pack-derived Hard Rule into the unit's `## Hard rules` section WITH explicit provenance citation. Tools consuming the unit must see WHICH framework pack rule applies (audit trail, debugging, override decisions).
 
-**One grammar per unit (S6 EB-GATE-7).** A unit's `## Hard rules` carries EITHER v1 dash productions OR v2 fenced ast-grep YAML — never both (`hard_rule_mixed_grammar` halts at bolt time). Pack rules translate per the pack→bolt table in `bind-codebase/references/hard-rules-and-packs.md §2.9a`: when the unit's other rules are v1 (binding-suggested `DO NOT modify …`), emit the pack rule as its v1 production (or Anti-pattern) — do NOT drop a fenced YAML block into a v1 unit; when the pack carries a real ast-grep `rule:` body and the unit has no v1 rules, emit v2 fenced YAML (the shape below) for ALL of the unit's rules — v2 rules require `ast-grep` at bolt pre-flight (HALTs `dep_missing` if absent); run `/mega-sdd:install-deps --tools=ast-grep` ahead of execute-bolts if it isn't installed yet.
+**One grammar per unit.** A unit's `## Hard rules` carries EITHER v1 dash productions OR v2 fenced ast-grep YAML — never both (`hard_rule_mixed_grammar` halts at bolt time). Pack rules translate per the pack→bolt table in `bind-codebase/references/hard-rules-and-packs.md §2.9a`: when the unit's other rules are v1 (binding-suggested `DO NOT modify …`), emit the pack rule as its v1 production (or Anti-pattern) — do NOT drop a fenced YAML block into a v1 unit; when the pack carries a real ast-grep `rule:` body and the unit has no v1 rules, emit v2 fenced YAML (the shape below) for ALL of the unit's rules — v2 rules require `ast-grep` at bolt pre-flight (HALTs `dep_missing` if absent); run `/mega-sdd:install-deps --tools=ast-grep` ahead of execute-bolts if it isn't installed yet.
 
 Format inside unit's `## Hard rules` section:
 
@@ -157,7 +157,7 @@ g. **OQ-ID propagation check** (audit response 2026-05-27 §F):
        → HALT `unit_oq_trace_missing`  (blocker YAML in the halt-protocol reference)
    ```
 
-   **Why this rail exists:** audit 2026-05-27 §F traced OQ-DM-P2-1 from vault → binding-phase-2.md (correctly carried) → units/U-005 + U-014 (resolution semantics carried as `lc_amount + goods_total` fields, but the OQ-ID itself was DROPPED). CONFLICTs already propagate via this same mechanism; this rail extends the discipline to OQs.
+   **Why this rail exists:** a field audit traced OQ-DM-P2-1 from vault → binding-phase-2.md (correctly carried) → units/U-005 + U-014 (resolution semantics carried as `lc_amount + goods_total` fields, but the OQ-ID itself was DROPPED). CONFLICTs already propagate via this same mechanism; this rail extends the discipline to OQs.
 
 ### h. PBT properties citation check (when `properties:` present)
 

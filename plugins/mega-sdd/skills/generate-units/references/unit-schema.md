@@ -23,7 +23,7 @@ A "unit" is an atomic, AI-executable dev prompt derived from a (bound-)vault. Ea
 ---
 id: U-001                         # zero-padded, monotonic
 title: <short imperative phrase>
-vault_source: <doc>.md#<anchor>    # ONE grammar (v8 P0): <doc> = vault.md | model.md | flows.md |
+vault_source: <doc>.md#<anchor>    # ONE grammar: <doc> = vault.md | model.md | flows.md |
                                    #   constraints.md | constitution.md (legacy 0N-*.md tolerated on read);
                                    #   <anchor> = the F-*/D-NNN id, the DBML table name, or the H2/H3
                                    #   heading slug the unit derives from (e.g. flows.md#F-U-001,
@@ -100,13 +100,13 @@ produces_interfaces: []            # OPTIONAL — list of vault interface IDs th
 consumes_interfaces: []            # OPTIONAL — list of vault interface IDs this unit depends on
                                    # `execute-bolts` halts (cross_squad_interface_draft) if any referenced
                                    # interface has status: draft.
-allowed_new_deps: []               # OPTIONAL (v5 P9) — the ALLOWLIST of new third-party
+allowed_new_deps: []               # OPTIONAL — the ALLOWLIST of new third-party
                                    # dependencies this unit sanctions. execute-bolts code gate 6
                                    # (the `validate-new-deps.sh --unit=` authorization concern) flags any dep the bolt ADDED that is
                                    # NOT in this list as `dep_unauthorized` (anti-over-engineering /
                                    # scope-creep, the WAJIB "pas" bar) — a deterministic ADVISORY finding
                                    # fed to the panel, never a halt. `[]` = "no new deps sanctioned".
-                                   # ABSENT (v4/pre-v5 units) → the gate is a no-op (enforced:false), never
+                                   # ABSENT (legacy units) → the gate is a no-op (enforced:false), never
                                    # a finding. Distinct from the `DO_NOT_ADD_DEPS` Hard rule (which BLOCKS
                                    # ALL new deps via B1); this is the graduated, advisory allowlist form.
 acceptance_test:                   # how to verify the bolt succeeded
@@ -118,8 +118,7 @@ acceptance_test:                   # how to verify the bolt succeeded
                                    # literal string the runner actually prints (e.g. jest prints
                                    # "passed", never "passes"); when you cannot cite one, LEAVE IT
                                    # EMPTY — exit code 0 is the criterion. A description here makes
-                                   # every run fail (field defect: 4 units needed fix commits because
-                                   # this very example used to be the description-shaped poison).
+                                   # every run fail.
     ears: "WHEN a login request carries an expired token THE SYSTEM SHALL respond 401 with problem+json"
                                    # OPTIONAL (additive, backward-compatible) — an EARS-shaped statement
                                    # ("WHEN <trigger> THE SYSTEM SHALL <response>" / "WHILE <state> ..." /
@@ -144,25 +143,25 @@ acceptance_test:                   # how to verify the bolt succeeded
     expects: ""                    # same substring contract — the render REQUIREMENT (route 200 +
                                    # real display field asserted) lives in the TEST's own assertions,
                                    # never as prose in expects
-prd_source: docs/PRD.md#halaman-kontak   # v8 P1 (spec 2026-09-10 App. F1) — the PRD heading (`<prd-file>#<heading-slug>`,
+prd_source: docs/PRD.md#halaman-kontak   # spec 2026-09-10 App. F1 — the PRD heading (`<prd-file>#<heading-slug>`,
                                    #   slug = lowercase, non-alphanumerics → `-`) or line (`<prd-file>:<line>`) this
                                    #   unit implements; repo-relative; a YAML list is allowed. RESOLVED by
                                    #   validate-unit-spec.sh when present (halt prd_source_unresolvable — a citation
                                    #   to a heading that does not exist is a fabricated requirement); absent =
-                                   #   legacy unit, tolerated. Input of validate-plan-coverage.sh (P1.d).
-context_source: flows.md#F-U-001   # v8 P1 — alias of vault_source (same `<doc>.md#<anchor>` grammar); writers
-                                   #   emit ONE of the two (v7 chain: vault_source; v8 PLAN: context_source).
+                                   #   legacy unit, tolerated. Input of validate-plan-coverage.sh.
+context_source: flows.md#F-U-001   # alias of vault_source (same `<doc>.md#<anchor>` grammar); writers
+                                   #   emit ONE of the two (classic chain: vault_source; lite PLAN: context_source).
 binding_refs:                      # binding manifest IDs this unit honors
   - C-001
   - OQ-012
 ---
 ```
 
-**Legacy keys.** Pre-diet units may carry `grounding_evidence` / `superpowers_skills` / `estimated_complexity` / a nested `mutability` map — readers tolerate all of them; `generate-units` no longer writes them. **v8 P1 writer diet (spec App. F1d):** the consumer census 2026-09-10 found ZERO readers for `mutability`, `estimated_complexity`, `grounding_evidence`, `superpowers_skills` and `acceptance_test[].ears` — new units MUST NOT carry them. The diet is writer-side only: no validator requires their absence.
+**Legacy keys.** Legacy units may carry `grounding_evidence` / `superpowers_skills` / `estimated_complexity` / a nested `mutability` map — readers tolerate all of them; `generate-units` no longer writes them. **Zero-reader writer diet (spec App. F1d):** the consumer census 2026-09-10 found ZERO readers for `mutability`, `estimated_complexity`, `grounding_evidence`, `superpowers_skills` and `acceptance_test[].ears` — new units MUST NOT carry them. The diet is writer-side only: no validator requires their absence.
 
 ## Required body sections (polished AI-coding-prompt shape)
 
-**xs body diet (v8 P1, spec 2026-09-10 App. F1e).** A unit with 1–2 `acceptance_test` entries AND 1–3 implementation steps is the router's `unit_tier: xs` class (`scripts/_lib/unit_tier.py` — the ONE size proxy shared by `resolve-review-tier.sh` and `validate-unit-spec.sh`). Its body is embedded verbatim in every dispatch prompt, so for that class: **Goal = 1 line · Context ≤ 2 sentences · Implementation steps ≤ 3 · `## Anti-patterns` and `## Out of scope` only when every item cites a source** (U-XXX, OQ-, C-, doc anchor, file:line). `validate-unit-spec.sh` records offenders in the state's `xs_body_advisory` list (advisory — never an issue, status or halt). Non-xs units keep the shape below.
+**xs body diet (spec 2026-09-10 App. F1e).** A unit with 1–2 `acceptance_test` entries AND 1–3 implementation steps is the router's `unit_tier: xs` class (`scripts/_lib/unit_tier.py` — the ONE size proxy shared by `resolve-review-tier.sh` and `validate-unit-spec.sh`). Its body is embedded verbatim in every dispatch prompt, so for that class: **Goal = 1 line · Context ≤ 2 sentences · Implementation steps ≤ 3 · `## Anti-patterns` and `## Out of scope` only when every item cites a source** (U-XXX, OQ-, C-, doc anchor, file:line). `validate-unit-spec.sh` records offenders in the state's `xs_body_advisory` list (advisory — never an issue, status or halt). Non-xs units keep the shape below.
 
 ```markdown
 ## Goal
@@ -180,7 +179,7 @@ binding_refs:                      # binding manifest IDs this unit honors
 - src/Models/User.php:12 — entity to extend
 - .mega-sdd/knowledge-base/modules/customer.prd.md §2 (if KB present; legacy numbered tree: docs/knowledge-base/10-domains/<domain>.md §5) — domain behavior to honor
 
-## Claims  (v8 P1 — brownfield units only; a CONTRACT about existing code, never a verdict)
+## Claims  (brownfield units only; a CONTRACT about existing code, never a verdict)
 <One line per expectation about EXISTING code this unit relies on or changes. Verdicts are NEVER written here — the JIT bind at dispatch (execute-bolts pre-flight 3.9, spec App. F2–F4) verifies each line and records CONFIRMED/CONFLICT/OQ in the hook-guarded `bolts/U-XXX/binding.json`. Greenfield / create-only units omit the section (their claims derive from target_files: create ⇒ must-not-exist).>
 
 - C-U005-01 "Nasabah model has field `nip` (unique)" — expect: app/Models/Nasabah.php:Nasabah
@@ -190,7 +189,7 @@ binding_refs:                      # binding manifest IDs this unit honors
 Grammar: `- C-U<NNN>-<NN> "<verbatim expectation>" — expect: <path>[:<symbol>] | <path> — must-exist | <path> — must-not-exist`. `<path>[:<symbol>]` ⇒ symbol claim (symbol index); bare `<path>` with must-exist/must-not-exist ⇒ filesystem claim (0 model tokens); a quoted expectation without a resolvable symbol ⇒ text claim (ladder E3, express-bind.md).
 
 ## Hard rules  (validated at bolt time by execute-bolts pre/post-flight)
-<Machine-parseable constraints. Grammar closed in v1 per DESIGN-OQ-4 (5 rule types). One rule per line. Empty section allowed (no rules to enforce).>
+<Machine-parseable constraints. Grammar closed in v1 (5 rule types). One rule per line. Empty section allowed (no rules to enforce).>
 
 - DO NOT modify <path>
 - DO NOT add new <manifest-file> dependencies
@@ -302,7 +301,7 @@ A line matching neither a mechanical type nor the directive tier is unparseable 
 
 ## Atomicity rules
 
-- One unit = one PR-sized commit. If the body steps would produce >300 lines of code change, SPLIT into multiple sequential units (allocated U-00N at Step 6 topological numbering) with an explicit `depends_on` chain — never dotted sub-IDs (U-001.1 would break the content-hash ID-stability contract `--refresh`/`--reconcile` depend on). The >300 LOC / ≤5 files threshold is an authoring judgment (advisory — no validator measures it). Under granularity `large` (`--max-complexity=large` / config `unit_granularity: coarse`, 7.20.0) the threshold rises to >600 LOC / ≤8 files — same advisory class, "PR-sized" becomes "story-sized"; every other rail (whitelist, task_type, Hard rules, per-unit review) is granularity-independent.
+- One unit = one PR-sized commit. If the body steps would produce >300 lines of code change, SPLIT into multiple sequential units (allocated U-00N at Step 6 topological numbering) with an explicit `depends_on` chain — never dotted sub-IDs (U-001.1 would break the content-hash ID-stability contract `--refresh`/`--reconcile` depend on). The >300 LOC / ≤5 files threshold is an authoring judgment (advisory — no validator measures it). Under granularity `large` (`--max-complexity=large` / config `unit_granularity: coarse`) the threshold rises to >600 LOC / ≤8 files — same advisory class, "PR-sized" becomes "story-sized"; every other rail (whitelist, task_type, Hard rules, per-unit review) is granularity-independent.
 - `target_files` whitelist is enforced by `execute-bolts` at three layers: the dispatch prompt forbids out-of-whitelist writes (rules tier), the review panel checks scope (judgment tier), and the deterministic B3 whitelist observer (`validate-bolt-artifacts.sh --whitelist-scan`, Stop-hook + gate-time) diffs each bolted unit's COMMITTED paths against `target_files` ∪ sanctioned extras (vault/bolt artifacts, `.mega-sdd/`, test files) — escaped paths block the next `execute-bolts` with `whitelist_violation`.
 - `existing_interfaces` is enforced by acceptance tests — any test against a listed interface must continue passing.
 - `task_type` is enforced by `execute-bolts` — `verify` units MUST NOT modify any file; violations are halt-conditions at bolt time.

@@ -22,18 +22,18 @@ description: Detect OS + package manager and install missing optional native dep
 
 - `--dry-run` (show install plan; don't execute)
 - `--tools=<csv>` (limit to subset, e.g., `--tools=pandoc,mmdc` for emit-PDF-only)
-- `--force-recheck` (re-audit every tool from scratch — kept as an accepted no-op modifier; every run already re-probes since v7.3.0)
+- `--force-recheck` (re-audit every tool from scratch — kept as an accepted no-op modifier; every run already re-probes)
 - `--pkg-mgr=<name>` (override auto-detected manager; e.g., force `cargo` instead of `brew`)
 - `--manual` (print install commands but skip Bash invocation — user runs commands themselves)
 - `--auto` (orchestrator-invoked; emit handoff YAML in chat per orchestrate-flow handoff-contract)
 
 ## Outputs
 
-Chat-only: detected OS, tool inventory, install plan, per-tool verify result. (v7.3.0: the install-outcomes memory log is removed — every run re-probes; probes are bounded and cheap.)
+Chat-only: detected OS, tool inventory, install plan, per-tool verify result. (No install-outcomes memory log — every run re-probes; probes are bounded and cheap.)
 
 ## Playwright browser (detect-and-offer — deliberately NO tool-matrix row)
 
-The plugin bundles the Playwright MCP server (one of the two pinned servers in `plugins/mega-sdd/.mcp.json` — the other is Context7, 6.9.0); the ~130MB Chromium binary is NOT bundled and is never auto-installed. This lane follows the Chrome detect-only precedent (a matrix row would need an exec `verify_cmd`, and `npx playwright --version` auto-fetches from the npm registry when absent — the unbounded-network-probe class; spec 2026-08-12):
+The plugin bundles the Playwright MCP server (one of the two pinned servers in `plugins/mega-sdd/.mcp.json` — the other is Context7); the ~130MB Chromium binary is NOT bundled and is never auto-installed. This lane follows the Chrome detect-only precedent (a matrix row would need an exec `verify_cmd`, and `npx playwright --version` auto-fetches from the npm registry when absent — the unbounded-network-probe class; spec 2026-08-12):
 
 1. **Detect** (filesystem-only, offline, bounded): the browser cache dir exists and is non-empty —
    - macOS: `~/Library/Caches/ms-playwright/`
@@ -68,7 +68,7 @@ Read `references/tool-matrix.yaml`. For each tool:
 4. **A `command -v` hit is never sufficient on its own** (WindowsApps alias stubs resolve yet exit 49 — `references/audit-and-verify.md §command -v is never sufficient`). Presence ≠ usability; the pre-filter may only ever produce `missing`, never `present`.
 5. **`python3` is the named exception** — verdict via the shared resolver (`scripts/_lib/resolve-python.sh`), not a bare `verify_cmd`; same bound, same carve-outs. Exact invocation + remedy rule: `references/audit-and-verify.md §python3 — the named exception`.
 
-(v7.3.0: every run re-audits — there is no cache to skip; `--force-recheck` is an accepted no-op.)
+(Every run re-audits — there is no cache to skip; `--force-recheck` is an accepted no-op.)
 
 Emit one compact chat block: the resolved bound prefix, then one line per tool — ✓ present (version) / ✗ missing (its `fallback_behavior`).
 
@@ -145,7 +145,7 @@ handoff:
   emitted_by: install-deps
   emitted_at: <ISO8601 timestamp>
   status: completed | halted
-  artifacts: []                      # chat-only skill; no files written (v7.3.0)
+  artifacts: []                      # chat-only skill; no files written
   next_action:
     suggested_skill: null
     suggested_args: []
@@ -170,10 +170,10 @@ Status `halted` on `install_failed` OR `pkg_mgr_not_found`. Required ONLY under 
 3. ALWAYS show exact `install_cmd` + source pkg manager + size estimate BEFORE running (AskUserQuestion gate).
 4. ALWAYS verify post-install with `verify_cmd` from matrix — claim "installed" only after verify passes.
 5. NEVER install Claude Code itself — out of scope; this skill installs OPTIONAL mega-sdd deps only.
-6. Claim "installed" only AFTER the verify pass — never on partial state (every run re-probes; the install-outcomes memory log died with the memory lane in v7.3.0).
+6. Claim "installed" only AFTER the verify pass — never on partial state (every run re-probes; there is no install-outcomes memory log).
 7. Skip tools with no matching matrix entry AND no working fallback — emit warning, don't halt entire batch.
 8. NEVER treat `command -v <tool>` as proof a tool works — it may only ever yield `missing`. A Windows App Execution Alias stub resolves on PATH and exits 49. Promotion to `present` requires an execution probe.
 9. The ONLY sanctioned Windows PATH writer is `scripts/fix-windows-path.sh` — `reg add` / hand-written `.reg` imports / `setx PATH` each corrupt or truncate the value while REPORTING success (full failure catalog: `references/windows-path.md`); the script refuses `--ensure-dirs` without `--backup-to`, and that refusal must not be worked around.
-10.–11. *(retired with the memory lane in v7.3.0 — numbering kept so cross-references to rules 12–13 stay valid)*
-12. NEVER run a `verify_cmd` unbounded where a bound resolves, and NEVER run one for a tool `command -v` already reported absent (the v5.8.0 unbounded-probe stall class). Resolve the prefix per Bash invocation — `timeout -k 2 10`, else `gtimeout -k 2 10`, else empty — and treat exit 124, 137 AND 127 as `present`/`verified`, never `missing`/`unverified`.
+10.–11. *(retired — numbering kept so cross-references to rules 12–13 stay valid)*
+12. NEVER run a `verify_cmd` unbounded where a bound resolves, and NEVER run one for a tool `command -v` already reported absent (the unbounded-probe stall class). Resolve the prefix per Bash invocation — `timeout -k 2 10`, else `gtimeout -k 2 10`, else empty — and treat exit 124, 137 AND 127 as `present`/`verified`, never `missing`/`unverified`.
 13. NEVER hard-code the bound as a literal at a probe site, and NEVER let its absence become a verdict about a tool (stock macOS ships neither `timeout` nor `gtimeout` — a literal prefix would mint the exact false-`missing` class rule 12 prevents). Bound-resolution + the `-k 2` rationale: `references/audit-and-verify.md §Probe contract`.

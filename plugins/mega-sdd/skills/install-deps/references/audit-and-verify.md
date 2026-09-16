@@ -1,7 +1,7 @@
 # Audit & verify — the probe contract (Step 2 + Step 6 detail)
 
-Operative detail routed from `SKILL.md` §Step 2 / §Step 6 (relocated 6.13.0, spec
-2026-08-17-token-lard-cuts-p1 D3 — content moved verbatim, not rewritten).
+Operative detail routed from `SKILL.md` §Step 2 / §Step 6 (spec
+2026-08-17-token-lard-cuts-p1 D3).
 
 ## Contents
 - [Probe contract (Step 2 item 3)](#probe-contract-step-2-item-3)

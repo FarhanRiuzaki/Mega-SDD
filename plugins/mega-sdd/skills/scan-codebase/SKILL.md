@@ -44,9 +44,9 @@ The full default exclusion list, the override flags, and the anti-bias rationale
 
 ## Procedure (compact skeleton)
 
-Detailed per-step logic — including the probe-scan-engine.sh engine digest, the per-file invalidation gate, the regex/ripgrep extraction code blocks, the framework-detection table + pack-resolution YAML, and the routes/models/naming/pattern heuristics — is in **`references/scan-procedure.md`**. (The tree-sitter opt-in lane + its integration reference were removed in v7.4.0 — the ladder is `ast-grep → regex`.)
+Detailed per-step logic — including the probe-scan-engine.sh engine digest, the per-file invalidation gate, the regex/ripgrep extraction code blocks, the framework-detection table + pack-resolution YAML, and the routes/models/naming/pattern heuristics — is in **`references/scan-procedure.md`**. (The ladder is `ast-grep → regex` — there is no tree-sitter lane.)
 
-0. **Engine detection.** Run `scripts/probe-scan-engine.sh` — ONE spawn resolves the D2 ladder (`ast-grep → regex`; the tree-sitter opt-in lane was removed in v7.4.0 — no grammar compile step exists, so the clang OOM class is structurally unreachable) and prints a JSON digest; consume the digest, never re-probe. ast-grep route → `precision_tier: ast`; regex → loud warning. A forced `--engine=` whose binary is absent → halt `dep_missing`. Details + digest schema: `references/scan-procedure.md` Step 0.
+0. **Engine detection.** Run `scripts/probe-scan-engine.sh` — ONE spawn resolves the D2 ladder (`ast-grep → regex`; no tree-sitter lane and no grammar compile step exists, so the clang OOM class is structurally unreachable) and prints a JSON digest; consume the digest, never re-probe. ast-grep route → `precision_tier: ast`; regex → loud warning. A forced `--engine=` whose binary is absent → halt `dep_missing`. Details + digest schema: `references/scan-procedure.md` Step 0.
 1. **Detect repo root.** Walk up to `.git`; else treat CWD as root and warn.
 2. **Detect package manager / language.** Probe `package.json` / `composer.json` / `Gemfile` / `Cargo.toml` / `go.mod` / `requirements.txt`|`pyproject.toml` / `pom.xml`|`build.gradle` (full per-ecosystem table: `references/scan-procedure.md §Step 2`). Multiple → record all.
 3. **Detect test framework.** Grep `jest|vitest|playwright.config.*`, `phpunit.xml`/`pest.php`, `pytest.ini`/`tox.ini`, `Cargo.toml [dev-dependencies]`.
@@ -93,7 +93,7 @@ Emit a handoff YAML record per your local template on **every** invocation — c
 - **`references/codebase-map-schema.md`** — the full `codebase-map.md` output schema (frontmatter + §1–§7), how `bind-codebase` consumes it, and detection-precision caveats.
 - **`references/exclusions.md`** — the default exclusion list (grouped by ecosystem), override flags, the by-name targeted reads, and the anti-bias rationale.
 - **`references/halts-flags-handoff.md`** — anti-hallucination rails, all halt conditions + YAML, the full flag catalog, and the `--auto` handoff YAML.
-- **`queries/`** — `astgrep/<lang>.yml` rule packs (20 languages — the tier-1 glossary Step 5 consumes; one pack per ast-grep language, `jsx` aliases to the javascript lane); registry + tested versions in `queries/VERSIONS.md`. (The tree-sitter `tags-*.scm` files died with the opt-in lane, v7.4.0.)
+- **`queries/`** — `astgrep/<lang>.yml` rule packs (20 languages — the tier-1 glossary Step 5 consumes; one pack per ast-grep language, `jsx` aliases to the javascript lane); registry + tested versions in `queries/VERSIONS.md`.
 
 ## Related skills
 

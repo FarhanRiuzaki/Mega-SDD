@@ -44,7 +44,7 @@ Before vault parsing (Step 1), detect missing upstream signals:
 | codebase_map | binding | vault_mode | Action |
 |---|---|---|---|
 | present | present | any | ✅ Proceed (current behavior; HIGH confidence) |
-| any | present with `binding_metadata.retrieval` (EXPRESS binding — P2 default) | any | ✅ **Proceed (HIGH confidence)** — an express binding was produced WITHOUT a map by design (claim-scoped retrieval, read-evidence anchors); a missing map beside it is NOT a missing artifact and MUST NOT demote confidence, prompt, or auto-run scan-codebase |
+| any | present with `binding_metadata.retrieval` (EXPRESS binding — the default) | any | ✅ **Proceed (HIGH confidence)** — an express binding was produced WITHOUT a map by design (claim-scoped retrieval, read-evidence anchors); a missing map beside it is NOT a missing artifact and MUST NOT demote confidence, prompt, or auto-run scan-codebase |
 | absent | absent | greenfield | ✅ Proceed (no codebase context expected; MEDIUM confidence labeled) |
 | absent | absent | existing | ⚠️ INTERACTIVE prompt — "Brownfield vault but no codebase-map/binding. Options: (1) auto-run bind-codebase --express first (recommended — needs no map), (2) classic: scan-codebase + bind-codebase, (3) proceed with reduced precision (LOW confidence), (4) cancel" |
 | present | absent | existing | ⚠️ INTERACTIVE prompt — "Codebase-map present but no binding. Options: (1) run bind-codebase first (recommended), (2) proceed with file-existence checks only (MEDIUM confidence), (3) cancel" |
@@ -153,9 +153,9 @@ Defensive generation introduces NEW signals but FEW new halts. Most checks are w
 
 ## Backward compatibility
 
-- v3.1 vaults without upstream artifacts → trigger Step 0.5 prompts; user can decline to keep v3.1 behavior
-- v3.1 units without `grounding_confidence` → treated as v3.1 schema; new field optional in frontmatter
-- `--no-defensive` flag disables Steps 0.5 + 7.6 + 12.3 entirely (back to v3.1 behavior)
+- Vaults without upstream artifacts → trigger Step 0.5 prompts; user can decline to keep the legacy behavior
+- Units without `grounding_confidence` → treated as legacy schema; new field optional in frontmatter
+- `--no-defensive` flag disables Steps 0.5 + 7.6 + 12.3 entirely (back to the legacy behavior)
 - `--auto` flag in chain mode (orchestrate-flow --deep) → defaults safest (no death by prompts in autonomous chains)
 
 ## Moved content (pointers)

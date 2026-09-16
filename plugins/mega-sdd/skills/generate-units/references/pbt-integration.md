@@ -201,14 +201,14 @@ Anti-halu: when emission isn't supported for language, properties stay in unit b
 - **No framework auto-install**: skill never modifies `composer.json` / `package.json` / etc. Framework presence is user's responsibility.
 - **Counterexamples preserved**: PBT failures emit counterexample JSON in halt YAML for user debugging.
 - **Severity is binary**: `error` halts; `warning` doesn't. No nuanced levels (avoid analysis paralysis).
-- **Skippable**: `--no-pbt` flag on execute-bolts disables PBT validation (preserves pre-v2.5 behavior).
+- **Skippable**: `--no-pbt` flag on execute-bolts disables PBT validation.
 
 ## Backward compatibility
 
-- v3.10 units without `properties:` field → execute-bolts treats as v2.4 (just acceptance_test); no behavior change
+- Units without `properties:` field → execute-bolts treats as acceptance_test-only; no behavior change
 - Existing acceptance_test mechanism unchanged
 - PBT-emitted test files use `tests/Property/` convention; doesn't conflict with existing test directories
-- `--no-pbt` flag preserves pre-v2.5 behavior
+- `--no-pbt` flag disables PBT validation (acceptance_test-only)
 
 ## References
 

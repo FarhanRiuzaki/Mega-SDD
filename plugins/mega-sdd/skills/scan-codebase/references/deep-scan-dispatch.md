@@ -187,7 +187,7 @@ Runs in main thread (no extra subagent — reuses just-written `codebase-map.md`
 5. Build merged YAML structure (cache_signatures v2.1 schema):
 
      starterkit_context:
-       schema_version: 3.1                          # v3.1 = neutral authz reshape (rbac block replaced by authz; entrypoints replaces routes; mechanism replaces guard); v3.0 added patterns:; v2.0 added per-slice cache; v1.0 was initial
+       schema_version: 3.1                          # v3.1 = neutral authz reshape (rbac block replaced by authz; entrypoints replaces routes; mechanism replaces guard)
        generated_by: scan-codebase@<skill version from SKILL.md frontmatter>
        generated_at: <ISO8601 of MOST RECENT slice write>
        framework: <from §7 Framework.name>

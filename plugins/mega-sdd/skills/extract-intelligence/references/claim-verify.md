@@ -1,6 +1,6 @@
-# Claim-verify lane — adversarial verification per module (7.25.0)
+# Claim-verify lane — adversarial verification per module
 
-Spec: `docs/superpowers/specs/2026-09-05-kb-verify-lane-design.md` Fase 3. Field
+Spec: `docs/superpowers/specs/2026-09-05-kb-verify-lane-design.md`. Field
 basis: audit KB Host-AS400 menemukan 8 klaim WRONG (2 arah-uang) di KB yang lolos
 semua gate struktural — extraction single-pass tidak pernah dicek lawan; disiplin
 prosa (P1-P6) tanpa verifikasi = doktrin kita sendiri ("prose enforces nothing").

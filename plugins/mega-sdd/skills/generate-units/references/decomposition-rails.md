@@ -23,7 +23,7 @@ The artifact kinds + paths are read from the active framework pack — never har
 
 ## Dependency-graph emission + cycle rejection (Step 4)
 
-**Principle**: emit `depends_on` ONLY when there is concrete evidence of unit coupling. Conservative defaults previously over-emitted deps, forcing sequential execution where units could parallelize. Tighter rules maximize parallelism by default; user can add deps manually when implicit ordering matters.
+**Principle**: emit `depends_on` ONLY when there is concrete evidence of unit coupling. Over-emitted deps force sequential execution where units could parallelize. Tighter rules maximize parallelism by default; user can add deps manually when implicit ordering matters.
 
 **Emit `depends_on: U-X` ONLY IF** at least one is true:
 
@@ -147,7 +147,7 @@ Dispatch a separate subagent for the adversarial review using the template's opt
 
 **Skip mode (`--no-adversarial-review` flag):**
 
-Preserves pre-review behavior. Sets `_authored_by: same-pass`. Use for debug / regression testing only — NOT recommended for production unit generation.
+Sets `_authored_by: same-pass`. Use for debug / regression testing only — NOT recommended for production unit generation.
 
 **Regenerate behavior:**
 

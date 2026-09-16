@@ -53,7 +53,7 @@ Apply the default exclusion globs to the union (a journaled `node_modules/` writ
 
 ## Step 0 — Engine detection (ONE probe-script spawn, never prose-driven probes)
 
-Run the deterministic resolver — **one spawn resolves the D2 ladder** (`ast-grep → regex`; the tree-sitter opt-in lane was removed in v7.4.0 — no grammar compile step exists anywhere, so the clang-OOM class is structurally unreachable):
+Run the deterministic resolver — **one spawn resolves the D2 ladder** (`ast-grep → regex`; no tree-sitter lane — no grammar compile step exists anywhere, so the clang-OOM class is structurally unreachable):
 
 ```bash
 # <plugin-root> = the mega-sdd plugin directory (resolve it the same way every
@@ -125,7 +125,7 @@ Probe in order (record ALL hits — multi-language projects are normal):
 - `Package.swift` → swift (SwiftPM); `pubspec.yaml` → dart (Flutter/pub); `mix.exs` → elixir (hex); `build.sbt` → scala (sbt); `*.cabal` / `stack.yaml` → haskell; `CMakeLists.txt` / `Makefile` with `.c`/`.cpp` sources → c/cpp
 - Multiple → multi-language project; record all.
 
-**Language KEYS for the Step-0 probe (the routing seam — define it, don't infer it).** The detected-language set passed as `--lang=` keys is the union of (a) the manifest rows above and (b) **per-extension keys from the Step-4 file walk, named by ast-grep language id**: `.tsx → tsx`, `.jsx → jsx`, `.ts → typescript`, `.js/.mjs/.cjs → javascript`, `.kt/.kts → kotlin`, `.swift → swift`, `.scala → scala`, `.c/.h → c`, `.cpp/.cc/.cxx/.hpp/.hh → cpp`, `.dart → dart`, `.ex/.exs → elixir`, `.lua → lua`, `.sh/.bash → bash`, `.hs → haskell`. Compound manifest labels expand to their member keys (jvm → `java` AND `kotlin`, each only if its extension appears in the walk; .NET → `csharp`, and `fsharp` stays a regex-lane key). Each key gets ONE real sample file from the walk. This seam is exactly where the v5.33.0 tsx regression lived — a detected key with no same-named pack file falls to regex, so keys MUST be ast-grep language ids, never file extensions or marketing names.
+**Language KEYS for the Step-0 probe (the routing seam — define it, don't infer it).** The detected-language set passed as `--lang=` keys is the union of (a) the manifest rows above and (b) **per-extension keys from the Step-4 file walk, named by ast-grep language id**: `.tsx → tsx`, `.jsx → jsx`, `.ts → typescript`, `.js/.mjs/.cjs → javascript`, `.kt/.kts → kotlin`, `.swift → swift`, `.scala → scala`, `.c/.h → c`, `.cpp/.cc/.cxx/.hpp/.hh → cpp`, `.dart → dart`, `.ex/.exs → elixir`, `.lua → lua`, `.sh/.bash → bash`, `.hs → haskell`. Compound manifest labels expand to their member keys (jvm → `java` AND `kotlin`, each only if its extension appears in the walk; .NET → `csharp`, and `fsharp` stays a regex-lane key). Each key gets ONE real sample file from the walk. A detected key with no same-named pack file silently falls to regex, so keys MUST be ast-grep language ids, never file extensions or marketing names.
 
 ## Step 3 — Detect test framework
 
@@ -243,7 +243,7 @@ difference — not file count — is what decides whether a scan finishes:
 | `regex` (ripgrep) | **one per LANGUAGE** |
 
 (The per-FILE engine class — the removed tree-sitter lane — cost one spawn per
-file; that bill is what killed it, v7.4.0.)
+file; that bill is what killed it.)
 
 On POSIX a spawn costs ~18 ms and the difference is invisible. On a Windows box with
 an endpoint-security agent it is **~220 ms** (measured, `windows-team-environment`),
@@ -273,7 +273,7 @@ N_total   = N_hash + N_extract
 per_spawn = 0.22s on OS=windows-bash, else 0.02s
 estimate  = N_total × per_spawn  # ast-grep is ~1 spawn and regex
                                  # ~n_languages (no per-file engine exists
-                                 # since v7.4.0), but N_hash still counts
+                                 # anywhere), but N_hash still counts
                                  # on every engine
 ```
 
@@ -344,14 +344,13 @@ They are remedies, NOT options awaiting a reply:
 *(a) The house rule is that `--auto` takes the SAFEST option* — `--auto` runs with nobody
 watching, exactly where a multi-hour stall strands someone. Unattended, "safest" is neither
 of the alternatives. A full per-file AST pass was a multi-hour stall (100k files × 0.22 s ≈
-6.1 h on Windows — the class that got the tree-sitter lane removed in v7.4.0). A blocker is a **phase-1 chain halt**: `scan-codebase` is phase 1 of
+6.1 h on Windows — the class that got the tree-sitter lane removed). A blocker is a **phase-1 chain halt**: `scan-codebase` is phase 1 of
 nearly every brownfield row in `orchestrate-flow/references/routing-rules.md`, and **ZERO**
 routing rows carry `--engine`/`--include`/`--force-large`, so a chain cannot pre-resolve this
 gate the way it pre-resolves `bind-codebase <vault>` — the blocker would strand the whole
 chain before a single artifact exists. On Windows the gate fires at only ~272 files, so this
 is the common case, not a corner case. Safest here is finishing in seconds at a precision the
-map states honestly. (These principles were first written down for the retired generate-units
-PageRank spawn gate — that pass was removed; this section now owns them.)
+map states honestly.
 
 *(b) This does NOT violate the no-silent-downgrade rail — that rail protects the RECORD, not
 the action.* The `--auto` downgrade is not a SILENT downgrade: "silently" is about the record, not the action.
@@ -619,4 +618,4 @@ The map can be committed or shared; symbol/route extraction can capture a hardco
   Write the `file:line` + pattern class ONLY — **never the matched value**; this is a rotation worklist, not a secret store. The same durable channel is used by every scrub site (Step 10a's `codebase-map.md` and Step 10.5.3's `starterkit-context.yaml` / `reuse-index.yaml`). List the file in the handoff `artifacts[]` when it was written this run.
 - This gate redacts the ARTIFACT — it never edits repo source files.
 - Empty `secret_findings` (the normal case) → nothing to route, no chat output.
-- **The map-validator state refresh is ALSO chained by the deriver** (it runs `validate-codebase-map.sh --cwd=<project-root> --quiet` after the rename): no hook validates the map on write (the PostToolUse validator fan-out was removed in v7.5.0), so the chained call keeps `.codebase-map-state.json` fresh for `analyze` (the bind-codebase PreToolUse gate also re-validates lazily when the map is newer than its state). A validator FAIL surfaces as the deriver's exit 4 — halt, do not consume the map.
+- **The map-validator state refresh is ALSO chained by the deriver** (it runs `validate-codebase-map.sh --cwd=<project-root> --quiet` after the rename): no hook validates the map on write, so the chained call keeps `.codebase-map-state.json` fresh for `analyze` (the bind-codebase PreToolUse gate also re-validates lazily when the map is newer than its state). A validator FAIL surfaces as the deriver's exit 4 — halt, do not consume the map.

@@ -74,7 +74,7 @@ before any dispatch; §README roll-up + §data-mutation-policy at synthesis.
 1. Validate the legacy path exists and is non-empty (else halt).
 2. If `--seed=<path>`: copy the seed to `{out}/_source/` (read-only cross-reference).
 3. **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/derive-extract-census.sh" --legacy=<legacy> --kb-dir={out}/knowledge-base` — writes `census.json`: code files (+sha256, logs/backups/data excluded by construction; non-UTF8 members flagged `encoding: non-utf8` — convert before reading), stacks, entry points, a deterministic module proposal. The census IS the completeness contract.
-4. **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/derive-site-census.sh" --legacy=<legacy> --kb-dir={out}/knowledge-base` — WRITE/CALL site inventory per stack idiom (v1: rpg family; unsupported stacks recorded honestly). The Step-5 gate requires every site cited in the KB (`site_uncovered`).
+4. **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/derive-site-census.sh" --legacy=<legacy> --kb-dir={out}/knowledge-base` — WRITE/CALL site inventory per stack idiom (rpg family; unsupported stacks recorded honestly). The Step-5 gate requires every site cited in the KB (`site_uncovered`).
 5. Census `stacks` include `rpg`/`rpgle`/`rpg-copy`/`dds` → every extractor AND verifier dispatch carries the `READ ALSO: plugins/mega-sdd/references/legacy-idioms/rpg-as400.md` line (template §Dispatch core).
 
 ### Step 2 — Module confirmation (human, only when >1 module proposed)
@@ -103,15 +103,15 @@ Exactly 1 proposed module → no question; proceed.
 
 **Per-module quality gate** (main thread, after each PRD lands): the grep
 battery in `references/prd-kontrak-template.md` §Per-module quality gate
-(frontmatter, 6 sections + §7 Run & Recovery for workflow modules (7.27.0),
+(frontmatter, 6 sections + §7 Run & Recovery for workflow modules,
 ≥3 gotchas for workflow modules, Mermaid fence, advisory `kb-leak-scan.sh`).
 FAIL → re-dispatch that module once with the gate output as feedback. The
-census gate additionally enforces the 7.27.0 grammar: AC per [LOCKED] BR
+census gate additionally enforces the grammar: AC per [LOCKED] BR
 (`ac_missing_for_locked`) and an acyclic `rebuild_after`
 (`rebuild_order_invalid`); advisories surface undeclared references,
 decision-table smells, and flow-vs-[ARTIFACT] contradictions.
 
-**Claim-verify lane (7.25.0)** — after a module's quality gate passes, dispatch
+**Claim-verify lane** — after a module's quality gate passes, dispatch
 the **`mega-sdd:claim-verifier`** agent for that module (read-only, blind,
 adversarial; single-module xs runs DISPATCH TOO — the writer never checks
 itself). Controller types only the dispatch core per `references/claim-verify.md`,
@@ -142,7 +142,7 @@ halt.
 
 ### Step 4 — Synthesis (main thread ONLY)
 
-0. **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/derive-prd-counts.sh" --kb-dir={out}/knowledge-base --write` — script-derives every frontmatter count from the PRD bodies (extractors no longer type them; 7.26.0). The README roll-up composes FROM these trued-up counts, and the Step-5 gate recounts the roll-up (`rollup_mismatch`).
+0. **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/derive-prd-counts.sh" --kb-dir={out}/knowledge-base --write` — script-derives every frontmatter count from the PRD bodies (extractors never type them). The README roll-up composes FROM these trued-up counts, and the Step-5 gate recounts the roll-up (`rollup_mismatch`).
 1. `README.md` roll-up per template §README roll-up (multi-module: + `## ERD`
    + `## System Flow` Mermaid; module quick-reference carries the recommended
    rebuild ORDER from `depends_on` — module is the phasing unit).
@@ -154,9 +154,9 @@ halt.
 
 **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-extract-census.sh" --kb-dir={out}/knowledge-base` — recomputes coverage from census + the PRD artifacts: unclaimed / double-claimed / phantom / uncited files, missing OQ sections, non-Mermaid flows, the claim-verify states (`.verify/<domain>.json` per module: LOCKED coverage + sample floor recomputed from each PRD body — `claim_verify_missing`/`_failed`/`_incomplete`), site coverage (`site_uncovered` — every derived WRITE/CALL site cited ±2 or in-range), and the README roll-up recount (`rollup_mismatch`). Advisory (never blocks): `oq_answerable_from_disk` — an OQ whose `probe-glob:` now matches an artifact on disk → offer a delta re-extract for that module. FAIL → fix (re-dispatch the owning module / run the missing verifier / cite the site) or honestly record the gap as `[OPEN]`/OQ in the owning PRD, then re-run. Never hand off on FAIL.
 
-**Hand-off announce:** "PRD-kontrak written to `<out>/knowledge-base/` — N module(s), census: N files fully claimed. Critical findings: N. Open questions: N (P1: …, P2: …, P3: …). Next: review `<out>/knowledge-base/README.md`, then `generate-intent --kb=<out>/knowledge-base/` to continue the revamp lane." **When Open questions > 0, ALSO offer answering them now (7.21.0):** "Mau jawab OQ-nya sekarang? (resolve-oq KB mode — jawaban legacy paling akurat selagi konteksnya masih hangat; belum dijawab pun tetap ikut ke vault nanti)" — offer only, never auto-invoke.
+**Hand-off announce:** "PRD-kontrak written to `<out>/knowledge-base/` — N module(s), census: N files fully claimed. Critical findings: N. Open questions: N (P1: …, P2: …, P3: …). Next: review `<out>/knowledge-base/README.md`, then `generate-intent --kb=<out>/knowledge-base/` to continue the revamp lane." **When Open questions > 0, ALSO offer answering them now:** "Mau jawab OQ-nya sekarang? (resolve-oq KB mode — jawaban legacy paling akurat selagi konteksnya masih hangat; belum dijawab pun tetap ikut ke vault nanti)" — offer only, never auto-invoke.
 
-**Auto-render HTML (7.18.0, 0 model tokens):** after the gate passes, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-html.sh" <out>/knowledge-base --index` and name `<kb>/html/index.html` in the announce — the shareable per-domain report (opens offline, no Claude needed). Fail-open: a render failure is ONE warning line, never a halt; skip when `.mega-sdd/config.yaml` has `render_html: off`.
+**Auto-render HTML (0 model tokens):** after the gate passes, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-html.sh" <out>/knowledge-base --index` and name `<kb>/html/index.html` in the announce — the shareable per-domain report (opens offline, no Claude needed). Fail-open: a render failure is ONE warning line, never a halt; skip when `.mega-sdd/config.yaml` has `render_html: off`.
 
 **Advisor offer (when the target architecture is undecided):** append one line to the announce — "Arsitektur target belum diputuskan? Gue bisa jalanin konsultasi advisor dulu (evidence digest dari KB + census constraint + 2–3 opsi + ADR)." On yes, load `plugins/mega-sdd/references/architecture-advisor.md` and follow it — an OFFER, never auto; the resulting `decisions/ADR-*.md` (accepted) is consumed by `generate-intent --kb`.
 
@@ -200,7 +200,7 @@ mutability-tier producer: `tier_distribution`, `locked_claims_touched`,
 - `mega-sdd:generate-intent` — consumes the output via `--kb=<path>` (incl. `decisions/ADR-*.md` accepted by the advisor).
 - `mega-sdd:bind-codebase` — consults the output as secondary ground truth.
 - `scripts/derive-extract-census.sh` / `scripts/validate-extract-census.sh` — census + completeness gate.
-- `scripts/derive-site-census.sh` / `scripts/derive-prd-counts.sh` — WRITE/CALL site inventory + script-derived frontmatter counts (7.26.0).
+- `scripts/derive-site-census.sh` / `scripts/derive-prd-counts.sh` — WRITE/CALL site inventory + script-derived frontmatter counts.
 - `plugins/mega-sdd/references/legacy-idioms/rpg-as400.md` — extraction-side idiom sheet for the rpg/dds stacks (READ ALSO line in dispatches).
 - `scripts/kb-leak-scan.sh` — tech-agnostic vocabulary advisory.
 - Design specs: `docs/superpowers/specs/2026-08-26-extract-revamp-contract-design.md` (current), `docs/superpowers/specs/2026-06-15-extract-intelligence-tech-agnostic.md` (historical, wave era).

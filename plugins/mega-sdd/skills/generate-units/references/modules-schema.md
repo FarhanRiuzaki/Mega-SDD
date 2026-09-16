@@ -220,15 +220,15 @@ After each unit completes:
 
 ## Backward compatibility
 
-- v3.4 vaults without `_meta/modules.yaml` → all units get `module: M-default` (single implicit module)
-- v3.4 unit files without `module:` field → treated as M-default
+- Vaults without `_meta/modules.yaml` → all units get `module: M-default` (single implicit module)
+- Unit files without `module:` field → treated as M-default
 - `_index.md` falls back to flat list (no grouping) when only M-default exists
 - `execute-bolts --module=<id>` works for M-default-only vaults (just runs all units)
 - Existing `vault_source` field is the primary signal for auto-derivation
 
 ## Migration
 
-Existing v3.4 vaults can opt into modules by:
+Existing vaults can opt into modules by:
 
 1. Adding `_meta/modules.yaml` — manually, OR by promoting the auto-derivation output: any `generate-units` run's Step 4.5 writes `_meta/modules.yaml.auto`; review it, then `mv _meta/modules.yaml.auto _meta/modules.yaml` (execute-bolts' `--module=` halt accepts only the promoted name)
 2. Re-running `generate-units --reconcile` — refreshes Step 5 module assignment against the existing unit set without regenerating unit bodies

@@ -161,7 +161,7 @@ blocker:
   next_action: "Append the listed OQ-IDs to unit's binding_refs frontmatter so the traceability link is preserved."
 ```
 
-**Why this rail exists:** audit 2026-05-27 §F traced OQ-DM-P2-1 from vault → binding-phase-2.md (correctly carried) → units/U-005 + U-014 (resolution semantics carried as `lc_amount + goods_total` fields, but the OQ-ID itself was DROPPED). Future readers reviewing U-005 cannot trace the design decision back to its source OQ. CONFLICTs already propagate via this same mechanism (per phase-1 verification); this rail extends the discipline to OQs.
+**Why this rail exists:** a field audit traced OQ-DM-P2-1 from vault → binding-phase-2.md (correctly carried) → units/U-005 + U-014 (resolution semantics carried as `lc_amount + goods_total` fields, but the OQ-ID itself was DROPPED). Future readers reviewing U-005 cannot trace the design decision back to its source OQ. CONFLICTs already propagate via this same mechanism (per phase-1 verification); this rail extends the discipline to OQs.
 
 ## `starterkit_rule_citation_missing` — ALWAYS STOP
 
@@ -185,8 +185,7 @@ Recovery: user edits unit to add citation; re-runs Step 12.5 polished-prompt ren
 ## Confirm gates (not halts — no blocker YAML)
 
 These STOP to ask, then continue on the user's answer. They emit NO blocker envelope and add
-no member to the halt enum. None remain — the sole former member (the Step 7.5 spawn-cost
-gate) was removed with the PageRank pass.
+no member to the halt enum. None remain.
 
 ## Halt-vs-warning summary
 
@@ -194,4 +193,4 @@ Hard halts (STOP): `cycle_detected`, `cross_squad_dep_invalid`, `interface_ref_m
 
 Soft (proceed, surface a WARNING): anchor file missing / line out of bounds (Step 12.3); Implementation-steps bullet-only (Step 12.5 c); module ≥10% unassigned; target_files collision force-create (option 4). The full halt-vs-warning matrix is in the defensive-generation reference listed in the skill router.
 
-Confirm gates (ASK, then proceed on the answer — neither hard nor soft halt, no enum member, no `blockers[]` entry, `status` never `halted`): none remain (the sole member — the Step 7.5 spawn-cost gate — was removed with the PageRank pass; §Confirm gates above).
+Confirm gates (ASK, then proceed on the answer — neither hard nor soft halt, no enum member, no `blockers[]` entry, `status` never `halted`): none remain (§Confirm gates above).
