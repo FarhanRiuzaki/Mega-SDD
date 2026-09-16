@@ -1,7 +1,7 @@
 ---
 framework: laravel-base-26
 framework_version_range: "Laravel 12.x | base-laravel-26 starterkit"
-last_verified_against: 2026-05-22
+last_verified_against: 2026-09-16
 maintainer: mega-sdd (extracted from /Users/<user>/SunnyGo/2026/AIRND2026/Project/base-laravel-26 CLAUDE.md + structure audit)
 detection_priority: 10  # P2 matcher: lower wins — starterkit variants/meta-frameworks precede their substrates
 detection_signature:
@@ -264,6 +264,15 @@ HARD_RULE: yarn (not npm) for frontend builds
 - Custom `app/<NewFolder>/` not in `[Actions, DataTables, Enums, Helpers, Http, Jobs, Listeners, Mail, Models, Notifications, Policies, Providers, Services, Traits, View]` — get approval first
 - New Spatie / Laravel composer deps without approval — project pins specific versions; lockfile coordination matters
 - Manual obfuscation of generated files — use `php artisan obfuscate:controller` pipeline; commits with "obfuscat" in message skip PHPStan hook intentionally
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: PHPDoc — **read by**: Larastan at PHPStan level 5 (`composer analyse`; the pre-commit hook runs it on staged files; the 109 KB baseline holds accepted debt — never "fix" baseline items inside an unrelated unit) — relation/collection generics and `@property` model attributes for IDE contracts; nothing else in the starterkit reads a docblock. A full block only where Larastan or a boundary-crossing caller needs it.
+- **Skip**: signature echoes on getters/setters/constructors/plain methods (already ruled in §Idioms); `@param`/`@return` repeating native types; `// Step 1` narration in services, jobs and helpers; a docblock on a starterkit helper/trait whose name + signature already say it.
+- **Write**: the relation/collection generic Larastan needs; a notification-rule-engine hook whose trigger is not visible in the code; a Reverb channel/authorization contract; a workaround for a starterkit constraint — cite the page under `docs/development/`.
+- **Names carry the meaning**: as the base Laravel pack — predicates `isX`/`hasX`/`canX`, verb-first service methods, plural collections; existing starterkit traits/helpers keep their names (reuse-first — never a synonym of an existing helper).
 
 ## Artisan commands (project-specific)
 

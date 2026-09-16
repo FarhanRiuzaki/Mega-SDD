@@ -1,7 +1,7 @@
 ---
 framework: laravel
 framework_version_range: "10.x — 12.x"
-last_verified_against: 2026-05-22
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_signature:
   package_manifest: composer.json
@@ -176,6 +176,15 @@ HARD_RULE: Routes file MUST NOT contain business logic
 - Eloquent N+1 patterns: looping over collection + accessing relationship without `with()` eager load
 - `env()` calls outside `config/*.php` files (cached config breaks env access at runtime)
 - Storing files via `move_uploaded_file()` (use `Storage::disk()->putFile()` for testability + cloud-storage abstraction)
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: PHPDoc — **read by**: PHPStan/Larastan (`phpstan.neon`) for what native types cannot say — generics on relations and collections (`@return HasMany<Order, $this>`, `Collection<int, User>`), `@property`/`@property-read` model attributes (what `ide-helper` writes), `@mixin`; the IDE for those same contracts; Pint/php-cs-fixer only normalize a block, never require one. A full block only where one of these reads it, or on public API consumed outside this module.
+- **Skip**: methods whose native signature already carries the types; getters/setters, accessors/mutators, constructors; controller actions and route closures; `@param`/`@return` that repeat a native type; `@var` on a typed property.
+- **Write**: the generic a native type cannot express and Larastan needs (relation return types, keyed collections); a non-obvious contract on a public service method — queue dispatch, transaction boundary, thrown domain exception, side effect on another aggregate.
+- **Names carry the meaning**: booleans as predicates (`isActive`, `hasVerifiedEmail`, `canRetry`); methods start with the verb (`calculateInstallment`, `syncBranches`); collections plural (`activeLoans`); scopes read as adjectives (`scopeActive`); never `data`, `temp`, `obj`, `handle`, `process`.
 
 ## Security idioms
 

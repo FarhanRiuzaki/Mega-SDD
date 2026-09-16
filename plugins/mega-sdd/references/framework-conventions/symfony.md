@@ -1,7 +1,7 @@
 ---
 framework: symfony
 framework_version_range: "6.4 — 7.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_signature:
   package_manifest: composer.json
@@ -145,6 +145,15 @@ HARD_RULE: Business logic MUST NOT live in controllers; delegate to services in 
 - `die()` / `var_dump()` in committed code — use Symfony's `dd()` helper for debugging only, remove before commit
 - Hard-coded credentials or env values — use `.env` files and `%env(KEY)%` parameters
 - Using `@Route(...)` annotation syntax (Doctrine-style docblock) — prefer PHP 8 `#[Route(...)]` attribute syntax in Symfony 6.4+
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: PHPDoc — **read by**: PHPStan/Psalm for generics and shapes native types cannot express (`Collection<int, Product>`, `array{id: int, name: string}`, `@template`); API Platform, when installed, lifts class/property PHPDoc summaries into the OpenAPI schema; PHP 8 attributes (`#[Route]`, `#[ORM\Entity]`) replaced annotation docblocks — in 6.4+ a docblock is never configuration. A full block only where one of these reads it, or on public API consumed outside this bundle/module.
+- **Skip**: services and controllers whose native signature carries the types; getters/setters/constructors; `@param`/`@return` repeating a native type; `@var` on a typed property; Doctrine annotation blocks (use attributes).
+- **Write**: the generic or array shape PHPStan needs; a message handler's side effect or idempotency contract; an event subscriber's ordering assumption; the API Platform description an external consumer will read.
+- **Names carry the meaning**: predicates `isEnabled`, `hasRole`, `canPublish`; verb-first service methods (`calculateTotal`, `dispatchInvoice`); plural collections (`pendingOrders`); handlers named after their message (`CreateOrderHandler`); never `data`, `temp`, `obj`, or a bare `process()`.
 
 ## Security idioms
 

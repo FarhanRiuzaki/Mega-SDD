@@ -1,7 +1,7 @@
 ---
 framework: slim
 framework_version_range: "4.x"
-last_verified_against: 2026-06-10
+last_verified_against: 2026-09-16
 maintainer: mega-sdd
 detection_signature:
   package_manifest: composer.json
@@ -98,6 +98,15 @@ HARD_RULE: Middleware MUST be applied via $app->add() or $group->add() / route->
   rule_type: CUSTOM
   rationale: Direct calls to middleware in action bodies bypass the PSR-15 middleware stack and break orthogonal concerns
 ```
+
+## Code style (self-documenting)
+
+> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+
+- **Doc-comment tool**: PHPDoc — **read by**: PHPStan/Psalm when configured (`phpstan.neon`) for the generics and array shapes PSR-7/PSR-15 code cannot type natively (`array<string, mixed>` route args, `@param array{id: int} $args`); nothing in Slim reads a docblock — routes, middleware and the container are code. A full block only where a static analyser reads it, or on public API consumed outside this module.
+- **Skip**: action classes with `__invoke(Request $request, Response $response, array $args)` — the PSR signature is the doc; getters/setters/constructors; `@param`/`@return` repeating native types; `@var` on a typed property.
+- **Write**: the array shape of `$args` or the parsed body PHPStan needs; a middleware's ordering or short-circuit contract; a container binding whose lifetime (shared vs fresh) is not visible.
+- **Names carry the meaning**: actions as verb-noun (`CreateOrderAction`), middleware as noun + `Middleware` (`AuthMiddleware`); predicates `isAuthorized`, `hasScope`; plural collections (`routes`, `pendingJobs`); never `data`, `temp`, `obj`, `handle`, `process`.
 
 ## Security idioms
 
