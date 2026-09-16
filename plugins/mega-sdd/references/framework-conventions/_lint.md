@@ -16,13 +16,14 @@ Optional but recommended: `last_verified_against:`, `maintainer:`, `detection_si
 
 ## Check 2 — Required-always sections
 
-Every pack MUST contain ALL five of the following `## ` headings (in any order):
+Every pack MUST contain ALL six of the following `## ` headings (in any order):
 
 1. `## File location standards` — table mapping artifact kinds to filesystem paths
 2. `## Naming standards` — table of naming conventions (class, method, file, column, etc.)
 3. `## Idioms` — bullet list of the framework's preferred patterns
 4. `## Hard Rules emitted` — fenced block of `HARD_RULE:` entries that merge into `binding.md`
 5. `## Testing conventions` — test runner, test file location, naming, and fixture conventions
+6. `## Code style (self-documenting)` — the stack's code-style DELTA over Iron Rule 6 (since 8.2.0; shape in Check 6)
 
 A pack that omits any of these is incomplete and MUST NOT be loaded into the registry.
 
@@ -35,9 +36,9 @@ The following sections MUST be present if the framework has the capability. A pa
 - `## UI detection` — REQUIRED when the stack renders server- or client-side UI. Opt-out with `_(N/A: API-only / no UI)_` if the framework is API-only.
 - `## Reuse discovery` — REQUIRED when the stack has reusable first-party code (helpers, models, services, commands). Opt-out with `_(N/A: no conventional reuse locations)_` only for minimal/micro frameworks.
 
-## Check 3d — `## Code style (self-documenting)` (recommended in 8.1.0, REQUIRED from 8.2.0)
+## Check 6 — `## Code style (self-documenting)` shape (REQUIRED since 8.2.0; the header itself is Check 2)
 
-The stack's code-style DELTA over Iron Rule 6 (`agents/bolt-implementer.md`): four bold slots — **Doc-comment tool** + **read by**, **Skip**, **Write**, **Names carry the meaning** — ≤ 6 bullets, ≤ 1 600 bytes of bullets, `read by` naming concrete toolchain consumers (or `none by default`), every fact web-verified at authoring. Consumed by the dispatch builder as the T2 `code_style_slice` (most-specific pack wins, no chain merge). `_universal.md` MUST NOT carry it — the generic rule is agent-carried. In 8.1.0 `validate-pack.sh` only recognizes the header (Check 3b); the authoring shape of every pack that carries it is pinned by `tests/per-stack-packs/test-code-style-section.sh`. Spec: `docs/superpowers/specs/2026-09-16-code-style-playbook-design.md`.
+The stack's code-style DELTA over Iron Rule 6 (`agents/bolt-implementer.md`): four bold slots — **Doc-comment tool** + **read by**, **Skip**, **Write**, **Names carry the meaning** — ≤ 6 bullets, ≤ 1 600 bytes of bullets, `read by` naming concrete toolchain consumers (or `none by default`), every fact web-verified at authoring (bump `last_verified_against:`). The script checks that all five labels are present and that no template placeholder (`<the … >`, `<tool>`) survives; bullet count and byte cap are pinned by `tests/per-stack-packs/test-code-style-section.sh`. Consumed by the dispatch builder as the T2 `code_style_slice` (most-specific pack wins, no chain merge). `_universal.md` MUST NOT carry it — the generic rule is agent-carried. Spec: `docs/superpowers/specs/2026-09-16-code-style-playbook-design.md`.
 
 ## Check 4 — Valid YAML in hint-section fenced blocks
 

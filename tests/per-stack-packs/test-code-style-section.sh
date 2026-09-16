@@ -45,4 +45,12 @@ for f in "$CONV"/*.md; do
   fi
 done
 [ "$n" -ge 25 ] && pass "$n pack(s) carry the section (all non-underscore packs)" || fail "only $n pack(s) carry the section (25 expected)"
+# ── Check 6 negative pins (8.2.0): the validator must REJECT a broken section, not just accept a good one ──
+TMP="$(mktemp -d 2>/dev/null || mktemp -d -t cs6)"; trap 'rm -rf "$TMP"' EXIT
+sed 's/^- \*\*Skip\*\*:/- Skip:/' "$CONV/spring.md" > "$TMP/spring.md"
+bash "$VP" "$TMP/spring.md" 2>&1 | grep -q 'missing slot \*\*Skip\*\*' && pass "Check 6: a section without the **Skip** slot is rejected" || fail "Check 6: missing-slot pack accepted"
+sed 's/^- \*\*Doc-comment tool\*\*: Javadoc/- **Doc-comment tool**: <tool>/' "$CONV/spring.md" > "$TMP/spring.md"
+bash "$VP" "$TMP/spring.md" 2>&1 | grep -q 'unfilled template placeholder' && pass "Check 6: a surviving <tool> placeholder is rejected" || fail "Check 6: placeholder pack accepted"
+awk '/^## Code style/{skip=1; next} skip&&/^## /{skip=0} !skip' "$CONV/spring.md" > "$TMP/spring.md"
+bash "$VP" "$TMP/spring.md" 2>&1 | grep -q 'missing section — ## Code style' && pass "Check 2: a pack without ## Code style is rejected (required since 8.2.0)" || fail "Check 2: sectionless pack accepted"
 echo; [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"; exit $rc

@@ -150,12 +150,34 @@ _validate_pack() {
     "## Naming standards" \
     "## Idioms" \
     "## Hard Rules emitted" \
-    "## Testing conventions"; do
+    "## Testing conventions" \
+    "## Code style"; do
     if ! printf '%s\n' "$content" | grep -qF "$req_section"; then
       echo "VIOLATION: missing section — $req_section"
       violations=$((violations + 1))
     fi
   done
+
+  # ---- Check 6 (8.2.0 code-style playbook): `## Code style` shape ----------
+  # The section is the stack's DELTA over bolt-implementer Iron Rule 6, consumed
+  # as the T2 code_style_slice: five bold labels must be present and no template
+  # placeholder may survive. Bullet count / byte cap are pinned by
+  # tests/per-stack-packs/test-code-style-section.sh (a style rule, never a
+  # gate on generated code — this only lints the PACK's authoring shape).
+  local _cs_body _cs_label
+  _cs_body=$(printf '%s\n' "$content" | awk '/^## Code style/{f=1; next} f&&/^## /{exit} f')
+  if [ -n "$_cs_body" ]; then
+    for _cs_label in 'Doc-comment tool' 'read by' 'Skip' 'Write' 'Names carry the meaning'; do
+      if ! printf '%s\n' "$_cs_body" | grep -qF -- "**${_cs_label}**"; then
+        echo "VIOLATION: ## Code style — missing slot **${_cs_label}** (Check 6; see _lint.md)"
+        violations=$((violations + 1))
+      fi
+    done
+    if printf '%s\n' "$_cs_body" | grep -qE -- '(^|[ :(])<([A-Za-z][^>]*[ |][^>]*|[a-z]+)>'; then
+      echo "VIOLATION: ## Code style — unfilled template placeholder left in the section (Check 6)"
+      violations=$((violations + 1))
+    fi
+  fi
 
   # ---- Check 3: conditional sections (heading MUST be present) -----------
   local cond_section
