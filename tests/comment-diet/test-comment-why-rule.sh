@@ -16,6 +16,9 @@
 #      validate-bolt-artifacts.sh `provenance_missing`) — the diet never removes it
 #   i/j 8.0.2 — the trailer is TWO lines (marker + Unit); dropped lines had zero readers; gate key unchanged
 #   h  no comment-counting validator exists (F.5) — no script names a comment-ratio gate
+#   n–u 8.1.0 code-style playbook (spec 2026-09-16): OPEN-1 boundary-crossing public-API licence, OPEN-2
+#      comment language = surrounding code, skip/allow additions, "Names do the explaining", self-review
+#      Comments check, _universal mirror (+ NO ## Code style of its own), quality lens comment-what shapes
 # Run: bash tests/comment-diet/test-comment-why-rule.sh </dev/null
 set -u
 rc=0; pass() { echo "PASS: $1"; }; fail() { echo "FAIL: $1"; rc=1; }
@@ -63,4 +66,24 @@ grep -q 'docblocks that restate the signature' "$IMPL" && grep -q 'Step 1: valid
   && pass "l: the four concrete bans are still present (docblock echo, // Step N, test-step narration, file-name header)" || fail "l: a concrete ban was lost"
 grep -q 'an OPEN list' "$UNI" && grep -q 'The delete test decides every case' "$UNI" && grep -q 'In doubt → not written' "$UNI" && grep -q 'Minimality for the comments that pass' "$UNI" && grep -q 'a full docblock only when a toolchain reads it' "$UNI" \
   && pass "m: _universal.md §Comment conventions carries the same three clauses" || fail "m: _universal.md clauses"
+# n–u — 8.1.0 code-style playbook R1 (docs/superpowers/specs/2026-09-16-code-style-playbook-design.md §4)
+grep -q 'or on public API that crosses a module/team boundary' "$IMPL" && grep -q 'never the signature itself' "$IMPL" \
+  && pass "n: Iron Rule 6 licence = toolchain reads it OR boundary-crossing public API; content = contract, never the signature (OPEN-1)" || fail "n: OPEN-1 licence"
+grep -q 'Comment language follows the surrounding code' "$IMPL" && grep -q 'never two languages in one file' "$IMPL" \
+  && pass "o: Iron Rule 6 — comment language follows the surrounding code (OPEN-2)" || fail "o: OPEN-2 comment language"
+grep -q 'non-public members whose name already says it' "$IMPL" && grep -q 'overrides whose contract lives on the interface/base' "$IMPL" \
+  && grep -q 'thread-safety or an exception the name does not imply' "$IMPL" && grep -q '`TODO`/`FIXME`' "$IMPL" && grep -q '`@throws`' "$IMPL" \
+  && pass "p: Rule 6 skip-list (non-public, overrides) + allow-list (side effect / thread-safety / exception, FIXME) + @throws tag" || fail "p: skip/allow additions"
+grep -q 'Names do the explaining' "$IMPL" && grep -q 'booleans read as a question' "$IMPL" && grep -q 'start with the verb' "$IMPL" \
+  && grep -q 'collections are plural' "$IMPL" && grep -q '`data`, `temp`, `obj`' "$IMPL" \
+  && pass "q: §Code organization carries 'Names do the explaining' + the four naming heuristics" || fail "q: naming paragraph"
+grep -q '\*\*Comments\*\* — every comment I left survives the delete test' "$IMPL" \
+  && pass "r: self-review carries the Comments check" || fail "r: self-review Comments check"
+grep -q 'crosses a module/team boundary' "$UNI" && grep -q 'Comment language follows the surrounding code' "$UNI" \
+  && grep -q 'thread-safety' "$UNI" && grep -q 'non-public members whose name already says it' "$UNI" \
+  && grep -q 'Code style (self-documenting)' "$UNI" && ! grep -q '^## Code style' "$UNI" \
+  && pass "s: _universal.md mirrors n/o/p and points at the pack ## Code style — carrying NO such section itself" || fail "s: _universal mirror"
+grep -q '`@param`/`@return`/`@throws` tags that restate the signature' "$QL" && grep -q 'a doc block on a non-public member' "$QL" \
+  && grep -q 'A \*missing\* comment or docblock is NOT a finding' "$QL" \
+  && pass "u: quality lens comment-what shapes include tag echo + non-public doc block; missing docs still never a finding" || fail "u: quality lens shapes"
 echo; [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"; exit $rc
