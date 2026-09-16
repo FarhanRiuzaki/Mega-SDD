@@ -32,7 +32,7 @@ A `.mega-sdd/` dir in the CWD is a STATUS signal only (one session-start notice 
 
 **Gateway marker:** announce lines end with `` `mega-sdd-trace:<skill>` ``; every subagent dispatch prompt carries one `mega-sdd-trace:<skill>` line. Verbatim, no variants (docs/gateway-contract.md).
 
-**Hard gate:** `bind-codebase` BLOCKS unit generation while `binding.md` has unresolved CONFLICT entries.
+**Hard gate:** `bind-codebase` BLOCKS unit generation while `binding.md` has unresolved CONFLICT entries (classic lane; on the lite lane the same CONFLICT closes the unit's gate at `execute-bolts` dispatch — `binding_conflict`).
 
 ## Output language
 

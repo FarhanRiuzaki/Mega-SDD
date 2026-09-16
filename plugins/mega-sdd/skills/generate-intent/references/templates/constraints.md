@@ -103,7 +103,7 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/constraints"]
 > - The `[tech / <mode>]` / `[business]` bracket is MANDATORY per OQ (bracket-
 >   first is the only category source — there is no roll-up fallback here).
 > - Sort P1 → P2 → P3. Priority + conf + resolution annotations per
->   vault-contract.md §OQ-conventions, unchanged.
+>   vault-core.md §OQ-conventions, unchanged.
 
 - [ ] **OQ-CN-1** [P1] [business]: <e.g. "Performance targets not specified in PRD">
 - [ ] **OQ-FL-1** [P2] [business] [origin: flows.md#F-U-001]: <e.g. "PRD describes happy path only — what happens when payment fails?">

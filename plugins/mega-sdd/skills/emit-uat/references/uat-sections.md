@@ -51,7 +51,7 @@ pair 1:1).
 ## Section 1 — Ruang Lingkup & Kriteria
 
 **Slot:** `{{section-1-narrative}}` + fragment block §1
-**Source:** `<vault>/flows.md` (F-* flows in scope) + the SIT doc-control maturity probe (`<vault>/sit/SIT.md`)
+**Source:** `<vault>/flows.md` (F-* flows in scope; layout-3: `context.md ## Flows`, resolved by the script) + the SIT doc-control maturity probe (`<vault>/sit/SIT.md`)
 **Fragment carries:** the flows-in-scope table (UAT ↔ TS ↔ F-id ↔ judul ↔ tipe) + the entry-criteria table
 (incl. the SEOJK berita-acara-SIT gate row + the probed SIT maturity) + the exit-criteria table + citation footer.
 **Narrative (model):** 2–4 kalimat Indonesia — cakupan uji (flow apa saja, scope mana), siapa yang mengeksekusi
@@ -68,7 +68,7 @@ PREPEND this block quote to the narrative verbatim:
 ## Section 2 — Skenario UAT
 
 **Slot:** `{{section-2-narrative}}` + fragment block §2
-**Source:** `<vault>/flows.md` — one `### UAT-NNN` block per `F-*-NNN` flow (1:1)
+**Source:** `<vault>/flows.md` (layout-3: `context.md ## Flows`, resolved by the script) — one `### UAT-NNN` block per `F-*-NNN` flow (1:1)
 **Fragment carries per UAT scenario:** heading `### UAT-NNN — <judul> (F-id)`, a metadata table (Flow / Unit
 terkait / Prioritas / Prasyarat / Data uji), the flow's **Mermaid diagram VERBATIM** (the Mermaid-flows hard
 rule extends to UAT — never redrawn, never prose-ified), the flow's **DoD items VERBATIM** as expected outcomes,

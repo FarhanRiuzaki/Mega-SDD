@@ -13,7 +13,7 @@ squads:
   - id: "{{SQUAD_ID_1}}"                  # e.g., squad-be (lowercase kebab-case, prefix `squad-`)
     label: "{{SQUAD_LABEL_1}}"            # e.g., Backend Squad
     owns_layers: []                       # e.g., [backend, data-model]
-    owns_flow_prefixes: []                # e.g., [F-B-, F-C-] — flows with these prefixes belong here
+    owns_flow_prefixes: []                # e.g., [F-S-, F-C-] — flows with these prefixes belong here
     owns_components: []                   # explicit named components from vault.md ## Architecture
     owns_feature_tags: []                 # feature tags (only used in partition_model: feature or hybrid)
 

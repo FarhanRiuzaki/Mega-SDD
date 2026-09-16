@@ -58,7 +58,7 @@ Run the generate-units candidate walk (`../generate-units/SKILL.md` Steps 2 → 
 
 | # | Run | On non-zero |
 |---|---|---|
-| 1 | `validate-unit-spec.sh --cwd=<root> --vault=<vault>` | `unit_underspecified` / `hard_rule_unparseable` / `prd_source_unresolvable` / `render_test_missing` — fix the unit, re-run; advisories (`xs_body_advisory`, `vault_source_advisory`) = trim; `dag_shape_advisory` = split/reorder (L2) |
+| 1 | `validate-unit-spec.sh --cwd=<root>` (NO `--vault=` — exit 2) | `unit_underspecified` / `hard_rule_unparseable` / `prd_source_unresolvable` / `render_test_missing` — fix the unit, re-run; advisories (`xs_body_advisory`, `vault_source_advisory`) = trim; `dag_shape_advisory` = split/reorder (L2) |
 | 2 | `validate-flow-coverage.sh --cwd=<root>` | BLOCKING gate (state file FAIL blocks execute-bolts): add the missing per-step artifact units |
 | 3 | `validate-sibling-consistency.sh --cwd=<root>` (project-wide; NO `--vault=` — unknown args are `exit 2` + a `STATUS: ERROR` first line) | fix the divergent sibling |
 | 4 | `validate-plan-coverage.sh --cwd=<root> --prd=<prd> --vault=<vault>` | exit 1 → halt `plan_coverage_gap` (the gaps ARE the finding: add a unit / raise an OQ quoting the heading / move it under an explicit Out-of-scope heading — never patch the census) |

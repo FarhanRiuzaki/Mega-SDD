@@ -1,6 +1,6 @@
 # Unit Schema
 
-A "unit" is an atomic, AI-executable dev prompt derived from a (bound-)vault. Each unit corresponds to one bolt — one PR-sized code commit. Units are the contract handed off to `execute-bolts` via superpowers.
+A "unit" is an atomic, AI-executable dev prompt derived from a (bound-)vault. Each unit corresponds to one bolt — one PR-sized code commit. Units are the contract handed off to `execute-bolts` via the `bolt-implementer` agent.
 
 ## Contents
 - Required frontmatter
@@ -331,7 +331,7 @@ When `generate-units` emits a unit with `consumes_interfaces: [api-leave-request
 
 ## Dependency graph
 
-`depends_on` builds a DAG. `generate-units` rejects cycles. `execute-bolts` topologically sorts the graph; independent units may run in parallel under `subagent-driven-development`.
+`depends_on` builds a DAG. `generate-units` rejects cycles. `execute-bolts` topologically sorts the graph; independent units may run in parallel via `execute-bolts --parallel` (wave-parallel `bolt-implementer` dispatch).
 
 ## ID stability
 

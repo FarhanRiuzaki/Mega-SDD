@@ -6,7 +6,7 @@ description: Spec-driven intent generation — a PRD/BRD (+ Figma), a free-text 
 
 # Grand Design Spec Generator (generate-intent)
 
-Converts a PRD/BRD (+ Figma), a free-text brief, or a knowledge base into a 4-file layout-2 vault (`vault.md` / `model.md` / `flows.md` / `constraints.md`, + `constitution.md`, `_meta/ai-consumer-guide.md`, `vault.json`) inside a user-specified folder, optimized for **anti-hallucination dev handoff** — a downstream dev (human or AI) can implement from these docs without inventing requirements.
+Converts a PRD/BRD (+ Figma), a free-text brief, or a knowledge base into a 4-file layout-2 vault (`vault.md` / `model.md` / `flows.md` / `constraints.md`, + `constitution.md`, `_meta/ai-consumer-guide.md`, `vault.json`) inside a user-specified folder, optimized for **anti-hallucination dev handoff** — a downstream dev (human or AI) can implement from these docs without inventing requirements. This is the classic-lane producer (the default lane). Under `--lite` / `.mega-sdd/config.yaml` `lane: lite` the preflight refuses it (`intent_folded_into_plan`) and `plan` writes the layout-3 `context.md` vault instead.
 
 > **Skill instruction language:** this skill reasons in English. **Generated docs match the input language** — Indonesian PRD → Indonesian vault; English PRD → English vault. Chat prompts default to **Indonesian + English technical terms**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 structural tokens stay English (full rules → `plugins/mega-sdd/references/output-language.md`).
 
@@ -72,7 +72,7 @@ When the user invokes `generate-intent <arg>`, evaluate rules **in order; first 
 |---|---|---|
 | `--from-prompt "<brief>"` | Force Mode B (free-text); explicit override of detection. | `references/from-prompt-mode.md` |
 | `--kb=<path>` | Mode B KB sub-mode — consume an extract-intelligence knowledge base as the brief. | `references/kb-submode.md` |
-| `--phase=N` | Legacy numbered-tree KB sub-mode only (a PRD-kontrak KB has no phase lane — module = phasing unit; the flag is logged + ignored there) — scope vault generation to Phase N of `suggested-phasing.md`; writes `phase` + `phase_total` to `vault.json`; emits the §Phase context block in `vault.md`. Default `--phase=1`; out-of-range → invocation-time error/halt. Non-KB modes are always `phase: 1, phase_total: 1`. | `references/kb-submode.md` |
+| `--phase=N` | Legacy numbered-tree KB sub-mode only (a PRD-kontrak KB has no phase lane — module = phasing unit; the flag is logged + ignored there) — scope vault generation to Phase N of `suggested-phasing.md`; writes `phase` + `phase_total` to `vault.json`; emits the §Phase context block in `vault.md`. Default `--phase=1`; out-of-range → refuse with an error message (no registered halt type). Non-KB modes are always `phase: 1, phase_total: 1`. | `references/kb-submode.md` |
 | `--scope=<id>` | Select one scope (BE/MW/FE/custom id, or `all` for legacy single vault) of a multi-scope PRD. When the PRD has a `scopes:` block and the flag is unset, the interactive picker fires (Step 0.9). Invalid id → halt `scope_not_declared_in_prd`. | `references/setup-flow.md` |
 | `--scan=<codebase-map-path>` | Starterkit overlay — read `codebase-map.md` before drafting so vault sections use dual-citation (Intent + Starterkit binding) per `vault-contract.md §Starterkit-binding`. Auto-applied when a codebase-map exists and `--greenfield` is unset (confirm first unless `--auto`). | `references/setup-flow.md` |
 | `--greenfield` | Explicit opt-in for stack-agnostic generation — skips scan reading; vault stays generic. Required when no starterkit is present. | `references/setup-flow.md` |
@@ -97,8 +97,8 @@ Mode A/B/KB all emit the SAME canonical artifact set into the user-confirmed `<O
 └── vault.json           ← Machine-readable manifest (script-derived — `derive-vault-json.sh`; markdown stays human-authoritative)
 ```
 
-- `vault.json` is the canonical structured manifest AI consumers load for fast, reliable context without parsing prose. Schema, field rules, and regeneration triggers → `references/vault-core.md §schema`. It is **script-derived via `scripts/derive-vault-json.sh`** — the script derives the structural arrays from the vault markdown (layout-2: 4 files; legacy: 7), carries at-generation pins forward, merges the authored `--patch`, and holds the `vault.json.lock` itself (exit 4 → `memory_in_use` halt). Never hand-write vault.json.
-- An 8th file, `constitution.md` (§A–§F project rules), is written at Step 3.4 unless `--no-constitution` is set → `references/vault-core.md §constitution`.
+- `vault.json` is the canonical structured manifest AI consumers load for fast, reliable context without parsing prose. Schema, field rules, and regeneration triggers → `references/vault-core.md §schema`. It is **script-derived via `scripts/derive-vault-json.sh`** — the script derives the structural arrays from the vault markdown (layout-3 `context.md` / layout-2 4 files / legacy 7 — one resolver, `_lib/vault_md`), carries at-generation pins forward, merges the authored `--patch`, and holds the `vault.json.lock` itself (exit 4 → `memory_in_use` halt). Never hand-write vault.json.
+- An additional file, `constitution.md` (§A–§F project rules), is written at Step 3.4 unless `--no-constitution` is set → `references/vault-core.md §constitution`.
 - Multi-squad mode (≥2 squads) additionally emits `_meta/squads.yaml`, `interfaces/_index.md`, and `.obsidian/graph.json` → `references/setup-flow.md`.
 - Multi-scope vaults tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` → `references/multi-scope.md`.
 
@@ -112,7 +112,7 @@ Every Open Question is tagged at generation time with `category: business | tech
 - **`tech`** OQs → `scan` (resolvable from a codebase-map; needs `scan_query`), `recommend` (Claude proposes a pick; needs `recommendation` + `rationale` + `scan_citations` + `fallback_if_wrong` — **never fabricate citations**), or `blocking`.
 - **Conservative default** when no pattern matches: `category: business`, `resolution_mode: blocking`, `classification_confidence: low` (preserves blocking behavior — safe).
 - Only `high`-confidence tech OQs auto-resolve downstream in `bind-codebase`; `medium`/`low` are flagged for human review in the vault.md `## Auto-Classification Review` section.
-- **Memoization (re-runs / `--regenerate`):** when the vault already carries a classification for an OQ whose TEXT is unchanged (exact match against the existing `vault.json` entry), REUSE it verbatim — re-classify only new or text-changed OQs. An existing vault classification IS the record of any human correction — reuse-verbatim protects it (never silently overwrite a human-edited bracket).
+- **Memoization (re-runs over an existing vault):** when the vault already carries a classification for an OQ whose TEXT is unchanged (exact match against the existing `vault.json` entry), REUSE it verbatim — re-classify only new or text-changed OQs. An existing vault classification IS the record of any human correction — reuse-verbatim protects it (never silently overwrite a human-edited bracket).
 
 The classifier runs at Step 3.5 (after the 4 files, before the self-check) and writes the classification brackets/hints into the markdown body and the JSON-only fields (`scan_query`, `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`) into the authored patch consumed at Step 3.8 by `derive-vault-json.sh`, per `vault-core.md §Updated OQ schema`. Validation gate + halts (`oq_tech_missing_mode`, `oq_recommend_underspecified`, `oq_scan_missing_query`; `oq_recommend_citation_invalid` fires post-write via `validate-vault-oqs.sh`) → `references/generation-guide.md`.
 
@@ -155,7 +155,7 @@ All halts emit the unified `blocker` envelope (`plugins/mega-sdd/references/halt
 
 Grounded (every non-trivial claim cites a source) · honest about gaps (OQs over guesses) · simple (except flows) · human-readable (reviewable by architect, PM, business owner, QA — not just AI consumers) · predictable structure · language match (output follows input language; code-level terms stay English).
 
-**Auto-render HTML (7.18.0, 0 model tokens):** after Step 5 delivery, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-html.sh" <vault-dir> --index` and name `<vault>/html/index.html` in the closing summary — the vault as a shareable offline page set. Fail-open (one warning line, never a halt); skip when `.mega-sdd/config.yaml` has `render_html: off`.
+**Auto-render HTML (0 model tokens):** after Step 5 delivery, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-html.sh" <vault-dir> --index` and name `<vault>/html/index.html` in the closing summary — the vault as a shareable offline page set. Fail-open (one warning line, never a halt); skip when `.mega-sdd/config.yaml` has `render_html: off`.
 
 ## Specialist references (load on demand)
 
@@ -172,7 +172,7 @@ Grounded (every non-trivial claim cites a source) · honest about gaps (OQs over
 - **`references/scope-picker.md`** — scope filter logic + prior-vault default rules (used by Step 0.9).
 - **`references/legacy-retrofit-prompt.md`** — the AI subagent prompt for the legacy-PRD scope retrofit bridge.
 - **`references/squad-partition.md`** — squad-declaration validation rules.
-- **`references/templates/`** — scaffolds for the 4 files + `squads.yaml`, `interfaces-index`, `obsidian-graph.json` (`vault.json` has NO template — it is script-derived, never hand-written). Read ONLY the template for the file currently being drafted, never the whole set.
+- **`references/templates/`** — scaffolds for the 4 files + `squads.yaml`, `interfaces-index`, `interface-note`, `obsidian-graph.json` (`vault.json` has NO template — it is script-derived, never hand-written). Read ONLY the template for the file currently being drafted, never the whole set.
 
 ## Related skills
 

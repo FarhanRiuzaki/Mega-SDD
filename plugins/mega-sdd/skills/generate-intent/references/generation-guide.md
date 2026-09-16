@@ -15,7 +15,7 @@
 
 ## Step 3 — Generate the 4 files
 
-Output to the **resolved output folder from Step 0** (`<OUTPUT_DIR>`). The layout-2 vault is **4 files** (SKILL body, The vault output contract): `vault.md` (frontmatter lock + `## Overview` / `## Architecture` / `## Decisions` — EXACT hard-header strings, see the template) · `model.md` · `flows.md` · `constraints.md` (+ script-derived `vault.json`). Vaults generated before v7 use the legacy 7-file layout (00–06); every reader is dual-layout for one minor cycle (`plugins/mega-sdd/references/paths.md §Vault layout`).
+Output to the **resolved output folder from Step 0** (`<OUTPUT_DIR>`). The layout-2 vault is **4 files** (SKILL body, The vault output contract): `vault.md` (frontmatter lock + `## Overview` / `## Architecture` / `## Decisions` — EXACT hard-header strings, see the template) · `model.md` · `flows.md` · `constraints.md` (+ script-derived `vault.json`). Vaults generated before v7 use the legacy 7-file layout (00–06), READ-ONLY through 8.x — every reader goes through one resolver, `scripts/_lib/vault_md.py` (layout-3 `context.md` → layout-2 → legacy; `plugins/mega-sdd/references/paths.md §Vault layout`).
 
 **Conditional sections** (driven by the Step 2 detection flags `HAS_UI_COMPONENTS` / `HAS_TOKENS` / `HAS_A11Y` / `HAS_VOICE_BRAND`):
 
@@ -29,7 +29,7 @@ Output to the **resolved output folder from Step 0** (`<OUTPUT_DIR>`). The layou
 
 ## Operator-workflow-UX capture + Design-Source OQ
 
-> `validate-vault-oqs.sh` re-validates every vault doc write (PostToolUse) and surfaces a capture-stage miss as **advisory** via `analyze` (v4 Hybrid demoted this from a hard-block — it no longer blocks `mega-sdd:execute-bolts`). This prose is the real win — get it right at generation time.
+> `validate-vault-oqs.sh` runs under `analyze` (the `vault_oqs` family) and surfaces a capture-stage miss as **advisory** — it never blocks `mega-sdd:execute-bolts`. This prose is the real win — get it right at generation time.
 
 **Rule 1 — model the operator surface when the flows show a workflow.** When the flows in `flows.md` exhibit a **maker-checker / multi-stage-approval / workflow** pattern (a user-facing flow with a maker→checker actor hand-off chain, OR ≥2 distinct decision transition steps — approve / reject / review / confirm), model the operator-facing surface as **FIRST-CLASS requirements GROUNDED in the flows** — never invented:
 
@@ -53,7 +53,7 @@ Capture these in `vault.md ## Architecture` (and the component/view inventory) a
    - `fallback_if_wrong`: "blocking — request an explicit design source from the PO".
    Only when the user accepts is the `design_system` block written (with `source: design-intelligence-recommend`).
 
-In both cases the `design_system` block (vault-contract.md §design_system) is written into the authored patch (it lands in `vault.json` via `derive-vault-json.sh`) + the `constraints.md > Design system` section, each line cited to its source. The validator still FAILs with `design_source_oq_missing` when UI components exist with all three design flags false and **no** Design-Source OQ (blocking or recommend) is present AND no scanned-template design system was derived.
+In both cases the `design_system` block (vault-core.md §design_system) is written into the authored patch (it lands in `vault.json` via `derive-vault-json.sh`) + the `constraints.md > Design system` section, each line cited to its source. The validator still FAILs with `design_source_oq_missing` when UI components exist with all three design flags false and **no** Design-Source OQ (blocking or recommend) is present AND no scanned-template design system was derived.
 
 ## `vault.json` machine-readable manifest
 
@@ -61,8 +61,8 @@ Alongside the 4 markdown files, `vault.json` is a structured manifest AI dev con
 
 - **Run** `bash $PLUGIN_ROOT/scripts/derive-vault-json.sh --vault <OUTPUT_DIR> --patch <patch-file>` at Step 3.8 — after `constitution.md` (Step 3.4) and the Step-3.5 classifier complete, so the authored patch carries their records and `constitution.md` is on disk for the hash pin. The script derives every structural mirror from the markdown: `entities[]`, `flows[]`, `adrs[]`, `open_questions[]` skeletons, `open_questions_summary`, `vault_version` + the six Vault Lock enums (incl. the optional `project_scale`); it computes `constitution_hash` fresh at initial generation and carries it forward thereafter.
 - **The model still authors** (via the `--patch` JSON, a scratchpad temp file): `title`, `source_documents`, `design_system_flags` [+ `design_system`], scope block (`scope`/`scope_metadata`/`prd_sha256`/`prd_path_at_generation`), `phase`/`phase_total`, and the per-OQ JSON-only classifier fields (`scan_query`, `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`). Setting a derived key in the patch exits 2 (anti-laundering).
-- **Lock:** the script acquires and releases `<vault>/vault.json.lock` itself (backoff + retry per `generate-intent/references/vault-contract.md §Concurrency contract`); exit 4 → surface the existing `memory_in_use` halt envelope.
-- **Schema, field rules, and regeneration trigger points** → `generate-intent/references/vault-contract.md §schema`.
+- **Lock:** the script acquires and releases `<vault>/vault.json.lock` itself (backoff + retry per `generate-intent/references/vault-core.md §Concurrency contract`); exit 4 → surface the existing `memory_in_use` halt envelope.
+- **Schema, field rules, and regeneration trigger points** → `generate-intent/references/vault-core.md §schema`.
 - **Why both formats:** humans review markdown (narrative, citations, nuance); AI consumers read `vault.json` (fast structural lookup, no token-heavy prose parsing, reliable enum-based status/priority filtering).
 
 ## Reading the templates
@@ -86,7 +86,7 @@ Read the relevant template (Claude Code: `Read` tool; Claude.ai sandbox: `view` 
 
 After Step 3 writes the 4 files but BEFORE the Step 4 self-check, run the auto-classifier on every generated OQ (they all live in `constraints.md ## Open Questions`):
 
-1. **For each OQ in `constraints.md ## Open Questions`**, apply the heuristic table from `generate-intent/references/vault-contract.md §Auto-classifier heuristics`: match the OQ text against the pattern column; assign `category`, `resolution_mode`, `classification_confidence`. Conservative default when no pattern matches: `category: business`, `resolution_mode: blocking`, `classification_confidence: low`.
+1. **For each OQ in `constraints.md ## Open Questions`**, apply the heuristic table from `generate-intent/references/vault-core.md §Auto-classifier heuristics`: match the OQ text against the pattern column; assign `category`, `resolution_mode`, `classification_confidence`. Conservative default when no pattern matches: `category: business`, `resolution_mode: blocking`, `classification_confidence: low`.
 2. **For `resolution_mode: scan`:** populate `scan_query` from the OQ's "Resolves:" hint or infer the codebase-map section to probe (e.g., "what test framework?" → `scan_query: "codebase-map §test_frameworks"`).
 3. **For `resolution_mode: recommend`:** populate the four required fields:
    - `recommendation` — Claude's pick (1–2 sentences).
@@ -96,9 +96,9 @@ After Step 3 writes the 4 files but BEFORE the Step 4 self-check, run the auto-c
    - **Anti-halu rail:** NEVER fabricate citations. If no codebase context exists at all, downgrade to `category: business` with note "no codebase context to ground recommendation; needs human decision."
 4. **For `resolution_mode: blocking`** (default for business + low-confidence tech): no additional fields required.
 4b. **`project_scale: xs` defer-by-default (size-weighted §2, 7.29.0).** When the vault frontmatter carries `project_scale: xs`: every **tech** OQ (`scan`/`recommend`) with `classification_confidence: medium` is BORN deferred — annotate the markdown entry with `**Deferred**: project_scale=xs — auto-deferred at generation; resolves at binding (brownfield) / resurfaces via resolve-oq (greenfield), tidak ditanya interaktif` and carry `defer_to` for it in the authored patch — `binding` when the vault is brownfield (`implementation_mode: existing` AND repo signals present — the only context where a binding target is legal, per `resolve-oq/references/interactive-walk.md §Defer targets`), otherwise `stakeholder` (greenfield — the same value the express auto-defer writes; amended 7.29.1). These OQs are listed in §Auto-Classification Review under an `Auto-deferred (project_scale: xs)` sub-heading and are NEVER surfaced in an interactive walk (resolve-oq's priority walk and the chain's batched-P1 walk both skip `deferred`). **The evidence standard is unchanged:** `high`-confidence auto-resolve still requires the same citation probe at bind time; what changes is ASK vs DEFER, never the proof. Business OQs and `low`-confidence tech (conservative-default → business/blocking) are untouched — human-decided as always.
-5. **Write classified OQ data** back to the markdown body (the `[tech / scan]` / `[conf: …]` brackets + resolve hints) and put the JSON-only fields into the authored patch consumed by `derive-vault-json.sh`, per `generate-intent/references/vault-contract.md §Updated OQ schema` — never hand-edit `vault.json`.
+5. **Write classified OQ data** back to the markdown body (the `[tech / scan]` / `[conf: …]` brackets + resolve hints) and put the JSON-only fields into the authored patch consumed by `derive-vault-json.sh`, per `generate-intent/references/vault-core.md §Updated OQ schema` — never hand-edit `vault.json`.
 6. **Generate the `vault.md` "## Auto-Classification Review" section.** List every tech-tagged OQ + every flipped/manually-overridden OQ. Only `high`-confidence tech OQs auto-resolve downstream in `bind-codebase`; `medium`/`low` are flagged for user review.
-7. **Validation gate:** before proceeding to Step 4, validate every OQ entry per `generate-intent/references/vault-contract.md §Validation rules`:
+7. **Validation gate:** before proceeding to Step 4, validate every OQ entry per `generate-intent/references/vault-core.md §Validation rules`:
    - Tech OQ missing `resolution_mode` → halt `oq_tech_missing_mode`.
    - `recommend` OQ missing any of `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong` → halt `oq_recommend_underspecified`.
    - `scan` OQ missing `scan_query` → halt `oq_scan_missing_query`.
@@ -132,12 +132,12 @@ Driven by `OUTPUT_MODE` (Step 0.7):
 
 | Aspect | `compact` (default) | `full` |
 |--------|---------------------|--------|
-| TL;DR header (doc 01–06) | 1 line: `> **TL;DR**: <doc summary> · <intended audience> · <when to read>.` | 3 lines (TL;DR / Audience / When to read) |
-| API contracts (doc 02) | Table: endpoint · method · purpose · auth · errors · source. Skip request/response JSON unless the payload is non-trivial or has a nested struct that isn't obvious from field names. | Full request/response JSON example per endpoint |
-| Entity descriptions (doc 03) | DBML only + 1-line `Purpose:` per entity. No prose narrative. | DBML + per-entity prose: Purpose, Key fields, Relations |
-| Flow blocks (doc 04) | Mermaid flowchart (the flow body) + DoD checklist per flow. Skip Preconditions/Postconditions sections (derivable from the diagram). Source line still required. | Actor / Trigger + Preconditions + Mermaid flow diagram + Postconditions + DoD + Failure handling + Source |
-| Decision blocks (doc 05) | 1-paragraph: `D-XXX: title — context in 1 sentence. Decision: <X>. Consequences: <Y, Z>. Source: PRD §...` | Multi-section: Status / Date / Context / Decision / Consequences (✅⚠️ bullets) / Source |
-| Glossary (doc 00) | Product-specific PRD terms only + the pointer line to `_meta/ai-consumer-guide.md` §Standard terms. | Same — the generic-rows drop is unconditional (both modes); the static guide carries the standard rows |
+| TL;DR header (every doc) | 1 line: `> **TL;DR**: <doc summary> · <intended audience> · <when to read>.` | 3 lines (TL;DR / Audience / When to read) |
+| API contracts (`vault.md ## Architecture`) | Table: endpoint · method · purpose · auth · errors · source. Skip request/response JSON unless the payload is non-trivial or has a nested struct that isn't obvious from field names. | Full request/response JSON example per endpoint |
+| Entity descriptions (`model.md`) | DBML only + 1-line `Purpose:` per entity. No prose narrative. | DBML + per-entity prose: Purpose, Key fields, Relations |
+| Flow blocks (`flows.md`) | Mermaid flowchart (the flow body) + DoD checklist per flow. Skip Preconditions/Postconditions sections (derivable from the diagram). Source line still required. | Actor / Trigger + Preconditions + Mermaid flow diagram + Postconditions + DoD + Failure handling + Source |
+| Decision blocks (`vault.md ## Decisions`) | 1-paragraph: `D-XXX: title — context in 1 sentence. Decision: <X>. Consequences: <Y, Z>. Source: PRD §...` | Multi-section: Status / Date / Context / Decision / Consequences (✅⚠️ bullets) / Source |
+| Glossary (`vault.md`) | Product-specific PRD terms only + the pointer line to `_meta/ai-consumer-guide.md` §Standard terms. | Same — the generic-rows drop is unconditional (both modes); the static guide carries the standard rows |
 | Open Questions per doc | 1-line: `OQ-{CODE}-{N} [P{1\|2\|3}]: <question> — resolve: <PIC/source>` | Multi-line: question + reasoning + impact + resolution path |
 | Sources section | Bullet list, no prose intro. | Same |
 | "Note" / "Why X" asides in body | Cut. Reasoning belongs in `vault.md ## Decisions`. | Allowed when it adds context. |
@@ -147,7 +147,7 @@ Driven by `OUTPUT_MODE` (Step 0.7):
 
 **Audience principle:** `compact` = optimized for builder reading (architect, dev, QA) — tables + DoD + citations, skips narrative scaffolding because the reader knows the domain. `full` = optimized for cross-functional review (PM, BO, legal, compliance + builder) — prose context for non-technical readers, examples for clarity.
 
-**Doc 04 (flows) exception:** `compact` still cuts Preconditions/Postconditions, but the Mermaid flow diagram + DoD detail stay complete (flow correctness > token saving for QA & implementation); `full` uses full structured blocks per template.
+**`flows.md` exception:** `compact` still cuts Preconditions/Postconditions, but the Mermaid flow diagram + DoD detail stay complete (flow correctness > token saving for QA & implementation); `full` uses full structured blocks per template.
 
 Cut filler. No padding to look thorough. No amputation to look minimal. Output mode adjusts the **granularity of context**, not the completeness of facts.
 
@@ -243,7 +243,7 @@ Append at the bottom of model.md and flows.md (vault.md sections carry `### Sour
 - <if unknown: "TBD - confirm with PO">
 ```
 
-**NO per-doc Open Questions section** — every OQ lives in constraints.md (below). **Open Question tagging convention:** see `generate-intent/references/vault-contract.md §OQ-conventions` for the tag format, topic-prefix table, and priority definitions.
+**NO per-doc Open Questions section** — every OQ lives in constraints.md (below). **Open Question tagging convention:** see `generate-intent/references/vault-core.md §OQ-conventions` for the tag format, topic-prefix table, and priority definitions.
 
 ## constraints.md centralized Open Questions structure
 

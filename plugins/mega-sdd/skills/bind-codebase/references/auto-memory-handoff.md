@@ -135,7 +135,8 @@ handoff:
     # that fell back MUST emit bare ["--auto"]: keying off the flag alone would
     # wrongly reconcile a fresh full re-bind. The halted → resolve-oq branch is
     # unaffected: its args do NOT gain --reconcile regardless of whether this bind
-    # ran with --paths.
+    # ran with --paths. (Classic lane — a layout-3 vault reconciles via
+    # `plan --reconcile` after `scripts/rebind-units.sh`, routing-rules.md.)
     suggested_args: ["--auto"]                 # full re-bind (incl. --paths fallback); ["--reconcile", "--auto"] only when a claim-scoped re-bind actually executed
     rationale: "<1-sentence>"
   blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers); populated on bind_conflict

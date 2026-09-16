@@ -33,7 +33,7 @@ When building a recommendation for an OQ, consult these sources in order. First 
 
 ### 1. KB `[VERIFIED]` markers (strongest)
 
-If a knowledge-base exists at (priority order, first hit wins) `.mega-sdd/knowledge-base/` (canonical), `docs/knowledge-base/` (legacy), or `old-reference/knowledge-base/`:
+If a knowledge-base exists at the path derive-state resolves (`knowledge_base:` in config.yaml, else `.mega-sdd/knowledge-base/` → `docs/knowledge-base/` → `docs/mega-sdd/knowledge-base/` → `old-reference/knowledge-base/`):
 
 - **Modern grammar (7.6.0+, checked FIRST):** per-module PRD-kontrak files at `<kb>/modules/*.prd.md` — match the OQ tag/text against each module's claim rows (§1 scope, §4 rules) and their inline `file:line` citations. **In KB mode the OQ's HOME MODULE is probed first** (the OQ lives in that file's §6); citation: `<kb>/modules/<module>.prd.md §<section>` + the claim's own `file:line`.
 - Legacy grammar (back-compat): match against `10-domains/*` domain files
@@ -41,7 +41,7 @@ If a knowledge-base exists at (priority order, first hit wins) `.mega-sdd/knowle
 - `OQ-FL-3` (flows, payment) → look in `10-domains/20-import-lc-payment.md` or similar
 - Extract `[VERIFIED]` items that directly answer the OQ
 - **Mutability tier**: if KB claim carries mutability marker, surface it in recommendation (`[VERIFIED][LOCKED]` → flag user "this is a LOCKED rule, rebuild MUST preserve 1:1"; `[VERIFIED][ARTIFACT]` → flag "this is discardable, do you want to discard?")
-- Citation: `<kb-path>/10-domains/<file>.md §<section>:<line>` (use detected KB path)
+- Citation: `<kb-path>/modules/<domain>.prd.md §<section>:<line>` (use detected KB path; legacy grammar: `10-domains/<file>.md …`)
 - Confidence: HIGH
 
 ### 2. Vault — related ADRs + flows + constraints (medium)
@@ -101,7 +101,7 @@ function build_recommendation(oq):
 
 ## Citation probe step
 
-BEFORE surfacing the recommendation in `AskUserQuestion`, probe each citation in `Recommendation.citation` for resolution. This prevents LLM-fabricated citations from surfacing (mirrors the bind-codebase `oq_recommend_citation_invalid` halt for tech-OQ recommend mode).
+BEFORE surfacing the recommendation in `AskUserQuestion`, probe each citation in `Recommendation.citation` for resolution. This prevents LLM-fabricated citations from surfacing (mirrors generate-intent's `oq_recommend_citation_invalid` halt — `validate-vault-oqs.sh` post-write — for tech-OQ recommend mode).
 
 ### Probe logic
 
@@ -185,7 +185,7 @@ On user selection:
 - **Picked Skip** → nothing recorded anywhere: no vault edit, no derive run.
 
 - **Picked Defer/Out-of-scope** → record:
-  - vault.json: mark `status: deferred` or `status: out-of-scope`
+  - vault.json: mark `status: deferred` or `status: out_of_scope`
 
 ## High-stakes domain warning
 

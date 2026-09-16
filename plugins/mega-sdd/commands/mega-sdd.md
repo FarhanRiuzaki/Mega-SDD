@@ -1,6 +1,6 @@
 ---
 description: THE mega-sdd front door — any SDD lane phrase routes here. No arg → derive-state status view (position, vault, counts, staleness, foreign-SDD/adoption notices) + propose the next chain with ONE upfront confirmation. With an artifact arg (PRD / legacy dir / vault / brief) → input-shape detection + the adoption lane. Every gated phase stays Skill-dispatched. Legacy /mega-sdd:<command> typed forms no longer register — typed text still routes here or to its skill by phrase.
-argument-hint: "[input] [--weight=S|M|L] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--lean|--full] [--express|--classic] [--plan|--act|--plan-then-act]"
+argument-hint: "[input] [--weight=S|M|L] [--deep|--shallow] [--greenfield] [--scope=<id>] [--step-after=<phase>] [--stop-after=<phase>] [--resume] [--manual] [--out=<path>] [--no-lint] [--no-analyze] [--no-modules-summary] [--no-agents-md] [--converge|--no-converge] [--max-cycles=N] [--with-fsd] [--lean|--full] [--express|--classic] [--plan|--act|--plan-then-act] [--lite] [--model-tier=<tier>|<role>:<tier>] [--no-escalate]"
 ---
 
 > **The command surface** — three public verbs: `/mega-sdd` (this front door), `/mega-sdd:sync` (reconcile with moved code), `/mega-sdd:emit <prd|fsd|sit|uat>` (the four team documents). (`/mega-sdd:slice` was removed in v7.4.0 — Fase 5, owner decision.) Everything else is either auto-invoked by the chain, PROPOSED by this front door when state demands it, or reachable by natural-language phrase — the 5.x deprecation aliases were removed (a typed legacy form arrives as plain text and still routes to its skill).
@@ -11,7 +11,7 @@ User arguments: $ARGUMENTS
 
 > `--weight=S|M|L` — the v7 task-weight override (the anchor's S/M/L table decides by default; this flag is the user's escape hatch and always wins). `--weight=S`: do NOT run Lane 0/1 — answer the request inline as plain Claude Code, zero mega-sdd scripts (for when a small question arrived via `/mega-sdd` anyway). `--weight=M`: force the delta lane (Lane 1 step 3) even if the ownership match is weak. `--weight=L`: force the full chain. No other alias exists for this flag.
 >
-> `--lean` / `--full` — the tranche-E profile switch (opt-in): lean trims the advisory chain diagnostics; persistent form `profile: lean` in `.mega-sdd/config.yaml` (also governs the Stop-hook analyze aggregate — the flag alone does not). Never touches any gate. → orchestrate-flow SKILL §Auto-integrated diagnostics.
+> `--lean` / `--full` — the tranche-E profile switch (opt-in): lean trims the advisory chain diagnostics; persistent form `profile: lean` in `.mega-sdd/config.yaml` (also governs the Stop-hook analyze aggregate — the flag alone does not). Never touches any gate. → orchestrate-flow SKILL.md Step 7 + references/chain-execution.md §Auto-integrated diagnostics.
 
 ## Lane 0 — no argument: status view + next-chain proposal
 
@@ -23,7 +23,7 @@ When `<input>` is empty:
    - **Vault(s)** — per vault: docs present, units count, bolts count, OQ P0/P1 open, binding state (CONFIRMED/CONFLICT/OQ counts), drift-report / PENDING-SYNC presence.
    - **Staleness** — `change_signal` (map stamp vs HEAD, dirty-journal rows). Change signal present → surface it and prefer proposing `/mega-sdd:sync`.
    - **Foreign-SDD / adoption** — `probes.foreign_sdd` non-empty → name the detected tool(s) (spec-kit / Kiro / OpenSpec / generic specs) and propose the adoption lane (certify + ingest), never silent.
-   - **Maintenance notices (auto-PROPOSED, never auto-run)** — when state demands, propose the matching maintenance one-timer with one keterangan line each: legacy scattered layout detected → `/mega-sdd:migrate-paths`; missing native deps limiting a proposed phase → `/mega-sdd:install-deps`; plugin cache behind the marketplace clone → `/mega-sdd:update-plugin`.
+   - **Maintenance notices (auto-PROPOSED, never auto-run)** — when state demands, propose the matching maintenance one-timer with one keterangan line each: legacy scattered layout detected → `/mega-sdd:migrate-paths`; missing native deps limiting a proposed phase → `/mega-sdd:install-deps`.
 3. Propose the next chain from `derived.proposed_next` and confirm ONCE (the same upfront-confirmation contract as orchestrate-flow — Run / Edit / Cancel covering ALL phases including execute-bolts), then invoke the `mega-sdd:orchestrate-flow` skill via the Skill tool with `--deep --auto` (+ user flags). No fixed starting phase; the digest decides.
 
 ## Lane 1 — with an artifact argument: input-shape detection

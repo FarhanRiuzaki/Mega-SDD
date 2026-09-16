@@ -1,8 +1,8 @@
 # Predictive Checks Catalog
 
-> Per-skill preflight checks consulted by `mega-sdd:orchestrate-flow` Step 3.5.
+> Per-skill preflight checks consulted by `mega-sdd:orchestrate-flow` Step 5.
 
-**Consumed by:** `mega-sdd:orchestrate-flow` Step 3.5 predictive preflight
+**Consumed by:** `mega-sdd:orchestrate-flow` Step 5 predictive preflight
 
 ---
 
@@ -22,14 +22,14 @@
 - [Cold-halt anticipation checks](#cold-halt-anticipation-checks)
 - [install-deps preflight checks](#install-deps-preflight-checks)
 - [emit-fsd preflight checks](#emit-fsd-preflight-checks)
-- [Read protocol (Step 3.5)](#read-protocol-step-35)
+- [Read protocol (Step 5)](#read-protocol-step-5)
 - [Anti-halu rails](#anti-halu-rails)
 - [Adding new checks](#adding-new-checks)
 - [See also](#see-also)
 
 ## Purpose
 
-Catalog of lightweight checks that detect known halt preconditions BEFORE invoking the skill. Per spec §4.2: "Instead of 'scan-codebase halted on dep_missing 8 minutes in', user sees 'before chain starts: tree-sitter not installed; install or use --engine=regex'."
+Catalog of lightweight checks that detect known halt preconditions BEFORE invoking the skill. Per spec §4.2: "Instead of 'scan-codebase halted on dep_missing 8 minutes in', user sees 'before chain starts: tree-sitter not installed; install or use --engine=regex'." (historical wording — the AST engine is ast-grep since v7.4.0)
 
 ---
 
@@ -56,9 +56,9 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 ## scan-codebase preflight checks
 
 - **check_id: `ast_engine_present`**
-  command: `command -v tree-sitter || command -v tree-sitter-cli || command -v ast-grep`
+  command: `command -v ast-grep`
   expected: exit 0
-  on_fail: "no AST engine installed (tree-sitter AND ast-grep both absent); scan-codebase will fall back to the regex engine (lower precision). Install: brew install ast-grep (zero-compilation tier) / brew install tree-sitter-cli — OR run `/mega-sdd:install-deps` for auto-install. tree-sitter absent with ast-grep present is the NORMAL D2 state (no warning): auto extraction runs at the ast-grep tier, precision stays ast; tree-sitter is an explicit --engine opt-in."
+  on_fail: "ast-grep not installed; scan-codebase falls back to the regex engine (lower precision). Install: brew install ast-grep / cargo install ast-grep — OR run `/mega-sdd:install-deps`."
   fatal: no
   predicts_halt: dep_missing (only under a forced `--engine=`; avoided if user OK with the fallback tier OR installs a binary)
 
@@ -163,7 +163,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 - **check_id: `oq_status_field_present`**
   command: `python3 -c "import json; v=json.load(open('<vault-path>/vault.json')); exit(0 if any('status' in oq for oq in v.get('open_questions', [])) else 1)"`
   expected: at least one OQ entry has status field (schema)
-  on_fail: "vault.json open_questions[] entries lack 'status' field (pre-v1.1 schema). resolve-oq cannot track Resolve/Out-of-Scope/Defer outcomes without status field. Regenerate vault via generate-intent --refresh."
+  on_fail: "vault.json open_questions[] entries lack 'status' field (pre-v1.1 schema). resolve-oq cannot track Resolve/Out-of-Scope/Defer outcomes without status field. Regenerate vault via generate-intent --regenerate."
   fatal: no
   predicts_halt: (no halt; degraded interactive walk)
 
@@ -186,7 +186,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 - **check_id: `kb_target_writable`**
   command: `mkdir -p <kb-output-dir>/.test-write && rmdir <kb-output-dir>/.test-write`
   expected: exit 0 (directory creatable)
-  on_fail: "extract-intelligence cannot write to <kb-output-dir>. Check permissions OR change --output."
+  on_fail: "extract-intelligence cannot write to <kb-output-dir>. Check permissions OR change --out=."
   fatal: yes
   predicts_halt: dep_missing
 
@@ -209,7 +209,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 - **check_id: `units_present_for_agents_md`**
   command: `test -d <vault-path>/units && ls <vault-path>/units/U-*.md | head -1`
   expected: at least 1 unit file exists
-  on_fail: "emit-agents-md is unit-aware (lists units in AGENTS.md). Run generate-units first OR pass --no-units for vault-only AGENTS.md."
+  on_fail: "emit-agents-md is unit-aware (lists units in AGENTS.md). Run generate-units first."
   fatal: no
   predicts_halt: (no halt; degraded AGENTS.md)
 
@@ -234,7 +234,7 @@ An earlier audit flagged ~33 halts firing cold (no anticipating predictive-check
 - **check_id: `units_have_acceptance_tests`** (anticipates `unit_underspecified`)
   command: `for f in <vault-path>/units/U-*.md; do grep -q "^acceptance_test:" "$f" || { echo "no acceptance_test: $f"; exit 1; }; done`
   expected: exit 0 (every unit has acceptance_test field)
-  on_fail: "One or more units lack acceptance_test field. execute-bolts will halt unit_underspecified. Edit affected units OR re-run generate-units --strict."
+  on_fail: "One or more units lack acceptance_test field. execute-bolts will halt unit_underspecified. Edit affected units OR re-run generate-units --regenerate."
   fatal: yes
   predicts_halt: unit_underspecified
 
@@ -248,7 +248,7 @@ An earlier audit flagged ~33 halts firing cold (no anticipating predictive-check
 **Documented as RUNTIME-ONLY (no feasible static check):**
 
 - `handoff_missing`, `handoff_type_mismatch`, `artifact_missing` — orchestrate-flow self-emits on chain envelope state corruption; the corruption IS the runtime event
-- `predictive_check_failed`, `model_tier_unknown`, `routing_outcome_corrupt` — orchestrate-flow self-checks during runtime
+- `predictive_check_failed`, `model_tier_unknown` — orchestrate-flow self-checks during runtime
 - `test_fail`, `hard_rule_violated`, `provenance_missing` — emitted during execute-bolts execution, not anticipatable pre-flight
 - `cross_squad_interface_draft` — depends on producer skill state at runtime (interface lock status)
 - `deep_scan_subagent_failed/_all_failed/cache_corrupt` — depends on subagent runtime outcomes
@@ -296,7 +296,7 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
 
 ---
 
-## Read protocol (Step 3.5)
+## Read protocol (Step 5)
 
 > **IMPLEMENTED by `scripts/validate-preflight.sh --predictive`** (the merged predictive mode, v7 Fase 2) — the orchestrator runs the script (`--predictive --cwd --chain`), never this loop by hand; the loop below is the maintainer's spec of what the script does, and this catalog is the script's declared source of truth.
 
@@ -319,7 +319,7 @@ For each skill in proposed chain:
 2. `on_fail:` message MUST be actionable (concrete fix the user can apply)
 3. `fatal: yes` MUST be reserved for cases where chain CANNOT succeed without fix
 4. NEVER auto-fix preconditions on user's behalf — user does the fix; checks re-run on next invocation
-5. Empty/missing predictive-checks.md → orchestrate-flow Step 3.5 logs "no checks defined; skipping preflight" + chain proceeds (no halt)
+5. Empty/missing predictive-checks.md → orchestrate-flow Step 5 logs "no checks defined; skipping preflight" + chain proceeds (no halt)
 
 ---
 
@@ -331,11 +331,11 @@ Future iters that touch a skill MUST update this catalog if introducing new prec
 2. Add new `- **check_id:**` entry with all 5 fields
 3. Use canonical halt type names from `plugins/mega-sdd/references/halt-protocol.md` `§halt-protocol type enum`
 4. Verify check command is portable (works on macOS + Linux; if not, document platform)
-5. Cite in skill's SKILL.md halt section: "Step 3.5 preflight check `<check_id>` anticipates this halt"
+5. Cite in skill's SKILL.md halt section: "Step 5 preflight check `<check_id>` anticipates this halt"
 
 ---
 
 ## See also
 
-- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` §Step 3.5 (consumer)
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` §Step 5 (consumer)
 - `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol (canonical halt envelope for `predictive_check_failed`)

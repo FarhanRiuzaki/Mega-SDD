@@ -18,6 +18,8 @@ Turns intent into actionable atomic specs for AI dev execution. Each unit corres
 
 Do NOT use when the vault has unresolved CONFLICT entries in `binding.md` — that is a hard block (see The hard gate below); re-run binding first.
 
+Classic lane only (layout-2 / legacy vault). On the lite lane or a layout-3 `context.md` vault the PreToolUse gate FATALs `units_folded_into_plan` — units are born in `plan` (`plan <prd> --lite`; sync = `plan --reconcile`).
+
 ## Inputs & flags
 
 - Vault path (positional, required) — the vault dir; brownfield runs carry `<vault>/binding.md` + `<vault>/bound/` (units are written to `<vault>/units/`, beside `bound/` and `bolts/`)
@@ -26,8 +28,8 @@ Do NOT use when the vault has unresolved CONFLICT entries in `binding.md` — th
 - `--adversarial-subagent` — Step 9.5 dispatches a SEPARATE subagent per unit for adversarial test review (stronger blind-spot coverage; auto-set for any unit with `risk: high`/`critical` — the `risk:` frontmatter field is WRITTEN by Step 2.5 per the risk signals in `references/adversarial-test-prompt.md`, defined in `references/unit-schema.md`; absent = low)
 - `--no-adversarial-review` — SKIP Step 9.5; sets every unit's `acceptance_test._authored_by: same-pass`. DISCOURAGED (re-opens the D4-006 blind-spot risk); debug/regression only
 - `--regenerate` — rewrite existing unit files; PRESERVES units with `acceptance_test._authored_by: human`; others rewritten per Step 9 + 9.5
-- `--reconcile` — living-vault sync lane: UPDATE existing unit IDs in place against the refreshed binding (task_type flips per the new Implementation State Map, Migration notes refreshed from the new field_diff, `status` recomputed via `scripts/compute-unit-staleness.sh`; vanished claims → `status: superseded`, kept never deleted; new claims → new units). ID-stability contract holds — never duplicates. Full pass → `references/task-typing.md §Reconcile pass`
-- Dependency-emission flags: `--strict-deps` (default) · `--loose-deps` (legacy over-emit) · `--no-deps` (testing). Collision: `--collision-policy=<extend|verify|skip|prompt>`. Other: `--no-defensive`, `--skip-pagerank` (accepted NO-OP since 5.29.0 — the pass was removed; kept as an accepted compat no-op; removal rides the next MAJOR, per the 2026-09-05 audit)
+- `--reconcile` — living-vault sync lane: UPDATE existing unit IDs in place against the refreshed binding (task_type flips per the new Implementation State Map, Migration notes refreshed from the new field_diff, `status` recomputed via `scripts/compute-unit-staleness.sh`; vanished claims → `status: superseded`, kept never deleted; new claims → new units). ID-stability contract holds — never duplicates. Full pass → `references/task-typing.md §Reconcile pass` (classic lane; a layout-3 vault reconciles via `plan --reconcile` — this flag FATALs `units_folded_into_plan` there)
+- Dependency-emission flags: `--strict-deps` (default) · `--loose-deps` (legacy over-emit) · `--no-deps` (testing). Collision: `--collision-policy=<extend|verify|skip|prompt>`. Other: `--no-defensive`, `--skip-pagerank` (accepted NO-OP since 5.29.0 — the pass was removed; kept as an accepted compat no-op; removal rides a future MAJOR, per the 2026-09-05 audit)
 
 ## Output
 
@@ -115,7 +117,7 @@ The step skeleton is below with every gate/rail inline, and **the inline skeleto
    - **12.6 Deduplication check.** A `create` unit whose `target_files` ALL already exist → halt `dedup_ambiguous` (NEVER silent-rewrite the task_type).
    - **12.7 Sibling-consistency sweep.** Reason about siblings TOGETHER (grouped by module + scope): every sibling a pack-declared cross-cutting concern applies to MUST declare the SAME mechanism (no fan-out divergence); every FK column MUST declare its derived relation accessor. Enforced by `validate-sibling-consistency.sh`.
 
-**12.8. PRD coverage (v8 P1, spec App. F5) — script-run.** When the vault records its PRD (`vault.json` `prd_path_at_generation`, or the PRD passed on the chain), **Run** `bash <plugin-root>/scripts/validate-plan-coverage.sh --cwd=<root> --prd=<prd> --vault=<vault>`: every PRD requirement heading must be owned by some unit's `prd_source` or quoted by an open question; exit 1 → **halt `plan_coverage_gap`** listing the headings (add a unit, raise an OQ, or move the heading under an explicit Out-of-scope section). Units are NOT written around the gap — the gap is the finding. Under the lite lane (`--lite` or config `lane: lite`) a PASS state is REQUIRED before the chain reaches execute-bolts: `validate-preflight.sh --predictive` refuses the bolts hop while `.plan-coverage-state.json` is missing or FAIL. No PRD on record → skip with one line.
+**12.8. PRD coverage (v8 P1, spec App. F5) — script-run.** When the vault records its PRD (`vault.json` `prd_path_at_generation`, or the PRD passed on the chain), **Run** `bash <plugin-root>/scripts/validate-plan-coverage.sh --cwd=<root> --prd=<prd> --vault=<vault>`: every PRD requirement heading must be owned by some unit's `prd_source` or quoted by an open question; exit 1 → **halt `plan_coverage_gap`** listing the headings (add a unit, raise an OQ, or move the heading under an explicit Out-of-scope section). Units are NOT written around the gap — the gap is the finding. On the classic lane no predictive gate reads this state; the lite-lane gate (`validate-preflight.sh --predictive` → `lite_plan_coverage_pass`) belongs to `plan` Step 5.
 
 **13. Audit log.** Append to `vault.json`: `{ "event": "units_generated", "at": "...", "count": N }`. Runs last so the event reflects all post-write validation outcomes.
 

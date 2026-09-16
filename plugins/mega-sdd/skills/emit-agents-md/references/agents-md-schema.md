@@ -63,7 +63,7 @@ Cite source: `<!-- from vault.md L<N> -->` (legacy: `01-overview.md L<N>`)
 ## Build commands
 
 \`\`\`bash
-<build commands from vault constraints.md tech-stack OR memory conventions.md>
+<build commands from vault constraints.md tech-stack OR codebase-map.md §7 Framework (detection_source manifest)>
 \`\`\`
 
 If unknown → omit section.
@@ -75,12 +75,12 @@ If unknown → omit section.
 ## Test commands
 
 \`\`\`bash
-<test framework invocations from memory conventions.md OR vault flows.md DoD>
+<test framework invocations from starterkit-context.yaml patterns.test.framework OR vault flows.md DoD>
 \`\`\`
 
 Example:
 \`\`\`bash
-# PHP project detected (phpunit from conventions.md)
+# PHP project detected (phpunit from starterkit-context.yaml patterns.test.framework)
 ./vendor/bin/phpunit
 \`\`\`
 
@@ -92,12 +92,12 @@ If no test framework detected → "No test framework detected. Run tests manuall
 ```markdown
 ## Code style + conventions
 
-- **File naming**: <from conventions.md OR vault constraints.md>
-- **Class naming**: <from conventions.md>
-- **Test file convention**: <from conventions.md>
-- **Error format**: <from conventions.md error envelope section>
+- **File naming**: <from codebase-map.md §5 Naming conventions / starterkit-context.yaml patterns.<role>.naming OR vault constraints.md>
+- **Class naming**: <from codebase-map.md §5 Naming conventions>
+- **Test file convention**: <from starterkit-context.yaml patterns.test.naming>
+- **Error format**: <from codebase-map.md §6 Pattern signatures error-envelope entry>
 
-Cite source per row: `<!-- from conventions.md §<section> -->`
+Cite source per row: `<!-- from codebase-map.md §<section> -->` / `<!-- from starterkit-context.yaml patterns.<role> -->`
 ```
 
 ## Section 5 — Architecture overview
@@ -145,7 +145,7 @@ P2 (Feature blockers):
 
 These items are unresolved at vault generation time. AI tools should NOT make assumptions about them.
 
-For the full OQ list: `.mega-sdd/vaults/<slug>/constraints.md` §Open Questions (legacy: the `00-index.md` roll-up)
+For the full OQ list: `.mega-sdd/vaults/<slug>/constraints.md` §Open Questions (layout-3: `context.md ## Open Questions`; legacy: the `00-index.md` roll-up)
 ```
 
 ## Section 7.5 — Constitution
@@ -223,8 +223,8 @@ For tools that consume only AGENTS.md: this section + above sections are everyth
 |---|---|
 | Project overview | Always (the vault always has an Overview) |
 | Build commands | Detected build tooling (composer/npm/cargo/gradle/etc.) |
-| Test commands | Test framework detected in conventions.md OR DoD in flows.md |
-| Code style + conventions | conventions.md exists OR constraints.md has style section |
+| Test commands | Test framework detected in starterkit-context.yaml patterns.test OR DoD in flows.md |
+| Code style + conventions | codebase-map.md §5 / starterkit-context.yaml patterns exist OR constraints.md has style section |
 | Architecture overview | Always (the vault always has an Architecture section) |
 | Key decisions | the Decisions section has ≥1 ADR |
 | Open questions | vault.json `open_questions_summary.total > 0` |

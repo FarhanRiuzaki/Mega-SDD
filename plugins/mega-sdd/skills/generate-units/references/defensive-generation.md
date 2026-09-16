@@ -166,6 +166,6 @@ Defensive generation introduces NEW signals but FEW new halts. Most checks are w
 
 ## References
 
-- tree-sitter scan extracts signature details (leveraged for field diff)
+- ast-grep scan (`precision_tier: ast`) extracts signature details (leveraged for field diff)
 - `bind-codebase/SKILL.md` — Implementation State Map (which Step 7.6 reads to decide prompt content)
 - `bind-codebase/references/binding-contract.md` — six-state classification table

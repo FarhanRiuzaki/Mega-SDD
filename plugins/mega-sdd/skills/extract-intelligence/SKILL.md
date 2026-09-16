@@ -49,7 +49,7 @@ thread with zero subagents.
 | Convert brief/PRD-kontrak → intent vault | `mega-sdd:generate-intent` | Consumes this skill's output via `--kb=<path>` |
 
 **Typical chain (the revamp lane):**
-`extract-intelligence` → `generate-intent --kb=<kb>` → `generate-units` → `execute-bolts`
+`extract-intelligence` → `generate-intent --kb=<kb>` → `bind-codebase` → `generate-units` → `execute-bolts` (classic lane — the KB lane has no `--lite` form; `routing-rules.md` KB rows)
 
 ## Inputs
 

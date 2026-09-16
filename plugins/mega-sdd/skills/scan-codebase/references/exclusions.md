@@ -6,7 +6,7 @@
 - Targeted reads by explicit path
 - Override flags
 
-Loaded by `scan-codebase` Step 4 (build tree) and the Step 5 extraction walk. The scan walks every path NOT matching the default exclusion globs. The list is grouped by ecosystem for maintainability — implementation treats it as a flat allowlist applied to the `find` / `tree-sitter` walk. User `--exclude` flags are **appended** to these defaults (not replacing); `--no-default-excludes` opts out entirely.
+Loaded by `scan-codebase` Step 4 (build tree) and the Step 5 extraction walk. The scan walks every path NOT matching the default exclusion globs. The list is grouped by ecosystem for maintainability — implementation treats it as a flat allowlist applied to the Step 4 `find` walk. User `--exclude` flags are **appended** to these defaults (not replacing); `--no-default-excludes` opts out entirely.
 
 ## Why exclude SDD outputs from the bulk scan
 

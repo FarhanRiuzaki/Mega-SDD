@@ -26,7 +26,7 @@ else BOUND=""; fi
 $BOUND <verify_cmd>   # unquoted on purpose — an empty BOUND must vanish
 ```
 
-**A `verify_cmd` containing a shell operator MUST be wrapped, or the bound covers only its first word-group.** Seven matrix rows read `tree-sitter --version || tree-sitter-cli --version`. Substituted bare, the shell parses `||` at the TOP level: `timeout … tree-sitter --version` is bounded, then the fallback limb runs **completely unbounded** — and because `||` yields the LAST command's status, it also swallows the 124/137 the bound just produced, so the verdict table below reads the fallback's code instead. Both halves of the protection are lost silently. When the value contains `||`, `&&`, `|`, or `;`, wrap it in one bounded shell:
+**A `verify_cmd` containing a shell operator MUST be wrapped, or the bound covers only its first word-group.** No current matrix row carries a shell operator, but a compound `verify_cmd` (e.g. `a --version || b --version`) substituted bare would be parsed the shell parses `||` at the TOP level: `timeout … tree-sitter --version` is bounded, then the fallback limb runs **completely unbounded** — and because `||` yields the LAST command's status, it also swallows the 124/137 the bound just produced, so the verdict table below reads the fallback's code instead. Both halves of the protection are lost silently. When the value contains `||`, `&&`, `|`, or `;`, wrap it in one bounded shell:
 
 ```bash
 $BOUND sh -c "<verify_cmd>"   # one bounded process; the operator is INSIDE the bound
@@ -46,7 +46,6 @@ Every value in `tool-matrix.yaml` is plain words and flags — no quotes, `$`, o
 - **Timeout — exit 124 (SIGTERM landed) OR exit 137 (the `-k` escalation had to SIGKILL) → mark `present` with a `slow-verify` note, NEVER `missing`.** `command -v` already proved the binary exists; a slow probe is not a missing tool, and treating it as one would propose a pointless reinstall of something already installed. **Both codes carry the same verdict** — a native `.exe` that ignores SIGTERM exits 137, and reading 137 as a failed probe reintroduces exactly the false-`missing` bug the bound exists to prevent.
 - **Exit 127 → mark `present` with a `probe-inconclusive` note, NEVER `missing`.** `command -v` already resolved this name in step 2, so 127 cannot mean the tool is absent from PATH — it means the probe layer itself could not run: no bounding utility on this machine, flags written in the wrong order, or a shim whose interpreter is gone. Say *inconclusive*, not *working*: we did not observe the tool execute. **The absence of the bounding utility must never itself produce a `missing` verdict** — that proposes reinstalling software that is already installed.
 - Exit non-zero with any OTHER code (not 124, 137, or 127) → mark `missing`.
-- A memory hit from step 1 **plus** exit 0 → additionally annotate `cached-installed` (we installed it before; don't re-propose it). A memory hit NEVER skips the probe.
 - **The exit code is the verdict — never gate on a stdout pattern.** `semgrep --version` prints an upgrade banner before the version, so a "does stdout look like a version" test false-fails a working tool.
 
 ## `command -v` is never sufficient (item 4)

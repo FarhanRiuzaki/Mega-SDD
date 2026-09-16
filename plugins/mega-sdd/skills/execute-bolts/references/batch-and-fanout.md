@@ -62,11 +62,11 @@ blocker:
 
 1. **Load `_meta/modules.yaml`.** If absent BUT `_meta/modules.yaml.auto` exists → instruct: "review `_meta/modules.yaml.auto` and promote it: `mv _meta/modules.yaml.auto _meta/modules.yaml`". If neither exists → halt: "`--module=` requires `_meta/modules.yaml`. Run `generate-units` (Step 4.5 auto-derives `modules.yaml.auto`), review, then promote it."
 2. **Validate `<id>` exists** in declared modules.
-3. **Check blocked_by**: for each `blocked_by` entry, verify that module is `status: completed` (per memory). Incomplete → halt `module_blocked_by` listing pending prerequisites.
+3. **Check blocked_by**: for each `blocked_by` entry, verify that module is `status: completed` (per the `query-graph.sh --modules` rollup over `bolt-outcomes.json`). Incomplete → halt `module_blocked_by` listing pending prerequisites.
 4. **Filter units**: working set = units where `module: <id>` AND not yet completed.
 5. **Topologically sort** within the module by `depends_on`.
 6. **Proceed** with sequential or `--parallel` execution on the filtered set.
-7. **After all units complete**: probe the module's DoD checklist (`modules.yaml.modules[<id>].dod`). Surface incomplete DoD items in chat; the user marks them via `list-modules --mark-dod=<module>` or edits modules.yaml manually.
+7. **After all units complete**: probe the module's DoD checklist (`modules.yaml.modules[<id>].dod`). Surface incomplete DoD items in chat; the user marks them via the list-modules diagnostic (`orchestrate-flow/references/diagnostics-procedures.md §list-modules`, `--mark-dod=<module>` flow) or edits modules.yaml manually.
 
 ```yaml
 blocker:
@@ -102,6 +102,6 @@ blocker:
   next_action: "Producer squad must lock the interface before consumer bolts can execute. Edit interfaces/<id>.md frontmatter: status: locked, locked_at: YYYY-MM-DD. Re-run execute-bolts."
 ```
 
-> Under `--parallel` / `--per-squad`, the main-thread controller explicitly re-invokes the project-wide quality validators after each batch. This is **defense-in-depth**, not a fix for an invisible write: PostToolUse already fires on bolt-agent writes (AUDIT L1), but the explicit re-scan makes the gate state deterministic regardless of concurrent write ordering. This is the §Parent-thread post-flight re-scan obligation described in the Hard-Rule-scan ref (listed in SKILL.md).
+> Under `--parallel` / `--per-squad`, the main-thread controller explicitly re-invokes the project-wide quality validators after each batch. The PostToolUse validator fan-out was removed in v7.5.0, so between gate re-derivations this explicit re-scan is what refreshes the project-wide quality state after concurrent writes. This is the §Parent-thread post-flight re-scan obligation described in the Hard-Rule-scan ref (listed in SKILL.md).
 
 > The per-bolt drift check and the B2 batch-completion full-suite gate apply to EVERY invocation (single-unit included) and therefore live in `halts-and-handoff.md` (§Per-bolt drift check, §Batch completion — full-suite gate (B2)) — this file deliberately carries no copy.

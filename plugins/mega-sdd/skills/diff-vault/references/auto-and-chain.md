@@ -88,7 +88,7 @@ Patch artifact storage:
 - Use case: audit trail of vault evolution; can replay or revert via `jd -p`
 - Backward compat: skip storage when jd is absent; skill-internal Read+compare proceeds.
 
-See `plugins/mega-sdd/references/tooling-install.md` §jd for install commands per platform.
+See `plugins/mega-sdd/references/tooling-install.md` (jd row + per-platform install lines) for install commands.
 
 ## Handoff YAML emission
 
@@ -114,7 +114,7 @@ handoff:
     # (a) status halted on diff_conflict (a Resolved-OQ [x] vs new PRD contradiction whose
     #     content lives ONLY in VAULT-DIFF.md): re-invoke diff-vault WITHOUT --auto so Step 5
     #     resolves it interactively. resolve-oq CANNOT consume this — it walks only [ ] OQ
-    #     entries and reads vault docs 00-06, never VAULT-DIFF.md; keeping --auto here would
+    #     entries and reads the vault's OQ surface (`context.md` / `constraints.md` / legacy 0N docs), never VAULT-DIFF.md; keeping --auto here would
     #     re-hit the same contradiction and re-halt (an operator loop).
     suggested_skill: mega-sdd:diff-vault        # interactive re-invoke
     suggested_args: []                          # NO --auto — interactive Step 5 walkthrough

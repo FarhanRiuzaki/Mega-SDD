@@ -23,7 +23,7 @@ description: Generate a Hybrid Confluence FSD (Markdown + PDF) from vault/units/
 
 - `<vault-path>` (positional, optional — defaults to first vault detected via `plugins/mega-sdd/references/paths.md` priority order)
 - `--mode={pre-dev|post-dev|auto}` (default: `auto` — detect from CWD state)
-- `--styling=<path-to-yaml>` (override `FSD.styling.yaml` doc-metadata; PDF look is `github.css`, see Step 1)
+- doc-metadata: edit `<vault>/fsd/FSD.styling.yaml` (seeded from `references/styling-config.yaml` on first run; PDF look is `github.css`, see Step 1) — there is no `--styling` flag
 - `--no-pdf` (emit `FSD.md` only — skip the md2pdf render)
 - `--sections=<comma-list>` (emit subset; e.g., `--sections=1,2,5,7,8,10`)
 - `--auto` (orchestrator-invoked; emit handoff YAML in chat per `mega-sdd:orchestrate-flow/references/handoff-contract.md`)
@@ -59,6 +59,7 @@ Run `bash <plugin-root>/scripts/build-fsd-core.sh --vault=<vault> --cwd=<project
 - **Exit 2:** usage / vault / template problem — fix the invocation; nothing was written.
 - The model NEVER edits builder-derived section content except to DELETE a row that is provably wrong (delete/reformat-only authority — a RULE, not a gate: Step 4.6 catches an unresolvable PATH, not a plausibly-cited invented row; adding one is fabrication regardless). NEVER replace a `[Pending — …]` marker with invented content.
 - NEVER Read `.citation-map.json` directly — `build-citation-map.sh --check-drift` (inside the builder) is its only sanctioned reader.
+- **Layout-3 vault (`context.md`):** every vault doc name resolves to a `context.md` H2 section (`_lib/vault_md.resolve_doc`), and §1/§2 are quoted VERBATIM from the PRD pinned in `vault.json.prd_path_at_generation` (cited `<prd> §<heading>` + line range; a section the PRD lacks renders `[Pending — PRD §… tidak ada di <prd> — tidak dikarang]`). Layout-2/legacy never reads the PRD (7.37.0, pin `tests/v8-layout3/test-docs-resource.sh`).
 
 ### Step 4.5: Post-emission unfilled-slot scan
 
@@ -143,7 +144,7 @@ FSD generated (<mode>):
 Per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`. emit-fsd emits these halts:
 
 - `dep_missing` — `vault_present_for_fsd` predictive check fails (no vault.json found)
-- `quality_gate_failed` with subtype `pdf_render_failed` — pandoc exits non-zero in Step 5.3
+- `quality_gate_failed` with subtype `pdf_render_failed` — `md2pdf.sh` exits 1 in Step 5.2
 - `quality_gate_failed` with subtype `template_slot_unfilled` — internal bug: a `{{slot}}` marker in fsd-template.md has no extraction rule in section-mapping.md (impossible if reference files are consistent; defensive check)
 - `quality_gate_failed` with subtype `citation_unresolvable` — Step 4.6: FSD.md cites a source path that resolves to no existing file (fabricated or stale citation), detected deterministically by `scripts/build-citation-map.sh` exit 1; details carry the script's `UNRESOLVED`/`LEFTOVER` lines
 

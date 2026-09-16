@@ -57,9 +57,9 @@ Per `plugins/mega-sdd/references/paths.md`:
    - If exists AND has mega-sdd marker → safe to regenerate (marker-detected)
 3. **Read vault sources**:
    - `vault.json` for structured metadata (project shape, mode, OQ counts)
-   - `vault.md`, `flows.md`, `constraints.md` (legacy: `00-index.md`/`01-overview.md`/`02-architecture.md`/`05-decisions.md` + siblings) for prose
-   - `binding.md` (if exists) for implementation state
-   - `<project>/.mega-sdd/memory/conventions.md` (if exists) for detected conventions
+   - `vault.md`, `flows.md`, `constraints.md` (legacy: `00-index.md`/`01-overview.md`/`02-architecture.md`/`05-decisions.md` + siblings) for prose (layout-3: `context.md` — one file; `## Overview` / `## Flows` / `## Constraints` / `## Decisions` / `## Open Questions` H2 sections)
+   - `binding.md` (if exists; classic lane — lite: per-unit `bolts/U-*/binding.json`) for implementation state
+   - `<project>/.mega-sdd/codebase/codebase-map.md` §5 Naming conventions + `starterkit-context.yaml` `patterns` (if present) for detected conventions
 4. **Read user-authored AGENTS.md** (if `--mode=append`):
    - Preserve user-authored sections (anything before mega-sdd generation marker)
    - Append mega-sdd section after marker

@@ -86,7 +86,7 @@ handoff:
 
 ## Field-level schema annotations
 
-Each annotation is machine-readable for the Step 6.b validation gate.
+Each annotation is machine-readable for the Step 7b validation gate.
 `(REQUIRED)` — must be present in every handoff regardless of context.
 `(CONDITIONAL)` — must be present when stated runtime condition is met.
 `(OPTIONAL)` — encouraged but absence is never a halt.
@@ -155,7 +155,7 @@ TYPE: object — skill-specific metric fields (e.g., `duration_ms`, `items_proce
 
 ### `checkpoints:` (CONDITIONAL — if skill emits resume-capable checkpoints)
 
-TYPE: object — `{ latest_step_id: string, checkpoint_file: string (absolute path), resume_command: string }`. Required when skill ran to a checkpoint boundary and supports `--resume-from`.
+TYPE: object — `{ latest_step_id: string, checkpoint_file: string (absolute path), resume_command: string }`. Required when skill ran to a checkpoint boundary and supports `--resume-from` (declared — no skill emits checkpoints at HEAD).
 
 ### `constitution:` (CONDITIONAL — if vault has constitution.md)
 
@@ -193,7 +193,7 @@ TYPE: object {
 
 Nested under `metadata:`. Resolved model tier per named subagent role. Sub-skills consult this block before each subagent dispatch; absent role-name → use catalog default per `plugins/mega-sdd/references/model-tiers.md` §Catalog.
 
-Condition: present when orchestrate-flow Step 2.8 ran.
+Condition: present when orchestrate-flow Step 3 (Resolution preflight — model-tier override resolution) ran.
 
 Companion field: `metadata.model_tier_sources:` (OPTIONAL) — same keys; values are the override source for each tier (`catalog` | `user` | `project` | `cli`) for debugging.
 
@@ -227,7 +227,7 @@ starterkit_context:
 
 **Canonical source of truth for full structure:** `plugins/mega-sdd/references/starterkit-context-schema.md`
 
-**Type-check enforceability:** fields with explicit `TYPE:` annotations above are validated at Step 6.b.i. Fields without a `TYPE:` annotation bypass type check (warn-only log). covers all top-level fields + 1 level of nesting (e.g., `mutability.tier_distribution.LOCKED`). Deeper nesting deferred to +.
+**Type-check enforceability:** fields with explicit `TYPE:` annotations above are validated at Step 7b. Fields without a `TYPE:` annotation bypass type check (warn-only log). covers all top-level fields + 1 level of nesting (e.g., `mutability.tier_distribution.LOCKED`). Deeper nesting is deferred.
 
 ### Status values
 
@@ -251,7 +251,7 @@ A compact consumer-side ROUTING INDEX — one row per producer. Per §Precedence
 | Producer | Statuses (halt enum) | `next_action` routing — conditional branches | Operative emission spec |
 |---|---|---|---|
 | `extract-intelligence` | completed \| halted (a module's quality gate fails twice per `prd-kontrak-template.md` §Per-module quality gate) | → `mega-sdd:generate-intent --kb=<kb> --auto` | `extract-intelligence/references/handoff.md` |
-| `generate-intent` | completed \| paused (P1 business OQs — user triage; downstream still works) \| halted (`oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query` / `memory_in_use`) | CWD-conditional on codebase-map presence (routing-rules.md :53/:55): brownfield + codebase-map PRESENT → `mega-sdd:bind-codebase` (the norm under the scan-first reorder); brownfield + NO codebase-map on disk yet → `mega-sdd:scan-codebase`; greenfield → `mega-sdd:generate-units` | `generate-intent/references/auto-and-handoff.md` |
+| `generate-intent` | completed \| paused (P1 business OQs — user triage; downstream still works) \| halted (`oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query` / `memory_in_use`) | CWD-conditional on codebase-map presence (routing-rules.md §Decision matrix starterkit rows / §Deep-chain decision matrix; classic spine — express hands off `bind-codebase --express` regardless of map): brownfield + codebase-map PRESENT → `mega-sdd:bind-codebase` (the norm under the scan-first reorder); brownfield + NO codebase-map on disk yet → `mega-sdd:scan-codebase`; greenfield → `mega-sdd:generate-units` | `generate-intent/references/auto-and-handoff.md` |
 | `scan-codebase` | completed \| halted (`deep_scan_subagent_all_failed` / `dep_missing` / `memory_in_use`); soft-halt warn-only, chain continues (`deep_scan_subagent_failed` / `deep_scan_cache_corrupt`) | CWD-conditional: no vault yet → `mega-sdd:generate-intent --scan=<map> --auto` (starterkit-first — draft the vault scan-aware); vault already present → `mega-sdd:bind-codebase <vault> --auto`; sync lane (`--changed-only` under Mode D), incremental ran → `mega-sdd:detect-drift --vault=<vault> --scope=@<vault>/.sync-changed-paths.txt --auto`; sync-lane full-scan fallback → SKIP detect-drift, hand off mega-sdd:bind-codebase `<vault> --auto` (no changed set to scope; continue Mode D straight to a FULL re-bind per §3.8(b)(1) — a scope-less detect-drift null-terminates the chain before the re-bind) | `scan-codebase/references/halts-flags-handoff.md` |
 | `bind-codebase` | completed \| paused \| halted (`bind_conflict` / `bind_conflict_constitution_violation` / `framework_pack_missing` / `framework_pack_cycle` / `framework_pack_unparseable` / `memory_in_use`); tech-OQ recommendations are advisory — surfaced in binding.md, status stays `completed` (bind-codebase §2.7) | completed → `mega-sdd:generate-units` — args STATE-based on what this bind actually did, not the `--paths` flag: `["--auto"]` on a full re-bind (incl. a `--paths` run that fell back per binding-contract.md "Fallback to full re-bind"); `["--reconcile", "--auto"]` ONLY when a claim-scoped re-bind actually executed (S4 living-vault sync lane §3.3/§3.6) so generate-units reconciles in place; halted on conflict → `mega-sdd:resolve-oq` (args unchanged) | `bind-codebase/references/auto-memory-handoff.md` |
 | `generate-units` | completed \| halted (`cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `cross_module_dep_invalid` / `module_cycle_detected` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing` / `unit_oq_trace_missing`) | → `mega-sdd:execute-bolts --all --parallel --auto` (wave layering from the chain's analyze-parallelism JSON when in context; the overlap rail stays with the dispatcher) | `generate-units/references/auto-and-memory.md` |
@@ -263,7 +263,7 @@ A compact consumer-side ROUTING INDEX — one row per producer. Per §Precedence
 | `install-deps` | completed \| halted (`install_failed` / `pkg_mgr_not_found`) | terminal — `suggested_skill: null` (user-explicit; no auto-next) | local copy in `install-deps/SKILL.md` §Handoff emission |
 | `emit-agents-md` | completed \| halted (`user_authored_conflict` / `vault_not_found` / `vault_corrupt` / `greenfield_no_bind_context`) | `type: chain_complete` — AGENTS.md is the pipeline terminal output | local copy in `emit-agents-md/SKILL.md` §Handoff emission |
 
-**Canonical bolt-halt enum (single owner).** The 29-entry execute-bolts halt enum lives ONLY in `execute-bolts/references/halts-and-handoff.md §Handoff emission` (`halt-taxonomy.md` classifies every entry into always-stop / cycle-eligible / soft). This index deliberately carries NO copy — consult the owner; with a single home, copy-drift is impossible by construction.
+**Canonical bolt-halt enum (single owner).** The execute-bolts halt enum lives ONLY in `execute-bolts/references/halts-and-handoff.md §Handoff emission` (`halt-taxonomy.md` classifies every entry into always-stop / cycle-eligible / soft). This index deliberately carries NO copy — consult the owner; with a single home, copy-drift is impossible by construction.
 
 ---
 
@@ -299,7 +299,7 @@ This keeps orchestrator stateless (per the spec's "no state file" decision).
 | Level | Granularity | Mechanism | Owner |
 |---|---|---|---|
 | Chain | *which phase* to resume | CWD / artifact inspection (`routing-rules.md`) — reads NO persisted chain-state file | orchestrate-flow |
-| Within a phase | *which sub-step* to resume | the phase skill's own checkpoint cursor (`checkpoint-protocol.md`, `<vault>/.internal/checkpoints/`) via `--resume-from=<step-id>` | the phase skill (e.g. bind-codebase) |
+| Within a phase | *which sub-step* to resume | the phase skill's own checkpoint cursor (`checkpoint-protocol.md`, `<vault>/.internal/checkpoints/`) via `--resume-from=<step-id>` (declared — no skill emits checkpoints at HEAD) | the phase skill (e.g. bind-codebase) |
 
 Precedence is unambiguous because the levels never overlap: CWD inspection first selects the phase. If that phase's artifacts already exist (completed), the orchestrator **skips it entirely** and its stale checkpoints are irrelevant. If the phase is incomplete, the orchestrator **re-enters it** and the skill's checkpoint resumes mid-execution from its cursor. A checkpoint never overrides phase selection, and phase selection never reaches into a skill's sub-steps.
 

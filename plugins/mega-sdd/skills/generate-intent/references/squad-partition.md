@@ -41,7 +41,7 @@ Routing rule:
 When multiple rules in the same squad match, precedence is:
 
 1. `owns_components` (explicit named match) — highest precedence
-2. `owns_flow_prefixes` (flow ID prefix match, e.g., `F-B-` for backend flows)
+2. `owns_flow_prefixes` (flow ID prefix match, e.g., `F-S-` for system/backend flows)
 3. `owns_layers` (architectural layer match)
 4. `owns_feature_tags` (feature tag match)
 

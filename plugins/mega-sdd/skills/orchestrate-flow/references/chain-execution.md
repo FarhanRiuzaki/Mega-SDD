@@ -56,8 +56,8 @@ Per `plugins/mega-sdd/references/model-tiers.md` override syntax. Resolves model
 a. **Read CLI flags from invocation**: collect all `--model-tier=<role>:<tier>` flags into `cli_overrides`.
 b. **Read `<project>/.mega-sdd/config.yaml`**: parse `model_tiers:` section if present; build `project_overrides`.
 c. (v7.3.0: the user-scope preferences source is removed — project `config.yaml model_tiers:` is the single override source.)
-d. **Compute final resolved tier per role** (precedence: CLI > project > user > catalog):
-   - For each role mentioned in any override source: cli → project → user → catalog default (read from `plugins/mega-sdd/references/model-tiers.md §Catalog`).
+d. **Compute final resolved tier per role** (precedence: CLI > project > catalog):
+   - For each role mentioned in any override source: cli → project → catalog default (read from `plugins/mega-sdd/references/model-tiers.md §Catalog`).
 e. **Emit final `model_tiers:` dict in handoff metadata** for all downstream skills:
    ```yaml
    metadata:
@@ -133,10 +133,10 @@ source_skill: orchestrate-flow
 details:
   failing_check_id: ast_engine_present
   failing_skill: scan-codebase
-  command_run: "command -v tree-sitter || command -v tree-sitter-cli"
+  command_run: "command -v ast-grep"
   expected: "exit 0"
   actual: "exit 1 (binary not found)"
-next_action: "Install an AST engine (brew install ast-grep — zero-compilation tier — OR brew install tree-sitter-cli) then re-run. Alternatively, run scan-codebase with --engine=regex to accept the regex tier."
+next_action: "Install ast-grep (brew install ast-grep / cargo install ast-grep — or run /mega-sdd:install-deps) then re-run. Alternatively, run scan-codebase with --engine=regex to accept the regex tier."
 ```
 
 ## First-run pre-flight (execute-bolts)
@@ -153,7 +153,7 @@ tool surfaces at dispatch time (superpowers-bridge.md §Dispatch order).
 > gate) and every emit row (already opt-in via `--with-fsd`) are NOT profile-conditioned.
 
 
-Per the command-sprawl-audit consolidation restoring "single command" philosophy. Inside a `--deep` chain (OR `--auto` mode), the orchestrator AUTOMATICALLY runs these diagnostics at appropriate phases — user does NOT run these separately. The operative procedures for `lint-units` / `analyze-parallelism` / `list-modules` / `enrich-semantics` live in `references/diagnostics-procedures.md` (relocated from their 5.x command files in the surface cull):
+Per the command-sprawl-audit consolidation restoring "single command" philosophy. Inside a `--deep` chain (OR `--auto` mode), the orchestrator AUTOMATICALLY runs these diagnostics at appropriate phases — user does NOT run these separately. The operative procedures for `lint-units` / `analyze-parallelism` / `list-modules` live in `references/diagnostics-procedures.md` (relocated from their 5.x command files in the surface cull):
 
 | Phase | Auto-runs | Output integration |
 |---|---|---|
@@ -162,14 +162,14 @@ Per the command-sprawl-audit consolidation restoring "single command" philosophy
 | After `execute-bolts` completes | `list-modules` (per `references/diagnostics-procedures.md §list-modules` table format) | Per-module status table in chain end summary |
 | After all phases complete | `emit-agents-md` (per the `emit-agents-md` skill, respecting `config.yaml defaults.emit_agents_md: true\|false`) | `AGENTS.md` (or `.mega-sdd.md` sibling) written at repo root |
 | After all phases complete | `emit-fsd` (per the `emit-fsd` skill, **OPT-IN** — requires `--with-fsd` flag on `auto`/`orchestrate-flow`. Legacy `--no-fsd` still works as no-op for back-compat. Reason: pandoc + Chrome md2pdf render + low user feedback signal per perf audit.) | `<vault>/fsd/FSD.pdf` (+ FSD.md, .citation-map.json) written ONLY when `--with-fsd` passed; chain summary: "FSD emitted: N sections, M citations, mode: <pre-dev\|post-dev>" |
-| **After EACH phase completes (chain boundary)** | **Doc-control stamp refresh** (script-lane, ~0 tokens): for each ALREADY-EMITTED doc — `<vault>/fsd/FSD.md`, `<vault>/prd/PRD.md`, `<vault>/sit/SIT.md`, `<vault>/uat/UAT.md` — that exists, `Run: bash <plugin-root>/scripts/refresh-doc-stamps.sh --vault=<vault> --doc=<fsd\|prd\|sit\|uat> --position="<phase just completed> selesai; next: <next phase or chain end>"`. **`--position` ONLY** — maturity rungs are set at emit time (SIT via the `build-sit-evidence.sh` verdict; FSD via mode) or by humans (PRD `reviewed`/`final`); the chain never bumps maturity. Non-zero exit → log one line, never halt (the stamp is metadata, not a gate). Skip silently when no emitted doc exists. | Doc-control blocks stay current between full emissions (per `plugins/mega-sdd/references/emission-engine.md §Doc-control stamping`) |
+| **After EACH phase completes (chain boundary)** | **Doc-control stamp refresh** (script-lane, ~0 tokens): for each ALREADY-EMITTED doc — `<vault>/fsd/FSD.md`, `<vault>/prd/PRD.md`, `<vault>/sit/SIT.md`, `<vault>/uat/UAT.md` — that exists, `Run: bash <plugin-root>/scripts/refresh-doc-stamps.sh --vault=<vault> --doc=<fsd\|prd\|sit\|uat> --position="<phase just completed> selesai; next: <next phase or chain end>"`. **`--position` ONLY** — maturity rungs are set at emit time (SIT via the `build-sit-evidence.sh` verdict; FSD via mode) or by humans (PRD `reviewed`/`final`); the chain never bumps maturity. Non-zero exit → log one line, never halt (the stamp is metadata, not a gate). Skip silently when no emitted doc exists. | Doc-control blocks stay current between full emissions (per `plugins/mega-sdd/references/emission-engine.md §Script contracts` + the `scripts/refresh-doc-stamps.sh` header contract) |
 | After `extract-intelligence` completes AND no vault exists yet | Chain-summary MENTION (one line, never auto-run): "KB siap — untuk draft PRD yang bisa dibaca tim dari KB ini (marker `[VERIFIED]/[INFERRED]/[OPEN]` dibawa verbatim), jalankan `/mega-sdd:emit prd` (reverse mode). Pipeline lanjut via `generate-intent --kb` — PRD adalah OUTPUT, bukan input pipeline." | One line in the chain end summary |
 | After `execute-bolts` completes AND ≥1 `bolts/U-*/acceptance.json` exists | Chain-summary PROPOSAL (one line, never auto-run): "Bukti eksekusi tersedia — `/mega-sdd:emit sit` menghasilkan dokumen SIT dengan tabel bukti §4 script-derived (maturity dari coverage evidence)." | One line in the chain end summary |
 | At chain end AND `<vault>/sit/SIT.md` exists | Chain-summary MENTION (one line, never auto-run): "Tim UAT butuh test script? `/mega-sdd:emit uat` menghasilkan skenario bisnis 1:1 dari flow + berita acara." | One line in the chain end summary |
 
 These diagnostics run TRANSPARENTLY — chat output includes their summaries inline with phase progress lines. User does NOT need to know they exist as separate commands.
 
-**Exception — staged-input enrichment PAUSES.** The `enrich-semantics` row is the ONE auto-integrated step that is NOT fire-and-forget: it auto-**proposes** but never auto-**applies** (the per-stage field allocation is best-effort + `--apply` mutates the KB/vault, so review is mandatory per "jangan auto-apply tanpa konfirmasi"). The orchestrator surfaces `ENRICHMENT-PROPOSALS.md`, pauses the chain, and waits for the user to review → `enrich-semantics --apply` → `/mega-sdd --resume`. If no `kb_flow_staging_missing` advisory is present, the step is skipped silently. Opt-out: `--no-enrich-staging`.
+`enrich-semantics` was removed in v7 Fase 2 — a `kb_flow_staging_missing` advisory (validate-kb.sh) is remediated by a scoped `extract-intelligence` re-run (`references/diagnostics-procedures.md §enrich-semantics`).
 
 **Manual override**: each diagnostic remains runnable on demand for debugging/one-off use — the user asks by phrase through the front door ("lint units", "cek parallelism", "status module") and the orchestrator runs the matching procedure from `references/diagnostics-procedures.md`. Auto-invocations skip when the user explicitly disables via `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags on the front door / `orchestrate-flow`.
 
@@ -218,8 +218,7 @@ In `--deep` mode, append to the final summary:
   - Parallelism speedup from auto analyze-parallelism (X.Yx vs sequential)
   - Per-module status from auto list-modules (X/Y modules completed)
   - AGENTS.md emission confirmation (file path + section count)
-  - Memory review prompt if pending suggestions exist
-  - Acceptance-test concerns from execute-bolts handoff: IF `metrics.acceptance_test_concerns: []` is non-empty (bolt subagent flagged implementation passes acceptance test but feels under-validated), surface as: `"⚠ N/M bolts flagged acceptance_test_concern — review for under-validation: <unit_id list>. Consider re-running affected units with adversarial-reviewed acceptance tests (run generate-units --regenerate --adversarial-subagent --units=<list>)."`
+  - Acceptance-test concerns from execute-bolts handoff: IF `metrics.acceptance_test_concerns: []` is non-empty (bolt subagent flagged implementation passes acceptance test but feels under-validated), surface as: `"⚠ N/M bolts flagged acceptance_test_concern — review for under-validation: <unit_id list>. Consider re-running affected units with adversarial-reviewed acceptance tests (re-run generate-units --regenerate --adversarial-subagent for the affected units)."`
   - Deferred open questions (P3/A6): IF the vault carries `open_questions[] status == deferred` (incl. express auto-defers), surface as: `"⏸ N OQ deferred (auto-deferred P2/P3 di jalur express + defer manual) — <tag list>. Jawab kapan saja: resolve-oq."` — the defer is recorded state; this line is its mandated resurface (also in execute-bolts `_summary.md §Deferred open questions` and the non-deep Emit-final-summary step).
   - FSD pending sections: IF the chain ran emit-fsd, read `<vault>/fsd/.citation-map.json` `missing_sources[]` — non-empty → surface: `"ℹ FSD emitted with N pending section(s) (sources not yet produced: <list>) — full coverage after the missing artifacts exist (scan/bind/bolts), then re-run /mega-sdd:emit fsd."`
 - **Predictive preflight metrics:**

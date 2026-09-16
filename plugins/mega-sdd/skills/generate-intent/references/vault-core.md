@@ -15,7 +15,7 @@ Shared definitions referenced by all `mega-sdd` skills — the DRAFTING CORE spl
 
 ## §schema — `vault.json` manifest
 
-Every `mega-sdd` vault has a `vault.json` alongside the vault markdown (layout-2: 4 files; legacy: 7). The markdown is human-authoritative; the JSON is a derived structural index optimized for AI consumers (Claude Code, Cursor, automated agents).
+Every `mega-sdd` vault has a `vault.json` alongside the vault markdown (layout-3: one `context.md` — every doc name resolves to it via `_lib/vault_md.resolve_doc`; layout-2: 4 files; legacy: 7). The markdown is human-authoritative; the JSON is a derived structural index optimized for AI consumers (Claude Code, Cursor, automated agents).
 
 **`vault.json` is SCRIPT-DERIVED by `scripts/derive-vault-json.sh` — a model/hand write is an authoring bug.** Three lanes:
 
@@ -82,7 +82,7 @@ Present when a design system has been resolved for the vault — from a scanned 
 - `source` — one of `prd` | `scanned-template` | `design-intelligence-recommend`. **Precedence (highest→lowest): `prd` > `scanned-template` > `design-intelligence-recommend`.** When a template was scanned (`starterkit-context.yaml §ui_ux`), `source: scanned-template` and the values are DERIVED FROM the template — ui-ux-pro-max never overrides it, only gap-fills.
 - `provenance` — the source citation: the resolving OQ tag + design-intelligence citation + PRD signal (for `design-intelligence-recommend`), or the `starterkit-context.yaml §ui_ux` anchor (for `scanned-template`). Required when the block is present (anti-halu: no design system without provenance).
 
-`vault_version` is bumped to `1.1` because this block is additive to the manifest. Consumers on `1.0` simply do not see it (backward compatible).
+This block is additive to the manifest — consumers that do not know it simply ignore it (backward compatible). `vault_version` is the vault's CONTENT version (bumped by resolve-oq / diff-vault rounds), not a schema version — it is not bumped for this block.
 
 ### Phase fields
 
@@ -105,15 +105,15 @@ phase_total: <int>    # total phases planned (legacy numbered-tree KB only — p
 
 ### Operator-workflow-UX capture + Design-Source OQ
 
-Two CAPTURE-stage rails checked by `validate-vault-oqs.sh` (PostToolUse re-validates every vault doc write; surfaced as **advisory** via `analyze` — v4 Hybrid demoted this from a hard-block, so it no longer blocks `mega-sdd:execute-bolts`). Both are **vault-FORMAT conventions** — stack-neutral, evaluated pre-binding — so they need NO framework pack (a new target stack does not change these vault conventions). Both preserve the anti-hallucination rail: the fix is always an Open Question, **never a defaulted value**.
+Two CAPTURE-stage rails checked by `validate-vault-oqs.sh` under `analyze` (the `vault_oqs` family — **advisory**, never blocks `mega-sdd:execute-bolts`). Both are **vault-FORMAT conventions** — stack-neutral, evaluated pre-binding — so they need NO framework pack (a new target stack does not change these vault conventions). Both preserve the anti-hallucination rail: the fix is always an Open Question, **never a defaulted value**.
 
 - **Workflow flow signal (closed grammar).** A user-facing flow (`F-U-` prefix, or prefix-less; the `F-S-` / `F-C-` / `F-X-` internal classes are excluded) is a **multi-stage approval / maker-checker / workflow** flow when EITHER its actor/title line shows a maker→checker hand-off chain (a `maker … checker|approver|confirmer|reviewer|…` chain joined by `->` / `→` arrows) OR its step body carries **≥ 2 distinct decision transition steps** (approve / reject / review / confirm). One decision step alone is a simple submit; two or more is multi-stage.
 
 - **Operator-surface requirement (the four first-class surfaces).** When a workflow flow exists, the vault MUST model the operator-facing surface as requirements **grounded in the flows** (never invented): (1) **worklist / inbox**, (2) **decision affordance** (approve/reject actions in the current state), (3) **human-readable workflow-state labels**, (4) **audit timeline** of transitions. Presence is detected by the operator-surface vocabulary in the vault's prose docs (layout-2: `vault.md`, `model.md`, `flows.md`; legacy: 02/01/03/04). (The Design-Source OQ check below additionally scans `vault.json`.)
-  - **Halt `operator_surface_missing`** — workflow flow present AND no operator-surface requirement AND no Design-Source OQ → FAIL.
+  - **Finding `operator_surface_missing`** — workflow flow present AND no operator-surface requirement AND no Design-Source OQ → FAIL.
 
 - **Design-Source OQ (anti-hallucination escape hatch).** When `design_system_flags.HAS_UI_COMPONENTS = true` but `HAS_TOKENS`, `HAS_A11Y`, and `HAS_VOICE_BRAND` are **all `false`**, the vault MUST carry a high-priority Design-Source Open Question (recommended tag shape `OQ-DESIGN-SOURCE-{N} [P1]`, or any OQ whose tag/text names a design-source concern — tokens / a11y / voice-brand source). **DO NOT default WCAG/Material/token values** — capture the gap as an OQ only.
-  - **Halt `design_source_oq_missing`** — UI components present AND all three design flags false AND no Design-Source OQ → FAIL. (This was the captured trade-finance Phase-2 miss.)
+  - **Finding `design_source_oq_missing`** — UI components present AND all three design flags false AND no Design-Source OQ → FAIL. (This was the captured trade-finance Phase-2 miss.)
 
 A Design-Source OQ also satisfies the `operator_surface_missing` rail (it is the accepted "captured the miss" signal): a vault that has not yet decided its operator surface may carry a Design-Source OQ instead of inventing the surface, and the gate passes.
 
@@ -122,10 +122,10 @@ A Design-Source OQ also satisfies the `operator_surface_missing` rail (it is the
 A multi-step workflow (wizard, maker→checker, multi-page form) **stages** its inputs: which fields enter at which step, in what order, by which role, gated by which transition. When that structure is flattened to a single "Inputs: A,B,C,D,E,F" list, the downstream bolt builds ONE form instead of the multi-step wizard (the captured trade-finance regression). To prevent it, staging is carried as a **stable structured field** and propagated the SAME way as OQ-IDs (§id-stability) and constitution clauses — copied verbatim, never re-derived:
 
 - **Source of truth.** `extract-intelligence` captures staging in the KB workflow file's `## 3a. Staged inputs` section as a `stages:` YAML block (see `extract-intelligence/references/prd-kontrak-template.md §Staged inputs` — the PRD-kontrak grammar carries the block inside §3 Flow; legacy numbered-tree KBs carry it as the workflow file's `## 3a`). Each stage cites its own `_source` anchor.
-- **Preservation rule (generate-intent).** When a KB workflow domain has a `stages:` block, generate-intent MUST copy it **verbatim** into the matching `flows.md` flow entry (`**Stages**` block), emit the corresponding Mermaid `stateDiagram`, and stamp the flow with `_kb_source: [20-workflows/<file>.md]`. It MUST NOT re-flatten the staging into prose. (The flow body itself is the Mermaid `stateDiagram` / flowchart — never a prose Steps list, per the Mermaid-flows hard rule; the `stages:` block is authoritative for the staged fields.)
+- **Preservation rule (generate-intent).** When a KB workflow domain has a `stages:` block, generate-intent MUST copy it **verbatim** into the matching `flows.md` flow entry (`**Stages**` block), emit the corresponding Mermaid `stateDiagram`, and stamp the flow with `_kb_source: [modules/<domain>.prd.md]` (legacy numbered-tree KB: `20-workflows/<file>.md`). It MUST NOT re-flatten the staging into prose. (The flow body itself is the Mermaid `stateDiagram` / flowchart — never a prose Steps list, per the Mermaid-flows hard rule; the `stages:` block is authoritative for the staged fields.)
 - **Enriched-stages preservation.** The KB `stages:` block MAY carry an enriched form: `input_fields` as objects (`{name, mutability, visibility, conditional}`) instead of bare strings, plus per-stage delta fields (`new_fields_vs_prior`, `hidden_fields_vs_prior`, `promoted_to_mutable_vs_prior`, `dynamic_disclosures`) — see `extract-intelligence/references/prd-kontrak-template.md §Staged inputs`. "Verbatim" **includes these**: generate-intent MUST preserve whichever form the KB used and MUST NOT downgrade enriched `input_fields` objects to bare strings (a silent drop of the maker→checker field-promotion / show-hide intent the extractor captured). generate-intent does not itself *act on* the delta semantics — those are consumed at UI/bolt time per the UI/UX-design-intelligence integration (`docs/superpowers/specs/2026-06-05-ui-ux-design-intelligence-integration-design.md`); carrying them through unmodified is precisely what makes that downstream consumption possible. Bare-string KBs are unaffected (nothing to preserve).
 - **Back-reference (`_kb_source`).** This field is the deterministic link from a vault flow to its originating KB workflow — the analog of an OQ tag. `validate-vault-flow-staging.sh` follows it: if the cited KB workflow has a `stages:` block and the vault flow does not, it raises a `vault_flow_staging_drop` finding, surfaced as **advisory** via `analyze` (v4 Hybrid demoted this from a hard-block — it no longer blocks execute-bolts). No KB present, or no `_kb_source` on the flow (legacy vault) → the check **skips** (backward-compatible by construction; pre-staging vaults never trip it).
-- **Advisory at the source.** the kb flows surface (`validate-kb.sh --surface=flows`) raises an advisory `kb_flow_staging_missing` (never status-flipping) when a workflow KB file looks multi-step but carries no `stages:` block, pointing the user to `enrich-semantics` to retro-fit staging without a full re-extract.
+- **Advisory at the source.** the kb flows surface (`validate-kb.sh --surface=flows`) raises an advisory `kb_flow_staging_missing` (never status-flipping) when a workflow KB file looks multi-step but carries no `stages:` block, retro-fit staging by re-running `extract-intelligence` for that module.
 
 > **Walking-skeleton scope:** only the staged-input dimension is enforced. The `conditions:` field captures per-transition guards best-effort; richer conditional / role-matrix / transition-guard enforcement is Fork-B-future.
 
@@ -143,8 +143,8 @@ Every writer regenerates by **running the script** — never by editing the JSON
 
 The exclusive advisory file lock on `<vault>/vault.json.lock` is acquired **BY `scripts/derive-vault-json.sh` itself** — a single implementation, no per-skill lock dance. This prevents data corruption from concurrent-tab / concurrent-session writes that previously raced silently. Lock semantics: atomic `O_EXCL` create, bounded backoff + retry, release on all exit paths — the plugin's single advisory-lock pattern (this section is its canonical spec since v7.3.0).
 
-**Writers (4 total — each invokes the script; none touches the lock directly):**
-- `generate-intent` Step 3.8 (initial derive, `--patch`)
+**Writers (each invokes the script; none touches the lock directly):**
+- `generate-intent` Step 3.8 (initial derive, `--patch`) · `plan` (lite lane, initial derive) · `migrate-paths` layout rungs
 - `bind-codebase` Step 6 (`--event` audit append) — and bind-codebase still writes `binding.md` in the same Step-6 window (binding.md has no separate lock; the script-held derive is the serialization point for the manifest, and two concurrent binds are upgrade-your-plugin territory per Backward compatibility below)
 - `diff-vault` Step 6.5 (derive + `--patch` sources)
 - `resolve-oq` (derive + `--event` after every Resolve / Out-of-Scope / Defer outcome)
@@ -186,10 +186,10 @@ next_action:
 OQ entries in vault.json support status-tracking fields. **Status vocabulary is ONE closed set: `open | resolved | out_of_scope | deferred`** (G3 — the legacy `pending` / `out-of-scope` spellings are retired from the contract; the deriver and `open_questions_summary.by_status` use only this set). The full OQ entry shape:
 
 ```yaml
-oqs:
-  - id: OQ-DATA-001
+open_questions:
+  - tag: OQ-DATA-001
     priority: P1 | P2 | P3
-    section: <vault-filename.md>
+    doc: <vault-filename.md>
     text: <question text>
     status: open | resolved | deferred | out_of_scope       # default: open if absent
     # When status=resolved:
@@ -358,7 +358,7 @@ For `resolution_mode: recommend`:
 
 ## §constitution — Project-Facing Rules
 
-Per Spec Kit `/speckit.constitution` + AWS Kiro "steering files" pattern (independent convergence in spec-driven-dev tools 2025-2026). Mega-sdd adopts as **8th vault file**: `constitution.md`.
+Per Spec Kit `/speckit.constitution` + AWS Kiro "steering files" pattern (independent convergence in spec-driven-dev tools 2025-2026). Mega-sdd adopts as an additional vault file: `constitution.md`.
 
 Constitution is **project-facing rules** distinct from `AGENTS.md` (agent-facing flattened export). It captures non-negotiable project invariants that EVERY bolt must respect:
 
@@ -457,7 +457,7 @@ Constitution version pinned to vault:
 ### Backward compatibility
 
 - v3.9 vaults without `constitution.md` → skill detects absence; auto-routes to user prompt "constitution.md missing; create from PRD constraints? Y/n"
-- Existing vault file structure unchanged (layout-2: 4 files; legacy: 7); constitution is an additive file
+- Existing vault file structure unchanged (layout-3: `context.md`; layout-2: 4 files; legacy: 7); constitution is an additive file
 - Tools that hardcoded the file count → graceful fallback (treat missing constitution as empty list)
 
 ## §boilerplate — Skill instruction language

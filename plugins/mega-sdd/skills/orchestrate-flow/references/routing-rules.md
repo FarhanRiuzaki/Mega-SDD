@@ -17,6 +17,7 @@
 - [Single confirmation](#single-confirmation)
 - [Halt-pause behavior](#halt-pause-behavior)
 - [Greenfield vs brownfield detection](#greenfield-vs-brownfield-detection)
+- [Mode inference vs vault `mode:` (mode_migrate table)](#mode-inference-vs-vault-mode-mode_migrate-table)
 - [First-run dependency check](#first-run-dependency-check)
 
 ## CWD inspection (deterministic, in order)
@@ -28,7 +29,7 @@ The probes (10 core + the P2 foreign-SDD adoption probe) and where each lands:
 | # | Probe (identical semantics to the pre-P1 prose) | `state.json` field |
 |---|---|---|
 | 1 | **PRD/seed detection** — `prd.md`, `seed-PRD.md`, or `*.md` PRD candidates at the ROOT **plus one level inside dirs whose name case-insensitively matches `PRD`/`docs`/`documents`/`requirements`** (fixed set, never a repo walk; subdir hits keep their ON-DISK prefix, e.g. `PRD/prd-simkredit.md`; dirs deduped by inode on case-insensitive filesystems) | `probes.prd` (`present` / `candidates[]` / `newest_mtime`) |
-| 2 | **Vault detection** — priority order: `.mega-sdd/vaults/*` (canonical — `vault.json` OR bare `0[0-6]-*.md` docs count, SAME semantics as `validate-preflight.sh has_vault()`, now literally the same library function: a 7-file vault without `vault.json` is still a vault, never invisible to routing) → `docs/mega-sdd/vaults/*/vault.json` (legacy) → `vaults/*/vault.json` (oldest legacy). First hit wins (`probes.vaults[0]` / `derived.vault`). When vault docs exist but `vault.json` is absent (`derived.manifest_derive_needed: true`), the proposed chain FIRST runs `scripts/derive-vault-json.sh --vault <vault>` (derives the manifest deterministically from the docs — never hand-write it) before any phase that reads `vault.json` — the script already prepends this step to `derived.proposed_next` | `probes.vaults[]` |
+| 2 | **Vault detection** — priority order: `.mega-sdd/vaults/*` (canonical — `vault.json` OR bare `0[0-6]-*.md` docs (or the layout-2 four docs / layout-3 `context.md`) count, SAME semantics as `validate-preflight.sh has_vault()`, now literally the same library function: a 7-file vault without `vault.json` is still a vault, never invisible to routing) → `docs/mega-sdd/vaults/*/vault.json` (legacy) → `vaults/*/vault.json` (oldest legacy). First hit wins (`probes.vaults[0]` / `derived.vault`). When vault docs exist but `vault.json` is absent (`derived.manifest_derive_needed: true`), the proposed chain FIRST runs `scripts/derive-vault-json.sh --vault <vault>` (derives the manifest deterministically from the docs — never hand-write it) before any phase that reads `vault.json` — the script already prepends this step to `derived.proposed_next` | `probes.vaults[]` |
 | 3 | **Bound-vault detection** — `<vault>/bound/` (canonical) or legacy `<vault>-bound/` sibling | `probes.vaults[].bound_present` |
 | 4 | **Units detection** — `units/U-*.md` (+ `U-*/unit.md` layout + legacy sibling) | `probes.vaults[].units_count` |
 | 5 | **Bolts detection** — `bolts/U-*/bolt-report.md` | `probes.vaults[].bolts_count` |
@@ -53,6 +54,7 @@ The probes (10 core + the P2 foreign-SDD adoption probe) and where each lands:
 | `prd_revision` | new PRD revision (file newer than vault) | `diff-vault <prd>` |
 | `maintenance_sync` | Mode D row (freshness substrate = map OR symbol-index) | the full sync chain (below); express-born (index, no map) swaps hop 1 for `scripts/derive-changed-paths.sh` |
 | `vault_greenfield_no_units` | vault mode=greenfield, no units | `generate-units` |
+| `lite_context_no_units` | plan-born vault (`context.md`), no units | `plan <prd> --lite --regenerate` → `execute-bolts --all --lite` |
 | `vault_no_map` | vault mode=existing, no codebase-map | **express (default):** bind `--express` → units (the map never exists on this spine — a scan demand here would trap every brownfield vault forever); **classic:** scan → bind → units |
 | `vault_map_unbound` | vault + map, no bound-vault (incl. ACTIVE conflicts / mixed resolutions) | `bind-codebase` |
 | `binding_resolved_no_rebind` | KEEP_VAULT/DEFER-only resolved binding (row below) | `generate-units` |
@@ -186,7 +188,7 @@ When `--deep` flag is set, the cap-3 rule is replaced with pipeline-end chains.
 When `--deep` chain plans, orchestrator probes:
 
 - `.git` present + existing code files (`.{php,js,ts,py,rs,go,rb}` etc.) → **brownfield** (classic: run scan-codebase first; express: GROUND already supplied the context)
-- `.git` present + only scaffolding files (e.g., bare Laravel boilerplate, no business logic) → **brownfield-light** (classic: run scan-codebase --quick first; express: same as brownfield)
+- `.git` present + only scaffolding files (e.g., bare Laravel boilerplate, no business logic) → **brownfield-light** (classic: run `scan-codebase --shallow-scan` first; express: same as brownfield)
 - No `.git` OR fresh `composer create-project`/`npx create-*` with no manual edits → **greenfield** (skip scan-codebase upfront)
 
 Override via `--brownfield` / `--greenfield` flag on `auto`/`orchestrate-flow`.
@@ -232,7 +234,7 @@ When a sub-skill emits a blocker YAML:
 - User decides next: retry, fix, cancel
 - Final summary lists completed/paused/skipped per step
 
-## Greenfield vs brownfield detection
+## Mode inference vs vault `mode:` (mode_migrate table)
 
 | Signals | Mode inferred |
 |---|---|

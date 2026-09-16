@@ -110,7 +110,7 @@ Per finding: Finding ID + severity + entity/field; source-claim mutability tier 
 2. **Re-run `/mega-sdd:sync`** — re-walks drift end-to-end through the Mode D chain (scan → drift → re-bind → reconcile → execute).
 3. **`--auto-apply=safe`** (§3.5) — auto-applies ONLY the narrow safe class: confidence HIGH + category ∈ {name-drift, type-drift, missing-in-vault} + claim NOT `[LOCKED]` + code side committed. CRITICAL / `[LOCKED]` drift is a compliance escalation and is NEVER `--auto-apply=safe` eligible (see §Vault write-back protocol Rails) — it always routes to human triage.
 
-In the **sync lane** (Mode D) the chain auto-continues to claim-scoped re-bind (`bind-codebase --paths=@<vault>/.sync-changed-paths.txt`); queued drift does not stall that hop, but the moat re-blocks downstream units/bolts if re-bind surfaces a CONFLICT.
+In the **sync lane** (Mode D) the chain auto-continues to claim-scoped re-bind (`bind-codebase --paths=@<vault>/.sync-changed-paths.txt`; layout-3: `rebind-units.sh --paths=@…` → `plan --reconcile`); queued drift does not stall that hop, but the moat re-blocks downstream units/bolts if re-bind surfaces a CONFLICT.
 
 ```markdown
 ### Finding D-001 (CRITICAL — drift on LOCKED entity)

@@ -1,6 +1,6 @@
 ---
 description: "Maintenance one-timer — migrate legacy scattered outputs to the canonical .mega-sdd/ layout (git mv + reference rewrite); dry-run preview; idempotent."
-argument-hint: "[--dry-run] [--from=auto|<layout>] [--to=new] [--auto-confirm]"
+argument-hint: "[--dry-run] [--from=auto|<layout>] [--to=new] [--auto-confirm] [--vault-layout[=<vault-dir>|=3]] [--vault=<dir>] [--apply]"
 ---
 
 Migrate mega-sdd outputs to the canonical layout per `plugins/mega-sdd/references/paths.md`.

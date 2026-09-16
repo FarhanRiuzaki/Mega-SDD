@@ -45,14 +45,14 @@ Produced by `bind-codebase`. The classification rules, the deterministic ADD/KEE
 
 | State | Definition | Code Signal |
 |---|---|---|
-| `IMPLEMENTED` | V == C (field sets match exactly) | tree-sitter signature == vault claim signature |
+| `IMPLEMENTED` | V == C (field sets match exactly) | ast-grep signature == vault claim signature |
 | `PARTIAL_FIELDS_MISSING` | C ⊂ V (code missing fields from claim) | extracted signature missing fields V \ C |
 | `PARTIAL_FIELDS_SURPLUS` | V ⊂ C (code has extra fields not in claim) | extracted signature has extras C \ V; vault may need update |
 | `PARTIAL_FIELDS_BOTH` | shared fields exist but both V\C and C\V non-empty (rare; bidirectional drift) | field-level set diff at precision_tier ast |
 | `NEW` | C absent (symbol missing) | not in codebase-map |
 | `UNKNOWN` | V ∩ C empty but symbol exists | semantic mismatch needs human review |
 
-(V = vault claim field set; C = code field set from tree-sitter signature extraction.)
+(V = vault claim field set; C = code field set from ast-grep signature extraction (`precision_tier: ast`).)
 
 ## task_type for the six states
 

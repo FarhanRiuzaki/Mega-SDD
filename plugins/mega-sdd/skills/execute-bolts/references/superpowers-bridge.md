@@ -77,9 +77,9 @@ RUN L0 code gates — ONE call: run-code-gates.sh   (references/code-gates.md)
    │  no panel; the flagged code is in the already-landed commit — remediation
    │  acts on that commit per code-gates.md)
    ├─ exit 2: environment error — nothing certified, fix + re-run, never "clean"
-   ▼ exit 0 (findings + skips in the stdout JSON, pasted into lens prompts)
+   ▼ exit 0 (findings + skips in the stdout JSON — written ONCE to lens-inputs/U-XXX/l0-results.json; each lens gets the PATH)
 SELECT panel tier (risk-based)            (references/review-panel.md)
-   minimal = spec · standard = spec+quality · full = +security +standards
+   minimal = spec · standard = spec+standards (+quality) · full = +security
    ▼
 DISPATCH the selected lenses IN ONE MESSAGE (Agent tool, parallel, BLIND, read-only)
    each lens gets: a unit-body slice sized to the lens (spec = full verbatim;
@@ -91,7 +91,7 @@ DISPATCH the selected lenses IN ONE MESSAGE (Agent tool, parallel, BLIND, read-o
    lens-specific context. Returns are findings-only (return-size contract).
    NEVER the implementer's report, NEVER another lens's verdict.
    ▼
-MERGE in the controller (main thread) → finding ledger bolts/U-XXX/findings.json
+MERGE in the controller (main thread) → finding ledger bolts/U-XXX/findings.json (via `scripts/merge-panel-findings.sh`, the sole writer)
    evidence-or-drop (no file:line → discarded) → dedup, max severity → consensus marks
    ├─ spec ❌ OR any Critical → re-dispatch bolt-implementer BY POINTER
    │  (findings.json path + open finding IDs — never inlined; shared cap:

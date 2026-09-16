@@ -76,6 +76,7 @@ Provenance values:
   claims: C-NNN "<claim text>" (one line per implemented claim → the bolt-report `claims:` line)
   anchors_consulted: <list>   # with ANCHOR STALE flags — an implementer signal, kept
   hard_rules_active: <N> mechanical rule(s) — text verbatim in ## Hard rules of this file   # count since 8.0.3, NOT ids
+  hard_rules_v2_ast_rules: <N> ast-grep rule block(s) in ## Hard rules   # only when v2 blocks exist
 ```
 
 > **`hard_rules_active` is a COUNT since 8.0.3** — the verbatim list duplicated the `## Hard rules` section this same file carries, and its only consumer (the trailer's `Hard Rules active:` line) is gone. **Still no ids, decided 2026-07-31** (`context-enrichment.md §Re-decided amendments`, row 2). Unit Hard rules have no ids; minting them would fork a second identity model from `_lib/postflight_rules.py`, which is what the B1 gate matches against. This template said `<list of rule IDs>` and `agents/bolt-implementer.md §Provenance trailer` said the same — both are corrected, because the implementer was being told to stamp ids into a mandatory trailer while its only sanctioned source hands it text, and post-flight verifies trailer PRESENCE only, so the mismatch would land as a malformed-but-present trailer no gate catches.
@@ -138,7 +139,7 @@ T2 (`### Reuse index (filtered slice)`): assembled + truncated per
 ## Anti-context (negative space = freedom + protection)
 
 DO NOT MODIFY: <LABELLED UNION of two sources, each entry carrying its own:
-                (a) [LOCKED] entries of <kb>/99-rebuild-architecture/data-mutation-policy.md
+                (a) [LOCKED] entries of the KB's data-mutation-policy.md (KB root in the PRD-kontrak grammar; the legacy 99-rebuild-architecture/ location is still probed)
                     — emitted as `<path>  (source: data-mutation-policy.md)`
                 (b) the unit's own `## Hard rules` DO NOT / MUST NOT / NEVER modify lines
                     — emitted as `<path>  (source: U-XXX.md ## Hard rules)`
@@ -358,7 +359,7 @@ The budget dict, the priority-ordered T2 section list, the per-section truncatio
 - Anti-context block populated from actual data sources (data-mutation-policy.md, KB, framework pack) — NEVER invented
 - Confidence labels MUST cite source (binding C-NNN OR KB inference OR heuristic default with rationale)
 - Validation hints MUST be specific commands (not "run tests")
-- The Provenance values block MUST carry actual values (unit_id, vault_sha256, claim_id, anchors, rule_ids), not placeholders — the agent-carried trailer shape (bolt-implementer §Provenance trailer) is filled from it
+- The Provenance values block MUST carry actual values (unit_id, provenance_path, vault_sha256, claims, anchors_consulted, the hard_rules_active count), not placeholders — the agent-carried trailer shape (bolt-implementer §Provenance trailer) is filled from it
 
 ## Logging
 

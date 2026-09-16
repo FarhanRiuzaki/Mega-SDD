@@ -68,7 +68,7 @@ For specific producers, validate that their emitted metrics are consistent with 
 
 ## Propagation
 
-After all checks pass, propagate handoff metadata to the next skill in the chain: pass canonical top-level fields (scope, constitution, mutability, pbt, cycles, replay, starterkit_context) without modification. The memory POINTER slice for the next skill is built from the updated state (pointers only — row text never re-transits; see `memory-layer.md §Per-phase invocation`).
+After all checks pass, propagate handoff metadata to the next skill in the chain: pass canonical top-level fields (scope, constitution, mutability, pbt, cycles, replay, starterkit_context) without modification.
 
 ## Orchestrator consumption loop
 
@@ -81,7 +81,7 @@ loop:
     if --deep AND current phase != the `--to=` bound (the front door renders --step-after/--stop-after INTO --to before dispatch — this loop never sees those names):
       # Confidence-aware auto-continue: next_action.confidence is a TYPED field
       # (handoff-contract §next_action.confidence) — consume it, don't just type-check it.
-      if handoff.next_action.confidence is present AND < confidence_minimum (config, default 0.80):
+      if handoff.next_action.confidence is present AND < confidence_minimum (prose floor 0.80 — no config key exists yet; a future `confidence_minimum:` in .mega-sdd/config.yaml would own it):
         log: "⏸ {skill} recommends {next} with confidence {c} (< {floor}) — confirm before continuing"
         ask user (continue / reroute / stop)   # demote auto-continue to user review; absent confidence → auto-continue unchanged
       current = handoff.next_action.suggested_skill

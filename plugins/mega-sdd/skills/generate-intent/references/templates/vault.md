@@ -26,7 +26,7 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/vault"]
 
 **Phase:** <N> of <M>
 
-**This vault covers:** <1-line summary from suggested-phasing.md §Phase N — first sentence wins. Single-phase: "Single-phase project".>
+**This vault covers:** <1-line summary — legacy numbered-tree KB only: from suggested-phasing.md §Phase N, first sentence wins. PRD-kontrak KB / non-KB: "Single-phase project".>
 
 <!-- HARD-HEADER CONTRACT (v7 layout-2): the three H2 anchors below —
      `## Overview`, `## Architecture`, `## Decisions` — are EXACT strings.

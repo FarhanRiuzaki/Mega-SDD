@@ -24,7 +24,7 @@ ada ketentuan erd harus 1:1" (code and ERD may change as long as the
 reengineering goals are met; ERD need not be 1:1 unless a rule requires it).
 
 The KB sub-mode shares the SAME vault contract
-(`generate-intent/references/vault-contract.md`) as Mode A and Mode B
+(`generate-intent/references/vault-core.md` + `vault-contract.md`) as Mode A and Mode B
 free-text; only input parsing differs.
 
 ## Grammar detection (PRD-kontrak vs legacy numbered tree)
@@ -77,13 +77,13 @@ KB consumption correctness is unchanged whether the check confirms/warns/skips.
    "PRD-kontrak KB has no phase lane (module = phasing unit); flag ignored"
    and proceed (never halt).
 6. **README `## ERD` / `## System Flow`** (multi-module) seed
-   `02-architecture.md` boundaries + `flows.md` skeletons — the rebuild shape,
+   `vault.md ## Architecture` boundaries + `flows.md` skeletons — the rebuild shape,
    with legacy shape as reference only.
 7. **`<kb>/decisions/ADR-*.md` with `Status: accepted`** (7.14.0, architecture
    advisor — `plugins/mega-sdd/references/architecture-advisor.md`): a recorded
    human decision is a legitimate input document (same source class as a PRD) —
    its `## Claims` block flows into the vault with the ADR as the citation, and
-   its topology seeds the target-architecture side of `02-architecture.md`.
+   its topology seeds the target-architecture side of `vault.md ## Architecture`.
    `Status: proposed` is NEVER consumed as a decision — surface it as an OQ
    ("arsitektur target belum diputuskan — ADR-NNN masih proposed"). No
    `decisions/` dir = nothing to do (the advisor is optional).
@@ -112,7 +112,7 @@ KB consumption correctness is unchanged whether the check confirms/warns/skips.
 
 | Marker pair | Vault treatment | Vault location |
 |---|---|---|
-| `[VERIFIED][LOCKED]` (PRD-kontrak: unmarked-cited + `[LOCKED]`) | Verbatim — exact legacy field name, type, constraint preserved | `02-architecture.md` + Hard Rule emission for execute-bolts; tagged `mutability_source: kb_locked` |
+| `[VERIFIED][LOCKED]` (PRD-kontrak: unmarked-cited + `[LOCKED]`) | Verbatim — exact legacy field name, type, constraint preserved | `vault.md ## Architecture` + Hard Rule emission for execute-bolts; tagged `mutability_source: kb_locked` |
 | `[VERIFIED][INTENT]` (unmarked-cited + `[INTENT]`/untagged) | Outcome goal — state transition + business rule preserved; implementation references rebuild proposal | `vault.md ## Architecture` (rebuild shape) + `flows.md` (outcome); tagged `mutability_source: kb_intent` |
 | `[VERIFIED][ARTIFACT]` | Vault `## Open Questions` — default "discard unless preserve required" | `constraints.md ## Open Questions`; tagged `mutability_source: kb_artifact`, default resolution: discard |
 | `[INFERRED][LOCKED]` | Single confirmation question (high stakes); default "keep as LOCKED" pending user veto | OQ until confirmed, then promoted per the `[VERIFIED][LOCKED]` rule |

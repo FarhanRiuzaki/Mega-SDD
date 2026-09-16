@@ -214,9 +214,8 @@ After each unit completes:
 
 | Halt type | When |
 |---|---|
-| `module_unassigned_warn` | ≥10% of units have `module: M-unassigned`. Warning (not blocking); halts only with `--strict-modules` flag |
+| (chat warning, no halt) | ≥10% of units have `module: M-unassigned` → warning in the Step 4.5 summary; nothing blocks |
 | `module_blocked_by` | execute-bolts --module=X invoked but X.blocked_by has incomplete module Y |
-| `module_dod_unsat` | module declared completed but DoD items still pending (user attempts to mark done prematurely) |
 | `cross_module_dep_invalid` | unit's depends_on crosses module boundary AND that module isn't declared in blocked_by |
 
 ## Backward compatibility

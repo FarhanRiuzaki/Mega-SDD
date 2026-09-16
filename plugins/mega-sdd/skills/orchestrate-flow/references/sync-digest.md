@@ -11,7 +11,7 @@ Written by the sync chain whenever an autonomous run defers a human decision. Se
 **Last sync run**: <ISO8601> · **Open items**: N
 
 ## 1. CONFLICTs (BLOCKING — gate closed for affected units)
-- [ ] CONFLICT-7 — <one-line> → resolve via `resolve-oq --binding <vault>/binding.md`
+- [ ] CONFLICT-7 — <one-line> → resolve via `resolve-oq --binding` (classic: `<vault>/binding.md`; lite: the unit's `bolts/U-XXX/binding.json`)
       (source: binding.md §CONFLICT-7; affected units: U-004, U-009)
 
 ## 2. Drift direction calls (vault stale vs code regressed — your call)
@@ -23,7 +23,7 @@ Written by the sync chain whenever an autonomous run defers a human decision. Se
       (provenance: a1b2c3 "hotfix rounding" — <author>, <date>)
 ```
 
-Consumers: the session-start staleness notice points HERE (instead of suggesting a fresh sync) when open items exist; `resolve-oq --binding` marks the CONFLICT entries resolved as it goes.
+Consumers: the `/mega-sdd` status view (Lane 0 — PENDING-SYNC presence) points HERE when open items exist (the session-start line stopped reading it in v7.5.0); `resolve-oq --binding` marks the CONFLICT entries resolved as it goes.
 
 ## SYNC-REPORT.md — the run report (overwrite)
 

@@ -168,14 +168,16 @@ blocker:
 Emitted by Step 12.5 f when a unit's starterkit-derived Hard Rule lacks the mandatory `Citation: starterkit-context.yaml §<path>` field. Mirrors the "every Hard Rule needs a Citation" rail (Step 12.4.5) extended to starterkit-derived rules.
 
 ```yaml
-type: starterkit_rule_citation_missing
-source_skill: generate-units
-details:
-  unit_id: <U-XXX>
-  rule_text: "<text of offending rule>"
-  missing_citation: "starterkit-context.yaml §<expected path>"
-  rule_index: <int>
-next_action: "Edit unit <U-XXX>: append 'Citation: starterkit-context.yaml §<path>' to Hard Rule #<index>, then re-run generate-units."
+blocker:
+  type: starterkit_rule_citation_missing
+  emitted_by: generate-units
+  emitted_at: <ISO8601>
+  details:
+    unit_id: <U-XXX>
+    rule_text: "<text of offending rule>"
+    missing_citation: "starterkit-context.yaml §<expected path>"
+    rule_index: <int>
+  next_action: "Edit unit <U-XXX>: append 'Citation: starterkit-context.yaml §<path>' to Hard Rule #<index>, then re-run generate-units."
 ```
 
 Recovery: user edits unit to add citation; re-runs Step 12.5 polished-prompt render pass. This halt is ALWAYS STOP — never a soft warning. Do NOT write the unit while the citation is missing.

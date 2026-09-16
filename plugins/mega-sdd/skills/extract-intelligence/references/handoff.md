@@ -18,7 +18,7 @@ handoff:
     rationale: "Knowledge base extracted; generate vault using KB as Mode B brief."
   blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers)
   metrics:
-    items_processed: 35    # MD files written
+    items_processed: <N>    # module PRDs written
     items_blocked: 0
   scope:                                  # when target vault will have scope_metadata
     id: <scope id>

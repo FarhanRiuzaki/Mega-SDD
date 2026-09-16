@@ -22,7 +22,7 @@ The emitted `binding.md` is byte-compatible with every parser and gate.
 
 | Surface | Standard | Express |
 |---|---|---|
-| Claim enumeration | model reads all 7 vault docs | `claims-ledger.json` skeleton + a model **completeness sweep** of the vault docs (§E2 — the ledger is never the claim boundary) |
+| Claim enumeration | model reads the whole vault doc set (four on layout-2; seven legacy) | `claims-ledger.json` skeleton + a model **completeness sweep** of the vault docs (§E2 — the ledger is never the claim boundary) |
 | Primary ground truth | `codebase-map.md` (loaded whole) | the source files themselves, reached via symbol-index queries + targeted Reads |
 | codebase-map.md | required input (halt when missing) | **not read at all** (zero map load; not required) |
 | KB consultation | when the map is silent | when the retrieval ladder is silent — same marker/tier semantics |
@@ -71,7 +71,7 @@ fixes for twice).
    (satisfies the "no paraphrasing" rail); `source` is the exact `NN-name.md:LINE`
    `make-bound.sh` needs.
 2. **Completeness sweep (MANDATORY — the ledger is a SKELETON, never the claim
-   boundary).** Read the 7 vault docs (they are small — the express saving is the
+   boundary).** Read the vault docs (four on layout-2; they are small — the express saving is the
    codebase-map, not the vault) and enumerate claim-bearing statements the ledger
    grammar cannot see: named-H2 component sections (a template vault has NO `## §`
    headings), API-contract rows, prose constraints ("Must use Laravel 11"),

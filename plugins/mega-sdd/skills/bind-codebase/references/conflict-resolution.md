@@ -8,7 +8,7 @@ When `bind-codebase` produces CONFLICT entries, downstream pipeline is blocked. 
 bind-codebase detects N conflicts
    │
    ▼
-binding.md written with CONFLICT table
+binding.md written with `### CONFLICT-N` detail blocks
    │
    ▼
 User chooses resolution path:
@@ -49,7 +49,7 @@ KEEP_VAULT / DEFER (vault + code unchanged) → NO re-bind (it would re-raise th
 
 ### c. DEFER — neither side wins yet
 - Action: CONFLICT → OQ; binding records both options for later
-- Effect: bound-vault produced (since CONFLICTs cleared) but OQ propagates to unit grounding
+- Effect: the handoff validator passes (structural RESOLVED marker) so units generate carrying the OQ; `bound/` is NOT produced until a later clean re-bind (`make-bound.sh` refuses on any CONFLICT verdict regardless of resolution)
 - Use when: decision genuinely cannot be made right now; needs stakeholder
 
 ### d. SPLIT — vault claim was too coarse

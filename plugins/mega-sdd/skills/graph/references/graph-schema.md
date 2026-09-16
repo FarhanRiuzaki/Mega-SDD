@@ -3,6 +3,17 @@
 Pure JSON root object at `.mega-sdd/graph.json`. Never hand-edited. Regenerated
 by the builder. Safe to delete.
 
+## Contents
+
+- [Top level](#top-level)
+- [Node types (v1)](#node-types-v1)
+- [`symbol` — the code layer](#symbol--the-code-layer)
+- [ID namespacing](#id-namespacing)
+- [`code_anchor` identity](#code_anchor-identity)
+- [Edge relations (v1)](#edge-relations-v1)
+- [Confidence derivation](#confidence-derivation-honest-confidence-rule)
+- [Anti-hallucination](#anti-hallucination)
+
 ## Top level
 
 ```json
@@ -83,7 +94,7 @@ normalized to its file when minting/matching.
 
 | relation | from → to | source field |
 |---|---|---|
-| implements | claim → code_anchor | binding.json `claims[].anchor` |
+| implements | claim → code_anchor | binding.json `claims[].anchor` (whole-vault `<vault>/binding.json` on the classic lane; every `bolts/U-*/binding.json` on lite) |
 | honors | unit → claim/oq | unit frontmatter `binding_refs` |
 | depends_on | unit → unit | unit frontmatter `depends_on` |
 | in_module | unit → module | modules.yaml vault_sections match (or unit `module:`) |

@@ -2,7 +2,7 @@
 
 ## Contents
 - Incremental mode (`--changed-only`)
-- Step 0 — Engine detection (probe-scan-engine.sh — the 3-tier ladder digest)
+- Step 0 — Engine detection (probe-scan-engine.sh — the D2 ladder digest, ast-grep → regex)
 - Step 1 — Detect repo root
 - Step 2 — Detect package manager / language
 - Step 3 — Detect test framework
@@ -285,7 +285,7 @@ estimate  = N_total × per_spawn  # ast-grep is ~1 spawn and regex
 |---|---|---|---|
 | 1 | **Decided** | an explicit `--engine=` (any value) OR an explicit `--include=` on the invocation | Proceed. The caller already made the precision-vs-latency call; log the estimate as a one-line note, no blocker, no downgrade. |
 | 2 | **Undecided STANDALONE** | a DIRECT user invocation: no explicit `--engine=`/`--include=`, and NONE of lane 3's unattended signals | Emit `scan_spawn_budget_exceeded` and STOP before extracting (YAML shape: `references/halts-flags-handoff.md`). A human invoked this run and reads its output; the precision choice is theirs. |
-| 3 | **UNATTENDED — the chain lane, and every forked run** | ANY of: `--auto`; the body is running FORKED; or an orchestrator (`orchestrate-flow`, `/mega-sdd`, `/mega-sdd:sync`) dispatched this phase — which is how the Mode-D `--changed-only` sync hop arrives | **Downgrade to the highest OOM-safe tier and RECORD it loudly** (three surfaces, below): tier 2 (`ast-grep`) when the Step-0 digest carries `astgrep_version` — extraction collapses to ~ONE spawn and `precision_tier` STAYS `ast`, so nothing downstream degrades; `regex` only when ast-grep is absent. Neither a halt nor a stall. |
+| 3 | **UNATTENDED — the chain lane, and every forked run** | ANY of: `--auto`; the body is running FORKED; or an orchestrator (`orchestrate-flow`, `/mega-sdd`, `/mega-sdd:sync`) dispatched this phase — which is how the Mode-D `--changed-only` sync hop arrives | **Downgrade to the highest OOM-safe tier and RECORD it loudly** (three surfaces, below): tier 1 (`ast-grep`) when the Step-0 digest carries `astgrep_version` — extraction collapses to ~ONE spawn and `precision_tier` STAYS `ast`, so nothing downstream degrades; `regex` only when ast-grep is absent. Neither a halt nor a stall. |
 
 **Lane 2 vs lane 3 — the test is UNATTENDED-ness, and ties go to lane 3.** `--auto` alone is
 NOT a sufficient discriminator and must never be read as one: **ZERO**
@@ -387,7 +387,7 @@ route (`engine: ast-grep`).
 
 - Rule packs: `queries/astgrep/<lang>.yml` (kind-based definition rules, one pack per
   language; header comments carry the per-pack contract).
-- Invoke ONCE for ALL tier-2 languages together — rules are language-tagged, so this is
+- Invoke ONCE for ALL ast-grep-packed languages together — rules are language-tagged, so this is
   **one process for the whole non-REUSE set** (verified against ast-grep 0.42.3):
 
 ```bash
@@ -619,4 +619,4 @@ The map can be committed or shared; symbol/route extraction can capture a hardco
   Write the `file:line` + pattern class ONLY — **never the matched value**; this is a rotation worklist, not a secret store. The same durable channel is used by every scrub site (Step 10a's `codebase-map.md` and Step 10.5.3's `starterkit-context.yaml` / `reuse-index.yaml`). List the file in the handoff `artifacts[]` when it was written this run.
 - This gate redacts the ARTIFACT — it never edits repo source files.
 - Empty `secret_findings` (the normal case) → nothing to route, no chat output.
-- **The map-validator state refresh is ALSO chained by the deriver** (it runs `validate-codebase-map.sh --cwd=<project-root> --quiet` after the rename): the temp-file + rename write does not fire the PostToolUse `Write|Edit` dispatch, so the chained call keeps `.codebase-map-state.json` fresh for `analyze` (the bind-codebase PreToolUse gate also re-validates lazily when the map is newer than its state). A validator FAIL surfaces as the deriver's exit 4 — halt, do not consume the map.
+- **The map-validator state refresh is ALSO chained by the deriver** (it runs `validate-codebase-map.sh --cwd=<project-root> --quiet` after the rename): no hook validates the map on write (the PostToolUse validator fan-out was removed in v7.5.0), so the chained call keeps `.codebase-map-state.json` fresh for `analyze` (the bind-codebase PreToolUse gate also re-validates lazily when the map is newer than its state). A validator FAIL surfaces as the deriver's exit 4 — halt, do not consume the map.

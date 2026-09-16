@@ -13,10 +13,10 @@ Verify every doc has:
 - [ ] No invented entities, fields, endpoints, decisions, or behaviors. Every claim can be cited to PRD/Figma/uploaded docs.
 - [ ] **Sources** section filled (cite PRD section, Figma frame, or other input).
 - [ ] **Out of Scope** section filled (write `TBD - confirm with PO` if genuinely unknown — never leave empty).
-- [ ] **Open Questions** section filled. Tagged `OQ-{DOC_CODE}-{N}` + prioritized P1/P2/P3.
+- [ ] **Open Questions** — ALL in `constraints.md ## Open Questions`, each tagged `OQ-{DOC_CODE}-{N}` + prioritized P1/P2/P3 (no per-doc OQ section).
 
 **Readability (architect/PM/QA review-ready):**
-- [ ] **TL;DR header** present in every doc 01–06. Format: 1-line if `OUTPUT_MODE=compact`, 3-line if `OUTPUT_MODE=full`.
+- [ ] **TL;DR header** present in every doc (vault.md sections, model.md, flows.md, constraints.md). Format: 1-line if `OUTPUT_MODE=compact`, 3-line if `OUTPUT_MODE=full`.
 - [ ] Output language convention consistent — code-level terms in English (entity names, field names, types, enum values, HTTP methods, framework names); prose narrative in PRD language. Avoid mixing English and PRD language in the same prose sentence except for code-term references.
 - [ ] Read-aloud test: the first paragraph of each doc does not sound like AI translation.
 - [ ] First-use acronym/jargon defined inline; cross-doc terms are in the `vault.md ## Glossary` (absent at `project_scale: xs` — first-use inline definitions carry them there).
@@ -25,11 +25,11 @@ Verify every doc has:
 - [ ] If `project_scale: xs`: NO `## Glossary` (no header, no placeholder) AND §Auto-Classification Review carries the `Auto-deferred (project_scale: xs)` sub-heading listing every medium-confidence tech OQ born `deferred` (with its `defer_to` — `binding` brownfield / `stakeholder` greenfield).
 
 **Output mode compliance (driven by `OUTPUT_MODE` from Step 0.7):**
-- [ ] If `compact`: TL;DR header is 1-line in docs 01–06.
+- [ ] If `compact`: TL;DR header is 1-line in every doc.
 - [ ] If `compact`: API contracts use the table format; full request/response JSON only appears for endpoints with non-trivial payload (nested struct / polymorphic shape).
-- [ ] If `compact`: doc 03 entity descriptions dropped — DBML block + 1-line `Purpose:` per entity is enough.
-- [ ] If `compact`: doc 04 Preconditions/Postconditions sections cut; Steps + DoD remain detailed.
-- [ ] If `compact`: doc 05 ADRs use the 1-paragraph format, not the multi-section block.
+- [ ] If `compact`: `model.md` entity descriptions dropped — DBML block + 1-line `Purpose:` per entity is enough.
+- [ ] If `compact`: `flows.md` Preconditions/Postconditions sections cut; Steps + DoD remain detailed.
+- [ ] If `compact`: `vault.md ## Decisions` ADRs use the 1-paragraph format, not the multi-section block.
 - [ ] If `compact`: OQ entries are 1-line, not multi-line elaboration.
 - [ ] Glossary (BOTH modes — the drop is unconditional; the whole section is omitted at `project_scale: xs`): product-specific PRD terms only + the pointer line to `_meta/ai-consumer-guide.md` §Standard terms; generic/standard rows never re-emitted.
 - [ ] If `full`: every section per template scaffold is filled, including prose narrative, JSON examples, multi-bullet consequences.
@@ -44,7 +44,7 @@ Verify every doc has:
 - [ ] Every OQ carries `category` + (if tech) `resolution_mode` + `classification_confidence`.
 - [ ] Every `recommend`-mode OQ has at least one `scan_citations` entry; no fabricated citations.
 - [ ] `vault.md` has `## Auto-Classification Review` section listing tech-tagged OQs + medium/low confidence cases.
-- [ ] **`constitution.md`** (the 8th file): exists unless `--no-constitution`, and **every `X-NNN` clause cites a source** (`§` / `(source: …)` / a KB/PRD anchor / a `file:line` / a link). An uncited clause is a defaulted or invented rule — demote it to an Open Question, never ship it (it would become a BLOCKING Hard rule at execute-bolts). This mirrors the deterministic `validate-constitution.sh` per-clause check.
+- [ ] **`constitution.md`** (the additional vault file): exists unless `--no-constitution`, and **every `X-NNN` clause cites a source** (`§` / `(source: …)` / a KB/PRD anchor / a `file:line` / a link). An uncited clause is a defaulted or invented rule — demote it to an Open Question, never ship it (it would become a BLOCKING Hard rule at execute-bolts). This mirrors the deterministic `validate-constitution.sh` per-clause check.
 
 **Each doc must be readable in <10 minutes by an architect (BOTH modes).**
 
@@ -64,7 +64,7 @@ Verify every doc has:
 - [ ] `vault.md ## Glossary` (when present — omitted at `project_scale: xs`) carries product-specific terms only + the pointer to the guide's Standard-terms table — no re-emitted generic rows (ADR/DBML/DoD/FK/NFR/OQ/RTO/RPO/SLO or design-system terms).
 
 **Design-system grounding (only if any design-system section appears):**
-- [ ] Section presence justified — `02-architecture#ui-components` exists ⇒ `HAS_UI_COMPONENTS = true` from Step 2; `06-constraints#design-system` exists ⇒ at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`.
+- [ ] Section presence justified — `vault.md ## Architecture > UI components & patterns` exists ⇒ `HAS_UI_COMPONENTS = true` from Step 2; `constraints.md ## Design system` exists ⇒ at least one of `HAS_TOKENS`, `HAS_A11Y`, `HAS_VOICE_BRAND` is `true`.
 - [ ] Components table cites source per row (Figma frame name / tokens file path / PRD §). No invented components.
 - [ ] Tokens table cites source per row. No invented hex values, type scales, spacing values, radius values.
 - [ ] Patterns prose grounded in PRD note / Figma annotation / explicit user instruction. No best-practice insertions (no defaulted WCAG levels, no defaulted "max 1 CTA per screen" rules unless source explicitly states).

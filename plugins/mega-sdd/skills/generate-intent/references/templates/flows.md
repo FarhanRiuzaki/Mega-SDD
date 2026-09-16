@@ -55,7 +55,7 @@ flowchart TD
 ```
 
 <!-- staged-only: present ONLY when this flow collects inputs across multiple steps/pages/roles
-     (wizard, maker→checker). Copy the `stages:` block from the source KB workflow §3a VERBATIM —
+     (wizard, maker→checker). Copy the `stages:` block from the source KB module's §3 Flow (legacy tree: §3a) VERBATIM —
      do NOT re-flatten it. If the KB used the ENRICHED form (`input_fields` as objects
      with name/mutability/visibility/conditional, plus per-stage delta fields new_fields_vs_prior /
      hidden_fields_vs_prior / promoted_to_mutable_vs_prior / dynamic_disclosures), preserve THAT
@@ -86,7 +86,7 @@ stateDiagram-v2
     S1 --> S2: "S1 maker submits"
     S2 --> [*]: "S2 checker approves"
 ```
-**_kb_source**: [20-workflows/<workflow-file>.md]
+**_kb_source**: [modules/<domain>.prd.md]   <!-- legacy KB: 20-workflows/<workflow-file>.md -->
 <!-- /staged-only -->
 
 <!-- full-only -->

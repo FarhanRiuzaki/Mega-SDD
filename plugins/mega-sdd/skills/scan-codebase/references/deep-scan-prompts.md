@@ -316,7 +316,7 @@ never a function body.
 INPUTS TO READ:
 1. <MANIFEST_FACTS> (authoritative; do NOT re-read manifests)
 2. Each path/glob in <REUSE_FILE_HINTS>
-   (use tree-sitter -> ast-grep -> ripgrep/regex fallback, the established tool ladder)
+   (use ast-grep -> ripgrep/regex fallback, the established tool ladder)
 
 PROCEDURE:
 1. For each category in <REUSE_CONSTRUCT_MAP>, enumerate the stack's reusable symbols at the hinted locations.

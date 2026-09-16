@@ -8,8 +8,8 @@ consumers: ["{{CONSUMER_SQUAD_ID_1}}"]    # list of squad IDs (one or more)
 status: draft                              # draft | locked  — start as draft; lock after stakeholder review
 version: "1.0"
 locked_at: null                            # ISO8601 date when first locked; preserved across edits
-related_flows: []                          # e.g., [[04-flows#F-U-001]]
-related_entities: []                       # e.g., [[03-data-model#leave_request]]
+related_flows: []                          # e.g., flows.md#F-U-001
+related_entities: []                       # e.g., model.md#leave_request
 tags: [interface, "squad/{{PRODUCER_SQUAD_SLUG}}"]
 ---
 
@@ -57,7 +57,7 @@ response:
 
 ## Blocked by
 
-<list of [[06-constraints#OQ-XX-N]] references for OQs that must resolve
+<list of constraints.md#OQ-XX-N references for OQs that must resolve
 before this interface can move from draft → locked. Empty list = ready
 to lock pending review.>
 

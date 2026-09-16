@@ -2,7 +2,7 @@
 
 > **Static copy installed by mega-sdd; identical across vaults; do not hand-edit — re-copied on regen** (a plain `cp` of this template at vault generation time). Per-vault specifics (which P1 OQ clusters block which work areas, layer-routing anchors, vault metadata) live in `vault.md` (legacy: 00-index.md §Implementation Notes) — this file carries the GENERIC consumer protocol only.
 
-This guide is for AI dev tools (Claude Code, Cursor, etc.) and humans that read the vault as source of truth when writing/modifying code. The vault (layout-2: `vault.md` + `model.md` + `flows.md` + `constraints.md`; legacy: `00-index.md` … `06-constraints.md`) is the single source of truth for requirements; this file tells you how to consume it safely.
+This guide is for AI dev tools (Claude Code, Cursor, etc.) and humans that read the vault as source of truth when writing/modifying code. The vault (layout-3: one `context.md` with `## Flows` / `## Data model` / `## Constraints` / `## Open Questions` [+ Overview/Architecture/Decisions]; layout-2: `vault.md` + `model.md` + `flows.md` + `constraints.md`; legacy: `00-index.md` … `06-constraints.md`) is the single source of truth for requirements; this file tells you how to consume it safely.
 
 ## MANDATORY before writing/modifying any code
 
@@ -12,22 +12,22 @@ This guide is for AI dev tools (Claude Code, Cursor, etc.) and humans that read 
 
 2. **For mode `existing`** — additional MANDATORY steps:
    - Ask the user: *"Share a short description of the existing codebase (project root, framework, key tables that are relevant), or confirm I should scan first before continuing."*
-   - **Cross-check entities** ([[03-data-model]]) against the existing schema:
+   - **Cross-check entities** (`model.md`; layout-3: `context.md ## Data model`) against the existing schema:
      - New entity in vault, name doesn't collide with existing → safe to create.
      - Vault entity that shares a name with an existing one → STOP, clarify extend vs replace.
-   - **Cross-check flows** ([[04-flows]]) against existing routes/handlers/cron jobs:
+   - **Cross-check flows** (`flows.md`; layout-3: `context.md ## Flows`) against existing routes/handlers/cron jobs:
      - New flow, no collision → safe to add.
      - Flow that touches an existing endpoint/job → STOP, clarify extend vs replace.
-   - **Cross-check decisions** ([[05-decisions]]) against existing patterns:
+   - **Cross-check decisions** (`vault.md ## Decisions`; layout-3: `context.md ## Decisions`) against existing patterns:
      - Decision that **conflicts** with an existing pattern → STOP, escalate to architect for a transition plan.
 
 3. **For mode `new`** — checks still apply:
-   - Confirm tech stack from the vault with the user ([[02-architecture]] may still have Open Questions on stack).
+   - Confirm tech stack from the vault with the user (`vault.md ## Architecture` — layout-3: `context.md ## Architecture` — may still have Open Questions on stack).
    - If P1 Open Questions are unresolved → STOP, do not auto-pick a stack default.
 
 4. **Use the relevant layer section based on what you're implementing**:
-   - Working on backend → focus on [[02-architecture#Backend]] + the backend section of [[04-flows]].
-   - Working on UI (mobile/web) → focus on the relevant UI layer in [[02-architecture]] + user flows in [[04-flows]].
+   - Working on backend → focus on the Backend layer of `vault.md ## Architecture` + the backend section of `flows.md`.
+   - Working on UI (mobile/web) → focus on the relevant UI layer in `vault.md ## Architecture` + user flows in `flows.md`.
    - Cross-cutting feature → check the cross-cutting flows section + multiple layer sections.
 
 ## During implementation
@@ -38,13 +38,13 @@ This guide is for AI dev tools (Claude Code, Cursor, etc.) and humans that read 
 
 ## When you encounter an inconsistency
 
-- Vault internal conflict (e.g., doc 03 vs doc 04) → STOP, surface to the user with quotes from both sides.
+- Vault internal conflict (e.g., `model.md` vs `flows.md`) → STOP, surface to the user with quotes from both sides.
 - Vault vs existing code conflict → STOP, escalate to user. Show the vault quote + the existing-code reference.
 - Vault vs original PRD (if user grants PRD access) → STOP, escalate to user. The vault should reflect the PRD; if not, the vault is stale.
 
 ## Halt protocol for autonomous runs
 
-In **interactive mode** (chat with a human), "STOP and ask user" works fine — surface the issue in chat and wait. In **autonomous mode** (agent runners, CI tasks, headless workflows, the `flow` orchestrator), silent halt loses the signal. Instead, emit a structured `blocker` artifact so the runner can route it.
+In **interactive mode** (chat with a human), "STOP and ask user" works fine — surface the issue in chat and wait. In **autonomous mode** (agent runners, CI tasks, headless workflows, the `/mega-sdd` front door / `orchestrate-flow`), silent halt loses the signal. Instead, emit a structured `blocker` artifact so the runner can route it.
 
 The unified envelope (per the mega-sdd plugin's `references/halt-protocol.md` §halt-protocol) covers three blocker types: `oq_blocker` (unresolved P1 OQ), `diff_conflict` (diff-vault conflict), and `drift_framework_mismatch` (detect-drift framework mismatch).
 
@@ -92,8 +92,8 @@ The agent runner decides what to do (page resolver, create ticket, post to Slack
 
 If your task is fully blocked by P1 OQs but you want to make incremental progress, work on artifacts that don't depend on the unresolved decisions:
 
-- **From DoD bullets** (in [[04-flows]]): draft test specs / Gherkin scenarios. The DoD is the test contract.
-- **From entities** (in [[03-data-model]]): scaffold ORM models / type definitions with `// TODO(OQ-...): resolved type pending` markers.
+- **From DoD bullets** (in `flows.md`): draft test specs / Gherkin scenarios. The DoD is the test contract.
+- **From entities** (in `model.md`): scaffold ORM models / type definitions with `// TODO(OQ-...): resolved type pending` markers.
 - **From flows**: sketch UI mocks / API stub signatures using vault-stated names but no business logic yet.
 - **From OOS section**: confirm with PM what's NOT in scope — saves wasted scaffolding.
 
@@ -130,4 +130,4 @@ Generic cross-doc terms and acronyms (product-specific PRD terms live in `vault.
 | a11y (cond.) | Numeronym for "accessibility" (a + 11 letters + y). |
 | semantic HTML (cond.) | Use of meaningful HTML elements (`<button>`, `<nav>`, `<main>`, etc.) for accessibility and structure. |
 
-> Rows marked `(cond.)` are relevant only when the vault carries design-system sections (`02-architecture#UI components & patterns` / `06-constraints#Design System`); ignore them otherwise. This table is static — it never varies per vault.
+> Rows marked `(cond.)` are relevant only when the vault carries design-system sections (`vault.md ## Architecture > UI components & patterns` / `constraints.md ## Design system`); ignore them otherwise. This table is static — it never varies per vault.

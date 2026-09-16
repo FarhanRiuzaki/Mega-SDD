@@ -1,5 +1,5 @@
 ---
-description: "Maintenance — detect OS + pkg manager, install missing optional native deps (tree-sitter, ast-grep, pandoc, …) with one batch confirm; never auto-sudo, never curl|bash."
+description: "Maintenance — detect OS + pkg manager, install missing optional native deps (ast-grep, ripgrep, pandoc, mmdc, …) with one batch confirm; never auto-sudo, never curl|bash."
 argument-hint: "[--dry-run] [--tools=<csv>] [--force-recheck] [--pkg-mgr=<name>] [--manual] [--auto]"
 ---
 
@@ -18,12 +18,12 @@ Argument parsing:
 Follow `skills/install-deps/SKILL.md` Procedure exactly.
 
 Hard rails (anti-halu + safety):
-- NEVER auto-`sudo` — for tools requiring elevation (most apt/dnf installs), the skill PRINTS the command + instructs user to run manually. Memory records as "sudo-pending".
+- NEVER auto-`sudo` — for tools requiring elevation (most apt/dnf installs), the skill PRINTS the command + instructs user to run manually (reported in chat as "sudo-pending").
 - NEVER use curl|bash patterns — only signed package manager commands per `tool-matrix.yaml`.
 - ALWAYS show exact `install_cmd` + source pkg manager + size estimate BEFORE running.
 - Single batch confirmation via AskUserQuestion — user sees full plan before any install runs.
 - ALWAYS verify post-install with `verify_cmd` from matrix — claim "installed" only after verify passes.
-- Memory write happens AFTER verify pass — never record "installed" on partial state.
+- Claim "installed" only AFTER the verify pass — never on partial state.
 - This skill installs OPTIONAL mega-sdd deps only — never installs Claude Code itself.
 
-On completion, announce summary: "✅ Install complete: N verified, M failed, K skipped. Memory: outcomes written to <path>."
+On completion, announce summary: "✅ Install complete: N verified, M failed, K skipped."

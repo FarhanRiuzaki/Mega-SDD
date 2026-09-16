@@ -27,12 +27,12 @@ Trigger this skill for:
 - "spec out this idea" / "from this prompt" / "baku dari ide" / "I have a brief not a PRD"
 - The user types a short description of a project and wants to skip writing a full PRD.
 - The user is currently round-tripping to ChatGPT to get a structured prompt for generate-intent; this skill replaces that round-trip.
-- Inside `/mega-sdd` Rule 0 chain (auto-dispatched when prompt arg detected and no vault/PRD in CWD).
+- Inside the `/mega-sdd` front-door chain (auto-dispatched when a brief is detected and no vault/PRD is in CWD).
 
 Do NOT use this skill when:
 
 - A real PRD/BRD doc exists — use `generate-intent` directly with the doc.
-- The user wants to evolve an existing vault from a new prompt — that's a future capability (use `diff-vault` against a manually-written new doc for now).
+- The user wants to evolve an existing vault from a ticket-scale prompt — that is `diff-vault --from-prompt` (the delta lane), not this mode.
 
 ## Core principle
 
@@ -50,12 +50,12 @@ Accept the brief:
 - If `$ARGUMENTS` is empty → ask via plain chat: *"Tell me about your idea — a few sentences or a paragraph is fine."* Capture the user's reply as the brief.
 
 Reject and ask again if:
-- Brief is < 20 characters AND not invoked from `flow` (when invoked from flow with `--auto`, emit `blocker` instead — see Halt handling).
+- Brief is < 20 characters AND not invoked from the front door / orchestrate-flow (when invoked from there with `--auto`, emit `blocker` instead — see Halt handling).
 - Brief is gibberish/unparseable (e.g., "asdfgh") — same treatment.
 
 Persist:
 - `BRIEF=<verbatim user input>`
-- `OUTPUT_DIR=<resolved path>` — slug-derived from brief content (e.g., "leave-management-spec" from "I want a leave management web app"). Default location is `./<slug>-spec/`.
+- `OUTPUT_DIR=<resolved path>` — slug-derived from brief content (e.g., "leave-management-spec" from "I want a leave management web app"). Default location is `.mega-sdd/vaults/<slug>/` (canonical per `plugins/mega-sdd/references/paths.md`; the seed-PRD goes to `<OUTPUT_DIR>/source/`).
 
 ### Step 1: Brief inventory
 
@@ -208,31 +208,31 @@ Suggested next step:
 - OR /mega-sdd <OUTPUT_DIR> (auto-chains generation + resolve-oq)
 ```
 
-If invoked from `orchestrate-flow` Rule 0, control returns to orchestrate-flow which dispatches `generate-intent` next.
+If invoked from the front-door chain, control returns to it, which dispatches `generate-intent` next.
 
 ## Question taxonomy
 
 | # | Topic | Why critical | Default question | Format |
 |---|-------|--------------|------------------|--------|
-| 1 | Project shape | Drives 02-arch + 04-flows structure | "What kind of system?" | multi-choice (mobile-app / web-app / api-only / multi-platform / data-pipeline / custom) |
-| 2 | Primary users / personas | 01-overview personas | "Who's the primary user?" | free-text |
-| 3 | Core problem | 01-overview Problem | "What problem does this solve?" | free-text |
-| 4 | Top 2–3 user flows | 04-flows skeleton | "Top 2–3 things a user does?" | free-text |
+| 1 | Project shape | Drives `vault.md ## Architecture` + `flows.md` structure | "What kind of system?" | multi-choice (mobile-app / web-app / api-only / multi-platform / data-pipeline / custom) |
+| 2 | Primary users / personas | `vault.md ## Overview` personas | "Who's the primary user?" | free-text |
+| 3 | Core problem | `vault.md ## Overview` Problem | "What problem does this solve?" | free-text |
+| 4 | Top 2–3 user flows | `flows.md` skeleton | "Top 2–3 things a user does?" | free-text |
 | 5 | Implementation mode | Mode flag + detect-drift applicability | "Greenfield or extending existing codebase?" | multi-choice (`new` / `existing`) |
-| 6 | Tech stack constraints | 02-arch tech stack | "Any tech stack constraints?" | free-text or "no constraints" |
-| 7 | Regulatory / compliance | 06-constraints | "Any regulatory requirements?" | multi-choice (GDPR / HIPAA / OJK / PDP-Indonesia / none / other) |
-| 8 | Success metrics | 01-overview success criteria | "How will you know it's working?" | free-text or "TBD" |
+| 6 | Tech stack constraints | `vault.md ## Architecture` tech stack | "Any tech stack constraints?" | free-text or "no constraints" |
+| 7 | Regulatory / compliance | `constraints.md` | "Any regulatory requirements?" | multi-choice (GDPR / HIPAA / OJK / PDP-Indonesia / none / other) |
+| 8 | Success metrics | `vault.md ## Overview` success criteria | "How will you know it's working?" | free-text or "TBD" |
 | 9 | Out of scope | Every doc OOS | "What's NOT in scope for v1?" | free-text or "nothing decided" |
 | 10 | Anything else | Catch-all | "Anything else critical?" | free-text or "no, proceed" |
 
 ## --auto flag
 
-The `--auto` flag is passed by upstream callers (typically `/mega-sdd` via Rule 0 chain) to skip logistical prompts only. **Substance prompts — every Q&A question — ALWAYS stay interactive.** That's the entire point of this skill: capturing the user's actual answers, never Claude's guesses.
+The `--auto` flag is passed by upstream callers (typically the `/mega-sdd` front door's input-shape detection — a brief routes to `generate-intent --from-prompt`) to skip logistical prompts only. **Substance prompts — every Q&A question — ALWAYS stay interactive.** That's the entire point of this skill: capturing the user's actual answers, never Claude's guesses.
 
 | Step | Interactive behavior | `--auto` behavior |
 |------|---------------------|-------------------|
 | Step 0 (brief input) | If $ARGUMENTS empty, ask via chat | If $ARGUMENTS empty, **emit `blocker`** (`type=oq_blocker`, tag=`OQ-FROMPROMPT-0`, context="--auto invoked without brief") |
-| Step 0 (output dir) | Default to `./<slug>-spec/` | Same default. If dir exists & non-empty, **STILL ASK** (destructive — never auto-overwrite). |
+| Step 0 (output dir) | Default to `.mega-sdd/vaults/<slug>/` | Same default. If dir exists & non-empty, **STILL ASK** (destructive — never auto-overwrite). |
 | Step 1 (brief inventory announce) | Show user the skip plan | Same — informational, not interactive |
 | Step 2 (Q&A loop) | Ask each topic | **Always ask** every topic (substance prompt — hard rule, no override) |
 | Step 6 (final summary) | Print to chat | Same — informational |
@@ -259,9 +259,9 @@ blocker:
   priority: P1
   context: "from-prompt cannot elaborate — brief is too short or unparseable"
   resolver_owner: null
-  resolver_route: "user must provide a longer brief or invoke from-prompt directly without --auto"
+  resolver_route: "user must provide a longer brief or invoke `generate-intent --from-prompt` directly without --auto"
   vault_version: "n/a"
-  source_skill: from-prompt
+  source_skill: generate-intent
 ```
 
 Per `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol. Caller (orchestrator) catches and surfaces to user.
@@ -298,7 +298,7 @@ Per `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol. Caller (orch
 
 ## References
 
-- Schema, OQ conventions, citation conventions: `./vault-contract.md` (§schema, §OQ-conventions, §boilerplate). Halt protocol: `plugins/mega-sdd/references/halt-protocol.md` (§halt-protocol).
+- Schema, OQ conventions, citation conventions: `./vault-core.md` (§schema, §OQ-conventions, §boilerplate). Halt protocol: `plugins/mega-sdd/references/halt-protocol.md` (§halt-protocol).
 - Downstream consumer: `../SKILL.md` (generate-intent) consumes the seed-PRD as a normal source. PRD_STATUS auto-set to `draft` based on the seed-PRD's `Status: DRAFT` metadata.
-- Orchestrator: `orchestrate-flow/SKILL.md` Rule 0 dispatches this skill via `--auto` when prompt input detected.
-- For `vault.json.source_documents[].type = "seed-PRD"` is the recommended value when this skill's output is consumed; vault-contract.md §schema treats `type` as a free-form string.
+- Orchestrator: the `/mega-sdd` front door (`orchestrate-flow`) dispatches this mode via `--auto` when brief input is detected.
+- For `vault.json.source_documents[].type = "seed-PRD"` is the recommended value when this skill's output is consumed; vault-core.md §schema treats `type` as a free-form string.

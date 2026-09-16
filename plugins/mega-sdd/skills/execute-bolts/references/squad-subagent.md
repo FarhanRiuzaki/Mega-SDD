@@ -85,5 +85,5 @@ writes its own bolt-report + halt artifacts; the controller aggregates.
 ## Single-squad fallback
 
 If the user passes `--per-squad` but only one squad is declared: halt early (per
-Procedure step 1 in SKILL.md). Don't loop over a single squad for no benefit — use
+step 1 of `batch-and-fanout.md §--per-squad`). Don't loop over a single squad for no benefit — use
 plain `--all` (optionally `--all --parallel`).

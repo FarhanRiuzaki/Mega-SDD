@@ -2,7 +2,7 @@
 
 Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and propagated deferred-OQ entries from a `binding.md` file produced by `bind-codebase`, and writes resolutions back to `binding.md` + the `vault.json` changelog. The standard OQ walk (Steps 0–5) is covered by the interactive-walk reference the SKILL.md router lists.
 
-**Invocation:** `resolve-oq --binding <path-to-binding.md>`
+**Invocation:** `resolve-oq --binding <path-to-binding.md>` (classic) — on a lite/layout-3 vault pass the vault dir; the per-unit `bolts/U-*/binding.json` files are walked instead
 
 ## Procedure
 
@@ -21,7 +21,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    Choose action:
      [K] KEEP_VAULT  — vault is correct; code patch will be required later (the CONFLICT re-raises on re-bind until the code change lands — by design)
      [C] KEEP_CODE   — vault is wrong; patch vault inline to match code (vault edited this session)
-     [D] DEFER       — downgrade CONFLICT to OQ; gate binding TERBUKA, unit tetap digenerate membawa OQ-nya (execute-bolts prompt di "TBD: OQ-XXX" sebelum bolt final; P1 business menghentikan bolt)
+     [D] DEFER       — downgrade CONFLICT to OQ; gate binding TERBUKA, unit tetap digenerate membawa OQ-nya (execute-bolts prompt di "TBD: OQ-XXX" sebelum bolt final; P1 business menghentikan bolt) (classic `binding.md` conflicts only — the per-unit `binding.json` writer accepts KEEP_VAULT / KEEP_CODE / SPLIT)
      [S] SPLIT       — break vault claim into sub-claims (user provides splits; each sub-claim re-binds separately)
    ```
 
@@ -66,7 +66,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
    - *Other* — the free-text ANSWER, parsed per Step 2b
    - *Esc* — end the walk
 
-   **The `→ <file>.md` destination override does NOT apply in this mode** — Step 2b validates it against the vault's seven documents, and this walk writes none of them: a propagated-OQ resolution's only markdown home is `binding.md` (step 4). So the destination is fixed, not choosable. Still strip a trailing `→ <file>.md` and REJECT it with narration ("tujuan resolusi di mode `--binding` selalu `binding.md`") exactly as Step 2b handles a target outside the legal set: the remainder is the answer, and a BARE override resolves nothing (no write, counted as skipped). Never land a `--binding` resolution in a vault document.
+   **The `→ <file>.md` destination override does NOT apply in this mode** — Step 2b validates it against the vault's document filenames for its layout, and this walk writes none of them: a propagated-OQ resolution's only markdown home is `binding.md` (step 4). So the destination is fixed, not choosable. Still strip a trailing `→ <file>.md` and REJECT it with narration ("tujuan resolusi di mode `--binding` selalu `binding.md`") exactly as Step 2b handles a target outside the legal set: the remainder is the answer, and a BARE override resolves nothing (no write, counted as skipped). Never land a `--binding` resolution in a vault document.
 
    Never add a fourth option to fill the freed capacity: three options is the shape — not four with a hole. An invented answer is fabrication, and the cap is a ceiling, not a quota. There is no typed end-the-walk sentinel here either. The recorded `action` letters are unchanged (`A` answer / `C` out-of-scope / Skip emits no event).
 
@@ -78,7 +78,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks CONFLICT entries and
 
 5. **Hand-off (S4 — differs per action mix; a blanket re-bind LOOPS on KEEP_VAULT).**
    - **Any KEEP_CODE or SPLIT chosen** (the vault was edited) → suggest `bind-codebase` re-run: the edited claims now match code and re-bind cleanly.
-   - **Only KEEP_VAULT / DEFER chosen** (vault AND code unchanged) → do NOT suggest a re-bind: bind Step 2 re-derives verdicts from the unchanged vault-vs-code contradiction, so a re-bind RE-RAISES the same CONFLICT (by design — bind never consumes a prior resolution as evidence; memory only SUGGESTS). The resolved-marked `binding.md` already passes `validate-handoff-binding-units.sh`, so proceed to `generate-units`. For KEEP_VAULT, `<vault>/bound/` is produced only by a future re-bind AFTER the code change lands (typically via execute-bolts on the units carrying the CONFLICT-N reference).
+   - **Only KEEP_VAULT / DEFER chosen** (vault AND code unchanged) → do NOT suggest a re-bind: bind Step 2 re-derives verdicts from the unchanged vault-vs-code contradiction, so a re-bind RE-RAISES the same CONFLICT (by design — bind never consumes a prior resolution as evidence). The resolved-marked `binding.md` already passes `validate-handoff-binding-units.sh`, so proceed to `generate-units`. For KEEP_VAULT, `<vault>/bound/` is produced only by a future re-bind AFTER the code change lands (typically via execute-bolts on the units carrying the CONFLICT-N reference).
    - Mixed → re-bind (for the vault edits); expect KEEP_VAULT conflicts to re-raise and re-mark them (the binding carries the prior verdicts).
 
 ## Hard rails

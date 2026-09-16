@@ -61,7 +61,7 @@ tools:
 
   - id: ast-grep
     used_by: [scan-codebase, execute-bolts, generate-units, detect-drift]
-    purpose: "scan-codebase tier-2 AST extraction (zero-compilation — the OOM-safe tier) + Hard Rule v2 grammar (5-10x expressivity vs v1)"
+    purpose: "scan-codebase tier-1 AST extraction (zero-compilation — the OOM-safe tier) + Hard Rule v2 grammar (5-10x expressivity vs v1)"
     fallback_behavior: "scan falls to the regex tier (lower precision); v1-authored rules run natively; units already carrying v2 rules HALT dep_missing until installed"
     matrix:
       - os: macos

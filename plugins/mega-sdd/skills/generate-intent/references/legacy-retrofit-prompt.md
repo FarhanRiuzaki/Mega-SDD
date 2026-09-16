@@ -38,7 +38,7 @@ TASK:
    - Assign confidence: HIGH (≥3 indicators), MEDIUM (1-2 indicators), LOW (inferred only)
    - Cite EVIDENCE — specific line numbers + quoted text
    - Propose which existing PRD sections belong to this scope
-4. Propose canonical frontmatter (per `generate-intent/references/scope-picker.md` schema)
+4. Propose canonical frontmatter (per the `proposed_frontmatter` shape below — the PRD `scopes:` frontmatter grammar; vault-side fields live in `generate-intent/references/multi-scope.md`)
 5. Propose section restructure — preserve original content; add scope headers where missing
 
 DISCIPLINE (non-negotiable):

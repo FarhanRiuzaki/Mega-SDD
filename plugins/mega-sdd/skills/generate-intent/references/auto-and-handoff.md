@@ -51,8 +51,8 @@ handoff:
   next_action:
     # CWD-conditional on codebase-map presence — resolve at emission time (mirrors
     # scan-codebase's own handoff, scan-codebase/references/halts-flags-handoff.md
-    # §next_action; grounded in routing-rules.md Decision matrix :53/:55). Under the
-    # scan-first brownfield reorder (routing-rules.md :110/:115) scan-codebase runs
+    # §next_action; grounded in routing-rules.md §Decision matrix). Under the
+    # scan-first brownfield reorder (routing-rules.md §scan-first brownfield reorder) scan-codebase runs
     # BEFORE generate-intent (invoked WITH --scan=<map>), so the codebase-map is
     # ALMOST ALWAYS already present here — bind-codebase is the common brownfield hop;
     # the scan-codebase branch fires only when no map exists on disk yet.
@@ -90,7 +90,7 @@ Per `plugins/mega-sdd/references/paths.md`:
 
 - **Default vault path:** `<project-root>/.mega-sdd/vaults/<slug>/`
 - **Legacy vault path:** `<project-root>/docs/mega-sdd/vaults/<slug>/`
-- **Detection:** probe the `<project-root>/.mega-sdd/` directory + the `config.yaml layout:` field.
+- **Detection:** probe the `<project-root>/.mega-sdd/` directory (the `config.yaml layout:` key has no reader — `paths.md`).
 - **Slug derivation:** from the project name OR PRD title.
 - **Read-side back-compat:** the skill probes both candidate dirs when resuming or diffing an existing vault.
 

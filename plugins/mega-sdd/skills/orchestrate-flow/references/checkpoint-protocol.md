@@ -1,5 +1,7 @@
 # Checkpoint Protocol
 
+> **Status (8.3.0):** declared contract — no skill or script emits per-step checkpoints at HEAD and no skill accepts `--resume-from`; `--resume` is CWD-driven only (SKILL.md Step 9). Kept as the target design.
+
 `orchestrate-flow` writes per-step checkpoint files enabling **mid-skill resume** — not just inter-skill resume but also "bind-codebase crashed at claim 45 of 100 → resume at claim 46".
 
 Inspired by LangGraph's checkpoint-per-node pattern (33k ⭐); implemented as JSONL files (per ITER6-OQ-5).

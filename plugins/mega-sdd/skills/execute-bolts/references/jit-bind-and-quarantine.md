@@ -44,8 +44,7 @@ script; the model's only judgment is the ladder E3 verdict on `text` claims.
    ALWAYS STOP for those units (this is one of the three halts allowed to
    wait for a human, §3.10). Keterangan for the human: *klaim unit bertentangan
    dengan kode — pilih KEEP_VAULT / KEEP_CODE / SPLIT lewat `resolve-oq
-   --binding`, yang menulis balik via `write-unit-binding.sh --resolve
-   <claim-id>=<pilihan> --by=user`; file binding.json ter-guard hook, jangan
+   --binding`, yang menulis balik via `write-unit-binding.sh --resolve=<claim-id>=<pilihan> --by=user`; file binding.json ter-guard hook, jangan
    diedit.* Units without CONFLICT proceed; a CONFLICT unit's dependents are
    skipped with the reason. The PreToolUse gate re-runs this validator with
    `--units=<unit>` on every `bolt-implementer` dispatch — a hand dispatch

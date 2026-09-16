@@ -12,7 +12,7 @@ When `generate-intent` runs with `--scope=<id>` flag OR canonical PRD has `scope
 
 ```json
 {
-  "version": "1.0",
+  "vault_version": "1.0",
   "title": "Order Management System — BE",
   "implementation_mode": "existing",
   "scope": "BE",
@@ -44,7 +44,7 @@ When `generate-intent` runs with `--scope=<id>` flag OR canonical PRD has `scope
 | `scope_metadata.sibling_scopes_in_prd` | Yes | generate-intent | Other scopes from PRD (informational) |
 | `scope_metadata.consumed_locked_contracts` | Yes | generate-intent | From PRD scope's `depends_on_locked_contracts` |
 | `scope_metadata.published_locked_contracts` | Yes | generate-intent | Computed: contracts where this scope is `from` in `cross_scope_dependencies` |
-| `prd_sha256` | Yes | generate-intent | For memory-driven scope default on re-invocation |
+| `prd_sha256` | Yes | generate-intent | For the prior-vault scope default on re-invocation (scope-picker §Detection priority step 3) |
 | `prd_path_at_generation` | Yes | generate-intent | For PRD change tracking via diff-vault |
 
 ### vault.md header structure
@@ -80,14 +80,14 @@ When vault has scope metadata, the `vault.md` header MUST include:
 - ...
 ```
 
-When vault has NO scope metadata (legacy single-scope PRD), 00-index.md header omits scope/sibling/contracts sections entirely.
+When vault has NO scope metadata (legacy single-scope PRD), the `vault.md` header (legacy: 00-index.md) omits scope/sibling/contracts sections entirely.
 
 ### Validation rules (enforced by generate-intent when assembling the authored patch)
 
 - If `scope` field present → `scope_metadata` MUST exist with all required fields
 - `scope_metadata.id` MUST match PRD frontmatter `scopes.<id>` key
 - `sibling_scopes_in_prd` MUST list ALL other scopes from PRD scopes block (not chosen ones)
-- `prd_sha256` MUST be sha256 of PRD content at generation time (used by memory recall) — computed once into the initial `--patch`; later derives carry it forward, and only `diff-vault` re-baselines it via its sources-patch
+- `prd_sha256` MUST be sha256 of PRD content at generation time (used by the prior-vault scope default) — computed once into the initial `--patch`; later derives carry it forward, and only `diff-vault` re-baselines it via its sources-patch
 - When chosen scope == `all` (legacy flag) → patch omits the `scope` field (back-compat)
 
 ### Backward compatibility

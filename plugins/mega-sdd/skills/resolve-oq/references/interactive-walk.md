@@ -19,15 +19,15 @@ Loaded by `resolve-oq` for the standard (non-`--binding`) walk. The SKILL.md bod
 
 1. **Get the vault path** from the user.
    - **Claude Code**: use `AskUserQuestion` with options like `["Use auto-detected '<path>'", "Specify path", "Cancel"]`.
-   - Auto-detect: scan CWD for a directory containing `vault.md` + `model.md` + `flows.md` + `constraints.md` (layout-2) — or the legacy 7-file set (`00-index.md` … `06-constraints.md`). If exactly one such directory exists, suggest it as default.
-   - Fallback: ask plainly — *"Path to the vault directory? (must contain vault.md — or the legacy 00-index.md set)"*
+   - Auto-detect: scan CWD for a directory containing `context.md` (layout-3) — or `vault.md` + `model.md` + `flows.md` + `constraints.md` (layout-2) — or the legacy 7-file set (`00-index.md` … `06-constraints.md`). If exactly one such directory exists, suggest it as default.
+   - Fallback: ask plainly — *"Path to the vault directory? (must contain context.md, vault.md, or the legacy 00-index.md set)"*
 
 2. **Verify integrity**:
-   - Layout-2: the 4 files exist (`vault.md`, `model.md`, `flows.md`, `constraints.md`) and `constraints.md` has `## Open Questions`. Legacy: the 7 files exist and `00-index.md` has the roll-up.
-   - At least one `[ ]` OQ entry exists across the 6 numbered docs.
+   - Layout-3: `context.md` exists and has `## Open Questions`. Layout-2: the 4 files exist (`vault.md`, `model.md`, `flows.md`, `constraints.md`) and `constraints.md` has `## Open Questions`. Legacy: the 7 files exist and `00-index.md` has the roll-up.
+   - At least one `[ ]` OQ entry exists in the authored OQ surface.
    - If any check fails → STOP, surface the issue. Suggest the user run `generate-intent` first if the vault is malformed/missing.
 
-3. **Lock check**: layout-2 — the vault.md frontmatter `lock_status:`/lock scalars; legacy — the `00-index.md` Vault Lock Status section `Status:` line.
+3. **Lock check**: layout-3/2 — the frontmatter lock scalars (`locked_at` / `locked_by`; a vault is LOCKED when `locked_at` is set); legacy — the `00-index.md` Vault Lock Status section `Status:` line.
    - If `Status: 🔒 LOCKED` → ask via `AskUserQuestion`: *"This vault is LOCKED for `<scope>`. Resolving OQs will edit it and require re-sign-off after. Proceed?"* → options `["Unlock and proceed (re-sign-off needed after)", "Cancel"]`.
    - If user cancels → STOP. If proceeds → record in the resolution-round Changelog entry that the vault was unlocked for this round. User is responsible for re-locking after the round: edit the lock home (vault.md frontmatter; legacy: 00-index.md Vault Lock Status) — change `Status: ⚠️ DRAFT (unlocked for resolve-oq round)` back to `Status: 🔒 LOCKED for <scope>`, refresh `Locked at` / `Locked by`, append a Changelog entry confirming the relock.
    - If `Status: ⚠️ DRAFT` → no lock; continue normally.
@@ -63,8 +63,8 @@ Persist: `RESOLUTION_SCOPE=<choice>`. Echo back so the user sees the plan.
 
 ## Step 1 — Parse OQ list
 
-1. Read all vault docs (layout-2 4-file set, or the legacy 7 files).
-2. For each numbered doc (01–06), extract entries from its `## Open Questions` section that are still `[ ]` (open) — skip `[x]` (resolved) and `[~]` (out of scope).
+1. Read the authored OQ surface (layout-3: `context.md ## Open Questions`; layout-2: `constraints.md ## Open Questions`; legacy: the 7 files' per-doc sections + roll-up).
+2. Extract entries that are still `[ ]` (open) — skip `[x]` (resolved) and `[~]` (out of scope).
 3. For each OQ, capture:
    - Tag (`OQ-{CODE}-{N}`)
    - Priority (`P1 | P2 | P3`)
@@ -210,10 +210,10 @@ question: |
   jadi memilih = sekaligus mengonfirmasi tujuan. Ringkasan diff tetap ditampilkan setelahnya.
   • Mau jawab sendiri (termasuk mengambil salah satu alternatif di atas)? pilih "Other", ketik
     jawabanmu; tambahkan "→ <file>.md" di akhir kalau mau memaksa dokumen tujuan lain — nama
-    filenya HARUS salah satu dokumen vault (layout-2: `vault.md`/`model.md`/`flows.md`/`constraints.md`; legacy: `00-index.md` … `06-constraints.md`), di luar
+    filenya HARUS salah satu dokumen vault (layout-3: `context.md`; layout-2: `vault.md`/`model.md`/`flows.md`/`constraints.md`; legacy: `00-index.md` … `06-constraints.md`), di luar
     itu override-nya ditolak dan kamu diberi tahu.
   • Cuma mau memindahkan tujuan tanpa mengubah jawaban? ketik "→ <file>.md" saja di "Other" (juga
-    harus salah satu dari 7 dokumen vault): itu berarti "terima rekomendasi, tapi taruh di file itu".
+    harus salah satu dokumen vault layout ini): itu berarti "terima rekomendasi, tapi taruh di file itu".
   • Skip (opsi [2]) = lewati OQ INI SAJA lalu walk LANJUT ke OQ berikutnya — tidak ada perubahan file, OQ tetap `[ ]` open dan muncul lagi di pass berikutnya.
   • Tekan Esc = AKHIRI SELURUH walk sekarang, OQ ini tidak disentuh — progres yang sudah ter-derive aman, skill lompat ke Step 3 (bump versi + Changelog) lalu keluar.
 header: "{OQ tag}"          # short — e.g. "OQ-DC-4"
@@ -261,7 +261,7 @@ options:
 
 #### When there is NO recommendation
 
-`recommendation-context.md` may yield nothing — no KB/memory/vault/codebase signal, or the citation
+`recommendation-context.md` may yield nothing — no KB/vault/codebase signal, or the citation
 probe failed and it downgraded silently. **The prompt is still ONE round trip**, and it must NOT
 present an unsourced guess as a recommendation. Slot `[1]` is simply not spent, and the answer rides
 "Other". Same language precedence as the full shape — the strings below are the default rendering.
@@ -270,7 +270,7 @@ present an unsourced guess as a recommendation. Slot `[1]` is simply not spent, 
 [{i}/{N}]  {OQ tag}  [{priority}]  [{category}]
   Doc      : {origin doc} → {section}
   Pertanyaan: "{full OQ question text, verbatim}"
-  Sumber   : (tidak ada — tidak ada sinyal KB / memory / vault / codebase yang bisa dikutip)
+  Sumber   : (tidak ada — tidak ada sinyal KB / vault / codebase yang bisa dikutip)
 
 question: |
   {the OQ question text again, verbatim}
@@ -279,7 +279,7 @@ question: |
   sumber dilarang. **Tulis jawabanmu langsung di "Other"** — jawabannya akan mendarat
   {inline di entri OQ | sebagai {ADR baru di vault.md ## Decisions | …}} sesuai prefix `{CODE}-`;
   tambahkan "→ <file>.md" di akhir kalau mau dokumen tujuan lain — nama filenya HARUS salah satu
-  dari dokumen vault (layout-2 4 file / legacy 7 file), di luar itu override-nya ditolak.
+  dari dokumen vault (layout-3: `context.md`; layout-2: 4 file; legacy: 7 file), di luar itu override-nya ditolak.
   Karena belum ada rekomendasi, menulis "→ <file>.md" SAJA tanpa jawaban tidak mengubah apa pun —
   OQ tetap `[ ]` open.
   • Skip (opsi [1]) = lewati OQ INI SAJA lalu walk LANJUT ke OQ berikutnya — tidak ada perubahan file, OQ tetap `[ ]` open.
@@ -316,7 +316,7 @@ permitted at any branch:
 1. **Destination override FIRST.** Strip a trailing `→ <file>.md` (or `-> <file>.md`), then
    **VALIDATE the stripped target BEFORE any write.** The comparison is exact: take the value's
    basename and compare it, character for character, against the vault's document filenames
-   — layout-2: `vault.md`, `model.md`, `flows.md`, `constraints.md`; legacy: `00-index.md` …
+   — layout-3: `context.md`; layout-2: `vault.md`, `model.md`, `flows.md`, `constraints.md`; legacy: `00-index.md` …
    `06-constraints.md`. Nothing else is a legal destination (no directory, no
    path outside `VAULT_DIR`, no invented filename, no near-miss spelling). The collapse removed the
    pre-write "confirm/override the destination?" prompt, so this check — not the post-write
@@ -326,12 +326,12 @@ permitted at any branch:
      corrected there).
    - **Miss** → the fragment is NOT an override, and it is DROPPED from the answer text (it was
      plainly a destination attempt, not content). Narrate the rejection, naming the legal set:
-     *"`→ {X}` bukan salah satu dokumen vault (layout-2 4 file / legacy 7 file) —
+     *"`→ {X}` bukan salah satu dokumen vault (layout-3: `context.md`; layout-2: 4 file; legacy: 7 file) —
      override tujuan diabaikan."* Then continue deterministically, with **no re-prompt**: a
      non-empty remainder still resolves the OQ, landing at the AUTO-CLASSIFIED target (narrate
      which file it landed in); a BARE invalid override resolves nothing — no markdown change, the
      OQ stays `[ ]` open, counted as skipped, because the user's stated intent was to redirect and
-     that intent cannot be honored. **Never land an answer in a file outside the seven.**
+     that intent cannot be honored. **Never land an answer in a file outside the vault's document set.**
 2. **Non-empty remainder is the answer.** Action `A` (Answer) with that text, landing at the
    override from (1) when one was present, otherwise at the auto-classified target.
 3. **Empty remainder after a bare override → accept the RECOMMENDED answer, land it at the
@@ -366,7 +366,7 @@ file holding the JSON shown; passing inline JSON exits 3):
 | `[4]` | C — Out of scope | `[~]` + `→ Out of Scope v{X.Y}: …` → `out_of_scope` | `--event '{"event":"oq-out-of-scope","id":"OQ-XXX","at":"<iso>","action":"C"}'` |
 | `[2]` (or an empty Other) | D — Skip | no markdown change; OQ remains `open` | no derive run; **walk continues** to the next OQ |
 | *Esc* | — end the walk | no markdown change for THIS OQ; it remains `open` | no derive run; jump to Step 3 |
-| bare override that cannot be honored (no recommendation to accept, **or** a target outside the vault's 7 documents) | — no-op | no markdown change; OQ remains `open` | no derive run; narrate, count as skipped |
+| bare override that cannot be honored (no recommendation to accept, **or** a target outside the vault's document set) | — no-op | no markdown change; OQ remains `open` | no derive run; narrate, count as skipped |
 
 **The letters `A` / `B` / `C` in `"action"` are the recorded contract — they are NOT the slot
 numbers.** A prompt renumbered to `[1]`–`[4]` still emits `"action":"A"|"B"|"C"`; never
@@ -639,7 +639,7 @@ Resolved {R} OQs via `resolve-oq` session.
 - [ ] Every Out of Scope OQ marked `[~]` and physically present in the target doc's `## Out of Scope` section.
 - [ ] Every Deferred OQ still `[ ]` but with a `**Deferred (v{X.Y})**:` annotation.
 - [ ] No OQ silently dropped: every queue item **that was presented** ended in resolve / OOS / defer / skip. On an Esc-terminated round the queue items after the Esc point were never presented — they are `unreached`, not dropped, and are reported as such in Step 5. Do NOT fail this check on them, and do NOT invent an outcome for them.
-- [ ] Vault version bumped in Vault Lock Status section.
+- [ ] Vault version bumped in the lock home (frontmatter `vault_version:`; legacy: Vault Lock Status section).
 - [ ] Changelog entry written with accurate counts.
 - [ ] `Last updated` date updated.
 - [ ] If any resolution was `Promoted`, the target doc has the new entry (e.g., new ADR `D-XXX` exists in `vault.md ## Decisions`) — verify via grep that the cross-reference resolves.

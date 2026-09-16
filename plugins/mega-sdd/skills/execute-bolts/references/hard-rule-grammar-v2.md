@@ -21,7 +21,7 @@ Replaces the bespoke 5-type v1 grammar. Each Hard Rule in a unit's `## Hard rule
 - v1 was 5 fixed types; v2 is expressive within ast-grep's pattern grammar
 - v2 ships with fix templates (rule can suggest auto-fix)
 - v2 single Rust binary (single install for users)
-- v2 covers 100+ languages via tree-sitter grammars (shared with Swap #1)
+- v2 covers 100+ languages via tree-sitter grammars
 
 ## Detection
 
@@ -148,7 +148,7 @@ Same as grammar v1 — `hard_rule_violated` blocker; detect-after (the bolt comm
 
 ## Migration command (per ITER6-OQ-2 resolved explicit)
 
-`migrate-rules --vault=<path>` walks the vault's units and offers to migrate v1 → v2:
+`migrate-rules <vault-path>` (invoked by phrase via the front door; flags per `migrate-rules.md`) walks the vault's units and offers to migrate v1 → v2:
 
 ```
 Walking ./vault/units/...

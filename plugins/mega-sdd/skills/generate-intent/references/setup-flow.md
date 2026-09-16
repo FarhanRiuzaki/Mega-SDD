@@ -10,6 +10,7 @@
 - Step 0.8 — Scan-aware context loading
 - Step 0.9 — Scope detection + PRD filtering
 - Multi-squad artifact emission
+- Step 3.4 — Write constitution.md
 - Scope-detection halt conditions
 
 > **Runtime ordering note:** the `0.x` numbering reserves slots for pre-Step-1 metadata, but **Step 0.8 (scan-aware loading) executes at RUNTIME BEFORE Step 0.9 (scope detection)** — the scope picker's smart default needs the scan-codebase result. Sequence: Step 0 → 0.5 → 0.6 → 0.7 → squad partition → **0.8** → **0.9** → Step 1.
@@ -73,7 +74,7 @@ The vault is a **lock against requirements** (PRD/BRD), not against an existing 
 
 3. **Do NOT ask** for codebase path, repo URL, or existing entity names — that is the downstream consumer's job. This skill stays focused on requirement → vault.
 
-4. **Migration trigger** (mode=new only): a `mode=new` vault should plan its transition to `existing` because the moment real code lands it risks drifting. Capture in Vault Lock Status field `mode_migrate_after`. Defaults: `"first commit on main"` (flips once non-trivial implementation lands) / `"first prod deploy"` (after the system is observable) / `"sprint-1 demo"` (at first stakeholder review). When the trigger fires the user manually flips the flag (edit the vault.md frontmatter + Changelog + bump version) OR runs `diff-vault` with `mode=existing`. After the flip, `detect-drift` becomes applicable. For `mode=existing`, set `mode_migrate_after = null`.
+4. **Migration trigger** (mode=new only): a `mode=new` vault should plan its transition to `existing` because the moment real code lands it risks drifting. Capture as the vault.md frontmatter key `mode_migration_trigger:` (mirrored to vault.json `mode_migrate_after`). Defaults: `"first commit on main"` (flips once non-trivial implementation lands) / `"first prod deploy"` (after the system is observable) / `"sprint-1 demo"` (at first stakeholder review). When the trigger fires the user manually flips the flag (edit the vault.md frontmatter + Changelog + bump version) OR runs `diff-vault` with `mode=existing`. After the flip, `detect-drift` becomes applicable. For `mode=existing`, set `mode_migration_trigger: null` (vault.json `mode_migrate_after: null`).
 
 > Never proceed to Step 0.6 without a confirmed `IMPLEMENTATION_MODE`.
 
@@ -87,7 +88,7 @@ Controls whether the skill pauses for clarification or generates straight throug
 
 2. **Persist:** echo `PRD_STATUS=final | draft`. Recorded in the vault.md frontmatter lock; drives Step 2 gap-handling + push-back.
 
-3. **Implications when `PRD_STATUS=final`:** MUST NOT ask "Proceed or clarify first?" when gaps are high — proceed, dump everything to OQs. MUST NOT refuse to generate due to PRD inconsistencies — surface contradictions in OQs with both quotes side-by-side. MUST still refuse "just guess the rest" — `final` means the PRD is locked, NOT that Claude may invent; gaps stay OQs. Vault Lock Status reflects: `PRD source: <filename> (FINAL, signed-off)`.
+3. **Implications when `PRD_STATUS=final`:** MUST NOT ask "Proceed or clarify first?" when gaps are high — proceed, dump everything to OQs. MUST NOT refuse to generate due to PRD inconsistencies — surface contradictions in OQs with both quotes side-by-side. MUST still refuse "just guess the rest" — `final` means the PRD is locked, NOT that Claude may invent; gaps stay OQs. The vault.md frontmatter reflects it: `prd_source: "<filename> — FINAL, signed-off"`.
 
 > Never proceed to Step 0.7 without a confirmed `PRD_STATUS`.
 
@@ -137,7 +138,7 @@ Validate per the squad-partition rules ref (routed from the SKILL router). If va
 Vault generation produces fewer fabricated entities + tighter OQ classification when codebase context is available at gen-time. Probe for existing scan artifacts BEFORE Step 1 (vault structure read) and BEFORE Step 2 (extraction):
 
 1. **Probe codebase-map.md:** `<project>/.mega-sdd/codebase/codebase-map.md` (canonical) AND `<project>/codebase-map.md` (legacy).
-3. **Probe knowledge-base:** `<project>/.mega-sdd/knowledge-base/README.md` (canonical) AND `<project>/docs/knowledge-base/README.md` (legacy).
+2. **Probe knowledge-base:** the same 5-rung probe as derive-state — config `knowledge_base:` first, then the 4 README generations (`kb-submode.md §KB auto-detection`).
 
 **Detection outcomes:**
 
@@ -155,7 +156,7 @@ Vault generation produces fewer fabricated entities + tighter OQ classification 
 | Step | Usage |
 |---|---|
 | Step 2 (PRD/brief extraction) | Cross-reference PRD-mentioned entities against the codebase entity list; mark existing entities with `[CODEBASE: exists]` annotation in the vault body |
-| Step 3 (write the 4 files) | Conventions section in `constraints.md` auto-populated from `conventions.md` memory; tech stack pre-filled (see the generation guide via the SKILL router) |
+| Step 3 (write the 4 files) | Conventions section in `constraints.md` pre-filled from the codebase-map `§5 Naming conventions` (classic) or the framework pack `## Code style` (express); tech stack pre-filled (see the generation guide via the SKILL router) |
 | Step 3.5 (OQ auto-classifier) | OQs matching codebase signals (test framework, naming, file location, error format) auto-resolved as `tech/scan` with `status: resolved` + citation; NOT surfaced as open. **Map-less (express default): the SAME resolution runs from manifest/index/file probes** — `scan_query` names the probe target (e.g. `manifest phpunit.xml`, `symbol-index LeaveRequest`), citations are real `file:line`. This matters beyond quality: an unresolved P1 tech/scan OQ trips the `oq_gate` position and inserts an interactive resolve-oq ahead of bind — the classifier resolving from probes is what keeps the express path non-stop. |
 | Step 4 (self-check) | Validate entity claims don't fabricate new entities for already-existing codebase entities |
 
@@ -163,7 +164,7 @@ Vault generation produces fewer fabricated entities + tighter OQ classification 
 
 ## Step 0.9 — Scope detection + PRD filtering
 
-Driven by the scope-picker ref (filter logic + memory write rules; routed from the SKILL router). Runs AFTER all Step 0.x metadata config (PRD_STATUS, OUTPUT_MODE, squad partition, scan-aware) and BEFORE Step 1 Load PRD — scope choice filters which PRD content gets loaded. `--scope=<id>` and `--greenfield` interact as documented in the `generate-intent` skill (Mode/flag detection) + `scope-picker.md`.
+Driven by the scope-picker ref (filter logic + prior-vault default rules; routed from the SKILL router). Runs AFTER all Step 0.x metadata config (PRD_STATUS, OUTPUT_MODE, squad partition, scan-aware) and BEFORE Step 1 Load PRD — scope choice filters which PRD content gets loaded. `--scope=<id>` and `--greenfield` interact as documented in the `generate-intent` skill (Mode/flag detection) + `scope-picker.md`.
 
 a. **Read PRD frontmatter.** `scopes:` block present → step b; absent → step c.
 
@@ -173,7 +174,7 @@ b. **Canonical scope handling:**
      - `--scope=<id>` set → validate against declared scopes; **halt `scope_not_declared_in_prd`** if invalid (surface the PRD-declared scope list + cancel).
      - Else → `AskUserQuestion` with a lead line ("Memilih satu scope memfilter PRD ke bagian scope itu; scope lain bisa digenerate sebagai vault terpisah nanti."): one option per declared scope rendered as `<id> — <name/1-line summary from the PRD scopes: block>` (smart-default flagged per cwd heuristic) + "All scopes — satu vault gabungan (legacy; tidak ada filter per scope)" + "Cancel".
      - If the user chose `--scope=all` (legacy) → emit a warning, proceed with all content.
-   - After scope chosen: filter PRD content per the scope-picker §Filter logic + persist the choice per its §Memory write rules (scope-picker ref, routed from the SKILL router); tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` per `generate-intent/references/multi-scope.md`; render sibling-scope informational notes in `vault.md`.
+   - After scope chosen: filter PRD content per the scope-picker §Filter logic + persist the choice in `vault.json` (`scope` + `prd_sha256`, scope-picker §Detection priority step 6); tag `vault.json` with `scope` / `scope_metadata` / `prd_sha256` per `generate-intent/references/multi-scope.md`; render sibling-scope informational notes in `vault.md`.
 
 c. **Legacy PRD retrofit bridge:**
    - **Under `--auto` / the express chain (W1, v8 P1.e — spec 2026-09-10 App. F6b): do NOT ask.** Treat the PRD as single-scope, record `scope_inferred: single` in the vault.json patch, and add ONE delivery-report line offering the retrofit lane (`generate-intent --scope` after a manual `scopes:` block). The prompt below is the INTERACTIVE path only.
@@ -182,14 +183,14 @@ c. **Legacy PRD retrofit bridge:**
 
 ## Multi-squad artifact emission
 
-After the 7 prose docs + `vault.json`, if `multi_squad_mode: true`:
+After the 4 vault docs + `vault.json`, if `multi_squad_mode: true`:
 
 1. **Emit `_meta/squads.yaml`** from `templates/squads.yaml.template`, substituting `{{PROJECT_SHAPE}}`, `{{PARTITION_MODEL}}`, and per-squad `{{SQUAD_ID_N}}`, `{{SQUAD_LABEL_N}}`, ownership lists.
 2. **Emit `interfaces/_index.md`** from `templates/interfaces-index.template.md`, substituting `{{VAULT_VERSION}}` and `{{PROJECT_SLUG}}`. Do NOT emit any `interfaces/<id>.md` files — those are authored manually by the architect when cross-squad contracts emerge.
 3. **Emit `.obsidian/graph.json`** from `templates/obsidian-graph.json.template`, then ADD per-squad `colorGroups` entries — one per declared squad with a distinct color in order:
-   - `squad-be` → `{ "a": 1, "rgb": 3911867 }` (blue: #3b82f6)
-   - `squad-fe-web` → `{ "a": 1, "rgb": 11048700 }` (purple: #a855f7)
-   - `squad-integrations` → `{ "a": 1, "rgb": 16330027 }` (orange: #f97316)
+   - `squad-be` → `{ "a": 1, "rgb": 3900150 }` (blue: #3b82f6)
+   - `squad-fe-web` → `{ "a": 1, "rgb": 11032055 }` (purple: #a855f7)
+   - `squad-integrations` → `{ "a": 1, "rgb": 16347926 }` (orange: #f97316)
    - additional squads → cycle through the standard Obsidian palette.
 4. **Single-squad mode:** skip steps 1–3.
 
@@ -197,7 +198,7 @@ After emission, suggest the next step with the squad count: "Generated vault for
 
 ## Step 3.4 — Write constitution.md
 
-Per `generate-intent/references/vault-core.md §constitution`. Write the 8th vault file with project-facing rules unless `--no-constitution` is set.
+Per `generate-intent/references/vault-core.md §constitution`. Write `constitution.md` with project-facing rules unless `--no-constitution` is set.
 
 1. **Extract from PRD/KB:** coding standards (PRD tech-stack + KB conventions); security baselines (PRD non-functional + KB business rules); architecture invariants (PRD architecture + KB design-decisions); anti-patterns (KB critical findings); performance constraints (PRD non-functional + KB perf hints); compliance (PRD constraints + regulatory KB sections).
 2. **Write `<vault>/constitution.md`** with 6 sections §A–§F (Coding standards / Security baselines / Architecture invariants / Anti-patterns / Performance constraints / Compliance).

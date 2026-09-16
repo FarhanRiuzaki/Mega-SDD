@@ -11,7 +11,7 @@ Reference for `generate-intent` Step 0.9 scope detection + filtering. Companion 
 - --scope flag semantics
 - Filter logic
 - Sibling scope informational
-- Memory hit UX
+- Prior-vault hit UX
 - Anti-halu rails
 - Edge cases handled
 
@@ -121,12 +121,11 @@ When an existing vault carries the same PRD sha256 + a scope:
   Existing vault scope: <scope> (vault.json)
 
 ❓ Same scope this run?
-   [Enter] <scope> (default after 5s; confirm-once)
+   [Enter] <scope> (recommended — confirm-once)
    [2/3/4] Different scope
    [5] Cancel
 ```
 
-Confirm-once timeout default: 5 seconds. Configurable via `--scope-confirm-timeout=N` (rarely needed).
 
 When `--auto` flag set AND a prior-vault hit → silent default; do not prompt at all.
 

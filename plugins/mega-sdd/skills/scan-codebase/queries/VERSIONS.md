@@ -41,7 +41,7 @@ cargo install ast-grep           # Cross-platform
 npm install -g @ast-grep/cli     # Cross-platform alternative
 ```
 
-Kind names in the packs are grammar-version-sensitive the same way `.scm` queries are; if a
+Kind names in the packs are grammar-version-sensitive; if a
 pack stops matching after an ast-grep upgrade, report it like a grammar-drift issue below.
 
 ## Coverage gaps
@@ -56,7 +56,7 @@ These inputs fall back to regex extraction regardless of grammar/rule-pack avail
 ## Reporting issues
 
 If your project hits grammar drift (parses fail for valid code), report:
-1. Language + tree-sitter grammar version
+1. Language + ast-grep version (`ast-grep --version`)
 2. Sample failing snippet
 3. Plugin version (from `plugin.json`)
 

@@ -19,7 +19,7 @@ Flags: `[vault-path] [--module=<id>] [--squad=<id>] [--changed-only] [--strict] 
 
 ### Step 1 — Resolve vault + load context
 
-Probe canonical (`.mega-sdd/vaults/*/`) then legacy (`docs/mega-sdd/vaults/*/`); use the positional arg if given; halt if no vault found. Load, for the cross-unit checks below: `vault.json`, every `units/U-*.md`, `binding.md` (if present), `_meta/modules.yaml`, `_meta/squads.yaml`, the codebase map (probe both new + legacy paths), and `.memory/bolt-outcomes.json` (for context).
+Probe canonical (`.mega-sdd/vaults/*/`) then legacy (`docs/mega-sdd/vaults/*/`); use the positional arg if given; halt if no vault found. Load, for the cross-unit checks below: `vault.json`, every `units/U-*.md`, `binding.md` (classic lane; lite = `bolts/U-*/binding.json`) (if present), `_meta/modules.yaml`, `_meta/squads.yaml`, the codebase map (probe both new + legacy paths), and `.memory/bolt-outcomes.json` (for context).
 
 ### Step 1b — `--changed-only` scope-set (semantic scoping, spec 2026-08-03-semantic-scoped-validation.md)
 
@@ -43,7 +43,7 @@ For each unit file, run the hook-wired validator and fold its verdict into the r
 bash <plugin-root>/scripts/validate-unit-spec.sh --cwd="$(pwd)" --file-path="<unit-file>"
 ```
 
-It returns a JSON report (and writes `.mega-sdd/.unit-spec-state.json`), exit `0`=PASS / `1`=FAIL / `2`=error. It is the **single source of truth** for these checks (so lint-units and the PostToolUse hook never drift):
+It returns a JSON report (and writes `.mega-sdd/.unit-spec-state.json`), exit `0`=PASS / `1`=FAIL / `2`=error. It is the **single source of truth** for these checks (so lint-units and the execute-bolts PreToolUse gate, which re-derives it, never drift):
 
 - required frontmatter (`id`/`unit_id`, `title`, `task_type`, `target_files`, `vault_source`/`vault_anchors`) — `unit_underspecified`;
 - `## Anchors` present for `verify`/`extend`; `## Migration notes` present for `extend`;
@@ -53,7 +53,7 @@ It returns a JSON report (and writes `.mega-sdd/.unit-spec-state.json`), exit `0
 
 Surface any FAIL with the validator's evidence string. Under `--strict`, a FAIL is a halt-equivalent exit.
 
-> **Legacy-layout limitation (be honest about it).** The validator only matches canonical `.mega-sdd/vaults/*/units/` and `*-bound/units/` paths — same scope as the PostToolUse hook it shares. On a **legacy** `docs/mega-sdd/vaults/*/units/` vault it no-ops (exit 0), so this Step 2 per-unit integrity sweep is **skipped** there (the Step 3 cross-unit checks below still run, since lint-units performs those itself). If a legacy vault is detected, say so and suggest `/mega-sdd:migrate-paths` to move it to the canonical layout for full per-unit coverage — never report a legacy vault as "0 integrity issues" when the checks did not run.
+> **Legacy-layout limitation (be honest about it).** The validator only matches canonical `.mega-sdd/vaults/*/units/` and `*-bound/units/` paths — same scope as the execute-bolts PreToolUse gate that re-derives it. On a **legacy** `docs/mega-sdd/vaults/*/units/` vault it no-ops (exit 0), so this Step 2 per-unit integrity sweep is **skipped** there (the Step 3 cross-unit checks below still run, since lint-units performs those itself). If a legacy vault is detected, say so and suggest `/mega-sdd:migrate-paths` to move it to the canonical layout for full per-unit coverage — never report a legacy vault as "0 integrity issues" when the checks did not run.
 
 ### Step 3 — Cross-unit + grounding checks (lint-units' own value-add)
 
@@ -95,7 +95,7 @@ This relies on markdownlint-cli2's own config discovery (`.markdownlint-cli2.{js
 ### lint-units rails + halts
 
 - Lint is READ-ONLY — never modifies vault, units, binding, or memory.
-- The unit-spec integrity verdicts come from `validate-unit-spec.sh` (the same validator the PostToolUse hook runs) — lint-units does not reimplement them, so the two can never disagree.
+- The unit-spec integrity verdicts come from `validate-unit-spec.sh` (the same validator the execute-bolts PreToolUse gate re-derives) — lint-units does not reimplement them, so the two can never disagree.
 - The cross-unit checks are DETERMINISTIC (field presence, ID resolution, file/line probe) — recommendations cite the specific unit + the specific check that failed, never a vague suggestion.
 - Halts: vault not found / `vault.json` corrupt → halt with a helpful error; `--strict` + any validator FAIL or SOFT warning → halt-equivalent exit (CI integration).
 

@@ -63,8 +63,8 @@ Build an internal diff model. For each axis, classify items into the diff outcom
 
 For each approved change, use `Edit` (preferred) or `Write` (when restructuring large sections) to update the vault file:
 
-1. **Auto-resolved OQs** → mark `[x]` in OQ section + roll-up; insert resolution pointer to new PRD §X.Y.
-2. **New OQs** → append `[ ] **OQ-{CODE}-{N+1}**` entries to the relevant doc's Open Questions section + roll-up.
+1. **Auto-resolved OQs** → mark `[x]` on the OQ line (constraints.md / context.md; legacy: + the 00-index roll-up); insert resolution pointer to new PRD §X.Y.
+2. **New OQs** → append `[ ] **OQ-{CODE}-{N+1}** … [origin: <file>#<anchor>]` entries to the authored OQ surface (constraints.md / context.md; legacy: the relevant doc + roll-up).
 3. **Added entities / flows / decisions** → append to the relevant doc per existing convention. Use the same `OUTPUT_MODE` (compact / full) as the existing vault.
 4. **Changed** → in-place update; preserve IDs. Add `> **Changed in v{X.Y}**: <1-line summary>` banner above the changed block.
 5. **Removed** → annotate banner; do NOT delete content.
@@ -110,9 +110,9 @@ Vault diff applied from <new source filename + version>.
 ```
 
 3. **Update `Last updated`** date.
-4. **Update PRD source reference** in Vault Lock Status:
-   - From: `**PRD source**: <old filename, version, date> — <FINAL | DRAFT>`
-   - To: `**PRD source**: <new filename, version, date> — <FINAL | DRAFT>` (prior version moved into Changelog history).
+4. **Update PRD source reference** in the lock home — frontmatter `prd_source:` (legacy: the `**PRD source**:` bullet in Vault Lock Status):
+   - From: `<old filename, version, date> — <FINAL | DRAFT>`
+   - To: `<new filename, version, date> — <FINAL | DRAFT>` (prior version moved into Changelog history).
 
 ## From-prompt delta lane (`--from-prompt "<brief>"`)
 
@@ -136,7 +136,7 @@ The delta lane's entry (spec `2026-08-11-free-text-delta-lane.md`): a ticket-sca
 
 **Version bump.** A from-prompt apply is a Small bump by construction of the cap (the scope-bump tiebreak thresholds are unreachable under it); the bump grammar owner above is unchanged.
 
-**Scope derivation (Step 7.5).** After Step 7, **Run** `bash <plugin>/scripts/derive-delta-paths.sh --vault=<VAULT_DIR>` — touched VAULT-DIFF docs → affected claims' anchor paths → `<VAULT_DIR>/.delta-changed-paths.txt`. Exit 3 = unbound vault (no `binding.json`) → the router proposes the normal chain; exit 2 = FAIL-CLOSED → the router proposes a FULL re-bind (the script never converts uncertainty into a scoped bind). The downstream hop is the EXISTING claim-scoped machinery: `bind-codebase --paths=@<VAULT_DIR>/.delta-changed-paths.txt` (+ the vault-section leg of `binding-contract.md §Claim-scoped re-bind`, which reads VAULT-DIFF.md) → `generate-units --reconcile` → stale/new bolts.
+**Scope derivation (Step 7.5).** After Step 7, **Run** `bash <plugin>/scripts/derive-delta-paths.sh --vault=<VAULT_DIR>` — touched VAULT-DIFF docs → affected claims' anchor paths → `<VAULT_DIR>/.delta-changed-paths.txt`. Exit 3 = unbound vault (no `binding.json` and no per-unit `bolts/U-*/binding.json`) → the router proposes the normal chain; exit 2 = FAIL-CLOSED → the router proposes a FULL re-bind (the script never converts uncertainty into a scoped bind). The downstream hop is the EXISTING claim-scoped machinery: `bind-codebase --paths=@<VAULT_DIR>/.delta-changed-paths.txt` (+ the vault-section leg of `binding-contract.md §Claim-scoped re-bind`, which reads VAULT-DIFF.md) → `generate-units --reconcile` → stale/new bolts.
 
 ## Halt — `delta_too_large`
 

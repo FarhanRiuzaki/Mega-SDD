@@ -3,7 +3,7 @@ description: Emit one of the four team documents — /mega-sdd:emit <prd|fsd|sit
 argument-hint: "<prd|fsd|sit|uat|html|summary> [vault-path|md-path] [--no-pdf] [--auto] [doc-specific flags]"
 ---
 
-The single emission verb of the 5.0.0 surface. **Dispatch is via the Skill tool — never the Agent tool** (the doc-pack gates key on Skill calls).
+The single emission verb. **Dispatch is via the Skill tool — never the Agent tool** (the doc-pack gates key on Skill calls).
 
 User arguments: $ARGUMENTS
 
@@ -24,7 +24,7 @@ Strip the first positional (`prd|fsd|sit|uat`) and pass EVERY remaining argument
 
 **Lane `summary` — ringkasan eksekutif ber-sitasi (7.19.0, AI di lapisan MD, BUKAN di render).** Target = vault atau KB dir (argumen kedua; absen → pakai vault/KB satu-satunya, lebih dari satu → tanya dengan keterangan). Prosedur:
 
-1. **Baca sumber angka yang NYATA**: `census.json` (file/baris/module), `vault.json` (claims, OQ, changelog), `binding.md` (CONFIRMED/CONFLICT), `units/_index.md`, `bolts/_summary.md` + `_batch-suite.json`, KB README. Yang tidak ada → bagian itu tulis jujur "belum ada datanya (fase belum jalan)" — angka TIDAK PERNAH dikarang, setiap angka dan klaim menyebut artefak sumbernya.
+1. **Baca sumber angka yang NYATA**: `census.json` (file/baris/module), `vault.json` (claims, OQ, changelog), `binding.md` (classic) / `bolts/U-*/binding.json` (lite) (CONFIRMED/CONFLICT), `units/_index.md`, `bolts/_summary.md` + `_batch-suite.json`, KB README. Yang tidak ada → bagian itu tulis jujur "belum ada datanya (fase belum jalan)" — angka TIDAK PERNAH dikarang, setiap angka dan klaim menyebut artefak sumbernya.
 2. **Tulis `<target>/summary/SUMMARY.md`** pola DD9000 (referensi selera di research/2026-08-31-render-html-standard.md §7): §00 strip angka utama → §flow pipeline (Mermaid, label edge dua sisi: atas aksi, bawah bukti) → §peta modul → §temuan → §status JUJUR (baris "menunggu"/"butuh keputusan bisnis" ikut tampil). Tiap section ditutup SATU kalimat takeaway tebal. Bahasa = §Register natural; Tier-1 verbatim; doc-control stamp seperti emisi lain.
 3. **Render**: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-html.sh" <target>/summary/SUMMARY.md` — sebut path html-nya di penutup.
 

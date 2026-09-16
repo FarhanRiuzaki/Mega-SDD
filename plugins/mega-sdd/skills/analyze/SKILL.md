@@ -64,7 +64,7 @@ Consistency check FAILED:
 Resolution:
 - binding_units_handoff FAIL → re-run generate-units with binding OQ-IDs
 - unit_spec FAIL → fix unit frontmatter per validate-unit-spec.sh findings
-- vault_binding_coverage FAIL → re-run bind-codebase
+- plan_coverage FAIL → re-run generate-units (classic) / plan --regenerate (lite) — PRD heading without a unit
 - vault_oqs FAIL → fix OQ structure in vault docs
 - FAIL traceable to a low-precision (regex-tier) scan or another missing optional native dep upstream → run `/mega-sdd:install-deps` then re-run the upstream skill (scan-codebase / generate-units / etc.)
 <etc.>
@@ -124,6 +124,6 @@ Beyond the core set, the report surfaces every code-delivery gate's last status 
 ## Scope constraints
 
 - **Report-only**: NEVER modifies source artifacts. Only writes `.analyze-state.json` and `CONSISTENCY-REPORT.md`.
-- **Manual [VERIFY-STEP]**: NOT auto-triggered by hooks. User or orchestrator invokes explicitly.
+- **Manual re-run**: the validator RE-RUN is never hook-triggered — the Stop-hook auto surface is the cheap aggregate only (§Two modes); user or orchestrator invokes the re-run explicitly.
 - **Additive**: Reuses all existing validator scripts unchanged. New vault consistency checks are additive.
 - **Idempotent**: Safe to run repeatedly. State files are overwrite-not-append.

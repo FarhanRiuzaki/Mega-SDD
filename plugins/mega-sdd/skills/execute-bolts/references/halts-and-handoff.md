@@ -62,7 +62,7 @@ After `bolt-report.md` is written, scan the `bolt_self_report` block (and adjace
 3. After all bolts complete (`--all`), assemble the aggregate into handoff `metrics.acceptance_test_concerns: [{unit, concern}]`.
 4. Also surfaced via `_summary.md` (a new "## Acceptance-test concerns" sub-section).
 
-No new halt type — concerns are warnings, not blockers. The re-validation path is `generate-units --regenerate --adversarial-subagent --units=<list>` to author stronger acceptance tests, then re-run the affected bolts. orchestrate-flow Step 7's final summary surfaces the count + unit list when non-empty.
+No new halt type — concerns are warnings, not blockers. The re-validation path is `generate-units --regenerate --adversarial-subagent` (scoped to the affected units) to author stronger acceptance tests, then re-run the affected bolts. orchestrate-flow Step 7's final summary surfaces the count + unit list when non-empty.
 
 ## Provenance trailer enforcement
 
@@ -83,7 +83,7 @@ After post-flight Hard Rule validation passes (or a proposed-and-confirmed fix i
 
 a. Read `vault.json` scope (if a multi-scope vault) OR skip the scope filter.
 b. For each file in the unit's `target_files` modified this bolt:
-   - Compare current state vs the vault's expected state (from `binding.md` anchors when present).
+   - Compare current state vs the vault's expected state (from `binding.md` anchors on the classic lane, or the unit's `bolts/U-XXX/binding.json` on lite, when present).
    - Detect name drift, type drift, behavior drift (per detect-drift categories).
 c. If drift is detected on a LOCKED entity (per `data-mutation-policy.md`) → halt `bolt_introduces_locked_drift` (pure-pause; override-only — never propose-and-confirm).
 d. If drift is detected on an INTENT/ARTIFACT entity → log to `bolt-report.md` `## Drift introduced` + continue (will surface at the batch-end detect-drift gate).
@@ -191,7 +191,7 @@ The per-bolt acceptance command is **scoped** to that unit; nothing re-runs the 
 
 **Run the FULL suite, unscoped.** Use the test runner detected at pre-flight check 3.5 with **no per-unit filter** — e.g. `yarn test` / `pytest` / `go test ./...` / `cargo test`, NOT `yarn test <one-file>`. Capture pass/fail/todo counts.
 
-**Out-of-band bypass guard (before the verdict).** Record the invocation's base SHA at batch start. Scan `git log <base>..HEAD` **excluding this run's own bolt commits**; for each commit, `git show --name-only` and flag any that touched a file listed in some unit's `target_files` yet whose message carries no `SDD-PROVENANCE` trailer. List them in `bypass_commits[]`. Bounding to the batch window is mandatory — an unscoped scan flags every pre-SDD commit in history. A non-empty list does not by itself halt (the full-suite run is the real gate) but forces the suite to run even on an otherwise-skippable invocation, and is surfaced in `_summary.md`.
+**Out-of-band bypass guard (before the verdict).** Record the invocation's base SHA at batch start. Scan `git log <base>..HEAD` **excluding this run's own bolt commits**; for each commit, `git show --name-only` and flag any that touched a file listed in some unit's `target_files` yet whose message carries no `SDD-PROVENANCE` trailer. List them as `bypass_commits[]` in `_summary.md` (and the handoff notes). Bounding to the batch window is mandatory — an unscoped scan flags every pre-SDD commit in history. A non-empty list does not by itself halt (the full-suite run is the real gate) but forces the suite to run even on an otherwise-skippable invocation, and is surfaced in `_summary.md`.
 
 **Record `<vault>/bolts/_batch-suite.json` — via the sanctioned writer ONLY:** run `bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root>`. The artifact is hook-guarded (a hand-written or agent-written file is denied and would be overwritten anyway); the wrapper runs the suite itself, refuses a dirty code tree, pins the 40-hex HEAD captured BEFORE the run, writes to every discoverable vault, and stamps:
 
@@ -219,7 +219,7 @@ Per unit:
   `scripts/compute-unit-staleness.sh` later compares these to the working tree — a mismatch marks the unit `stale` for the sync lane. Older bolt-reports without the field → staleness is `unknown` (treated as not-stale; never guessed).
 - `<vault>/bolts/U-XXX/preflight.json` — Hard rule pre-flight snapshot for audit + diff (script-written by `run-preflight-scan.sh`; hook-guarded).
 - `<vault>/bolts/U-XXX/postflight.json` — Hard rule post-flight check results (per-rule pass/fail + evidence).
-- `<vault>/bolts/U-XXX/findings.json` — the review-panel finding ledger (controller-written working state; `review-panel.md §Attempt rounds`).
+- `<vault>/bolts/U-XXX/findings.json` — the review-panel finding ledger (script-written by `merge-panel-findings.sh`, hook-guarded; `review-panel.md §Attempt rounds`).
 
 **Evidence-commit batching (spec D7).** When the project versions `.mega-sdd/` in git: ALL state-file refreshes + bolt artifacts produced by one unit's attempt cycle are staged into ONE evidence commit at unit completion (`chore(sdd): evidence U-XXX — …`). A standalone gate-state-refresh commit (`chore(sdd): refresh gate state`) is never emitted — the measured field run landed such commits seconds apart, pure history spam. Projects that gitignore `.mega-sdd/` are unaffected; the unit's CODE commit stays atomic and separate per the bolt contract.
 
@@ -245,7 +245,7 @@ After the last unit: suggest `detect-drift` to verify all bolts honored the vaul
 
 **End-of-chain phase context.** After the final bolt completes successfully (status==completed AND blockers==[]), inspect `vault.json` for `phase` + `phase_total`.
 
-**Single source of truth.** BOTH branches below MUST match §Handoff emission (`--auto`) `next_action` (the `next_action:` block of the handoff template below) and the contract's execute-bolts routing row (`orchestrate-flow/references/handoff-contract.md §Per-skill expected emissions`): `suggested_skill: mega-sdd:detect-drift`. detect-drift is the DEFAULT-ON auto-gate that runs after every execute-bolts batch (`orchestrate-flow/references/chain-execution.md §Hybrid drift gate phase`), so **execute-bolts is never terminal** — the canonical hop is always detect-drift. Phase status is carried as an informational `next_action.hint` (per `chain-execution.md §Phase context` — "This complements the execute-bolts handoff `next_action.hint`"), **never** as `suggested_skill`: advancing to the next KB-rebuild phase is a MANUAL user checkpoint (`generate-intent/references/generation-guide.md §To start the next phase`; `chain-execution.md §Phase context`), NOT an auto-route. Emitting the phase advance as a `suggested_skill` would let the orchestrator consumption loop pass `suggested_args` straight through and auto-cross into the next phase, bypassing that checkpoint.
+**Single source of truth.** BOTH branches below MUST match §Handoff emission (`--auto`) `next_action` (the `next_action:` block of the handoff template below) and the contract's execute-bolts routing row (`orchestrate-flow/references/handoff-contract.md §Per-skill expected emissions`): `suggested_skill: mega-sdd:detect-drift`. detect-drift is the DEFAULT-ON auto-gate that runs after every execute-bolts batch (`orchestrate-flow/references/chain-execution.md §Hybrid drift gate phase`), so **execute-bolts is never terminal** — the canonical hop is always detect-drift. Phase status is carried as an informational `next_action.hint` (per `chain-execution.md §Final summary appendix (--deep)` — "This complements the execute-bolts handoff `next_action.hint`"), **never** as `suggested_skill`: advancing to the next KB-rebuild phase is a MANUAL user checkpoint (`generate-intent/references/generation-guide.md §Phase context`; `chain-execution.md §Final summary appendix (--deep)`), NOT an auto-route. Emitting the phase advance as a `suggested_skill` would let the orchestrator consumption loop pass `suggested_args` straight through and auto-cross into the next phase, bypassing that checkpoint.
 
 IF `vault.phase < vault.phase_total`:
 ```yaml
@@ -278,6 +278,7 @@ handoff:
   status: completed | halted
   notes:
     postflight_skipped: <true|false>     # true ONLY when --force-skip-postflight was used this run (anti-bypass audit trail)
+    full_suite_skipped: <true|false>     # true ONLY when --no-full-suite was used this run
   artifacts:                             # ONE LINE per bolt dir actually written; NO range shorthand of ANY kind; NO "(N units)" annotations
     - <absolute path to vault/bolts/U-001/>
     - <absolute path to vault/bolts/U-002/>
@@ -318,7 +319,7 @@ handoff:
 
 Status `halted` on any entry of the CANONICAL bolt-halt enum (single owner — `handoff-contract.md`'s routing index carries NO copy, only a pointer here, and `halt-taxonomy.md` classifies every entry into always-stop / cycle-eligible / soft; on conflict this list wins):
 
-`test_fail` · `hard_rule_violated` · `hard_rule_unparseable` · `hard_rule_unanchored` · `hard_rule_mixed_grammar` · `verify_unit_writable` · `cross_squad_interface_draft` · `module_blocked_by` · `sprint_blocked_by` · `acceptance_path_unowned` · `dep_missing` · `secret_in_code` · `sast_critical_finding` · `dep_not_found` · `review_critical_unresolved` · `pbt_citation_invalid` · `pbt_property_violated` · `batch_suite_red` · `batch_suite_gate_missing` · `postflight_evidence_missing` · `acceptance_evidence_missing` · `acceptance_red` · `build_broken` · `anchor_missing` · `whitelist_violation` · `commit_rejected_by_hook` · `bolt_repeated_partial_failure` · `partial_state_corrupt` · `dispatch_prompt_too_large` · `bolt_introduces_locked_drift` · `scope_creep_detected` · `provenance_missing` · `self_assessment_missing` · `bolt_artifacts_missing` · `memory_in_use` · `panel_evidence_missing` · `l0_evidence_missing` · `acceptance_expects_missing`
+`test_fail` · `hard_rule_violated` · `hard_rule_unparseable` · `hard_rule_unanchored` · `hard_rule_mixed_grammar` · `verify_unit_writable` · `cross_squad_interface_draft` · `module_blocked_by` · `sprint_blocked_by` · `acceptance_path_unowned` · `dep_missing` · `secret_in_code` · `sast_critical_finding` · `dep_not_found` · `review_critical_unresolved` · `pbt_citation_invalid` · `pbt_property_violated` · `batch_suite_red` · `batch_suite_gate_missing` · `postflight_evidence_missing` · `acceptance_evidence_missing` · `acceptance_red` · `build_broken` · `anchor_missing` · `whitelist_violation` · `commit_rejected_by_hook` · `bolt_repeated_partial_failure` · `partial_state_corrupt` · `dispatch_prompt_too_large` · `bolt_introduces_locked_drift` · `scope_creep_detected` · `provenance_missing` · `self_assessment_missing` · `bolt_artifacts_missing` · `memory_in_use` · `panel_evidence_missing` · `l0_evidence_missing` · `acceptance_expects_missing` · `binding_conflict` · `ambiguous_spec` · `verify_grounding_untrusted`
 
 Required ONLY under `--auto`.
 

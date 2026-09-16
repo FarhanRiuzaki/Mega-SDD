@@ -6,7 +6,10 @@ a. **Read `constitution.md`** at the start of Step 2 (binding); cache for cross-
 b. **For each CONFLICT detected**, scan constitution §A–F clauses for relevant rules.
 c. **Cite constitution clauses** in `binding.md` CONFLICT entries when applicable:
    ```
-   | CONFLICT-7 | Auth uses Bearer | Code uses session | Constitution §B-001 mandates Sanctum auth on /api/* (clause precedence) | KEEP_VAULT |
+   ### CONFLICT-7 — Auth uses Bearer
+   - **Codebase reality**: session auth (…)
+   - **Constitution**: §B-001 mandates Sanctum auth on /api/* (clause precedence)
+   - **Suggested action**: KEEP_VAULT — …
    ```
 d. **Constitution-violation as halt:** if existing code is in CONFLICT with the constitution AND the user passed `--strict-constitution`, surface `bind_conflict_constitution_violation`; the user resolves before the vault locks.
 e. **Constitution hash persistence:** write `constitution_hash` (sha256 of `constitution.md` content) to `binding.md` frontmatter for later drift detection by `detect-drift`.

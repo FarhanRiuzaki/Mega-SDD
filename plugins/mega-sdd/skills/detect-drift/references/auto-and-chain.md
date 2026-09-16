@@ -82,6 +82,8 @@ handoff:
     #   `--paths` echoes the ACTUAL resolved SCOPE_DIRS @-path detect-drift scanned (NOT a hardcoded literal):
     suggested_skill: mega-sdd:bind-codebase
     suggested_args: ["--paths=@<resolved SCOPE_DIRS @-path, e.g. <vault>/.sync-changed-paths.txt>", "--auto"]
+    # layout-3 / lite: the engine renders `scripts/rebind-units.sh --cwd . --vault <vault> --paths=@<same file>`
+    # → `plan --reconcile` instead (orchestrate-flow/references/routing-rules.md).
     rationale: "<e.g. 'Sync lane: N drift finding(s) queued to PENDING-SYNC.md; continue Mode D → claim-scoped re-bind (§3.3)' OR 'Zero drift; vault + code aligned'>"
     # STANDALONE (any other --scope: a non-sync @file whose basename ≠ .sync-changed-paths.txt, a drift-axis
     #   --scope, a bare scope-id, or no scope) → emit `next_action: null` instead. The DRIFT-REPORT.md +
@@ -105,7 +107,7 @@ Status `halted` on `drift_framework_mismatch`. Standalone invocation emits an in
 
 ## Auto-trigger as a chain phase
 
-When orchestrate-flow runs detect-drift as an auto-gate after an execute-bolts batch (presence of `<vault>/bolts/` with recent postflight snapshots + `--auto-gate`):
+When orchestrate-flow runs detect-drift as an auto-gate after an execute-bolts batch (presence of `<vault>/bolts/` with recent postflight snapshots — the hybrid auto-gate, DEFAULT-ON):
 
 1. Switch to incremental mode (snapshot reuse, below).
 2. Map severity → chain action: CRITICAL drift on a LOCKED entity → emit a halt blocker (orchestrate-flow halts the chain); HIGH → emit a pause signal (surface to user); MEDIUM/LOW → log only, chain continues.
@@ -114,7 +116,7 @@ Standalone invocation (no chain context) behaves as a fresh full scan, ignoring 
 
 ## Snapshot reuse
 
-Per `plugins/mega-sdd/references/shared-snapshot-schema.md`. With `--reuse-bolt-snapshots` (auto-set by the orchestrate-flow auto-gate):
+Per `plugins/mega-sdd/references/shared-snapshot-schema.md`. When run as the post-bolts auto-gate (incremental mode):
 
 1. For each unit in `vault.json`, read `<vault>/bolts/U-XXX/postflight.json` if present and fresher than `vault.json`.
 2. Aggregate file-level sha256 + ast_signatures across valid snapshots.
@@ -126,7 +128,7 @@ Stale detection: if `postflight.json.vault_sha256` ≠ the current `vault.json` 
 
 ## Per-bolt incremental mode
 
-Used by execute-bolts' per-bolt drift check. Single-bolt scope, invoked with `--per-bolt --unit=U-XXX`: compare only that bolt's `target_files` vs vault expectations and return a synchronous result (no report written):
+execute-bolts performs its own inline per-bolt drift check (`execute-bolts/references/halts-and-handoff.md`); detect-drift is NOT invoked per bolt. The shape below is what that inline check renders (single-bolt scope: only that bolt's `target_files` vs vault expectations; no report written):
 
 ```
 per_bolt_drift_result:

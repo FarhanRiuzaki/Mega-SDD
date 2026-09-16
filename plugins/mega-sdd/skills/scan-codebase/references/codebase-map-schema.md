@@ -17,7 +17,7 @@ package_managers: ["npm", "composer"]
 test_frameworks: ["jest", "phpunit"]
 # engine + precision metadata
 engine: ast-grep | regex        # legacy maps may carry `tree-sitter` (pre-7.4 producer) — consumers treat it like ast-grep (tier `ast`)
-precision_tier: ast | regex                    # BOTH AST engines stamp `ast`
+precision_tier: ast | regex                    # the AST engine stamps `ast` (legacy `tree-sitter` maps too)
 # downgrade record — present when ANY ladder fall happened: (a) Step-0 per-language falls
 # (`lang:reason -> tier` pairs from the probe digest — auto: no_astgrep_pack/astgrep_absent;
 # references/scan-procedure.md §Step 0),
@@ -64,7 +64,7 @@ truncated_sections: ["2"]
 
 ## 6. Pattern signatures
 
-> Consumers: `bind-codebase` validates `constraints.md` claims against these rows (binding-contract §Claim categories); `execute-bolts` injects them as the `Codebase patterns:` dispatch line when `starterkit-context.yaml` is absent (context-enrichment §Map §6 fallback) — the section is never write-only.
+> Consumers: `bind-codebase` validates `constraints.md` (layout-2 vault) claims against these rows (binding-contract §Claim categories); `execute-bolts` injects them as the `Codebase patterns:` dispatch line when `starterkit-context.yaml` is absent (context-enrichment §Map §6 fallback) — the section is never write-only.
 - Auth pattern: middleware|session|jwt|none
 - Error handling: try-catch|result-monad|throw
 - State: redux|context|none|composer-event
@@ -98,7 +98,7 @@ framework:
 
 ## How `bind-codebase` uses this
 
-For each vault claim referencing code (endpoint, field, file path), `bind-codebase` greps codebase-map sections 2-4 and naming conventions. Match → CONFIRMED. Mismatch → CONFLICT. Absent → OQ — **except** when the claim's section is listed in `truncated_sections`: absence there is NOT evidence (the element may be beyond the extraction cap) → classify UNKNOWN, and never emit a `create`-type task from it.
+For each vault claim referencing code (endpoint, field, file path), `bind-codebase` (classic bind lane) greps codebase-map sections 2-4 and naming conventions. Match → CONFIRMED. Mismatch → CONFLICT. Absent → OQ — **except** when the claim's section is listed in `truncated_sections`: absence there is NOT evidence (the element may be beyond the extraction cap) → classify UNKNOWN, and never emit a `create`-type task from it.
 
 ## Detection precision
 

@@ -7,7 +7,7 @@ Loaded when `<vault>/constitution.md` exists. Extends the drift scan to validate
 After the existing drift scan (entities, flows, decisions):
 
 1. **Read** `constitution.md` + `constitution_hash` from `vault.json`.
-2. **Validate the constitution hasn't drifted from binding**: compute the current sha256 of `constitution.md`; compare to `binding.md`'s `constitution_hash`. On mismatch → halt `constitution_drift_detected` (the constitution changed since the last binding; a re-bind is needed).
+2. **Validate the constitution hasn't drifted from binding**: compute the current sha256 of `constitution.md`; compare to `binding.md`'s `constitution_hash` (layout-2); on a layout-3 vault compare to `vault.json` `constitution_hash` — there is no `binding.md`. On mismatch → halt `constitution_drift_detected` (the constitution changed since the last binding; a re-bind is needed).
 3. **Scan code for clause violations (§A–§F)**: for each clause with a mechanically detectable pattern, run an ast-grep or regex probe (ast-grep absent → regex fallback, lower precision; run `/mega-sdd:install-deps --tools=ast-grep` to install automatically); prose-only clauses are flagged "manual review needed" (never fabricate a violation).
 4. **Categorize**: `constitution_violation_critical` (§B Security, §F Compliance — halt-equivalent); `constitution_violation_standard` (§A Coding, §C Architecture, §E Performance — warning); `constitution_violation_advisory` (§D Anti-patterns — flag for review).
 

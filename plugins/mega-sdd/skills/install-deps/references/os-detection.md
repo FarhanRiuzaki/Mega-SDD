@@ -97,8 +97,8 @@ esac
 # === Step 3: Detect fallback managers ===
 FALLBACKS=""
 # On Windows, a SECONDARY native manager (scoop/winget/choco that is present but is
-# NOT the detected primary) is a first-class fallback. Several tools (tree-sitter,
-# ast-grep, jd) ship natively only via scoop, so a winget-primary box must
+# NOT the detected primary) is a first-class fallback. Several tools ship natively
+# only via scoop or winget (ast-grep, jd, gitleaks), so a box whose primary lacks one must
 # still reach them when scoop is installed — prefer these over runtime installs.
 if [ "$OS" = "windows-bash" ]; then
   for m in scoop winget choco; do
@@ -135,20 +135,20 @@ echo "FALLBACKS: $FALLBACKS"
 - **macOS without brew**: PKG_MGR = `none` initially; install-deps proposes installing brew first via official Apple-pkg-manager-friendly method. Auto-execution of Homebrew's own install script (`/bin/bash -c "$(curl -fsSL https://...)"`) is FORBIDDEN per safety rails — instead, point user to https://brew.sh and instruct manual install.
 - **WSL Ubuntu without `apt`**: extremely rare; happens in chroot/container envs. Halt `pkg_mgr_not_found` with hint to install apt.
 - **Windows native (no WSL, no git-bash)**: out of scope — user instructed to install WSL Ubuntu (or git-bash) and re-run.
-- **Windows + winget primary**: `ripgrep`, `pandoc`, `tree-sitter` (`tree-sitter.tree-sitter-cli`), `ast-grep` (`ast-grep.ast-grep`), `jd` (`josephburnett.jd`), and `gitleaks` (`Gitleaks.Gitleaks`) all install via winget; `scoop` remains an alternative source and `go` the cross-platform fallback for gitleaks; `semgrep` is Python-based and installs via `pipx`. If a tool's needed manager (pipx for semgrep / a runtime) is absent, it is reported `unsupported` with the concrete remedy (install pipx / a runtime) — not a silent skip. This was the "some deps don't install on Windows" gap.
-- **Alpine `apk`**: most mega-sdd deps (pandoc, tree-sitter) NOT available in default `apk` repos. Cross-platform cargo fallback used heavily on Alpine.
+- **Windows + winget primary**: `ripgrep`, `pandoc`, `ast-grep` (`ast-grep.ast-grep`), `jd` (`josephburnett.jd`), and `gitleaks` (`Gitleaks.Gitleaks`) all install via winget; `scoop` remains an alternative source and `go` the cross-platform fallback for gitleaks; `semgrep` is Python-based and installs via `pipx`. If a tool's needed manager (pipx for semgrep / a runtime) is absent, it is reported `unsupported` with the concrete remedy (install pipx / a runtime) — not a silent skip. This was the "some deps don't install on Windows" gap.
+- **Alpine `apk`**: most mega-sdd deps (e.g., pandoc) NOT available in default `apk` repos. Cross-platform cargo fallback used heavily on Alpine.
 
 ## Fallback chain
 
 When primary PKG_MGR lacks a tool (per `tool-matrix.yaml`), install-deps Step 3 tries fallback managers in this order:
 
-0. **(Windows only)** a secondary native Windows manager that is installed but not the primary — `scoop`, then `winget`, then `choco`. Every matrix tool with a Windows row (`tree-sitter`, `ast-grep`, `ripgrep`, `jd`, `pandoc`, `gitleaks`) now has BOTH winget and scoop routes, so this step matters mainly for a box whose primary manager lacks a specific package version or is broken.
-1. `cargo` (Rust-based: tree-sitter-cli, ast-grep, ripgrep)
-2. `npm` (Node-based: markdownlint-cli2, tree-sitter-cli, @ast-grep/cli)
+0. **(Windows only)** a secondary native Windows manager that is installed but not the primary — `scoop`, then `winget`, then `choco`. Every matrix tool with a Windows row (`python3`, `ast-grep`, `ripgrep`, `jd`, `pandoc`, `gitleaks`) has BOTH winget and scoop routes, so this step matters mainly for a box whose primary manager lacks a specific package version or is broken.
+1. `cargo` (Rust-based: ast-grep, ripgrep)
+2. `npm` (Node-based: markdownlint-cli2, @ast-grep/cli, @mermaid-js/mermaid-cli)
 3. `go install` (Go-based: jd, gitleaks)
 4. `pipx` (Python-based: semgrep)
 
-**Detected-but-no-matrix-row managers.** Some managers are detected as a primary yet have **no rows in `tool-matrix.yaml`**: `choco` (Windows) and `yum` (legacy RHEL/CentOS), plus `pacman`/`apk`. A box whose primary is one of these detects the manager but installs nothing *from* it — every tool routes through the runtime fallback chain above (`cargo`/`npm`/`go`/`pipx`). This is by design: the runtime installers are cross-platform, so choco/yum/pacman/apk are treated as detect-only-then-fallback rather than carrying their own tool rows.
+**Detected-but-no-matrix-row managers.** Some managers are detected as a primary yet have **no or only a `python3` row in `tool-matrix.yaml`**: `yum` (legacy RHEL/CentOS) and `apk` have no rows; `choco` (Windows) and `pacman` carry only the `python3` row. A box whose primary is one of these detects the manager but installs (almost) nothing *from* it — every tool routes through the runtime fallback chain above (`cargo`/`npm`/`go`/`pipx`). This is by design: the runtime installers are cross-platform, so choco/yum/pacman/apk are treated as detect-only-then-fallback rather than carrying their own tool rows.
 
 If a tool has no matching `(tool, os, pkg_mgr)` entry AND no fallback works, mark tool as `unsupported` in install plan + skip with warning (don't halt — graceful degradation). On Windows specifically, when an `unsupported` tool was skipped purely for lack of a manager, the warning MUST name the concrete remedy — "install `scoop` (https://scoop.sh) then re-run, or install Node/Rust/Go/pipx for the cross-platform fallback" — rather than a bare skip, so the user knows why the tool is missing and how to get it.
 

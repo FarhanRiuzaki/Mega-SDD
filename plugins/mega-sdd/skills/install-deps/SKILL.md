@@ -121,7 +121,7 @@ For each successfully-installed tool:
 
 Emit one line per tool: ✓ verified (version) / ↻ installed-but-resolves-in-a-new-shell (restart the terminal) / ✗ verify failed (`hash -r` then re-run, or check PATH).
 
-If ANY unverified → halt `install_failed` with subtype `verify_after_install_failed`, or subtype `path_stale_pending_restart` when the probe succeeded but this shell cannot see it.
+If ANY unverified → halt `install_failed` with subtype `verify_after_install_failed`, or `verify_after_install_failed` with note `path_stale_pending_restart` when the probe succeeded but this shell cannot see it.
 
 ## Step 7: Summary + handoff
 
@@ -158,7 +158,7 @@ handoff:
     tools_failed: <int>              # install or verify failed
     tools_sudo_pending: <int>        # requires_sudo — printed but not auto-run
     detected_os: <"macos" | "linux" | "wsl" | "windows-bash" | "unknown">
-    detected_pkg_mgr: <"brew" | "apt" | "dnf" | "yum" | "pacman" | "apk" | "winget" | "scoop" | "choco" | "pipx" | "cargo-fallback" | "none">
+    detected_pkg_mgr: <"brew" | "apt" | "dnf" | "yum" | "pacman" | "apk" | "winget" | "scoop" | "choco" | "cargo-fallback" | "none">
 ```
 
 Status `halted` on `install_failed` OR `pkg_mgr_not_found`. Required ONLY under `--auto`.

@@ -26,7 +26,7 @@ The user typically provides one or more of:
 - **Output folder path:** the user MUST specify (Step 0). The skill never assumes a path silently.
 - **Optional context:** existing system docs, tech stack constraints, prior architecture decisions.
 
-If critical inputs are missing or unclear, **ask before generating**. Better 5 upfront questions than 7 docs of guesses.
+If critical inputs are missing or unclear, **ask before generating**. Better 5 upfront questions than a vault of guesses.
 
 ## Project Shape Registry
 

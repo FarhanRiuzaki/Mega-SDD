@@ -12,7 +12,7 @@ State file: `<cwd>/.mega-sdd/.validation-blockers.json` (OVERWRITE-NOT-APPEND �
 
 Audit `docs/superpowers/audits/2026-05-27-iter-67-integrity-audit.md` §F traced one OQ-ID drop. Real-run inventory revealed 27 of 27 OQs are dropped in TF Import phase-1 + phase-2 units — the audit only saw the tip. The skill-body prose rule in `generate-units` Step 12.5.g cannot enforce this; the model may write a unit without citing the OQ regardless of what the skill body says.
 
-This validator + `PreToolUse` hook on `mega-sdd:execute-bolts` is the [HOOK-VALIDATE] enforcement layer that closes the loop: drops detected automatically when a unit is saved (`PostToolUse` on Write/Edit), bolt generation blocked until drops are resolved (`PreToolUse` on the bolt-gen skill).
+This validator + `PreToolUse` hook on `mega-sdd:execute-bolts` is the [HOOK-VALIDATE] enforcement layer that closes the loop: drops recomputed at gate time (the PreToolUse aggregator re-derives the handoff verdict on every guarded dispatch), bolt generation blocked until drops are resolved (`PreToolUse` on the bolt-gen skill).
 
 ## Usage
 
@@ -20,7 +20,7 @@ This validator + `PreToolUse` hook on `mega-sdd:execute-bolts` is the [HOOK-VALI
 bash <plugin-root>/scripts/validate-handoff-binding-units.sh --cwd="$(pwd)"
 ```
 
-No other arguments. The current project root (CWD) is auto-detected.
+Optional: `--units=<csv>` / `--vault` / `--full-bind` / `--quiet` (see the script header). The current project root (CWD) is auto-detected.
 
 ## Expected outputs
 
@@ -78,11 +78,11 @@ binding_refs:
 ---
 ```
 
-Save the file. `PostToolUse` will auto-re-validate; the state file updates automatically.
+Save the file, then re-run the script (or let the next guarded dispatch recompute it at the gate); the state file updates on that run.
 
 ## Implementation
 
-The procedure invokes `plugins/mega-sdd/scripts/validate-handoff-binding-units.sh`. The script is deterministic bash + python, no LLM judgment. Same script runs from the `PostToolUse` hook when units are saved.
+The procedure invokes `plugins/mega-sdd/scripts/validate-handoff-binding-units.sh`. The script is deterministic bash + python, no LLM judgment.
 
 ## Scope
 

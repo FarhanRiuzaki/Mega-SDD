@@ -17,7 +17,7 @@ The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip 
 | Step 0 (vault location) | Ask via `AskUserQuestion` | If exactly 1 vault detected in CWD, use it without prompting. If 0 or >1, ask (or fail loudly if called with `--auto` from a non-orchestrator context). |
 | Step 0 (lock check, if `Status: 🔒 LOCKED`) | Ask user to confirm unlock | Default to "proceed if DRAFT" (no unlock implied). If LOCKED, **STILL ASK** — unlocking has audit consequences. |
 | Step 0.5 (resume detection) | Ask continue / fresh / cancel | Default to "continue from current state". |
-| Step 0.6 (resolution scope) | Ask scope | Default to `p1-only` — DELIBERATE chain-context divergence from the interactive default (`all-priorities`): a chain only needs the P1 blocking tier resolved to resume; P2/P3 stay for a later interactive session. |
+| Step 0.6 (resolution scope) | Ask scope | Chain-routed via the `oq_gate` (express spine): `express-batched` (SKILL Step 0.6 — P1 batched ≤4 per call, P2/P3 auto-deferred on the record). Any other `--auto` caller: `p1-only` — DELIBERATE chain-context divergence from the interactive default (`all-priorities`): a chain only needs the P1 blocking tier resolved to resume. |
 | Step 2b (the ONE per-OQ prompt: Resolve/Defer/OOS/Skip + the answer + the landing) | **Always ask** | **Always ask** (substance prompt — no override) |
 | Step 2c (cross-cutting multi-doc landing) | Chosen on the Step 2b prompt — the primary doc + cross-refs are DISCLOSED in the answer option's description, so picking the option is the human's confirmation | Identical — always the human's call, never auto-decided |
 | Step 2c (Defer follow-up: `defer_to` + reason; OOS follow-up: rationale) | **Always ask** — ONE call, and for Defer that call carries BOTH questions | **Always ask** — recorded state may never be defaulted or derived (invariant #5) |
@@ -25,7 +25,7 @@ The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip 
 What stays interactive even with `--auto`:
 
 - **Per-OQ choice** (Resolve / OOS / Defer / Skip) — captures stakeholder answers; never auto-decides.
-- **Resolution destination** — still a human decision, now made ON the single prompt: the auto-classified target rides the answer option's description, and the override channel is "Other" (a bare `→ <file>.md` accepts the recommendation and re-lands it) plus the Step 2c diff summary. The override target is VALIDATED before any write against the vault's 7 document filenames (`interactive-walk.md` §"Reading the Other free text" step 1) — a miss is not an override, is narrated, and never re-prompts. The separate confirm-the-destination round trip is gone; the human's control over it — and the pre-write check that used to ride it — is not.
+- **Resolution destination** — still a human decision, now made ON the single prompt: the auto-classified target rides the answer option's description, and the override channel is "Other" (a bare `→ <file>.md` accepts the recommendation and re-lands it) plus the Step 2c diff summary. The override target is VALIDATED before any write against the vault's own document filenames for its layout (`interactive-walk.md` §"Reading the Other free text" step 1) — a miss is not an override, is narrated, and never re-prompts. The separate confirm-the-destination round trip is gone; the human's control over it — and the pre-write check that used to ride it — is not.
 - **Cross-cutting OQ landing** — same mechanism: the primary doc + cross-ref plan are disclosed in the option the human picks.
 - **LOCKED vault unlock confirmation** — audit-significant.
 
@@ -104,7 +104,7 @@ handoff:
   status: completed | paused
   artifacts:
     - <absolute path to vault.json (updated)>
-    - <absolute path to binding.md (when --binding mode)>
+    - <absolute path to binding.md (classic) or the touched bolts/U-*/binding.json (lite) when --binding mode>
   next_action:
     # --binding mode — the next hop is ACTION-MIX dependent (binding-mode.md Step 5). A
     # blanket re-bind LOOPS on KEEP_VAULT/DEFER: bind re-derives the SAME CONFLICT from the

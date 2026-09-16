@@ -62,7 +62,7 @@ Within each affected section, every architectural decision gets TWO sub-fields:
 
 - Vaults without Starterkit binding fields → consumed unchanged by bind-codebase + generate-units; conventions resolved from binding step instead.
 - Mixed vaults (some sections have Starterkit binding, others don't) → permitted; downstream skills handle absence gracefully.
-- `bind-codebase` reading a vault with Starterkit binding fields: they supplement Hard Rule emission (clauses cited inline as `source: vault §02-architecture > Starterkit binding > Authentication strategy`).
+- `bind-codebase` reads a vault with Starterkit binding fields unchanged (no special handling); when a clause needs a citation, cite it as `vault.md ## Architecture > Starterkit binding > <concern>` (e.g. `> Authentication strategy`).
 
 ## §Multi-scope vault — Scope tagging schema
 

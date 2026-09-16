@@ -61,7 +61,7 @@ Semantic grouping layer ABOVE atomic units (units stay atomic; modules group rel
 
 - **Load `_meta/modules.yaml`** if present
 - **Auto-derive** when absent: scan vault sections (`## F-U-*` flows, `## D-*` ADRs by domain cluster, named components in `vault.md ## Architecture`); write `_meta/modules.yaml.auto` (note `.auto` suffix; user renames to lock in)
-- **KB module-graph seed (legacy-rebuild vaults):** when `00-index.md` §Implementation Notes carries `kb_module_graph: <path>` (written by generate-intent's KB sub-mode), read that `module-dependency-graph.md` FIRST and seed the auto-derivation from its module list + dependency edges — the extraction already computed the grouping; don't re-derive it blind. KB edges are a SEED for `blocked_by` declarations, not evidence: every cross-module `depends_on` still requires the concrete-coupling evidence rule below. Absent/unreadable path → fall through to plain auto-derivation silently.
+- **KB module-graph seed (legacy-rebuild vaults):** when `vault.md` (legacy `00-index.md`) §Implementation Notes carries `kb_module_graph: <path>` (written by generate-intent's KB sub-mode), read that `module-dependency-graph.md` FIRST and seed the auto-derivation from its module list + dependency edges — the extraction already computed the grouping; don't re-derive it blind. KB edges are a SEED for `blocked_by` declarations, not evidence: every cross-module `depends_on` still requires the concrete-coupling evidence rule below. Absent/unreadable path → fall through to plain auto-derivation silently.
 - **For each unit candidate**: match `vault_source` against `module.vault_sections` patterns; assign `unit.module = <module-id>`
 - **Unassigned units** → `module: M-unassigned` (fallback); emit chat warning if ≥10% of units unassigned
 - **Cross-module dependency validation**: every unit `depends_on` edge crossing module boundary requires explicit `blocked_by` declaration in the dependent module's modules.yaml entry. Cycle through Step 4 if module DAG has cycle (halt `module_cycle_detected`); missing `blocked_by` → halt `cross_module_dep_invalid`.
@@ -104,13 +104,13 @@ A unit is **view-bearing** when any `target_files` path matches the active frame
 
 ```yaml
 ## UI contract
-label_map:                       # human label per displayed field — from 02-architecture field names + 01-context copy; NEVER a Str::title(column) like "Customer Id"
+label_map:                       # human label per displayed field — from `model.md` (legacy 02-architecture) field names + `vault.md ## Overview` (legacy 01-context) copy; NEVER a Str::title(column) like "Customer Id"
   customer_id: "Customer"
   created_at: "Created"
 fk_display:                      # FK column => the related entity's display field, resolved via the relation (pack `## Relation derivation`); never render the raw id
   customer_id: "customer.name"
   branch_id: "branch.name"
-value_formatting:                # money/number/date/status formatting — from field types in 02-architecture
+value_formatting:                # money/number/date/status formatting — from field types in `model.md` (legacy 02-architecture)
   amount: "currency (2dp, thousands sep)"
   status: "human label + badge (map enum -> label from flow states)"
   created_at: "human date (null-safe placeholder)"
@@ -119,7 +119,7 @@ required_states:                 # the states this view MUST handle — DERIVED 
   - loading     # async fetch/action present in the flow
   - error       # failure branch present in the flow (surface via the project notification idiom)
   - pending     # workflow item mid-process (maker-checker / multi-stage flow) -> show human status label
-grounded_in: ["flows.md F-U-003 step 2", "02-architecture §Widget"]   # citations (anti-halu)
+grounded_in: ["flows.md F-U-003 step 2", "model.md §Widget"]   # citations (anti-halu)
 design_system_ref: "vault.design_system"   # present ONLY when the vault carries a design_system block (vault-core.md §design_system); propagates the resolved style/palette/a11y (+ its source) to the bolt so the view renders on-system, not generic. Omit when absent.
 ```
 

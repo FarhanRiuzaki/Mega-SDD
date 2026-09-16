@@ -4,7 +4,8 @@
 > Consumed by `emit-prd/SKILL.md` Steps 2–3. **The MECHANICAL rules below are EXECUTED BY
 > `scripts/build-prd-core.sh`** — it pre-fills those slots and leaves the
 > genuinely-synthetic ones (`section-1-*` narrative, reverse-mode `section-2-actors-table`,
-> diagram-less `journey-<slug>` slots) as `{{…}}` markers for the model. Editing a mechanical rule
+> diagram-less `journey-<slug>` slots) as `{{…}}` markers for the model (layout-2/legacy; on layout-3
+> `section-1-*` is filled verbatim from the PRD — 7.37.0). Editing a mechanical rule
 > here MUST be mirrored in the builder — the two are one contract. This file is the PRD doc-pack's
 > **section map** for the shared emission engine
 > (`plugins/mega-sdd/references/emission-engine.md §What a doc-pack supplies`).
@@ -55,7 +56,7 @@ with the KB citation:
 ## Section 1 — Latar Belakang & Tujuan
 
 **Slots:** `{{section-1-background}}`, `{{section-1-purpose}}`
-**Forward source:** the vault Overview (`vault.md ## Overview`; legacy `01-overview.md`) §Purpose + §Scope (+ §Goals for tujuan)
+**Forward source:** the vault Overview (`vault.md ## Overview`; legacy `01-overview.md`) §Purpose + §Scope (+ §Goals for tujuan); layout-3: the PRD (`vault.json.prd_path_at_generation`) sections, quoted verbatim
 **Reverse source:** KB `README.md` (domain summary) + `00-overview/` or the KB's overview doc; system purpose claims with markers
 **Extraction:** narasi Indonesia yang menganyam klaim sumber; reverse mode: claim lines keep markers per the rule above.
 **Citation:** per-paragraph `[Source: <path>[:Ln] (sha256: pending)]`
@@ -72,7 +73,7 @@ with the KB citation:
 ## Section 3 — Kebutuhan Fungsional
 
 **Slot:** `{{section-3-fr-content}}`
-**Forward source:** `<vault>/02-functional.md` FR-NNN headings (verbatim ids) + `flows.md` flow inventory
+**Forward source:** `<vault>/02-functional.md` FR-NNN headings (verbatim ids) + `flows.md` flow inventory; layout-3 with no FR doc: one row per PRD requirement heading (first paragraph verbatim)
 **Reverse source:** KB domain claim lists (per domain file) — requirement-shaped claims WITH markers
 **Extraction:**
 - Forward: per FR — id + title + 1–3 kalimat ringkas; per flow — id + judul (bukan diagram; §4 punya diagram).

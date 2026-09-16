@@ -178,4 +178,4 @@ After units are written, reason about SIBLING units *together*, not one at a tim
 
 Likewise, every FK column a unit declares (`<name>_id`) MUST declare its derived relation accessor (pack `## Relation derivation`; universal default: the camelCase singular of `<name>`).
 
-This sweep is ENFORCED by `scripts/validate-sibling-consistency.sh` (PostToolUse → `.sibling-consistency-state.json`; PreToolUse Branch 7 blocks `execute-bolts` on FAIL) — this prose is defense-in-depth; the validator is the gate. Tech-agnostic + anti-hallucination: never invent a concern the active pack does not declare.
+This sweep is ENFORCED by `scripts/validate-sibling-consistency.sh` (writes `.sibling-consistency-state.json`; the PreToolUse gate recomputes it and Branch 7 blocks `execute-bolts` on FAIL) — this prose is defense-in-depth; the validator is the gate. Tech-agnostic + anti-hallucination: never invent a concern the active pack does not declare.
