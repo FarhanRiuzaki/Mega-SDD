@@ -87,3 +87,15 @@ Registry one-liner (absorbed, same type):
 *Subtype of `quality_gate_failed` (`details.subtype: starterkit_metrics_inconsistent`) — enum + dispatch rule live in the registry §`quality_gate_failed` subtypes.*
 
 - `starterkit_metrics_inconsistent` — orchestrate-flow: generate-units handoff reports `units_with_starterkit_rules > 0` but `starterkit-context.yaml` flags `partial: true` (rules pulled from incomplete framework slice may cite missing conventions). Resolution: re-run `scan-codebase` (since the failed-slice fix, a plain re-run re-dispatches failed slices — they carry no per_slice cache signature; `--no-cache` is the belt-and-braces option that re-dispatches everything; `--force-deep` is only needed when a LOW-confidence trigger skipped deep-scan entirely) then regenerate units. Detection is in-skill prose since v7.5.0 №C (the Skill-matcher validator was deleted) — it fires at the orchestrate-flow handoff-consumption step, not at write time.
+
+### drift_inputs_missing
+
+- `drift_inputs_missing` — detect-drift Step 0 (fork-ready — it cannot ask): the vault or code dir is unresolvable from the args / CWD. ALWAYS STOP; re-invoke with `--code=<repo-root>` and/or `--vault=<vault-dir>`.
+
+### scope_args_missing
+
+- `scope_args_missing` — `validate-handoff-yaml.sh`: an execute-bolts handoff carries a `scope:` block and routes to detect-drift without `--scope=<id>` in `next_action.suggested_args` — the scope would die at the seam. ALWAYS STOP; add the flag.
+
+### vault_json_corrupt
+
+- `vault_json_corrupt` — `scripts/ground.sh` Guard 1: a `vault.json` fails to parse; the mode guard skips it and prints the file. **[C1 SELF-RESOLVE — never halts on the primary path]** Resolution: `derive-vault-json.sh --vault <dir>`.

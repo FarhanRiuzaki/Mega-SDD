@@ -33,3 +33,19 @@ The `pdf_render_failed` / `template_slot_unfilled` / `citation_unresolvable` sub
 ### marker_stripped
 
 - `marker_stripped` — emit-prd: a PRD line citing a knowledge-base claim lost (or upgraded) that claim's `[VERIFIED]/[INFERRED]/[OPEN]` confidence marker, detected deterministically by `scripts/check-prd-markers.sh` (exit 1). Details carry the script's verbatim `MARKER_STRIPPED` / `MARKER_UPGRADED` / `MARKER_MISSING` lines + keterangan. An `[INFERRED]`/`[OPEN]` claim presented as fact is fabrication (invariant 5). Resolution: restore the marker verbatim from the cited KB claim on each flagged line, re-run the check / emit-prd.
+
+### user_authored_conflict
+
+- `user_authored_conflict` — emit-agents-md under `--auto`: AGENTS.md exists, user-authored, no mega-sdd marker (an interactive run asks sibling / append / skip). ALWAYS STOP; re-run interactively or pick `sibling`.
+
+### vault_not_found
+
+- `vault_not_found` — emit-agents-md: no vault resolvable from the args / CWD. ALWAYS STOP; pass the vault path.
+
+### vault_corrupt
+
+- `vault_corrupt` — emit-agents-md: `vault.json` lacks a required field. ALWAYS STOP; re-derive it (`derive-vault-json.sh --vault <dir>`).
+
+### greenfield_no_bind_context
+
+- `greenfield_no_bind_context` — emit-agents-md: a greenfield vault with no bind context to render. ALWAYS STOP; run the chain to bolts first (or `--lite`).

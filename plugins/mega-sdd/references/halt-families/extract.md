@@ -13,3 +13,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 As a `quality_gate_failed` subtype (the extract default — registry §`quality_gate_failed` subtypes):
 
 - *(omitted OR `module_quality_threshold_unmet`)* — extract-intelligence: per-module PRD-kontrak quality threshold not met twice. Resolution: user reviews the module PRD + accepts (with QA notes), re-scopes, OR re-runs the module with adjusted prompt. The extract default emits with `subtype` ABSENT; `module_quality_threshold_unmet` is a documentation label only, never written into an envelope (pre-v7.6 records may carry the historical label `wave_quality_threshold_unmet` — same semantic).
+
+### claim_verify_failed
+
+- `claim_verify_failed` — extract-intelligence claim-verify lane: the same module's verify report shows `wrong_load_bearing > 0` twice. ALWAYS STOP; findings verbatim in the halt.

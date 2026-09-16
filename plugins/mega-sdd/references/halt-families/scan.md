@@ -21,3 +21,23 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### dep_missing
 
 - `dep_missing` — scan-codebase: a FORCED engine's binary not found (ast-grep under --engine=ast-grep; the tree-sitter lane was removed v7.4.0). ALWAYS STOP.
+
+### scan_repo_too_large
+
+- `scan_repo_too_large` — scan-codebase: repo > 100k files and no `--force-large`. ALWAYS STOP; re-run with `--force-large` or narrow `--include=`.
+
+### scan_primary_app_ambiguous
+
+- `scan_primary_app_ambiguous` — scan-codebase: monorepo with ≥2 app-root manifests, no `--include`, no root manifest. ALWAYS STOP; re-run with `--include=<app dir>`.
+
+### scan_spawn_budget_exceeded
+
+- `scan_spawn_budget_exceeded` — scan-codebase (undecided STANDALONE lane only): estimated extraction > 60 s with no explicit `--engine=` / `--include=`. ALWAYS STOP; re-run with an explicit engine or include, or unattended (`--auto`).
+
+### codebase_map_derive_failed
+
+- `codebase_map_derive_failed` — scan-codebase Step 10: `derive-codebase-map.sh` exit 2 — a delta gap. ALWAYS STOP; fix the named delta and re-run the same scan.
+
+### codebase_map_invalid
+
+- `codebase_map_invalid` — scan-codebase Step 10: `derive-codebase-map.sh` exit 4 — the derived map fails its own validation. ALWAYS STOP; read the deriver stderr, re-run.

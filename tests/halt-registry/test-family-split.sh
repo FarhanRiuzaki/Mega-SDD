@@ -72,7 +72,10 @@ B=$(wc -c < "$HP" | tr -d ' ')
 # ONE emitted halt (prd_source_unresolvable: enum token + a bare index row) cannot fit
 # without trimming unrelated rows. Same class as the two earlier raises above — the
 # registry grew by exactly one legitimately emitted halt, nothing else.
-[ "$B" -le 34000 ] && ok "b1 registry $B <= 34000" || fail "b1 registry regrew to $B"
+# 34000 -> 38000 (8.4.0 debt gate, spec 2026-09-16-doc-audit-debt-gate-design.md §3): 13 live
+# skill/script-emitted types registered (scan ×5, flow ×3, emit-agents-md ×4, subtype claim_verify_failed)
+# — terse rows only; the next_action.type enum shrank 12 -> 5 in the same edit.
+[ "$B" -le 38000 ] && ok "b1 registry $B <= 38000" || fail "b1 registry regrew to $B"
 OVER=""
 for f in "$FD"/*.md; do
   FB=$(wc -c < "$f" | tr -d ' ')
@@ -117,7 +120,8 @@ grep -qF 'Consumer dispatch logic MUST branch on `details.subtype`' "$HP" && ok 
 N9=$(grep -c '^- `[a-z0-9_]*` \*(subtype of `quality_gate_failed`)\*' "$HP")
 # 9 -> 7 (doc-audit 2026-08-23): replan_budget_exceeded + revalidate_budget_exceeded
 # deleted — zero emitters anywhere (never shipped); the count pins the LIVE set.
-[ "$N9" -eq 7 ] && ok "d2c all 7 subtype rows marked" || fail "d2c subtype row markers wrong: $N9"
+# 7 -> 8 (8.4.0): claim_verify_failed registered — live emitter in extract-intelligence Step 5.
+[ "$N9" -eq 8 ] && ok "d2c all 8 subtype rows marked" || fail "d2c subtype row markers wrong: $N9"
 
 echo "── d3: stop-class floor across family files (semantic-flip tripwire) ──"
 NSTOP=$(cat "$FD"/*.md | grep -o 'ALWAYS STOP' | wc -l | tr -d ' ')

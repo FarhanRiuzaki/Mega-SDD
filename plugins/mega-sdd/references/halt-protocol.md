@@ -72,7 +72,7 @@ The envelope is uniform across types so a single consumer can handle all of them
 
 ```yaml
 blocker:
-  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | binding_conflict | dep_missing | test_fail | ambiguous_spec | cycle_detected | cross_module_dep_invalid | module_cycle_detected | unit_oq_trace_missing | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing | bind_conflict_constitution_violation | bind_inputs_missing | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid | predictive_check_failed | invalid_handoff | handoff_type_mismatch | model_tier_unknown | pbt_citation_invalid | pbt_property_violated | handoff_missing | artifact_missing | partial_state_corrupt | dedup_ambiguous | hard_rule_unparseable | hard_rule_violated | prd_no_scopes_block_user_rejected_retrofit | prd_path_missing | prd_retrofit_low_confidence | quality_gate_failed | scope_not_declared_in_prd | install_failed | pkg_mgr_not_found | oq_tech_missing_mode | oq_recommend_underspecified | oq_scan_missing_query | oq_business_p1_unresolved | no_starterkit_detected | module_blocked_by | sprint_blocked_by | acceptance_path_unowned | hard_rule_unanchored | unit_underspecified | prd_source_unresolvable | plan_coverage_gap | verify_unit_writable | verify_grounding_untrusted | adoption_demote_confirm | delta_too_large | secret_in_code | sast_critical_finding | dep_not_found | review_critical_unresolved | batch_suite_red | batch_suite_gate_missing | postflight_evidence_missing | acceptance_evidence_missing | acceptance_red | build_broken | panel_evidence_missing | l0_evidence_missing | acceptance_expects_missing | anchor_missing | whitelist_violation | commit_rejected_by_hook | scope_creep_detected | bolt_artifacts_missing | hard_rule_mixed_grammar | convergence_max_reached | phase_stuck | anti_spin
+  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | binding_conflict | dep_missing | test_fail | ambiguous_spec | cycle_detected | cross_module_dep_invalid | module_cycle_detected | unit_oq_trace_missing | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing | bind_conflict_constitution_violation | bind_inputs_missing | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid | predictive_check_failed | invalid_handoff | handoff_type_mismatch | model_tier_unknown | pbt_citation_invalid | pbt_property_violated | handoff_missing | artifact_missing | partial_state_corrupt | dedup_ambiguous | hard_rule_unparseable | hard_rule_violated | prd_no_scopes_block_user_rejected_retrofit | prd_path_missing | prd_retrofit_low_confidence | quality_gate_failed | scope_not_declared_in_prd | install_failed | pkg_mgr_not_found | oq_tech_missing_mode | oq_recommend_underspecified | oq_scan_missing_query | oq_business_p1_unresolved | no_starterkit_detected | module_blocked_by | sprint_blocked_by | acceptance_path_unowned | hard_rule_unanchored | unit_underspecified | prd_source_unresolvable | plan_coverage_gap | verify_unit_writable | verify_grounding_untrusted | adoption_demote_confirm | delta_too_large | secret_in_code | sast_critical_finding | dep_not_found | review_critical_unresolved | batch_suite_red | batch_suite_gate_missing | postflight_evidence_missing | acceptance_evidence_missing | acceptance_red | build_broken | panel_evidence_missing | l0_evidence_missing | acceptance_expects_missing | anchor_missing | whitelist_violation | commit_rejected_by_hook | scope_creep_detected | bolt_artifacts_missing | hard_rule_mixed_grammar | convergence_max_reached | phase_stuck | anti_spin | drift_inputs_missing | scope_args_missing | vault_json_corrupt | scan_repo_too_large | scan_primary_app_ambiguous | scan_spawn_budget_exceeded | codebase_map_derive_failed | codebase_map_invalid | user_authored_conflict | vault_not_found | vault_corrupt | greenfield_no_bind_context
   tag: <stable identifier — OQ-AR-1, D-007, etc.>
   priority: P1 | P2 | P3 | n/a
   context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying diff-vault Step 6'>"
@@ -110,20 +110,13 @@ next_action: "<one-line prose string>"         # plain string form
 # next_action: <missing>                        → halt invalid_handoff during validation
 ```
 
-`type` enum (extensible per skill — only `re_run_producer` / `user_review` / `chain_complete` are script-emitted today by `validate-handoff-yaml.sh`; the rest are prose vocabulary for skill-authored envelopes):
+`type` enum — five values, each with a live emitter or consumer (the seven prose-only values that no skill, script, or fixture ever used were dropped in 8.4.0; the free-text `hint` carries any nuance):
 
-- `inspect_subskill_logs` — read chat_tail_excerpt + investigate sub-skill output
-- `rename_and_retry` — rename corrupt file to .corrupt-<timestamp> + re-run
-- `re_run_producer` — re-run the producer skill standalone to reproduce
-- `edit_skill_template` — fix skill body template emission (producer bug)
-- `user_install_dep` — user installs missing native binary
-- `user_resolve_oq` — user runs `resolve-oq` interactively
-- `user_review` — user inspects artifact + decides
-- `invoke_skill` — orchestrator auto-invokes recovery skill
-- `chain_complete` — terminal; no further action
-- `file_plugin_bug` — internal bug; user files at github.com/FarhanRiuzaki/Mega-SDD/issues
-- `log_and_continue` — soft halt; orchestrator logs + proceeds
-- `manual_review` — user reviews state manually (no auto-action)
+- `re_run_producer` — re-run the producer skill standalone to reproduce *(script-emitted by `validate-handoff-yaml.sh`)*
+- `user_review` — user inspects artifact + decides *(script-emitted)*
+- `chain_complete` — terminal; no further action *(script-emitted)*
+- `invoke_skill` — orchestrator auto-invokes a recovery skill (skill-authored envelopes; the handoff-types fixtures)
+- `inspect_subskill_logs` — read chat_tail_excerpt + investigate sub-skill output (skill-authored envelopes)
 
 Consumer dispatch (ANY halt-displaying surface — orchestrate-flow is the chain-path displayer; a skill halting on a STANDALONE run renders the same way):
 
@@ -144,7 +137,7 @@ One row per halt type. The full guidance body lives in the named family file
 (`references/halt-families/`) — load ONLY the family of the halt in hand; this
 index is the router and the registry-existence surface (grep a type name here).
 
-Rows below are the halt-type index — this index is the registry-existence surface (grep a type name here); the handoff validator checks envelope SHAPE, not type membership. Rows marked *(subtype of `quality_gate_failed`)* are NOT standalone types: they are emitted as `type: quality_gate_failed` + `details.subtype: <name>` (see §`quality_gate_failed` subtypes below). `skills/orchestrate-flow/references/halt-taxonomy.md` mirrors classification NAMES only; full guidance bodies live in `halt-families/`, these rows are the index.
+Rows below are the halt-type index — this index is the registry-existence surface (grep a type name here); the handoff validator checks envelope SHAPE and, since 8.4.0, WARNS (advisory `halt_type_unregistered` in its state, never a FAIL) on a blocker type this index does not carry. Validator DROP codes (`binding_missing`, `conflict_unresolved`, … in `.validation-blockers.json`) are not halt types: the emitting skill maps them to a halt (`conflict_unresolved` ⇒ `binding_conflict`). Rows marked *(subtype of `quality_gate_failed`)* are NOT standalone types: they are emitted as `type: quality_gate_failed` + `details.subtype: <name>` (see §`quality_gate_failed` subtypes below). `skills/orchestrate-flow/references/halt-taxonomy.md` mirrors classification NAMES only; full guidance bodies live in `halt-families/`, these rows are the index.
 
 **intent-and-vault** (`halt-families/intent-and-vault.md`):
 
@@ -162,6 +155,7 @@ Rows below are the halt-type index — this index is the registry-existence surf
 **extract** (`halt-families/extract.md`):
 
 - `quality_gate_failed` — extract-intelligence: a module's per-module quality gate failed twice for the same module (frontmatter / sections / gotcha floor / Mermaid flow / citation discipline). ALWAYS STOP; gate output verbatim. → `halt-families/extract.md`
+- `claim_verify_failed` *(subtype of `quality_gate_failed`)* — extract-intelligence claim-verify lane: the same module's verify report shows `wrong_load_bearing > 0` twice. ALWAYS STOP; findings verbatim in the halt. → `halt-families/extract.md`
 
 **scan** (`halt-families/scan.md`):
 
@@ -169,6 +163,11 @@ Rows below are the halt-type index — this index is the registry-existence surf
 - `deep_scan_cache_corrupt` — scan-codebase: starterkit-context.yaml exists but fails YAML parse. Soft halt: cache au…
 - `deep_scan_subagent_all_failed` — scan-codebase: ALL 5 deep-scan slice subagents failed (likely API outage). ALWAYS STOP:…
 - `dep_missing` — scan-codebase: a FORCED engine's binary not found (ast-grep under --engine=ast-grep… *(also emitted by execute-bolts — test runner absent (preflight 3.5) or ast-grep absent under v2 grammar — and the emit lane)*
+- `scan_repo_too_large` — scan-codebase: repo > 100k files and no `--force-large`. ALWAYS STOP; re-run with `--force-large` or narrow `--include=`. → `halt-families/scan.md`
+- `scan_primary_app_ambiguous` — scan-codebase: monorepo with ≥2 app-root manifests, no `--include`, no root manifest. ALWAYS STOP; re-run with `--include=<app dir>`. → `halt-families/scan.md`
+- `scan_spawn_budget_exceeded` — scan-codebase (undecided STANDALONE lane only): estimated extraction > 60 s with no explicit `--engine=` / `--include=`. ALWAYS STOP; re-run with an explicit engine or include, or unattended (`--auto`). → `halt-families/scan.md`
+- `codebase_map_derive_failed` — scan-codebase Step 10: `derive-codebase-map.sh` exit 2 — a delta gap. ALWAYS STOP; fix the named delta and re-run the same scan. → `halt-families/scan.md`
+- `codebase_map_invalid` — scan-codebase Step 10: `derive-codebase-map.sh` exit 4 — the derived map fails its own validation. ALWAYS STOP; read the deriver stderr, re-run. → `halt-families/scan.md`
 
 **bind** (`halt-families/bind.md`):
 
@@ -257,6 +256,9 @@ Rows below are the halt-type index — this index is the registry-existence surf
 - `convergence_max_reached` — orchestrate-flow: convergence loop hit `--max-cycles`. User reviews cycle history (enve…
 - `phase_stuck` — factory-line: a phase failed to reach a green checkpoint within the retry cap (default…
 - `anti_spin` — factory-line: a phase re-ran with an identical unresolved set (no progress); the loop s…
+- `drift_inputs_missing` — detect-drift Step 0 (fork-ready — it cannot ask): the vault or code dir is unresolvable from the args / CWD. ALWAYS STOP; re-invoke with `--code=<repo-root>` and/or `--vault=<vault-dir>`. → `halt-families/flow.md`
+- `scope_args_missing` — `validate-handoff-yaml.sh`: an execute-bolts handoff carries a `scope:` block and routes to detect-drift without `--scope=<id>` in `next_action.suggested_args` — the scope would die at the seam. ALWAYS STOP; add the flag. → `halt-families/flow.md`
+- `vault_json_corrupt` — `scripts/ground.sh` Guard 1: a `vault.json` fails to parse; the mode guard skips it and prints the file. **[C1 SELF-RESOLVE — never halts on the primary path]** Resolution: `derive-vault-json.sh --vault <dir>`. → `halt-families/flow.md`
 - `starterkit_metrics_inconsistent` *(subtype of `quality_gate_failed`)* — orchestrate-flow: generate-units handoff reports `units_with_starterkit_rules > 0` but…
 
 **emit** (`halt-families/emit.md`):
@@ -267,12 +269,16 @@ Rows below are the halt-type index — this index is the registry-existence surf
 - `signoff_fabricated` *(subtype of `quality_gate_failed`)* — emit-sit: a §5 Sign-off body row in `SIT.md` carries non-placeholder text in the Nama /…
 - `execution_fabricated` *(subtype of `quality_gate_failed`)* — emit-uat: a §2 execution cell / tester footer, §3 RTM status, or §4 berita-acara/sign-o… (ANNEX_FORGED)
 - `marker_stripped` *(subtype of `quality_gate_failed`)* — emit-prd: a PRD line citing a knowledge-base claim lost (or upgraded) that claim's `[VE…
+- `user_authored_conflict` — emit-agents-md under `--auto`: AGENTS.md exists, user-authored, no mega-sdd marker (an interactive run asks sibling / append / skip). ALWAYS STOP; re-run interactively or pick `sibling`. → `halt-families/emit.md`
+- `vault_not_found` — emit-agents-md: no vault resolvable from the args / CWD. ALWAYS STOP; pass the vault path. → `halt-families/emit.md`
+- `vault_corrupt` — emit-agents-md: `vault.json` lacks a required field. ALWAYS STOP; re-derive it (`derive-vault-json.sh --vault <dir>`). → `halt-families/emit.md`
+- `greenfield_no_bind_context` — emit-agents-md: a greenfield vault with no bind context to render. ALWAYS STOP; run the chain to bolts first (or `--lite`). → `halt-families/emit.md`
 
 #### `quality_gate_failed` subtypes
 
 The `quality_gate_failed` halt carries a `subtype:` discriminator. Canonical subtype enum — these are emitted as `type: quality_gate_failed` + `details.subtype: <name>`, **NOT** as standalone halt types:
 
-*(omitted / `module_quality_threshold_unmet`)* · `starterkit_metrics_inconsistent` · `pdf_render_failed` · `template_slot_unfilled` · `citation_unresolvable` · `signoff_fabricated` · `execution_fabricated` · `marker_stripped`
+*(omitted / `module_quality_threshold_unmet`)* · `starterkit_metrics_inconsistent` · `pdf_render_failed` · `template_slot_unfilled` · `citation_unresolvable` · `signoff_fabricated` · `execution_fabricated` · `marker_stripped` · `claim_verify_failed`
 
 Consumer dispatch logic MUST branch on `details.subtype` field. If `subtype` is absent OR empty, treat as the `module_quality_threshold_unmet` semantic (extract-intelligence; pre-v7.6 records may carry the historical label `wave_quality_threshold_unmet` — same semantic). Full guidance per subtype lives in the family files the index routes to (emit-lane subtypes → `halt-families/emit.md`; starterkit/budget guards → `halt-families/flow.md`; the extract default → `halt-families/extract.md`).
 
