@@ -48,12 +48,17 @@ Run the generate-units candidate walk (`../generate-units/SKILL.md` Steps 2 → 
 - **xs body diet** for the router's xs class (1–2 acceptance entries AND ≤3 steps): Goal ONE line, Context ≤2 sentences, steps ≤3, no Anti-patterns / Out of scope unless every item is sourced. `validate-unit-spec.sh` lists offenders in `xs_body_advisory` — trim before Step 5 ends.
 - **Step 12.4 constitution inject**, **12.4.5 pack provenance**, **12.5 render pass a–h**, **12.6 dedup**, **12.7 sibling sweep** — unchanged (the validators run in Step 5). **12.8 plan coverage** — runs in Step 5 as the LAST validator.
 - `_index.md` — per `../generate-units/references/auto-and-memory.md §_index.md` (module groups, Mermaid DAGs, topological order).
+- **PRE-CODE diet (8.3.0 L2/L3, spec `2026-09-16-clinic-levers-design.md`, MEASUREMENT PENDING — MEASURED cause: the clinic plan took 56 m, §2f):**
+  - **Grammar source (L3a):** the SHAPE every validator parses is in `references/unit-grammar-cheatsheet.md` (each regex copied verbatim and parity-pinned) — read it; **never open `validate-*.sh` / `_lib/*.py` to learn a field** (±10 m of the 56).
+  - **Write in batches (L3b):** units are written one module per message — every unit Write of that module in ONE turn (≤ 8 Writes), never one unit per turn (13 m for 22 sequential writes); Step 5 validates the batch.
+  - **Adversarial review in parallel (L3c):** the Step 9.5 review of every `risk: high` unit is ONE message dispatching N read-only `Explore` reviewers at once, never serial (±20 m serial for 5 units); gaps merge with `_authored_by:` exactly as before.
+  - **DAG shape (L2):** depth ≤ 4 hops, no hub with ≥ 3 direct dependents unless it is a true foundation (schema/migration), no unit with > 6 steps or > 4 `target_files` — `validate-unit-spec.sh` names offenders in `dag_shape_advisory` (critical path, hubs, split candidates); split or reorder before Step 5 ends. The clinic critical path U-001→…→U-021 was 5 hops ≈ the whole bolt-stage once the panel barrier was gone.
 
 ## Step 5 — validator order + halt mapping
 
 | # | Run | On non-zero |
 |---|---|---|
-| 1 | `validate-unit-spec.sh --cwd=<root> --vault=<vault>` | `unit_underspecified` / `hard_rule_unparseable` / `prd_source_unresolvable` / `render_test_missing` — fix the unit, re-run; advisories (`xs_body_advisory`, `vault_source_advisory`) = trim |
+| 1 | `validate-unit-spec.sh --cwd=<root> --vault=<vault>` | `unit_underspecified` / `hard_rule_unparseable` / `prd_source_unresolvable` / `render_test_missing` — fix the unit, re-run; advisories (`xs_body_advisory`, `vault_source_advisory`) = trim; `dag_shape_advisory` = split/reorder (L2) |
 | 2 | `validate-flow-coverage.sh --cwd=<root>` | BLOCKING gate (state file FAIL blocks execute-bolts): add the missing per-step artifact units |
 | 3 | `validate-sibling-consistency.sh --cwd=<root>` (project-wide; NO `--vault=` — unknown args are `exit 2` + a `STATUS: ERROR` first line) | fix the divergent sibling |
 | 4 | `validate-plan-coverage.sh --cwd=<root> --prd=<prd> --vault=<vault>` | exit 1 → halt `plan_coverage_gap` (the gaps ARE the finding: add a unit / raise an OQ quoting the heading / move it under an explicit Out-of-scope heading — never patch the census) |

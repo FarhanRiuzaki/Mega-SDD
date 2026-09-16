@@ -70,6 +70,7 @@ Grounded (every non-trivial claim cites PRD §) · honest about gaps (OQs over g
 
 - **`references/plan-procedure.md`** — Steps 0–7 in detail: pins, the working table + A1 contract, context.md authoring order, the units delta list vs generate-units, the batched-ask shape (keterangan, >4 overflow rule), the self-check table, headless behavior.
 - **`references/templates/context.md`** — the layout-3 template (read before Step 3).
+- **`references/unit-grammar-cheatsheet.md`** — the machine-read SHAPE of every unit/context field (regexes verbatim, parity-pinned); read this instead of validator source (L3a).
 - Owning contracts (unchanged, cross-skill): `../generate-intent/references/vault-core.md` (§OQ-conventions, §Auto-classifier heuristics, §constitution, §id-stability), `../generate-intent/references/generation-guide.md` (§Readability, §Project scale xs, §Mandatory section template), `../generate-intent/references/setup-flow.md` (§Step 0.9 scope), `../generate-intent/references/self-check.md`; `../generate-units/references/unit-schema.md`, `task-typing.md`, `decomposition-rails.md`, `validation-passes.md`, `starterkit-derivation.md`, `adversarial-test-prompt.md`, `templates/unit.md`, `auto-and-memory.md`.
 
 ## Related skills
