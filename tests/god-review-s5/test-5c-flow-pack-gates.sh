@@ -238,7 +238,13 @@ sed -e 's|app/Http/Controllers/|src/controllers/|g' -e 's|app/Http/|src/|g' \
     -e 's|\.blade\.php|.tpl.html|g' -e 's|Eloquent|the ORM|g' \
     -e 's|artisan|the cli|g' -e 's|blade|tpl|g' -e 's|Blade|Tpl|g' \
     -e 's|composer\.json|the manifest|g' -e 's|app/Models/|src/models/|g' \
+    -e 's|^- \*\*Doc-comment tool\*\*: <.*|- **Doc-comment tool**: doc comments — **read by**: none by default. A full block only on public API consumed outside this module.|' \
+    -e 's|^- \*\*Skip\*\*: <.*|- **Skip**: members whose name and signature already say it.|' \
+    -e 's|^- \*\*Write\*\*: <.*|- **Write**: the non-obvious contract the name hides.|' \
+    -e 's|^- \*\*Names carry the meaning\*\*: <.*|- **Names carry the meaning**: predicates isX/hasX, verb-first functions, plural collections.|' \
     "$WORK/r2raw.md" > "$WORK/r2teststack.md"
+# (the four `## Code style` slots are filled too — REQUIRED since 8.2.0, Check 2 header + Check 6
+#  shape; a raw copy keeps its `<placeholder>` bullets and is caught by Check 6 as the README warns)
 bash "$VPK" "$WORK/r2teststack.md" >/dev/null 2>&1 && ok "r2 S5R-2b: filled hand-scaffold (README path) passes lint" || fail "r2 S5R-2b: filled hand-scaffold fails lint — README authoring path broken"
 
 # ── GU-SKC-INDENT ──
