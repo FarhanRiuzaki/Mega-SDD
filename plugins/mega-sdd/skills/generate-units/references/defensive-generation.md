@@ -26,7 +26,7 @@ Mitigates "ngawang" (floating/disconnected) units. User UX request:
 - Anchor unresolved → WARNING in unit body (not halt; anchors can be aspirational)
 - Confidence label HIGH/MEDIUM/LOW visible in unit frontmatter + chat output
 
-## Step 0.5 — Pre-flight upstream check (NEW)
+## Step 0.5 — Pre-flight upstream check
 
 Before vault parsing (Step 1), detect missing upstream signals:
 

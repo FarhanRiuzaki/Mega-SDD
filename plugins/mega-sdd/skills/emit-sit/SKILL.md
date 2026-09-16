@@ -73,7 +73,7 @@ Fill `references/sit-template.md` slots (frontmatter header + per-section narrat
 
 ### Step 4.5: Unfilled-slot scan
 
-`grep -oE '\{\{[a-z0-9_-]+\}\}' <vault>/sit/SIT.md` — ANY hit → halt `quality_gate_failed` with subtype `template_slot_unfilled`; STOP before render. (SIT/PRD lanes use this in-skill scan — `validate-fsd-slots.sh` stays FSD-scoped per `plugins/mega-sdd/references/emission-engine.md §P5 seams`.)
+`grep -oE '\{\{[a-z0-9_-]+\}\}' <vault>/sit/SIT.md` — ANY hit → halt `quality_gate_failed` with subtype `template_slot_unfilled`; STOP before render. (SIT/PRD lanes use this in-skill scan — `validate-fsd-slots.sh` stays FSD-scoped per `plugins/mega-sdd/references/emission-engine.md §Doc-pack seams`.)
 
 ### Step 4.6: Stamp citations + write the map (script-run, BEFORE render)
 

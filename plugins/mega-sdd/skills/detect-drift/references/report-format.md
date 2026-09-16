@@ -131,7 +131,7 @@ In the **sync lane** (Mode D) the chain auto-continues to claim-scoped re-bind (
 - Record which dirs were scanned vs excluded.
 - If a framework was mis-detected, re-run with an explicit `SCOPE_DIRS` override.
 
-## Vault write-back protocol (Step 5.5 — living-vault S5)
+## Vault write-back protocol (Step 5.5)
 
 Spec `2026-06-10-living-vault-continuous-sync-design.md` lifts the old "report-only" boundary for VAULT-side actions, with guardrails. Code-side remains untouched: the skill never edits app source (`FIX_CODE` directions stay out-of-band, queued in `PENDING-SYNC.md` for human follow-up).
 

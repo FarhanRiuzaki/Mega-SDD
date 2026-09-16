@@ -148,7 +148,7 @@ Per-journey format (MERMAID MANDATE — never prose-only, never ASCII):
 All `{{slot_name}}` markers MUST be filled OR explicitly stamped `[Pending — <source> not yet generated]`.
 A leftover `{{slot}}` after assembly = halt `quality_gate_failed:template_slot_unfilled` (SKILL Step 4.5
 in-skill grep — the PRD lane's slot scan; `validate-fsd-slots.sh` stays FSD-scoped per
-`plugins/mega-sdd/references/emission-engine.md §P5 seams`).
+`plugins/mega-sdd/references/emission-engine.md §Doc-pack seams`).
 
 Citation footers use the engine format:
 

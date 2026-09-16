@@ -139,7 +139,7 @@ Every writer regenerates by **running the script** — never by editing the JSON
 - `bind-codebase` Step 6 — audit log append: `derive-vault-json.sh --vault <dir> --event '{"event":"bind",…}'`.
 - `detect-drift` — dual-lane. The **diagnostic lane** never regenerates (reports only — DRIFT-REPORT.md / PENDING-SYNC.md). The **`--auto-apply=safe` explicit-ACCEPT write-back lane** regenerates like every writer: after applying the accepted vault patches it runs `derive-vault-json.sh --vault <vault-dir>` (script-held lock; per the §Concurrency detect-drift exception + detect-drift SKILL Step 6).
 
-### Concurrency contract (closes audit D3-012)
+### Concurrency contract
 
 The exclusive advisory file lock on `<vault>/vault.json.lock` is acquired **BY `scripts/derive-vault-json.sh` itself** — a single implementation, no per-skill lock dance. This prevents data corruption from concurrent-tab / concurrent-session writes. Lock semantics: atomic `O_EXCL` create, bounded backoff + retry, release on all exit paths — the plugin's single advisory-lock pattern (this section is its canonical spec).
 

@@ -73,7 +73,7 @@ Echo `VAULT_DIR=<resolved-absolute-path>` after Step 0 and re-echo at the start 
 
 **Step 5 — Present summary.** Stats (`{R} resolved · {O} OOS · {D} deferred · {S} skipped · {N} unreached (Esc ended the walk before them — name the resume tag) · {U} untouched`); new `v{X.Y}`; absolute `VAULT_DIR`; top 3 remaining P1 blockers if any; next step (re-run after stakeholder follow-up; lock manually for sprint). If any OQs deferred to binding → suggest `scan-codebase && bind-codebase` (brownfield, classic lane; on the lite lane the JIT bind at `execute-bolts --all --lite` resolves them per wave) or warn there is no resolution path (greenfield). No "I have resolved…" preamble.
 
-## KB mode (7.21.0 — spec 2026-09-02-kb-oq-resolution-and-human-language.md)
+## KB mode (spec 2026-09-02-kb-oq-resolution-and-human-language.md)
 
 Entered ONLY from Step 0's no-vault-but-KB offer. Walks the `## 6. Open Questions` section of every `<kb>/modules/*.prd.md` — the tag convention (`OQ-<DOMAIN>-<NN> [P1|P2|P3]`) is already vault-identical, and the per-OQ prompt keeps the canonical shape (4 slots + Other + Esc, keterangan rules, no-invention). Differences vs the vault walk, exhaustive:
 

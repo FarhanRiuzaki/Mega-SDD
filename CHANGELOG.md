@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [8.4.1] - 2026-09-16 — follow-up debt gate: rename heading/ToC ber-archaeology + sel rationale model-tiers (docs-only)
+
+Spec `docs/superpowers/specs/2026-09-16-doc-audit-debt-gate-design.md §5`. Diet 8.4.0 sengaja tidak menyentuh heading (anchor `§` + mirror `## Contents` ikut bergeser); rilis ini merapikannya dalam satu skrip assert-once, setiap mirror ikut dipindah.
+
+### Changed
+- 19 heading dibersihkan dari tag rilis/ronde/iter/tanggal — a.l. `## KB mode (7.21.0 — spec …)`, `## Rotation policy (per ITER6-OQ-7 resolved)`, `## Migration command (per ITER6-OQ-2 …)`, `### Concurrency contract (closes audit D3-012)`, `## Adversarial test review pass (… closes audit D4-006)`, `## Specialist references (… v7 R4 loading contract)`, `# Shared Snapshot Schema (v1.1, Iter 30 → extended Iter 46)` + 4 sub-heading producer/consumer, `## Register — natural, bukan baku (mandat …, 2026-08-31; ronde 3 …)`, `## OQ authoring — human-first (mandat tim, 2026-09-02)`, `## v7.1 office rollout runbook`, `## P5 seams (declared in P3 — resolved in P5)` → `## Doc-pack seams (declared, deliberately not generalized)` (+5 sitasi `§P5 seams` → `§Doc-pack seams`), `## Vault layout (v7 layout-2 ↔ …)`, `### Layout-3 (v8, … ; 8.0)`, `## §halt-protocol — Unified blocker envelope (v0.14, extended v1.1)`, `### Type-specific schemas (v1.1 additions)`, `## Vault write-back protocol (… living-vault S5)`, `## Step 0.5 — Pre-flight upstream check (NEW)`, `## Lite lane exemption (v8 P2)`, `## One-screen halt (…, v8 P1.e — …)`, `### XS emission (…, approved 2026-09-05)`. ToC + anchor mirror (`#rotation-policy`, `#multi-squad-detection`) ikut dipindah.
+- Tombstone `## enrich-semantics` (**REMOVED.**) + baris ToC-nya di diagnostics-procedures dihapus; pointer di chain-execution ditulis ulang tanpa link mati.
+- `model-tiers.md` sel Rationale `(scan-codebase Iter 32)` ×4 dan `Claim-verify lane (7.25.0)` dibersihkan — dua sel pertama (`| N | \`role\` |`, yang dibaca `ground.sh`) tidak disentuh.
+- `tests/v8-plan/test-lite-2hop.sh` re-pin ke prefix `^## Lite lane exemption` (pin = section-nya ada, bukan tag versinya).
+- Dipertahankan sengaja: `## AMENDMENT 2026-07-31` / `## Re-decided amendments (2026-07-31)` (rekaman pengukuran bertanggal, dipin test), nama fitur W1/W2, heading versi skema `starterkit-context-schema.md` (diskriminator runtime), `queries/VERSIONS.md` (katalog ber-pin), pointer file spec.
+
+### Notes
+- 27 file runtime: 525.748 → 524.773 B (−975 B). Suite lokal dua tree: 465 suite / 0 merah. Leg scm tidak di-push (VPN).
+- Audit-driven hardening T2/T3 yang tercatat "belum dibangun" di memori sesi ternyata sudah SHIPPED 7.10.0 / 7.11.0 / 7.12.0 (spec 2026-08-30 §2.4/§3.5/§6) — catatan dikoreksi, tidak ada yang perlu dibangun.
+
 ## [8.4.0] - 2026-09-16 — debt gate doc-audit v8: 20 temuan kode ditutup (FIX/WONTFIX by design), 13 halt hidup didaftarkan, debt test/fixture dibereskan, keputusan owner §8 diterapkan, diet archaeology versi di prose runtime
 
 Spec `docs/superpowers/specs/2026-09-16-doc-audit-debt-gate-design.md` (sumber: laporan `research/2026-09-16-doc-audit-v8.md` §7–§8, §10). Owner call: "gas semua beresin" — setiap item debt dapat resolusi FIX (kode + test), DECIDE (keputusan diterapkan), atau WONTFIX (by design, alasan tertulis). Tidak ada test dihapus atau dilonggarkan; pin yang PREMIS-nya berubah oleh spec ini di-re-pin ke nilai terukur dengan alasan di komentarnya.

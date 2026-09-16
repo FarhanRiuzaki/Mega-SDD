@@ -62,7 +62,7 @@ C3 halts are enforced by `plugins/mega-sdd/scripts/validate-handoff-*.sh` valida
 
 Halts not yet classified (or in older skill bodies) default to legacy behavior (ALWAYS STOP). The current C1 census is carried inline in the registry — each C1 halt's index row and family entry is marked **C1 SELF-RESOLVE**; a row without that mark is not C1.
 
-## §halt-protocol — Unified `blocker` envelope (v0.14, extended v1.1)
+## §halt-protocol — Unified `blocker` envelope
 
 When a skill running in `--auto` mode hits something that requires human judgment (unresolved P1 OQ blocking downstream work, diff-vault conflict, framework mismatch), it emits a structured YAML artifact called a **blocker**. The orchestrator (`/mega-sdd`) catches blockers, pauses the chain, and surfaces the artifact in chat for the user to act on.
 
@@ -103,7 +103,7 @@ next_action:
   hint: "<one-line user-facing instruction>"   # required
   commands: ["<bash command>", ...]            # optional; ordered list of recovery commands
 
-# LEGACY (accepted for backward compat, pre-v0.15):
+# LEGACY (accepted for backward compat):
 next_action: "<one-line prose string>"         # plain string form
 
 # OMITTED (NOT accepted):
@@ -129,7 +129,7 @@ Consumer dispatch (ANY halt-displaying surface — orchestrate-flow is the chain
 2. Else read `next_action.hint` if it's a string → display as plain text
 3. Else (no next_action) → emit `invalid_handoff` halt at validation gate
 
-**Backward compatibility:** all pre-v0.15 halt emit sites work unchanged. The canonical shape is RECOMMENDED for new halts but not enforced — consumers fall back to legacy string-only form.
+**Backward compatibility:** legacy halt emit sites work unchanged. The canonical shape is RECOMMENDED for new halts but not enforced — consumers fall back to legacy string-only form.
 
 ### Type-specific guidance — registry index
 
@@ -322,7 +322,7 @@ Only the unified `blocker:` envelope is accepted — the pre-1.0 bare `oq_blocke
 - `context` is human-readable; keep it short (one line). It's not a structured field.
 - For `diff_conflict`, `options` MUST list the user choices as `{code, keterangan}` pairs — the code verbatim from the diff report, the keterangan saying what choosing it does (e.g. `supersede` — keputusan baru menggantikan yang di vault; `keep_vault` — tolak perubahan PRD, vault tetap; `capture_both` — catat keduanya sebagai OQ untuk stakeholder). An optional `recommended: <code>` carries a one-line rationale. (Legacy bare-string arrays are read-compatible; the DISPLAYER still renders the legend per step 0.)
 
-### Type-specific schemas (v1.1 additions)
+### Type-specific schemas
 
 ```yaml
 # bind_conflict — emitted by bind-codebase when CONFLICT count > 0

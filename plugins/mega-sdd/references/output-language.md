@@ -70,7 +70,7 @@ A human-facing question the human cannot answer from the prompt alone is a defec
 
 Descriptions follow the standing Tier-2 language precedence (Indonesian-mix by default). This contract binds the halt displayer (`plugins/mega-sdd/references/halt-protocol.md §Consumer dispatch` renders a keterangan block BEFORE the envelope YAML) and every skill prompt template; pinned by `tests/interaction-keterangan/`.
 
-## Register — natural, bukan baku (mandat user + tim, 2026-08-31; ronde 3 2026-09-03: bahasa apa pun)
+## Register — natural, bukan baku (mandat user + tim: bahasa apa pun)
 
 Semua prosa yang plugin HASILKAN — **bahasa apa pun: Indonesia, English, atau mix** (ronde 3, mandat owner: "disemua doc result… mau bahasa inggris ataupun indonesia or mix") — di Tier-2 narasi + Tier-3 artefak (vault, KB, binding, laporan, keterangan, emissions) ditulis sebagai **bahasa kerja engineer yang natural**, bukan bahasa dokumen resmi atau terjemahan harfiah. Istilah teknis dipakai apa adanya; kalimat aktif dan langsung; kata upacara dibuang — di bahasa mana pun.
 
@@ -102,7 +102,7 @@ Rambu:
 - Tier-1 tak tersentuh (enum, verdict, ID, path — English verbatim); "vault ikut bahasa input" tak berubah — pilihan BAHASA tetap diatur precedence/Tier-3, register ini mengatur GAYA di bahasa yang terpilih (ronde 3: ID, EN, dan mix semuanya kena; dulu hanya prosa Indonesia).
 - **Kutipan tetap kutipan:** teks yang dikutip/disitasi dari sumber (PRD excerpt, klausa, jawaban user verbatim) TIDAK di-rewrite ke register natural — citation discipline menang.
 
-## OQ authoring — human-first (mandat tim, 2026-09-02)
+## OQ authoring — human-first (mandat tim)
 
 §Register mengatur register (kaku vs natural); section ini mengatur **komprehensibilitas** — keluhan lapangan: "bahasa OQ seperti alien". Berlaku untuk SEMUA teks OQ yang DITULIS ke artifact (KB PRD-kontrak §6, vault `constraints.md ## Open Questions`, propagasi binding):
 

@@ -169,7 +169,7 @@ Per unit: a `<vault>/bolts/U-XXX/` dir (created deterministically at Procedure S
 
 After the last unit: suggest `detect-drift` to verify the bolts honored the vault; show a summary (N done, M failed, P skipped). **Auto-render HTML (0 model tokens):** run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-html.sh" <vault>/bolts/_summary.md` and name the html path in the summary — the batch report as a shareable offline page. Fail-open (one warning line, never a halt); skip when `.mega-sdd/config.yaml` has `render_html: off`. Under `--auto`, emit the handoff YAML (artifacts one-line-per-bolt with NO range shorthand; `starterkit_context` + `metrics` incl. `acceptance_test_concerns`; conditional `scope:` block). End-of-chain phase advancement (multi-phase rebuild) and the full handoff YAML schema → `references/halts-and-handoff.md`.
 
-## Specialist references (load on the stated condition — v7 R4 loading contract)
+## Specialist references (load on the stated condition)
 
 **Every implement unit (the default lane):**
 - `references/superpowers-bridge.md` — dispatch order, the review-panel per-unit flow, whitelist enforcement, bolt-report schema.

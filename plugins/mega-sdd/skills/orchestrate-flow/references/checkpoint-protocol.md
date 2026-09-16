@@ -13,7 +13,7 @@ Inspired by LangGraph's checkpoint-per-node pattern (33k ⭐); implemented as JS
 - [Skill responsibilities](#skill-responsibilities)
 - [Append-only writes (race-tolerant)](#append-only-writes-race-tolerant)
 - [Resume command](#resume-command)
-- [Rotation policy](#rotation-policy-per-iter6-oq-7-resolved)
+- [Rotation policy](#rotation-policy)
 - [Integration with handoff YAML](#integration-with-handoff-yaml)
 - [Backward compatibility](#backward-compatibility)
 - [Privacy + cleanup](#privacy--cleanup)
@@ -81,7 +81,7 @@ For `--auto` mode invocations (via orchestrate-flow), resume is automatic on `/m
 
 > **Two-level resume:** checkpoints resume a skill's *sub-step*; they do NOT pick the phase. A *completed* phase (artifacts present) is skipped by the orchestrator regardless of any stale checkpoint, so chain-level "no state file" and skill-level checkpoint resume never conflict. Full precedence table → handoff-contract.md §Resume mechanics.
 
-## Rotation policy (per ITER6-OQ-7 resolved)
+## Rotation policy
 
 - Keep checkpoints for last 3 runs in `<vault>/.internal/checkpoints/`
 - Older checkpoints moved to `<vault>/.internal/checkpoints-archive/`

@@ -72,13 +72,13 @@ notice instead of validating silently and doing nothing).
 
 | # | Role | Tier | Rationale |
 |---|---|---|---|
-| 1 | `auth-extractor` | sonnet | Fuzzy detection across 5 auth libs + version + features; multi-file evidence (scan-codebase Iter 32) |
-| 2 | `authz-extractor` | sonnet | Same pattern; RBAC libs + middleware + policies (scan-codebase Iter 32) |
-| 3 | `ui-ux-extractor` | sonnet | Multi-domain (JS+CSS+notification+icon+datatable+idioms); empirically-grounded idiom inference needs reasoning (scan-codebase Iter 32) |
-| 4 | `libs-extractor` | sonnet | Manifest parsing + category mapping + usage-hint grep across many libs (scan-codebase Iter 32) |
+| 1 | `auth-extractor` | sonnet | Fuzzy detection across 5 auth libs + version + features; multi-file evidence (scan-codebase deep-scan slice) |
+| 2 | `authz-extractor` | sonnet | Same pattern; RBAC libs + middleware + policies (scan-codebase deep-scan slice) |
+| 3 | `ui-ux-extractor` | sonnet | Multi-domain (JS+CSS+notification+icon+datatable+idioms); empirically-grounded idiom inference needs reasoning (scan-codebase deep-scan slice) |
+| 4 | `libs-extractor` | sonnet | Manifest parsing + category mapping + usage-hint grep across many libs (scan-codebase deep-scan slice) |
 | 5 | `reuse-extractor` | sonnet | First-party source trawl (helpers/model_api/services/commands); multi-file pattern recognition; outputs reuse-index.yaml (scan-codebase reuse-awareness) |
 | 6 | `extract-intelligence-module` | sonnet | Per-module PRD-kontrak extraction; bounded file-set per agent, disciplines ride the agent body (extract-intelligence). Synthesis (README roll-up + data-mutation-policy) runs on the MAIN thread — no dispatched role |
-| 23 | `extract-intelligence-verify` | sonnet | Claim-verify lane (7.25.0): adversarial per-module citation grading against explicit claims with a known output schema — the spec-reviewer/resolution-verifier class of bounded judgment; escalate via `model_tiers:` override for gnarly legacy dialects |
+| 23 | `extract-intelligence-verify` | sonnet | Claim-verify lane: adversarial per-module citation grading against explicit claims with a known output schema — the spec-reviewer/resolution-verifier class of bounded judgment; escalate via `model_tiers:` override for gnarly legacy dialects |
 | 15 | `implementer` | sonnet | Typical implementation task (subagent-driven-development pattern); user can override to opus for complex tasks |
 | 16 | `spec-reviewer` | sonnet | Compliance verification against spec (subagent-driven-development pattern) |
 | 17 | `code-quality-reviewer` | **opus** | Deep code review; cross-cutting concerns; security/performance (subagent-driven-development pattern) |
@@ -153,7 +153,7 @@ When a future iter introduces a new subagent dispatch:
 - `plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md` §`model_tiers:` (handoff metadata schema)
 - `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol (`model_tier_unknown` halt definition)
 
-## v7.1 office rollout runbook (per-unit routing)
+## Office rollout runbook (per-unit routing)
 
 1. **Probe the build first (1 line, never assume):** dispatch `Agent(subagent_type: general-purpose, model: "haiku")` asking the agent to quote its own system-prompt model line. Reply names Haiku → the `model` param works on that build; reply names the session model → STOP, report (frontmatter wins there — the file-variant fallback is a separate decision, do not build it ad hoc).
 2. **Gateway sessions (mega-code):** the model aliases must resolve at the office gateway; if they do not, set `model_tiers.bolt_implementer: inherit` (or a hard value the gateway serves) per project — the config neutralizes routing without a plugin change.

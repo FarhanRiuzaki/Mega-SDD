@@ -66,6 +66,36 @@ Rules carried from the audit runbook and the repo contract: code at HEAD is the 
 
 Clinic levers measurement (paid xs runs), P4 office field run, extras live run, the scm push (VPN). Listed so the debt ledger is complete, not because this cycle touches them.
 
-## 5. Verification
+## 5. Follow-up (8.4.1) — heading / ToC archaeology + model-tiers rationale cells
+
+The 8.4.0 diet left headings untouched (renaming a heading moves its `§` anchor and its `## Contents` mirror). This follow-up renames the headings that carried only provenance and moves every mirror with them, in one script with assert-once replacements:
+
+| Heading (before → after) | Mirrors moved |
+|---|---|
+| `## KB mode (7.21.0 — spec …)` → `## KB mode (spec …)` | none |
+| `## Adversarial test review pass (Step 9.5 — closes audit D4-006)` → `(Step 9.5)` | SKILL.md step 9.5 prose |
+| `## Lite lane exemption (v8 P2)` → `## Lite lane exemption` | `tests/v8-plan/test-lite-2hop.sh` re-pinned to the prefix (the pin is about the section existing) |
+| `## Rotation policy (per ITER6-OQ-7 resolved)` → `## Rotation policy` | ToC anchor |
+| `### Concurrency contract (closes audit D3-012)` → `### Concurrency contract` | none (`§Concurrency contract` cites keep matching) |
+| `## Migration command (per ITER6-OQ-2 resolved explicit)` → `## Migration command` | ToC |
+| `## One-screen halt (W1 zero-idle, v8 P1.e — spec …)` → `(W1 zero-idle — spec …)` | none |
+| `### XS emission (… §1b, approved 2026-09-05)` → `(… §1b)` | none |
+| `## Specialist references (… — v7 R4 loading contract)` (execute-bolts) → `(load on the stated condition)` | none |
+| `# Shared Snapshot Schema (v1.1, Iter 30 → extended Iter 46)` + 4 producer/consumer sub-headings | intro paragraph reworded |
+| `## Register — natural, bukan baku (mandat …, 2026-08-31; ronde 3 …)` → `(mandat user + tim: bahasa apa pun)`; `## OQ authoring — human-first (mandat tim, 2026-09-02)` → `(mandat tim)` | test pins the prefix only |
+| `## v7.1 office rollout runbook (…)` → `## Office rollout runbook (…)`; rationale cells `(scan-codebase Iter 32)` ×4, `Claim-verify lane (7.25.0)` | first two table cells untouched (`ground.sh` parses `\| N \| \`role\` \|` only) |
+| `## P5 seams (declared in P3 — resolved in P5)` → `## Doc-pack seams (declared, deliberately not generalized)`; `### Doc-pack sidecar scripts (P5 — …)` → `(doc-specific, not engine spine)` | ToC + 5 `§P5 seams` citations (3 templates, emit-prd, emit-sit) |
+| `## Vault layout (v7 layout-2 ↔ legacy 7-file)`, `### Layout-3 (v8, … ; 8.0)` | ToC |
+| `## §halt-protocol — Unified \`blocker\` envelope (v0.14, extended v1.1)`, `### Type-specific schemas (v1.1 additions)`, `pre-v0.15` ×2 | `§halt-protocol` / `§Type-specific schemas` cites keep matching; registry shrinks |
+| `## Vault write-back protocol (Step 5.5 — living-vault S5)` → `(Step 5.5)` | detect-drift SKILL prose |
+| `## Step 0.5 — Pre-flight upstream check (NEW)` → drop `(NEW)` | ToC already bare |
+| `## enrich-semantics` tombstone section + its ToC line REMOVED (diagnostics-procedures) | chain-execution pointer reworded |
+| ToC anchor `#multi-squad-detection-v11` → `#multi-squad-detection` | heading was already bare |
+
+Kept on purpose: `## AMENDMENT 2026-07-31` / `## Re-decided amendments (2026-07-31)` (dated measurement records, test-pinned), W1/W2 feature names, schema-version headings in `starterkit-context-schema.md` (runtime discriminators), `queries/VERSIONS.md` (pinned catalog), spec-file pointers.
+
+Audit-driven hardening T2/T3 (listed as "spec'd, not built" in the session memory) were verified SHIPPED in 7.10.0 / 7.11.0 / 7.12.0 (`docs/superpowers/specs/2026-08-30-audit-driven-hardening.md` §2.4, §3.5, §6) — nothing to build; the memory note was stale.
+
+## 6. Verification
 
 Both test trees (`find plugins/mega-sdd/tests tests -name 'test-*.sh' -o -name '*.test.sh'`, stdin `/dev/null`), `validate-pack.sh --all` + `--check-registry`, `claude plugin validate`, manifest = CHANGELOG tag, GitHub CI on the pushed HEAD. Dispatch golden regen limited to f2 with the reason in the commit.

@@ -169,7 +169,7 @@ Inside a `--deep` chain (OR `--auto` mode), the orchestrator AUTOMATICALLY runs 
 
 These diagnostics run TRANSPARENTLY — chat output includes their summaries inline with phase progress lines. User does NOT need to know they exist as separate commands.
 
-`enrich-semantics` is a removal tombstone — a `kb_flow_staging_missing` advisory (validate-kb.sh) is remediated by a scoped `extract-intelligence` re-run (`references/diagnostics-procedures.md §enrich-semantics`).
+`enrich-semantics` is a removal tombstone — a `kb_flow_staging_missing` advisory (validate-kb.sh) is remediated by a scoped `extract-intelligence` re-run on the affected module, reviewed as usual.
 
 **Manual override**: each diagnostic remains runnable on demand for debugging/one-off use — the user asks by phrase through the front door ("lint units", "cek parallelism", "status module") and the orchestrator runs the matching procedure from `references/diagnostics-procedures.md`. Auto-invocations skip when the user explicitly disables via `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md` flags on the front door / `orchestrate-flow`.
 

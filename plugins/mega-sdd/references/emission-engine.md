@@ -9,10 +9,10 @@
 - What a doc-pack supplies
 - The emission spine (steps)
 - Script contracts (shared, `--doc`-parameterized)
-- Doc-pack sidecar scripts (P5 — doc-specific, not engine spine)
+- Doc-pack sidecar scripts (doc-specific, not engine spine)
 - Anti-hallucination rails (engine-level)
 - Doc-pack registry
-- P5 seams (declared in P3 — resolved in P5)
+- Doc-pack seams (declared, deliberately not generalized)
 
 ## What a doc-pack supplies
 
@@ -52,7 +52,7 @@ All three scripts live in `plugins/mega-sdd/scripts/` and default to the FSD lan
 - **`refresh-doc-stamps.sh --vault=<v> --doc=<name> [--maturity=..] [--position=..] [--generated-at=..] [--bump --change-note=..] [--approve --approver=..]`** — writes/refreshes ONLY the script-owned doc-control block (`<!-- mega-sdd:doc-control … -->`, inserted after the frontmatter) without touching any other byte (the binding-boilerplate stamp precedent — derive-binding-json.sh PHASE 0: parser-invisible, pure-additive, idempotent, atomic). Exit 0 stamped/no-op · 2 usage/doc missing. **WIRED:** every emitter's final step runs it (emit-fsd Step 6.5, emit-prd Step 6, emit-sit Step 6), and orchestrate-flow refreshes the `position` field for every existing emitted doc at chain boundaries (`chain-execution.md §Auto-integrated diagnostics` — script-lane, ~0 tokens; a maturity/position refresh never needs a re-emission). Maturity rungs are set ONLY at emit time (FSD from mode; SIT from the `build-sit-evidence.sh` verdict) or by humans (PRD `reviewed`/`final`) — the chain boundary passes `--position` only.
   **Versioning (script-owned):** `--bump` (every full emission) minor-bumps the doc version in the sidecar `<vault>/<doc>/.doc-history.json` (first emission → `0.1`), sets `status: draft`, and appends one curated history row (actor, git short hash, derived change-note); `--approve --approver="Nama, Peran"` is a HUMAN-run governance event minting the next whole version (`0.x → 1.0`, `1.x → 2.0`) with `status: approved`. The block gains `version:`/`status:` fields and the doc gains a visible script-rendered `**Riwayat Revisi:**` table (`<!-- mega-sdd:revision-history -->` region, latest first) — auto-generated projection of the sidecar, never hand-maintained, per spec 2026-07-23 §4. `--position`-only chain-boundary refreshes never touch version state. Docs never bumped keep the legacy 3-field block byte-identically.
 
-### Doc-pack sidecar scripts (P5 — doc-specific, not engine spine)
+### Doc-pack sidecar scripts (doc-specific, not engine spine)
 
 - **`build-sit-evidence.sh --vault=<v> [--vault=<v2> …] --cwd=<root> [--out=..] [--check-signoff]`** — the SIT doc-pack's deterministic evidence builder: emits the §1–§5 fragment (`<vault>/sit/.sit-evidence.md`) from `flows.md` + unit `acceptance_test[]` + the hook-guarded B4/B1/B2 artifacts, computes the `planned|partial|executed` maturity verdict, and enforces the sign-off slot grammar (`--check-signoff`: a non-placeholder Nama/Tanggal/Tanda-tangan/Status cell in §5 → exit 1 `SIGNOFF_*` + keterangan — a model-filled sign-off is a fabricated record).
 - **`check-prd-markers.sh --prd=<PRD.md> --cwd=<root> [--kb=..]`** — the PRD doc-pack's marker-preservation check: a PRD line citing a KB claim must carry that claim's `[VERIFIED]/[INFERRED]/[OPEN]` marker verbatim (`MARKER_STRIPPED`/`MARKER_UPGRADED`/`MARKER_MISSING` → exit 1 + keterangan — an inferred claim presented as fact never ships).
@@ -79,7 +79,7 @@ Every doc-pack inherits these (the FSD doc-pack states the operative FSD wording
 | `sit` | `emit-sit` (SKILL.md + references/sit-sections.md + sit-template.md) — TS-NNN ← F-NNN scenarios (Mermaid verbatim), script-derived executed evidence + placeholder-literal sign-off (`build-sit-evidence.sh`) | LIVE |
 | `uat` | `emit-uat` (SKILL.md + references/uat-sections.md + uat-template.md) — UAT-NNN ← F-NNN business scenarios aligned to SIT TS ids, placeholder-literal execution columns + berita acara (`build-uat-scaffold.sh`), zero-dep xlsx render (`build-uat-xlsx.sh`) | LIVE |
 
-## P5 seams (declared in P3 — resolved in P5)
+## Doc-pack seams (declared, deliberately not generalized)
 
 - **`validate-fsd-slots.sh` stays FSD-scoped — permanently.** It runs under `analyze` (run-analyze.sh family `fsd_slots`; the PostToolUse scanner fan-out is gone), keys on the FSD path (`*FSD.md` / `*/fsd/*.md`) and writes `.mega-sdd/.fsd-slots-state.json`; widening the path filter (or adding a `--doc` flag) would change gate behavior for existing projects. **The chosen zero-risk wiring:** the prd/sit lanes run the engine's step-5 in-skill `grep -oE '\{\{[a-z0-9_-]+\}\}'` slot scan, and the SIT sign-off slot grammar is enforced by the SIBLING deterministic check `build-sit-evidence.sh --check-signoff` (run as a mandatory emit-sit gate step + as a re-emission guard) — no hook contract touched.
 - **`refresh-doc-stamps.sh` is WIRED** — emitter final steps + orchestrate-flow chain boundaries (see §Script contracts above).

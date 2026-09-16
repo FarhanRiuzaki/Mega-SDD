@@ -112,7 +112,7 @@ status). **The model never fills a cell** — enforced by `build-sit-evidence.sh
 All `{{slot_name}}` markers MUST be filled (narrative slots) or replaced by their fragment block.
 A leftover `{{slot}}` after assembly = halt `quality_gate_failed:template_slot_unfilled`
 (SKILL Step 4.5 in-skill grep — the SIT lane's slot scan; `validate-fsd-slots.sh` stays FSD-scoped
-per `plugins/mega-sdd/references/emission-engine.md §P5 seams`).
+per `plugins/mega-sdd/references/emission-engine.md §Doc-pack seams`).
 
 ## Drift callout format
 

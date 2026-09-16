@@ -1,6 +1,6 @@
-# Shared Snapshot Schema (v1.1, Iter 30 → extended Iter 46)
+# Shared Snapshot Schema
 
-Canonical JSON schema for code-state snapshots consumed by mega-sdd skills across hops. **v1.1 extension** broadens scope from the original `execute-bolts ↔ detect-drift` hop to additionally cover `scan-codebase → bind-codebase` (new `codebase-map` snapshot_type) and `extract-intelligence → generate-intent --kb` (new `extracted-kb` snapshot_type). Each extension preserves v1.0 backward compatibility — v1.0 readers simply skip unfamiliar snapshot_type values.
+Canonical JSON schema for code-state snapshots consumed by mega-sdd skills across hops. The schema covers the `execute-bolts ↔ detect-drift` hop plus `scan-codebase → bind-codebase` (new `codebase-map` snapshot_type) and `extract-intelligence → generate-intent --kb` (new `extracted-kb` snapshot_type). Readers skip unfamiliar snapshot_type values (backward-compatible by construction).
 
 Goal: every consumer skill that re-reads state already captured by an upstream producer can shortcut to the captured snapshot when source files match. Baseline savings (~28s → ≤5s for drift gate on 20-bolt batch); the v1.1 extension adds a one-sha freshness attestation on the scan→bind hop (NOT a parsing shortcut — binding correctness is unchanged either way) + the KB freshness check (extract→intent hop).
 
@@ -71,7 +71,7 @@ Goal: every consumer skill that re-reads state already captured by an upstream p
 
 The bolt artifacts `<vault>/bolts/U-XXX/preflight.json` and `postflight.json` never adopted the snapshot schema above. They are written ONLY by the hook-guarded script pair `scripts/run-preflight-scan.sh` / `scripts/run-postflight-scan.sh` (shared engine `scripts/_lib/postflight_rules.py`; contract in `execute-bolts/references/hard-rule-scan.md`). Preflight records `unit_id`, `grammar`, `head_sha`, `snapshot_at`, `signature_at_preflight`, the extracted Hard `rules[]` (`{type, path | manifest | function}`), `matched_files` and `written_by`; postflight records `unit_id`, `head_sha`, `scanned_at`, the per-rule verdicts (`rules[]`, `status`, `total` / `attested` / `unverified`, `directives`) and `written_by`. No `snapshot_type`, `files[].ast_signatures` or `rules_validated[]` field exists, nothing reads them as snapshots, and there is no `<vault>/_drift-baseline.json` producer — detect-drift always scans fresh.
 
-### scan-codebase (codebase-map snapshot — v2.7.1+, Iter 46)
+### scan-codebase (codebase-map snapshot)
 
 > **Express-spine note:** on the default spine this snapshot has no producer (scan runs on-demand only) and no consumer (bind `--express` skips the currency check, provenance fixed `no-snapshot` — `bind-codebase/references/auto-memory-handoff.md`). The lane stays fully live for classic-spine and on-demand scan runs.
 
@@ -83,7 +83,7 @@ Write to `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.j
 - `source_files_sha256_map: {}` — EMPTY for this type (no consumer; §2's `Last_Scanned_Sha256` column already carries per-file hashes)
 - `files[]: []` (empty)
 
-### extract-intelligence (extracted-kb snapshot — v1.6+, Iter 46)
+### extract-intelligence (extracted-kb snapshot)
 
 > **Producer retired:** the PRD-kontrak grammar carries freshness inside `census.json` (per-file `sha256`), so new extractions emit NO snapshot; `generate-intent --kb` checks census freshness directly. The consumer contract below still applies to legacy numbered-tree KBs that carry a snapshot on disk.
 
@@ -100,7 +100,7 @@ Write to `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json` after wave-4 co
 
 detect-drift has no snapshot consumer: there is no `--reuse-bolt-snapshots` flag and no baseline file — every run is a fresh scan of the live codebase against the vault (`DRIFT-REPORT.md` + `PENDING-SYNC.md`).
 
-### bind-codebase (codebase-map snapshot consumer — v1.10+, Iter 46)
+### bind-codebase (codebase-map snapshot consumer)
 
 Before Step 3 (claim-vs-code matching):
 
@@ -111,7 +111,7 @@ Before Step 3 (claim-vs-code matching):
 
 This hop is a **freshness attestation, NOT a parsing shortcut** (bind-codebase `auto-memory-handoff.md` is the consumer-side contract) — binding correctness and its read path are unchanged whether the attestation confirms or rejects.
 
-### generate-intent --kb (extracted-kb snapshot consumer — v1.15+, Iter 46)
+### generate-intent --kb (extracted-kb snapshot consumer)
 
 Before reading `<kb-dir>`:
 

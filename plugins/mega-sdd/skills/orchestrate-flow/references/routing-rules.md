@@ -10,7 +10,7 @@
 
 - [CWD inspection (deterministic, in order)](#cwd-inspection-deterministic-in-order)
 - [Decision matrix](#decision-matrix)
-- [Multi-squad detection](#multi-squad-detection-v11)
+- [Multi-squad detection](#multi-squad-detection)
 - [Chain depth limit](#chain-depth-limit)
 - [Deep-chain decision matrix](#deep-chain-decision-matrix-scan-first-for-brownfield)
 - [Resume + skip](#resume--skip)

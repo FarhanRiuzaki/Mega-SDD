@@ -122,7 +122,7 @@ the annex has no narrative slot).
 All `{{slot_name}}` markers MUST be filled (frontmatter + header + narrative slots) or replaced by their
 fragment block. A leftover `{{slot}}` after assembly = halt `quality_gate_failed:template_slot_unfilled`
 (SKILL Step 4.5 in-skill grep — the UAT lane's slot scan; `validate-fsd-slots.sh` stays FSD-scoped per
-`plugins/mega-sdd/references/emission-engine.md §P5 seams`).
+`plugins/mega-sdd/references/emission-engine.md §Doc-pack seams`).
 
 Slot inventory:
 

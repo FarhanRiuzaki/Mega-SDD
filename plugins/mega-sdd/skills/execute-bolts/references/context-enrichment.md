@@ -359,7 +359,7 @@ bash "<plugin-root>/scripts/build-dispatch-prompt.sh" \
 
 `--unit-tier=` carries the `unit_tier` field of the **same `resolve-review-tier.sh` JSON the controller already holds** for panel/model routing (one source of verdict — the builder never calls the router). An unknown value or an absent flag **fails OPEN** to the full payload, and stdout echoes the label back as `unit_tier` when one was passed.
 
-### XS emission (size-weighted spec 2026-08-23 §1b, approved 2026-09-05)
+### XS emission (size-weighted spec 2026-08-23 §1b)
 
 Only `xs` changes the emission. What holds ALWAYS: unit body **verbatim**, `constitution_clauses` untouched, anti-context intact, every validator/gate unchanged — xs cuts **muatan** (loaded bytes), never **bukti** (evidence), and every cut is recorded (aggregated `unit_tier_xs` provenance row in the file; per-key reasons on stdout `sections_omitted` via `--explain`). The cuts:
 

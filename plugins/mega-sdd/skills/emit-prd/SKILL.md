@@ -56,7 +56,7 @@ Per `references/prd-sections.md §Mode determination`: vault present → **forwa
 
 ### Step 4.5: Unfilled-slot scan
 
-`grep -oE '\{\{[a-z0-9_-]+\}\}' <out-root>/prd/PRD.md` — ANY hit → halt `quality_gate_failed:template_slot_unfilled`; STOP. (In-skill scan — `validate-fsd-slots.sh` stays FSD-scoped per `plugins/mega-sdd/references/emission-engine.md §P5 seams`.)
+`grep -oE '\{\{[a-z0-9_-]+\}\}' <out-root>/prd/PRD.md` — ANY hit → halt `quality_gate_failed:template_slot_unfilled`; STOP. (In-skill scan — `validate-fsd-slots.sh` stays FSD-scoped per `plugins/mega-sdd/references/emission-engine.md §Doc-pack seams`.)
 
 ### Step 4.6: Stamp citations + write the map (script-run)
 

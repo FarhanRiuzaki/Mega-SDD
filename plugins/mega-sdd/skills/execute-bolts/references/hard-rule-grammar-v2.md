@@ -11,7 +11,7 @@ Replaces the bespoke 5-type v1 grammar. Each Hard Rule in a unit's `## Hard rule
 - Hard rules
 - Mapping v1 → v2 (the 5 original types)
 - Pre/post-flight validation flow
-- Migration command (per ITER6-OQ-2 resolved explicit)
+- Migration command
 - Backward compatibility
 - ast-grep limitation: syntax-only
 - References
@@ -146,7 +146,7 @@ For each rule:
 
 Same as grammar v1 — `hard_rule_violated` blocker; detect-after (the bolt commit already landed): remediation is fix-forward or `git revert` of the flagged commit, and the B1 gate blocks every further `execute-bolts` until a passing `postflight.json` is recorded.
 
-## Migration command (per ITER6-OQ-2 resolved explicit)
+## Migration command
 
 `migrate-rules <vault-path>` (invoked by phrase via the front door; flags per `migrate-rules.md`) walks the vault's units and offers to migrate v1 → v2:
 

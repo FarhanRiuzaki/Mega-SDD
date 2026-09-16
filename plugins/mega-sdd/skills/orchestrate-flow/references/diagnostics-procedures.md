@@ -9,7 +9,6 @@ All are ADVISORY diagnostics: read-only over the pipeline artifacts (the sole ex
 - [lint-units — pre-bolt static lint](#lint-units)
 - [analyze-parallelism — DAG parallelism report](#analyze-parallelism)
 - [list-modules — module progress + DoD](#list-modules)
-- [enrich-semantics — REMOVED v7](#enrich-semantics)
 
 ## lint-units
 
@@ -181,7 +180,3 @@ The script's DoD column reflects the **marked** state only (a `dod:` item writte
 - **DoD test commands are never auto-marked from the read-only display.** They are only re-run in the `--mark-dod` flow above, via Bash, where the exit code (not an LLM guess) decides pass/fail.
 - `blocked_by` is resolved against each blocking module's computed status; a blocker is "ok" only when that module is itself `completed`.
 - Halts: vault not found / `vault.json` corrupt → script exits **1**, relay and stop; `--module=<id>` / `--mark-dod=<id>` names an unknown module → halt with the list of valid module IDs (the script exits **2** on an unknown `--module`); a `--mark-dod` test command fails → do **not** auto-mark; the user resolves it manually.
-
-## enrich-semantics
-
-**REMOVED.** The staged-input retrofit helper (`enrich-workflows-staging.sh`) is deleted; the `kb_flow_staging_missing` advisory remains (the kb flows surface of validate-kb.sh) and the remediation is a scoped re-run of `extract-intelligence` on the affected domain, reviewed as usual. Historical procedure: git.

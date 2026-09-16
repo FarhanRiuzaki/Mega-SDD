@@ -9,7 +9,7 @@ Per user UX request — "by default semua file output md hasil skill itu masuk s
 - Path resolution algorithm
 - Canonical layout
 - Root state surface (`.mega-sdd/` dot-files)
-- Vault layout (v7 layout-2 ↔ legacy 7-file; Layout-3)
+- Vault layout (layout-2 ↔ legacy 7-file; Layout-3)
 - User-scope
 - Per-skill path mapping (canonical → legacy)
 - Detection logic
@@ -106,7 +106,7 @@ Live state files at the `.mega-sdd/` root (writers in parentheses):
 
 Plus ~35 `.*-state.json` validator/gate state files (one per validator; written by their deterministic writers, re-derived at gates).
 
-## Vault layout (v7 layout-2 ↔ legacy 7-file)
+## Vault layout (layout-2 ↔ legacy 7-file)
 
 Layout-2 (classic-lane default through 8.x; marker `vault_layout: 2` in the vault.md frontmatter + vault.json) is the 4-file vault. Every reader is DUAL-LAYOUT for the 8.x cycle (§Layout-3 dual-read window; probe the layout-2 file first, fall back to the legacy name). Migration: `migrate-paths.sh --vault-layout` (dry-run default; `--apply` executes) → then a FULL re-bind is MANDATORY (line anchors invalidated; binding.json/.citation-map.json are regenerated, never patched).
 
@@ -123,7 +123,7 @@ Layout-2 (classic-lane default through 8.x; marker `vault_layout: 2` in the vaul
 
 The `## Overview` / `## Architecture` / `## Decisions` anchors are a HARD-HEADER CONTRACT — derive-vault-json + derive-claims-ledger exit 2 naming the missing header (DOC_CODE re-keys filename→section on layout-2).
 
-### Layout-3 (v8, `context.md` — the plan-born shape; 8.0)
+### Layout-3 (`context.md` — the plan-born shape)
 
 ONE file `context.md` (marker `vault_layout: 3` in its frontmatter + vault.json) carries what layout-2 spread over four: `## Flows` (`### F-*` + DoD), `## Data model` (DBML), `## Constraints` (NFR table), `## Open Questions` (the ONE OQ home) — required — plus optional `## Overview` / `## Architecture` / `## Decisions` (`### D-NNN`). Every reader goes through ONE resolver, `_lib/vault_md.resolve_doc` (layout-3 → layout-2 → legacy) + `v3_section` for section-parsing consumers; no consumer forks its own mapping. **Binding is per unit** on this layout: `bolts/U-XXX/binding.json` written by the JIT bind at dispatch (sole writer `write-unit-binding.sh`) — there is no whole-vault `binding.md` / `binding.json`. Migration: `/mega-sdd:migrate-paths --vault-layout=3` (dry-run default) folds a layout-2 vault into `context.md`, archives the four docs + `binding.md`/`binding.json`/`claims-ledger.json` verbatim under `<vault>/_meta/archive/layout2/`, splits the binding per unit into `bolts/U-XXX/binding-migrated.json` (prior verdicts + human resolutions), rewrites unit doc refs NAME-only, and ends with the mandatory **full JIT re-bind** (`scripts/rebind-units.sh --units=all`). **Dual-read window:** layout-3 / layout-2 / legacy 7-file all resolve for the 8.x cycle; the legacy 7-file reader is retired at the next major after that (office floor is ≥7.6).
 
