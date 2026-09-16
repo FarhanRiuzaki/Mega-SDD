@@ -40,12 +40,14 @@ Reading order: `README.md` → the module you'll rebuild first (`modules/<domain
 
 > **Pre-existing KBs** on the numbered tree (`00-overview/ … 99-rebuild-architecture/`) stay readable everywhere: start at `README.md`, domains under `10-domains/`, phasing under `99-rebuild-architecture/suggested-phasing.md`.
 
-## Stage 2 — After generate-intent
+## Stage 2 — After generate-intent (classic) / after `plan` (`--lite`)
 
 Path root: `<project>/.mega-sdd/vaults/<slug>/`
 
 | What | Where | Read when |
 |---|---|---|
+| ⭐ Vault entrypoint (layout-3) | `context.md` — sections Overview · Architecture · Flows · Data model · Constraints · Open Questions · Decisions | lite-lane (`plan`-born) or migrated vaults — one file carries what layout-2 spreads over four |
+| Project rules | `constitution.md` | written by `plan`; classic vaults: when present |
 | ⭐ Vault entrypoint + Phase context | `vault.md` (legacy vaults: `00-index.md`) | Start here every session |
 | Feature scope (Phase N) | `vault.md ## Overview` | What you're building NOW |
 | Components + APIs | `vault.md ## Architecture` | Component contracts |
@@ -72,10 +74,11 @@ Path root: `<project>/.mega-sdd/vaults/<slug>/`
 
 | What | Where | Read when |
 |---|---|---|
+| Per-unit binding (`--lite`, written at dispatch) | `bolts/U-XXX/binding.json` (`gate`, claims, CONFLICT blocks) | Why THIS unit was blocked/cleared |
 | ⭐ Implementation State Map | `binding.md` §Implementation State Map | What's IMPLEMENTED / NEW / PARTIAL |
 | Per-claim binding evidence | `binding.md` body | Why each claim was classified |
 
-## Stage 5 — After generate-units
+## Stage 5 — After generate-units (or `plan` on `--lite`)
 
 Path root: `<project>/.mega-sdd/vaults/<slug>/units/`
 
@@ -111,13 +114,13 @@ Path root: `<project>/.mega-sdd/vaults/<slug>/bolts/`
 
 ## Phase 2+ workflow (after Phase 1 completes)
 
-For PRD-kontrak KBs the **module is the phasing unit**: read `README.md`'s module quick-reference (recommended rebuild order), pick the next module, and run `generate-intent --kb=<KB>` for it — the flag detects the grammar (census.json present → PRD-kontrak lane). Pipeline proceeds as usual: bind-codebase → generate-units → execute-bolts for that module's scope.
+For PRD-kontrak KBs the **module is the phasing unit**: read `README.md`'s module quick-reference (recommended rebuild order), pick the next module, and run `generate-intent --kb=<KB>` for it — the flag detects the grammar (census.json present → PRD-kontrak lane). Pipeline proceeds as usual: bind-codebase → generate-units → execute-bolts for that module's scope (classic; on `--lite`: `plan` → `execute-bolts --all --lite`).
 
 Legacy numbered-tree KBs keep the `--phase` lane:
 
 1. Read `<KB>/99-rebuild-architecture/suggested-phasing.md` §Phase 2
 2. Run `generate-intent --kb=<KB> --phase=2` to bootstrap Phase 2 vault
-3. Pipeline proceeds: bind-codebase → generate-units → execute-bolts (for Phase 2 scope)
+3. Pipeline proceeds: bind-codebase → generate-units → execute-bolts (for Phase 2 scope) — classic; on `--lite`: `plan` → `execute-bolts --all --lite`
 4. Repeat for Phase 3+
 
 `vault.json.phase` tells you which phase the current vault represents. The vault.md §Phase context surfaces this at the top of the vault for at-a-glance discovery.

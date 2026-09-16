@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [8.3.1] - 2026-09-16 — doc-audit v8 (docs-only): delapan permukaan diaudit klaim-per-klaim, description plugin.json dikoreksi (patch bump per runbook §6)
+
+Runbook `research/2026-09-16-doc-audit-v8-runbook.md`, laporan `research/2026-09-16-doc-audit-v8.md`. Tidak ada perubahan kode, gate, hook, test, benchmark, atau spec (spec lama hanya distempel "Superseded"). Satu commit per permukaan.
+
+### Changed
+- **`plugin.json` description** — "a consolidated `/analyze` consistency surface" → "a consolidated analyze consistency surface (phrase-routed skill)": tidak ada command `/analyze` (6 file di `commands/`; analyze = skill yang dirutekan frasa "cek konsistensi" / front door). Kedua manifest 8.3.1.
+- **Permukaan runtime** (skills/, references/, agents/, framework-conventions/, commands/): lane classic dilabel DEFAULT 8.x + lane `--lite` diberi rumah di setiap prosedur yang menyebut bind/units sebagai fase tanpa kualifikasi; istilah mati dihapus (tree-sitter sebagai engine, vendored fallback, PostToolUse validator fan-out, memory lane, trailer 5 baris, nama doc 7-file sebagai target hidup); klaim flag/section/path yang salah ditulis ulang sesuai parser script (mis. `validate-unit-spec.sh` tidak punya `--vault=`, `write-unit-binding.sh --resolve=`, `merge-panel-findings.sh` urutan kolom RESOLUTIONS `id | file:line | verdict | note`).
+- **Dokumen manusia** (README ×2, CONTRIBUTING, docs/mega-sdd/*, tests/scenarios): diagram pipeline v8 dua lane, hitungan skill 19→20, tabel command, §8.0.0 di upgrade guide, layout-3 di reading-map, mekanisme hook yang sudah tidak ada (PostToolUse fan-out) diganti "re-derived at the gate".
+
+### Notes
+- Angka per permukaan (klaim dicek / salah / diperbaiki), daftar istilah mati sebelum/sesudah, delta byte per lane, temuan bug kode untuk gate berikutnya, dan `[OPEN]` ada di laporan.
+
 ## [8.3.0] - 2026-09-16 — tiga lever klinik DIBANGUN (L1 top-up deterministik, L2 dag_shape_advisory, L3 diet PRE-CODE plan) — MEASUREMENT PENDING, `--lite` tetap opt-in
 
 Spec `docs/superpowers/specs/2026-09-16-clinic-levers-design.md` (dari bedah §2f laporan P3, aturan D owner). Penyebabnya MEASURED di run klinik lite 7.38.0 yang bersih; efek levernya BELUM diukur — butuh 2 run xs per lever lalu klinik sekali (EST ≈ $500–520, keputusan budget owner). Karena itu tidak ada klaim angka di rilis ini, `derived.lane` default tetap classic, dan setiap permukaan yang berubah berlabel MEASUREMENT PENDING.

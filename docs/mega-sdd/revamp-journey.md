@@ -19,7 +19,7 @@ flowchart TD
     end
     subgraph B2["Babak 2 — Konstruksi (spec-driven build)"]
         KB --> GI["generate-intent --kb<br/>(deteksi grammar; modul = unit phasing)"]
-        GI --> VAULT["vault layout-2 (4 file)<br/>+ OQ di constraints.md"]
+        GI --> VAULT["vault layout-2 (4 file) — classic<br/>(--lite: plan → context.md layout-3)<br/>+ OQ di constraints.md"]
         VAULT --> ROQ["resolve-oq<br/>(P1 business — keputusan manusia)"]
         ROQ --> BIND["bind-codebase (express)<br/>CONFIRMED / CONFLICT / OQ"]
         BIND -- "CONFLICT unresolved = GATE" --> ROQ
@@ -49,7 +49,7 @@ flowchart TD
 - **mega-sdd v7.6+** (ekstraksi census→PRD-kontrak di babak 1) — surface publiknya **3 verb**: `/mega-sdd` (front door), `/mega-sdd:sync`, `/mega-sdd:emit` (`/mega-sdd:slice` dihapus di v7.4.0). Typed command lama (`/mega-sdd:auto`, `/mega-sdd:extract-intelligence`, `/mega-sdd:resolve-oq`, dst.) **sudah dihapus di v6.0.0** — frasa natural ("extract domain knowledge", "jawab OQ list") tetap route ke skill-nya.
 - Legacy codebase yang bisa dibaca (idealnya 100+ file agar ekstraksinya bermakna).
 - Direktori target rebuild yang **terpisah** dari legacy, sudah `git init` + scaffold framework tujuan (starterkit wajib; tanpa manifest framework harus opt-in `--greenfield`).
-- Native deps opsional mempertajam hasil: `/mega-sdd:install-deps` (tree-sitter, ast-grep, dll.) — degradasi tetap jujur bila absen.
+- Native deps opsional mempertajam hasil: `/mega-sdd:install-deps` (ast-grep, ripgrep, pandoc, dll.) — degradasi tetap jujur bila absen.
 
 ## Babak 1 — Ekstraksi: legacy jadi knowledge base
 
@@ -124,13 +124,13 @@ flowchart LR
     SY --> DET["Deteksi perubahan<br/>(dirty journal ∪ git)"]
     DET -- "tidak menyentuh klaim" --> INSYNC["in-sync, selesai<br/>(short-circuit deterministik)"]
     DET -- "menyentuh klaim" --> TRI["Drift triage<br/>(urut blast-radius via graph)"]
-    TRI --> REBIND["Re-bind claim-scoped<br/>+ generate-units --reconcile"]
+    TRI --> REBIND["Re-bind claim-scoped<br/>+ generate-units --reconcile<br/>(layout-3/--lite: rebind-units.sh → plan --reconcile)"]
     REBIND --> REP["SYNC-REPORT.md<br/>+ verify-recommended (transitive impact)"]
     TICKET["Change request kecil<br/>(tiket via chat)"] --> DELTA["delta lane:<br/>diff-vault --from-prompt"]
     DELTA --> REBIND
 ```
 
-- **`/mega-sdd:sync`** mendeteksi apa yang berubah sejak terakhir, re-verdict hanya klaim yang terdampak, dan merekonsiliasi unit yang stale — proporsional, bukan sweep semua.
+- **`/mega-sdd:sync`** mendeteksi apa yang berubah sejak terakhir, re-verdict hanya klaim yang terdampak, dan merekonsiliasi unit yang stale — proporsional, bukan sweep semua (vault layout-3/`--lite`: `rebind-units.sh` → `plan --reconcile`).
 - **Graph advisory** (fail-open, tidak pernah memblokir): drift triage diproses **urut blast-radius terbesar dulu**, dan SYNC-REPORT membawa daftar **verify-recommended (transitive impact)** — unit downstream yang dependensinya berubah walau file-nya sendiri tidak (celah yang tak terlihat hash check).
 - **Delta lane**: change request seukuran tiket cukup diketik ke front door (`/mega-sdd "ubah field X di form Y"`) — bila vault memiliki entitasnya, chain-nya `diff-vault --from-prompt` → re-bind claim-scoped → reconcile, tanpa regenerasi vault.
 - Dokumen tim ikut hidup: `/mega-sdd:emit <doc>` kapan pun untuk refresh dari vault terbaru (versi dokumen di-track; `--bump`/`--approve` tetap keputusan manusia).

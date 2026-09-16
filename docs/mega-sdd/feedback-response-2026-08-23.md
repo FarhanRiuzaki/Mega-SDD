@@ -1,5 +1,7 @@
 # Balasan untuk feedback tim (Igoo0/feedback-mega-sdd, diukur di 6.12.0)
 
+> Rekaman bertanggal (balasan 2026-08-23 + follow-up 2026-09-06; target waktu itu 7.5.1 / 7.29.x). Superseded by 8.0.0 — versi berjalan di `plugins/mega-sdd/.claude-plugin/plugin.json`, jalur upgrade di `upgrade-from-old-version.md`.
+
 Terima kasih — ini feedback terbaik yang pernah diterima plugin ini. Rasio 17.9:1 per unit, 5.8:1 spec:kode, 12/26 validator SKIP: itu pengukuran, bukan kesan. Dan framing kalian sendiri jujur: masalahnya **time-to-first-code + fixed overhead**, bukan total biaya. Kami pakai framing itu apa adanya di bawah.
 
 Konteks penting yang kalian catat sendiri: pengukuran kalian jalan di **6.12.0** dengan drift versi (empat instalasi dormant di cache). Sejak itu program v7 (7.0.0→7.5.0, ~40 rilis) menyerang persis kelas keluhan kalian. Dokumen ini memetakan tiap keluhan → status di **7.5.0**, dengan bukti — dan mengakui yang belum kejawab.

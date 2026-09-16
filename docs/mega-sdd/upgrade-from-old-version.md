@@ -6,6 +6,7 @@
 
 ## Contents
 
+- Upgrading to 8.0.0 (the v8 lite lane + layout-3 major)
 - Upgrading to 7.0.0 (the vault layout-2 major)
 - Upgrading to 7.3–7.5 (observability removal, surface cull, direct dispatch)
 - Upgrading to 7.6 (extraction revamp: census → PRD-kontrak)
@@ -21,6 +22,19 @@
 - Per-iter behavior changes (what changed between iters affects you)
 - Pre-flight checklist before upgrade
 - See also
+
+## Upgrading to 8.0.0 (the v8 lite lane + layout-3 major)
+
+**What changed:** a second, OPT-IN lane. `--lite` (or `lane: lite` in `.mega-sdd/config.yaml`) turns a PRD into a layout-3 vault (`context.md` + `constitution.md` + `vault.json` + `units/`) in ONE `plan` phase, then `execute-bolts --all --lite` binds each unit just-in-time at dispatch (`bolts/U-XXX/binding.json`, sole writer `scripts/write-unit-binding.sh`; a CONFLICT still closes the gate). Under lite the three classic phases are FATAL in `validate-preflight.sh` with the replacement hop named (`intent_folded_into_plan`, `bind_folded_into_bolts`, `units_folded_into_plan`). Sync on a lite/layout-3 vault re-binds via `scripts/rebind-units.sh --paths=@…` → `plan --reconcile` → `execute-bolts --all --lite`; `sync --full-bind` (= `rebind-units.sh --units=all`) is the whole-vault audit. Also: comments explain WHY not WHAT (8.0.1, a style rule) and the file provenance trailer is TWO lines (8.0.2/8.0.3) — the commit trailer `SDD-PROVENANCE:` is unchanged.
+
+**What did NOT break:** the classic chain stays the DEFAULT for all of 8.x and is byte-identical on layout-2 vaults; every gate and hook contract; legacy 7-file vaults stay readable (read-only). No migration is required to keep working.
+
+**Migrating a layout-2 vault to layout-3 (optional):**
+1. `/mega-sdd:migrate-paths --vault-layout=3 --vault=<vault-dir>` — dry-run preview (a legacy 7-file vault is refused: run `--vault-layout` first).
+2. Commit, then re-run with `--apply` (dirty tree refused). The four docs + `binding.md` / `binding.json` / `claims-ledger.json` are archived verbatim under `<vault>/_meta/archive/layout2/`; `binding.md` is split per unit into `bolts/U-XXX/binding-migrated.json` (human RESOLUTIONs preserved); `derive-vault-json.sh` regenerates `vault.json`.
+3. **MANDATORY: full JIT re-bind** — `bash <plugin-root>/scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=all` (or let `execute-bolts --all --lite` bind each unit at dispatch). The rung never writes `bolts/U-XXX/binding.json` itself.
+
+**Deliberate degradation (plan-born vaults):** a layout-3 vault without `## Architecture` reports Architecture-prose drift as `n/a` (migrated vaults keep the section).
 
 ## Upgrading to 7.0.0 (the vault layout-2 major)
 
@@ -85,7 +99,7 @@ Keep your original PRD or KB; regenerate vault + binding + units fresh on the ne
 **Path B (preserve existing vault + binding + bolts):**
 Run migrations → expect 1-2 schema halts → recover via halt envelope hints. ~15-30 min.
 
-> **v3.41.0+ Iter 62 update (per F-E-4):** target version refreshed from v3.26.1 (Iter 36 doc baseline) to v3.41.0; the CURRENT target is 7.29.x — see the 7.0.0 through 7.7–7.29 sections above, which apply on top of everything below. Per-iter behavior summary covers Iter 36-62 (table below). Existing migration commands + recovery sections still valid; new sections cover Iter 54+ (emit-fsd), Iter 55+ (install-deps), Iter 60 (F4 bypass tightening).
+> **v3.41.0+ Iter 62 update (per F-E-4):** target version refreshed from v3.26.1 (Iter 36 doc baseline) to v3.41.0; the CURRENT target is 8.3.x — see the 8.0.0 through 7.7–7.29 sections above, which apply on top of everything below. Per-iter behavior summary covers Iter 36-62 (table below). Existing migration commands + recovery sections still valid; new sections cover Iter 54+ (emit-fsd), Iter 55+ (install-deps), Iter 60 (F4 bypass tightening).
 
 ## Per-iter behavior changes (Iter 36-62, added Iter 62 per F-E-4)
 
@@ -109,14 +123,15 @@ Run migrations → expect 1-2 schema halts → recover via halt envelope hints. 
 
 ## Recommended upgrade paths
 
-- **v3.0-v3.25 → 7.29.x:** use Path A (regenerate from PRD/KB). Many schema + behavior changes accumulated; regen is faster than migrating each artifact.
-- **v3.26-v3.37 → 7.29.x:** use Path B — no flag needed (`--legacy-type-bypass` was RETIRED in v4.75.0; un-annotated fields are warn-only under the deterministic validator).
-- **v3.38-v3.40 → 7.29.x:** seamless upgrade; existing chains compatible.
+- **v3.0-v3.25 → 8.3.x:** use Path A (regenerate from PRD/KB). Many schema + behavior changes accumulated; regen is faster than migrating each artifact.
+- **v3.26-v3.37 → 8.3.x:** use Path B — no flag needed (`--legacy-type-bypass` was RETIRED in v4.75.0; un-annotated fields are warn-only under the deterministic validator).
+- **v3.38-v3.40 → 8.3.x:** seamless upgrade; existing chains compatible.
 
 ## Compatibility matrix
 
-| Old artifact | Works on 7.29.x? | What to do |
+| Old artifact | Works on 8.3.x? | What to do |
 |---|---|---|
+| Layout-2 vault (7.x) | Yes — the classic chain stays the default | Optional: `/mega-sdd:migrate-paths --vault-layout=3 --vault=<dir>` then full JIT re-bind |
 | `docs/mega-sdd/vaults/<slug>/` legacy path | Read OK (back-compat probe) | Optional: `/mega-sdd:migrate-paths` |
 | `.mega-sdd-memory/` legacy path | Read OK (back-compat probe) | Same |
 | `<repo-root>/codebase-map.md` legacy location | Read OK (back-compat probe) | Re-run `scan-codebase` to write canonical `.mega-sdd/codebase/codebase-map.md` |
