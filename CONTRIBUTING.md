@@ -11,14 +11,14 @@ This is a Claude Code plugin marketplace + the plugin itself. Plugin code lives 
 These are the non-negotiable rails. Any PR violating them will be closed:
 
 1. **Anti-hallucination at intent layer:** uncertain claims → Open Question, never guess.
-2. **Binding gate is BLOCKING:** `bind-codebase` MUST NOT produce `bound-vault/` while conflicts exist.
+2. **Binding gate is BLOCKING:** `bind-codebase` MUST NOT produce `<vault>/bound/` while conflicts exist (classic); on `--lite` the per-unit `bolts/U-XXX/binding.json` `gate` closes the same gate.
 3. **Unit grounding:** every unit has `target_files` whitelist + ≥1 acceptance test.
 4. **Bolt isolation:** every bolt produces exactly one PR's worth of commits; no skipping pre-commit hooks.
 5. **Drift surfaces, never silently:** detect-drift writes a report, even when clean.
 
 ## Skill changes
 
-Skills are content-driven. Edit `SKILL.md` (the agent reads it) NOT supporting `references/*.md` (unless adding new contracts).
+Skills are content-driven. Edit the `SKILL.md` router and its `references/*.md` together — keep `SKILL.md` ≤ 500 lines and put procedure detail in references (see `plugins/mega-sdd/CLAUDE.md` §Authoring standards).
 
 Before submitting:
 - Bump skill `version:` in frontmatter
@@ -95,7 +95,7 @@ git tag v0.13.0
 git push origin v0.13.0
 ```
 
-Tags enable `git#vX.Y.Z` pin examples in the README. Tag every release.
+Tag every release.
 
 ## Adding a new skill
 
@@ -105,7 +105,7 @@ When adding a new skill to the plugin:
 2. Add `SKILL.md` with frontmatter: `name`, `version: 0.1.0`, `description`.
 3. **Do NOT add a `commands/<skill-name>.md` file.** The public command surface is three verbs (`/mega-sdd`, `/mega-sdd:sync`, `/mega-sdd:emit`) plus three maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`) — exactly 6 command files, nothing else (the 5.x deprecation aliases were removed at 6.0.0, the `memory` one-timer in v7.3.0, `/mega-sdd:slice` in v7.4.0). A new skill is internal — it is reached through the `/mega-sdd` front door (state-based routing) or, for a document, the `/mega-sdd:emit` verb. Only a deliberate spec-level decision may extend the canonical surface (see `plugins/mega-sdd/CLAUDE.md` §Commands — `/mega-sdd:slice`, added 6.8.0 per spec `2026-08-12-playwright-embed-design.md` and removed in v7.4.0 by owner decision, is the worked example of that escape hatch in both directions).
 4. Reference `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` for shared definitions instead of duplicating.
-5. **Implement `--auto` flag handling (v0.14 convention)**: any new skill that has prompts must define a `## --auto flag` section near the top of its SKILL.md, listing what `--auto` skips (logistical) vs what stays interactive (substance). When blocked in `--auto`, emit a `blocker` artifact per `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol — pick the existing type (`oq_blocker`, `diff_conflict`, `drift_framework_mismatch`) or propose a new type as part of the contract bump.
+5. **Implement `--auto` flag handling (v0.14 convention)**: any new skill that has prompts must document its `--auto` behaviour in the SKILL.md body (what `--auto` skips — logistics — vs what stays interactive — substance). When blocked in `--auto`, emit a `blocker` artifact per `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol — pick the existing type (`oq_blocker`, `diff_conflict`, `drift_framework_mismatch`) or propose a new type as part of the contract bump.
 6. Add a CHANGELOG entry that includes the new skill at version 0.1.0.
 
 ## Audit + spec workflow

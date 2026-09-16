@@ -22,7 +22,7 @@
 /mega-sdd ./prd.md
 ```
 
-That's it. Mega-sdd runs the full pipeline: parse PRD → ground the repo (script, seconds) → bind claims → generate atomic units → execute bolts via TDD → commit code. Single upfront confirmation; auto-continues unless something needs human input.
+That's it. Mega-sdd runs the full pipeline: parse PRD → ground the repo (script, seconds) → bind claims → generate atomic units → execute bolts via TDD → commit code. Single upfront confirmation; auto-continues unless something needs human input. That is the classic chain — the DEFAULT for every 8.x release. Opt-in since 8.0.0: `--lite` (or `lane: lite` in `.mega-sdd/config.yaml`) folds intent + units into ONE `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite`.
 
 And when the code moves on afterwards (manual hotfix, AI edit in any session, `git pull`) — `/mega-sdd:sync` catches everything up incrementally. Development never ends; neither does the pipeline.
 
@@ -130,8 +130,9 @@ A sample PRD to match expected outputs exactly: [`sample-prd-clinic.md`](tests/s
 
 ```bash
 /mega-sdd ./prd.md                   # PRD → working code (4 phases, express)
+/mega-sdd ./prd.md --lite            # opt-in v8 lite lane: plan → execute-bolts --all --lite (JIT bind per wave)
 /mega-sdd ./legacy-php/ --out=./new/ # Legacy → PRD-kontrak KB → vault → code (5 phases, express)
-/mega-sdd "build a clinic system"    # Free-text brief → code (3 phases)
+/mega-sdd "build a clinic system"    # Free-text brief → code (4 phases; 3 with --greenfield)
 /mega-sdd                            # no arg → status view, then proposes next chain
 /mega-sdd --resume                   # Continue paused/halted chain
 ```
@@ -148,7 +149,7 @@ Single confirmation. Auto-continues clean phases. Halts surface YAML blockers wi
 Every handoff is contracted and grounded. The seven layers that matter most:
 
 1. **Uncertain claims become Open Questions** — anything the spec can't prove from its sources is promoted to a question for you, never a guess.
-2. **The binding gate blocks** — vault claims are validated against the live codebase; unresolved CONFLICTs stop the pipeline before any code is generated.
+2. **The binding gate blocks** — vault claims are validated against the live codebase; unresolved CONFLICTs stop the pipeline before any code is generated (classic: whole-vault `binding.md`; `--lite`: per unit, just-in-time at dispatch).
 3. **Units are grounded** — `target_files` whitelist + a mandatory acceptance test + anchors citing real code patterns.
 4. **Hard Rules are enforced, not suggested** — ast-grep validates constraints at bolt time, wired to deterministic hooks. The doctrine: *prose that says HALT enforces nothing.*
 5. **Handoffs are typed contracts** — every cross-phase handoff YAML is schema- and type-validated at the producer side, so shape drift halts the moment it happens.
@@ -209,14 +210,15 @@ flowchart TB
     subgraph PIPE["⚙️ Pipeline phases"]
         EXTRACT["extract-intelligence<br/>legacy → PRD-kontrak (census)"]:::phase --> INTENT["generate-intent<br/>(vault + OQs)"]:::phase
         INTENT --> GROUND["ground + bind (express)<br/>ast-grep AST · CONFIRMED/CONFLICT/OQ"]:::phase
-        GROUND --> UNITS["generate-units<br/>atomic + Anchors + Hard Rules"]:::phase --> BOLTS["execute-bolts<br/>sprint waves (parallel) · pre/post-flight + L0 gates"]:::phase
+        GROUND --> UNITS["generate-units<br/>atomic + Anchors + Hard Rules"]:::phase --> BOLTS["execute-bolts<br/>sprint waves (parallel) · pre/post-flight + L0 gates<br/>--lite: JIT bind per wave"]:::phase
+        PLAN["plan (--lite, opt-in since 8.0.0)<br/>context.md + constitution.md + units (layout-3)"]:::phase -.-> BOLTS
     end
 
     subgraph EXEC["🤖 Execution agents"]
         IMPL["bolt-implementer (TDD)"]:::agent --> PANEL["blind review panel — parallel, risk-tiered<br/>spec · quality · security · standards · design"]:::agent
     end
 
-    ART[("📚 Grounded artifacts — .mega-sdd/<br/>vault · binding.md · units · bolts<br/>codebase-map · symbol-index (reuse) · graph.json")]:::art
+    ART[("📚 Grounded artifacts — .mega-sdd/<br/>vault · binding.md (classic) / bolts/U-*/binding.json (lite) · units · bolts<br/>codebase-map · symbol-index (reuse) · graph.json")]:::art
     MOAT["🛡️ Enforcement — hooks + deterministic validators<br/>CONFLICT gate · B1–B4 evidence gates · quality gates<br/>anti-self-bypass · recompute-at-gate"]:::moat
     DOCS["📄 Emissions<br/>PRD · FSD · SIT · UAT (SEOJK) · summary · AGENTS.md · PDF · HTML offline (interaktif, diagram-first)"]:::phase
     OUT(["✅ tested atomic commits"]):::out
@@ -274,7 +276,8 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 | Unit kekecilan / kebanyakan wave | set `.mega-sdd/config.yaml` `unit_granularity: coarse` (or `--max-complexity=large`) |
 | Install missing native deps (pandoc, mmdc, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr) |
 | Update mega-sdd to the latest version | `/mega-sdd:update-plugin` then `/plugin marketplace update mega-sdd` |
-| Migrate vault layout (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
+| Migrate legacy paths → `.mega-sdd/` (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
+| Migrate vault layout (7-file → layout-2 → layout-3, one-time) | `/mega-sdd:migrate-paths --vault-layout[=<vault>]` then `--vault-layout=3 --vault=<vault>` (dry-run default, `--apply` executes; a full JIT re-bind follows: `scripts/rebind-units.sh --units=all`) |
 | Migrate Hard Rules grammar (one-time) | say "migrate hard rules ./vault" |
 | Disable auto-diagnostic flags | `/mega-sdd ./prd.md --no-lint --no-analyze --no-modules-summary --no-agents-md` |
 | PRD revision arrived | `/mega-sdd ./new-prd.md` (routes to diff-vault) — or say "PRD revisi" |
@@ -293,8 +296,8 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 
 | | |
 |---|---|
-| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts. **19 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **9 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, resolution-verifier, domain-extractor, claim-verifier) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat|html|summary>`) plus 3 maintenance one-timers (typed legacy forms route as plain text). |
-| **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via superpowers. |
+| **What** | Multi-phase pipeline: extract → intent → scan → bind → units → bolts (classic, the default) — or `--lite`: plan → bolts. **20 skills** (lean routers + progressive disclosure — each `SKILL.md` ≤500 lines, detail in on-demand `references/`) + **9 first-class subagents** (`agents/`: bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, resolution-verifier, domain-extractor, claim-verifier) + a **3-verb command surface** (`/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd|fsd|sit|uat|html|summary>`) plus 3 maintenance one-timers (typed legacy forms route as plain text). |
+| **Who** | **Architects** produce intent without repo access. **Devs / AI** scan + bind with read-only repo access. **AI agents** ship bolts with write access via the first-class `bolt-implementer` agent (superpowers TDD optional). |
 | **When** | After PRD signed off, brief captured, OR legacy codebase available. Replaces ad-hoc "build this" handoff with a structured contract surviving all the way to working code. |
 | **Where** | All outputs consolidated under `<project>/.mega-sdd/`. User defaults at `~/.mega-sdd/config.yaml`. Project source unchanged. |
 | **Why** | The architect/dev hallucination boundary is the #1 source of AI-dev rework. Mega-sdd inserts a mandatory binding gate + per-claim implementation-state classification + AST-validated Hard Rules, all recomputed at the gate from ground truth. |
@@ -307,8 +310,9 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 ├── .mega-sdd/                              # ALL mega-sdd outputs
 │   ├── config.yaml                          # project-level config
 │   ├── vaults/<slug>/                       # vault per project
-│   │   ├── vault.md, model.md, flows.md, constraints.md, vault.json   # layout-2 (v7); legacy: 00-index.md ... 06-constraints.md
-│   │   ├── binding.md, bound/, units/, bolts/
+│   │   ├── vault.md, model.md, flows.md, constraints.md, vault.json   # layout-2 (classic lane, default); legacy 7-file 00-…06-*.md read-only
+│   │   ├── context.md, constitution.md, vault.json                       # layout-3 (plan-born on --lite, or migrate-paths --vault-layout=3)
+│   │   ├── binding.md, bound/ (classic) · bolts/U-XXX/binding.json (lite), units/, bolts/
 │   │   ├── _meta/squads.yaml, modules.yaml  # multi-squad + modules
 │   │   ├── interfaces/                      # cross-squad contracts
 │   │   ├── .memory/                         # vault-scope pipeline state (bolt-outcomes.json; name is historical)
@@ -322,7 +326,7 @@ All phases auto-chain via `/mega-sdd`. Each phase emits typed handoff YAML that 
 └── (project source: app/, routes/, src/, etc.)
 ```
 
-User-scope: `~/.mega-sdd/config.yaml` (cross-project defaults — `halt_auto_propose`, `default_output_root`).
+User-scope: `~/.mega-sdd/config.yaml` (cross-project defaults — `halt_auto_propose`).
 
 ### Halt protocol
 
@@ -357,6 +361,7 @@ Single-confirm pipeline-end execution with auto-continue, progress indication, C
 
 ```bash
 /mega-sdd ./prd.md                    # detect → propose chain → confirm once → run
+/mega-sdd ./prd.md --lite             # opt-in v8 lite lane: plan → execute-bolts --all --lite; durable form: lane: lite in .mega-sdd/config.yaml
 /mega-sdd --resume                    # continue paused chain (CWD + checkpoint driven)
 /mega-sdd --step-after=bind-codebase  # manual handoff after binding
 /mega-sdd --shallow                   # opt-out of --deep (cap-3 default)
