@@ -4,8 +4,8 @@
 
 **Version:** 1.0
 **Introduced:** v3.25.0 (Iter 34)
-**Consumed by:** all SKILL.md subagent dispatch sites (cite via `references/model-tiers.md §<role-name>`)
-**Resolved by:** `mega-sdd:orchestrate-flow` v3.1.0+ Step 2.8 (override chain: CLI > project config > catalog default — non-panel roles only; `*-reviewer` lenses are frontmatter-pinned, see §Override syntax)
+**Consumed by:** the scan-codebase deep-scan dispatch (cites via `references/model-tiers.md §<role-name>`); agent-backed roles are pinned in `agents/*.md` frontmatter (parity with rows 6, 15-23)
+**Resolved by:** `mega-sdd:orchestrate-flow` (SKILL.md "Model-tier override resolution" bullet; procedure in `references/chain-execution.md`) (override chain: CLI > project config > catalog default — non-panel roles only; `*-reviewer` lenses are frontmatter-pinned, see §Override syntax)
 
 ---
 
@@ -150,7 +150,7 @@ When a future iter introduces a new subagent dispatch:
 
 ## See also
 
-- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` §Step 2.8 (override resolution)
+- `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` "Model-tier override resolution" bullet + `references/chain-execution.md` (override resolution)
 - `plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md` §`model_tiers:` (handoff metadata schema)
 - `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol (`model_tier_unknown` halt definition)
 

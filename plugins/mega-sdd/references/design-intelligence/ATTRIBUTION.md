@@ -4,7 +4,7 @@ These reference files are a **distillation** of the [ui-ux-pro-max](https://gith
 
 ## Why distilled (not vendored wholesale)
 
-ui-ux-pro-max ships a Python + ~11MB CSV search engine. mega-sdd runs standalone with **no extra runtime dependencies**, so we distill its CSV data into static markdown/YAML consumed as **injected context** (per the Fork-A doctrine in `plugins/mega-sdd/CLAUDE.md`: prose Skill-invokes no-op; injected text + validators are what work). No Python is executed at mega-sdd runtime.
+ui-ux-pro-max ships a Python + ~11MB CSV search engine. mega-sdd runs standalone with **no extra runtime dependencies**, so we distill its CSV data into static markdown/YAML consumed as **injected context** (per the enforcement doctrine in `plugins/mega-sdd/CLAUDE.md §The enforcement doctrine`: prose Skill-invokes no-op; injected text + validators are what work). No Python is executed at mega-sdd runtime.
 
 ## Files (all GENERATED — do not hand-edit)
 

@@ -48,8 +48,8 @@ Bundling these binaries in the plugin is impractical (50MB+ multi-platform bloat
 |---|---|---|---|
 | `python3` | **REQUIRED** — the hooks' stdin parsers + the deterministic gate validators | none — without a usable interpreter the PreToolUse gates fail CLOSED | per-OS install per `install-deps/references/tool-matrix.yaml` (`/mega-sdd:install-deps`) |
 | `ast-grep` (alias `sg`) | scan-codebase (TIER-1 AST extraction — zero-compilation, one spawn), execute-bolts, generate-units, detect-drift (Hard Rule v2 grammar) | scan falls to regex tier; v1-authored rules run natively; units carrying v2 rules need it installed | macOS: `brew install ast-grep` · Linux/win: `cargo install ast-grep` · Node: `npm install -g @ast-grep/cli` |
-| `ripgrep` (`rg`) | scan-codebase (structured JSON grep) | GNU grep (slower; no structured JSON) | macOS: `brew install ripgrep` · Linux/win: `cargo install ripgrep` · apt: `apt install ripgrep` |
-| `jd` | diff-vault, execute-bolts (canonical JSON/YAML diff with patches) | Manual diff via Read+compare | macOS: `brew install jd` · Linux/win: `go install github.com/josephburnett/jd/v2/jd@latest` |
+| `ripgrep` (`rg`) | scan-codebase (fast regex tier) | GNU grep (slower) | macOS: `brew install ripgrep` · Linux/win: `cargo install ripgrep` · apt: `apt install ripgrep` |
+| `jd` | diff-vault (canonical JSON/YAML diff) | Manual diff via Read+compare | macOS: `brew install jd` · Linux/win: `go install github.com/josephburnett/jd/v2/jd@latest` |
 | `pandoc` | emit-fsd/prd/sit/uat (md2pdf HTML render for the PDF lanes) | Markdown-only output (no PDF) | macOS: `brew install pandoc` · apt: `apt install pandoc` · win: `winget install JohnMacFarlane.Pandoc` |
 | `mmdc` (`@mermaid-js/mermaid-cli`) | emit-fsd/prd/sit/uat (pre-render mermaid to SVG for the PDF lane) | mermaid stays a code block (quality drop) | `npm install -g @mermaid-js/mermaid-cli` (all platforms) |
 | `markdownlint-cli2` | orchestrate-flow (vault prose lint, optional) | Skill-internal heuristic checks | `npm install -g markdownlint-cli2` · macOS: `brew install markdownlint-cli2` |

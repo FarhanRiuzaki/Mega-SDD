@@ -7,7 +7,7 @@
 | Tag | Format (verbatim, satu token per baris) | Muncul di | Emitter |
 |---|---|---|---|
 | `mega-sdd-trace:turn` | **baris PERTAMA**, verbatim | Satu kali per user prompt, HANYA di project ter-adopsi (ada `.mega-sdd/`); CWD non-SDD = hening total. Sejak v7.5.0 №G hook yang sama BOLEH menambahkan satu baris kedua (tawaran sync dari census kalimat "selesai" — pure shell, nol spawn); filter gateway tetap key pada baris pertama | `hooks/user-prompt-submit` (pure shell, nol spawn) |
-| `mega-sdd-trace:<skill>` | akhir announce line skill, dalam backtick | Setiap kali sebuah skill mega-sdd mulai (13 skill ber-announce) | announce line tiap `skills/*/SKILL.md` |
+| `mega-sdd-trace:<skill>` | akhir announce line skill, dalam backtick | Setiap kali sebuah skill mega-sdd mulai (14 skill ber-announce) | announce line tiap `skills/*/SKILL.md` |
 | `mega-sdd-trace:<skill>` / `mega-sdd-trace:execute-bolts:<unit-id>` | baris tunggal di dalam prompt dispatch | Setiap prompt subagent (bolt implementer, lens panel, verifier, deep-scan extractor, wave extractor) — subagent berjalan fresh-context sehingga tanpa baris ini tidak terlihat filter gateway | `scripts/build-dispatch-prompt.sh` (T1 + `inline_core`), controller (lens/verifier), template deep-scan/wave |
 
 ## Aturan

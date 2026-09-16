@@ -32,7 +32,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### partial_state_corrupt
 
-- `partial_state_corrupt` — execute-bolts: `--resume` mode loaded `<vault>/bolts/U-XXX/partial-state.json` (canonical path per execute-bolts §Partial-state contract) and JSON parse failed. **C1 SELF-RESOLVE (SCRIPT-LAYER ENFORCED via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7):** at GROUND, the script scans `<cwd>/.mega-sdd/vaults/*-bound/bolts/U-*/partial-state.json`; any file failing JSON parse is renamed to `partial-state.json.corrupt-<ISO8601>` (forensics preserved); next `--resume` invocation restarts fresh from unit spec. The chat one-liner is the record. NEVER halts. Limitation: the GROUND C1 battery globs the legacy `*-bound/` sibling only; canonical-layout vaults are not scanned by this self-resolve rung (tracked).
+- `partial_state_corrupt` — execute-bolts: `--resume` mode loaded `<vault>/bolts/U-XXX/partial-state.json` (canonical path per execute-bolts §Partial-state contract) and JSON parse failed. **C1 SELF-RESOLVE (SCRIPT-LAYER ENFORCED via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7):** at GROUND, the script scans every vault layout's `<vault>/bolts/U-*/partial-state.json` (`_lib/vault_layouts`); any file failing JSON parse is renamed to `partial-state.json.corrupt-<ISO8601>` (forensics preserved); next `--resume` invocation restarts fresh from unit spec. The chat one-liner is the record. NEVER halts.
 
 ### hard_rule_violated
 
@@ -56,7 +56,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### verify_unit_writable
 
-- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). **C1 SELF-RESOLVE (SCRIPT-LAYER DETECTION via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7 — DISPATCH-LAYER AUTO-CLEAR in execute-bolts):** at GROUND, the script scans `<cwd>/.mega-sdd/vaults/*-bound/units/U-*.md` AND `<cwd>/.mega-sdd/vaults/*-bound/units/U-*/unit.md` (both layouts). For each `task_type: verify` unit with forbidden ops → emit the chat notice in the GROUND output. On-disk unit NOT modified (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path). Detection-only at GROUND means the warning re-fires at every M/L entry until human fixes the unit — intentional visibility. NEVER halts. Source skill: `execute-bolts`. Limitation: the GROUND C1 battery globs the legacy `*-bound/` sibling only; canonical-layout vaults are not scanned by this self-resolve rung (tracked).
+- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). **C1 SELF-RESOLVE (SCRIPT-LAYER DETECTION via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7 — DISPATCH-LAYER AUTO-CLEAR in execute-bolts):** at GROUND, the script scans every vault layout's `units/U-*.md` / `units/U-*/unit.md` (`_lib/vault_layouts.unit_files`) AND `<cwd>/.mega-sdd/vaults/*-bound/units/U-*/unit.md` (both layouts). For each `task_type: verify` unit with forbidden ops → emit the chat notice in the GROUND output. On-disk unit NOT modified (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path). Detection-only at GROUND means the warning re-fires at every M/L entry until human fixes the unit — intentional visibility. NEVER halts. Source skill: `execute-bolts`.
 
 ### secret_in_code
 
@@ -144,7 +144,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### test_fail
 
-- `test_fail` — execute-bolts: a bolt's acceptance test still fails after the max retry budget (the attempt loop stops instead of thrashing). ALWAYS STOP. Details `{unit_id, attempts, failing_test, last_error}` (registry §Type-specific schemas). Resolution: read `<vault>/bolts/U-XXX/bolt-report.md` for the failure trail; common causes are a missing test runner (`install-deps`), an unmigrated database, or a unit missing a `target_files` dependency — fix, then `/mega-sdd --resume`.
+- `test_fail` — execute-bolts: a bolt's acceptance test still fails after the max retry budget (the attempt loop stops instead of thrashing). ALWAYS STOP. Details `{unit_id, retries_attempted, test_command, last_failure_output, files_touched}` (registry §Type-specific schemas). Resolution: read `<vault>/bolts/U-XXX/bolt-report.md` for the failure trail; common causes are a missing test runner (`install-deps`), an unmigrated database, or a unit missing a `target_files` dependency — fix, then `/mega-sdd --resume`.
 
 ### ambiguous_spec
 

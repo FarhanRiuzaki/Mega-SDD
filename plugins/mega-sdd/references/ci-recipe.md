@@ -40,7 +40,9 @@ How to run mega-sdd gates in CI (GitHub Actions / GitLab / any runner) and in he
 
 ```bash
 bash plugins/mega-sdd/scripts/validate-handoff-binding-units.sh --cwd="$PWD" --quiet || exit 1
-bash plugins/mega-sdd/scripts/compute-unit-staleness.sh --vault=.mega-sdd/vaults/<slug> | grep -q 'stale=0' || exit 1
+# compute-unit-staleness.sh prints JSON ({units[].status, counts}) and always exits 0 — gate on counts.stale
+bash plugins/mega-sdd/scripts/compute-unit-staleness.sh --vault=.mega-sdd/vaults/<slug> \
+  | python3 -c 'import json,sys; sys.exit(1 if json.load(sys.stdin)["counts"].get("stale") else 0)' || exit 1
 ```
 
 ## CI environment checklist
@@ -48,7 +50,7 @@ bash plugins/mega-sdd/scripts/compute-unit-staleness.sh --vault=.mega-sdd/vaults
 - `--auto` on EVERY mega-sdd invocation (interactive steps otherwise hang the runner; every phase has an `--auto` path — decisions queue to PENDING-SYNC.md / the OQ roll-up).
 - git identity set (`user.name`/`user.email`) when the job runs `execute-bolts` (bolts commit); read-only gates (drift, binding validation) need none.
 - `python3` on the runner (hooks + validators use it; the moat additionally fails CLOSED without it — see `hooks/pre-tool-use` fallback — but CI should just install it).
-- Worktree runners: all probes are worktree-safe (`git rev-parse --git-path …`); nothing assumes `.git` is a directory.
+- Worktree runners: the rebase / hooks-dir probes in `execute-bolts` and `sync` resolve via `git rev-parse --git-path …`; nothing assumes `.git` is a directory.
 
 ## What NOT to do
 

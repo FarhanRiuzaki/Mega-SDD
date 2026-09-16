@@ -79,7 +79,7 @@ blocker:
   resolver_owner: "<name or role, e.g. 'Mike Patel (Eng Lead)'>"
   resolver_route: "<where to find them, e.g. 'ask in #timeoff-team'>"
   vault_version: "<current vault version, e.g. '1.1'>"
-  source_skill: generate-intent | diff-vault | detect-drift | bind-codebase | scan-codebase | generate-units | execute-bolts | extract-intelligence | resolve-oq | orchestrate-flow | emit-agents-md | emit-fsd | emit-prd | emit-sit | emit-uat | install-deps
+  source_skill: generate-intent | diff-vault | detect-drift | bind-codebase | scan-codebase | generate-units | execute-bolts | extract-intelligence | resolve-oq | plan | orchestrate-flow | emit-agents-md | emit-fsd | emit-prd | emit-sit | emit-uat | install-deps
   # type-specific fields below
   conflict_old: "<vault state>"            # diff_conflict only
   conflict_new: "<new PRD state>"          # diff_conflict only
@@ -110,7 +110,7 @@ next_action: "<one-line prose string>"         # plain string form
 # next_action: <missing>                        → halt invalid_handoff during validation
 ```
 
-`type` enum (extensible per skill):
+`type` enum (extensible per skill — only `re_run_producer` / `user_review` / `chain_complete` are script-emitted today by `validate-handoff-yaml.sh`; the rest are prose vocabulary for skill-authored envelopes):
 
 - `inspect_subskill_logs` — read chat_tail_excerpt + investigate sub-skill output
 - `rename_and_retry` — rename corrupt file to .corrupt-<timestamp> + re-run
@@ -144,7 +144,7 @@ One row per halt type. The full guidance body lives in the named family file
 (`references/halt-families/`) — load ONLY the family of the halt in hand; this
 index is the router and the registry-existence surface (grep a type name here).
 
-Rows below are the halt-type index — orchestrate-flow schema validation rejects undeclared types as `invalid_handoff`. Rows marked *(subtype of `quality_gate_failed`)* are NOT standalone types: they are emitted as `type: quality_gate_failed` + `details.subtype: <name>` (see §`quality_gate_failed` subtypes below). `skills/orchestrate-flow/references/halt-taxonomy.md` mirrors classification NAMES only; full guidance bodies live in `halt-families/`, these rows are the index.
+Rows below are the halt-type index — this index is the registry-existence surface (grep a type name here); the handoff validator checks envelope SHAPE, not type membership. Rows marked *(subtype of `quality_gate_failed`)* are NOT standalone types: they are emitted as `type: quality_gate_failed` + `details.subtype: <name>` (see §`quality_gate_failed` subtypes below). `skills/orchestrate-flow/references/halt-taxonomy.md` mirrors classification NAMES only; full guidance bodies live in `halt-families/`, these rows are the index.
 
 **intent-and-vault** (`halt-families/intent-and-vault.md`):
 
@@ -305,24 +305,7 @@ blockers:
 
 ### Backward compatibility
 
-Vaults generated under v0.13 still emit the legacy `oq_blocker:` YAML form (without the unified envelope). AI consumers reading vaults should accept both shapes for one release cycle:
-
-```yaml
-# Legacy v0.13 form (still valid):
-oq_blocker:
-  tag: OQ-AR-1
-  priority: P1
-  ...
-
-# New v0.14 form:
-blocker:
-  type: oq_blocker
-  tag: OQ-AR-1
-  priority: P1
-  ...
-```
-
-Regenerated vaults produce only the new form.
+Only the unified `blocker:` envelope is accepted — the pre-1.0 bare `oq_blocker:` form is not parsed by `validate-handoff-yaml.sh`.
 
 ### Field rules
 

@@ -4,6 +4,16 @@ mega-sdd's **runtime output** defaults to **Indonesian, mixing English technical
 
 This file is itself an English directive doc (it mandates Indonesian output but is not itself translated). It is loaded on demand; the always-injected anchor carries the short policy + precedence.
 
+## Contents
+
+- Precedence (resolve output language in this strict order)
+- The 3 tiers
+- Tier-1 — do-not-translate census
+- Tier-3 — per-artifact language
+- Prompt surfaces (AskUserQuestion / halt menus) — the keterangan contract
+- OQ authoring — human-first
+- Switching & extensibility
+
 ## Precedence (resolve output language in this strict order)
 
 1. **Explicit request this session** ("use English", "pakai bahasa Jawa") — wins over everything until the user changes it.
@@ -32,7 +42,7 @@ These are English words sitting in machine-parsed positions; every one is parser
 - **Markers:** mutability `[LOCKED]` / `[INTENT]` / `[ARTIFACT]`; confidence `[VERIFIED]` / `[INFERRED]` / `[OPEN]`; OQ priority `P1` / `P2` + status `[~]` / `[ ]` / `[x]`.
 - **Halt vocabulary:** escalation tiers `C1` / `C2` / `C3`; halt-type vocabulary (`conflict_unresolved`, `missing_*`, `test_fail`, `bind_conflict`, …) + all JSON / frontmatter **field names**.
 - **Anti-halu & provenance:** placeholders `[Pending — X]` / `_None detected_`; citation `sha256:` stamp + `[Source: <path>]`; generator directives `<!-- compact-skip -->` / `<!-- full-only -->`; `generated_by:` marker; status `draft|locked`.
-- **Doc structural spine** (parsed by validators / wikilinks): section headers (`## Purpose`, `## NFR`, `^FR-\d+`, `Implementation State Map`, `Open Questions`, `## Conflicts` / `### CONFLICT`, the KB 11-section header spine); `[[doc#Header]]` wikilink targets; DBML `Table … { }` blocks; KB `stages:` YAML + mermaid enums; the lock values machine-read by `derive-vault-json.sh` (W5), dual-layout — layout-2: the `vault.md` frontmatter scalars `vault_version` / `project_shape` / `implementation_mode` / `mode_migrate_after` / `prd_status` / `output_mode` (+ the optional `project_scale`, 7.29.0) (+ the hard-header anchors `## Overview` / `## Architecture` / `## Decisions`, which the parsers exit-2 on); legacy: the six `00-index.md` Vault Lock Status bold-bullet keys (`**Vault version**` / `**Project shape**` / `**Implementation mode**` / `**Mode migration trigger**` / `**PRD status**` / `**Output mode**` — the `**History**` bullet is deliberately NOT machine-read and stays unpinned); the `flows.md` (legacy `04-flows.md`) `**Definition of Done**:` / `**Source**:` / `**_kb_source**:` labels, the `vault.md ## Decisions` (legacy `05-decisions.md`) `**Status**:` label, and the `// Purpose:` DBML comment token; the `flows.md` (legacy `04-flows.md`) `**Stages**` label (the vault flow-staging surface, NOT the deriver: it heads the `stages:` YAML block that `validate-vault-flow-staging.sh` machine-reads).
+- **Doc structural spine** (parsed by validators / wikilinks): section headers (`## Purpose`, `## NFR`, `^FR-\d+`, `Implementation State Map`, `Open Questions`, `## Conflicts` / `### CONFLICT`, the KB PRD-kontrak 6-section spine — legacy numbered tree: 11); `[[doc#Header]]` wikilink targets; DBML `Table … { }` blocks; KB `stages:` YAML + mermaid enums; the lock values machine-read by `derive-vault-json.sh` (W5), dual-layout — layout-2: the `vault.md` frontmatter scalars `vault_version` / `project_shape` / `implementation_mode` / `mode_migration_trigger` (canonical vault.json key `mode_migrate_after`) / `prd_status` / `output_mode` (+ the optional `project_scale`, 7.29.0) (+ the hard-header anchors `## Overview` / `## Architecture` / `## Decisions`, which the parsers exit-2 on); legacy: the six `00-index.md` Vault Lock Status bold-bullet keys (`**Vault version**` / `**Project shape**` / `**Implementation mode**` / `**Mode migration trigger**` / `**PRD status**` / `**Output mode**` — the `**History**` bullet is deliberately NOT machine-read and stays unpinned); the `flows.md` (legacy `04-flows.md`) `**Definition of Done**:` / `**Source**:` / `**_kb_source**:` labels, the `vault.md ## Decisions` (legacy `05-decisions.md`) `**Status**:` label, and the `// Purpose:` DBML comment token; the `flows.md` (legacy `04-flows.md`) `**Stages**` label (the vault flow-staging surface, NOT the deriver: it heads the `stages:` YAML block that `validate-vault-flow-staging.sh` machine-reads).
 - **Names & glyphs:** skill names, `/mega-sdd:*` command names, file / state-file paths, glyphs `✓ ⏸ ⛔`.
 - **Gateway & git surfaces:** the gateway tag family `mega-sdd-trace:*` (byte-verbatim contract — `docs/gateway-contract.md`); the commit trailers `SDD-Acceptance: v5` / `SDD-PROVENANCE:` / `Unit:` (parser-pinned).
 - **Script-emitted output stays English** (`query-graph.sh` incl. its `--modules` rollup, `analyze-parallelism.sh` — their labels / headers / JSON are asserted by executable `.sh` tests). Scripts are not localized; only model-generated prose is.
@@ -47,7 +57,7 @@ These are English words sitting in machine-parsed positions; every one is parser
 | **Quoted / cited source content** (PRD excerpts, constitution clauses, binding quotes) | **source language — never translate a citation** (citation discipline) |
 | Doc structural spine (`§` headers parsed by validators, `[Source: sha256:…]`) | **English** |
 
-**Surface split for `analyze` / `detect-drift` / `bind-codebase` / `resolve-oq`:** what they *say to the user* (chat narration of a recommendation, a drift finding, an OQ prompt) is Tier-2 → Indonesian by default, already governed by the anchor. What they *record into a vault artifact* (an OQ resolution answer, drift rationale written to the vault, `binding.md` claim text) is vault content → stays the vault's language. Only `emit-fsd` and `analyze` author standalone plugin-owned report files, so they are the only L3 Tier-3 pointer additions; the others narrate via the anchor and write via the vault-language rule, and are deliberately not given an artifact-language directive.
+**Surface split for `analyze` / `detect-drift` / `bind-codebase` / `resolve-oq`:** what they *say to the user* (chat narration of a recommendation, a drift finding, an OQ prompt) is Tier-2 → Indonesian by default, already governed by the anchor. What they *record into a vault artifact* (an OQ resolution answer, drift rationale written to the vault, `binding.md` claim text) is vault content → stays the vault's language. Only the emit-* doc-packs (fsd/prd/sit/uat) and `analyze` author standalone plugin-owned report files, so they are the only L3 Tier-3 pointer additions; the others narrate via the anchor and write via the vault-language rule, and are deliberately not given an artifact-language directive.
 
 ## Prompt surfaces (AskUserQuestion / halt menus) — the keterangan contract
 

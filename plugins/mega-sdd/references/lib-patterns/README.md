@@ -15,15 +15,20 @@ plugins/mega-sdd/references/lib-patterns/
     rbac-libs.md             # Spatie/permission / laravel-permission / custom
     ui-libs.md               # JS / CSS / notification / icon / datatable
     generic-libs.md          # queue / cache / log / test / misc
+  django/                    # compact bullet pack (2-4 lines per file; no manifest / file-fingerprint / YAML sections)
+    auth-libs.md
+    rbac-libs.md
+    ui-libs.md
+    generic-libs.md
 ```
 
 ## Adding a new framework
 
-To add a new framework (e.g., `nextjs/`, `django/`, `rails/`):
+To add a new framework (e.g., `nextjs/`, `rails/`):
 
 1. Create directory `lib-patterns/<framework>/`
 2. Add the 4 standard catalog files: `auth-libs.md`, `rbac-libs.md`, `ui-libs.md`, `generic-libs.md`
-3. Each file follows the canonical "Detection Examples" structure:
+3. Each file follows the canonical "Detection Examples" structure (`laravel/` is the full-form reference; `django/` ships as a compact bullet pack):
    - **Manifest fingerprint**: which key in package manifest signals this lib
    - **File fingerprint**: where in the codebase the lib's usage appears
    - **Sample output YAML slice**: what the extractor should emit

@@ -79,7 +79,7 @@ Related-but-separate config surfaces (different scopes, documented where they li
 
 - **Defaults when absent** — a missing file or missing key NEVER errors; behavior is the documented default.
 - **Validation** — unknown keys are ignored (forward-compat); a malformed YAML file is treated as absent (hooks fail-open to defaults, one debug-log line).
-- **Restart required for hook-read keys** — the hook-read keys are `dirty_journal` and `staleness_notice` (session-start), `gateguard` (pre-tool-use), `auto_verify_on_edit` (post-tool-use), and `spine` / `profile` (stop); all are read at event time, so edits apply on the next tool event / session start (no full restart needed); skill-read keys apply on next skill invocation.
+- **Restart required for hook-read keys** — the hook-read keys are `dirty_journal` (post-tool-use), `staleness_notice` (session-start), `gateguard` (pre-tool-use), `auto_verify_on_edit` (post-tool-use), and `spine` / `profile` (stop); all are read at event time, so edits apply on the next tool event / session start (no full restart needed); skill-read keys apply on next skill invocation.
 - `halt_auto_propose` exists as a USER-scope key in `~/.mega-sdd/config.yaml` — shape and semantics in `execute-bolts/references/halt-recovery.md §Configuration override`.
 - REQUIRED interpreter: `python3` — without a usable interpreter the PreToolUse gates fail CLOSED (see tooling-install.md).
 - **Git:** the file is safe to commit (team-shared posture) OR gitignore it for per-developer preferences — your call; it contains no secrets by design. Do NOT put credentials here.

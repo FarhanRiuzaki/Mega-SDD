@@ -12,7 +12,7 @@ The `pdf_render_failed` / `template_slot_unfilled` / `citation_unresolvable` sub
 
 ### pdf_render_failed
 
-- `pdf_render_failed` — emit-fsd: pandoc exited non-zero during PDF render in §Step 5.3. Details include `pandoc_stderr_tail` (last 500 chars). Resolution: inspect md2pdf stderr; md2pdf uses pandoc+Chrome (GitHub style, never LaTeX) and falls back to HTML without Chrome — install pandoc/mmdc via `/mega-sdd:install-deps`, re-run emit-fsd.
+- `pdf_render_failed` — emit-fsd: pandoc exited non-zero during PDF render in §Step 5.3. Details include `md2pdf_stderr_tail` (last 500 chars). Resolution: inspect md2pdf stderr; md2pdf uses pandoc+Chrome (GitHub style, never LaTeX) and falls back to HTML without Chrome — install pandoc/mmdc via `/mega-sdd:install-deps`, re-run emit-fsd.
 
 ### template_slot_unfilled
 

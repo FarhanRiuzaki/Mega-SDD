@@ -9,6 +9,7 @@ Per user UX request — "by default semua file output md hasil skill itu masuk s
 - Path resolution algorithm
 - Canonical layout
 - Root state surface (`.mega-sdd/` dot-files)
+- Vault layout (v7 layout-2 ↔ legacy 7-file; Layout-3)
 - User-scope
 - Per-skill path mapping (canonical → legacy)
 - Detection logic
@@ -18,13 +19,14 @@ Per user UX request — "by default semua file output md hasil skill itu masuk s
 - Migration
 - Recommended `.gitignore` entries
 - References
+- Derived caches (never state)
 
 ## Path resolution algorithm
 
 Every writer skill resolves output paths via this protocol:
 
 1. **Check user override**: `~/.mega-sdd/config.yaml` `default_output_root: <abs-or-rel-path>` (cross-project user preference) *(documented-only — no code reads `default_output_root` today)*
-2. **Check project override**: `<project-root>/.mega-sdd/config.yaml` `output_root: <abs-or-rel-path>` (per-repo override)
+2. **Check project override**: `<project-root>/.mega-sdd/config.yaml` `output_root: <abs-or-rel-path>` (per-repo override) *(prose-honored by extract-intelligence only — no script/hook reads `output_root`; scripts resolve `.mega-sdd/` directly)*
 3. **Default**: `<project-root>/.mega-sdd/`
 4. **Legacy detection**: if old-layout paths exist (e.g., `docs/mega-sdd/vaults/`, `.mega-sdd-memory/`, top-level `codebase-map.md`), skills WRITE to legacy paths for back-compat. User opts into new layout via `/mega-sdd:migrate-paths`.
 
@@ -35,7 +37,7 @@ Every writer skill resolves output paths via this protocol:
 ├── .mega-sdd/                                    # ALL mega-sdd outputs (default; configurable)
 │   ├── config.yaml                                # Project-level config (output_root, opt-outs)
 │   ├── vaults/<slug>/                             # Vault content + per-vault state
-│   │   ├── vault.md, model.md, flows.md,          # 4-file layout-2 vault (v7; legacy vaults:
+│   │   ├── vault.md, model.md, flows.md,          # 4-file layout-2 vault (classic lane — the 8.x DEFAULT; the lite lane writes context.md, §Layout-3; legacy vaults:
 │   │   │   constraints.md                         #   00-index.md ... 06-constraints.md — see §Vault layout)
 │   │   ├── vault.json                             # Manifest (carries vault_layout: 2 on layout-2)
 │   │   ├── claims-ledger.json                     # Derived claim index (derive-claims-ledger.sh — bind --express input)
@@ -91,7 +93,7 @@ Live state files at the `.mega-sdd/` root (writers in parentheses):
 - `.locked-files-index.json` — `build-locked-index.sh`; read by GateGuard + the v7.5.0 LOCKED-edit notice
 - `codebase/.dirty-paths.jsonl` — PostToolUse journal; read by the session-start notice + the completion census
 - `state.json` — routing digest (`derive-state.sh` / `ground.sh`)
-- `graph.json` — `build-graph.sh`; gates the Stop-hook publisher leg
+- `graph.json` — `build-graph.sh`; one of the two triggers (with `vaults/`) of the Stop-hook publisher leg
 - `factory-ledger.json` — Factory Line ledger
 - `CONSISTENCY-REPORT.md` — analyze output
 - `codebase/reuse-index.yaml` + `codebase/symbol-index.json` — reuse substrate
@@ -104,7 +106,7 @@ Plus ~35 `.*-state.json` validator/gate state files (one per validator; written 
 
 ## Vault layout (v7 layout-2 ↔ legacy 7-file)
 
-Layout-2 (v7 default; marker `vault_layout: 2` in the vault.md frontmatter + vault.json) is the 4-file vault. Every reader is DUAL-LAYOUT for one minor cycle (probe the layout-2 file first, fall back to the legacy name — floor v5.9.0 kantor). Migration: `migrate-paths.sh --vault-layout` (dry-run default; `--apply` executes) → then a FULL re-bind is MANDATORY (line anchors invalidated; binding.json/.citation-map.json are regenerated, never patched).
+Layout-2 (classic-lane default through 8.x; marker `vault_layout: 2` in the vault.md frontmatter + vault.json) is the 4-file vault. Every reader is DUAL-LAYOUT for the 8.x cycle (§Layout-3 dual-read window; probe the layout-2 file first, fall back to the legacy name — floor v5.9.0 kantor). Migration: `migrate-paths.sh --vault-layout` (dry-run default; `--apply` executes) → then a FULL re-bind is MANDATORY (line anchors invalidated; binding.json/.citation-map.json are regenerated, never patched).
 
 | Layout-2 | Legacy (7-file) | Content |
 |---|---|---|
@@ -137,7 +139,7 @@ ONE file `context.md` (marker `vault_layout: 3` in its frontmatter + vault.json)
 |---|---|---|---|
 | `extract-intelligence` | knowledge-base/ (census.json + modules/*.prd.md + README.md) | `.mega-sdd/knowledge-base/` | `docs/knowledge-base/` or `<out>/knowledge-base/` |
 | `scan-codebase` | codebase-map.md | `.mega-sdd/codebase/codebase-map.md` | `<repo-root>/codebase-map.md` |
-| `scan-codebase` | starterkit-context | `.mega-sdd/codebase/starterkit-context.yaml` | `docs/codebase/starterkit-context.yaml` (legacy back-compat probe only) |
+| `scan-codebase` | starterkit-context | `.mega-sdd/codebase/starterkit-context.yaml` | — (no legacy location) |
 | `build-symbol-index.sh` (script) | symbol-index | `.mega-sdd/codebase/symbol-index.json` | — (new artifact, no legacy location) |
 | `generate-intent` | vault/ | `.mega-sdd/vaults/<slug>/` | `docs/mega-sdd/vaults/<slug>/` |
 | `bind-codebase` | binding.md + bound/ | `<vault>/binding.md` + `<vault>/bound/` | `<vault>/binding.md` + `<vault>-bound/` |
@@ -234,7 +236,7 @@ probe_paths:
 |---|---|---|
 | Visibility | Visible in file tree | Hidden by default (most tools/IDEs hide dotfiles) |
 | Discoverability for AI tools | Mixed with project docs | Clearly separated as mega-sdd state |
-| Git tracking | Often tracked (developer-facing) | Per-project decision (recommend track `vaults/`, `decisions.md`, `conventions.md`; gitignore `outcomes.md`, `.internal/`, `.memory/`) |
+| Git tracking | Often tracked (developer-facing) | Per-project decision (recommend track `vaults/`; gitignore `.internal/`, `.memory/`, `codebase/.dirty-paths.jsonl`, `.cache/`) |
 | Convention parity | Mixed with markdown docs | Matches `.git/`, `.vscode/`, `.idea/` patterns (tool state) |
 | Migration cost | n/a | One-time `/mega-sdd:migrate-paths` |
 
@@ -242,7 +244,7 @@ User explicitly requested consolidation under `.mega-sdd/`. Trade-off: lose some
 
 ## Migration
 
-`/mega-sdd:migrate-paths` walks old layout, moves to new with `git mv` where safe, updates internal references in vault.json, binding.md, and per-file frontmatter. See `commands/migrate-paths.md`.
+`/mega-sdd:migrate-paths` walks old layout, moves to new with `git mv` where safe, updates legacy path strings in vault.json, binding.md and bound/*.md. See `commands/migrate-paths.md`.
 
 Migration is opt-in. Existing projects continue to work with legacy paths via back-compat detection.
 
@@ -252,7 +254,7 @@ For project repo `.gitignore`:
 
 ```
 # Mega-SDD ephemeral state (per-project decision; uncomment what you want untracked)
-# .mega-sdd/memory/outcomes.md          # noisy per-dev run logs
+# .mega-sdd/codebase/.dirty-paths.jsonl # per-dev journal (always gitignore)
 # .mega-sdd/vaults/*/.internal/          # checkpoints (stale symbol-graph.json caches from <5.29.0 are inert — safe to delete)
 # .mega-sdd/vaults/*/.memory/            # per-vault ephemeral memory
 # .mega-sdd/vaults/*/bolts/              # bolt reports (regenerable)
@@ -262,7 +264,7 @@ For project repo `.gitignore`:
 
 Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to track per team norms.
 
-**Multi-dev note:** `vault.json`, `binding.md`, and `claims-ledger.json` are whole-file regenerated state — git line-merge of any of them after two devs ran the pipeline concurrently produces a corrupt file (the GROUND-time guard in `scripts/ground.sh` detects unparseable vault.json but does not merge it). Team options: (a) one-writer-at-a-time discipline (feature branch per vault), or (b) gitignore `vault.json` + regenerate from markdown on checkout (`vault.json` is derived; the markdown is the truth). The per-dev noise file (`.dirty-paths.jsonl`) should always be gitignored.
+**Multi-dev note:** `vault.json`, `binding.md`, and `claims-ledger.json` are whole-file regenerated state — git line-merge of any of them after two devs ran the pipeline concurrently produces a corrupt file (`scripts/ground.sh` currently SKIPS an unparseable vault.json without a halt — a separate halt class is a future slice; nothing merges or repairs it). Team options: (a) one-writer-at-a-time discipline (feature branch per vault), or (b) gitignore `vault.json` + regenerate from markdown on checkout (`vault.json` is derived; the markdown is the truth). The per-dev noise file (`.dirty-paths.jsonl`) should always be gitignored.
 
 ## References
 
@@ -271,6 +273,6 @@ Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to t
 
 ## Derived caches (never state)
 
-- `<root>/.mega-sdd/.cache/pack-resolver/` — the framework-pack resolver's derived stdout cache (one file per section/chain request). Discardable at any time; deleting it costs one cold resolve. Never committed (gitignored), never read as project state.
+- `<root>/.mega-sdd/.cache/pack-resolver/` — the framework-pack resolver's derived stdout cache (one file per section/chain request). Discardable at any time; deleting it costs one cold resolve. Add it to `.gitignore` yourself (mega-sdd never edits `.gitignore`); never read as project state.
 - `<root>/.mega-sdd/.stop-scan-stamp` — the Stop hook's turn-gate stamp (HEAD sha at the last artifact scan). Absence simply means the next Stop scans; never committed.
 - `<root>/.mega-sdd/.ptu-scan-stamp` — legacy name — the PostToolUse debounce and its 4 scanners were removed in v7; retained only in the anti-forge guard + probe-prune lists, never written.

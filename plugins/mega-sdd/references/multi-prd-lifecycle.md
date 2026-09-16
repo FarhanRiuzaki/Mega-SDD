@@ -22,7 +22,7 @@ When a doc arrives or the project moves, route by **what actually changed**, nev
 
 **Disambiguation signal:** if the incoming doc's title/scope matches an existing vault's `source` (same product, same epic) → it's a revision → `diff-vault`. If it introduces a new feature area not owned by any existing vault → new vault. **Prompt-scale signal (no doc, just a sentence):** the sentence names an entity/flow/module an existing vault's **`vault.json`** owns (`entities[].name`, `flows[].title`, module names — the machine index, never a vault md file; the MECHANICAL check in `commands/mega-sdd.md` step 3) → delta lane; it names a feature area no vault owns → new vault. When unsure, the router ASKS (it must not guess between evolve-in-place and new-epic — they diverge hard).
 
-## Project index — `.mega-sdd/project.md`
+## Project index (derived on demand — no file)
 
 Derived view (v7: the dedicated index script was removed — derive it on demand by listing `.mega-sdd/vaults/*/vault.json`): one row per vault — slug, title, source doc, version, status (`intent` / `units-ready` / `in-progress` / `shipped`), unit + bolt counts, feature area. **The sequence of vaults IS the project's PRD/epic history.** A new vault reads this index to know what PRD 1..N-1 shipped, so it binds against the right reality. Re-derive whenever the answer matters (vault list + counts are cheap reads).
 
@@ -32,7 +32,7 @@ Per-vault constitutions (`<vault>/constitution.md`) carry the locked rules of TH
 
 - Project constitution clauses use the same `§A–§F` / `A-001` grammar as a vault constitution.
 - It is authored once (lift the cross-cutting clauses out of PRD 1's vault constitution at first ship, or write it explicitly) and only changes by explicit user action — never auto-edited.
-- `constitution-propagation` checks project → vault inheritance in addition to binding → units.
+- Project → vault inheritance is a prose contract today: `validate-constitution-propagation.sh` checks binding → units only; no script checks project → vault inheritance.
 
 ## Doc-type agnosticism
 
