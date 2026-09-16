@@ -1,0 +1,60 @@
+session_start=2026-09-16T14:50:48.596000+00:00  records=469  models={'claude-opus-5': 183}
+
+endpoint 2026-09-16T23:00:13+07:00
+  gross wall-clock : 1h09m24s
+  human-wait       : 56.5 min (5 events)
+  net machine time : 0h12m53s
+  raw tokens       : 14,047,890
+  cost-weighted    : 2,772,916
+
+endpoint 2026-09-16T23:23:49+07:00
+  gross wall-clock : 1h33m00s
+  human-wait       : 56.5 min (5 events)
+  net machine time : 0h36m29s
+  raw tokens       : 31,771,278
+  cost-weighted    : 5,746,736
+
+wait events:
+  2026-09-16T15:11:24.145000+00:00 IDLE    15.4 min
+  2026-09-16T15:27:42.034000+00:00 IDLE    15.5 min
+  2026-09-16T15:44:38.244000+00:00 USER    16.0 min
+  2026-09-16T15:51:08.590000+00:00 USER     6.0 min
+  2026-09-16T15:54:41.298000+00:00 USER     3.5 min
+
+phase decomposition (v8 P0) — endpoint 2026-09-16T23:00:13+07:00
+  segment                                 gross      wait        net      raw tok       cw tok
+  front-door / routing                 0h00m03s     0.0m   0h00m03s            0            0
+  mega-sdd:mega-sdd                    0h04m42s     0.0m   0h04m42s      240,875      113,072
+  GROUND(script)                       0h00m10s     0.0m   0h00m10s      160,983       30,396
+  mega-sdd:orchestrate-flow            0h00m02s     0.0m   0h00m02s      118,582       37,137
+  mega-sdd:plan                        0h59m25s    56.5m   0h02m54s    2,651,409      573,615
+  GROUND(script) ×2                    0h02m39s     0.0m   0h02m39s    5,346,130    1,107,141
+  mega-sdd:resolve-oq                  0h00m13s     0.0m   0h00m13s      519,608      108,832
+  GROUND(script)                       0h00m12s     0.0m   0h00m12s      902,260      145,683
+  mega-sdd:execute-bolts               0h00m48s     0.0m   0h00m48s    3,652,957      596,555
+  bolt-implementer ×2                  0h01m04s     0.0m   0h01m04s      455,086       60,486
+  (sum of segment nets)                                     0h12m53s
+  PRE-CODE  (start → first bolts dispatch 2026-09-16T15:58:19.774000+00:00): net 0h11m00s, cw 2,115,876
+  BOLT-1    (dispatch → first unit commit):         net 0h01m53s, cw 657,040
+  pre-code share of net time-to-first-code: 85.4%  (v8 P0 kill-criterion: < 25% ⇒ stop at P1)
+
+BOLT-1 breakdown (v8 P0)
+  window 2026-09-16T15:58:19.774000+00:00 → 2026-09-16T23:00:13+07:00  gross 0h01m53s · wait 0.0m · net 0h01m53s
+  class                               count        sum      union  units
+  implementer dispatches                  2   0h08m03s   0h04m58s  U-001,U-004
+  review-panel lenses                     0   0h00m00s   0h00m00s  
+  resolution-verifier (fix rounds)        0   0h00m00s   0h00m00s  
+  gate/validator scripts                  1   0h00m00s   0h00m00s  U-001
+  other Agent dispatches                  0   0h00m00s   0h00m00s  
+  other Bash calls                        6   0h00m04s   0h00m04s  U-001
+  Skill dispatches                        1   0h00m01s   0h00m01s  
+  AskUserQuestion                         0   0h00m00s   0h00m00s  
+  fix rounds (implementer re-dispatch per unit − 1): 0   per-unit dispatches: {'U-001': 1, 'U-004': 1}
+  tool-active union (all non-ask spans): 0h05m05s  = 270% of BOLT-1 net; the remainder is controller reasoning/reading between tool calls
+  CAVEAT: Agent spans measure MAIN-LANE blocking time only. A background dispatch (execute-bolts waves, parallel panel lenses) returns its tool_result at once and does its work on the sidechain, so implementer/panel 'sum' here is a LOWER BOUND of their runtime; the COUNTS and the per-unit re-dispatch (fix rounds) are exact. Gate scripts and other Bash calls are foreground and exact.
+
+interaction points (v8 W1 budget: 3-screen ≤2, clinic ≤3)
+  to 2026-09-16T23:00:13+07:00: ASK 0 + mid-run USER waits 3 = 3 interaction point(s); 2 idle event(s) >10min
+  to 2026-09-16T23:23:49+07:00: ASK 0 + mid-run USER waits 3 = 3 interaction point(s); 2 idle event(s) >10min
+
+json written: /Users/<user>/SunnyGo/2026/AIRND2026/Project/mega-sdd-github/benchmarks/results/p3/xs-lite-8.3.0-levers-run3/extract.json

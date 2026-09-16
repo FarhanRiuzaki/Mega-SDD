@@ -1,0 +1,7 @@
+arm xs-lite-8.3.0-levers-run3 sid ec894c20 start 14:50:52Z
+  DONE_code    1h32m56s  last code commit  style(U-002): apply repo formatter to Beranda test
+  DONE_p5      1h32m56s  last type(U-*) commit (P0/P2 tables)  style(U-002): apply repo formatter to Beranda test
+  DONE_gate    1h33m03s  last unit gate pass (postflight/acceptance/panel merge) for U-002
+  B2 suite     1h33m18s  run-full-suite.sh result (batch gate, reported separately)
+  EXCLUDED     1h06m54s  first drift/analyze/html/emit call (never in DONE)
+  gate calls seen for last-code unit: {'run-acceptance-tests.sh': '16:23:55', 'run-postflight-scan.sh': '16:23:55', 'merge-panel-findings.sh': '16:20:22'}
