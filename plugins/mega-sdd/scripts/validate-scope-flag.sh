@@ -41,9 +41,13 @@ fi
 
 [ -z "$CWD" ] && { echo "ERROR: --cwd required" >&2; exit 2; }
 
-# Read user message
+# Read user message. Without --user-message-file the message comes from stdin —
+# but ONLY when stdin is a pipe/file: on a terminal `cat` would block forever
+# (doc-audit v8 finding #7b), so a TTY means "no message" (graceful PASS below).
 if [ -n "$USER_MSG_FILE" ] && [ -f "$USER_MSG_FILE" ]; then
   USER_MSG=$(cat "$USER_MSG_FILE")
+elif [ -t 0 ]; then
+  USER_MSG=""
 else
   USER_MSG=$(cat)
 fi
@@ -100,9 +104,10 @@ except OSError:
 for _d in _scan_dirs:
     for pattern in ["prd.md", "seed-PRD.md", "*PRD*.md", "*prd*.md"]:
         prd_candidates.extend(glob.glob(os.path.join(_d, pattern)))
-# Also check .mega-sdd/ subdirs
+# Also check .mega-sdd/ subdirs + the from-prompt seed (`<vault>/source/seed-PRD.md`)
 prd_candidates.extend(glob.glob(os.path.join(cwd, ".mega-sdd", "seed-prd.md")))
 prd_candidates.extend(glob.glob(os.path.join(cwd, ".mega-sdd", "prd.md")))
+prd_candidates.extend(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "source", "seed-PRD.md")))
 # Dedupe by inode-identity where available (PRD/ vs prd/ on a case-insensitive
 # filesystem lists the same files twice), then filter to real files
 _seen_files, _uniq = set(), []
@@ -128,7 +133,8 @@ if not prd_candidates:
         "scope_requested": scope_requested,
         "searched_patterns": ["prd.md", "seed-PRD.md", "*PRD*.md",
                               "{PRD,docs,documents,requirements}/(same patterns)",
-                              ".mega-sdd/{seed-,}prd.md"],
+                              ".mega-sdd/{seed-,}prd.md",
+                              ".mega-sdd/vaults/*/source/seed-PRD.md"],
     }
     with open(state_file, "w") as f:
         json.dump(state, f, indent=2)
@@ -173,6 +179,19 @@ if fm_match:
                 m_scalar = re.match(r"^\s+-\s+(\S+)\s*$", ln)
                 if m_scalar:
                     declared_scopes.append(m_scalar.group(1).strip().strip("'\""))
+            if not declared_scopes:
+                # d) MAP shape — the CANONICAL form the PRD template + sample PRDs use
+                #    (doc-audit v8 finding #7): `scopes:\n  BE:\n    name: …`. The scope
+                #    ids are the keys at the FIRST child indent; deeper keys are attributes.
+                first_indent = None
+                for ln in block_text.split("\n"):
+                    m_key = re.match(r"^([ \t]+)([A-Za-z0-9_-]+):\s*(#.*)?$", ln)
+                    if not m_key:
+                        continue
+                    if first_indent is None:
+                        first_indent = m_key.group(1)
+                    if m_key.group(1) == first_indent:
+                        declared_scopes.append(m_key.group(2))
 
 if not declared_scopes:
     # PRD has no scopes: block — legacy single-scope vault

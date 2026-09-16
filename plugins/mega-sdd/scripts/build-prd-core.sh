@@ -350,7 +350,12 @@ CATS = (("section-5-performance", ("performance", "latency", "throughput", "p95"
         ("section-5-other", ("compliance", "regulat", "audit", "ojk", "bi-")))
 if mode == "forward":
     fn = vtext("02-functional.md")
-    const = read(os.path.join(vault, "_meta", "constitution.md"))
+    # producers write <vault>/constitution.md; `_meta/` = hand-made-vault fallback (doc-audit v8 #4)
+    const_rel = "constitution.md"
+    const = read(os.path.join(vault, "constitution.md"))
+    if const is None:
+        const = read(os.path.join(vault, "_meta", "constitution.md"))
+        const_rel = "_meta/constitution.md"      # cite the file actually read
     nfr = md_section(fn, "NFR") or (md_section(fn, "Non-Functional Requirements") if fn else None)
     for slot, words in CATS:
         parts = []
@@ -367,7 +372,7 @@ if mode == "forward":
     if nfr:
         cite(5, "vault/" + vdoc_name("02-functional.md"))
     if const:
-        cite(5, "vault/_meta/constitution.md")
+        cite(5, "vault/" + const_rel)
 else:
     all_claims = []
     for df in sorted(glob.glob(os.path.join(kb_root, "*", "*.md"))):

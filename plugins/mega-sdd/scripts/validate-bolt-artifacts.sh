@@ -1408,6 +1408,21 @@ if is_unit_path(file_path):
                 fname = os.path.basename(f).replace(".md", "")
                 if fname.startswith("D-"):
                     available.add(fname.upper())
+        # Layout-2 / layout-3 / legacy keep ADRs INLINE as `### D-NNN: title` headings in
+        # vault.md / context.md / 04-decisions.md (doc-audit v8 finding #19 — the
+        # file-only inventory false-flagged every inline ADR cite as pbt_citation_invalid).
+        _inline_re = re.compile(r"^#{2,4}\s+(D-[A-Z0-9-]*\d+)\b", re.IGNORECASE | re.MULTILINE)
+        for pre_pat in vault_layouts.vault_prefixes(cwd):
+            for pre in glob.glob(pre_pat):
+                for doc in ("vault.md", "context.md", "04-decisions.md", "decisions.md"):
+                    dp = os.path.join(pre, doc)
+                    if not os.path.isfile(dp):
+                        continue
+                    try:
+                        with open(dp, encoding="utf-8", errors="replace") as fh:
+                            available.update(m.upper() for m in _inline_re.findall(fh.read()))
+                    except OSError:
+                        pass  # unreadable doc → no inline ids from it (file inventory still counts)
         # Cross-check
         missing = sorted([c for c in cited if c not in available])
         if missing:

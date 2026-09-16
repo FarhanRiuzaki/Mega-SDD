@@ -105,6 +105,15 @@ bash "$S/write-unit-binding.sh" --cwd="$T" --vault="$V" --unit=U-002 --resolve=C
 bash "$S/write-unit-binding.sh" --cwd="$T" --vault="$V" --unit=U-002 --resolve=C-U002-01=KEEP_VAULT --by=user >/dev/null 2>&1 \
   && python3 -c "import json;d=json.load(open('$V/bolts/U-002/binding.json'));c=[x for x in d['claims'] if x['id']=='C-U002-01'][0];assert c['resolution']['action']=='KEEP_VAULT' and c['resolution']['by']=='user'" \
   && pass "c5: --resolve records {action, by, at} on the CONFLICT claim (resolve-oq write-back path)" || fail "c5: resolution not recorded"
+# c6/c7 — spec 2026-09-16 §1 #11: DEFER (binding-mode [D], CONFLICT → OQ the unit carries) is a legal
+# action; the claim is still CONFLICT so a second --resolve overwrites c5's KEEP_VAULT. The enum is
+# still closed: an unknown action is refused (exit 3) and leaves the recorded resolution untouched.
+bash "$S/write-unit-binding.sh" --cwd="$T" --vault="$V" --unit=U-002 --resolve=C-U002-01=DEFER --by=user >/dev/null 2>&1; RC=$?
+[ $RC -eq 0 ] && python3 -c "import json;d=json.load(open('$V/bolts/U-002/binding.json'));c=[x for x in d['claims'] if x['id']=='C-U002-01'][0];assert c['verdict']=='CONFLICT' and c['resolution']['action']=='DEFER' and c['resolution']['by']=='user',c" \
+  && pass "c6: --resolve=C-id=DEFER --by=user on a CONFLICT claim → exit 0, resolution.action == DEFER" || fail "c6: DEFER refused or not recorded (rc=$RC)"
+bash "$S/write-unit-binding.sh" --cwd="$T" --vault="$V" --unit=U-002 --resolve=C-U002-01=NOPE --by=user >/dev/null 2>&1; RC=$?
+[ $RC -eq 3 ] && python3 -c "import json;d=json.load(open('$V/bolts/U-002/binding.json'));c=[x for x in d['claims'] if x['id']=='C-U002-01'][0];assert c['resolution']['action']=='DEFER',c" \
+  && pass "c7: --resolve=C-id=NOPE → still REFUSED (exit 3), prior DEFER resolution untouched" || fail "c7: illegal action accepted or clobbered the resolution (rc=$RC)"
 
 # ── d: mutation — creating the missing migration flips C-U002-01 to CONFIRMED on rewrite ──
 mkdir -p "$T/database/migrations"

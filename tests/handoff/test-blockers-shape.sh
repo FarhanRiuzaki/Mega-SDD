@@ -56,4 +56,26 @@ bash "$V" --cwd="$T" --response-file="$T/resp.md" --skill-name=mega-sdd:bind-cod
 grep -q 'MUST be the LAST assistant TEXT of your reply' "$P/hooks/pre-tool-use" && pass "g: hook deny message names the legal path (corrected handoff = last assistant TEXT)" || fail "g: hook deny message silent on the transcript-text requirement"
 n_bad=$(grep -rn '^\s*blockers: \[\]' "$P/skills" --include='*.md' | grep -vc 'LIST of envelope bodies'); [ "$n_bad" -eq 0 ] && pass "h: every handoff teacher's blockers line carries the flat-shape pointer" || fail "h: $n_bad teacher(s) still show blockers: [] without the shape pointer"
 grep -q 'nested inside an entry' "$P/skills/orchestrate-flow/references/handoff-contract.md" && pass "i: contract documents the nested-list acceptance" || fail "i: contract silent on nested lists"
+# ── doc-audit v8 debt gate (spec 2026-09-16 §1 #10): registry membership is ADVISORY ──────
+# a blocker type the halt-protocol registry index does not know → warnings[] with code
+# halt_type_unregistered + the offending types; the verdict itself is untouched (still PASS).
+rm -f "$T/.mega-sdd/.handoff-validation-state.json"
+mk $'  blockers:\n    - type: totally_made_up_halt\n      emitted_by: x\n      details: {}'
+bash "$V" --cwd="$T" --response-file="$T/resp.md" --skill-name=mega-sdd:generate-intent >/dev/null 2>&1; RC=$?
+python3 - "$T/.mega-sdd/.handoff-validation-state.json" "$RC" <<'EOF3' && pass "j: unregistered blocker type → warnings[0].code == halt_type_unregistered, types == [totally_made_up_halt], status still PASS (exit 0)" || fail "j: unregistered type not surfaced as an advisory (rc=$RC)"
+import json, sys
+d = json.load(open(sys.argv[1])); rc = int(sys.argv[2])
+assert rc == 0 and d["status"] == "PASS", (rc, d.get("status"), d.get("halt_type"))
+w = d["warnings"]
+assert w[0]["code"] == "halt_type_unregistered" and w[0]["types"] == ["totally_made_up_halt"], w
+EOF3
+# same handoff, a registered type → no warnings key at all (the advisory is not a constant)
+rm -f "$T/.mega-sdd/.handoff-validation-state.json"
+mk $'  blockers:\n    - type: oq_blocker\n      emitted_by: x\n      details: {}'
+bash "$V" --cwd="$T" --response-file="$T/resp.md" --skill-name=mega-sdd:generate-intent >/dev/null 2>&1; RC=$?
+python3 - "$T/.mega-sdd/.handoff-validation-state.json" "$RC" <<'EOF4' && pass "k: registered type (oq_blocker) on the same handoff → PASS with NO warnings key" || fail "k: registered type produced a warning or changed the verdict (rc=$RC)"
+import json, sys
+d = json.load(open(sys.argv[1])); rc = int(sys.argv[2])
+assert rc == 0 and d["status"] == "PASS" and "warnings" not in d, (rc, d.get("status"), d.get("warnings"))
+EOF4
 echo; [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"; exit $rc

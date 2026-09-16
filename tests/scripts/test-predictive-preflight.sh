@@ -160,6 +160,27 @@ printf '%s\n' "$out" | grep -q '"check": "vault_present_for_drift", "status": "o
   && pass "vault_present_for_drift ok on the fixture vault" \
   || fail "vault_present_for_drift should pass on fixture"
 
+# ── 8b. layout-3 (plan-born) vault: binding_present_for_drift reads bolts/U-*/binding.json ──
+# A lite vault keeps ONE context.md and per-unit verdicts — there is never a whole-vault
+# binding.md, so the binding.md-only check FATALed every lite hop of detect-drift.
+# Separate project so the classic fixture above stays untouched.
+L3="$TMP/l3proj/.mega-sdd/vaults/leave"
+mkdir -p "$L3"
+printf '{"vault_version": "1.0", "open_questions": []}\n' > "$L3/vault.json"
+printf '# Context\n\n## Flows\n' > "$L3/context.md"
+out=$(bash "$S" $SFLAGS --cwd="$TMP/l3proj" --chain=detect-drift </dev/null); src=$?
+line=$(printf '%s\n' "$out" | grep '"check": "binding_present_for_drift"')
+[ "$src" -eq 3 ] && printf '%s' "$line" | grep -q '"status": "fatal"' \
+  && printf '%s' "$line" | grep -q -- '--lite' \
+  && pass "layout-3 vault with no bolts/U-*/binding.json -> binding_present_for_drift fatal, hint names --lite" \
+  || fail "layout-3 unbound drift preflight wrong (rc=$src): $out"
+mkdir -p "$L3/bolts/U-001"
+printf '{"unit_id": "U-001", "verdicts": []}\n' > "$L3/bolts/U-001/binding.json"
+out=$(bash "$S" $SFLAGS --cwd="$TMP/l3proj" --chain=detect-drift </dev/null); src=$?
+[ "$src" -eq 0 ] && printf '%s\n' "$out" | grep -q '"check": "binding_present_for_drift", "status": "ok"' \
+  && pass "layout-3 vault with bolts/U-001/binding.json -> binding_present_for_drift ok, exit 0" \
+  || fail "layout-3 per-unit binding.json not honored (rc=$src): $out"
+
 # ── 9. wide chain: summary counts equal per-line status counts; JSON stays valid ──
 CHAIN=generate-intent,detect-drift,resolve-oq,emit-fsd,emit-agents-md,execute-bolts,diff-vault,extract-intelligence,memory,scan-codebase
 out=$(bash "$S" $SFLAGS --cwd="$TMP/proj" --chain="$CHAIN" </dev/null); src=$?

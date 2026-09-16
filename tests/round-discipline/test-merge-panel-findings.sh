@@ -139,6 +139,41 @@ bash "$SH" --vault="$WORK/vault" --unit=U-001 --head=bbb2222 --round=2 \
 [ "$(python3 -c "import json;print(json.load(open('$WORK/out6.json'))['gate'])")" = "re-dispatch" ] \
   && ok "F2 gate still demands another round" || bad "F2 gate cleared without evidence"
 
+echo "── I: RESOLUTIONS column order is tolerant (verdict-then-anchor closes like the canonical order) ──"
+# Pins: a verifier that writes `id | verdict | file:line | note` (verdict in column 2) still
+# closes the finding — that order used to close NOTHING and every fix round fell into quarantine.
+rm -rf "$WORK/vault/bolts"; mkdir -p "$WORK/vault"
+bash "$SH" --vault="$WORK/vault" --unit=U-001 --head=aaa1111 --round=1 --spec-verdict=pass \
+  --lens=security:"$WORK/in/r1.txt" >/dev/null 2>&1
+cat > "$WORK/in/v3.txt" <<'EOF'
+RESOLUTIONS:
+F-1 | resolved | src/pay.ts:44 | guard added
+EOF
+bash "$SH" --vault="$WORK/vault" --unit=U-001 --head=bbb2222 --round=2 \
+  --spec-verdict=pass --verifier="$WORK/in/v3.txt" >"$WORK/out7.json" 2>/dev/null
+[ "$(q x 'F[0]["status"]')" = "resolved" ] && ok "I1 swapped column order (verdict, anchor) closes the finding" || bad "I1 swapped order not applied — parser reads one column order only"
+[ "$(q x 'F[0]["resolution"]["evidence"]')" = "src/pay.ts:44" ] && ok "I2 anchor recorded from column 3 as the evidence" || bad "I2 evidence not taken from the swapped anchor column"
+[ "$(q x 'F[0]["resolution"]["verified_by"]')" = "resolution-verifier round 2" ] && ok "I3 resolution stamped verified_by the round-2 verifier (same record as E)" || bad "I3 resolution record differs from the canonical order"
+[ "$(python3 -c "import json;print(json.load(open('$WORK/out7.json'))['gate'])")" = "clear" ] \
+  && ok "I4 gate clears exactly like the canonical order (E5)" || bad "I4 gate did not clear on the swapped order"
+# Pins: the evidence rule survives the swap — a `resolved` with no file:line anchor is still refused.
+rm -rf "$WORK/vault/bolts"; mkdir -p "$WORK/vault"
+bash "$SH" --vault="$WORK/vault" --unit=U-001 --head=aaa1111 --round=1 --spec-verdict=pass \
+  --lens=security:"$WORK/in/r1.txt" >/dev/null 2>&1
+cat > "$WORK/in/v4.txt" <<'EOF'
+RESOLUTIONS:
+F-1 | resolved | trust me | note
+EOF
+bash "$SH" --vault="$WORK/vault" --unit=U-001 --head=bbb2222 --round=2 \
+  --spec-verdict=pass --verifier="$WORK/in/v4.txt" >"$WORK/out8.json" 2>/dev/null
+[ "$(q x 'F[0]["status"]')" = "open" ] \
+  && ok "I5 swapped order WITHOUT an anchor leaves the finding open (evidence rule intact)" \
+  || bad "I5 a finding closed on a swapped, anchorless claim — the swap loosened the evidence rule"
+[ "$(python3 -c "import json;print(json.load(open('$WORK/out8.json'))['gate'])")" = "re-dispatch" ] \
+  && ok "I6 gate still demands another round" || bad "I6 gate cleared without evidence on the swapped order"
+[ "$(q x 'F[0]["resolution"]["claimed"] + "|" + str(F[0]["resolution"]["evidence"])')" = "resolved|None" ] \
+  && ok "I7 the anchorless claim is RECORDED (claimed=resolved, evidence=None), never applied" || bad "I7 anchorless swapped claim not recorded as a claim"
+
 echo "── G: schema is the documented one ──"
 python3 -c "
 import json,sys

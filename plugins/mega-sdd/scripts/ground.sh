@@ -91,8 +91,15 @@ for vj in vault_jsons:
     try:
         with open(vj) as f:
             data = json.load(f)
-    except Exception:
-        continue  # corrupted vault.json — separate halt class (future slice)
+    except Exception as _e:
+        # C1 detection (registry: vault_json_corrupt — doc-audit v8 finding #6, the
+        # old branch skipped the file SILENTLY): the mode guard cannot judge a file it
+        # cannot parse, so it says so and moves on; the fix is a re-derive, never a hand edit.
+        _rel = os.path.relpath(vj, cwd) if vj.startswith(cwd) else vj
+        emit_event("vault_json_corrupt", "skipped by the mode guard", path=_rel, error=str(_e)[:160])
+        notices.append(f"[self-resolved] vault_json_corrupt: {_rel} is not valid JSON ({str(_e)[:80]}) — "
+                       f"re-derive it: `bash <plugin>/scripts/derive-vault-json.sh --vault {os.path.dirname(_rel)}`")
+        continue
     current_mode = data.get("mode")
     if current_mode == expected_mode:
         continue
@@ -447,7 +454,12 @@ if mt_catalog_path:
                     tier = m.group(2)
                     if role in ("model_tiers", "preferences"):
                         continue
-                    if catalog_roles and role not in catalog_roles:
+                    # The catalog names roles with hyphens (`bolt-implementer`), the documented
+                    # config key is underscored (`model_tiers.bolt_implementer`) — compare
+                    # normalized (doc-audit v8 finding #5: every legitimate override tripped
+                    # model_tier_unknown, LIVE-proven).
+                    _norm = lambda s: s.replace("_", "-").lower()
+                    if catalog_roles and _norm(role) not in {_norm(r) for r in catalog_roles}:
                         emit_event(
                             "model_tier_unknown",
                             f"override role '{role}' not in catalog ({len(catalog_roles)} known roles); chain will use catalog default",

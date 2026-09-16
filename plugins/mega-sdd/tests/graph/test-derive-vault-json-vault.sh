@@ -37,6 +37,8 @@
 #      tag parses (amendment §3); validator behavior unchanged on the
 #      operator-ux fixtures
 #  11  usage: no --vault → exit 3
+#  12  --patch lands resolution_source / recommendation_citation on the named OQ
+#      only; a later derive WITHOUT --patch carries both forward verbatim
 #
 # Run: bash plugins/mega-sdd/tests/graph/test-derive-vault-json-vault.sh
 set -uo pipefail
@@ -355,5 +357,31 @@ fi
 # ── 11. usage ──
 bash "$DERIVE" </dev/null >/dev/null 2>&1; RC=$?
 [ "$RC" -eq 3 ] && ok "11: missing --vault → exit 3" || fail "11: usage exit wrong (rc=$RC)"
+
+# ── 12. --patch is the WRITER of the two per-OQ evidence keys ──
+# resolution_source / recommendation_citation are authored, not md-derived: the patch
+# lane must land them on the named OQ only, and the carry-forward lane must keep them on
+# a later derive WITHOUT --patch (a re-derive that drops them erases the OQ's evidence).
+V12="$WORK/v12"; seed_vault "$V12"
+echo '{"open_questions": {"OQ-AR-1": {"resolution_source": "recommendation", "recommendation_citation": "src/x.py:10"}}}' > "$WORK/evidence.json"
+OUT=$(bash "$DERIVE" --vault "$V12" --patch "$WORK/evidence.json" </dev/null 2>&1); RC=$?
+python3 -c "
+import json,sys; d=json.load(open('$V12/vault.json'))
+oq={o['tag']:o for o in d['open_questions']}
+assert oq['OQ-AR-1'].get('resolution_source')=='recommendation', oq['OQ-AR-1']
+assert oq['OQ-AR-1'].get('recommendation_citation')=='src/x.py:10', oq['OQ-AR-1']
+assert 'resolution_source' not in oq['OQ-FL-2'] and 'recommendation_citation' not in oq['OQ-FL-2'], oq['OQ-FL-2']
+" 2>/dev/null && [ "$RC" -eq 0 ] \
+  && ok "12: --patch lands resolution_source + recommendation_citation on OQ-AR-1 only (exit 0 — not a derived key)" \
+  || fail "12: patch lane rejected/missed the two evidence keys (rc=$RC): $(echo "$OUT" | head -2)"
+bash "$DERIVE" --vault "$V12" </dev/null >/dev/null 2>&1; RC=$?
+python3 -c "
+import json,sys; d=json.load(open('$V12/vault.json'))
+oq={o['tag']:o for o in d['open_questions']}
+assert oq['OQ-AR-1'].get('resolution_source')=='recommendation', oq['OQ-AR-1']
+assert oq['OQ-AR-1'].get('recommendation_citation')=='src/x.py:10', oq['OQ-AR-1']
+" 2>/dev/null && [ "$RC" -eq 0 ] \
+  && ok "12: re-derive WITHOUT --patch carries both keys forward verbatim" \
+  || fail "12: carry-forward dropped resolution_source / recommendation_citation (rc=$RC)"
 
 if [ "$FAILED" -eq 0 ]; then echo "ALL W5 DERIVE OK"; exit 0; else echo "W5 derive FAILED"; exit 1; fi

@@ -208,6 +208,9 @@ if vaults:
                                           f"vaults/{os.path.basename(d)}/bound/**/*",
                                           f"vaults/{os.path.basename(d)}/units/*.md",
                                           f"vaults/{os.path.basename(d)}/bolts/_summary.md",
+                                          # lite lane: the per-unit verdict record (8.0.0 re-key;
+                                          # doc-audit v8 finding #8 — never shipped before)
+                                          f"vaults/{os.path.basename(d)}/bolts/U-*/binding.json",
                                           f"vaults/{os.path.basename(d)}/vault.json"])
                    for d in vaults]
 else:

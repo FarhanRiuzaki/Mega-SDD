@@ -247,6 +247,11 @@ def c_vault_json(_):
 
 
 def c_binding_confirmed(_):
+    # layout-3 (plan-born) vault: verdicts live per unit in bolts/U-XXX/binding.json,
+    # there is no whole-vault binding.md (doc-audit v8 finding #16 — the check used
+    # to FATAL every lite hop of detect-drift).
+    if os.path.isfile(os.path.join(VAULT, "context.md")):
+        return bool(glob.glob(os.path.join(VAULT, "bolts", "U-*", "binding.json")))
     p = os.path.join(VAULT, "binding.md")
     if not os.path.isfile(p):
         return False
@@ -439,7 +444,9 @@ CHECKS = {
          "detect-drift requires a vault. Run generate-intent first."),
         ("binding_present_for_drift", True, c_binding_confirmed,
          "detect-drift compares against bound vault state. Run bind-codebase "
-         "first to establish binding."),
+         "first to establish binding (classic lane); on a layout-3 vault the "
+         "verdicts come from execute-bolts --all --lite (JIT bind per unit) or "
+         "scripts/rebind-units.sh --units=all."),
         ("clean_working_tree_for_drift", False, c_clean_tree,
          "detect-drift may conflate uncommitted user edits with actual "
          "drift. Commit or stash local changes first for clean drift "
@@ -461,8 +468,8 @@ CHECKS = {
         ("oq_status_field_present", False, c_oq_status_field,
          "vault.json open_questions[] entries lack 'status' field (pre-v1.1 "
          "schema). resolve-oq cannot track Resolve/Out-of-Scope/Defer "
-         "outcomes without status field. Regenerate vault via "
-         "generate-intent --refresh."),
+         "outcomes without status field. Re-run generate-intent on the PRD "
+         "(or `derive-vault-json.sh --vault <dir>` to re-derive vault.json from the docs)."),
         ("unresolved_oqs_exist", False, c_oq_unresolved,
          "All OQs in vault are already resolved. resolve-oq is a no-op."),
     ],
@@ -735,11 +742,26 @@ def _lane():
 
 
 def _layout3_vault_present():
-    """A plan-born (layout-3) vault exists under .mega-sdd/vaults/ — its docs are ONE
-    context.md and its verdicts live per unit; the classic three phases have nothing to
-    read or write there."""
+    """The vault THIS dispatch targets is plan-born (layout-3: ONE context.md, verdicts
+    per unit) — the classic three phases have nothing to read or write there.
+    Per-vault, not project-wide (doc-audit v8 finding #3: one layout-3 vault used to
+    fold bind/units for EVERY vault of a multi-PRD project): `--vault=<name|dir>` on
+    the args names the target; without it every vault dir must be layout-3 (a single
+    vault keeps the 8.0.0 behavior; a mixed project stays free to run the classic
+    phases on its classic vault)."""
     import glob as _g
-    return bool(_g.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "context.md")))
+    root = os.path.join(cwd, ".mega-sdd", "vaults")
+    m = re.search(r"(?:^|\s)--vault=(\S+)", _args)
+    if m:
+        v = m.group(1).strip("\"'")
+        for cand in (v, os.path.join(cwd, v), os.path.join(root, v)):
+            if os.path.isdir(cand):
+                return os.path.isfile(os.path.join(cand, "context.md"))
+        return False
+    dirs = [d for d in _g.glob(os.path.join(root, "*"))
+            if os.path.isdir(d) and not os.path.basename(d).startswith(".")
+            and not os.path.basename(d).endswith("-bound")]
+    return bool(dirs) and all(os.path.isfile(os.path.join(d, "context.md")) for d in dirs)
 
 
 def _lite_requested():

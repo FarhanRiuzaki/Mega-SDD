@@ -9,7 +9,7 @@
 # suite itself, then records the observed result with the pinned 40-hex HEAD.
 #
 # Usage:
-#   run-full-suite.sh --cwd=<project-root> [--runner="<command>"] [--vault=<name>] [--quiet]
+#   run-full-suite.sh --cwd=<project-root> [--runner="<command>"] [--vault=<name>] [--base=<sha>] [--quiet]
 #
 # Runner detection (manifest-based, first match wins; override with --runner):
 #   composer.json            → vendor/bin/pest || vendor/bin/phpunit || php artisan test
@@ -28,12 +28,20 @@ set -uo pipefail
 CWD=""
 RUNNER=""
 VAULT=""
+BASE_SHA=""
 QUIET=0
 for arg in "$@"; do
   case "$arg" in
     --cwd=*) CWD="${arg#*=}" ;;
     --runner=*) RUNNER="${arg#*=}" ;;
     --vault=*) VAULT="${arg#*=}" ;;
+    # --base=<sha>: the invocation's start commit. Enables the out-of-band bypass
+    # scan (halts-and-handoff.md §B2): commits in <base>..HEAD that touch a path some
+    # unit declares in target_files WITHOUT an SDD-PROVENANCE trailer are listed as
+    # bypass_commits[] in the artifact (doc-audit v8 finding #18 — the list had no
+    # writer; it was prose). Bounded to the window on purpose: an unscoped scan
+    # would flag every pre-SDD commit in history.
+    --base=*) BASE_SHA="${arg#*=}" ;;
     --quiet) QUIET=1 ;;
     *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
   esac
@@ -221,12 +229,87 @@ if [ "$HEAD_AFTER" != "$HEAD_SHA" ]; then
   exit 2
 fi
 
+# ── Out-of-band bypass scan (--base only; halts-and-handoff.md §B2) ──────────
+# A commit in <base>..HEAD that touched a path some unit declares in target_files
+# and carries NO SDD-PROVENANCE trailer bypassed the bolt path. The run's own bolt
+# commits carry the trailer, so they are excluded by construction. A non-empty
+# list never turns the suite red by itself — it is surfaced for the controller
+# (_summary.md mirrors it) and forces the suite to run; the verdict stays the suite's.
+BYPASS_JSON="[]"
+if [ -n "$BASE_SHA" ]; then
+  BYPASS_JSON=$(CWD="$CWD" BASE_SHA="$BASE_SHA" HEAD_SHA="$HEAD_SHA" MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib" python3 - <<'PY'
+import json, os, re, subprocess, sys
+cwd = os.environ["CWD"]; base = os.environ["BASE_SHA"]; head = os.environ["HEAD_SHA"]
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+try:
+    import vault_layouts
+    unit_paths = vault_layouts.unit_files(cwd)
+except Exception:
+    unit_paths = []
+def targets_of(uf):
+    try:
+        body = open(uf, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return []
+    m = re.match(r"^---\n(.*?)\n---", body, re.DOTALL)
+    if not m:
+        return []
+    out, in_block = [], False
+    for ln in m.group(1).split("\n"):
+        if re.match(r"^target_files\s*:", ln):
+            in_block = True; continue
+        if in_block:
+            if ln and ln[0] not in " \t":
+                break
+            pm = re.search(r"path:\s*(\S+)", ln)
+            if pm:
+                out.append(pm.group(1).strip().strip("'\""))
+            elif re.match(r"^\s*-\s+[^:\s]+\s*$", ln):
+                out.append(ln.strip().lstrip("-").strip().strip("'\""))
+    return [t[2:] if t.startswith("./") else t for t in out]
+targets = set()
+for uf in unit_paths:
+    targets.update(targets_of(uf))
+def git(*a):
+    try:
+        return subprocess.run(["git", "-C", cwd, *a], capture_output=True, text=True, timeout=60)
+    except subprocess.TimeoutExpired:
+        return None
+r = git("rev-list", "--reverse", "%s..%s" % (base, head))
+if r is None or r.returncode != 0:
+    print(json.dumps([{"error": "rev-list %s..%s failed — base sha unknown to this repo" % (base[:12], head[:12])}]))
+    sys.exit(0)
+out = []
+prefix = (git("rev-parse", "--show-prefix") or subprocess.CompletedProcess([], 0, "", "")).stdout.strip()
+for sha in r.stdout.split():
+    show = git("show", "--format=%B%x00", "--name-only", sha)
+    if show is None:
+        continue
+    body, _, files = show.stdout.partition("\x00")
+    if "SDD-PROVENANCE" in body:
+        continue
+    touched = []
+    for f in files.strip().splitlines():
+        f = f.strip()
+        if prefix and f.startswith(prefix):
+            f = f[len(prefix):]
+        if f in targets:
+            touched.append(f)
+    if touched:
+        out.append({"sha": sha, "subject": body.strip().splitlines()[0][:120] if body.strip() else "",
+                    "target_files_touched": sorted(touched)})
+print(json.dumps(out))
+PY
+)
+fi
+
 # ── Record the artifact in every target vault (write failure = exit 2, never
 # a false "recorded" success — S7-SUITE-6) ────────────────────────────────────
 for TARGET_DIR in "${TARGET_DIRS[@]}"; do
   mkdir -p "$TARGET_DIR" 2>/dev/null || { echo "ERROR: cannot create ${TARGET_DIR}" >&2; exit 2; }
   TARGET_DIR="$TARGET_DIR" STATUS="$STATUS" HEAD_SHA="$HEAD_SHA" RUNNER="$RUNNER" \
   DETECTED="$DETECTED" RUNNER_OVERRIDDEN="$RUNNER_OVERRIDDEN" QUIET="$QUIET" \
+  BASE_SHA="$BASE_SHA" BYPASS_JSON="$BYPASS_JSON" \
   SUITE_EXIT="$SUITE_EXIT" TAIL_OUT="$TAIL_OUT" MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib" python3 - <<'PYEOF' || { echo "ERROR: artifact write failed for ${TARGET_DIR} — result NOT recorded" >&2; exit 2; }
 import json, os
 from datetime import datetime, timezone
@@ -240,6 +323,12 @@ state = {
     "output_tail": os.environ.get("TAIL_OUT", "")[-2000:],
     "written_by": "run-full-suite.sh",
 }
+if os.environ.get("BASE_SHA"):
+    state["base_sha"] = os.environ["BASE_SHA"]
+    try:
+        state["bypass_commits"] = json.loads(os.environ.get("BYPASS_JSON") or "[]")
+    except ValueError:
+        state["bypass_commits"] = [{"error": "bypass scan output unparseable"}]
 try:
     import sys
     sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])

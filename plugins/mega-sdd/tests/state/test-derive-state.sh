@@ -243,6 +243,19 @@ assert p['present'] is True, p
 assert 'PRD/prd-simkredit.md' in p['candidates'], p['candidates']
 " 2>/dev/null && ok "f3b: probes.prd finds PRD/prd-simkredit.md (prefix kept)" \
   || fail "f3b: subdir PRD candidate missing from probes.prd"
+# f3d: from-prompt writes its seed under the vault it grows into
+# (.mega-sdd/vaults/<slug>/source/seed-PRD.md) with NO root PRD — the probe must list it
+# (prefixed relname) or the status view derives "no PRD" on a live from-prompt project.
+F="$WORK/f3d-prd-vault-seed"; mkdir -p "$F/.mega-sdd/vaults/leave-app/source"
+printf '# seed PRD (from-prompt)\n' > "$F/.mega-sdd/vaults/leave-app/source/seed-PRD.md"
+J=$(bash "$DS" --cwd="$WORK/f3d-prd-vault-seed" --json-only </dev/null 2>/dev/null)
+printf '%s' "$J" | python3 -c "
+import json,sys
+p=json.load(sys.stdin)['probes']['prd']
+assert p['present'] is True, p
+assert '.mega-sdd/vaults/leave-app/source/seed-PRD.md' in p['candidates'], p['candidates']
+" 2>/dev/null && ok "f3d: probes.prd finds .mega-sdd/vaults/leave-app/source/seed-PRD.md (from-prompt seed, prefix kept)" \
+  || fail "f3d: from-prompt seed under <vault>/source/ missing from probes.prd"
 # flag-/intent-conditioned rows: empty chain + a note (the script never invents intent)
 J=$(bash "$DS" --cwd="$WORK/f2-legacy-code" --json-only </dev/null 2>/dev/null)
 printf '%s' "$J" | python3 -c "

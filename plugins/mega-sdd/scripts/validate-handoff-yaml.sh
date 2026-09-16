@@ -67,7 +67,8 @@ STATE_FILE="${CWD}/.mega-sdd/.handoff-validation-state.json"
 mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || { echo "ERROR: cannot create $(dirname "$STATE_FILE")" >&2; exit 2; }
 
 # Run validator via python3 (yaml parsing + schema check)
-CWD="$CWD" SKILL_NAME="$SKILL_NAME" STATE_FILE="$STATE_FILE" QUIET="$QUIET" RESPONSE_TEXT="$RESPONSE_TEXT" python3 <<'PYEOF'
+HALT_REGISTRY="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/../references/halt-protocol.md"
+CWD="$CWD" SKILL_NAME="$SKILL_NAME" STATE_FILE="$STATE_FILE" QUIET="$QUIET" RESPONSE_TEXT="$RESPONSE_TEXT" HALT_REGISTRY="$HALT_REGISTRY" python3 <<'PYEOF'
 import hashlib
 import json
 import os
@@ -701,6 +702,32 @@ state = {
         ),
     },
 }
+
+# ─── Step 7b: registry membership — ADVISORY (doc-audit v8 finding #10) ──────
+# The registry index (references/halt-protocol.md) is the existence surface for
+# halt types; this validator checks SHAPE and, since 8.4.0, WARNS on a blocker
+# type the index does not know. Never a FAIL: the registry is prose, and a
+# fail-closed check here would deadlock a chain on a typo instead of surfacing it.
+try:
+    _reg = open(os.environ.get("HALT_REGISTRY", ""), encoding="utf-8", errors="replace").read()
+    _i0 = _reg.index("### Type-specific guidance — registry index")
+    _i1 = _reg.index("### Multiple blockers in one run")
+    _known_types = set(re.findall(r"^- `([a-z0-9_]+)`", _reg[_i0:_i1], re.M))
+except Exception:
+    _known_types = set()
+_h_obj = globals().get("h")
+_unregistered = []
+if _known_types and isinstance(_h_obj, dict) and isinstance(_h_obj.get("blockers"), list):
+    for _b in _h_obj["blockers"]:
+        _t = _b.get("type") if isinstance(_b, dict) else None
+        if isinstance(_t, str) and _t and _t not in _known_types and _t not in _unregistered:
+            _unregistered.append(_t)
+if _unregistered:
+    state["warnings"] = [{
+        "code": "halt_type_unregistered",
+        "types": _unregistered,
+        "hint": "blocker type(s) not in references/halt-protocol.md §registry index — register the type (index row + halt-families section + taxonomy) or fix the emitter's spelling; advisory only",
+    }]
 
 # Write state file (overwrite — current truth)
 try:

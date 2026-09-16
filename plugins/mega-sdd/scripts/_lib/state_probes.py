@@ -265,6 +265,12 @@ def probe_prd_candidates(cwd):
 
     seen_dirs = {_dir_id(cwd)} - {None}
     _scan(cwd, "")
+    # from-prompt writes its seed under the vault it will grow into
+    # (`.mega-sdd/vaults/<slug>/source/seed-PRD.md`, from-prompt-mode.md Step 4) —
+    # a seed the status view could not see (doc-audit v8 finding #15).
+    for src in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "source"))):
+        if os.path.isdir(src):
+            _scan(src, os.path.relpath(src, cwd).replace(os.sep, "/") + "/")
     try:
         entries = sorted(os.listdir(cwd))
     except OSError:

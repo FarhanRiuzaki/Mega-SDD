@@ -12,6 +12,9 @@
 #         diagram-less workflow → journey-<slug> model slot with quoted steps,
 #         markers check (check-prd-markers.sh) passes on builder output after
 #         simulated model fill.
+#   CONST a [LOCKED] clause in <vault>/constitution.md (what every producer writes)
+#         reaches FSD §6 / PRD §5 with the citation `vault/constitution.md`; the
+#         `_meta/` location stays a read fallback for hand-made vaults.
 #   WIRING SKILL.mds instruct the builders; templates stay the parse source
 #         (no hand-duplicated skeletons).
 # Run: bash tests/token-efficiency/test-5e-doc-builders.sh
@@ -202,6 +205,44 @@ open(sys.argv[1], "w", encoding="utf-8").write(s)
 PY
 bash "$MRK" --prd="$PRM" --cwd="$KM" --kb="$KM/.mega-sdd/knowledge-base" </dev/null >/dev/null 2>&1; RC=$?
 [ "$RC" = "0" ] && ok "ADV-002: line-anchored journey citation passes the markers check on a marker-carrying workflow" || fail "ADV-002 regressed: markers check rc=$RC"
+
+note "== CONST: <vault>/constitution.md [LOCKED] clause reaches FSD §6 / PRD §5 =="
+# the producers write <vault>/constitution.md; a `_meta/`-only read meant no LOCKED clause ever landed
+VC="$P/.mega-sdd/vaults/vconst"; mkdir -p "$VC"
+printf '{"project_name":"const","author":"T"}\n' > "$VC/vault.json"
+printf '# Constitution\n\n- SEC-001 [LOCKED] All passwords hashed with bcrypt (security)\n' > "$VC/constitution.md"
+# slot_of: the nearest heading above the clause line (pins WHICH §6/§5 slot the clause landed in)
+slot_of() { python3 - "$1" "$2" <<'PY2'
+import re, sys
+lines = open(sys.argv[1], encoding="utf-8").read().splitlines()
+hit = next((i for i, l in enumerate(lines) if sys.argv[2] in l), None)
+if hit is None: print("ABSENT"); sys.exit(0)
+print(next((lines[j].strip() for j in range(hit, -1, -1) if re.match(r"^#{1,6}\s", lines[j])), "NOHEADING"))
+PY2
+}
+bash "$FSD" --vault="$VC" --cwd="$P" </dev/null >/dev/null 2>&1; RC=$?
+FC="$VC/fsd/FSD.md"
+[ "$RC" = "0" ] && ok "FSD builder rc 0 on a constitution.md vault" || fail "FSD const vault rc=$RC"
+H=$(slot_of "$FC" 'All passwords hashed with bcrypt')
+echo "$H" | grep -qiE 'security|keamanan' && ok "FSD §6: the LOCKED clause landed in the Security slot (under: $H)" || fail "FSD §6 security slot: clause under '$H'"
+grep -q '_Dari constitution \[LOCKED\]:_' "$FC" && ok "FSD §6: labeled as a constitution [LOCKED] source" || fail "FSD §6 constitution label missing"
+grep -q 'vault/constitution.md' "$FC" && ok "FSD: citation carries vault/constitution.md" || fail "FSD citation vault/constitution.md missing"
+if grep -q 'vault/_meta/constitution.md' "$FC"; then fail "FSD still cites vault/_meta/constitution.md"; else ok "FSD: no vault/_meta/constitution.md citation"; fi
+bash "$CMAP" --vault="$VC" --cwd="$P" --mode=pre-dev </dev/null >/dev/null 2>&1; RC=$?
+[ "$RC" = "0" ] && ok "FSD: the REAL stamper resolves the vault/constitution.md citation (exit 0)" || fail "citation map rc=$RC on the constitution citation"
+bash "$PRD" --out-root="$VC" --cwd="$P" --mode=forward </dev/null >/dev/null 2>&1; RC=$?
+PC="$VC/prd/PRD.md"
+[ "$RC" = "0" ] && ok "PRD forward builder rc 0 on a constitution.md vault" || fail "PRD const vault rc=$RC"
+H=$(slot_of "$PC" 'All passwords hashed with bcrypt')
+echo "$H" | grep -qiE 'security|keamanan' && ok "PRD §5: the LOCKED clause landed in the Security slot (under: $H)" || fail "PRD §5 security slot: clause under '$H'"
+grep -q 'vault/constitution.md' "$PC" && ok "PRD: citation carries vault/constitution.md" || fail "PRD citation vault/constitution.md missing"
+if grep -q 'vault/_meta/constitution.md' "$PC"; then fail "PRD still cites vault/_meta/constitution.md"; else ok "PRD: no vault/_meta/constitution.md citation"; fi
+# the `_meta/` location is still READ (hand-made vaults) — content only; the citation text is the canonical path
+VM="$P/.mega-sdd/vaults/vmeta"; mkdir -p "$VM/_meta"
+printf '{"project_name":"meta","author":"T"}\n' > "$VM/vault.json"
+printf '# Constitution\n\n- SEC-001 [LOCKED] All passwords hashed with bcrypt (security)\n' > "$VM/_meta/constitution.md"
+bash "$FSD" --vault="$VM" --cwd="$P" </dev/null >/dev/null 2>&1
+grep -q 'All passwords hashed with bcrypt' "$VM/fsd/FSD.md" && ok "FSD: _meta/constitution.md still read as the fallback (hand-made vault)" || fail "FSD _meta fallback lost"
 
 note "== WIRING pins =="
 grep -q 'build-fsd-core.sh --vault=' "${ROOT}/plugins/mega-sdd/skills/emit-fsd/SKILL.md" && ok "emit-fsd SKILL instructs the builder" || fail "emit-fsd not rewired"

@@ -233,7 +233,14 @@ if binding is None:
     binding = read(os.path.join(vault, "bound", "binding.md"))
     if binding is not None:
         binding_rel = "bound/binding.md"
-const = read(os.path.join(vault, "_meta", "constitution.md"))
+# Every producer (generate-intent / plan / migrate-paths) writes <vault>/constitution.md;
+# `_meta/` is kept as a fallback for hand-made vaults (doc-audit v8 finding #4 — the
+# old `_meta/`-only read meant no LOCKED clause ever reached FSD §6).
+const_rel = "constitution.md"
+const = read(os.path.join(vault, "constitution.md"))
+if const is None:
+    const = read(os.path.join(vault, "_meta", "constitution.md"))
+    const_rel = "_meta/constitution.md"      # cite the file actually read
 cbmap_p = None
 for c in (os.path.join(cwd, ".mega-sdd", "codebase", "codebase-map.md"), os.path.join(cwd, "codebase-map.md")):
     if os.path.isfile(c):
@@ -620,7 +627,7 @@ if cons_by_cat:
 if const and any("[LOCKED]" in (slots[s] or "") or "constitution" in (slots[s] or "") for s in
                  ("section-6-performance-content", "section-6-security-content",
                   "section-6-availability-content", "section-6-other-constitution-content")):
-    cite(6, "vault/_meta/constitution.md")
+    cite(6, "vault/" + const_rel)
 
 # ── §7 Design / architecture ──
 ents = md_section(cbmap, "Entities|Data models / Schemas|Data models") if cbmap else None

@@ -26,7 +26,7 @@
 # merges every unit. Without --file-path the validator scans all units (the
 # execute-bolts PreToolUse gate uses this as its re-derive entry point).
 #
-# Inputs: --cwd=<project> [--file-path=<unit-file>]
+# Inputs: --cwd=<project> [--file-path=<unit-file>] [--vault=<name|dir>  exit-code scope only]
 # Outputs: JSON report stdout; writes .mega-sdd/.unit-spec-state.json (merged)
 # Exit: 0=PASS, 1=FAIL (focal file when --file-path given, else merged), 2=error.
 
@@ -34,11 +34,17 @@ set -uo pipefail
 
 CWD=""
 FILE_PATH=""
+VAULT_FILTER=""
 QUIET=0
 for arg in "$@"; do
   case "$arg" in
     --cwd=*) CWD="${arg#*=}" ;;
     --file-path=*) FILE_PATH="${arg#*=}" ;;
+    # --vault=<name|dir> is an EXIT-CODE scope only (doc-audit v8 finding #2: the
+    # controller typed it on 5 xs runs and hit "unknown arg" rc=2). The state file
+    # still merges every unit project-wide (S5 GU-HOOK-1); the exit code reflects
+    # the units under that vault, the way --file-path narrows it to one unit.
+    --vault=*) VAULT_FILTER="${arg#*=}" ;;
     --quiet) QUIET=1 ;;
     *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
   esac
@@ -87,7 +93,7 @@ if [ -x "$PACK_RESOLVER" ]; then
   TEST_PATTERNS_SECTION=$(bash "$PACK_RESOLVER" --cwd="$CWD" --section="Test patterns" --quiet 2>/dev/null) || TEST_PATTERNS_SECTION=""
 fi
 
-CWD="$CWD" FILE_PATH="$FILE_PATH" STATE_FILE="$STATE_FILE" QUIET="$QUIET" V_LIB="${SCRIPT_DIR}/_lib" \
+CWD="$CWD" FILE_PATH="$FILE_PATH" VAULT_FILTER="$VAULT_FILTER" STATE_FILE="$STATE_FILE" QUIET="$QUIET" V_LIB="${SCRIPT_DIR}/_lib" \
 TEST_PATTERNS_SECTION="$TEST_PATTERNS_SECTION" python3 <<'PYEOF'
 import glob
 import json
@@ -99,6 +105,18 @@ from datetime import datetime, timezone
 cwd = os.environ["CWD"]
 focal_path = os.environ.get("FILE_PATH", "")
 state_file = os.environ["STATE_FILE"]
+# --vault= scope: a directory, or a vault NAME under the canonical / legacy roots.
+# Unresolvable → ignored with a note in the state (never a usage error: the scope
+# narrows the exit, it does not gate the run).
+_vf = os.environ.get("VAULT_FILTER", "")
+vault_filter_dir = None
+if _vf:
+    for cand in (_vf, os.path.join(cwd, _vf),
+                 os.path.join(cwd, ".mega-sdd", "vaults", _vf),
+                 os.path.join(cwd, "docs", "mega-sdd", "vaults", _vf)):
+        if os.path.isdir(cand):
+            vault_filter_dir = os.path.realpath(cand)
+            break
 quiet = os.environ.get("QUIET", "0") == "1"
 test_patterns_section = os.environ.get("TEST_PATTERNS_SECTION", "")
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -1184,6 +1202,9 @@ state = {
     "ts": ts,
     "mode": "single" if focal_path else "project",
     "checked_file": focal_rel,        # back-compat: the focal unit on single dispatch
+    # --vault= exit scope (None = whole project); the state itself is never narrowed
+    "vault_filter": (os.path.relpath(vault_filter_dir, cwd) if vault_filter_dir
+                     else (("unresolved: %s" % _vf) if _vf else None)),
     "checked_files": checked_files,   # S5: the state ALWAYS covers every unit
     "status": status,
     "issues_count": len(merged),
@@ -1237,9 +1258,14 @@ if not quiet:
     print(json.dumps(state, indent=2))
 
 # Exit code: focal file's verdict on single dispatch (single-file semantics);
-# merged verdict in project mode (the gate's re-derive entry point).
+# the --vault= scope's verdict when given; merged verdict in project mode (the
+# gate's re-derive entry point).
 if focal_rel is not None:
     sys.exit(1 if any(i.get("file") == focal_rel for i in merged) else 0)
+if vault_filter_dir:
+    def _in_vault(rel):
+        return os.path.realpath(os.path.join(cwd, rel or "")).startswith(vault_filter_dir + os.sep)
+    sys.exit(1 if any(_in_vault(i.get("file")) for i in merged) else 0)
 sys.exit(0 if status == "PASS" else 1)
 PYEOF
 

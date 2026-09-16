@@ -19,6 +19,10 @@ printf '# idx\n' > "$MS/vaults/app/00-index.md"
 printf '# binding\nCONFIRMED stuff\n' > "$MS/vaults/app/binding.md"
 printf -- '---\nid: U-001\n---\nbody\n' > "$MS/vaults/app/units/U-001.md"
 printf '{"vault_version":"1.0"}\n' > "$MS/vaults/app/vault.json"
+# lite lane per-unit verdict record — spec 2026-09-16 §1 #8: the pattern was never in the
+# per-vault set, so JIT-bind verdicts never reached the gateway (pinned in a2 + a4 below)
+mkdir -p "$MS/vaults/app/bolts/U-001"
+printf '{"schema":"unit-binding/1","unit":"U-001","claims":[]}\n' > "$MS/vaults/app/bolts/U-001/binding.json"
 printf '# map\n' > "$MS/codebase/codebase-map.md"
 ( cd "$P" && git init -q && git config user.email t@t && git config user.name t \
   && git remote add origin https://git.example.com/grup/repo.git \
@@ -103,6 +107,7 @@ assert m["work_dir"] == "proj", m
 assert m["plugin_version"] == sys.argv[3] and m["plugin_version"], m  # governance version-floor signal
 assert m["graph_meta"]["source_hashes"] == {"a.md": "x1"}, m
 assert "graph.json" in m["files"] and "vaults/app/binding.md" in m["files"], m["files"]
+assert "vaults/app/bolts/U-001/binding.json" in m["files"], m["files"]   # #8: per-unit verdict record ships
 sent = set(names) - {"manifest.json"}
 assert sent == set(m["files"]), (sent, set(m["files"]))   # first push = full delta
 PYEOF

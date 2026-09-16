@@ -191,13 +191,14 @@ The per-bolt acceptance command is **scoped** to that unit; nothing re-runs the 
 
 **Run the FULL suite, unscoped.** Use the test runner detected at pre-flight check 3.5 with **no per-unit filter** — e.g. `yarn test` / `pytest` / `go test ./...` / `cargo test`, NOT `yarn test <one-file>`. Capture pass/fail/todo counts.
 
-**Out-of-band bypass guard (before the verdict).** Record the invocation's base SHA at batch start. Scan `git log <base>..HEAD` **excluding this run's own bolt commits**; for each commit, `git show --name-only` and flag any that touched a file listed in some unit's `target_files` yet whose message carries no `SDD-PROVENANCE` trailer. List them as `bypass_commits[]` in `_summary.md` (and the handoff notes). Bounding to the batch window is mandatory — an unscoped scan flags every pre-SDD commit in history. A non-empty list does not by itself halt (the full-suite run is the real gate) but forces the suite to run even on an otherwise-skippable invocation, and is surfaced in `_summary.md`.
+**Out-of-band bypass guard (before the verdict).** Record the invocation's base SHA at batch start and pass it to the writer below as `--base=<sha>`: the script scans `<base>..HEAD` **excluding this run's own bolt commits** (they carry the trailer) and lists every commit that touched a file some unit declares in `target_files` yet whose message carries no `SDD-PROVENANCE` trailer as `bypass_commits[]` in `_batch-suite.json` — `_summary.md` (and the handoff notes) mirror that list. Bounding to the batch window is mandatory — an unscoped scan flags every pre-SDD commit in history. A non-empty list does not by itself halt (the full-suite run is the real gate) but forces the suite to run even on an otherwise-skippable invocation, and is surfaced in `_summary.md`.
 
-**Record `<vault>/bolts/_batch-suite.json` — via the sanctioned writer ONLY:** run `bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root>`. The artifact is hook-guarded (a hand-written or agent-written file is denied and would be overwritten anyway); the wrapper runs the suite itself, refuses a dirty code tree, pins the 40-hex HEAD captured BEFORE the run, writes to every discoverable vault, and stamps:
+**Record `<vault>/bolts/_batch-suite.json` — via the sanctioned writer ONLY:** run `bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root> --base=<batch-start sha>`. The artifact is hook-guarded (a hand-written or agent-written file is denied and would be overwritten anyway); the wrapper runs the suite itself, refuses a dirty code tree, pins the 40-hex HEAD captured BEFORE the run, writes to every discoverable vault, and stamps:
 
 ```json
 { "status": "green|red", "head_sha": "<40-hex sha>", "ran_at": "<iso8601>",
   "runner": "<command>", "exit_code": 0, "output_tail": "…",
+  "base_sha": "<sha given as --base>", "bypass_commits": [],
   "written_by": "run-full-suite.sh" }
 ```
 

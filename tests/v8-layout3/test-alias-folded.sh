@@ -11,6 +11,9 @@
 #   e  the hook's predictive-preflight case list carries generate-intent + plan (a gate, not prose)
 #   f  the re-keyed sync chain: lane lite + per-unit binding + change signal → rebind-units.sh
 #      → plan --reconcile → execute-bolts --all --lite (never bind-codebase / generate-units)
+#   g  classic lane + TWO vaults (layout-2 `app` + layout-3 `lite`), no --vault= → bind/units NOT folded
+#      (the fold is per target vault, never project-wide — a mixed project keeps its classic vault runnable)
+#   h  same project, `--vault=lite` → bind folded; `--vault=app` (and the dir form of lite) resolve per target
 # Run: bash tests/v8-layout3/test-alias-folded.sh </dev/null
 set -u
 rc=0; pass() { echo "PASS: $1"; }; fail() { echo "FAIL: $1"; rc=1; }
@@ -53,4 +56,14 @@ assert 'binding.get("unit_bindings", 0) > 0' in src and 'scripts/rebind-units.sh
 i = src.index('if derived["lane"] == "lite" or vault.get("has_context_md"):'); j = src.index('"execute-bolts --all --lite"', i)
 assert '"bind-codebase' not in src[i:j] and '"generate-units' not in src[i:j]   # chain ENTRIES only (comments may name them)
 PY
+# g — pins: one layout-3 vault beside a layout-2 vault must NOT fold the classic phases for the whole project
+G="$T/g"; mkdir -p "$G/.mega-sdd/vaults/app/units" "$G/.mega-sdd/vaults/lite/units"; ( cd "$G" && git init -q . )
+echo "# v" > "$G/.mega-sdd/vaults/app/vault.md"; touch "$G/.mega-sdd/vaults/lite/context.md"
+R="$(pf "$G" bind-codebase)"; echo "$R" | grep -qv 'bind_folded_into_bolts' && pass "g1: classic lane + mixed vaults, no --vault= → bind-codebase NOT folded ($(echo "$R" | cut -d' ' -f1-2))" || fail "g1: $R"
+R="$(pf "$G" generate-units)"; echo "$R" | grep -qv 'units_folded_into_plan' && pass "g2: classic lane + mixed vaults, no --vault= → generate-units NOT folded ($(echo "$R" | cut -d' ' -f1-2))" || fail "g2: $R"
+# h — pins: `--vault=` on the dispatch args names the target; the fold follows THAT vault's layout
+R="$(pf "$G" bind-codebase '--vault=lite')"; echo "$R" | grep -q '^FATAL bind_folded_into_bolts' && pass "h1: --vault=lite (layout-3 by name) → bind folded" || fail "h1: $R"
+R="$(pf "$G" bind-codebase '--vault=app')"; echo "$R" | grep -qv 'bind_folded_into_bolts' && pass "h2: --vault=app (layout-2 by name) → bind NOT folded ($(echo "$R" | cut -d' ' -f1-2))" || fail "h2: $R"
+R="$(pf "$G" bind-codebase "--vault=$G/.mega-sdd/vaults/lite")"; echo "$R" | grep -q '^FATAL bind_folded_into_bolts' && pass "h3: --vault=<dir> form of the layout-3 vault → bind folded" || fail "h3: $R"
+R="$(pf "$G" generate-units '--vault=lite')"; echo "$R" | grep -q '^FATAL units_folded_into_plan' && pass "h4: --vault=lite → generate-units folded" || fail "h4: $R"
 echo; [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"; exit $rc

@@ -80,6 +80,7 @@ SEV_CANON = {"minor": "Minor", "important": "Important", "critical": "Critical"}
 # recorded and surfaced but never holds a round open (review-panel.md §Attempt
 # rounds, "Important/Minor findings enter as advisory ... never gating").
 GATING = {"critical"}
+RES_VERDICTS = {"resolved", "unresolved", "regressed"}
 
 
 def read(p):
@@ -190,11 +191,19 @@ if verifier_file:
     vtext = read(verifier_file)
     for parts in parse_rows(vtext, "NEW-FINDINGS"):
         add_row("verifier", parts)
-    # RESOLUTIONS rows: `finding-id | file:line | resolved|unresolved|regressed | note`
+    # RESOLUTIONS rows: `finding-id | file:line | resolved|unresolved|regressed | note`.
+    # Column order is tolerant (doc-audit v8 finding #1): a verifier that writes the
+    # verdict in column 2 and the anchor in column 3 (`F-1 | resolved | src/x.ts:44 | note`)
+    # used to close NOTHING — every fix round fell into the budget/quarantine path. The
+    # evidence rule is unchanged: `resolved` without a file:line anchor is recorded, never applied.
     for parts in parse_rows(vtext, "RESOLUTIONS"):
         fid = parts[0].strip()
-        path, line = split_anchor(parts[1])
-        verdict = parts[2].strip().lower() if len(parts) > 2 else ""
+        c1 = parts[1].strip() if len(parts) > 1 else ""
+        c2 = parts[2].strip() if len(parts) > 2 else ""
+        if c1.lower() in RES_VERDICTS and c1.lower() != c2.lower():
+            c1, c2 = c2, c1                      # swapped order → canonical
+        path, line = split_anchor(c1)
+        verdict = c2.lower()
         note = parts[3].strip() if len(parts) > 3 else ""
         resolutions.append({"id": fid, "file": path, "line": line,
                             "verdict": verdict, "note": note})

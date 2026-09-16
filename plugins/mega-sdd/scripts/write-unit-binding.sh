@@ -5,7 +5,7 @@
 # only this script produces or amends it — so a verdict can never be typed in.
 #
 #   write-unit-binding.sh --cwd=<root> --vault=<vault> --unit=U-XXX --claims=<wave claims.json> [--verdicts=<json>]
-#   write-unit-binding.sh --cwd=<root> --vault=<vault> --unit=U-XXX --resolve=C-U005-01=KEEP_VAULT|KEEP_CODE|SPLIT --by=<who>
+#   write-unit-binding.sh --cwd=<root> --vault=<vault> --unit=U-XXX --resolve=C-U005-01=KEEP_VAULT|KEEP_CODE|SPLIT|DEFER --by=<who>
 #
 # Verdicts (fail-closed, never CONFIRMED-by-absence):
 #   fs_must_exist      path exists (and line range fits when `:N[-M]`) → CONFIRMED/IMPLEMENTED · else CONFLICT
@@ -59,8 +59,11 @@ def write(doc):
 
 # ── resolve mode (resolve-oq --binding write-back) ────────────────────────────
 if E["V_RESOLVE"]:
-    m = re.match(r"^(C-[\w-]+)=(KEEP_VAULT|KEEP_CODE|SPLIT)$", E["V_RESOLVE"])
-    if not m: refuse("--resolve must be C-id=KEEP_VAULT|KEEP_CODE|SPLIT")
+    # DEFER = binding-mode [D] on the lite lane (doc-audit v8 finding #11): the CONFLICT is
+    # downgraded to an OQ the unit carries; a resolved claim no longer counts as open at the
+    # gate (validate-handoff-binding-units: open = CONFLICT without `resolution`).
+    m = re.match(r"^(C-[\w-]+)=(KEEP_VAULT|KEEP_CODE|SPLIT|DEFER)$", E["V_RESOLVE"])
+    if not m: refuse("--resolve must be C-id=KEEP_VAULT|KEEP_CODE|SPLIT|DEFER")
     if not E["V_BY"]: refuse("--by=<who> required for a resolution")
     if not os.path.isfile(out): refuse("no binding.json for %s yet" % unit)
     doc = json.load(open(out, encoding="utf-8"))

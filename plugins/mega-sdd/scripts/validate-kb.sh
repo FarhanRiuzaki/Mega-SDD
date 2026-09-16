@@ -914,8 +914,8 @@ if _multistep and not _has_stages_block:
                    ") but carries no `## 3a` stages: block — staging may be lost downstream "
                    "(single-form bolt instead of multi-step wizard)"),
         "suggested_fix": ("author the staged-inputs stages: block (prd-kontrak-template.md §Staged inputs), "
-                          "or retro-fit via `enrich-semantics --vault=<vault> "
-                          "--legacy-root=<legacy> --semantic=staged-input`"),
+                          "or re-extract the module (extract-intelligence re-runs the census-contracted "
+                          "PRD-kontrak for that module; the retired enrich-semantics step has no replacement command)"),
     })
 
 has_fail = any(c["status"] == "FAIL" for c in checks)
@@ -924,7 +924,7 @@ _summary = (
     if issues else "all flows use Mermaid; heuristic syntax checks pass"
 )
 if advisories:
-    _summary += f" | {len(advisories)} staging advisory(ies) — run enrich-semantics"
+    _summary += f" | {len(advisories)} staging advisory(ies) — author the Stages block or re-extract the module"
 result = {
     "status": "FAIL" if has_fail else "PASS",
     "checked_file": os.path.relpath(file_path, cwd),
@@ -933,7 +933,7 @@ result = {
     "advisories": advisories,   # v3.71.0+ semantic-depth — non-blocking
     "summary": _summary,
     "next_action": (
-        "Advisory: workflow looks multi-step but has no stages: block. Run enrich-semantics to retro-fit staging."
+        "Advisory: workflow looks multi-step but has no stages: block. Author the Stages block (vault-core.md §stages-propagation) or re-run generate-intent --kb on the module."
         if advisories else None
     ),
 }
