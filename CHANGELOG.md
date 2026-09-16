@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [8.4.0] - 2026-09-16 — debt gate doc-audit v8: 20 temuan kode ditutup (FIX/WONTFIX by design), 13 halt hidup didaftarkan, debt test/fixture dibereskan, keputusan owner §8 diterapkan, diet archaeology versi di prose runtime
+
+Spec `docs/superpowers/specs/2026-09-16-doc-audit-debt-gate-design.md` (sumber: laporan `research/2026-09-16-doc-audit-v8.md` §7–§8, §10). Owner call: "gas semua beresin" — setiap item debt dapat resolusi FIX (kode + test), DECIDE (keputusan diterapkan), atau WONTFIX (by design, alasan tertulis). Tidak ada test dihapus atau dilonggarkan; pin yang PREMIS-nya berubah oleh spec ini di-re-pin ke nilai terukur dengan alasan di komentarnya.
+
+### Fixed
+- **RESOLUTIONS kolom toleran** (`merge-panel-findings.sh`): verifier yang menulis `id | verdict | file:line | note` (kolom 2/3 tertukar) kini tetap menutup finding; aturan bukti tidak berubah (`resolved` tanpa `file:line` dicatat, tidak diterapkan). Sebelumnya setiap fix-round jatuh ke budget/karantina.
+- **`validate-unit-spec.sh --vault=<name|dir>`** diterima sebagai scope EXIT CODE saja (state tetap project-wide, S5 invariant) — LIVE rc=2 "unknown arg" di 5 run xs. `validate-sibling-consistency.sh` tetap strict (pin `test-plan-validator-args.sh` tidak disentuh).
+- **`_layout3_vault_present()` per-vault** (`validate-preflight.sh`): satu vault layout-3 tidak lagi melipat bind/units untuk SEMUA vault; `--vault=` di args menunjuk targetnya, tanpa `--vault=` semua vault harus layout-3 (vault tunggal = perilaku 8.0.0).
+- **`build-fsd-core.sh` / `build-prd-core.sh` baca `<vault>/constitution.md`** (path yang benar-benar ditulis producer; `_meta/` tinggal fallback vault buatan tangan, citation mengikuti file yang dibaca) — klausa konstitusi kini benar-benar terbit di FSD §6 / PRD §5.
+- **`ground.sh`**: `model_tiers.bolt_implementer` (underscore, sesuai doc) tidak lagi ditandai `model_tier_unknown` (normalisasi `_`↔`-` terhadap katalog); `vault.json` korup tidak lagi dilewati diam-diam — notice `[self-resolved] vault_json_corrupt: <file>` + perintah re-derive.
+- **`validate-scope-flag.sh`**: bentuk MAP kanonik `scopes:\n  BE:\n    name:` (template + 3 sample PRD) kini terbaca → `--scope=XX` benar-benar FAIL; stdin TTY tanpa `--user-message-file` tidak lagi blok; seed from-prompt di `.mega-sdd/vaults/*/source/seed-PRD.md` ikut dicari.
+- **Publisher** (`publish-artifacts.sh`) mengirim `vaults/<v>/bolts/U-*/binding.json` — project lite akhirnya mem-publish verdict-nya ke gateway.
+- **`validate-handoff-yaml.sh`** cek keanggotaan `blockers[].type` terhadap index registry — ADVISORY (`warnings[].code = halt_type_unregistered`), tidak pernah FAIL (fail-closed di sini = deadlock chain karena typo).
+- **`write-unit-binding.sh --resolve=C-id=DEFER`** diterima (bentuk lite dari binding-mode `[D]`: CONFLICT diturunkan jadi OQ yang dibawa unit; gate unit terbuka karena claim beresolusi tidak lagi dihitung open).
+- **Hint mati di kode** (`generate-intent --refresh`, `enrich-semantics` ×5 string di validate-preflight / validate-vault-flow-staging / validate-kb) diganti instruksi yang ada; dipin `tests/surface/test-dead-mechanism-names.sh` (+ `run-hook.sh`, `/mega-sdd:auto` di seed-playground).
+- **`state_probes.probe_prd_candidates`** melihat seed from-prompt (`.mega-sdd/vaults/<slug>/source/seed-PRD.md`) — status view tidak lagi buta terhadapnya.
+- **`binding_present_for_drift`** di vault layout-3 dipenuhi oleh `bolts/U-*/binding.json` (dulu FATAL di setiap hop lite detect-drift); hint menyebut `execute-bolts --all --lite` / `rebind-units.sh`.
+- **`run-full-suite.sh --base=<sha>`** menulis `base_sha` + `bypass_commits[]` (commit di `<base>..HEAD` yang menyentuh `target_files` unit tanpa trailer `SDD-PROVENANCE`; bolt run sendiri dikecualikan by construction) ke `_batch-suite.json` — daftar itu dulu prosa tanpa writer; `_summary.md` jadi mirror.
+- **PBT `Cites: §D-NNN`** (`validate-bolt-artifacts.sh`) juga membaca heading inline `### D-NNN:` di `vault.md` / `context.md` / `04-decisions.md` — layout-2/3 tidak lagi false-positive `pbt_citation_invalid`.
+- **Pack**: kunci mati `accessor_template` dihapus dari laravel/slim/symfony (validator hanya membaca `accessor_form`).
+- **`resolve-oq`** doc: writer audit-trail (`resolution_source` / `recommendation_citation`) = lane `derive-vault-json.sh --patch open_questions` yang sudah ada; dipin `plugins/mega-sdd/tests/graph/test-derive-vault-json-vault.sh`.
+
+### Added
+- **Registry halt**: 13 tipe hidup didaftarkan (index row + section family + taxonomy + schema enum): `drift_inputs_missing`, `scope_args_missing`, `vault_json_corrupt` (C1), `scan_repo_too_large`, `scan_primary_app_ambiguous`, `scan_spawn_budget_exceeded`, `codebase_map_derive_failed`, `codebase_map_invalid`, `user_authored_conflict`, `vault_not_found`, `vault_corrupt`, `greenfield_no_bind_context`, subtype `claim_verify_failed`. Preamble: kode drop validator (`binding_missing`, `conflict_unresolved`) BUKAN halt type. `routing_outcome_corrupt` mati beneran; `path_stale_pending_restart` = nilai `note`, bukan halt.
+- **`tests/skill-triggering/plan.test.md`** (7 trigger + 9 behavior) — satu-satunya skill tanpa fixture trigger.
+- Test baru: `test-unit-spec-vault-scope`, `test-scope-flag-map`, `test-dead-mechanism-names`, `test-ground-model-tier-norm`, `test-run-full-suite-bypass`, `test-pbt-citation-inline-adr`; 9 suite diperluas.
+
+### Changed
+- **`next_action.type` enum 12 → 5**: hanya nilai yang punya emitter/consumer (`re_run_producer`, `user_review`, `chain_complete` script-emitted; `invoke_skill`, `inspect_subskill_logs` dipakai fixture/skenario). Tujuh nilai prose-only dibuang; `hint` tetap free text.
+- **Anchor `using-mega-sdd` re-baseline** (keputusan owner): baris Hard gate membawa kualifikasi lite (`binding_conflict` saat dispatch); pin byte 3844 → 3969 (core), 1494 → 1619 (compact), cap 4030 tetap.
+- `partial_state_corrupt` di partial-state-and-saga disamakan ke registry (C1 self-resolve, ground.sh), `.mega-sdd/project.md` (tanpa producer) → status view front door, `paths.md` +2 row diagnostik, `project-config.md` +`defaults.emit_agents_md`, pointer mati "CLAUDE.md Fork A" → doktrin enforcement (golden f2 di-regen HANYA karena baris pointer itu).
+- BH5/BH8 `execute-bolts.test.md` → loop squad main-thread depth-1; scope-picker/scenario-7 timeout 5s fiktif dihapus; `seed-playground.sh` cetak `/mega-sdd`; `benchmarks/tasks/T01-greenfield-chain/files.lite.txt` = daftar lane lite 8.x (plan → bolts).
+- **Diet archaeology versi** di prose runtime (skills/, references/, commands/, agents/): 4 lane paralel (single-writer per file-set), ≈540 penggantian exact-string (≈630 tag rilis/ronde/iter/finding + klausa sejarah) di ≈100 file; prosa runtime (skills/ references/ commands/ agents/ *.md) 2.717.285 → 2.704.349 B setelah gate kode (−12.936 B, −0,48 %) — dibanding 8.3.1: 2.709.430 → 2.704.349 B (−5.081 B, −0,19 %; registrasi 13 halt + klausa lane baru memakan sebagian). Sensus baris ber-versi `x.y.z` di skills+references 289 → 140 (sisa = versi tool/pin, nilai skema runtime, literal yang dipin test, heading + ToC yang sengaja tidak diubah), tag ronde/iter 61 → 4. Dua literal yang dipin test dipulihkan (`W1` di execute-bolts 3.10, `no longer blocks` di vault-core) — pin menang.
+- `test-family-split` cap registry 34000 → 38000 B (37.059 B setelah 13 row terse) + subtype 7 → 8, alasan di komentar.
+
+### WONTFIX (by design, alasan di spec §1)
+- #9 ast-grep TIMEOUT → exit 3 `hard_rule_unparseable` (reuse disengaja: rule TIDAK tervalidasi; pesan sudah menyebut TIMEOUT + remedi).
+- #13b `## Security idioms` tidak di-wire ke dispatch prompt: mekanismenya memang HARD_RULE row (`## Hard Rules emitted`), section-nya untuk lens security (evidence-first).
+- #14 regex sanctioned-extras B3 tidak dilebarkan (melebarkan = melonggarkan gate; pola dir sudah menutup konvensi Java/Ruby/C#).
+
+### Notes
+- Byte loaded per lane (tracer `benchmarks/scripts/measure-context.sh`, 8.3.1 → 8.4.0): default (files.optimized.txt) 474.697 → 471.886 B (−2.811 B, −0,59 %); lite (files.lite.txt baru, diukur di kedua rev) 455.118 → 453.020 B (−2.098 B, −0,46 %). Diet KECIL dan disebut jujur: kebenaran + registrasi menambah byte, archaeology mengurangi lebih sedikit dari yang dibayangkan; densitas sisa = heading/ToC + literal ber-pin, keputusan owner kalau mau lanjut.
+- Suite lokal dua tree: 465 suite / 0 merah pada gate kode (sebelum diet) dan 465 suite / 0 merah (`SUITE_RC=0`, dua tree, stdin /dev/null) pada tree final. Leg scm tidak di-push (VPN).
+
 ## [8.3.1] - 2026-09-16 — doc-audit v8 (docs-only): delapan permukaan diaudit klaim-per-klaim, description plugin.json dikoreksi (patch bump per runbook §6)
 
 Runbook `research/2026-09-16-doc-audit-v8-runbook.md`, laporan `research/2026-09-16-doc-audit-v8.md`. Tidak ada perubahan kode, gate, hook, test, benchmark, atau spec (spec lama hanya distempel "Superseded"). Satu commit per permukaan.
