@@ -1,6 +1,6 @@
 # Mega-SDD Optional Native Tooling — Install Guide
 
-> **Auto-install:** for OS-aware auto-install with safety rails (detect OS + pkg mgr + propose plan + confirm + verify; every run re-probes — the outcome cache was removed in v7.3.0), use `/mega-sdd:install-deps` — it consumes the canonical YAML tool-matrix at `plugins/mega-sdd/skills/install-deps/references/tool-matrix.yaml`. This document remains useful as manual reference + fallback when auto-install isn't appropriate.
+> **Auto-install:** for OS-aware auto-install with safety rails (detect OS + pkg mgr + propose plan + confirm + verify; every run re-probes — there is no outcome cache), use `/mega-sdd:install-deps` — it consumes the canonical YAML tool-matrix at `plugins/mega-sdd/skills/install-deps/references/tool-matrix.yaml`. This document remains useful as manual reference + fallback when auto-install isn't appropriate.
 
 ## Platform support matrix
 
@@ -13,7 +13,7 @@ How much of mega-sdd works per environment (verified 2026-08-23 against the ship
 | **Windows + Git Bash (MINGW)** | ✅ | ✅ *if a USABLE interpreter resolves* — `resolve-python.sh` walks `python3` → `python` → `py -3` and rejects the WindowsApps alias stub, so no manual shim is needed; do NOT add a `python3` alias by hand | ✅ same condition | ✅ even WITHOUT python3 — the pre-tool-use fail-closed shell fallback still blocks execute-bolts when blockers ≠ PASS | Works; diagnostics degrade without python3 |
 | **Windows native (cmd/PowerShell, no bash)** | ⚠️ prose only — the model can follow skills via PowerShell | ❌ hooks are bash (hooks.json dispatches each `hooks/<name>` body directly; no PowerShell ports ship) | ❌ | ⚠️ **prose-enforced only — no deterministic gate** | Not recommended for real pipelines |
 
-> **Windows hook dispatch requires `bash` resolvable on PATH.** `hooks.json` invokes each hook as `bash "<plugin>/hooks/<name>"` (direct dispatch since v7.5.0 — the run-hook.sh middle layer cost 3 extra process spawns per event and is deleted), so cmd.exe launches `bash.exe` with the script as an argument rather than trying to interpret the file (a `.cmd`-extension dispatcher made cmd parse the `#!` shebang and fail with `'#!' is not recognized as an internal or external command`). Each body normalizes a backslash-separated `$0` itself (`HOOK_SELF`), which the old dispatcher used to do. On the Git Bash / WSL rows above, "✅ Hooks" therefore assumes Git for Windows (or WSL) is installed and its `bash` wins on PATH.
+> **Windows hook dispatch requires `bash` resolvable on PATH.** `hooks.json` invokes each hook as `bash "<plugin>/hooks/<name>"` (direct dispatch — no run-hook.sh middle layer, which cost 3 extra process spawns per event), so cmd.exe launches `bash.exe` with the script as an argument rather than trying to interpret the file (a `.cmd`-extension dispatcher made cmd parse the `#!` shebang and fail with `'#!' is not recognized as an internal or external command`). Each body normalizes a backslash-separated `$0` itself (`HOOK_SELF`). On the Git Bash / WSL rows above, "✅ Hooks" therefore assumes Git for Windows (or WSL) is installed and its `bash` wins on PATH.
 >
 > **It also assumes Claude Code itself is running its Bash tool, not its PowerShell tool.** Claude Code enables the PowerShell tool automatically on Windows when it cannot find Git Bash, and falls back to `powershell.exe`. On a corporate image where PowerShell is blocked by policy, every hook command then dies before `bash` is ever reached — the symptom is `EUNKNOWN: unknown error, uv_spawn` naming `powershell.exe`, which looks like a mega-sdd failure but is not one. Fix it host-side in `~/.claude/settings.json`:
 >
@@ -55,7 +55,7 @@ Bundling these binaries in the plugin is impractical (50MB+ multi-platform bloat
 | `markdownlint-cli2` | orchestrate-flow (vault prose lint, optional) | Skill-internal heuristic checks | `npm install -g markdownlint-cli2` · macOS: `brew install markdownlint-cli2` |
 | `semgrep` | execute-bolts L0 code gates (SAST on bolt diffs) | SAST gate SKIPs with a visible note | macOS: `brew install semgrep` · any: `pipx install semgrep` |
 | `gitleaks` | execute-bolts L0 code gates (secret scan on bolt diffs) | Plugin regex fallback (reduced coverage; always scanned) | macOS: `brew install gitleaks` · win: `scoop install gitleaks` · any: `go install github.com/zricethezav/gitleaks/v8@latest` |
-| `superpowers` plugin | execute-bolts (optional technique enhancement) | Not needed — the first-class agents encode the discipline (no vendored fallback since v7.4.0) | `/plugin install superpowers` |
+| `superpowers` plugin | execute-bolts (optional technique enhancement) | Not needed — the first-class agents encode the discipline (no vendored fallback) | `/plugin install superpowers` |
 
 > `pandoc` + `mmdc` power the emit PDF lanes; the PDF printer is a detected Chrome/Chromium (GUI app, detect-only — never installed by mega-sdd). Absent Chrome → GitHub-styled HTML fallback.
 
@@ -129,7 +129,7 @@ Mega-sdd works WITHOUT any of the optional tools. You get:
 - diff-vault: skill-internal compare
 - orchestrate-flow vault prose lint: internal heuristic checks
 
-For first-time exploration or one-off projects, minimal setup is fine. For sustained brownfield work or multi-project use, recommend installing at least **`ast-grep` + `ripgrep`** — ast-grep IS the AST tier (zero-compilation, one spawn; the tree-sitter opt-in lane was removed in v7.4.0).
+For first-time exploration or one-off projects, minimal setup is fine. For sustained brownfield work or multi-project use, recommend installing at least **`ast-grep` + `ripgrep`** — ast-grep IS the AST tier (zero-compilation, one spawn; there is no tree-sitter lane).
 
 ## License notes
 
@@ -166,5 +166,5 @@ Mega-sdd is tested against versions pinned in `plugins/mega-sdd/skills/scan-code
 
 ## References
 
-- `plugins/mega-sdd/skills/scan-codebase/queries/VERSIONS.md` — ast-grep rule-pack registry (the tree-sitter grammar matrix died with its lane, v7.4.0)
+- `plugins/mega-sdd/skills/scan-codebase/queries/VERSIONS.md` — ast-grep rule-pack registry
 - Tool-adoption history and rationale: `CHANGELOG.md` + git log

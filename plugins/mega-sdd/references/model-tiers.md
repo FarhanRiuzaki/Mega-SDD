@@ -3,7 +3,6 @@
 > Single source of truth for which model tier each named subagent role uses across the mega-sdd plugin.
 
 **Version:** 1.0
-**Introduced:** v3.25.0 (Iter 34)
 **Consumed by:** the scan-codebase deep-scan dispatch (cites via `references/model-tiers.md §<role-name>`); agent-backed roles are pinned in `agents/*.md` frontmatter (parity with rows 6, 15-23)
 **Resolved by:** `mega-sdd:orchestrate-flow` (SKILL.md "Model-tier override resolution" bullet; procedure in `references/chain-execution.md`) (override chain: CLI > project config > catalog default — non-panel roles only; `*-reviewer` lenses are frontmatter-pinned, see §Override syntax)
 
@@ -66,8 +65,8 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 
 ## Catalog
 
-Row numbers are stable history, so gaps are deliberate: 7–10 retired with the wave
-pipeline (v7.6.0), 11–14 + 18 removed 7.13.0 (zero dispatch sites anywhere in the
+Row numbers are stable, so gaps are deliberate: 7–10 retired with the wave
+pipeline, 11–14 + 18 removed (zero dispatch sites anywhere in the
 plugin — a `model_tiers:` override naming them now gets an honest `model_tier_unknown`
 notice instead of validating silently and doing nothing).
 
@@ -89,13 +88,13 @@ notice instead of validating silently and doing nothing).
 | 21b | `resolution-verifier` | sonnet | Fix-round verification: per-finding resolved/unresolved against new-head evidence + delta review of the fix range — bounded judgment against an explicit finding ledger, known output schema (review-panel §Attempt rounds) |
 | 22 | `bolt-implementer` | **inherit → v7.1 per-unit routed** | AMENDED v7.1 (spec 2026-08-22-per-unit-model-routing-design.md): config `model_tiers.bolt_implementer:` default `inherit` keeps the operator-tier behavior below verbatim; `auto` routes per unit from the SAME deterministic risk signals as the review-panel tier (opus←full, haiku←verify-only, sonnet←else) + a one-step evidence-gated cascade — NOT the hard pin the old rationale rejected (the pin follows per-unit evidence, both directions of the old cost argument are answered). Ship default stays `inherit` until the clinic A/B passes (≥25% token saving, panel quality equal — user gate). ORIGINAL rationale (still governs `inherit`): Deliberately operator-tiered, not unpinned: the implementer writes the code the LOCKED "akurasi code WAJIB" mandate is about, so it tracks the tier the operator chose for the session — a session run on a stronger model gets a stronger implementer with no plugin edit. A hard pin would also cut the wrong way in both directions: pinning down risks paying more via panel rejections + re-dispatches than the per-token saving, pinning up taxes every routine bolt. `inherit` is an EXPLICIT frontmatter value (`agents/bolt-implementer.md`), and any catalog↔frontmatter parity check must accept it as such (spec `2026-07-30-token-and-latency-optimization.md` §Phase 1a, amended) |
 
-**Distribution:** 2 opus + 12 sonnet + 1 inherit (15 rows; `haiku` is reached only through the v7.1 per-unit route for verify units — it has no catalog row). Sonnet-dominant by design; the sole `inherit` is the bolt implementer, whose tier is an operator choice.
+**Distribution:** 2 opus + 12 sonnet + 1 inherit (15 rows; `haiku` is reached only through the per-unit route for verify units — it has no catalog row). Sonnet-dominant by design; the sole `inherit` is the bolt implementer, whose tier is an operator choice.
 
 ---
 
 ## Override syntax
 
-> **Scope (S7-PANEL-3):** the `model_tiers:` override chain applies to SKILL-LEVEL
+> **Scope:** the `model_tiers:` override chain applies to SKILL-LEVEL
 > model picks (module extraction, audit probes, consolidators). It does NOT apply to
 > the execute-bolts review-panel lenses (`*-reviewer`) — those are pinned in each
 > plugin agent's frontmatter, which the runtime reads directly; a
@@ -159,4 +158,4 @@ When a future iter introduces a new subagent dispatch:
 1. **Probe the build first (1 line, never assume):** dispatch `Agent(subagent_type: general-purpose, model: "haiku")` asking the agent to quote its own system-prompt model line. Reply names Haiku → the `model` param works on that build; reply names the session model → STOP, report (frontmatter wins there — the file-variant fallback is a separate decision, do not build it ad hoc).
 2. **Gateway sessions (mega-code):** the model aliases must resolve at the office gateway; if they do not, set `model_tiers.bolt_implementer: inherit` (or a hard value the gateway serves) per project — the config neutralizes routing without a plugin change.
 3. Ship default is `inherit` everywhere until the A/B gate passes; flipping to `auto` is a config-line change, not a plugin release.
-4. **Field-pilot measurement:** after ≥10 bolts on a pilot project, read `model_used` / `escalated_from` / `signals_fired` from each unit's `bolts/U-*/bolt-report.md` (the per-unit audit trail — part of the bolt artifact set) and price the run **gateway-side** (the gateway logs usage per request; billing is a gateway concern, not this plugin's — v7.3.0 removed all in-plugin cost reporting). The 2026-08-22 pilot showed raw tokens are the WRONG flip metric (cheaper model ≠ fewer tokens) — decide on the gateway-billed number.
+4. **Field-pilot measurement:** after ≥10 bolts on a pilot project, read `model_used` / `escalated_from` / `signals_fired` from each unit's `bolts/U-*/bolt-report.md` (the per-unit audit trail — part of the bolt artifact set) and price the run **gateway-side** (the gateway logs usage per request; billing is a gateway concern, not this plugin's — there is no in-plugin cost reporting). The 2026-08-22 pilot showed raw tokens are the WRONG flip metric (cheaper model ≠ fewer tokens) — decide on the gateway-billed number.

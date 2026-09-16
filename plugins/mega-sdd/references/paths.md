@@ -49,7 +49,7 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── bolts/U-*/acceptance.json              # B4 acceptance evidence (run-acceptance-tests.sh)
 │   │   ├── bolts/U-*/dispatch-prompt.md           # Assembled bolt dispatch (build-dispatch-prompt.sh)
 │   │   ├── bolts/U-*/findings.json                # Review-panel finding ledger (controller-written; review-panel.md §Attempt rounds)
-│   │   ├── bolts/U-*/binding.json                 # JIT bind verdicts per unit (v8 P1; sole writer write-unit-binding.sh, hook-guarded evidence)
+│   │   ├── bolts/U-*/binding.json                 # JIT bind verdicts per unit (sole writer write-unit-binding.sh, hook-guarded evidence)
 │   │   ├── bolts/U-*/quarantine.json              # W1 quarantine record (write-unit-quarantine.sh; status: quarantined; released → quarantine.released.<ts>.json)
 │   │   ├── bolts/_wave-claims.json                # JIT bind claim set of the CURRENT wave (derive-unit-claims.sh; one file, overwritten per wave, head inside)
 │   │   ├── lens-inputs/U-*/design-slice.md        # Controller-written REVIEW-LENS inputs ONLY — never implementer/reviewer output (review-panel.md §Blind dispatch)
@@ -64,14 +64,14 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── prd/                                   # PRD output (emit-prd): PRD.md, PRD.pdf, .citation-map.json, .doc-history.json
 │   │   ├── sit/                                   # SIT output (emit-sit): SIT.md, SIT.pdf, .sit-evidence.md, .citation-map.json, .doc-history.json
 │   │   ├── uat/                                   # UAT output (emit-uat): UAT.md, UAT.pdf, UAT-v<version>.xlsx, .uat-scaffold.md, .citation-map.json, .doc-history.json
-│   │   │   ├── e2e/                               # Playwright skeletons (build-uat-e2e.sh, 6.10.0): UAT-NNN.spec.ts + config + package.json + .gitignore
+│   │   │   ├── e2e/                               # Playwright skeletons (build-uat-e2e.sh): UAT-NNN.spec.ts + config + package.json + .gitignore
 │   │   │   └── evidence/<UAT-id>/<run-ts>/        # auditor evidence packs (uat-run.sh, sole hook-guarded writer): result.json + screenshots/ + trace.zip
 │   │   ├── _meta/squads.yaml                      # Multi-squad partition
 │   │   ├── .memory/                               # Vault-scope PIPELINE state (name is historical)
 │   │   │   └── bolt-outcomes.json                 # per-unit completion — read by query-graph --modules
 │   │   └── .internal/                             # Vault-internal state
 │   │       ├── checkpoints/<timestamp>-<skill>-<step>.jsonl   # resumable checkpoints
-│   ├── knowledge-base/                            # Legacy extraction (extract-intelligence): census.json + modules/*.prd.md + README (PRD-kontrak; pre-v7.6 numbered tree still readable)
+│   ├── knowledge-base/                            # Legacy extraction (extract-intelligence): census.json + modules/*.prd.md + README (PRD-kontrak; the legacy numbered tree is still readable)
 │   │   ├── README.md
 │   │   ├── 00-overview/, 10-domains/, etc.
 │   │   └── .scan-meta.json
@@ -90,7 +90,7 @@ Every writer skill resolves output paths via this protocol:
 Live state files at the `.mega-sdd/` root (writers in parentheses):
 
 - `.validation-blockers.json` — gate aggregator (PreToolUse gate)
-- `.locked-files-index.json` — `build-locked-index.sh`; read by GateGuard + the v7.5.0 LOCKED-edit notice
+- `.locked-files-index.json` — `build-locked-index.sh`; read by GateGuard + the LOCKED-edit notice
 - `codebase/.dirty-paths.jsonl` — PostToolUse journal; read by the session-start notice + the completion census
 - `state.json` — routing digest (`derive-state.sh` / `ground.sh`)
 - `graph.json` — `build-graph.sh`; one of the two triggers (with `vaults/`) of the Stop-hook publisher leg
@@ -108,15 +108,15 @@ Plus ~35 `.*-state.json` validator/gate state files (one per validator; written 
 
 ## Vault layout (v7 layout-2 ↔ legacy 7-file)
 
-Layout-2 (classic-lane default through 8.x; marker `vault_layout: 2` in the vault.md frontmatter + vault.json) is the 4-file vault. Every reader is DUAL-LAYOUT for the 8.x cycle (§Layout-3 dual-read window; probe the layout-2 file first, fall back to the legacy name — floor v5.9.0 kantor). Migration: `migrate-paths.sh --vault-layout` (dry-run default; `--apply` executes) → then a FULL re-bind is MANDATORY (line anchors invalidated; binding.json/.citation-map.json are regenerated, never patched).
+Layout-2 (classic-lane default through 8.x; marker `vault_layout: 2` in the vault.md frontmatter + vault.json) is the 4-file vault. Every reader is DUAL-LAYOUT for the 8.x cycle (§Layout-3 dual-read window; probe the layout-2 file first, fall back to the legacy name). Migration: `migrate-paths.sh --vault-layout` (dry-run default; `--apply` executes) → then a FULL re-bind is MANDATORY (line anchors invalidated; binding.json/.citation-map.json are regenerated, never patched).
 
 | Layout-2 | Legacy (7-file) | Content |
 |---|---|---|
-| `vault.md` frontmatter | `00-index.md` §Vault Lock Status | the six lock values (+ `project_scale` since 7.29.0, + `kb_module_graph`) |
+| `vault.md` frontmatter | `00-index.md` §Vault Lock Status | the six lock values (+ `project_scale`, + `kb_module_graph`) |
 | `vault.md ## Overview` | `01-overview.md` | product, personas, problem, success criteria |
 | `vault.md ## Architecture` | `02-architecture.md` | layers, components, API contracts |
 | `vault.md ## Decisions` | `05-decisions.md` | `### D-NNN` ADRs |
-| `vault.md` Glossary/Auto-Classification/Source documents/Changelog | `00-index.md` sections | moved verbatim (roll-up + reading ceremony retired) |
+| `vault.md` Glossary/Auto-Classification/Source documents/Changelog | `00-index.md` sections | moved verbatim |
 | `model.md` | `03-data-model.md` | DBML entities |
 | `flows.md` | `04-flows.md` | Mermaid flows + DoD (the hot surface — hook + locators dual-probe) |
 | `constraints.md` (+ `## Open Questions`, `[origin:]` tokens) | `06-constraints.md` + per-doc OQ sections + the roll-up | constraints + THE one authored OQ home |
@@ -132,7 +132,7 @@ ONE file `context.md` (marker `vault_layout: 3` in its frontmatter + vault.json)
 ```
 ~/.mega-sdd/
 └── config.yaml                              # User defaults (halt_auto_propose, default_output_root override)
-                                             # (v7.3.0: relocated from ~/.mega-sdd/memory/config.yaml; the memory dir is removed)
+                                             # (relocated from ~/.mega-sdd/memory/config.yaml; the memory dir is removed)
 ```
 
 ## Per-skill path mapping (canonical → legacy)
@@ -148,13 +148,13 @@ ONE file `context.md` (marker `vault_layout: 3` in its frontmatter + vault.json)
 | `derive-claims-ledger.sh` (script) | claims-ledger | `<vault>/claims-ledger.json` | — (new artifact, no legacy location) |
 | `generate-units` | units/ | `<vault>/units/` | `<vault>-bound/units/` (or `<vault>/units/`) |
 | `execute-bolts` | bolts/ | `<vault>/bolts/U-*/` | `<vault>/bolts/U-*/` |
-| `execute-bolts` | lens-inputs/ | `<vault>/lens-inputs/U-*/` | n/a (new 2026-07-31) |
+| `execute-bolts` | lens-inputs/ | `<vault>/lens-inputs/U-*/` | n/a |
 | `execute-bolts` | checkpoints | `<vault>/.internal/checkpoints/` | `<vault>/.mega-sdd/checkpoints/` |
 | `orchestrate-flow` | model-tiers config | `.mega-sdd/config.yaml` (per-project `model_tiers:` section) | (no legacy back-compat) |
 | `emit-agents-md` | AGENTS.md | `<repo-root>/AGENTS.md` (UNCHANGED — interop file) | same |
-| `slice-design` (plugin `mega-sdd-extras`, separate install — writes NOTHING else under `.mega-sdd/`) | slice-report.md | `.mega-sdd/slices/<slug>/slice-report.md` | same path the 6.8.0–7.4.0 core skill used |
+| `slice-design` (plugin `mega-sdd-extras`, separate install — writes NOTHING else under `.mega-sdd/`) | slice-report.md | `.mega-sdd/slices/<slug>/slice-report.md` | same path the former core skill used |
 
-The project `.mega-sdd/memory/` dir is still honored as a project-root MARKER by `scripts/_lib/resolve-project-root.sh` and rewritten by migrate-paths, but nothing writes it since v7.3.0. The only live vault-memory artifact is `<vault>/.memory/bolt-outcomes.json` (documented in the canonical-layout tree above).
+The project `.mega-sdd/memory/` dir is still honored as a project-root MARKER by `scripts/_lib/resolve-project-root.sh` and rewritten by migrate-paths, but nothing writes it. The only live vault-memory artifact is `<vault>/.memory/bolt-outcomes.json` (documented in the canonical-layout tree above).
 
 ## Detection logic
 
@@ -205,7 +205,7 @@ Same protocol for codebase-map (`<project>/.mega-sdd/codebase/codebase-map.md` �
 `<project-root>/.mega-sdd/config.yaml` (full key reference: `plugins/mega-sdd/references/project-config.md`):
 
 ```yaml
-# scaffold defaults written by migrate-paths.sh; `layout:`, `defaults:`, `probe_paths:`, `mega_sdd_schema:` have NO reader today — live keys are documented in references/project-config.md. A KB outside the tree is pointed at by the LIVE top-level key `knowledge_base: <dir>` (7.30.0), not by `probe_paths.knowledge_base_candidates`.
+# scaffold defaults written by migrate-paths.sh; `layout:`, `defaults:`, `probe_paths:`, `mega_sdd_schema:` have NO reader today — live keys are documented in references/project-config.md. A KB outside the tree is pointed at by the LIVE top-level key `knowledge_base: <dir>`, not by `probe_paths.knowledge_base_candidates`.
 # Project-level mega-sdd config
 mega_sdd_schema: 1
 
@@ -271,10 +271,10 @@ Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to t
 ## References
 
 - `commands/migrate-paths.md` — migration helper
-- `docs/mega-sdd/upgrade-from-old-version.md` (repo docs, maintainer-facing since v7.4.0) — legacy-layout upgrade guide
+- `docs/mega-sdd/upgrade-from-old-version.md` (repo docs, maintainer-facing) — legacy-layout upgrade guide
 
 ## Derived caches (never state)
 
 - `<root>/.mega-sdd/.cache/pack-resolver/` — the framework-pack resolver's derived stdout cache (one file per section/chain request). Discardable at any time; deleting it costs one cold resolve. Add it to `.gitignore` yourself (mega-sdd never edits `.gitignore`); never read as project state.
 - `<root>/.mega-sdd/.stop-scan-stamp` — the Stop hook's turn-gate stamp (HEAD sha at the last artifact scan). Absence simply means the next Stop scans; never committed.
-- `<root>/.mega-sdd/.ptu-scan-stamp` — legacy name — the PostToolUse debounce and its 4 scanners were removed in v7; retained only in the anti-forge guard + probe-prune lists, never written.
+- `<root>/.mega-sdd/.ptu-scan-stamp` — legacy name — the PostToolUse debounce and its 4 scanners were removed; retained only in the anti-forge guard + probe-prune lists, never written.

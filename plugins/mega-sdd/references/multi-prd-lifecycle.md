@@ -24,7 +24,7 @@ When a doc arrives or the project moves, route by **what actually changed**, nev
 
 ## Project index (derived on demand — no file)
 
-Derived view (v7: the dedicated index script was removed — derive it on demand by listing `.mega-sdd/vaults/*/vault.json`): one row per vault — slug, title, source doc, version, status (`intent` / `units-ready` / `in-progress` / `shipped`), unit + bolt counts, feature area. **The sequence of vaults IS the project's PRD/epic history.** A new vault reads this index to know what PRD 1..N-1 shipped, so it binds against the right reality. Re-derive whenever the answer matters (vault list + counts are cheap reads).
+Derived view (derive it on demand by listing `.mega-sdd/vaults/*/vault.json`): one row per vault — slug, title, source doc, version, status (`intent` / `units-ready` / `in-progress` / `shipped`), unit + bolt counts, feature area. **The sequence of vaults IS the project's PRD/epic history.** A new vault reads this index to know what PRD 1..N-1 shipped, so it binds against the right reality. Re-derive whenever the answer matters (vault list + counts are cheap reads).
 
 ## Project constitution — `.mega-sdd/constitution.md` (shared, inherited)
 
@@ -36,4 +36,4 @@ Per-vault constitutions (`<vault>/constitution.md`) carry the locked rules of TH
 
 ## Doc-type agnosticism
 
-`generate-intent` already accepts PRD / BRD / Figma / free-text brief / KB (`--kb` — since v7.6 the extraction output is itself PRD-shaped: one PRD-kontrak per module). The lifecycle above is **doc-type agnostic** — "a new doc" means any of these. An EPIC-SCALE brief (a BRD for epic 2, a free-text brief for epic 3) becomes a new vault, bound against the accumulating codebase + the one project constitution; a TICKET-SCALE brief naming content an existing vault owns takes the delta lane (`diff-vault --from-prompt`) instead — the cap decides honestly when a "ticket" is really an epic.
+`generate-intent` already accepts PRD / BRD / Figma / free-text brief / KB (`--kb` — the extraction output is itself PRD-shaped: one PRD-kontrak per module). The lifecycle above is **doc-type agnostic** — "a new doc" means any of these. An EPIC-SCALE brief (a BRD for epic 2, a free-text brief for epic 3) becomes a new vault, bound against the accumulating codebase + the one project constitution; a TICKET-SCALE brief naming content an existing vault owns takes the delta lane (`diff-vault --from-prompt`) instead — the cap decides honestly when a "ticket" is really an epic.

@@ -24,9 +24,9 @@
 
 ## Why this exists
 
-Mermaid is the canonical diagram format for mega-sdd KB outputs. Skills that emit Mermaid are responsible for producing **parser-valid** syntax. The historical failure mode: model writes natural-language node text (often verbatim from legacy code references), Mermaid parser hits an unquoted comma / parenthesis / colon inside `[...]` shape, fails to render. Downstream consumers (PDF, vault, generate-intent) see a fenced ` ```mermaid ` block that LOOKS valid but renders as an error message. A fence-presence check alone does not catch this; the validators parse the block's syntax.
+Mermaid is the canonical diagram format for mega-sdd KB outputs. Skills that emit Mermaid are responsible for producing **parser-valid** syntax. The failure mode: model writes natural-language node text (often verbatim from legacy code references), Mermaid parser hits an unquoted comma / parenthesis / colon inside `[...]` shape, fails to render. Downstream consumers (PDF, vault, generate-intent) see a fenced ` ```mermaid ` block that LOOKS valid but renders as an error message. A fence-presence check alone does not catch this; the validators parse the block's syntax.
 
-This document is the producer-side contract. the kb flows surface (`validate-kb.sh --surface=flows`) (KB §3/§8) and the vault-flows surface (`validate-kb.sh --surface=vault-flows`) (vault `flows.md` flows) enforce a heuristic subset under `analyze` (run-analyze.sh runs both surfaces), sharing one tokenizer (`scripts/_lib/mermaid_syntax.py`). The opt-in ground-truth oracle (`verify-mermaid.sh`, real `mermaid.parse()`) was removed in v7 Fase 2 — the shared heuristic tokenizer is the enforced layer; for render ground truth, paste the block into mermaid.live or run `npx @mermaid-js/mermaid-cli` by hand.
+This document is the producer-side contract. the kb flows surface (`validate-kb.sh --surface=flows`) (KB §3/§8) and the vault-flows surface (`validate-kb.sh --surface=vault-flows`) (vault `flows.md` flows) enforce a heuristic subset under `analyze` (run-analyze.sh runs both surfaces), sharing one tokenizer (`scripts/_lib/mermaid_syntax.py`). The opt-in ground-truth oracle (`verify-mermaid.sh`, real `mermaid.parse()`) was removed — the shared heuristic tokenizer is the enforced layer; for render ground truth, paste the block into mermaid.live or run `npx @mermaid-js/mermaid-cli` by hand.
 
 ---
 
@@ -208,5 +208,5 @@ Tier classification: **C2** (producer must fix). NOT C1 — auto-rewriting Merma
 
 ## Not done (candidates)
 
-- **Full-render via `mmdc`**: `npx @mermaid-js/mermaid-cli` renders each block to SVG for pixel-level ground truth. Rejected for any gate: needs Chromium, slow, offline-flaky. (The former in-repo headless `mermaid.parse()` oracle was removed in v7 — same conclusion stands: full-render stays rejected for any gate.)
+- **Full-render via `mmdc`**: `npx @mermaid-js/mermaid-cli` renders each block to SVG for pixel-level ground truth. Rejected for any gate: needs Chromium, slow, offline-flaky. (The former in-repo headless `mermaid.parse()` oracle was removed — same conclusion stands: full-render stays rejected for any gate.)
 - **Auto-fix for unquoted shape text**: risk-graded tool that adds quotes only when unambiguous (no nested quotes / HTML entities). Opt-in; producer-side responsibility means it stays off by default.

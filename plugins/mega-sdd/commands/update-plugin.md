@@ -67,7 +67,7 @@ If `BEFORE_VERSION == AFTER_VERSION`, say "already up to date" and skip the cach
 
 **Step 5.5 — Dormant-cache sweep (confirm-first, NEVER silent — spec 2026-08-31-update-plugin-cache-sweep.md).**
 
-Dormant version dirs pile up under the cache and are the root of the version-drift bug class (the field wrapper once resolved a 6.6.0 dormant install). Sweep them, with ONE batched confirmation:
+Dormant version dirs pile up under the cache and are the root of the version-drift bug class. Sweep them, with ONE batched confirmation:
 
 1. Derive the referenced set — every mega-sdd version `installed_plugins.json` points at, ANY scope (never just entry `[0]` — that was the wrapper bug):
 

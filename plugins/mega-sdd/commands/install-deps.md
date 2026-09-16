@@ -10,7 +10,7 @@ User arguments: $ARGUMENTS
 Argument parsing:
 - `--dry-run`: show install plan + estimated sizes; don't execute (useful to preview)
 - `--tools=<csv>`: limit to subset (e.g., `--tools=pandoc,mmdc` for emit PDF deps only)
-- `--force-recheck`: accepted no-op modifier — every run already re-audits from scratch (v7.3.0)
+- `--force-recheck`: accepted no-op modifier — every run already re-audits from scratch
 - `--pkg-mgr=<name>`: override auto-detected manager (e.g., `--pkg-mgr=cargo` to use Rust toolchain instead of brew/apt)
 - `--manual`: print install commands as instructions but skip Bash invocation (user runs manually)
 - `--auto`: emit handoff YAML (orchestrator-invoked); the batch confirmation still runs

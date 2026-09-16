@@ -23,23 +23,23 @@ knowledge_base: ""         # ABSENT = probe the in-project KB paths (.mega-sdd/k
                            #   the project root, absolute allowed, `~` expanded. Read by derive-state (probes.knowledge_base,
                            #   source: config) → routing + generate-intent auto-detect (`--kb=<this dir>`). A configured path
                            #   whose README.md is missing counts as ABSENT (+ a note) — it never falls through to a stale
-                           #   local copy. analyze's kb_* validators stay project-local by design (7.30.0).
-spine: express      # P2 — express (default) | classic; classic restores scan-first chains + the Stop-hook analyze aggregate
-lane: standard      # v8 P1 — standard (default) | lite. The DURABLE form of the front-door `--lite` flag (derived.lane):
+                           #   local copy. analyze's kb_* validators stay project-local by design.
+spine: express      # express (default) | classic; classic restores scan-first chains + the Stop-hook analyze aggregate
+lane: standard      # standard (default) | lite. The DURABLE form of the front-door `--lite` flag (derived.lane):
                            #   lite = execute-bolts pre-flight 3.9 JIT bind on EVERY wave + W1 zero-idle + `validate-preflight.sh
                            #   --predictive` refuses the execute-bolts hop while .plan-coverage-state.json is missing/FAIL.
                            #   Set it once per project so `--resume` and every hop know the lane without re-typing the flag.
-# profile:          # P3 — ABSENT is the default: diagnostics lean-by-default on the express spine (Stop-hook analyze aggregate OFF). Set `full` to re-enable the aggregate; `lean` additionally cuts the advisory chain diagnostics (opt-in)
+# profile:          # ABSENT is the default: diagnostics lean-by-default on the express spine (Stop-hook analyze aggregate OFF). Set `full` to re-enable the aggregate; `lean` additionally cuts the advisory chain diagnostics (opt-in)
 review_panel: auto         # execute-bolts review-panel tier: auto (risk-based) | minimal | standard | full
                            #   (see execute-bolts references/review-panel.md; CLI --review-panel= overrides this key)
 model_tiers:
-  bolt_implementer: inherit  # v7.1 per-unit model routing: inherit (DEFAULT — today's behavior,
+  bolt_implementer: inherit  # per-unit model routing: inherit (DEFAULT — today's behavior,
                              # session model, no model param passed) | auto (router: the same
                              # resolve-review-tier signals pick haiku/sonnet/opus per unit +
                              # one-step failure cascade) | haiku | sonnet | opus (hard pin)
 parallel_max: 4              # execute-bolts in-flight implementer cap (Claude Code's own default is 20
                              # concurrent subagents — one bolt-implementer is ~80 turns; 4 keeps
-                             # a fleet Windows laptop responsive). v8 P3 (7.38.0): SCRIPT-READ, not
+                             # a fleet Windows laptop responsive). SCRIPT-READ, not
                              # prose-only — `_lib/vault_layouts.parallel_max()` (top-level key, first
                              # match, absent/non-integer → 4) feeds the in-run dispatch gate
                              # (hooks/pre-tool-use): on the lite lane a unit whose postflight +
@@ -55,9 +55,9 @@ preview_url: ""            # dev-server base URL (e.g. http://localhost:5173) �
                            #   the URL into the capture ladder as an argument — `capture-views.sh`
                            #   never reads config. Empty → design lens is code-only.
 # render_html: on          # ABSENT = on: every emit lane (prd/fsd/sit/uat + vault/KB renders) also writes the
-                           #   self-contained offline HTML beside the md (7.16.0). `off` skips the render step.
+                           #   self-contained offline HTML beside the md. `off` skips the render step.
 # unit_granularity: fine   # ABSENT = default (medium) unit size in generate-units; `coarse` = story-sized units
-                           #   (600 LOC / 8 files, 7.20.0 — same as `--max-complexity=large`), `fine` = smaller.
+                           #   (600 LOC / 8 files — same as `--max-complexity=large`), `fine` = smaller.
                            #   Precedence: flag > config > default.
 defaults:
   emit_agents_md: true       # false → the chain's final `emit-agents-md` hop is skipped (written by
@@ -68,7 +68,7 @@ Related-but-separate config surfaces (different scopes, documented where they li
 
 | Scope | File | Keys |
 |---|---|---|
-| USER (cross-project) | `~/.mega-sdd/config.yaml` | `halt_auto_propose` block (see `execute-bolts/references/halt-recovery.md §Configuration override`). Relocated from `~/.mega-sdd/memory/config.yaml` in v7.3.0 (memory dir removed) — move the file if you had one |
+| USER (cross-project) | `~/.mega-sdd/config.yaml` | `halt_auto_propose` block (see `execute-bolts/references/halt-recovery.md §Configuration override`). Relocated from `~/.mega-sdd/memory/config.yaml` (memory dir removed) — move the file if you had one |
 | PROJECT | `.mega-sdd/config.yaml` | this file |
 | VAULT | `<vault>/vault.json` + `_meta/` | per-vault state, squads, modules |
 

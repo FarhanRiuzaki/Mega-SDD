@@ -14,9 +14,7 @@ and **not** exported to the Bash tool, so a skill must derive its root from a
 path it already has. In a long session — or inside a dispatched subagent handed
 a path built before a `/plugin marketplace update` — that derived path can point
 at an **old** cache dir whose files still physically exist. The Read/Bash then
-silently succeeds against stale templates or stale scripts. (Real instance: a
-`generate-intent` subagent read `…/4.31.0/…/templates/flows.md` while the
-session was on 4.36.0.)
+silently succeeds against stale templates or stale scripts.
 
 ## The resolution (copy this snippet into the block)
 

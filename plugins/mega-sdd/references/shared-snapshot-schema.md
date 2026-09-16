@@ -1,8 +1,8 @@
 # Shared Snapshot Schema (v1.1, Iter 30 → extended Iter 46)
 
-Canonical JSON schema for code-state snapshots consumed by mega-sdd skills across hops. **v1.1 extension (Iter 46)** broadens scope from the original Iter 30 `execute-bolts ↔ detect-drift` hop to additionally cover `scan-codebase → bind-codebase` (new `codebase-map` snapshot_type) and `extract-intelligence → generate-intent --kb` (new `extracted-kb` snapshot_type). Each extension preserves Iter 30 backward compatibility — v1.0 readers simply skip unfamiliar snapshot_type values.
+Canonical JSON schema for code-state snapshots consumed by mega-sdd skills across hops. **v1.1 extension** broadens scope from the original `execute-bolts ↔ detect-drift` hop to additionally cover `scan-codebase → bind-codebase` (new `codebase-map` snapshot_type) and `extract-intelligence → generate-intent --kb` (new `extracted-kb` snapshot_type). Each extension preserves v1.0 backward compatibility — v1.0 readers simply skip unfamiliar snapshot_type values.
 
-Goal: every consumer skill that re-reads state already captured by an upstream producer can shortcut to the captured snapshot when source files match. Iter 30 baseline savings (~28s → ≤5s for drift gate on 20-bolt batch); Iter 46 extension adds a one-sha freshness attestation on the scan→bind hop (NOT a parsing shortcut — binding correctness is unchanged either way) + the KB freshness check (extract→intent hop).
+Goal: every consumer skill that re-reads state already captured by an upstream producer can shortcut to the captured snapshot when source files match. Baseline savings (~28s → ≤5s for drift gate on 20-bolt batch); the v1.1 extension adds a one-sha freshness attestation on the scan→bind hop (NOT a parsing shortcut — binding correctness is unchanged either way) + the KB freshness check (extract→intent hop).
 
 ## Contents
 
@@ -61,7 +61,7 @@ Goal: every consumer skill that re-reads state already captured by an upstream p
 }
 ```
 
-**v1.1 fields (Iter 46 — OPTIONAL):**
+**v1.1 fields (OPTIONAL):**
 - `codebase_map_sha256` — populated when `snapshot_type == codebase-map`. Allows downstream `bind-codebase` to detect codebase-map.md staleness in one check vs N source-file checks.
 - `source_files_sha256_map` — populated for the `extracted-kb` type ONLY (its generate-intent freshness check reads it, path-by-path). For `codebase-map` it is written EMPTY `{}` — no consumer reads it (bind-codebase compares `codebase_map_sha256` only) and per-file hashes already live in the map's §2 `Last_Scanned_Sha256` column.
 
@@ -73,7 +73,7 @@ The bolt artifacts `<vault>/bolts/U-XXX/preflight.json` and `postflight.json` ne
 
 ### scan-codebase (codebase-map snapshot — v2.7.1+, Iter 46)
 
-> **Express-spine note (P2):** on the default spine this snapshot has no producer (scan runs on-demand only) and no consumer (bind `--express` skips the currency check, provenance fixed `no-snapshot` — `bind-codebase/references/auto-memory-handoff.md`). The lane stays fully live for classic-spine and on-demand scan runs.
+> **Express-spine note:** on the default spine this snapshot has no producer (scan runs on-demand only) and no consumer (bind `--express` skips the currency check, provenance fixed `no-snapshot` — `bind-codebase/references/auto-memory-handoff.md`). The lane stays fully live for classic-spine and on-demand scan runs.
 
 Write to `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` after Step 10 codebase-map.md write:
 
@@ -85,7 +85,7 @@ Write to `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.j
 
 ### extract-intelligence (extracted-kb snapshot — v1.6+, Iter 46)
 
-> **Producer retired (v7.6):** the PRD-kontrak grammar carries freshness inside `census.json` (per-file `sha256`), so new extractions emit NO snapshot; `generate-intent --kb` checks census freshness directly. The consumer contract below still applies to pre-v7.6 numbered-tree KBs that carry a snapshot on disk.
+> **Producer retired:** the PRD-kontrak grammar carries freshness inside `census.json` (per-file `sha256`), so new extractions emit NO snapshot; `generate-intent --kb` checks census freshness directly. The consumer contract below still applies to legacy numbered-tree KBs that carry a snapshot on disk.
 
 Write to `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json` after wave-4 consolidation completes:
 
@@ -128,14 +128,14 @@ Before reading `<kb-dir>`:
 
 ## Backward compatibility
 
-Pre-Iter-30 bolts wrote preflight/postflight with informal JSON (per Iter 3). Iter 30 migration:
+Legacy bolts wrote preflight/postflight with informal JSON. Migration:
 
-- First Iter 30 bolt run writes new schema; older snapshots remain readable but consumer treats them as `snapshot_schema_version: "0.x (legacy)"` and falls back to fresh scan
+- The first bolt run writes the new schema; older snapshots remain readable but consumer treats them as `snapshot_schema_version: "0.x (legacy)"` and falls back to fresh scan
 - No data migration required; old snapshots aged out naturally as bolts re-execute
 
 ## File locations summary
 
 - Bolt Hard-rule artifacts (script-written, NOT this schema — see §Producer responsibilities): `<vault>/bolts/U-XXX/{preflight,postflight}.json`
-- Drift report: `<vault>/DRIFT-REPORT.md` (existing, per detect-drift v1.x)
-- Codebase-map snapshot (v1.1+, Iter 46): `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json`
-- Extracted-KB snapshot (v1.1+, Iter 46): `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json`
+- Drift report: `<vault>/DRIFT-REPORT.md` (existing)
+- Codebase-map snapshot (v1.1+): `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json`
+- Extracted-KB snapshot (v1.1+): `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json`
