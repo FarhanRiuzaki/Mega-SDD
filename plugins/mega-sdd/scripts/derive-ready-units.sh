@@ -16,8 +16,18 @@
 #               (quarantine of a dependency blocks the dependent, W1 rule);
 #   done      = implemented with pass evidence;   quarantined = as recorded.
 # Output: ONE JSON line {ready[], blocked[{unit,waiting_on[]}], done[], quarantined[],
-# in_progress[]} — pointers for the controller; it never dispatches anything, and
-# every gate the dispatch itself meets (F-09, B1–B4, whitelist, CONFLICT) is untouched.
+# in_progress[], dispatch_plan{}} — pointers for the controller; it never dispatches
+# anything, and every gate the dispatch itself meets (F-09, B1–B4, whitelist, CONFLICT)
+# is untouched.
+#
+# dispatch_plan (8.3.0 L1, spec 2026-09-16-clinic-levers-design.md — MEASUREMENT PENDING):
+# MEASURED on clinic lite 7.38.0 (research §2f): the controller topped up per BURST
+# (7 bursts 17–22 min apart), ready units waited ≈117 unit-min, = the 25 % idle. The
+# plan makes the top-up deterministic: cap = vault_layouts.parallel_max, in_flight =
+# vault_layouts.inflight_units (the ONE definition the gate + wave rail read),
+# slots = cap - in_flight, dispatch_now = the first `slots` ready units ordered by
+# direct-dependent count DESC (critical path first) then id; the rest = deferred.
+# The controller dispatches dispatch_now VERBATIM after every implementer return.
 # Exit 0 · 2 usage.
 set -u
 CWD="."; VAULT=""; QUIET=0
@@ -28,9 +38,15 @@ esac; done
 [ -n "$VAULT" ] && [ -d "$VAULT/units" ] || { echo "usage: --vault=<dir with units/> required" >&2; exit 2; }
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STALE="$(bash "$SCRIPT_DIR/compute-unit-staleness.sh" --project="$CWD" --vault="$VAULT" 2>/dev/null || echo '{"units":[]}')"
-V_VAULT="$VAULT" V_STALE="$STALE" V_QUIET="$QUIET" python3 <<'PYEOF'
+V_CWD="$CWD" V_LIB="$SCRIPT_DIR/_lib" V_VAULT="$VAULT" V_STALE="$STALE" V_QUIET="$QUIET" python3 <<'PYEOF'
 import glob, json, os, re, sys
 vault = os.environ["V_VAULT"]
+cwd = os.environ["V_CWD"]
+sys.path.insert(0, os.environ["V_LIB"])
+try:
+    import vault_layouts as _vl
+except Exception:
+    _vl = None
 try:
     stale = {u["unit"]: u for u in (json.loads(os.environ["V_STALE"]).get("units") or [])}
 except Exception:
@@ -63,7 +79,29 @@ for uid in sorted(units):
         in_progress.append(uid); continue
     waiting = [d for d in units[uid] if not (d in stale and stale[d].get("status") == "implemented" and evidence(d))]
     (ready if not waiting else blocked).append(uid if not waiting else {"unit": uid, "waiting_on": waiting})
-out = {"schema": "ready-units/1", "lane": "lite", "ready": ready, "blocked": blocked, "done": done, "quarantined": quarantined, "in_progress": in_progress,
-       "rule": "ready = every depends_on unit implemented with acceptance+postflight pass (panel may still run); quarantined/red/stale dependency blocks"}
+# dispatch_plan (L1): deterministic top-up — ONE in-flight definition, ONE cap.
+dependents = {u: 0 for u in units}
+for u, deps in units.items():
+    for d in deps:
+        if d in dependents: dependents[d] += 1
+if _vl is not None:
+    try:
+        in_flight = list(_vl.inflight_units(cwd)); cap = int(_vl.parallel_max(cwd))
+    except Exception:
+        in_flight = list(in_progress); cap = 4
+else:
+    in_flight = list(in_progress); cap = 4
+slots = max(0, cap - len(in_flight))
+ordered = sorted(ready, key=lambda u: (-dependents.get(u, 0), u))
+plan = {"cap": cap, "in_flight": in_flight, "slots": slots,
+        "dispatch_now": ordered[:slots], "deferred": ordered[slots:],
+        "order_rule": "direct-dependent count desc (critical path first), then unit id",
+        "reason": ("dispatch these NOW, in this order — one Agent call each, this message"
+                   if ordered[:slots] else
+                   ("no free slot (in_flight == cap) — wait for the next implementer return, never a timer/burst"
+                    if ready else "nothing ready — wait for the next implementer return"))}
+out = {"schema": "ready-units/2", "lane": "lite", "ready": ready, "blocked": blocked, "done": done, "quarantined": quarantined, "in_progress": in_progress,
+       "dispatch_plan": plan,
+       "rule": "ready = every depends_on unit implemented with acceptance+postflight pass (panel may still run); quarantined/red/stale dependency blocks; dispatch_plan = cap - in_flight slots filled critical-path-first (L1, spec 2026-09-16-clinic-levers-design.md)"}
 print(json.dumps(out))
 PYEOF
