@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [8.3.0] - 2026-09-16 — tiga lever klinik DIBANGUN (L1 top-up deterministik, L2 dag_shape_advisory, L3 diet PRE-CODE plan) — MEASUREMENT PENDING, `--lite` tetap opt-in
+
+Spec `docs/superpowers/specs/2026-09-16-clinic-levers-design.md` (dari bedah §2f laporan P3, aturan D owner). Penyebabnya MEASURED di run klinik lite 7.38.0 yang bersih; efek levernya BELUM diukur — butuh 2 run xs per lever lalu klinik sekali (EST ≈ $500–520, keputusan budget owner). Karena itu tidak ada klaim angka di rilis ini, `derived.lane` default tetap classic, dan setiap permukaan yang berubah berlabel MEASUREMENT PENDING.
+
+### Added
+- **L1 — top-up deterministik per implementer kembali** (`derive-ready-units.sh` schema `ready-units/2`): `dispatch_plan` = cap (`parallel_max`) − in-flight (`vault_layouts.inflight_units`, definisi tunggal yang dibaca gate + wave rail) = slot, diisi unit `ready` urutan critical-path-first (jumlah dependent langsung desc, lalu id), sisanya `deferred`, alasan eksplisit saat slot 0. Klausa lite di `batch-and-fanout.md`: controller mendispatch `dispatch_now` VERBATIM di pesan yang sama, tidak pernah menyusun burst/timer. Penyebab MEASURED: 7 burst berjarak 17–22 m, unit siap menunggu Σ ≈ 117 unit-menit (= 25 % idle).
+- **L2 — `dag_shape_advisory`** di `validate-unit-spec.sh` (advisory, bukan issue/status/exit): kedalaman > 4 hop → jalur kritis disebut; hub ≥ 3 dependent langsung; kandidat pecah > 6 langkah atau > 4 `target_files`; DAG sehat → `null`; aman terhadap siklus. Rail-nya di `plan-procedure.md` Step 4 + rute di tabel Step 5. Penyebab MEASURED: jalur kritis 5 hop ≈ seluruh bolt-stage begitu barrier panel hilang (amandemen #1 owner: penyebab DAG → fix di PLAN).
+- **L3 — diet PRE-CODE `plan`**: (a) `skills/plan/references/unit-grammar-cheatsheet.md` — bentuk mesin tiap field/produksi/anchor dengan regex disalin verbatim dari validator dan **di-pin parity** (regex yang hilang dari file-nya = suite merah) → model membaca sheet, bukan source validator; (b) penulisan unit per modul dalam satu pesan (≤ 8 Write); (c) review adversarial `risk: high` satu pesan N `Explore` paralel. Penyebab MEASURED: plan klinik 56 m (±10 m baca source validator, 13 m tulis 22 unit sekuensial, ±20 m review serial).
+
+### Notes
+- Pin: `tests/w2-fast-lane/test-l1-dispatch-plan.sh` a–f, `tests/unit-grammar-p1/test-dag-shape-advisory.sh` a–c, `tests/v8-plan/test-plan-precode-diet.sh` (parity ≥ 12 regex + 6 klausul prosa); regresi w2-lite, spawn-ceilings, xs-body, plan-skill hijau.
+- **Protokol ukur (belum dijalankan):** cache tree di commit ini → 2 run xs bersih (`p3-chain-xs.sh`, skenario/fixture/lane/model = run #2) → `p3-done-endpoints.py` + `p3-parallelism.py` + `p3-ship-verdict.py`; L1 lolos bila top-up terjadi di SETIAP return (ready-wait < 10 % bolt-stage), L2 bila jalur kritis ≤ 4 hop, L3 bila wall `plan` −30 %; baru klinik SEKALI untuk kriteria (b) (in-flight ≥ 2,5 DAN idle < 20 % DAN acceptance penuh DAN Critical 0) → `--lite` default di 9.0.0. Sebelum itu tidak ada klaim.
+
 ## [8.2.1] - 2026-09-16 — rail probe jaringan terbatas (hang 72 menit `curl --retry 40` di F.4) + kit pengukuran run Java tim
 
 ### Added
