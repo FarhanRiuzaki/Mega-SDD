@@ -333,7 +333,6 @@ property has under-specified the association.
 relation_derivation:
   fk_to_accessor:
     rule: '{singular}_id => ManyToOne property `{singular}` (camelCase), getter `get{Singular}()`'
-    accessor_template: 'get{PascalSingular}()'
     accessor_form: call
 ```
 

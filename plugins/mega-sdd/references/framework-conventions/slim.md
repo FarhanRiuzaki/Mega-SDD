@@ -309,7 +309,6 @@ cross_cutting_concerns:
 relation_derivation:
   fk_to_accessor:
     rule: '{singular}_id => accessor method `get{Singular}()` (PascalCase getter) on the domain entity'
-    accessor_template: 'get{PascalSingular}()'
     accessor_form: call
 ```
 
