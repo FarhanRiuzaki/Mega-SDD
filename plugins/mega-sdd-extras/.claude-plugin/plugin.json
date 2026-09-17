@@ -1,6 +1,6 @@
 {
   "name": "mega-sdd-extras",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Optional companion to mega-sdd: /mega-sdd-extras:slice turns ONE Figma page or frame (via your own Figma MCP — image or reference URL as the honest fallback) into framework-conventional UI code, render-checked through the mega-sdd Playwright MCP. Command-invocation only; never writes mega-sdd pipeline state; never starts a dev server; zero hooks, zero scripts, zero cost when not invoked.",
   "author": {
     "name": "Farhan Riuzaki"
