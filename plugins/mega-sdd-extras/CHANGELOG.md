@@ -2,6 +2,11 @@
 
 Separate from the core `mega-sdd` changelog (the repo-root `CHANGELOG.md` tracks the core plugin; its CI parity check anchors the core manifests to that file's newest tag).
 
+## [0.1.1] - 2026-09-17 — metadata: homepage/repository → GitHub
+
+### Changed
+- `plugin.json` `homepage`/`repository` + entri `marketplace.json` → `https://github.com/FarhanRiuzaki/Mega-SDD`, README install → `/plugin marketplace add FarhanRiuzaki/Mega-SDD` (persiapan rilis publik; sebelumnya nunjuk ke SCM internal kantor). Skill dan verb tidak berubah.
+
 ## [0.1.0] - 2026-09-06 — slice-design revived as a separate plugin (per-page, Figma MCP direct)
 
 Spec `docs/superpowers/specs/2026-09-06-mega-sdd-extras-slice-design.md` P0 (owner APPROVE 2026-09-06). Evidence: team-feedback triage 2026-08-23 §Item 2 — a real design→code user; the 4-page batch was the latency source; PNG exports lost the design tokens.
