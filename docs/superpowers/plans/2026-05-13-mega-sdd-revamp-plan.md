@@ -3625,7 +3625,7 @@ ENTRY POINTS
 
 ```bash
 # 1. Add marketplace
-/plugin marketplace add https://github.com/FarhanRiuzaki/Mega-SDD.git
+/plugin marketplace add FarhanRiuzaki/Mega-SDD
 
 # 2. Install plugin
 /plugin install mega-sdd
@@ -3792,7 +3792,7 @@ This repo hosts the `mega-sdd` Claude Code plugin and its marketplace listing.
 ## Quick start
 
 ```bash
-/plugin marketplace add https://github.com/FarhanRiuzaki/Mega-SDD.git
+/plugin marketplace add FarhanRiuzaki/Mega-SDD
 /plugin install mega-sdd
 /plugin install superpowers   # recommended companion
 ```
