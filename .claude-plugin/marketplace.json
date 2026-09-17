@@ -10,7 +10,7 @@
       "name": "mega-sdd",
       "source": "./plugins/mega-sdd",
       "description": "Spec-Driven Development for AI dev: intent → units → bolts pipeline with anti-hallucination guarantees and brownfield codebase grounding.",
-      "version": "8.4.1",
+      "version": "8.4.2",
       "author": {
         "name": "Farhan Riuzaki"
       },
@@ -38,7 +38,7 @@
       "name": "mega-sdd-extras",
       "source": "./plugins/mega-sdd-extras",
       "description": "Optional companion to mega-sdd: /mega-sdd-extras:slice — ONE Figma page/frame per run (your own Figma MCP; image/URL fallback) into framework-conventional UI code, render-checked via the mega-sdd Playwright MCP. Zero hooks/scripts; zero cost when not invoked.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "author": {
         "name": "Farhan Riuzaki"
       },
