@@ -77,9 +77,9 @@ This is the canonical install reference — other docs link here.
 
 ```bash
 # In Claude Code:
-/plugin marketplace add https://github.com/FarhanRiuzaki/Mega-SDD.git
+/plugin marketplace add FarhanRiuzaki/Mega-SDD
 /plugin install mega-sdd
-/plugin install superpowers   # recommended companion (TDD discipline)
+/plugin install superpowers@claude-plugins-official   # recommended companion (TDD discipline) — official Anthropic marketplace, no extra `marketplace add` needed
 /plugin install mega-sdd-extras   # optional: /mega-sdd-extras:slice — one Figma page → UI code (separate plugin, zero cost if unused)
 ```
 
