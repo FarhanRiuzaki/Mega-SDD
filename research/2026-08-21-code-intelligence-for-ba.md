@@ -40,7 +40,7 @@ Ini membalik cara pengambilan keputusan. Pertanyaannya bukan *"MCP server mana y
 |---|---|---|---|
 | **Retrieval** | menemukan *di mana* kodenya, untuk **semua** repo | `zereight/gitlab-mcp` (MIT) di atas **GitLab Advanced Search** | ⚠️ butuh tier **Premium/Ultimate** — **uji dulu** |
 | **Makna** | *apa fungsinya, untuk apa, seberapa yakin* | artifact mega-sdd (`graph.json` layer `symbol`) | ✅ **sudah jalan (v6.20.0)** |
-| **Jawaban** | LLM baca kode segar saat ditanya | AI gateway kantor (`192.0.2.20:8001`) | ✅ **sudah ada** |
+| **Jawaban** | LLM baca kode segar saat ditanya | AI gateway kantor (`<gateway-internal>:8001`) | ✅ **sudah ada** |
 
 **Prinsipnya:** ***pre-compute peta-nya, recompute makna-nya.***
 Jangan menyimpan prosa jadi ("cara kerja fallback login adalah X") sebagai sumber kebenaran — prosa itu basi tanpa ketahuan (§1b, terukur). Simpan **peta + anchor + confidence**, biar LLM membaca kode aslinya saat ditanya.
@@ -289,7 +289,7 @@ Layer vault (apa yang **dimaksud**) dan layer code (apa yang **ada**) bertemu di
 ```mermaid
 flowchart TD
     BA["Pertanyaan BA<br/>mis. login-nya pakai apa, gimana fallback-nya?"]
-    GW["AI Gateway kantor 192.0.2.20:8001<br/>LLM baca kode SEGAR saat ditanya"]
+    GW["AI Gateway kantor<br/>LLM baca kode SEGAR saat ditanya"]
     JW["Jawaban ter-anchor<br/>file:line + confidence + verdict"]
 
     subgraph RET["LAPIS RETRIEVAL - semua repo, kebasian terbatas dan ter-SLA"]
@@ -402,6 +402,6 @@ Jangan naikkan statusnya tanpa pengujian:
 - claude-context (Zilliz) — dokumentasi `docs/getting-started/environment-variables.md`
 
 **Dokumen internal terkait**
-- `docs/mega-sdd/gateway-mcp-guide.md`
-- `docs/mega-sdd/keputusan-arsitek-gateway.md`
+- `docs/mega-sdd/gateway-mcp-guide.md` (rekaman internal tim — dikeluarkan dari repo publik di 8.4.2, tetap ada di SCM kantor)
+- `docs/mega-sdd/keputusan-arsitek-gateway.md` (rekaman internal tim — dikeluarkan dari repo publik di 8.4.2, tetap ada di SCM kantor)
 - `docs/superpowers/specs/2026-08-21-graph-code-layer.md`
