@@ -15,7 +15,7 @@ Optional companion plugin to [`mega-sdd`](../mega-sdd/README.md), same marketpla
 ## Install
 
 ```
-/plugin marketplace add https://github.com/FarhanRiuzaki/Mega-SDD.git   # once, if not already
+/plugin marketplace add FarhanRiuzaki/Mega-SDD   # once, if not already
 /plugin install mega-sdd-extras
 ```
 
