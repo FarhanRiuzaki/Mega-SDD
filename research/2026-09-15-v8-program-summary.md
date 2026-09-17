@@ -73,7 +73,7 @@ Program v8 memotong **tiga fase model pra-kode (intent → bind → units) jadi 
 - **Penyerial sisa bolt-stage** kalau klinik 8.0.0 masih <2,5 in-flight: bedah ulang dengan metode P3 §2 (bukan lever baru).
 - **P4 field run Windows+Falcon** (angka resmi; `test-spawn-ceilings.sh` jalur JIT) — hanya owner/tim di kantor.
 - Seam handoff D4 (`metrics` flow-style di execute-bolts → detect-drift), sel xs→sonnet yang tidak pernah terpicu di fixture, `units/_index.md` refresh status setelah bolts, skema `blockers[]` — kelas parser mini-YAML.
-- **SCM leg** (git.example.com) PENDING sejak 53406cc — butuh VPN kantor; `sudo xcodebuild -license` di mesin runner untuk test stub-env lokal.
+- **SCM leg** (SCM internal kantor) PENDING sejak 53406cc — butuh VPN kantor; `sudo xcodebuild -license` di mesin runner untuk test stub-env lokal.
 
 ## 5. Untuk tim (bahasa manusia)
 
