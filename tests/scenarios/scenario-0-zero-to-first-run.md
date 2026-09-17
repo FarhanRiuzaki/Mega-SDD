@@ -65,12 +65,12 @@ On first launch, Claude Code opens a browser window asking you to log in with yo
 In your running Claude Code session, type:
 
 ```
-/plugin marketplace add https://github.com/FarhanRiuzaki/Mega-SDD.git
+/plugin marketplace add FarhanRiuzaki/Mega-SDD
 /plugin install mega-sdd
-/plugin install superpowers
+/plugin install superpowers@claude-plugins-official
 ```
 
-(`superpowers` is an optional companion plugin that adds TDD discipline to code execution — recommended, not required.)
+(`superpowers` is an optional companion plugin that adds TDD discipline to code execution — recommended, not required. It lives in the official Anthropic marketplace, which Claude Code already knows, so no extra `marketplace add` is needed.)
 
 Then restart the session so the new commands register: exit (`Ctrl+C` twice), run `claude` again — or just type `/reload-plugins` if your version supports it.
 
