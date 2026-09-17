@@ -71,3 +71,14 @@ __pycache__/
 /package.json
 /package-lock.json
 /.playwright-mcp/
+
+# Public-repo hygiene (8.4.2) — never tracked:
+# per-machine Claude Code permission allowlist
+.claude/settings.local.json
+# local session notes
+Claude outputs/
+# raw benchmark run logs — full `claude -p` stream + stderr (tens of MB; carry the
+# author email + local paths from `git log` output). The measured summaries next to
+# them (extract.json, run.meta, quality.json, vault-snapshot/) stay tracked.
+benchmarks/results/**/stream.jsonl
+benchmarks/results/**/stderr.log
