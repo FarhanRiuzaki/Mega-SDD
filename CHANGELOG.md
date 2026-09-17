@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [8.4.2] - 2026-09-17 — jalur install publik: semua referensi repo pindah ke GitHub (docs + manifest saja)
+
+Persiapan rilis publik di `github.com/FarhanRiuzaki/Mega-SDD`. Sebelumnya README, manifest, dan beberapa contoh masih nunjuk ke host SCM internal kantor yang cuma bisa diakses dari jaringan internal — instruksi install-nya gagal untuk user publik, dan hostname internal ikut ter-publish. Nol perubahan perilaku pipeline, hook, gate, maupun skrip.
+
+### Changed
+- **Jalur install** — `README.md` (blok Quick start), `plugins/mega-sdd-extras/README.md`, `commands/update-plugin.md` step 1, `tests/scenarios/scenario-0-zero-to-first-run.md` step 3: `/plugin marketplace add` sekarang pakai bentuk GitHub shorthand `FarhanRiuzaki/Mega-SDD` (bentuk `owner/repo` per dokumentasi Claude Code saat ini; URL `https://github.com/…` dengan atau tanpa `.git` juga valid).
+- **Manifest** — `homepage`/`repository` di `plugin.json` core + extras dan kedua entri `marketplace.json` → URL GitHub. Extras 0.1.0 → 0.1.1 (metadata saja, verb tidak berubah).
+- **Skill** — `emit-fsd` 1.7.3 → 1.7.4: `next_action` halt `template_slot_unfilled` nunjuk ke GitHub issues; `emit-agents-md` 1.7.0 → 1.7.1: contoh §8 interop notes di `references/agents-md-schema.md` nunjuk ke repo GitHub.
+- **Test** — `tests/publisher/test-publish-artifacts.sh`: fixture remote → `git.example.com`, fixture gateway office-shape → `192.0.2.20:8001` (alamat dokumentasi RFC 5737; bentuk `http://IP:port` yang dipin arm w1–w3 tetap sama). 41 ok / 0 fail.
+- Entri `[8.2.1]` › Notes: hostname SCM di catatan push dinetralkan — makna dan urutan entri tidak berubah.
+
+### Notes
+- **Dua doc gateway internal dikeluarkan dari repo publik** — `docs/mega-sdd/keputusan-arsitek-gateway.md` + `docs/mega-sdd/gateway-mcp-guide.md` (`git rm`; memuat IP/endpoint gateway, nama service, topologi proxy, dan governance per-NIP kantor — tetap ada di SCM kantor dan di history). Setiap rujukan ke keduanya (CHANGELOG 6.19.x, spec `2026-08-17-artifact-publisher-gateway.md`, tiga research) diberi catatan "dikeluarkan dari repo publik di 8.4.2"; kontrak marker publik tetap `docs/gateway-contract.md`.
+- **Dokumen internal lain diredaksi minimal** — hostname SCM → `git.example.com/grup/repo` / `FarhanRiuzaki/Mega-SDD` / "SCM internal kantor", IP gateway → placeholder `<gateway-internal>` di `docs/superpowers/specs/2026-08-21-graph-code-layer.md`, dua doc revamp `2026-05-13`, `research/2026-09-10-v8-p0-baseline.md`, `research/2026-09-15-v8-program-summary.md`, `research/2026-08-21-code-intelligence-for-ba.md`.
+- **Tree hygiene untuk rilis publik** — `.claude/settings.local.json` (allowlist per-mesin) dan 20 log mentah benchmark `benchmarks/results/**/{stream.jsonl,stderr.log}` (34 MB; memuat email author + path lokal dari output `git log`) di-`git rm --cached` dan masuk `.gitignore` bersama `Claude outputs/`; ringkasan hasil ukur yang dirujuk CHANGELOG (`extract.json`, `run.meta`, `quality.json`, `vault-snapshot/`) tetap ter-track.
+- **Install superpowers** — README Quick start + scenario-0: `/plugin install superpowers@claude-plugins-official` (marketplace resmi Anthropic, sesuai README superpowers saat ini); marketplace ini memang tidak mendaftarkan plugin itu, jadi bentuk lama `/plugin install superpowers` gagal.
+- History git tidak di-rewrite; remote lokal tidak diubah.
+
 ## [8.4.1] - 2026-09-16 — follow-up debt gate: rename heading/ToC ber-archaeology + sel rationale model-tiers (docs-only)
 
 Spec `docs/superpowers/specs/2026-09-16-doc-audit-debt-gate-design.md §5`. Diet 8.4.0 sengaja tidak menyentuh heading (anchor `§` + mirror `## Contents` ikut bergeser); rilis ini merapikannya dalam satu skrip assert-once, setiap mirror ikut dipindah.
@@ -100,7 +118,7 @@ Spec `docs/superpowers/specs/2026-09-16-clinic-levers-design.md` (dari bedah §2
 
 ### Notes
 - Pin: `tests/wave-rail/test-bounded-probe-rail.sh` (6 bentuk ditolak menyebut unit in-flight, 8 bentuk lolos termasuk pesan commit yang memuat `--retry 40`, hazard ganda → satu deny wave rail, jendela tertutup saat postflight mendarat, plugin-dev bebas, kontrak implementer + runner acceptance tetap 120 s); `test-wave-commit-rail.sh` regresi hijau.
-- Sisa dari lanjutan 13 §3 laporan P3: (2) lever klinik §2f = butuh run pengukuran berbayar (xs dulu, lalu klinik) → keputusan owner; (4) P4 field run Windows+Falcon = owner/tim di kantor; (5) push scm = VPN kantor (`Could not resolve host: git.example.com` dari luar, dicoba 2026-09-16).
+- Sisa dari lanjutan 13 §3 laporan P3: (2) lever klinik §2f = butuh run pengukuran berbayar (xs dulu, lalu klinik) → keputusan owner; (4) P4 field run Windows+Falcon = owner/tim di kantor; (5) push scm = VPN kantor (`Could not resolve host` untuk SCM internal kantor dari luar, dicoba 2026-09-16).
 
 ## [8.2.0] - 2026-09-16 — playbook code style R2: `## Code style (self-documenting)` di 25/25 pack + section jadi WAJIB di lint pack + satu fakta dikoreksi
 
@@ -1235,7 +1253,7 @@ Also in this release, from a real office `settings.json` supplied the same day:
 - **Windows office-rung defect fixed** — the rung's precondition was `command -v mega-code`, but the installed artifact on Windows is `mega-code.cmd`; a laptop with perfect settings could stay disarmed. Now probes `mega-code`/`mega-code.cmd`/`mega-code.exe` (shell builtins, no extra fork). Arms w1–w3 are built from the real file's shape — quoted absolute `.cmd` path + `http://` internal URL — and confirm the rung arms, mints through that same path, keeps the token out of argv, and still stays inert when the session is not routed there.
 - **reuse-index parsing accepts BOTH shapes in the wild** — the documented schema form (top-level categories, block entries, `path`/`line`, top-level `truncated`) and the form deep-scan actually emits (nested `reuse_index:`, inline flow entries, `_source`). Reading only one silently produced an empty code layer on the other. `truncated: {..: false}` correctly reads as not-truncated.
 
-The field-test finding that triggered this release (the 2026-08-20 run produced nothing because the session was on 6.18.0 — 13 minutes before the publisher existed on that laptop), plus the open items for the office teams (mega-code version floor, `project_id` normalization rule, symbol-index path), are recorded in `docs/mega-sdd/keputusan-arsitek-gateway.md`.
+The field-test finding that triggered this release (the 2026-08-20 run produced nothing because the session was on 6.18.0 — 13 minutes before the publisher existed on that laptop), plus the open items for the office teams (mega-code version floor, `project_id` normalization rule, symbol-index path), are recorded in `docs/mega-sdd/keputusan-arsitek-gateway.md` (internal team record — removed from the public repo in 8.4.2, kept in the office SCM).
 
 ## [6.19.2] - 2026-08-20 — office governance: mega-code sessions MUST run mega-sdd (detection contract + version-floor signal)
 
@@ -1244,7 +1262,7 @@ User mandate (governance kantor): sesi yang di-provision mega-code wajib menjala
 ### Added
 - **`plugin_version` in the publish manifest** (additive, schema stays `mega-sdd-publish/1`; read from the plugin's own `plugin.json`, fail-open `""`) — the gateway's version-floor audit signal per NIP/project.
 - **`tests/hooks/trace-governance-contract.test.sh`** — pins the STABLE GOVERNANCE CONTRACT: `mega-sdd-trace:turn` emitted verbatim in `.mega-sdd` projects, suppressed by `trace_tag: false`, absent outside mega-sdd projects; rename-tripwire on both marker strings in the emitting hooks (session-marker paths already pinned in `session-start.test.sh`). Hard checks at the gateway must key on `mega-sdd-trace:session` — `trace_tag: false` only kills `:turn`.
-- **Docs:** `keputusan-arsitek-gateway.md` §Governance (enforcement ladder + Mermaid flow + tegas: auto-repair before refuse, hard check keyed on `:session`, non-Claude-Code traffic out of scope) and `gateway-mcp-guide.md` §8 (marker table + opt-out semantics for the middleware/dashboard build). Verification scoped proportionally (additive fail-open field + doc/test pins): tests + mutation on the new arm, no blind round.
+- **Docs:** `keputusan-arsitek-gateway.md` §Governance (enforcement ladder + Mermaid flow + tegas: auto-repair before refuse, hard check keyed on `:session`, non-Claude-Code traffic out of scope) and `gateway-mcp-guide.md` §8 (marker table + opt-out semantics for the middleware/dashboard build) — both internal team docs, removed from the public repo in 8.4.2. Verification scoped proportionally (additive fail-open field + doc/test pins): tests + mutation on the new arm, no blind round.
 
 ## [6.19.1] - 2026-08-20 — publisher office-rung: "mega-code manages this SESSION", never "binary exists"
 
@@ -1260,7 +1278,7 @@ User requirement folded same-day (spec §Amendment v6.19.1): vanilla Claude must
 
 ## [6.19.0] - 2026-08-20 — the artifact publisher: mega-sdd artifacts flow to the office AI gateway
 
-Ships spec `2026-08-17-artifact-publisher-gateway.md` (brainstorm-approved; wire format + all contracts pinned with the gateway team, who are building ingest/MCP/:8002 in parallel per `docs/mega-sdd/gateway-mcp-guide.md` + `keputusan-arsitek-gateway.md`).
+Ships spec `2026-08-17-artifact-publisher-gateway.md` (brainstorm-approved; wire format + all contracts pinned with the gateway team, who are building ingest/MCP/:8002 in parallel per `docs/mega-sdd/gateway-mcp-guide.md` + `keputusan-arsitek-gateway.md` — both internal team docs, removed from the public repo in 8.4.2).
 
 ### Added
 - **`scripts/publish-artifacts.sh`** — fail-open publisher: collects graph/vault/binding/units/KB/codebase-map/symbol-index per vault, delta-by-sha (`.publish-state.json`), FULL manifest each push (gateway self-heals; `missing[]` evicts for resend), pinned wire format (raw `application/gzip`, `manifest.json` FIRST root tar entry), `POST <gateway>/mega-sdd/ingest`. Credential probe ladder: explicit env override → office path (`ANTHROPIC_BASE_URL` + bounded `mega-code get-token`) → config.yaml; no credentials → inert. Every failure exits 0 (401 → "run mega-code login" + queue; network → queue). Token never logged. No PII (work_dir = basename only).
