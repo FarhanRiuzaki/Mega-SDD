@@ -143,7 +143,7 @@ All routing rules per routing-rules.md fire deterministically (incl. R-FACTORY-4
 
 ### DC7: AI technical decisions never pause the chain and never route to resolve-oq
 - **Setup:** `--deep` chain; the vault carries tech OQs the AI decided (recommend-mode, all fields valid — per bind-codebase.test.md TQ5), one of them P1; zero CONFLICTs and no open business OQs
-- **Expect:** bind-codebase emits `status: completed` (NOT `paused`); orchestrator auto-invokes `generate-units`; the decisions are listed in binding.md "## AI Technical Decisions" (information, never an ask); because a decided OQ is `status: resolved`, the `oq_gate` (`pending_p0_p1`) does NOT fire for the P1 tech OQ and `resolve-oq` is never inserted into the chain — only an open P1 *business* OQ can do that
+- **Expect:** bind-codebase emits `status: completed` (NOT `paused`); orchestrator auto-invokes `generate-units`; the decisions are listed in binding.md "## AI Technical Decisions" (information, never an ask); because a decided OQ is `status: resolved`, the `oq_gate` (`pending_p0_p1`) does NOT fire for the P1 tech OQ and `resolve-oq` is never inserted into the chain — only an open P1 *business* OQ can do that; an open P1 `[tech / scan]` OQ is bind's to resolve and is NOT counted in `pending_p0_p1` either
 
 ## Resume mechanics (v1.3+, Iter 4)
 

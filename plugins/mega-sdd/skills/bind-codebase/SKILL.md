@@ -1,6 +1,6 @@
 ---
 name: bind-codebase
-version: 2.20.0
+version: 2.20.1
 description: Validate a vault against codebase-map.md (+ KB secondary), producing binding.md with CONFIRMED / CONFLICT / OQ verdicts per claim + an Implementation State Map; BLOCKS unit generation while conflicts remain. Use when the user says "bind vault to code", "validate vault against repo", "cek vault vs codebase", "binding gate", or orchestrate-flow routes a brownfield vault here.
 ---
 
@@ -133,7 +133,7 @@ This YAML is the canonical halt artifact (for orchestrate-flow consumption); the
 - Ambiguous evidence → OQ, not CONFIRMED.
 - `binding.md` claim text is verbatim from the vault — no paraphrasing.
 - Implementation-state defaults to `UNKNOWN`/low when undecidable; never silently `IMPLEMENTED` without a concrete anchor. State classification **annotates** CONFIRMED claims — it does NOT relax the gate; CONFLICT still blocks.
-- Tech OQs are DECIDED here, never handed to a human: `scan` single match → resolved; no/multiple matches → the AI picks (reuse-first order) and records it `(AI decision …)` with a real citation — never an invented anchor, never `[tech / blocking]`. Only a FACT no source contains, or a pick that reads as business, goes back to the stakeholder as `[business]`.
+- Tech OQs are DECIDED here, never handed to a human: `scan` single match → resolved; no/multiple matches → the AI picks (reuse-first order — `generate-intent/references/vault-core.md §AI technical decisions`) and records it `(AI decision …)` with a real citation — never an invented anchor, never `[tech / blocking]`. Only a FACT no source contains, or a pick that reads as business, goes back to the stakeholder as `[business]`.
 - A tech `recommend` decision is accepted only with verified citations + `rationale` + `fallback_if_wrong`; unverifiable citations → halt `oq_recommend_citation_invalid`. It is listed in `binding.md ## AI Technical Decisions` (information only — it requests nothing) and stays overridable via `resolve-oq single-oq <OQ-ID>`.
 - Suggested Hard Rules are promoted only from KB `[VERIFIED]` markers and only when anchored in the codebase-map; `[INFERRED]`/`[OPEN]` items → Anti-patterns only.
 

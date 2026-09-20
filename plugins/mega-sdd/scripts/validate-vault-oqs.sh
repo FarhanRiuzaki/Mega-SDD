@@ -64,12 +64,21 @@ if [ -f "$_RPR_HELPER" ] && [ -n "${CWD:-}" ]; then
 fi
 
 [ -z "$CWD" ] && { echo "ERROR: --cwd" >&2; exit 2; }
-[ -z "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ] && exit 0
+if [ -z "$FILE_PATH" ] || [ ! -f "$FILE_PATH" ]; then
+  # the authoring-time gate must never read "nothing to check" as a pass
+  [ "$STRICT_TECH" = "1" ] && { echo "STATUS: ERROR"; echo "ERROR: --strict-tech needs an existing --file-path (layout-3: <vault>/context.md; layout-2: <vault>/vault.json or <vault>/constraints.md) — got '${FILE_PATH:-<none>}'" >&2; exit 2; }
+  exit 0
+fi
 
 # Only validate vault doc files
 case "$FILE_PATH" in
   *.mega-sdd/vaults/*/0[1-6]-*.md|*.mega-sdd/vaults/*/vault.json|*.mega-sdd/vaults/*/context.md) ;;   # + v8 P2 layout-3
-  *) exit 0 ;;
+  # layout-2: constraints.md is the ONE authored OQ home. It was missing here while
+  # run-analyze.sh fed exactly these layout-2 names, so `analyze` never ran this
+  # validator on a layout-2 vault and reported a blind PASS.
+  *.mega-sdd/vaults/*/constraints.md) ;;
+  *) [ "$STRICT_TECH" = "1" ] && { echo "STATUS: ERROR"; echo "ERROR: --strict-tech cannot validate '$FILE_PATH' (not a vault OQ surface)" >&2; exit 2; }
+     exit 0 ;;
 esac
 
 STATE_FILE="${CWD}/.mega-sdd/.vault-oqs-state.json"
@@ -166,12 +175,11 @@ TECH_TEXT_RE = re.compile(
 BUSINESS_TEXT_RE = re.compile(
     r"\bshould\s+we\s+support\b|\bcount\s+as\s+in[- ]scope\b"
     r"|\bwhat\s+is\s+the\s+limit\b|\bmax(?:imum)?\s+value\s+for\b"
-    r"|\bregulated\b|\bregulat(?:ion|ory)\b|\bPOJK\b|\bOJK\b|\bcompliance\b"
-    r"|\bedge\s+case\b"
-    r"|\bstakeholders?\b|\bproduct\s+owner\b|\blegal\b|\bfinance\s+team\b"
+    r"|\bregulated\b|\bregulat(?:ion|ory)\b|\bPOJK\b|\bOJK\b"
+    r"|\bstakeholders?\b|\bproduct\s+owner\b|\bfinance\s+team\b"
     r"|\bpricing\b|\brefunds?\b|\bfees?\b|\bpenalt(?:y|ies)\b|\binterest\s+rate\b"
     r"|\bretention\s+period\b"
-    r"|\bauthoritative\b|\bcontradict\w*|\bsource\s+of\s+truth\b"
+    r"|\bauthoritative\b|\bcontradict\w*"
     r"|\[LOCKED\]"
     r"|\bregulasi\b|\bkepatuhan\b|\bbiaya\b|\bdenda\b|\bbunga\b|\bretensi\b"
     r"|\bkebijakan\s+bisnis\b|\bkeputusan\s+bisnis\b|\bpemangku\s+kepentingan\b"
@@ -194,9 +202,17 @@ BUSINESS_QUESTION_RE = re.compile(
     r"|\bberbayar\b|\blisensi\b|\banggaran\b|\blangganan\b"
     r"|\bdeployment\s+target\b|\bwhere\s+will\s+the\s+app\s+run\b|\bself[- ]hosted\b|\bhosting\b"
     r"|\bperformance\s+targets?\b|\bSL[AO]s?\b"
-    r"|\b(?:technology|tech)\s+stack\b",
+    r"|\b(?:technology|tech)\s+stack\b"
+    # words that are a business signal in a QUESTION but everyday engineering
+    # vocabulary in a pick / rationale — question text only
+    r"|\bcompliance\b|\blegal\b|\bedge\s+case\b|\bsource\s+of\s+truth\b"
+    # the Design-Source rail: a design system with no source is never the AI's
+    # to pick ("no defaulted standards" — style, palette, typography, WCAG level)
+    r"|\bdesign[- ]source\b|\bdesign\s+system\b|\bdesign\s+tokens?\b|\bpalette\b|\btypography\b"
+    r"|\bWCAG\b|\ba11y\s+level\b|\bbrand\s+voice\b",
     re.IGNORECASE,
 )
+DESIGN_SOURCE_TAG_RE = re.compile(r"^OQ-DESIGN-SOURCE\b", re.IGNORECASE)
 strict_tech = os.environ.get("STRICT_TECH", "0") == "1"
 # layout-3 (`context.md`) has no bind phase after authoring, so an open `scan`
 # OQ there has no resolver left — it is undecided too (layout-2 resolves `scan`
@@ -267,7 +283,8 @@ for oq, window in oq_blocks:
         # OQ text reads tech (matches the heuristic table) but is NOT tagged tech —
         # the lazy-default-to-business blind spot. Advisory (not in the Branch-10
         # blocking filter): surfaces a tag the classifier should have caught.
-        if not has_tech_category and TECH_TEXT_RE.search(window):
+        if not has_tech_category and TECH_TEXT_RE.search(window) \
+                and not (BUSINESS_TEXT_RE.search(window) or BUSINESS_QUESTION_RE.search(window)):
             mt = TECH_TEXT_RE.search(window)
             issues.append({
                 "halt_type": "oq_misclassified_tech",
@@ -291,14 +308,37 @@ for oq, window in oq_blocks:
 # Absent → skip these checks (advisory, graceful). This replaces the pre-fix markdown
 # `mode:` / `scan_target:` line regexes, which matched a grammar the vault never wrote
 # (dead detection + false-positive on every real vault).
-vjson_path = os.path.join(os.path.dirname(file_path), "vault.json")
+vdir = os.path.dirname(file_path)
+vjson_path = os.path.join(vdir, "vault.json")
 vj_oqs = []
+vj = {}
+vj_ok = False
 if os.path.isfile(vjson_path):
     try:
         vj = json.load(open(vjson_path, errors="replace"))
         vj_oqs = vj.get("open_questions") or []
+        vj_ok = isinstance(vj, dict) and isinstance(vj.get("open_questions"), list)
     except Exception:
-        vj_oqs = []
+        vj, vj_oqs = {}, []
+# The authoring-time gate must not go blind because the derive step was skipped
+# or wrote garbage: fall back to the markdown OQ home (the same parser the deriver
+# uses). JSON-only fields are absent there, so the field-completeness checks are
+# skipped in this mode — the two decision rails still run.
+md_fallback = False
+if strict_tech and not vj_ok:
+    for _nm in ("context.md", "constraints.md"):
+        _hp = os.path.join(vdir, _nm)
+        if os.path.isfile(_hp):
+            try:
+                _md = open(_hp, encoding="utf-8", errors="replace").read()
+                if _nm == "context.md":
+                    _md = vault_md.v3_sections(_md).get("open questions", "")
+                vj_oqs = vault_md.parse_open_questions(_nm, _md, [])
+                md_fallback = True
+            except Exception:
+                vj_oqs = []
+            break
+greenfield = str((vj or {}).get("implementation_mode") or "").strip().lower() == "new"
 for oqe in vj_oqs:
     if not isinstance(oqe, dict):
         continue
@@ -309,7 +349,7 @@ for oqe in vj_oqs:
     category = str(oqe.get("category") or "").strip().lower()
     rmode = str(oqe.get("resolution_mode") or "").strip().lower()
     # tech OQ MUST declare a resolution_mode.
-    if category.startswith("tech") and not rmode:
+    if category.startswith("tech") and not rmode and not md_fallback:
         issues.append({
             "halt_type": "oq_tech_missing_mode",
             "detail": f"OQ {tag} has category: tech but no resolution_mode (expected scan / recommend / hard_rule / blocking)",
@@ -318,7 +358,7 @@ for oqe in vj_oqs:
         })
         continue
     # resolution_mode: scan MUST populate scan_query.
-    if rmode == "scan" and not str(oqe.get("scan_query") or "").strip():
+    if rmode == "scan" and not md_fallback and not str(oqe.get("scan_query") or "").strip():
         issues.append({
             "halt_type": "oq_scan_missing_query",
             "detail": f"OQ {tag} has resolution_mode: scan but scan_query is empty",
@@ -327,7 +367,7 @@ for oqe in vj_oqs:
         })
     # resolution_mode: recommend MUST carry recommendation + rationale + >=1
     # scan_citations + fallback_if_wrong (vault-core.md §Validation rules).
-    if rmode == "recommend":
+    if rmode == "recommend" and not md_fallback:
         missing_fields = [f for f in ("recommendation", "rationale", "fallback_if_wrong")
                           if not str(oqe.get(f) or "").strip()]
         cites = oqe.get("scan_citations")
@@ -347,8 +387,10 @@ for oqe in vj_oqs:
     # hard — only a vault written under the business-only rule carries
     # `resolved_by: ai`, so no older vault can trip it.
     if str(oqe.get("resolved_by") or "").strip().lower() == "ai":
-        hay = " ".join(str(oqe.get(f) or "") for f in ("text", "recommendation", "rationale", "resolution"))
-        bm = BUSINESS_TEXT_RE.search(hay) or BUSINESS_QUESTION_RE.search(str(oqe.get("text") or ""))
+        hay = " ".join(str(oqe.get(f) or "") for f in ("text", "recommendation", "resolution"))
+        bm = (BUSINESS_TEXT_RE.search(hay) or BUSINESS_QUESTION_RE.search(str(oqe.get("text") or ""))
+              or re.search(r"\[LOCKED\]", str(oqe.get("rationale") or ""))
+              or DESIGN_SOURCE_TAG_RE.match(tag))
         if not category.startswith("tech") or bm:
             issues.append({
                 "halt_type": "oq_decided_business_signal",
@@ -367,12 +409,14 @@ for oqe in vj_oqs:
     # tech is answerable from the codebase / pack / docs / convention, so the
     # AI decides it (`→ **Resolved vX** (AI decision, <date>): <pick>`); what
     # it genuinely cannot answer is a missing FACT → re-tag `[business]`.
-    undecided_modes = {"recommend", "blocking"} | ({"scan"} if is_layout3 else set())
-    if category.startswith("tech") and status_v == "open" and rmode in undecided_modes:
+    undecided_modes = {"recommend", "blocking"} | ({"scan"} if (is_layout3 or greenfield) else set())
+    if category.startswith("tech") and status_v in ("open", "deferred") and rmode in undecided_modes:
         issues.append({
             "halt_type": "oq_tech_undecided",
             "detail": (
-                f"OQ {tag} is tech / {rmode} and still open — technical questions are decided by "
+                f"OQ {tag} is tech / {rmode} and still {status_v}"
+                + (" (a deferral resurfaces to a human just like an open one)" if status_v == "deferred" else "")
+                + " — technical questions are decided by "
                 "the AI (reuse-first: codebase → pack → installed dependency → current docs → "
                 "simplest option), recorded with rationale + citation + fallback_if_wrong. If the "
                 "answer is a FACT no source contains, re-tag it `[business]` with the reason."
@@ -380,6 +424,21 @@ for oqe in vj_oqs:
             "oq_id": tag,
             "resolution_mode": rmode,
             "severity": "hard" if strict_tech else "advisory",
+        })
+    if strict_tech and category.startswith("tech") and status_v == "resolved" \
+            and str(oqe.get("resolved_by") or "").strip().lower() != "ai":
+        issues.append({
+            "halt_type": "oq_tech_undecided",
+            "detail": (
+                f"OQ {tag} is tech and resolved but carries no `(AI decision, <date>)` marker — if the AI "
+                "decided it, the marker was translated or mangled (it is a Tier-1 token: keep it in "
+                "English, exactly `→ **Resolved vX.Y** (AI decision, <date>): <pick>`), and without it "
+                "the business-signal rail and the FSD decisions table skip this OQ. If a human answered "
+                "it, ignore this note."
+            ),
+            "oq_id": tag,
+            "resolution_mode": rmode,
+            "severity": "advisory",
         })
 
 # ═══════════════════════════════════════════════════════════════════════════

@@ -118,7 +118,7 @@
 - **Setup:** vault has OQ-AR-1 `category: tech`, `resolution_mode: scan`, `confidence: high`, `scan_query: codebase-map §test_frameworks`; codebase-map has exactly one entry `phpunit` in §test_frameworks
 - **Run:** `/mega-sdd:bind-codebase ./vault`
 - **Expect:**
-  - OQ-AR-1 flipped to `status: resolved`, `resolution: phpunit`, `scan_citations: [phpunit.xml:1]` in vault.json
+  - OQ-AR-1 flipped to `status: resolved`, `resolution: phpunit`, `scan_citations: [phpunit.xml:1]` in vault.json — the annotation carries `(AI decision, <date>)` so it derives `resolved_by: ai` (no human answered it; it must not read as a human answer)
   - binding.md "## Tech-OQ Auto-Resolved (Scan)" table includes OQ-AR-1
   - Pipeline NOT blocked (oq count decreases by 1)
 

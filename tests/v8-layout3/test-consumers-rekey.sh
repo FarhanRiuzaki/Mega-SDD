@@ -70,10 +70,16 @@ t = sys.argv[1]; prj = os.path.join(t, "proj3"); v = os.path.join(prj, ".mega-sd
 shutil.copy(os.path.join(t, "proj", ".mega-sdd", "vaults", "v", "context.md"), v)   # context.md ONLY, no vault.json
 ok = state_probes.has_vault(prj)
 oq = state_probes.probe_oq_counts(v)
-print(json.dumps({"has_vault": ok, "oq": oq}))
+# the fixture's only open P1 is `[tech / scan]` — bind-codebase resolves it, never a
+# human, so it must NOT trip the OQ gate; an open P1 [business] OQ still must
+cm = os.path.join(v, "context.md")
+open(cm, "a", encoding="utf-8").write("- [ ] **OQ-FL-9** [P1] [business] [origin: context.md#F-U-001]: which screen opens after submit? — resolve: PM\n")
+oq2 = state_probes.probe_oq_counts(v)
+print(json.dumps({"has_vault": ok, "oq": oq, "oq_with_business_p1": oq2}))
 PYX
 )
-echo "$PY_OUT" | grep -q '"has_vault": true' && echo "$PY_OUT" | grep -q '"pending_p0_p1": 1' && pass "R6: has_vault true + OQ fallback P1 open=1 from context.md alone" || fail "R6: $PY_OUT"
+echo "$PY_OUT" | grep -q '"has_vault": true' && echo "$PY_OUT" | grep -q '"oq": {"pending_p0_p1": 0' && echo "$PY_OUT" | grep -q '"oq_with_business_p1": {"pending_p0_p1": 1' \
+  && pass "R6: has_vault true + OQ fallback from context.md alone — an open P1 tech/scan never gates (0), an open P1 business does (1)" || fail "R6: $PY_OUT"
 # R7 — claims ledger parity
 cp -R "$FIX2" "$T/v2"; rm -f "$T/v2/vault.json"
 bash "$S/derive-claims-ledger.sh" --vault="$V" </dev/null >"$T/l3.log" 2>&1; R7=$?

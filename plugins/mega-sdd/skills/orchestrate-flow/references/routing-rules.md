@@ -109,7 +109,7 @@ The original directive "scan code base harusnya di atur di depan ... starterkit 
 **DEMOTE under `--auto` (LOCKED):** a `DEMOTE` verdict from `certify-artifact.sh` is **ALWAYS a C2 halt** — `type: adoption_demote_confirm` (see `plugins/mega-sdd/references/halt-protocol.md`) with the certify keterangan rendered first and ONE AskUserQuestion-shaped confirmation (re-ingest / manual fix / cancel). Never unconfirmed: the demotion burns generate-intent tokens and produces a DIFFERENT vault than the artifact the user placed. A mega-sdd-authored artifact is never REJECTED (migration guarantee — CERTIFIED_DEGRADED floor).
 
 **OQ counting note:** When inspecting vault for P0/P1 OQ counts, distinguish:
-- `pending_p0_p1_count`: OQs with `status: open` (or status field absent; a legacy `pending` value reads the same) at P0/P1 priority. These gate the chain via the intent rule above.
+- `pending_p0_p1_count`: OQs with `status: open` (or status field absent; a legacy `pending` value reads the same) at P0/P1 priority. These gate the chain via the intent rule above. **Not counted:** an open `[tech / scan]` OQ — bind-codebase resolves it by probing ground truth, it is never a human's question, so it must not route the chain into `resolve-oq` (every other tech OQ is already `resolved` by the authoring phase — `generate-intent/references/vault-core.md §AI technical decisions`).
 - `deferred_p0_p1_count`: OQs with `status: deferred`. These do NOT gate; they propagate to binding phase.
 
 ### Mode D — maintenance/sync detail

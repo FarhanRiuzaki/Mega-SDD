@@ -69,8 +69,33 @@ print('  ✓ claim codes', sorted(codes), 'sources', sorted(srcs))" || bad "ledg
 stage "L4 validators: vault-flows + vault-oqs on layout-2"
 OUT="$(bash "$SCR/validate-kb.sh" --surface=vault-flows --cwd="$PROJ" --file-path="$VAULT/flows.md" </dev/null 2>&1)"; RC=$?
 [ $RC -eq 0 ] && ok "vault-flows Mermaid mandate PASS on flows.md" || bad "vault-flows rc=$RC: $OUT"
+# This assertion used to read "PASS on constraints.md" and was VACUOUS: the validator's path
+# gate did not know the layout-2 names, exited 0 without checking anything and wrote no state —
+# the same blind spot that made `analyze` report PASS on every layout-2 vault. Two real steps now:
+#  (a) the validator RUNS on the layout-2 OQ home and catches what the migrated legacy vault
+#      really carries — two `[tech / recommend]` OQs with none of the four required fields;
+#  (b) those two are "where does the app run" and "is a paid licence acceptable": under the
+#      business-only rule that is the stakeholder's call, so the repair is `[business]` — and then
+#      the PASS is a real one.
+OQST="$PROJ/.mega-sdd/.vault-oqs-state.json"; rm -f "$OQST"
+bash "$SCR/validate-vault-oqs.sh" --cwd="$PROJ" --file-path="$VAULT/constraints.md" --quiet </dev/null >/dev/null 2>&1; RC=$?
+python3 - "$OQST" "$RC" <<'PYV' && ok "validate-vault-oqs RUNS on layout-2 constraints.md (state written) and flags the 2 underspecified recommend OQs" || bad "vault-oqs did not run / did not flag the migrated vault (rc=$RC)"
+import json, sys
+d = json.load(open(sys.argv[1])); rc = int(sys.argv[2])
+assert d["checked_file"].endswith("constraints.md") and d["status"] == "FAIL" and rc == 1, (d["status"], rc)
+under = sorted(i["oq_id"] for i in d["issues"] if i["halt_type"] == "oq_recommend_underspecified")
+assert under == ["OQ-CLINIC-005", "OQ-CLINIC-006"], under
+PYV
+python3 - "$VAULT/constraints.md" <<'PYR'
+import re, sys
+p = sys.argv[1]; s = open(p, encoding="utf-8").read()
+s2 = re.sub(r"(\*\*OQ-CLINIC-00[56]\*\* \[P[123]\] )\[tech / recommend\]", r"\1[business]", s)
+assert s2 != s, "the two tech/recommend OQ lines were not found in constraints.md"
+open(p, "w", encoding="utf-8").write(s2)
+PYR
+bash "$SCR/derive-vault-json.sh" --vault="$VAULT" </dev/null >/dev/null 2>&1 || bad "re-derive after the [business] re-tag failed"
 OUT="$(bash "$SCR/validate-vault-oqs.sh" --cwd="$PROJ" --file-path="$VAULT/constraints.md" </dev/null 2>&1)"; RC=$?
-[ $RC -eq 0 ] && ok "validate-vault-oqs PASS on constraints.md" || bad "vault-oqs rc=$RC: $OUT"
+[ $RC -eq 0 ] && ok "validate-vault-oqs PASS on constraints.md once hosting + paid-licence are [business] (a real PASS)" || bad "vault-oqs rc=$RC after re-tag: $(printf '%s' "$OUT" | grep -E 'halt_type|detail' | head -4)"
 
 # ── L5 binding with layout-2 refs ────────────────────────────────────────────
 stage "L5 binding write (layout-2 vault_source) -> stamp -> parity"

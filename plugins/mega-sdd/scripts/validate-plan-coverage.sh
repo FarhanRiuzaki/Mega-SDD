@@ -65,7 +65,11 @@ for uf in sorted(glob.glob(os.path.join(vault, "units", "U-*.md")) + glob.glob(o
 oq_texts = []
 try:
     vj = json.load(open(os.path.join(vault, "vault.json"), encoding="utf-8"))
-    oq_texts = [str(o.get("text", "")).lower() for o in vj.get("open_questions", [])]
+    # an OQ the AI already DECIDED (`resolved_by: ai`) is closed when this gate
+    # runs — a PRD heading with no unit and only that decision citing it is a
+    # gap, not coverage (a human answer keeps counting: no retro-effect)
+    oq_texts = [str(o.get("text", "")).lower() for o in vj.get("open_questions", [])
+                if isinstance(o, dict) and str(o.get("resolved_by") or "").lower() != "ai"]
 except Exception:
     pass
 

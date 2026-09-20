@@ -1,6 +1,6 @@
 ---
 name: emit-agents-md
-version: 1.7.1
+version: 1.7.2
 description: Flatten vault + binding + units into AGENTS.md (AAIF standard) for tool-agnostic interop; marker-guarded write-out. Triggers — "emit agents.md", "generate agents file", "tool-agnostic export", "interop agents.md", or paraphrases.
 ---
 

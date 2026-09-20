@@ -90,6 +90,19 @@ assert d["status"] == "FAIL" and rc == 1 and [g["slug"] for g in d["gaps"]] == [
 assert d["gaps"][0]["halt_type"] == "plan_coverage_gap" and "plan_coverage_gap" in d["next_action"]
 EOF
 
+# b2: an OQ the AI already DECIDED is closed — it must not count as coverage (a HUMAN answer still does)
+echo '{"open_questions":[{"tag":"OQ-AR-7","text":"Halaman Tentang Kami — pakai komponen apa?","status":"resolved","resolved_by":"ai"}]}' > "$V/vault.json"
+( cd "$T" && bash "$S" --cwd="$T" --prd="$T/docs/PRD.md" --vault="$V" --quiet ); RC=$?
+python3 - "$ST" "$RC" <<'EOF' && pass "b2: heading cited ONLY by an AI-decided OQ → plan_coverage_gap (a decision is not an open item)" || fail "b2: AI-decided OQ still counted as coverage"
+import json, sys
+d = json.load(open(sys.argv[1])); rc = int(sys.argv[2])
+assert d["status"] == "FAIL" and rc == 1 and [g["slug"] for g in d["gaps"]] == ["halaman-tentang-kami"], d
+EOF
+echo '{"open_questions":[{"tag":"OQ-CN-1","text":"Halaman Tentang Kami — isi tim final?","status":"resolved"}]}' > "$V/vault.json"
+( cd "$T" && bash "$S" --cwd="$T" --prd="$T/docs/PRD.md" --vault="$V" --quiet ); RC=$?
+[ $RC -eq 0 ] && pass "b3: a HUMAN-resolved OQ keeps counting (no retro-effect)" || fail "b3: human-resolved OQ stopped counting (rc=$RC)"
+echo '{"open_questions":[]}' > "$V/vault.json"
+
 # c: :line form covers the heading whose range contains the line
 mk U-003 'prd_source: docs/PRD.md:12'
 ( cd "$T" && bash "$S" --cwd="$T" --prd="$T/docs/PRD.md" --vault="$V" --quiet ); RC=$?

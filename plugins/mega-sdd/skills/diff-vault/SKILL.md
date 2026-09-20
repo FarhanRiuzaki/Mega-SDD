@@ -1,6 +1,6 @@
 ---
 name: diff-vault
-version: 2.5.0
+version: 2.5.1
 description: Evolves an existing vault when its PRD/BRD/Figma source changes — structured diff, preserves resolved OQs, flags contradictions with resolved decisions. Also the delta lane's entry (--from-prompt) when the FRONT DOOR routes a ticket-scale change-request to it — that lane is propose-first and never auto-triggers off a bare code-edit sentence. Use when the user says "PRD updated", "vault diff", "regenerate vault from new PRD", "PRD versi baru", "new BRD revision", or paraphrases.
 ---
 

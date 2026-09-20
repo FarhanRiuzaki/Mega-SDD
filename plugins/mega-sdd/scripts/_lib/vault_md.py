@@ -86,9 +86,14 @@ OQ_RESOLUTION_RE = re.compile(
 # The marker must OPEN the parenthetical (`(AI decision)` / `(AI decision, …)`):
 # a human note that merely mentions it — `(PM, after reviewing the AI decision
 # log)` — is a human answer and must never be attributed to the AI.
+# Case- and spacing-tolerant (`(AI Decision, …)`, `(ai  decision)`): a model that
+# capitalises the marker must not silently lose the stamp — losing it switches
+# off `oq_decided_business_signal` for that OQ (fail-open). Translating it
+# (`(Keputusan AI, …)`) is NOT tolerated: it is a Tier-1 token
+# (references/output-language.md) and validate-vault-oqs.sh flags the orphan.
 OQ_AI_DECISION_RE = re.compile(
-    r"→\s*\*{0,2}Resolved (?:v[\d.]+|\(plan\))\*{0,2}\s*\(\s*AI decision\s*(?:,[^)\n]*)?\)\s*:",
-    re.M,
+    r"→\s*\*{0,2}Resolved (?:v[\d.]+|\(plan\))\*{0,2}\s*\(\s*AI\s+decision\s*(?:,[^)\n]*)?\)\s*:",
+    re.M | re.I,
 )
 
 # `→ Out of Scope v1.1: reason`
@@ -764,7 +769,12 @@ def parse_open_questions(doc_name, md, errors):
             entry["resolution"] = rm.group(1).strip()
         # absent = a human resolved it (back-compat: every pre-existing
         # resolved OQ reads as human); only the AI marker is ever stamped
-        if status == "resolved" and OQ_AI_DECISION_RE.search(block):
+        # …and ONLY when the marker sits on the SAME annotation that supplied
+        # `resolution` (first match wins). Searching the whole block let a kept
+        # history line, a fenced example, or a neighbour OQ the line regex did
+        # not recognise stamp a HUMAN answer as the AI's — the two fields must
+        # never disagree about whose answer this is.
+        if status == "resolved" and rm and OQ_AI_DECISION_RE.match(block, rm.start()):
             entry["resolved_by"] = "ai"
         om = OQ_OOS_REASON_RE.search(block)
         if om:

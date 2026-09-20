@@ -916,6 +916,12 @@ def probe_oq_counts(vdir):
             continue
         if (oq.get("priority") or "").upper() not in ("P0", "P1"):
             continue
+        # `[tech / scan]` is resolved by bind-codebase probing ground truth — it
+        # is never a human's question, so an open P1 one must not route the chain
+        # into resolve-oq ahead of the bind that answers it.
+        if str(oq.get("category") or "").lower().startswith("tech") \
+                and str(oq.get("resolution_mode") or "").lower() == "scan":
+            continue
         status = oq.get("status") or "open"
         if status == "pending":
             status = "open"

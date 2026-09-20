@@ -48,7 +48,7 @@ Build an internal diff model. For each axis, classify items into the diff outcom
 - For ADR that contradicts new PRD: → Decision conflict. **User must resolve.**
 
 ### Open Questions
-- For each `[x]` resolved OQ in vault: does new PRD now answer it differently? → Resolved-OQ conflict. **User must resolve.**
+- For each `[x]` resolved OQ in vault: does new PRD now answer it differently? → Resolved-OQ conflict. **User must resolve.** EXCEPT an OQ whose annotation carries `(AI decision …)`: that was the AI's technical pick, not a stakeholder choice — the PRD is a source and simply WINS, with no ask and no `diff_conflict` halt. Rewrite its annotation as `→ **Resolved v{X.Y}** (PRD §<section>, <date>): <the PRD's answer>` — WITHOUT the `(AI decision …)` marker, so it stops reading as an AI decision — and record the replaced pick in the changelog event.
 - For each `[ ]` open OQ in vault: does new PRD now answer it? → Auto-resolve candidate.
 - For each new gap in new PRD that wasn't in old vault: → New OQ.
 

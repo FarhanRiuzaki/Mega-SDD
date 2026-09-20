@@ -143,6 +143,8 @@ P1 (Sprint-0 blockers):
 P2 (Feature blockers):
 - ...
 
+List ONLY OQs whose `status` is `open` or `deferred` — a `resolved` OQ (a stakeholder answer, or a technical decision the AI took: `resolved_by: ai`) is settled and is NOT a caution; listing one here would contradict the units that implement it.
+
 These items are unresolved at vault generation time. AI tools should NOT make assumptions about them.
 
 For the full OQ list: `.mega-sdd/vaults/<slug>/constraints.md` §Open Questions (layout-3: `context.md ## Open Questions`; legacy: the `00-index.md` roll-up)
@@ -227,7 +229,7 @@ For tools that consume only AGENTS.md: this section + above sections are everyth
 | Code style + conventions | codebase-map.md §5 / starterkit-context.yaml patterns exist OR constraints.md has style section |
 | Architecture overview | Always (the vault always has an Architecture section) |
 | Key decisions | the Decisions section has ≥1 ADR |
-| Open questions | vault.json `open_questions_summary.total > 0` |
+| Open questions | vault.json `open_questions_summary.by_status.open + by_status.deferred > 0` (never `total` — it counts resolved OQs) |
 | Mega-sdd interop notes | Always (signals mega-sdd presence to AGENTS.md-aware tools) |
 
 Empty sections OMITTED (not rendered with placeholders).

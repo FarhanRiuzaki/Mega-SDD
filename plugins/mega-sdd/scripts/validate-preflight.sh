@@ -471,7 +471,7 @@ CHECKS = {
          "outcomes without status field. Re-run generate-intent on the PRD "
          "(or `derive-vault-json.sh --vault <dir>` to re-derive vault.json from the docs)."),
         ("unresolved_oqs_exist", False, c_oq_unresolved,
-         "All OQs in vault are already resolved. resolve-oq is a no-op."),
+         "No open OQ is left in the vault — a plain resolve-oq walk is a no-op (`resolve-oq single-oq <OQ-ID>` still overrides an AI technical decision)."),
     ],
     "extract-intelligence": [
         ("legacy_codebase_path_present", True, c_legacy_path,

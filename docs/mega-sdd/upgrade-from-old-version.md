@@ -73,7 +73,7 @@
 - **7.16 — `/mega-sdd:emit html <file|dir>`** renders any mega-sdd md into one self-contained offline HTML.
 - **7.20–7.23 — team-feedback round.** `--max-complexity=large` / config `unit_granularity: coarse`; resolve-oq walks the extraction KB (§6); every OQ prompt opens with Konteks + Maksudnya; the natural-register writing contract applies to every emitted doc.
 - **7.24–7.27 — KB accuracy pack.** KB validators recognise the `modules/*.prd.md` grammar (a post-7.6 KB no longer SKIPs silently — `kb_discovery` MISCONFIGURED backstops it); the claim-verify lane (`claim-verifier` per module) runs after extraction; counts are script-derived; `rebuild_after` DAG + AC golden-master for `[LOCKED]` rules.
-- **7.28–7.29 — size-weighted.** `unit_tier: xs` shrinks the dispatch payload of small units (−65% measured); `project_scale: xs` (derived from PRD structure) omits the vault Glossary and auto-defers medium-confidence tech OQs.
+- **7.28–7.29 — size-weighted.** `unit_tier: xs` shrinks the dispatch payload of small units (−65% measured); `project_scale: xs` (derived from PRD structure) omits the vault Glossary (its tech-OQ auto-defer was superseded in 8.5: technical OQs are decided by the AI at every scale).
 
 **What did NOT break:** every artifact, every gate/hook contract, both vault layouts, both KB grammars. **No migration commands** for 7.6 → 7.29 — update the plugin (`claude plugin marketplace update` + `claude plugin update`, or `/mega-sdd:update-plugin`) and reload. If a previously-green bolt now blocks on `panel_evidence_missing` / `l0_evidence_missing`, it was dispatched under the new obligation key — run the panel / L0 writers named in the halt envelope.
 

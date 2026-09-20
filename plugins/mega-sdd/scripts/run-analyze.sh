@@ -165,7 +165,7 @@ if [ -f "$_PJ" ]; then
 fi
 
 # Per-family candidate lists (globs byte-identical to the pre-S1 loop finds).
-find "${CWD}/.mega-sdd/vaults" \( -name "0[0-6]-*.md" -o -name "vault.md" -o -name "model.md" -o -name "flows.md" -o -name "constraints.md" \) -not -path "*/bound/*" -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.vault_oqs"
+find "${CWD}/.mega-sdd/vaults" \( -name "0[0-6]-*.md" -o -name "vault.md" -o -name "model.md" -o -name "flows.md" -o -name "constraints.md" -o -name "context.md" \) -not -path "*/bound/*" -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.vault_oqs"
 find "${CWD}/.mega-sdd/vaults" -name "FSD.md" -not -path "*/.archived/*" 2>/dev/null > "${TMPD}/files.fsd_slots"
 # kb_* lists cover BOTH grammars (legacy tree + 7.6+ modules/*.prd.md — 7.24.0).
 { find "${CWD}/.mega-sdd/knowledge-base/10-domains" -name "*.md" -not -path "*/.archived/*" 2>/dev/null; \

@@ -346,6 +346,13 @@ try:
         if not isinstance(entry, dict):
             print(f"FAIL: --patch open_questions['{tag}'] must be an object")
             sys.exit(2)
+        if "resolved_by" in entry:
+            # derived ONLY from the markdown `(AI decision …)` annotation — on a
+            # `defer_to: binding` orphan too (the md-homed check below never
+            # reaches an orphan, so it would have let this one through)
+            print(f"FAIL: --patch sets 'resolved_by' on {tag} — it mirrors the markdown "
+                  f"`(AI decision …)` annotation and is never patchable.")
+            sys.exit(2)
         if tag in skeleton_tags:
             bad = sorted(set(entry) & DERIVED_OQ)
             if bad:

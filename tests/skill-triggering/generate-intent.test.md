@@ -140,6 +140,14 @@ All 10 cases above invoke the correct mode per the rule table. No false positive
 - **Setup:** (a) OQ matches a tech row AND a business row ("which library enforces the max value for transfer amount?"); (b) "the PRD names Bun + Postgres but the repo is Next.js + MySQL — which is authoritative?"
 - **Expect:** both `category: business` / `blocking` — never an AI decision; if one slipped through decided, `validate-vault-oqs.sh` FAILs `oq_decided_business_signal`
 
+### CL5e: the Design-Source OQ is the stakeholder's, never the AI's
+- **Setup:** greenfield UI PRD, `HAS_UI_COMPONENTS: true`, no tokens / a11y / voice-brand source, no scanned template
+- **Expect:** `OQ-DESIGN-SOURCE-1 [P1] [business]` (`resolution_mode: blocking`), left `[ ]`; the product-style-map pick rides in `recommendation` / `rationale` / `scan_citations` / `fallback_if_wrong` ONLY as slot `[1]` of the stakeholder ask; `design_system` is written only after the human accepts
+- **FAIL if:** it is tagged `[tech / recommend]` and written `(AI decision …)` — the AI would be picking style / palette / typography / WCAG level (`validate-vault-oqs.sh` → `oq_decided_business_signal`)
+
+### CL5f: greenfield never uses `scan`; a deferred tech OQ is undecided; the marker stays English
+- **Expect:** on `implementation_mode: new` a tech OQ is `recommend` + decided (nothing to scan, no bind phase); a tech OQ written `**Deferred …**` fails the gate exactly like an open one; in an Indonesian vault the annotation still reads `(AI decision, <date>)` — never `(Keputusan AI, …)`
+
 ### CL5d: Authoring-time gate
 - **Setup:** generate-intent leaves a `[tech / recommend]` OQ `[ ]` (or writes `[tech / blocking]`)
 - **Expect:** `validate-vault-oqs.sh --strict-tech` exits 1 with `oq_tech_undecided`; the skill decides it (or re-tags a missing fact) and re-runs — the same vault under `analyze` (no flag) is WARN only

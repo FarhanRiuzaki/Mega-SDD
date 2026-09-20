@@ -132,7 +132,7 @@ This enrichment is **advisory** — omitting these fields on an active CONFLICT 
 
 ## Tech-OQ Auto-Resolution
 
-For each OQ in the vault tagged `category: tech` AND `classification_confidence: high`, bind-codebase performs one of two operations based on `resolution_mode`:
+For each OQ in the vault tagged `category: tech` (every `classification_confidence` — see §Confidence gate), bind-codebase performs one of two operations based on `resolution_mode`:
 
 ### Scan mode (`resolution_mode: scan`)
 
@@ -147,8 +147,8 @@ For each OQ in the vault tagged `category: tech` AND `classification_confidence:
 ### Recommend mode (`resolution_mode: recommend`)
 
 - Validates required fields: `recommendation`, `rationale`, `scan_citations` (≥1), `fallback_if_wrong`
-- Validates that `scan_citations` resolve to entries in codebase-map / KB
-- Arrives ALREADY decided from the authoring phase (`[x]` + `(AI decision …)`); one still `open` (a vault written before that rule) is decided here once its fields + citations verify
+- Validates `scan_citations` per form: a codebase path / codebase-map / KB entry MUST resolve; `pack:<framework> §<section>` MUST name an existing pack section; `PRD §X` MUST exist in the source document; `docs:<library>@<version>` is recorded but unverifiable, so it is never sufficient alone (needs a verifiable co-citation)
+- Arrives ALREADY decided from the authoring phase (`[x]` + `(AI decision …)`); one found still `open` in an existing vault is decided here once its fields + citations verify
 - Listed in `binding.md` "## AI Technical Decisions" with full structure (decision + rationale + citations + fallback + the override command) — information only, it requests nothing
 - Does NOT block the pipeline and never routes to a `resolve-oq` walk; a pick that reads as business is left `open` and re-tagged `[business]` instead
 

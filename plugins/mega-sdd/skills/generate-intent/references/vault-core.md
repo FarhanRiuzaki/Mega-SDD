@@ -8,6 +8,7 @@ Shared definitions referenced by all `mega-sdd` skills — the DRAFTING CORE spl
 
 - §schema — `vault.json` manifest (incl. phase fields, design_system, stages-propagation, concurrency contract)
 - §OQ-conventions — Open Question tagging (category / resolution mode / classification confidence / auto-classifier)
+- AI technical decisions (the rule, the pick order, the never-decided list, override) + the `## AI Technical Decisions` table
 - Auto-Classification Review
 - §constitution — Project-Facing Rules (§A–§F clause template + lifecycle)
 - §boilerplate — Skill instruction language
@@ -112,7 +113,7 @@ Two CAPTURE-stage rails checked by `validate-vault-oqs.sh` under `analyze` (the 
 - **Operator-surface requirement (the four first-class surfaces).** When a workflow flow exists, the vault MUST model the operator-facing surface as requirements **grounded in the flows** (never invented): (1) **worklist / inbox**, (2) **decision affordance** (approve/reject actions in the current state), (3) **human-readable workflow-state labels**, (4) **audit timeline** of transitions. Presence is detected by the operator-surface vocabulary in the vault's prose docs (layout-2: `vault.md`, `model.md`, `flows.md`; legacy: 02/01/03/04). (The Design-Source OQ check below additionally scans `vault.json`.)
   - **Finding `operator_surface_missing`** — workflow flow present AND no operator-surface requirement AND no Design-Source OQ → FAIL.
 
-- **Design-Source OQ (anti-hallucination escape hatch).** When `design_system_flags.HAS_UI_COMPONENTS = true` but `HAS_TOKENS`, `HAS_A11Y`, and `HAS_VOICE_BRAND` are **all `false`**, the vault MUST carry a high-priority Design-Source Open Question (recommended tag shape `OQ-DESIGN-SOURCE-{N} [P1]`, or any OQ whose tag/text names a design-source concern — tokens / a11y / voice-brand source). **DO NOT default WCAG/Material/token values** — capture the gap as an OQ only.
+- **Design-Source OQ (anti-hallucination escape hatch).** When `design_system_flags.HAS_UI_COMPONENTS = true` but `HAS_TOKENS`, `HAS_A11Y`, and `HAS_VOICE_BRAND` are **all `false`**, the vault MUST carry a high-priority Design-Source Open Question (recommended tag shape `OQ-DESIGN-SOURCE-{N} [P1]`, or any OQ whose tag/text names a design-source concern — tokens / a11y / voice-brand source). **DO NOT default WCAG/Material/token values** — capture the gap as an OQ only. The Design-Source OQ is **`[business]` / `blocking`, never `[tech / recommend]`**: a design system with no source is the stakeholder's call; a product-style-map pick may ride along as the recommendation shown in the ask, it is never an AI decision.
   - **Finding `design_source_oq_missing`** — UI components present AND all three design flags false AND no Design-Source OQ → FAIL. (This was the captured trade-finance Phase-2 miss.)
 
 A Design-Source OQ also satisfies the `operator_surface_missing` rail (it is the accepted "captured the miss" signal): a vault that has not yet decided its operator surface may carry a Design-Source OQ instead of inventing the surface, and the gate passes.
@@ -232,7 +233,7 @@ Every Open Question MUST have a unique tag and priority marker.
 
 - `[ ]` — open
 - `[x]` — resolved (followed by `→ Resolved v{X.Y}: <answer or pointer>`)
-- `[x]` + `→ **Resolved v{X.Y}** (AI decision, <date>): <pick>` — a **tech** OQ the AI decided (§AI technical decisions). The `(AI decision …)` marker is what derives `resolved_by: "ai"`; a resolution without it reads as a human answer.
+- `[x]` + `→ **Resolved v{X.Y}** (AI decision, <date>): <pick>` — a **tech** OQ the AI decided (§AI technical decisions). The `(AI decision …)` marker is what derives `resolved_by: "ai"`; a resolution without it reads as a human answer. **The marker is a Tier-1 token — write it in English exactly as shown, in every vault language** (`(Keputusan AI, …)` is not parsed: the OQ would lose its stamp, the business-signal rail and the FSD decisions table would skip it).
 - `[~]` — out of scope (followed by `→ Out of Scope v{X.Y}: <reason>`)
 - `[ ]` + `**Deferred (v{X.Y})**: <reason>` — deferred (still open, but waiting on something specific)
 
@@ -249,10 +250,10 @@ Every OQ carries `category`:
 
 Tech OQs carry a `resolution_mode` describing HOW the AI answers it:
 
-- `scan` — answer deterministically found by probing ground truth. Requires `scan_query`, which names the PROBE TARGET: on the express spine (default) that is a manifest / symbol-index / file probe (`manifest phpunit.xml`, `symbol-index LeaveRequest`, `file config/auth.php`); on the classic spine a codebase-map section (`codebase-map §test_frameworks`) or KB. `bind-codebase` auto-resolves on single unambiguous match — express re-targets a `codebase-map §` hint to its underlying ground truth (the manifest/config file itself) rather than a map it did not read. No match / several matches → bind DECIDES (§AI technical decisions), it never hands the question to a human. **Layout-3 (`plan`) has no bind phase after authoring** — probe at authoring time and write the OQ already decided; an open `scan` OQ there has no resolver left.
+- `scan` — answer deterministically found by probing ground truth. Requires `scan_query`, which names the PROBE TARGET: on the express spine (default) that is a manifest / symbol-index / file probe (`manifest phpunit.xml`, `symbol-index LeaveRequest`, `file config/auth.php`); on the classic spine a codebase-map section (`codebase-map §test_frameworks`) or KB. `bind-codebase` auto-resolves on single unambiguous match — express re-targets a `codebase-map §` hint to its underlying ground truth (the manifest/config file itself) rather than a map it did not read. No match / several matches → bind DECIDES (§AI technical decisions), it never hands the question to a human. An open `[tech / scan]` OQ is bind's, so it never trips the chain's OQ gate (`state_probes.probe_oq_counts` skips it) — a P1 one does not route into `resolve-oq`. **Greenfield (`implementation_mode: new`) never uses `scan`**: there is nothing to scan and no bind phase follows — write `recommend` and decide it. **Layout-3 (`plan`) has no bind phase after authoring** — probe at authoring time and write the OQ already decided; an open `scan` OQ there has no resolver left.
 - `recommend` — the AI picks, with rationale. Requires `recommendation` + `rationale` + `scan_citations` (≥1 citation) + `fallback_if_wrong`. Written ALREADY DECIDED by the authoring phase (§AI technical decisions); `bind-codebase` re-verifies the citations and lists it in `binding.md ## AI Technical Decisions`.
 - `hard_rule` — encoded as bolt-time constraint. Requires `hard_rule` string. `execute-bolts` validates via pre-flight scan.
-- `blocking` — **business only.** A tech OQ is never `blocking`: if the AI truly cannot decide it, the question is a missing FACT → re-tag it `[business]` with the reason. (A vault written before this rule may still carry `[tech / blocking]`; readers stay tolerant, `validate-vault-oqs.sh` reports it as `oq_tech_undecided`.)
+- `blocking` — **business only.** A tech OQ is never `blocking`: if the AI truly cannot decide it, the question is a missing FACT → re-tag it `[business]` with the reason. (Readers stay tolerant of a `[tech / blocking]` bracket found in an existing vault; `validate-vault-oqs.sh` reports it as `oq_tech_undecided`.)
 
 A tech OQ MUST specify `resolution_mode`; absence is a generate-intent validation error (halt with `oq_tech_missing_mode` blocker).
 
@@ -387,7 +388,7 @@ For `resolution_mode: recommend`:
 - Every OQ with `resolution_mode: recommend` MUST have `recommendation` + `rationale` + at least one `scan_citations` entry + `fallback_if_wrong`. Missing any → halt `oq_recommend_underspecified`.
 - Every OQ with `resolution_mode: hard_rule` MUST have `hard_rule` populated (grammar enforced at execute-bolts pre-flight).
 - `classification_confidence` MUST be one of `high | medium | low`.
-- A `tech` OQ MUST NOT be left `open` in `recommend` / `blocking` mode (layout-3: nor `scan`) by the authoring phase → `oq_tech_undecided`. **Run** `validate-vault-oqs.sh --cwd=<root> --file-path=<vault doc> --strict-tech` at authoring time — the flag makes it a hard FAIL there; under `analyze` (no flag) the same finding is a soft advisory, so a vault written before this rule never retro-fails.
+- A `tech` OQ MUST NOT be left `open` OR `deferred` in `recommend` / `blocking` mode (layout-3 and greenfield: nor `scan` — no bind phase follows) by the authoring phase → `oq_tech_undecided` (a deferral resurfaces to a human just like an open one). **Run** `validate-vault-oqs.sh --cwd=<root> --file-path=<path> --strict-tech` at authoring time, with the EXACT path per layout — layout-3: `<vault>/context.md`; layout-2: `<vault>/vault.json` (or `<vault>/constraints.md`); any other path is `STATUS: ERROR` / exit 2 under the flag, never a silent pass. The flag makes the finding a hard FAIL; under `analyze` (no flag) it is a soft advisory, so an existing vault never retro-fails. A resolved tech OQ WITHOUT the marker is reported as an advisory (the marker was translated or mangled — or a human answered it).
 - An OQ carrying `resolved_by: ai` MUST be `tech` and MUST NOT read as business / regulated / `[LOCKED]` / a source-vs-code contradiction → `oq_decided_business_signal` (always hard).
 
 **Backwards compatibility**: OQs without a `category` field → treated as `business` by all skills. OQs with `category: business` and no `resolution_mode` → defaults to `blocking`. Existing vaults load unchanged.
