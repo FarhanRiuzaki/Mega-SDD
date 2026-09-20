@@ -232,6 +232,7 @@ Every Open Question MUST have a unique tag and priority marker.
 
 - `[ ]` — open
 - `[x]` — resolved (followed by `→ Resolved v{X.Y}: <answer or pointer>`)
+- `[x]` + `→ **Resolved v{X.Y}** (AI decision, <date>): <pick>` — a **tech** OQ the AI decided (§AI technical decisions). The `(AI decision …)` marker is what derives `resolved_by: "ai"`; a resolution without it reads as a human answer.
 - `[~]` — out of scope (followed by `→ Out of Scope v{X.Y}: <reason>`)
 - `[ ]` + `**Deferred (v{X.Y})**: <reason>` — deferred (still open, but waiting on something specific)
 
@@ -239,21 +240,32 @@ Every Open Question MUST have a unique tag and priority marker.
 
 Every OQ carries `category`:
 
-- `business` — needs stakeholder judgment. Examples: feature scope, edge-case behavior, regulatory threshold, UI copy, pricing logic.
-- `tech` — answerable from codebase or convention. Examples: test framework, error code format, naming convention, library version, file location.
+- `business` — **needs a human**: stakeholder judgment (feature scope, edge-case behavior, regulatory threshold, UI copy, pricing logic, anything `[LOCKED]`), OR a fact no source contains (what the legacy system / the organisation actually does), OR a source-vs-code contradiction ("the PRD names X but the repo is Y — which is authoritative?" is the CONFLICT class, never an AI pick).
+- `tech` — **decided by the AI**: answerable from the codebase, a framework pack, current library docs, or convention. Examples: test framework, error code format, naming convention, library version, file location.
 
-**Default**: `business`.
+**Default**: `business`. **The rule: an OQ reaches a human only when the AI cannot answer it.** A technical question is never asked — the AI takes the best + most efficient decision and records it (§AI technical decisions).
 
 ### Resolution mode (required when category=tech)
 
-Tech OQs carry a `resolution_mode` describing how the OQ is answered without blocking human review:
+Tech OQs carry a `resolution_mode` describing HOW the AI answers it:
 
-- `scan` — answer deterministically found by probing ground truth. Requires `scan_query`, which names the PROBE TARGET: on the express spine (default) that is a manifest / symbol-index / file probe (`manifest phpunit.xml`, `symbol-index LeaveRequest`, `file config/auth.php`); on the classic spine a codebase-map section (`codebase-map §test_frameworks`) or KB. `bind-codebase` auto-resolves on single unambiguous match — express re-targets a `codebase-map §` hint to its underlying ground truth (the manifest/config file itself) rather than a map it did not read.
-- `recommend` — AI picks with rationale. Requires `recommendation` + `rationale` + `scan_citations` (≥1 citation). `bind-codebase` surfaces in `binding.md` review section; user ACCEPTS / OVERRIDES / REJECTS.
+- `scan` — answer deterministically found by probing ground truth. Requires `scan_query`, which names the PROBE TARGET: on the express spine (default) that is a manifest / symbol-index / file probe (`manifest phpunit.xml`, `symbol-index LeaveRequest`, `file config/auth.php`); on the classic spine a codebase-map section (`codebase-map §test_frameworks`) or KB. `bind-codebase` auto-resolves on single unambiguous match — express re-targets a `codebase-map §` hint to its underlying ground truth (the manifest/config file itself) rather than a map it did not read. No match / several matches → bind DECIDES (§AI technical decisions), it never hands the question to a human. **Layout-3 (`plan`) has no bind phase after authoring** — probe at authoring time and write the OQ already decided; an open `scan` OQ there has no resolver left.
+- `recommend` — the AI picks, with rationale. Requires `recommendation` + `rationale` + `scan_citations` (≥1 citation) + `fallback_if_wrong`. Written ALREADY DECIDED by the authoring phase (§AI technical decisions); `bind-codebase` re-verifies the citations and lists it in `binding.md ## AI Technical Decisions`.
 - `hard_rule` — encoded as bolt-time constraint. Requires `hard_rule` string. `execute-bolts` validates via pre-flight scan.
-- `blocking` — explicit "no auto-resolve; still needs human". Rare for tech (used when scan is inconclusive AND no safe default).
+- `blocking` — **business only.** A tech OQ is never `blocking`: if the AI truly cannot decide it, the question is a missing FACT → re-tag it `[business]` with the reason. (A vault written before this rule may still carry `[tech / blocking]`; readers stay tolerant, `validate-vault-oqs.sh` reports it as `oq_tech_undecided`.)
 
 A tech OQ MUST specify `resolution_mode`; absence is a generate-intent validation error (halt with `oq_tech_missing_mode` blocker).
+
+### AI technical decisions
+
+A `tech` OQ is resolved by the authoring phase the moment its answer is grounded — it is written `[x]` with `→ **Resolved v{X.Y}** (AI decision, <date>): <pick>` and never enters a `resolve-oq` walk or the chain's OQ gate (both key on `status: open`).
+
+- **Decision ≠ fabrication.** Invariant 5 forbids inventing a FACT about the source. A decision asserts nothing about the source: it is a labelled choice with a cited basis and a stated way back. Two things stay forbidden: an invented citation, and "deciding" a missing fact.
+- **How to pick (first hit wins):** (1) what the codebase already does — reuse-first; (2) the project pack, then the plugin framework pack; (3) a dependency already installed over a new one; (4) current library docs (the bundled context7) for version-sensitive picks; (5) the simplest option that satisfies the PRD constraint / NFR. Tie → fewer new dependencies, then fewer files.
+- **Never decided by the AI** (they are `business` — `validate-vault-oqs.sh` fails an AI decision that reads like one, `oq_decided_business_signal`): scope, limits / thresholds / NFR targets (performance targets, uptime, SLA/SLO), money (pricing, fees, refunds, penalties, interest — AND any spend the AI cannot authorise: a paid licence, a paid tier, a budget), hosting / infrastructure ownership (where the app runs), retention, regulation / compliance, user-visible behaviour on an edge case, design standards with no source (the Design-Source OQ rail), anything `[LOCKED]`, and any source-vs-code contradiction. **Business wins ties:** one business signal makes the OQ `business`, whatever tech signal also matched.
+- **Audit trail:** the four `recommend` fields (`recommendation` / `rationale` / `scan_citations` / `fallback_if_wrong`) stay in `vault.json`; `resolved_by: "ai"` is derived from the annotation marker (md-owned — a `--patch` cannot set it).
+- **Override, any time:** `resolve-oq single-oq <OQ-ID>` re-opens a decided OQ with the AI's pick in slot `[1]`; the human answer replaces the annotation (no marker → `resolved_by` drops) and the prior pick stays in the changelog event.
+- **Visibility without asking:** the vault carries a `## AI Technical Decisions` table (below) and the run summary prints ONE line — `N keputusan teknis diambil AI (H di P1) — review: <path>; override: resolve-oq single-oq <OQ-ID>`. Priority (`P1` first) orders the table; it never adds an ask.
 
 ### Classification confidence
 
@@ -263,7 +275,7 @@ Auto-classification (per the auto-classifier heuristics below) carries a confide
 - `medium` — partial match (some signal, but not unambiguous)
 - `low` — fallback default; classifier defaulted to `business/blocking` because no strong signal
 
-**Auto-resolve gate**: only `high`-confidence tech OQs auto-resolve in `bind-codebase`. `medium`/`low` confidence OQs go to the vault.md "## Auto-Classification Review" section (legacy: 00-index.md). User reviews tags one-pass before binding runs; any OQ user flips from tech-to-business stays human-decided.
+**What confidence gates**: the CATEGORY call, not the decision. `medium`/`low` confidence OQs are listed in the vault.md "## Auto-Classification Review" section (legacy: 00-index.md) so a mis-tag is visible at a glance; any OQ the user flips from tech to business is re-opened and stays human-decided. A correctly tagged tech OQ is decided by the AI at every confidence — what protects against a mis-tag is the business-wins tie-break + `oq_decided_business_signal`, not a second human pass. (`scan` still auto-resolves at bind only on a single unambiguous match; otherwise bind decides and says so.)
 
 ### Auto-classifier heuristics
 
@@ -282,9 +294,12 @@ Auto-classification (per the auto-classifier heuristics below) carries a confide
 | "edge case: when Z happens" / "behavior on edge case" | business | blocking | high |
 | any mention of "stakeholder", "PO", "compliance team", "legal", "finance" | business | blocking | high |
 | any mention of "scan codebase", "check existing", "convention", "framework standard" | tech | scan | high |
+| "the PRD says X but the code / repo does Y" / "which is authoritative" / "source of truth" | business | blocking | high |
+| "paid licence / premium / Pro tier acceptable?" / "budget for X" / "where will the app run" / "deployment target" / "self-hosted or …" | business | blocking | high |
+| "performance targets" / "uptime" / "SLA / SLO" not stated or not achievable here | business | blocking | high |
 | anything else (no strong signal) | business | blocking | low (default) |
 
-**Conservative default**: when no heuristic matches → `business / blocking / low`. Safe — preserves current blocking behavior.
+**Conservative default**: when no heuristic matches → `business / blocking / low`. Safe — preserves current blocking behavior. **Business wins ties**: an OQ that matches both a tech row and a business row is `business`.
 
 ### Auto-Classification Review section in `vault.md`
 
@@ -293,23 +308,39 @@ After OQ classification, `vault.md` MUST include the section (layout-2 — there
 ```markdown
 ## Auto-Classification Review
 
-> Total classified: {N} OQs. Auto-resolution active: {M} (tech, high-confidence).
-> Manual review recommended: {K} (tech medium/low-confidence + any flipped from business to tech).
+> Total classified: {N} OQs. Decided by the AI: {M} (tech). Waiting on a human: {B} (business).
+> Category worth a glance: {K} (medium/low-confidence tags).
 
 | OQ-ID | Question | Auto-tagged | Confidence | Action |
 |---|---|---|---|---|
-| OQ-AR-1 | which test framework? | tech / scan | high | will auto-resolve via scan |
-| OQ-AR-7 | what HTTP error envelope? | tech / recommend | medium | needs review — confirm recommend mode |
+| OQ-AR-1 | which test framework? | tech / scan | high | resolves via scan at bind |
+| OQ-AR-7 | what HTTP error envelope? | tech / recommend | medium | decided by the AI — see AI Technical Decisions |
 | OQ-FL-3 | does cancellation refund? | business / blocking | high | blocking — needs stakeholder |
 ```
 
-User can override tags inline (e.g., flip OQ-AR-7 to `business / blocking` if "what error envelope" actually needs a product call, not a tech recommendation). Override mechanism: user edits `vault.md` (legacy: 00-index.md) OR `vault.json`; `bind-codebase` re-reads at run time.
+User can override tags inline (e.g., flip OQ-AR-7 to `business / blocking` if "what error envelope" actually needs a product call, not a technical pick — re-open the checkbox and drop the `(AI decision …)` annotation with it). Override mechanism: user edits `vault.md` (legacy: 00-index.md); `bind-codebase` re-reads at run time.
+
+### AI Technical Decisions section
+
+Directly after the review table (layout-2 `vault.md`; layout-3 `context.md`, under `## Open Questions`). One row per AI-decided OQ, `P1` first. Absent when nothing was decided — never an empty table.
+
+```markdown
+## AI Technical Decisions
+
+> {M} keputusan teknis diambil AI — override kapan saja: `resolve-oq single-oq <OQ-ID>`.
+
+| OQ-ID | Keputusan | Dasar (sitasi) | Kalau salah |
+|---|---|---|---|
+| OQ-AR-7 [P2] | RFC 7807 problem+json | codebase — `app/Http/Resources/ErrorResource.php:12` | pindah ke JSON:API error format |
+```
+
+Column headers follow the vault's doc language; the OQ-ID, the citation and every enum stay verbatim.
 
 ### Updated OQ schema in markdown body
 
 ```markdown
 - [ ] **OQ-AR-1** [P1] [tech / scan] [conf: high]: which test framework? — resolve: scan codebase-map §test_frameworks
-- [ ] **OQ-AR-7** [P2] [tech / recommend] [conf: medium]: what HTTP error envelope shape? — resolve: see Auto-Classification Review
+- [x] **OQ-AR-7** [P2] [tech / recommend] [conf: medium]: what HTTP error envelope shape? → **Resolved v1.0** (AI decision, 2026-09-20): RFC 7807 problem+json
 - [ ] **OQ-FL-3** [P1] [business] [conf: high]: does the cancellation flow refund prior payments? — resolve: PM/finance team
 ```
 
@@ -341,9 +372,13 @@ For `resolution_mode: recommend`:
   "scan_citations": ["app/Http/Resources/ErrorResource.php:12"],
   "fallback_if_wrong": "If RFC 7807 doesn't fit client expectations, revisit and consider JSON:API error format",
   "doc": "constraints.md",
-  "status": "open"
+  "status": "resolved",
+  "resolved_by": "ai",
+  "resolution": "RFC 7807 problem+json"
 }
 ```
+
+`status` / `resolution` / `resolved_by` mirror the markdown (never patched): `[x]` + the `(AI decision, <date>)` annotation. The four fields above them are the patch-lane audit trail.
 
 ### Validation rules (enforced by generate-intent at write time)
 
@@ -352,6 +387,8 @@ For `resolution_mode: recommend`:
 - Every OQ with `resolution_mode: recommend` MUST have `recommendation` + `rationale` + at least one `scan_citations` entry + `fallback_if_wrong`. Missing any → halt `oq_recommend_underspecified`.
 - Every OQ with `resolution_mode: hard_rule` MUST have `hard_rule` populated (grammar enforced at execute-bolts pre-flight).
 - `classification_confidence` MUST be one of `high | medium | low`.
+- A `tech` OQ MUST NOT be left `open` in `recommend` / `blocking` mode (layout-3: nor `scan`) by the authoring phase → `oq_tech_undecided`. **Run** `validate-vault-oqs.sh --cwd=<root> --file-path=<vault doc> --strict-tech` at authoring time — the flag makes it a hard FAIL there; under `analyze` (no flag) the same finding is a soft advisory, so a vault written before this rule never retro-fails.
+- An OQ carrying `resolved_by: ai` MUST be `tech` and MUST NOT read as business / regulated / `[LOCKED]` / a source-vs-code contradiction → `oq_decided_business_signal` (always hard).
 
 **Backwards compatibility**: OQs without a `category` field → treated as `business` by all skills. OQs with `category: business` and no `resolution_mode` → defaults to `blocking`. Existing vaults load unchanged.
 

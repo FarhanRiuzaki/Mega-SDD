@@ -22,7 +22,7 @@ Verify every doc has:
 - [ ] First-use acronym/jargon defined inline; cross-doc terms are in the `vault.md ## Glossary` (absent at `project_scale: xs` — first-use inline definitions carry them there).
 - [ ] Cross-ref ≤ 2 per section.
 - [ ] `vault.md` has: the frontmatter lock (`vault_layout: 2` + 6 scalars, + `project_scale` when derived), Phase context, the EXACT anchors `## Overview` / `## Architecture` / `## Decisions`, Glossary (omitted at `project_scale: xs`), Auto-Classification Review, Source documents, Changelog. ALL OQs sit in `constraints.md ## Open Questions` (an OQ checkbox anywhere else fails the derive).
-- [ ] If `project_scale: xs`: NO `## Glossary` (no header, no placeholder) AND §Auto-Classification Review carries the `Auto-deferred (project_scale: xs)` sub-heading listing every medium-confidence tech OQ born `deferred` (with its `defer_to` — `binding` brownfield / `stakeholder` greenfield).
+- [ ] If `project_scale: xs`: NO `## Glossary` (no header, no placeholder).
 
 **Output mode compliance (driven by `OUTPUT_MODE` from Step 0.7):**
 - [ ] If `compact`: TL;DR header is 1-line in every doc.
@@ -43,7 +43,8 @@ Verify every doc has:
 - [ ] Cross-cutting flow handoff points present.
 - [ ] Every OQ carries `category` + (if tech) `resolution_mode` + `classification_confidence`.
 - [ ] Every `recommend`-mode OQ has at least one `scan_citations` entry; no fabricated citations.
-- [ ] `vault.md` has `## Auto-Classification Review` section listing tech-tagged OQs + medium/low confidence cases.
+- [ ] **No tech OQ is left for a human:** every `[tech / recommend]` OQ is `[x]` + `→ **Resolved v{X.Y}** (AI decision, <date>): <pick>`; no `[tech / blocking]` bracket exists; every AI-decided OQ is genuinely technical (no scope / limit / money / retention / regulation / edge-case / `[LOCKED]` / PRD-vs-repo contradiction) — `validate-vault-oqs.sh --strict-tech` exits 0.
+- [ ] `vault.md` has `## Auto-Classification Review` section listing tech-tagged OQs + medium/low confidence cases, and — when any tech OQ was decided — the `## AI Technical Decisions` table (one row per decision, P1 first).
 - [ ] **`constitution.md`** (the additional vault file): exists unless `--no-constitution`, and **every `X-NNN` clause cites a source** (`§` / `(source: …)` / a KB/PRD anchor / a `file:line` / a link). An uncited clause is a defaulted or invented rule — demote it to an Open Question, never ship it (it would become a BLOCKING Hard rule at execute-bolts). This mirrors the deterministic `validate-constitution.sh` per-clause check.
 
 **Each doc must be readable in <10 minutes by an architect (BOTH modes).**

@@ -132,13 +132,17 @@ Product-specific PRD terms only (standard terms — ADR, DBML, DoD, FK, NFR, OQ,
 
 ## Auto-Classification Review
 
-> Written by Step 3.5. Every tech-tagged OQ + every flipped/overridden OQ; only `high`-confidence tech OQs auto-resolve in bind-codebase.
+> Written by Step 3.5. Every tech-tagged OQ + every flipped/overridden OQ. Confidence grades the CATEGORY call — a glance list, not an ask: tech OQs are decided by the AI (below), business OQs wait for the stakeholder.
 
 - <OQ tag> → <tech|business> / <confidence> (<1-line note>)
 
-### Auto-deferred (project_scale: xs)   <!-- xs vaults ONLY — omit this whole sub-heading on standard vaults -->
+## AI Technical Decisions   <!-- OMIT the whole section when no tech OQ was decided -->
 
-- <OQ tag> → tech / medium — born `deferred` (`defer_to: binding` brownfield · `stakeholder` greenfield); <1-line note>
+> <M> keputusan teknis diambil AI — override kapan saja: `resolve-oq single-oq <OQ-ID>`. P1 first; headers follow the doc language.
+
+| OQ-ID | Keputusan | Dasar (sitasi) | Kalau salah |
+|---|---|---|---|
+| <OQ tag> [<P1|P2|P3>] | <the pick, one line> | <codebase `file:line` / `pack:<fw> §…` / `docs:<lib>@<ver>` / `PRD §X`> | <fallback_if_wrong> |
 
 ## Source documents
 

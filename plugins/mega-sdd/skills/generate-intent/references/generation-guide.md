@@ -86,22 +86,24 @@ Read the relevant template (Claude Code: `Read` tool; Claude.ai sandbox: `view` 
 
 After Step 3 writes the 4 files but BEFORE the Step 4 self-check, run the auto-classifier on every generated OQ (they all live in `constraints.md ## Open Questions`):
 
-1. **For each OQ in `constraints.md ## Open Questions`**, apply the heuristic table from `generate-intent/references/vault-core.md §Auto-classifier heuristics`: match the OQ text against the pattern column; assign `category`, `resolution_mode`, `classification_confidence`. Conservative default when no pattern matches: `category: business`, `resolution_mode: blocking`, `classification_confidence: low`.
+1. **For each OQ in `constraints.md ## Open Questions`**, apply the heuristic table from `generate-intent/references/vault-core.md §Auto-classifier heuristics`: match the OQ text against the pattern column; assign `category`, `resolution_mode`, `classification_confidence`. Conservative default when no pattern matches: `category: business`, `resolution_mode: blocking`, `classification_confidence: low`. **Business wins ties** (a business row beats a tech row on the same OQ), and a "the PRD says X but the repo does Y" question is `business` — the CONFLICT class, never an AI pick.
 2. **For `resolution_mode: scan`:** populate `scan_query` from the OQ's "Resolves:" hint or infer the codebase-map section to probe (e.g., "what test framework?" → `scan_query: "codebase-map §test_frameworks"`).
 3. **For `resolution_mode: recommend`:** populate the four required fields:
    - `recommendation` — Claude's pick (1–2 sentences).
    - `rationale` — why this pick; what trade-off was considered (2–3 sentences).
-   - `scan_citations` — at least 1 entry; cite a related-pattern anchor in the codebase-map / KB / source PRD (e.g., `app/Http/Resources/ErrorResource.php:12`). If no exact match exists, cite the closest pattern with a "no exact match; closest: …" note.
-   - `fallback_if_wrong` — what to revisit if this recommendation turns out incorrect (1 sentence).
-   - **Anti-halu rail:** NEVER fabricate citations. If no codebase context exists at all, downgrade to `category: business` with note "no codebase context to ground recommendation; needs human decision."
-4. **For `resolution_mode: blocking`** (default for business + low-confidence tech): no additional fields required.
-4b. **`project_scale: xs` defer-by-default (size-weighted §2).** When the vault frontmatter carries `project_scale: xs`: every **tech** OQ (`scan`/`recommend`) with `classification_confidence: medium` is BORN deferred — annotate the markdown entry with `**Deferred**: project_scale=xs — auto-deferred at generation; resolves at binding (brownfield) / resurfaces via resolve-oq (greenfield), tidak ditanya interaktif` and carry `defer_to` for it in the authored patch — `binding` when the vault is brownfield (`implementation_mode: existing` AND repo signals present — the only context where a binding target is legal, per `resolve-oq/references/interactive-walk.md §Defer targets`), otherwise `stakeholder` (greenfield — the same value the express auto-defer writes). These OQs are listed in §Auto-Classification Review under an `Auto-deferred (project_scale: xs)` sub-heading and are NEVER surfaced in an interactive walk (resolve-oq's priority walk and the chain's batched-P1 walk both skip `deferred`). **The evidence standard is unchanged:** `high`-confidence auto-resolve still requires the same citation probe at bind time; what changes is ASK vs DEFER, never the proof. Business OQs and `low`-confidence tech (conservative-default → business/blocking) are untouched — human-decided as always.
-5. **Write classified OQ data** back to the markdown body (the `[tech / scan]` / `[conf: …]` brackets + resolve hints) and put the JSON-only fields into the authored patch consumed by `derive-vault-json.sh`, per `generate-intent/references/vault-core.md §Updated OQ schema` — never hand-edit `vault.json`.
-6. **Generate the `vault.md` "## Auto-Classification Review" section.** List every tech-tagged OQ + every flipped/manually-overridden OQ. Only `high`-confidence tech OQs auto-resolve downstream in `bind-codebase`; `medium`/`low` are flagged for user review.
-7. **Validation gate:** before proceeding to Step 4, validate every OQ entry per `generate-intent/references/vault-core.md §Validation rules`:
+   - `scan_citations` — at least 1 entry naming the BASIS of the pick: a codebase anchor (`app/Http/Resources/ErrorResource.php:12`), a pack section (`pack:laravel §Error handling`), current library docs (`docs:<library>@<version>` via the bundled context7), a KB section, or the PRD constraint it satisfies (`PRD §6.3`). If no exact match exists, cite the closest pattern with a "no exact match; closest: …" note.
+   - `fallback_if_wrong` — what to revisit if this pick turns out incorrect (1 sentence).
+   - **Anti-halu rail:** NEVER fabricate citations. No codebase (greenfield) is NOT a reason to ask a human — pick per the order in `vault-core.md §AI technical decisions` and cite the pack / docs / PRD constraint. Only a question whose answer is a FACT no source contains is re-tagged `category: business` with the note "fact absent from every source; only a human knows."
+   - **Write it DECIDED:** the OQ line is `[x]` with `→ **Resolved v{X.Y}** (AI decision, <date>): <the recommendation, one line>`. A tech OQ is never left open for a human and never asked (`vault-core.md §AI technical decisions`).
+4. **For `resolution_mode: blocking`** (business only — a tech OQ is never `blocking`): no additional fields required.
+5. **Write classified OQ data** back to the markdown body (the `[tech / scan]` / `[conf: …]` brackets + resolve hints + the `(AI decision …)` annotation on decided OQs) and put the JSON-only fields into the authored patch consumed by `derive-vault-json.sh`, per `generate-intent/references/vault-core.md §Updated OQ schema` — never hand-edit `vault.json`; `status` / `resolution` / `resolved_by` mirror the markdown and are rejected in a patch.
+6. **Generate the `vault.md` "## Auto-Classification Review" section + the "## AI Technical Decisions" table** (`vault-core.md` — the table is absent when nothing was decided). List every tech-tagged OQ + every flipped/manually-overridden OQ. `scan` OQs resolve at `bind-codebase`; every other tech OQ is already decided here.
+7. **Validation gate:** before proceeding to Step 4, validate every OQ entry per `generate-intent/references/vault-core.md §Validation rules` — after Step 3.8 derives `vault.json`, **Run** `bash <plugin-root>/scripts/validate-vault-oqs.sh --cwd=<root> --file-path=<vault>/vault.json --strict-tech` and read its exit code directly (never through a pipe):
    - Tech OQ missing `resolution_mode` → halt `oq_tech_missing_mode`.
    - `recommend` OQ missing any of `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong` → halt `oq_recommend_underspecified`.
    - `scan` OQ missing `scan_query` → halt `oq_scan_missing_query`.
+   - Tech OQ left open in `recommend` / `blocking` mode → `oq_tech_undecided`: decide it (step 3) or, when it is a missing fact, re-tag it `[business]`.
+   - An AI-decided OQ that reads as business / regulated / `[LOCKED]` / source-vs-code contradiction → `oq_decided_business_signal`: re-open it, drop the annotation, tag it `[business]`.
 
 **Halt YAML format:**
 
@@ -119,10 +121,10 @@ blocker:
 
 ## Project scale xs (size-weighted §2)
 
-Set by Step 2 from `scripts/derive-project-scale.sh` (deterministic structure count; greenfield lanes only — KB sub-mode and `--scan` overlays are always `standard`). At `project_scale: xs` exactly TWO things change; nothing else:
+Set by Step 2 from `scripts/derive-project-scale.sh` (deterministic structure count; greenfield lanes only — KB sub-mode and `--scan` overlays are always `standard`). At `project_scale: xs` exactly ONE thing changes; nothing else:
 
 1. **`vault.md ## Glossary` is omitted** (no header, no placeholder — the omit-never-fabricate rail) — the parser treats it as optional and `_meta/ai-consumer-guide.md §Standard terms` already carries the generic rows. Every other section keeps its normal rules: the conditional sections (`HAS_*` design blocks, API contracts) are already source-gated, the three hard-header H2 anchors stay mandatory, and `## Changelog`/`## Phase context` stay (they have writers/readers).
-2. **Step 3.5 rule 4b** — medium-confidence tech OQs are born deferred (`defer_to: binding` in brownfield, `stakeholder` in greenfield — the `defer_to` contract), recorded in §Auto-Classification Review, never asked interactively.
+Tech OQs need no xs carve-out: at EVERY scale they are decided by the AI at Step 3.5 (`vault-core.md §AI technical decisions`) — a decision, not a deferral, so nothing resurfaces later as debt.
 
 The target class: a "3 static screens" PRD stops producing a wall of interactive questions — OQ COUNT is unchanged (honesty), the interactive ceremony shrinks. `xs` can only ever come from structural evidence in the source document; absent/unparseable structure means `standard`.
 

@@ -21,7 +21,7 @@ Mirror the recommend-mode discipline:
 1. **Citation MANDATORY.** Every recommendation cites source (file:line OR KB section OR vault ADR). No citation → NO recommendation surfaced (silent fallback to no-recommendation interactive walk).
 2. **Rationale MANDATORY.** Why this pick. 1-3 sentences. Visible in `AskUserQuestion` description.
 3. **Fallback-if-wrong MANDATORY.** What to revisit if this turns out incorrect. 1 sentence.
-4. **User confirms ALWAYS.** Recommendation is `(recommended)` label on default option; user can pick "Other" or override freely.
+4. **User confirms ALWAYS — inside this walk.** Recommendation is `(recommended)` label on default option; user can pick "Other" or override freely. (Tech OQs never enter the walk — the AI decides them upstream, `generate-intent/references/vault-core.md §AI technical decisions`; this invariant governs what a human IS asked: business OQs and an explicit `single-oq` override.)
 5. **No fabrication.** If context sources don't yield a confident recommendation → omit recommendation; no pre-fill.
 6. **High-stakes warning.** Business-OQ recommendations carry a "review carefully — high-stakes domain" prefix in description (regulatory / finance / edge case markers).
 7. **Meaning-first narration (7.21.1).** When rationale / probe findings are surfaced to the user, lead with the business meaning in common ID/EN ("hasilnya dipakai modul credit analysis buat hitung skor"); the `file:line` / SP-name evidence follows in parentheses — never a bare citation dump as the sentence body (display rules: `interactive-walk.md` Step 2a).

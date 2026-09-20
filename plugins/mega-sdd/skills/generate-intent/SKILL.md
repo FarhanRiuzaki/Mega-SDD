@@ -1,6 +1,6 @@
 ---
 name: generate-intent
-version: 2.24.0
+version: 2.25.0
 description: Spec-driven intent generation — a PRD/BRD (+ Figma), a free-text brief (--from-prompt), or a KB (--kb) becomes a 4-file anti-hallucination vault (layout-2); Mode A/B auto-detected; --scope selects one scope of a multi-scope PRD; every OQ tagged category + resolution_mode. Use when the user says "spec out this feature", "buat dev handoff", "break down this PRD for the dev team", "pecah PRD ini buat AI dev", "from this prompt", "from a brief", "rebuild from KB", or paraphrases.
 ---
 
@@ -108,13 +108,13 @@ The per-file content guide (output-mode policy, readability standards, the vault
 
 Every Open Question is tagged at generation time with `category: business | tech` + `resolution_mode` + `classification_confidence`, using the auto-classifier heuristics in `references/vault-core.md §Auto-classifier heuristics`:
 
-- **`business`** OQs → `resolution_mode: blocking` (need a stakeholder decision).
-- **`tech`** OQs → `scan` (resolvable from a codebase-map; needs `scan_query`), `recommend` (Claude proposes a pick; needs `recommendation` + `rationale` + `scan_citations` + `fallback_if_wrong` — **never fabricate citations**), or `blocking`.
-- **Conservative default** when no pattern matches: `category: business`, `resolution_mode: blocking`, `classification_confidence: low` (preserves blocking behavior — safe).
-- Only `high`-confidence tech OQs auto-resolve downstream in `bind-codebase`; `medium`/`low` are flagged for human review in the vault.md `## Auto-Classification Review` section.
+- **An OQ reaches a human only when the AI cannot answer it.** **`business`** OQs → `resolution_mode: blocking`: a stakeholder decision, a fact no source contains, or a source-vs-code contradiction.
+- **`tech`** OQs are DECIDED by the AI, never asked → `scan` (resolvable by probing ground truth at bind; needs `scan_query`) or `recommend` (the AI picks; needs `recommendation` + `rationale` + `scan_citations` + `fallback_if_wrong` — **never fabricate citations**) — a `recommend` OQ is written already resolved, `[x]` + `→ **Resolved v{X.Y}** (AI decision, <date>): <pick>`. Never `blocking`. Pick order, the never-decided list and the override path → `references/vault-core.md §AI technical decisions`.
+- **Conservative default** when no pattern matches: `category: business`, `resolution_mode: blocking`, `classification_confidence: low` (preserves blocking behavior — safe). **Business wins ties.**
+- `classification_confidence` flags the CATEGORY call for a glance in the vault.md `## Auto-Classification Review` section; the decisions themselves are listed in `## AI Technical Decisions` and surfaced as ONE summary line — never an ask.
 - **Memoization (re-runs over an existing vault):** when the vault already carries a classification for an OQ whose TEXT is unchanged (exact match against the existing `vault.json` entry), REUSE it verbatim — re-classify only new or text-changed OQs. An existing vault classification IS the record of any human correction — reuse-verbatim protects it (never silently overwrite a human-edited bracket).
 
-The classifier runs at Step 3.5 (after the 4 files, before the self-check) and writes the classification brackets/hints into the markdown body and the JSON-only fields (`scan_query`, `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`) into the authored patch consumed at Step 3.8 by `derive-vault-json.sh`, per `vault-core.md §Updated OQ schema`. Validation gate + halts (`oq_tech_missing_mode`, `oq_recommend_underspecified`, `oq_scan_missing_query`; `oq_recommend_citation_invalid` fires post-write via `validate-vault-oqs.sh`) → `references/generation-guide.md`.
+The classifier runs at Step 3.5 (after the 4 files, before the self-check) and writes the classification brackets/hints into the markdown body and the JSON-only fields (`scan_query`, `recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`) into the authored patch consumed at Step 3.8 by `derive-vault-json.sh`, per `vault-core.md §Updated OQ schema`. Validation gate + halts (`oq_tech_missing_mode`, `oq_recommend_underspecified`, `oq_scan_missing_query`, `oq_tech_undecided`, `oq_decided_business_signal`; `oq_recommend_citation_invalid` — all fired post-write by `validate-vault-oqs.sh --strict-tech`) → `references/generation-guide.md`.
 
 ## Workflow skeleton
 
@@ -147,7 +147,7 @@ Push-back is **conditional on `PRD_STATUS`** (full matrix → `references/self-c
 
 All halts emit the unified `blocker` envelope (`plugins/mega-sdd/references/halt-protocol.md §halt-protocol`); under `--auto`, P1 business-blocking OQs additionally emit a blocker the orchestrator surfaces.
 
-- **OQ classification (Step 3.5):** `oq_tech_missing_mode`, `oq_recommend_underspecified`, `oq_scan_missing_query`, `oq_recommend_citation_invalid` (fired post-write by `validate-vault-oqs.sh`). (See `references/generation-guide.md` for the halt YAML.)
+- **OQ classification (Step 3.5):** `oq_tech_missing_mode`, `oq_recommend_underspecified`, `oq_scan_missing_query`, `oq_tech_undecided`, `oq_decided_business_signal`, `oq_recommend_citation_invalid` (fired post-write by `validate-vault-oqs.sh --strict-tech`). (See `references/generation-guide.md` for the halt YAML.)
 - **Scope detection (Step 0.9):** `scope_not_declared_in_prd`, `prd_no_scopes_block_user_rejected_retrofit`, `prd_retrofit_low_confidence` — all ALWAYS STOP CHAIN. (See `references/setup-flow.md` for the halt YAMLs.)
 - **vault.json derive:** `memory_in_use` when `derive-vault-json.sh` exits 4 (the script holds and releases the `vault.json.lock` itself; exit 4 = lock held after backoff — surface the existing `memory_in_use` envelope, keterangan unchanged).
 

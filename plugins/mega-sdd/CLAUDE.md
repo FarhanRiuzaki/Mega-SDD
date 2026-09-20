@@ -20,7 +20,7 @@ These are the reason Mega-SDD exists. Preserve their behavior exactly.
 2. **The CONFLICT gate blocks** — unresolved CONFLICTs block downstream unit/bolt generation. This is enforced by the PreToolUse hook on `execute-bolts` (reads `.validation-blockers.json`; on the lite lane the per-unit `binding.json` `gate` verdict closes the same gate) and by prose in `generate-units`. Do not downgrade it.
 3. **Citation discipline** — `emit-fsd` stamps `.citation-map.json` with sha256; missing sources become `[Pending — X]`, never fabrication.
 4. **Halt taxonomy (C1/C2/C3) + mutability tiers** (`[LOCKED]/[INTENT]/[ARTIFACT]`) are the domain vocabulary for rebuilds.
-5. **No fabrication** — if it isn't in the source (PRD/BRD/Figma/KB/codebase), it's an Open Question, not a guess.
+5. **No fabrication** — if it isn't in the source (PRD/BRD/Figma/KB/codebase), it's an Open Question, not a guess. An OQ reaches a human only when the AI cannot answer it: a **technical** question is DECIDED by the AI as a labelled, cited, reversible choice (`→ **Resolved vX.Y** (AI decision, <date>)`, `resolved_by: ai`; `skills/generate-intent/references/vault-core.md §AI technical decisions`) — a decision is not a fact about the source, so this is not fabrication. Business decisions, facts no source contains, and source-vs-code contradictions are NEVER decided by the AI (`validate-vault-oqs.sh` `oq_decided_business_signal`).
 
 ## The enforcement doctrine (hard-won — do not relitigate)
 

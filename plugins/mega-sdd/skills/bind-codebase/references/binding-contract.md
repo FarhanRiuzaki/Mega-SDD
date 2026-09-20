@@ -140,29 +140,29 @@ For each OQ in the vault tagged `category: tech` AND `classification_confidence:
 - Executes scan against codebase-map (and KB if present)
 - Apply outcome (per `bind-codebase` Procedure §2.6 — recorded in the vault MARKDOWN and carried into vault.json by the Step-6 derive, never hand-edited):
   - **Single unambiguous match** → OQ becomes `status: resolved` with `resolution` + script-stamped `resolved_at` + `scan_citations`
-  - **No match** → flip `resolution_mode` to `blocking` (md-bracket edit); OQ stays `open` (no silent guess)
-  - **Multiple matches** → flip `resolution_mode` to `blocking` (md-bracket edit); list candidates
+  - **Multiple matches** → the AI DECIDES (reuse-first order, `generate-intent/references/vault-core.md §AI technical decisions`): `status: resolved` + `resolved_by: ai`, the winner cited, the other candidates named in the resolution
+  - **No match** → the AI decides from the pack / current docs / convention with that basis cited (never an invented codebase anchor); ONLY a fact no source contains goes to a human — bracket flipped to `[business]`, OQ stays `open`. `[tech / blocking]` is never written
 - Recorded in `binding.md` "## Tech-OQ Auto-Resolved (Scan)" table
 
 ### Recommend mode (`resolution_mode: recommend`)
 
 - Validates required fields: `recommendation`, `rationale`, `scan_citations` (≥1), `fallback_if_wrong`
 - Validates that `scan_citations` resolve to entries in codebase-map / KB
-- Surfaced in `binding.md` "## Tech-OQ Recommendations (review required)" section with full structure (recommendation + rationale + citations + fallback + ACCEPT/OVERRIDE/REJECT user actions)
-- Does NOT block the pipeline — user reviews one-pass after binding completes
+- Arrives ALREADY decided from the authoring phase (`[x]` + `(AI decision …)`); one still `open` (a vault written before that rule) is decided here once its fields + citations verify
+- Listed in `binding.md` "## AI Technical Decisions" with full structure (decision + rationale + citations + fallback + the override command) — information only, it requests nothing
+- Does NOT block the pipeline and never routes to a `resolve-oq` walk; a pick that reads as business is left `open` and re-tagged `[business]` instead
 
 ### Confidence gate
 
 Per mode (S4 — aligned with generate-intent's shipped heuristics, whose recommend
 rows emit `classification_confidence: medium`):
-- **Scan mode**: ONLY `classification_confidence: high` auto-resolves. `medium`/`low` → skip auto-resolution, pass through unchanged.
-- **Recommend mode**: surfaced at `high` AND `medium` (surfacing is advisory and never blocks — restricting to `high` made the entire Recommendations feature dead code). `low` → skip surfacing, pass through unchanged.
-- In BOTH modes, a skipped OQ's `resolution_mode` is NEVER mutated (no flip to `blocking` on confidence grounds — only a failed scan flips to blocking, per §Scan mode).
-- Medium/low OQs are already listed in the vault.md "## Auto-Classification Review" (legacy: 00-index.md) for manual user attention before binding runs.
+- `classification_confidence` grades the CATEGORY call, not the decision: both modes run at `high`, `medium` AND `low`. A correctly tagged tech OQ is decided at every confidence.
+- The protection against a mis-tag is not a second human pass — it is the business-wins tie-break at classification plus `validate-vault-oqs.sh` `oq_decided_business_signal` (an AI decision that reads as business FAILs).
+- An OQ the user flipped to `[business]` in the vault.md "## Auto-Classification Review" (legacy: 00-index.md) is no longer tech and is skipped by both modes.
 
 ### Anti-halu enforcement
 
-- Scan finds no match → flip to `blocking`, NEVER guess
+- Scan finds no match → decide from a CITED basis (pack / docs / PRD constraint) — never an invented codebase anchor; a missing FACT is never decided, it becomes `[business]`
 - Recommendation citations unverifiable → halt with `oq_recommend_citation_invalid`
 - Missing recommendation fields → halt with `oq_recommend_underspecified`
 - Tech-OQ auto-resolution does NOT affect blocking rules — CONFLICT still blocks the binding gate. Tech-OQ resolution operates orthogonally to the verdict layer.

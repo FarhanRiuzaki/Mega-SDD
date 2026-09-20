@@ -47,7 +47,7 @@ print("PASS: c: template passes vault_md layout-3 detection + hard-header contra
 PYX
 
 # d — procedure: the ask shape, keterangan, overflow, headless honesty, brownfield query, validator order
-for k in '≤4 questions' 'Keterangan is mandatory' 'ask the top 4' 'never auto-answer' 'query-symbol-index.sh' 'validate-plan-coverage.sh' 'never answers an OQ on the user' 'Rail A1' 'Self-slice' 'must-not-exist'; do
+for k in '≤4 questions' 'Keterangan is mandatory' 'ask the top 4' 'never auto-answer' 'query-symbol-index.sh' 'validate-plan-coverage.sh' 'never answers a **business** OQ on the user' 'Tech OQs are DECIDED here' 'context.md --strict-tech' '(plan, <date>)' 'Rail A1' 'Self-slice' 'must-not-exist'; do
   grep -qF "$k" "$PR" && pass "d: procedure says: $k" || fail "d: procedure lacks: $k"
 done
 

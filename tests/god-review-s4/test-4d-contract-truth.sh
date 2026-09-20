@@ -99,9 +99,14 @@ grep -qF 'bind-time authoring obligation' "$BJS" && ok "ANCHOR-ATTEST: honest en
 if grep -qF 'anchor accuracy is enforced at bind time' "$BJS"; then fail "ANCHOR-ATTEST: old positive attestation survives"; else ok "ANCHOR-ATTEST: old attestation removed"; fi
 
 # ── BC-RECOMMEND-CONF-1 ──
-grep -qF '`classification_confidence: high` OR `medium`' "$OQR" && ok "RECOMMEND-CONF: Step 2.7 fires at high+medium (matches shipped generate-intent heuristics)" || fail "RECOMMEND-CONF: recommend gate still high-only dead code"
+# 8.5.0 (spec 2026-09-20-oq-business-only-design.md): the S4 finding was "a high-only gate makes
+# Step 2.7 dead code" — the business-only rule removes the confidence gate altogether (confidence
+# grades the CATEGORY call, not the decision), so the step fires at every confidence.
+grep -qF 'at every `classification_confidence`' "$OQR" && ok "RECOMMEND-CONF: Step 2.7 fires at every confidence (no high-only dead code)" || fail "RECOMMEND-CONF: recommend gate still high-only dead code"
 if grep -qF 'flow through as blocking' "$OQR"; then fail "RECOMMEND-CONF: contradictory 'flow through as blocking' survives"; else ok "RECOMMEND-CONF: no resolution_mode mutation on confidence grounds"; fi
-grep -qF '**Recommend mode**: surfaced at `high` AND `medium`' "$BC" && ok "RECOMMEND-CONF: binding-contract confidence gate split per mode" || fail "RECOMMEND-CONF: binding-contract gate stale"
+grep -qF 'grades the CATEGORY call, not the decision: both modes run at `high`, `medium` AND `low`' "$BC" && ok "RECOMMEND-CONF: binding-contract — confidence never gates a tech decision" || fail "RECOMMEND-CONF: binding-contract gate stale"
+if grep -qF 'NEVER auto-accept a recommendation' "$OQR"; then fail "RECOMMEND-CONF: the superseded never-auto-accept rail survives (8.5.0: tech is decided, business never is)"; else ok "RECOMMEND-CONF: superseded rail gone; the citation + business-signal rails replace it"; fi
+grep -qF 'NEVER decide a business matter' "$OQR" && ok "RECOMMEND-CONF: the replacement rail is present (never decide business; never unverifiable citations)" || fail "RECOMMEND-CONF: replacement anti-halu rail missing"
 if grep -qF -- '--accept-recommendations' "$OQR"; then fail "RECOMMEND-CONF: unimplemented --accept-recommendations flag survives"; else ok "RECOMMEND-CONF: unimplemented flag prose removed"; fi
 
 # ── BC-HANDOFF-3 ── (M-02 ownership flip: the OPERATIVE bind handoff template is the

@@ -49,3 +49,11 @@ Registry one-liner (absorbed, same type):
 ### oq_scan_missing_query
 
 - `oq_scan_missing_query` — generate-intent: an OQ marked `resolution_mode: scan` lacks the `scan_query` field that tells `bind-codebase` Tech-OQ auto-resolver what to grep for. ALWAYS STOP. Details `{oq_id}`. Resolution: user adds `scan_query: codebase-map §<section>` or `scan_query: <file-pattern>` to the OQ entry. Source skill: `generate-intent`.
+
+### oq_tech_undecided
+
+- `oq_tech_undecided` — generate-intent / plan: a `tech` OQ was left `open` in `recommend` / `blocking` mode (layout-3: also `scan` — no bind phase follows) instead of being DECIDED. An OQ reaches a human only when the AI cannot answer it (`generate-intent/references/vault-core.md §AI technical decisions`). Hard at the authoring-time gate (`validate-vault-oqs.sh --strict-tech`); a soft advisory under `analyze`, so a vault written before the rule never retro-fails. Details `{oq_id, resolution_mode}`. Resolution: decide it — pick reuse-first (codebase → pack → installed dependency → current docs → simplest option), write `[x]` + `→ **Resolved v<X.Y>** (AI decision, <date>): <pick>` with rationale + citation + `fallback_if_wrong`; if the answer is a FACT no source contains, re-tag it `[business]` with the reason. Source skills: `generate-intent`, `plan`.
+
+### oq_decided_business_signal
+
+- `oq_decided_business_signal` — generate-intent / plan / bind-codebase: an OQ carrying `resolved_by: ai` is not `tech`, or its text / rationale reads as business (scope, limits, money, retention, regulation, edge-case behaviour, `[LOCKED]`) or as a source-vs-code contradiction ("the PRD names X but the repo is Y"). ALWAYS STOP. Details `{oq_id, matched_pattern}`. Resolution: re-open it (`[ ]`), drop the `(AI decision …)` annotation, tag it `[business]` — the stakeholder answers (it joins the batched ask when P1). Never widen the pattern to make it pass. Source skills: `generate-intent`, `plan`, `bind-codebase`.

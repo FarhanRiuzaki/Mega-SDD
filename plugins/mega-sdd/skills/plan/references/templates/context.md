@@ -181,13 +181,30 @@ Ref: <table>.<fk_field> > <other_table>.id  // many-to-one
 > - Tag prefixes stay TOPIC markers (OV/AR/DM/FL/DC/CN — no ID churn).
 > - Every OQ that arose elsewhere carries `[origin: context.md#<anchor>]`
 >   (`#F-U-001`, `#Data-model`, `#Overview`, …); constraints-native OQs need none.
-> - `[tech / <scan|recommend|blocking>]` or `[business]` bracket is MANDATORY
+> - `[tech / <scan|recommend>]` or `[business]` bracket is MANDATORY
 >   (bracket-first is the only category source); `[conf: high|medium|low]` on tech.
-> - business ⇒ `resolution_mode: blocking`; P1 business OQs are the ONLY items
->   of the single batched ask at the end of PLAN. On `project_scale: xs`,
->   medium-priority OQs are BORN `**Deferred (plan)**:` (never asked, resurfaced
->   in the final report). Sort P1 → P2 → P3.
+> - An OQ reaches a human ONLY when the AI cannot answer it. business ⇒
+>   `resolution_mode: blocking`; P1 business OQs are the ONLY items of the single
+>   batched ask at the end of PLAN. On `project_scale: xs`, P2 business OQs are
+>   BORN `**Deferred (plan)**:` (never asked, resurfaced in the final report).
+> - tech ⇒ DECIDED by the AI at authoring time, never asked and never deferred:
+>   the line is `[x]` + `→ **Resolved v<X.Y>** (AI decision, <date>): <pick>`
+>   (there is no bind phase after PLAN — a `scan` question is probed NOW:
+>   manifest / symbol index / file). Never `[tech / blocking]`: a technical
+>   question the AI truly cannot answer is a missing FACT → tag it `[business]`.
+>   Pick order + the never-decided list: `vault-core.md §AI technical decisions`.
+> - Sort P1 → P2 → P3.
 
 - [ ] **OQ-CN-1** [P1] [business]: <e.g. "Performance targets not specified in PRD">
 - [ ] **OQ-FL-1** [P2] [business] [origin: context.md#F-U-001]: <e.g. "PRD describes happy path only — what happens when payment fails?">
-- [ ] **OQ-AR-1** [P2] [tech / scan] [conf: high] [origin: context.md#Overview]: <e.g. "which test framework?" — resolve: scan symbol-index §test_frameworks>
+- [x] **OQ-AR-1** [P2] [tech / scan] [conf: high] [origin: context.md#Overview]: <e.g. "which test framework?"> → **Resolved v1.0** (AI decision, <date>): <e.g. "Vitest — `package.json:31` already lists it">
+
+## AI Technical Decisions
+
+> OMIT this whole section when no tech OQ was decided. One row per
+> `(AI decision …)` OQ above, P1 first; headers follow the doc language.
+> <M> keputusan teknis diambil AI — override kapan saja: `resolve-oq single-oq <OQ-ID>`.
+
+| OQ-ID | Keputusan | Dasar (sitasi) | Kalau salah |
+|---|---|---|---|
+| OQ-AR-1 [P2] | <the pick, one line> | <codebase `file:line` / `pack:<fw> §…` / `docs:<lib>@<ver>` / `PRD §X`> | <fallback_if_wrong> |

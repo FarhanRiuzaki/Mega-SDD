@@ -103,6 +103,7 @@ DERIVED_OQ = {
     "classification_confidence", "text", "resolution", "out_of_scope_reason",
     "deferred_reason", "resolver_owner", "resolved_at", "deferred_at",
     "origin",  # v7 Fase 3: `[origin: file#anchor]` locality token — md-owned
+    "resolved_by",  # `(AI decision…)` annotation marker — md-owned, never patchable
 }
 KEY_ORDER = [
     "vault_version", "vault_layout", "generated_at", "title", "phase", "phase_total",

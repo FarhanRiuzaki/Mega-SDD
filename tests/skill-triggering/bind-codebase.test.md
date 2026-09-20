@@ -122,34 +122,46 @@
   - binding.md "## Tech-OQ Auto-Resolved (Scan)" table includes OQ-AR-1
   - Pipeline NOT blocked (oq count decreases by 1)
 
-### TQ2: Scan-mode high-confidence — no match
-- **Setup:** OQ-AR-2 `resolution_mode: scan`, `confidence: high`; codebase-map §referenced has 0 hits
+### TQ2: Scan-mode — no match → the AI DECIDES (never asked)
+- **Setup:** OQ-AR-2 `resolution_mode: scan`; codebase-map §referenced has 0 hits; the question is a CHOICE ("which test runner?"), the framework pack names one
 - **Expect:**
-  - OQ-AR-2 stays `status: open`; `resolution_mode` flipped from `scan` to `blocking` (md-bracket edit `[tech / scan]` → `[tech / blocking]`) with note "scan returned no match"
-  - binding.md "## Open Questions" section lists OQ-AR-2 (not in Auto-Resolved table)
-  - No silent guess emitted
+  - OQ-AR-2 flipped `[x]` + `→ **Resolved v{X}** (AI decision, <date>): <pick>`; vault.json `status: resolved`, `resolved_by: ai`
+  - `scan_citations` names the real basis (`pack:<framework> §…` / `docs:<lib>@<ver>` / `PRD §X`) — NEVER an invented codebase anchor
+  - `recommendation` / `rationale` / `fallback_if_wrong` present; row in binding.md "## AI Technical Decisions"
+  - NO `[tech / blocking]` bracket written; nothing routed to a resolve-oq walk
+
+### TQ2b: Scan-mode — no match AND the answer is a FACT no source contains
+- **Setup:** OQ-AR-2b asks what the legacy batch job's cut-off hour is; nothing in the codebase / KB / PRD says
+- **Expect:**
+  - NOT decided — stays `[ ]`; bracket flipped `[tech / scan]` → `[business]` with the note "fact absent from every source"
+  - binding.md "## Open Questions" lists it for the stakeholder
 
 ### TQ3: Scan-mode high-confidence — multiple matches
 - **Setup:** OQ-AR-3 `resolution_mode: scan`, `confidence: high`; codebase-map §referenced has 3 matches (e.g., jest + mocha + vitest all detected)
 - **Expect:**
-  - OQ-AR-3 stays `status: open`; flipped to `blocking` (md-bracket edit) with note "scan ambiguous — 3 matches: jest, mocha, vitest"
-  - User reviews manually
+  - the AI picks reuse-first (the one the codebase uses MOST / in the newest code) and resolves it `(AI decision, <date>): <pick> (chosen over: <the others>)`; `scan_citations` = the winner's anchor
+  - row in binding.md "## AI Technical Decisions"; `resolved_by: ai`; no ask, no `[tech / blocking]`
 
-### TQ4: Medium/low-confidence scan-mode — skipped
+### TQ4: Medium/low-confidence scan-mode — resolved like any other
 - **Setup:** OQ-AR-4 `resolution_mode: scan`, `confidence: medium`; codebase-map has clear single match
 - **Expect:**
-  - Auto-resolution SKIPPED (per DESIGN-OQ-3 high-conf gate)
-  - OQ-AR-4 stays `open` with `resolution_mode: scan` unchanged
-  - User reviews via 00-index.md "## Auto-Classification Review" before re-running binding
+  - Resolved exactly as TQ1 — `classification_confidence` grades the CATEGORY call, it does not gate the probe
+  - An OQ the user flipped to `[business]` in "## Auto-Classification Review" is skipped (it is the stakeholder's)
 
-### TQ5: Recommend-mode high-confidence — surfaced
-- **Setup:** OQ-AR-7 `resolution_mode: recommend`, `confidence: high`; all 4 required fields populated (`recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`); citations resolve in codebase-map
+### TQ5: Recommend-mode — verified + listed (decided, never asked)
+- **Setup:** OQ-AR-7 `resolution_mode: recommend` (any confidence), already `[x]` + `(AI decision …)` from generate-intent; all 4 required fields populated (`recommendation`, `rationale`, `scan_citations`, `fallback_if_wrong`); citations resolve
 - **Expect:**
-  - binding.md "## Tech-OQ Recommendations (review required)" section has full OQ-AR-7 block
-  - Recommendation displays with all 4 fields + ACCEPT/OVERRIDE/REJECT user actions
-  - OQ stays `open` (NOT auto-resolved) — user reviews after binding completes
-  - Pipeline continues (recommendation doesn't block)
-  - Under `--auto`, the handoff emits `status: completed` (NOT `paused`) with `next_action.suggested_skill: mega-sdd:generate-units` — recommendations are advisory and never pause the chain; the still-open OQ carries forward into generate-units as ungrounded (per `bind-codebase/references/auto-memory-handoff.md` §Handoff emission; routing indexed in `orchestrate-flow/references/handoff-contract.md`)
+  - binding.md "## AI Technical Decisions" section has the full OQ-AR-7 block (decision + rationale + citations + fallback + the override command `resolve-oq single-oq OQ-AR-7`) — NO ACCEPT/OVERRIDE/REJECT request
+  - OQ is `resolved` with `resolved_by: ai`; it never enters a resolve-oq walk and never trips `oq_gate`
+  - Under `--auto`, the handoff emits `status: completed` with `next_action.suggested_skill: mega-sdd:generate-units`
+
+### TQ5b: Recommend-mode still OPEN (vault written before the rule) — bind decides it
+- **Setup:** OQ-AR-7b `[ ] … [tech / recommend]`, 4 fields populated, citations resolve
+- **Expect:** bind flips it `[x]` + `(AI decision, <date>): <recommendation>`; Step-6 derive yields `resolved_by: ai` — a re-bind is the migration path
+
+### TQ5c: A "recommend" pick that reads as business — NOT decided
+- **Setup:** OQ-AR-7c tagged `[tech / recommend]` but asks "what is the limit for failed logins?" / "the PRD names Postgres but the repo is MySQL — which is authoritative?"
+- **Expect:** left `[ ]`, bracket flipped to `[business]`, carried in "## Open Questions"; if it slipped through as an AI decision, `validate-vault-oqs.sh` FAILs `oq_decided_business_signal`
 
 ### TQ6: Recommend-mode underspecified — halt
 - **Setup:** OQ-AR-8 `resolution_mode: recommend`, `confidence: high`, but `fallback_if_wrong` is missing
@@ -235,7 +247,7 @@ Living-vault continuous-sync design `2026-06-10-living-vault-continuous-sync-des
 
 ## Pass criteria
 
-All triggers fire. Blocking gate behaves per binding-contract.md. Deferred-OQ auto-resolution (B6) and propagation (B7) follow bind-codebase §2.5. Implementation-State Classification (IS1-IS5) follows §2.5 per binding-contract.md §Implementation-State Classification. Tech-OQ Auto-Resolution (TQ1-TQ8) follows §2.6-§2.7. Suggested Unit Hard Rules (SHR1-SHR8) follows §2.8 — `[VERIFIED]` + mechanically detectable → Hard rules; everything else → Anti-patterns. Sync-lane handoff (SY1-SY3): the completed→generate-units `--reconcile` discriminator is STATE-based — it keys on WHAT BIND ACTUALLY DID, not on whether the `--paths` flag was passed. A claim-scoped re-bind that actually executed (living-vault §3.3/§3.6, no fallback) emits the handoff with `["--reconcile", "--auto"]` (in-place id-stable reconcile + status/stale/superseded recompute); a full re-bind — whether a plain `--auto` run (SY2) OR a `--paths` run that fell back to a full re-bind (SY3, per binding-contract.md "Fallback to full re-bind") — keeps `["--auto"]` (fresh generation); `--reconcile` never leaks to a full re-bind or to the halted→resolve-oq branch. No silent guesses; no fabricated citations; no auto-accepted recommendations. No unguarded auto-resolution under any condition.
+All triggers fire. Blocking gate behaves per binding-contract.md. Deferred-OQ auto-resolution (B6) and propagation (B7) follow bind-codebase §2.5. Implementation-State Classification (IS1-IS5) follows §2.5 per binding-contract.md §Implementation-State Classification. Tech-OQ Auto-Resolution + AI decisions (TQ1-TQ8, incl. TQ2b / TQ5b / TQ5c) follows §2.6-§2.7. Suggested Unit Hard Rules (SHR1-SHR8) follows §2.8 — `[VERIFIED]` + mechanically detectable → Hard rules; everything else → Anti-patterns. Sync-lane handoff (SY1-SY3): the completed→generate-units `--reconcile` discriminator is STATE-based — it keys on WHAT BIND ACTUALLY DID, not on whether the `--paths` flag was passed. A claim-scoped re-bind that actually executed (living-vault §3.3/§3.6, no fallback) emits the handoff with `["--reconcile", "--auto"]` (in-place id-stable reconcile + status/stale/superseded recompute); a full re-bind — whether a plain `--auto` run (SY2) OR a `--paths` run that fell back to a full re-bind (SY3, per binding-contract.md "Fallback to full re-bind") — keeps `["--auto"]` (fresh generation); `--reconcile` never leaks to a full re-bind or to the halted→resolve-oq branch. No silent guesses; no fabricated citations. Tech OQs are decided by the AI (cited, reversible via `resolve-oq single-oq`) and never asked; business OQs, missing facts and CONFLICTs are never decided; no decision with unverifiable citations under any condition.
 
 ---
 

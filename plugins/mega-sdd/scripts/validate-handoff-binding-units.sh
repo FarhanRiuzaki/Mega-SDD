@@ -150,7 +150,8 @@ CONFLICT_RE = re.compile(r"\bCONFLICT-(?:[A-Z][A-Z0-9-]*-)?\d+\b")
 # --- Pass 1: collect OQ-IDs AND CONFLICT-IDs declared in any binding doc ---
 # S4 BC-HANDOFF-2 + round-2 BC-HANDOFF-1-FRESH-OQ: OQ harvesting is SECTION-AWARE.
 #  - RESOLVED sections (Tech-OQ Auto-Resolved / Auto-Resolved Deferred OQs /
-#    Tech-OQ Recommendations): NO propagation obligation — a resolved OQ
+#    AI Technical Decisions — and its pre-rename heading Tech-OQ
+#    Recommendations, kept so an older binding.md classes the same): NO propagation obligation — a resolved OQ
 #    influenced the bind, not necessarily any single unit. Advisory extras.
 #  - PENDING section (## Open Questions): fresh/deferred OQs with NO resolution
 #    yet — per the generate-units contract (SKILL.md Step 12.5.g) an OQ is cited
@@ -161,7 +162,7 @@ CONFLICT_RE = re.compile(r"\bCONFLICT-(?:[A-Z][A-Z0-9-]*-)?\d+\b")
 #  - LIVE (everything else — an OQ-ID woven into claims / State Map / Suggested
 #    Hard Rules means its resolution shaped binding evidence): keeps the
 #    blocking drop.
-RESOLVED_OQ_SECTIONS = ("tech-oq auto-resolved", "auto-resolved deferred", "tech-oq recommendations")
+RESOLVED_OQ_SECTIONS = ("tech-oq auto-resolved", "auto-resolved deferred", "tech-oq recommendations", "ai technical decisions")
 PENDING_OQ_SECTIONS = ("open questions",)
 
 def sec_class(heading):

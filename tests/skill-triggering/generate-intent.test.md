@@ -107,7 +107,8 @@ All 10 cases above invoke the correct mode per the rule table. No false positive
 - **Setup:** PRD requires "API uses standard error response shape"; ambiguity → OQ candidate "what HTTP error envelope?"
 - **Expect:** generate-intent's auto-classifier tags it `category: tech`, `resolution_mode: recommend`, `classification_confidence: medium` (recommend mode, not scan, because "error envelope shape" requires AI judgment)
 - vault.json populates `recommendation`, `rationale`, `scan_citations` (cites closest existing pattern), `fallback_if_wrong`
-- 00-index.md "## Auto-Classification Review" lists it
+- **The OQ is written DECIDED, never asked:** `[x]` + `→ **Resolved v{X.Y}** (AI decision, <date>): <pick>`; vault.json `status: resolved`, `resolved_by: ai`
+- vault.md "## Auto-Classification Review" lists it AND "## AI Technical Decisions" carries its row
 
 ### CL2: Pure scan-mode tech OQ
 - **Setup:** OQ candidate "what test framework should new tests use?"
@@ -127,10 +128,21 @@ All 10 cases above invoke the correct mode per the rule table. No false positive
 - Listed in Auto-Classification Review (low confidence flagged for review)
 - User can flip to tech if appropriate
 
-### CL5: Recommend-mode validation failure
-- **Setup:** PRD has tech ambiguity where Claude's recommendation would lack codebase context entirely (no related pattern at all in codebase-map or KB)
-- **Expect:** Auto-classifier degrades the OQ: stays `category: business`, `resolution_mode: blocking`, with note "no codebase context to ground recommendation; needs human decision"
-- NOT a fake recommendation with fabricated citations
+### CL5: No codebase context (greenfield) — still decided, honestly cited
+- **Setup:** PRD has a tech CHOICE (e.g. "which test runner?") and there is no related pattern at all in the codebase-map or KB
+- **Expect:** decided per the pick order — the citation names the REAL basis (`pack:<framework> §…` / `docs:<lib>@<ver>` / `PRD §X`), never a fabricated codebase anchor; NOT handed to a human just because there is no code
+
+### CL5b: The answer is a FACT no source contains
+- **Setup:** tech-sounding OQ whose answer only a person knows ("what hour does the legacy settlement job cut off?")
+- **Expect:** `category: business`, `resolution_mode: blocking`, note "fact absent from every source; only a human knows" — never decided, never guessed
+
+### CL5c: Business wins ties / source-vs-code contradiction
+- **Setup:** (a) OQ matches a tech row AND a business row ("which library enforces the max value for transfer amount?"); (b) "the PRD names Bun + Postgres but the repo is Next.js + MySQL — which is authoritative?"
+- **Expect:** both `category: business` / `blocking` — never an AI decision; if one slipped through decided, `validate-vault-oqs.sh` FAILs `oq_decided_business_signal`
+
+### CL5d: Authoring-time gate
+- **Setup:** generate-intent leaves a `[tech / recommend]` OQ `[ ]` (or writes `[tech / blocking]`)
+- **Expect:** `validate-vault-oqs.sh --strict-tech` exits 1 with `oq_tech_undecided`; the skill decides it (or re-tags a missing fact) and re-runs — the same vault under `analyze` (no flag) is WARN only
 
 ### CL6: Halt on recommend-mode missing fields
 - **Setup:** Manually-crafted vault.json with OQ `resolution_mode: recommend` but missing `fallback_if_wrong`
@@ -139,7 +151,7 @@ All 10 cases above invoke the correct mode per the rule table. No false positive
 
 ### CL7: Auto-Classification Review section exists
 - **Setup:** Any PRD producing ≥1 tech-tagged OQ at medium/low confidence
-- **Expect:** 00-index.md has `## Auto-Classification Review (v1.4+)` section listing every tech-tagged OQ with confidence column
+- **Expect:** 00-index.md has `## Auto-Classification Review (v1.4+)` section listing every tech-tagged OQ with confidence column; the confidence column is a glance list for the CATEGORY call — it never turns a tech OQ into an ask
 
 ## Pass criteria (Auto-classifier)
 

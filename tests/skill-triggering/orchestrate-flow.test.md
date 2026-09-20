@@ -141,9 +141,9 @@ All routing rules per routing-rules.md fire deterministically (incl. R-FACTORY-4
 - **Setup:** `--deep` chain; bind-codebase emits `status: halted` with `bind_conflict` blocker
 - **Expect:** chain STOPS; blocker YAML surfaced verbatim; user resolves via resolve-oq
 
-### DC7: Tech-OQ recommendations do NOT pause the chain
-- **Setup:** `--deep` chain; bind-codebase surfaces one or more tech-OQ recommendations (recommend-mode, all fields valid — per bind-codebase.test.md TQ5) but has zero CONFLICTs and no `--strict` business OQs
-- **Expect:** bind-codebase emits `status: completed` (NOT `paused`); orchestrator auto-invokes `generate-units`; recommendations remain in binding.md "## Tech-OQ Recommendations (review required)" for post-binding review and the OQ carries into generate-units as a pending ungrounded OQ — the chain never stalls awaiting `--resume` for an advisory recommendation
+### DC7: AI technical decisions never pause the chain and never route to resolve-oq
+- **Setup:** `--deep` chain; the vault carries tech OQs the AI decided (recommend-mode, all fields valid — per bind-codebase.test.md TQ5), one of them P1; zero CONFLICTs and no open business OQs
+- **Expect:** bind-codebase emits `status: completed` (NOT `paused`); orchestrator auto-invokes `generate-units`; the decisions are listed in binding.md "## AI Technical Decisions" (information, never an ask); because a decided OQ is `status: resolved`, the `oq_gate` (`pending_p0_p1`) does NOT fire for the P1 tech OQ and `resolve-oq` is never inserted into the chain — only an open P1 *business* OQ can do that
 
 ## Resume mechanics (v1.3+, Iter 4)
 

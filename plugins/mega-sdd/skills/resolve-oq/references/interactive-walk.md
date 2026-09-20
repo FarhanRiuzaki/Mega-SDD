@@ -57,14 +57,14 @@ Ask the user which OQs to walk through this session:
 - **`p1-only`** — only Priority 1 OQs (sprint-0 blockers). Pick this only when P2/P3 are deliberately deferred to a later session.
 - **`p1-then-p2`** — P1 first, then P2. Skip P3.
 - **`by-category`** — group by category from the roll-up (e.g., "PRD inconsistencies" first, "Tech stack" second). Useful when each category aligns with a different stakeholder.
-- **`single-oq`** — jump to a specific OQ tag (e.g., `OQ-FL-1`). For quick targeted resolution.
+- **`single-oq`** — jump to a specific OQ tag (e.g., `OQ-FL-1`). For quick targeted resolution. **Also the OVERRIDE path for an AI technical decision** (Step 1 rule 2).
 
 Persist: `RESOLUTION_SCOPE=<choice>`. Echo back so the user sees the plan.
 
 ## Step 1 — Parse OQ list
 
 1. Read the authored OQ surface (layout-3: `context.md ## Open Questions`; layout-2: `constraints.md ## Open Questions`; legacy: the 7 files' per-doc sections + roll-up).
-2. Extract entries that are still `[ ]` (open) — skip `[x]` (resolved) and `[~]` (out of scope).
+2. Extract entries that are still `[ ]` (open) — skip `[x]` (resolved) and `[~]` (out of scope). **Tech OQs never reach this queue**: the authoring phase / bind decided them (`generate-intent/references/vault-core.md §AI technical decisions`), so they are `[x]`. **One exception — override:** `single-oq <tag>` naming an `[x]` OQ whose annotation carries `(AI decision …)` queues that OQ. Build its prompt as usual with slot `[1]` = the AI's pick (its `recommendation` + `rationale` + `fallback_if_wrong` from `vault.json` are the description, labelled "keputusan AI saat ini"), and on the answer REPLACE the annotation with `→ **Resolved v{X.Y}** (<date>): <human answer>` — no `(AI decision …)` marker, so the next derive drops `resolved_by` — and record the replaced pick in the `derive-vault-json.sh --event` (`{"event":"ai_decision_overridden","oq":"<tag>","was":"<AI pick>"}`). Keeping the AI's pick (slot `[1]`) changes nothing. A `[x]` OQ WITHOUT the marker is a human answer — `single-oq` on it stays what it was (not re-opened here).
 3. For each OQ, capture:
    - Tag (`OQ-{CODE}-{N}`)
    - Priority (`P1 | P2 | P3`)

@@ -70,8 +70,25 @@ OQ_CONF_BRACKET_RE = re.compile(
 # (a resolved OQ is NOT always the last line of its doc — without re.M the `$`
 # only matched at block end and mid-doc annotations were silently dropped,
 # DELETING a prior resolution on re-derive since it is a DERIVED_OQ key).
+# The version slot also accepts the literal `(plan)` — the lite-lane batched
+# ask wrote `→ **Resolved (plan)** (date): answer` and the version-only form
+# silently DROPPED the stakeholder's answer on derive (field vault, 2026-09-16).
 OQ_RESOLUTION_RE = re.compile(
-    r"→\s*\*{0,2}Resolved v[\d.]+\*{0,2}[^:\n]*:\s*(.+)$", re.M
+    r"→\s*\*{0,2}Resolved (?:v[\d.]+|\(plan\))\*{0,2}[^:\n]*:\s*(.+)$", re.M
+)
+
+# `→ **Resolved v1.0** (AI decision, 2026-09-20): <pick>` — a TECH OQ the AI
+# decided (spec 2026-09-20-oq-business-only-design.md). The marker rides the
+# annotation's existing parenthetical slot, so OQ_RESOLUTION_RE parses the
+# answer unchanged; this regex only answers WHO resolved it. md-owned (a
+# DERIVED_OQ key): a --patch cannot forge it, and a human override that
+# rewrites the annotation without the marker drops it on the next derive.
+# The marker must OPEN the parenthetical (`(AI decision)` / `(AI decision, …)`):
+# a human note that merely mentions it — `(PM, after reviewing the AI decision
+# log)` — is a human answer and must never be attributed to the AI.
+OQ_AI_DECISION_RE = re.compile(
+    r"→\s*\*{0,2}Resolved (?:v[\d.]+|\(plan\))\*{0,2}\s*\(\s*AI decision\s*(?:,[^)\n]*)?\)\s*:",
+    re.M,
 )
 
 # `→ Out of Scope v1.1: reason`
@@ -745,6 +762,10 @@ def parse_open_questions(doc_name, md, errors):
         rm = OQ_RESOLUTION_RE.search(block)
         if rm:
             entry["resolution"] = rm.group(1).strip()
+        # absent = a human resolved it (back-compat: every pre-existing
+        # resolved OQ reads as human); only the AI marker is ever stamped
+        if status == "resolved" and OQ_AI_DECISION_RE.search(block):
+            entry["resolved_by"] = "ai"
         om = OQ_OOS_REASON_RE.search(block)
         if om:
             entry["out_of_scope_reason"] = om.group(1).strip()

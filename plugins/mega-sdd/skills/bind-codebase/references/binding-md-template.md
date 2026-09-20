@@ -41,8 +41,8 @@ scope_metadata: { id, name }         # only when vault.json is scoped (Step 1)
 |---|---|---|---|---|---|
 | OQ-AR-1 | tech / scan | which test framework? | codebase-map §test_frameworks | phpunit | phpunit.xml:1 |
 
-## Tech-OQ Recommendations (review required) (N)
-> Each has ACCEPT / OVERRIDE / REJECT options. Recommendations do NOT block; user reviews one-pass after binding completes.
+## AI Technical Decisions (N)
+> Tech OQs the AI decided (citations verified). Information only — nothing here blocks and nothing here needs a reply. Override any of them: `resolve-oq single-oq <OQ-ID>`.
 
 ### OQ-AR-7 [P2] [tech / recommend] [conf: high]
 …

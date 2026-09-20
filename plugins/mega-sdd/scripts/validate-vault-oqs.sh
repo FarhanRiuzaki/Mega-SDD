@@ -5,6 +5,11 @@
 # Per-OQ scope (B.4):
 #   - oq_recommend_citation_invalid (recommendation cites nonexistent KB section)
 #   - oq_tech_missing_mode / oq_recommend_underspecified / oq_scan_missing_query
+#   - oq_decided_business_signal (an AI-decided OQ reads as business / regulated /
+#     [LOCKED] / source-vs-code contradiction — always hard) and oq_tech_undecided
+#     (a tech OQ left open for a human — hard under --strict-tech, the
+#     authoring-time gate; a soft advisory under analyze so an older vault never
+#     retro-fails). Spec docs/superpowers/specs/2026-09-20-oq-business-only-design.md.
 #
 # Vault-WIDE rails (Task G — docs/superpowers/specs/2026-06-01-sharpen-code-delivery-uiux-design.md
 # §3 Slice G; plan §Task G). Operate on the WHOLE active vault, not just the
@@ -35,11 +40,16 @@ set -uo pipefail
 CWD=""
 FILE_PATH=""
 QUIET=0
+STRICT_TECH=0
 for arg in "$@"; do
   case "$arg" in
     --cwd=*) CWD="${arg#*=}" ;;
     --file-path=*) FILE_PATH="${arg#*=}" ;;
     --quiet) QUIET=1 ;;
+    # authoring-time gate (generate-intent Step 3.8 / plan Step 5): an undecided
+    # tech OQ is a hard FAIL. Without it (analyze on an older vault) the same
+    # finding is a soft advisory — a pre-existing vault never retro-fails.
+    --strict-tech) STRICT_TECH=1 ;;
     *) echo "ERROR: unknown arg" >&2; exit 2 ;;
   esac
 done
@@ -72,7 +82,7 @@ mkdir -p "$(dirname "$STATE_FILE")" 2>/dev/null || exit 2
 # behavior change to windows, rails, or exit codes.
 export MEGA_SDD_LIB_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/_lib"
 
-CWD="$CWD" FILE_PATH="$FILE_PATH" STATE_FILE="$STATE_FILE" QUIET="$QUIET" python3 <<'PYEOF'
+CWD="$CWD" FILE_PATH="$FILE_PATH" STATE_FILE="$STATE_FILE" QUIET="$QUIET" STRICT_TECH="$STRICT_TECH" python3 <<'PYEOF'
 import json, os, re, glob, sys
 from datetime import datetime, timezone
 
@@ -144,6 +154,54 @@ TECH_TEXT_RE = re.compile(
     r"|\bframework\s+standard\b",
     re.IGNORECASE,
 )
+
+# Spec 2026-09-20-oq-business-only-design.md §D3: the mirror table — the
+# literal BUSINESS rows of the same heuristic table, plus the money / retention /
+# compliance nouns and the source-vs-code contradiction shape ("the PRD names X
+# but the repo is Y — which is authoritative?" is the CONFLICT class: a human
+# call, never an AI pick). An OQ the AI decided (`resolved_by: ai`) whose text,
+# recommendation or rationale matches is a business matter decided without a
+# human → oq_decided_business_signal. Text-pattern test, never LLM judgment;
+# ID rows because generated docs follow the PRD language.
+BUSINESS_TEXT_RE = re.compile(
+    r"\bshould\s+we\s+support\b|\bcount\s+as\s+in[- ]scope\b"
+    r"|\bwhat\s+is\s+the\s+limit\b|\bmax(?:imum)?\s+value\s+for\b"
+    r"|\bregulated\b|\bregulat(?:ion|ory)\b|\bPOJK\b|\bOJK\b|\bcompliance\b"
+    r"|\bedge\s+case\b"
+    r"|\bstakeholders?\b|\bproduct\s+owner\b|\blegal\b|\bfinance\s+team\b"
+    r"|\bpricing\b|\brefunds?\b|\bfees?\b|\bpenalt(?:y|ies)\b|\binterest\s+rate\b"
+    r"|\bretention\s+period\b"
+    r"|\bauthoritative\b|\bcontradict\w*|\bsource\s+of\s+truth\b"
+    r"|\[LOCKED\]"
+    r"|\bregulasi\b|\bkepatuhan\b|\bbiaya\b|\bdenda\b|\bbunga\b|\bretensi\b"
+    r"|\bkebijakan\s+bisnis\b|\bkeputusan\s+bisnis\b|\bpemangku\s+kepentingan\b"
+    r"|\bbatas(?:an)?\s+(?:maksimal|maksimum|minimal|minimum)\b",
+    re.IGNORECASE,
+)
+# QUESTION-text-only rows (never the recommendation/rationale — "no paid licence
+# needed" is a fine reason for a technical pick). Every row is a class observed
+# tagged `tech` in the field vaults (benchmarks/results/p3 clinic runs,
+# 2026-09-20): spend the AI cannot authorise (paid licence / tier / budget),
+# hosting + infrastructure ownership, NFR targets, and WHICH STACK wins when
+# the PRD names one and the repo is another. Deliberately NO generic
+# "PRD … but the repo …" shape row: measured on the same vaults it flagged a
+# pure route-alias question, missed the stack question (the "." in "§6.3"
+# broke the span), and once loosened it would flag half of every xs vault's
+# legitimate tech OQs ("the PRD wants a table but the repo has no DB layer").
+# Gravity is a judgment the classifier makes; this table only backstops it.
+BUSINESS_QUESTION_RE = re.compile(
+    r"\bpaid\b|\blicen[cs]e[sd]?\b|\bbudget\b|\bsubscription\b|\bpremium\b|\bpro\s+tier\b"
+    r"|\bberbayar\b|\blisensi\b|\banggaran\b|\blangganan\b"
+    r"|\bdeployment\s+target\b|\bwhere\s+will\s+the\s+app\s+run\b|\bself[- ]hosted\b|\bhosting\b"
+    r"|\bperformance\s+targets?\b|\bSL[AO]s?\b"
+    r"|\b(?:technology|tech)\s+stack\b",
+    re.IGNORECASE,
+)
+strict_tech = os.environ.get("STRICT_TECH", "0") == "1"
+# layout-3 (`context.md`) has no bind phase after authoring, so an open `scan`
+# OQ there has no resolver left — it is undecided too (layout-2 resolves `scan`
+# at bind-codebase Step 2.6).
+is_layout3 = os.path.isfile(os.path.join(os.path.dirname(file_path), "context.md"))
 
 # Walk the body. Build per-OQ blocks: text from OQ mention up to (but excluding)
 # the next OQ mention. This avoids the bug where OQ-A's metadata window catches
@@ -283,6 +341,46 @@ for oqe in vj_oqs:
                 "resolution_mode": "recommend",
                 "missing_fields": missing_fields,
             })
+    status_v = str(oqe.get("status") or "open").strip().lower()
+    # ─── oq_decided_business_signal: the AI decided a matter that reads as
+    # business / regulated / [LOCKED] / source-vs-code contradiction. Always
+    # hard — only a vault written under the business-only rule carries
+    # `resolved_by: ai`, so no older vault can trip it.
+    if str(oqe.get("resolved_by") or "").strip().lower() == "ai":
+        hay = " ".join(str(oqe.get(f) or "") for f in ("text", "recommendation", "rationale", "resolution"))
+        bm = BUSINESS_TEXT_RE.search(hay) or BUSINESS_QUESTION_RE.search(str(oqe.get("text") or ""))
+        if not category.startswith("tech") or bm:
+            issues.append({
+                "halt_type": "oq_decided_business_signal",
+                "detail": (
+                    f"OQ {tag} was resolved by the AI but "
+                    + (f"its text/rationale carries a business signal (\"{bm.group(0)}\")" if bm
+                       else f"its category is '{category or 'untagged'}', not tech")
+                    + " — a business decision, a regulated/[LOCKED] matter, or a source-vs-code "
+                    "contradiction is never an AI pick. Re-open it (`[ ]`), drop the `(AI decision …)` "
+                    "annotation, tag it `[business]` and let the stakeholder answer."
+                ),
+                "oq_id": tag,
+                "matched_pattern": bm.group(0) if bm else None,
+            })
+    # ─── oq_tech_undecided: a tech OQ the authoring phase left for a human.
+    # tech is answerable from the codebase / pack / docs / convention, so the
+    # AI decides it (`→ **Resolved vX** (AI decision, <date>): <pick>`); what
+    # it genuinely cannot answer is a missing FACT → re-tag `[business]`.
+    undecided_modes = {"recommend", "blocking"} | ({"scan"} if is_layout3 else set())
+    if category.startswith("tech") and status_v == "open" and rmode in undecided_modes:
+        issues.append({
+            "halt_type": "oq_tech_undecided",
+            "detail": (
+                f"OQ {tag} is tech / {rmode} and still open — technical questions are decided by "
+                "the AI (reuse-first: codebase → pack → installed dependency → current docs → "
+                "simplest option), recorded with rationale + citation + fallback_if_wrong. If the "
+                "answer is a FACT no source contains, re-tag it `[business]` with the reason."
+            ),
+            "oq_id": tag,
+            "resolution_mode": rmode,
+            "severity": "hard" if strict_tech else "advisory",
+        })
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Task G — Operator-workflow-UX capture + Design-Source OQ (two vault-WIDE rails)
@@ -699,7 +797,10 @@ if active_vault_dir:
 # stay FAIL. This keeps an Indonesian "uncheckable" or a lone defaulted-standard hint
 # from reading as loud as a real gap.
 _SOFT_ADVISORY = {"operator_surface_uncheckable", "defaulted_standard_uncited"}
-_hard_issues = [i for i in issues if i.get("halt_type") not in _SOFT_ADVISORY]
+# oq_tech_undecided is hard only at the authoring-time gate (--strict-tech);
+# under analyze a pre-existing vault reads WARN, never a retro-FAIL.
+_hard_issues = [i for i in issues if i.get("halt_type") not in _SOFT_ADVISORY
+                and not (i.get("halt_type") == "oq_tech_undecided" and i.get("severity") == "advisory")]
 status = "FAIL" if _hard_issues else ("WARN" if issues else "PASS")
 state = {
     "ts": ts,

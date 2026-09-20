@@ -82,7 +82,7 @@ handoff:
     phase_total: 1                        # total phases planned (legacy KB suggested-phasing.md; PRD-kontrak KB always 1)
 ```
 
-Status `paused` when P1 business OQs are produced (downstream still works; the user should triage). Status `halted` on `oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query`. Required ONLY under `--auto`; standalone invocations may emit informationally.
+Status `paused` when P1 business OQs are produced (downstream still works; the user should triage). Status `halted` on `oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query` / `oq_tech_undecided` / `oq_decided_business_signal`. Required ONLY under `--auto`; standalone invocations may emit informationally.
 
 ## Path resolution
 

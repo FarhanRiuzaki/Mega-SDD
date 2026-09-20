@@ -58,10 +58,18 @@ Manual-run fixture for the `plan` skill — the lite-lane pre-code phase (PRD �
 ### B5: ONE batched ask
 - P1 business OQs → ONE `AskUserQuestion`, ≤4 questions, each with keterangan (question source + per-option explanation, Indonesian for ID users), options `[1]` recommended / `[2]` Defer / `[3]` Out of scope / Other
 - More than 4 → the 4 with the largest unit blast radius; the rest stay `blocking` in the report
-- Headless → the OQs stay open; the skill never self-answers
+- Headless → the business OQs stay open; the skill never self-answers a business OQ
+- A tech OQ is NEVER one of the questions — at any priority, P1 included
+
+### B5b: Tech OQs are decided by the AI, never asked
+- Every `[tech / scan|recommend]` OQ is written `[x]` + `→ **Resolved v<X.Y>** (AI decision, <date>): <pick>` at Step 3 (a `scan` question is probed NOW — no bind phase follows PLAN); `context.md` carries the `## AI Technical Decisions` table (omitted when none); vault.json shows `status: resolved`, `resolved_by: ai`
+- No `[tech / blocking]` bracket is ever written; a missing FACT or a "PRD says X but the repo does Y" question is `[business]`
+- Step 5 runs `validate-vault-oqs.sh --cwd=<root> --file-path=<vault>/context.md --strict-tech` AFTER the derive: `oq_tech_undecided` / `oq_decided_business_signal` are findings the phase fixes and re-runs — never patched around
+- The Step-7 summary prints ONE information line (`N keputusan teknis diambil AI … override: resolve-oq single-oq <OQ-ID>`) — not a question
+- A human answer from the batched ask is written `→ **Resolved v<X.Y>** (plan, <date>): <answer>` — never the `(AI decision …)` marker
 
 ### B6: xs switch
-- `project_scale: xs` (1–3 screens ∧ ≤2 entities ∧ ≤3 flows): medium-priority OQs are born `**Deferred (plan)**:`; units get the xs body diet
+- `project_scale: xs` (1–3 screens ∧ ≤2 entities ∧ ≤3 flows): P2 *business* OQs are born `**Deferred (plan)**:` (tech OQs are decided at every scale, never deferred); units get the xs body diet
 
 ### B7: `--regenerate` guard
 - Existing `context.md` in the target vault without `--regenerate` → refuse with one line; nothing overwritten
