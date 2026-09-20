@@ -134,9 +134,26 @@
 - **Setup:** unit U-011 has 3 Hard rules; bolt violates one
 - **Expect:** post-flight detects 1 violation; HALT with `hard_rule_violated` listing all 3 rules in evidence (passed + failed); bolt-report.md captures per-rule status
 
+## Attempt cap — the retry budget is hook-enforced (v2.53.0+)
+
+### AC1: the budget is persisted at dispatch, never counted by the controller
+- **Setup:** `execute-bolts U-003 --max-retries=2` (classic lane)
+- **Expect:** the router call forwards the flag — `resolve-review-tier.sh --unit … --write --max-retries=2` — and `bolts/U-003/review-tier.json` carries `retry_budget: 2`, `retry_budget_source: flag`. The controller keeps NO attempt counter of its own and never writes `attempts.json`.
+
+### AC2: `gate: "halt"` from the merge script ends the loop before a doomed dispatch
+- **Setup:** fix round 2 of 2 just merged; a Critical is still open; `merge-panel-findings.sh` prints `"budget_left":0,"gate":"halt"`
+- **Expect:** NO further `bolt-implementer` dispatch is built; the controller writes the `review_critical_unresolved` halt YAML (`retries_attempted` = `attempts.json` `dispatches` − 1) + the bolt-report `## Review panel` section and stops the unit (quarantine when the halt class allows).
+
+### AC3: the hook denies a dispatch past the budget — the controller does not retry it
+- **Setup:** a controller that lost count after a compaction dispatches a 4th implementer for a unit with `retry_budget: 2`
+- **Expect:** PreToolUse DENIES (`attempt-cap` … `review_critical_unresolved`, reason names count / budget / source / open finding ids + keterangan). The controller treats it as the terminal halt — it never re-dispatches, never edits `attempts.json` / `review-tier.json` (both are in the anti-self-bypass set), and tells the user the reset is theirs (delete `attempts.json`, or raise `max_retries:`).
+
+### AC4: lane lite + `unit_tier: xs` → budget 1
+- **Expect:** `retry_budget: 1`, `retry_budget_source: xs-lite` — one verifier round, then quarantine; an explicit `--max-retries=N` on the run still wins.
+
 ## Pass criteria
 
-All triggers fire, pre-flight gates behave, whitelist + retry/halt protocol works. Hard Rule pre/post-flight (HR1-HR11) follows §4 (pre-flight) + §Post-flight Hard Rule validation. Violations NEVER silent — post-flight is detect-after (the bolt commit already landed): the run HALTS, the B1 gate blocks every further `execute-bolts` until the flagged commit is fixed-forward or reverted.
+All triggers fire, pre-flight gates behave, whitelist + retry/halt protocol works. The retry budget is a mechanism (AC1-AC4): the hook counts, the controller never does. Hard Rule pre/post-flight (HR1-HR11) follows §4 (pre-flight) + §Post-flight Hard Rule validation. Violations NEVER silent — post-flight is detect-after (the bolt commit already landed): the run HALTS, the B1 gate blocks every further `execute-bolts` until the flagged commit is fixed-forward or reverted.
 
 ---
 

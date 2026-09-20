@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.52.0
+version: 2.53.0
 description: Executes units into code commits (bolts) via the first-class mega-sdd bolt agents (implementer + parallel blind review panel), with Hard Rule pre/post-flight scans that HALT on violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -27,7 +27,7 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
   - `--sprint=<n>` — execute ONE sprint (one topological wave, 1-indexed) and stop. Prerequisite: every unit in sprints `1..n-1` is complete; otherwise **halt `sprint_blocked_by`**. The sprint numbering is `analyze-parallelism.sh --format=json` `waves[]` — never hand-numbered.
   - `--sprint-checkpoint` — hold at every sprint boundary for human review instead of rolling into the next wave. Prints the sprint summary (units landed, advisory findings, gate results, elapsed) and waits. Off by default. Under `--auto` (non-interactive by contract) it does NOT wait — it emits the sprint summary into the handoff YAML at each boundary (`sprints[]`) and continues; a checkpoint that silently evaporates would be worse than none.
   - `--worktree` — isolate each bolt in a git worktree.
-  - `--max-retries=N` — default 3.
+  - `--max-retries=N` — default 3 (lane lite + `unit_tier: xs` → 1; `.mega-sdd/config.yaml` `max_retries:` sets the project default). **HOOK-ENFORCED per unit:** forward it to `resolve-review-tier.sh --write` (`--max-retries=N`, plus `--lite` on the lite lane) — the script persists `retry_budget` in `bolts/U-XXX/review-tier.json`, the PreToolUse gate counts every ALLOWED `bolt-implementer` dispatch in `bolts/U-XXX/attempts.json` and DENIES the one past `1 + retry_budget` (`review_critical_unresolved`). Never keep the count yourself, never write either file. A value above 3 is recorded with `retry_budget_source: flag` and named in the bolt-report.
   - `--dry-run` — walk steps, do not commit.
   - `--rebind=@<paths-file>` (lane lite / layout-3 only) — re-verdict, without dispatching anything, every unit whose `target_files` ∪ `## Anchors` ∪ per-unit binding anchors intersect the listed changed paths: **Run** `bash <plugin-root>/scripts/rebind-units.sh --cwd=<root> --vault=<vault> --paths=@<file>` (exit 0 = nothing affected · 4 = re-bound, read `gate` · 2/3 = fail-closed → `--units=all`). It is the sync/delta lane's re-bind hop on this layout (the state engine renders it; `bind-codebase --paths=@…` FATALs `bind_folded_into_bolts` here); the CONFLICT gate it writes is the same `.validation-blockers.json` every dispatch meets.
   - `--force` — re-execute completed units / proceed on a dirty tree.

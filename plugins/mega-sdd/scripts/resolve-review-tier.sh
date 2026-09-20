@@ -52,13 +52,17 @@ set -u
 UNIT=""
 PACK_FILE=""
 WRITE=0
+MAX_RETRIES=""
+LITE=0
 while [ $# -gt 0 ]; do case "$1" in
   --write) WRITE=1; shift;;
+  --max-retries=*) MAX_RETRIES="${1#*=}"; shift;;
+  --lite) LITE=1; shift;;
   --unit) UNIT="$2"; shift 2;;
   --unit=*) UNIT="${1#*=}"; shift;;
   --pack) PACK_FILE="$2"; shift 2;;
   --pack=*) PACK_FILE="${1#*=}"; shift;;
-  *) echo "usage: resolve-review-tier.sh --unit <U-*.md> [--pack <resolved-pack.md>] [--write]" >&2; exit 2;;
+  *) echo "usage: resolve-review-tier.sh --unit <U-*.md> [--pack <resolved-pack.md>] [--write] [--max-retries=N] [--lite]" >&2; exit 2;;
 esac; done
 [ -n "$UNIT" ] && [ -f "$UNIT" ] || { echo "usage: resolve-review-tier.sh --unit <U-*.md> [--pack <pack.md>]" >&2; exit 2; }
 
@@ -67,7 +71,7 @@ esac; done
 # gate (F-07). Keyed at dispatch, like B4 keys on the commit trailer, so a bolt
 # dispatched before this version never retro-blocks.
 export MEGA_SDD_LIB_DIR="$(cd "$(dirname "$0")" && pwd)/_lib"
-V_UNIT="$UNIT" V_PACK="${PACK_FILE:-}" V_WRITE="$WRITE" python3 <<'PYEOF'
+V_UNIT="$UNIT" V_PACK="${PACK_FILE:-}" V_WRITE="$WRITE" V_MAX_RETRIES="$MAX_RETRIES" V_LITE="$LITE" python3 <<'PYEOF'
 import fnmatch, json, os, re, sys
 
 unit_path = os.environ["V_UNIT"]
@@ -321,6 +325,25 @@ out = {"tier": tier, "lenses": lenses, "signals_fired": fired,
        "unit_tier": unit_tier}
 if parse_note:
     out["parse_note"] = parse_note
+# retry budget (spec 2026-09-20-hook-enforced-attempt-cap-design.md D2): resolved
+# HERE, once, from deterministic inputs — the PreToolUse attempt-cap gate reads
+# it back from review-tier.json and never recomputes it. Fail-soft: an import or
+# layout surprise leaves the field absent, and an absent field = the gate stays
+# silent for this unit (the migration guarantee), never a wrong number.
+try:
+    sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+    import vault_layouts as _vl
+    _ud = os.path.dirname(os.path.abspath(unit_path))
+    _vroot = os.path.dirname(_ud) if os.path.basename(_ud) == "units" else os.path.dirname(os.path.dirname(_ud))
+    _proj = _vroot
+    while _proj and _proj != os.path.dirname(_proj) and not os.path.isdir(os.path.join(_proj, ".mega-sdd")):
+        _proj = os.path.dirname(_proj)
+    _b, _src = _vl.retry_budget(_proj, _vroot, unit_tier, os.environ.get("V_MAX_RETRIES") or None,
+                                os.environ.get("V_LITE") == "1")
+    out["retry_budget"] = _b
+    out["retry_budget_source"] = _src
+except Exception:
+    pass
 if os.environ.get("V_WRITE") == "1":
     sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
     import plugin_meta

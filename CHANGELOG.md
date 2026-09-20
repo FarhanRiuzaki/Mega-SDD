@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [8.6.0] - 2026-09-20 — budget percobaan bolt jadi MEKANISME: hook yang ngitung, bukan controller
+
+Spec `docs/superpowers/specs/2026-09-20-hook-enforced-attempt-cap-design.md` (§8 = catatan implementasi). `--max-retries` selama ini angka yang *dipercayakan* ke controller buat dihitung — dan hitungan yang hidup di konteks model nggak selamat lewat compaction / `--resume`. Bukti lapangan: baseline klinik, U-008 jalan **4 fix round lawan budget 3**; fix round = **25 % wall** bolt-stage. Doktrin kita sendiri: *prose that says HALT enforces nothing.*
+
+### Added
+- **Gate `attempt-cap` (PreToolUse, in-run, per unit).** `resolve-review-tier.sh --write` sekarang nyimpen `retry_budget` + `retry_budget_source` di `bolts/U-XXX/review-tier.json` (urutan: flag `--max-retries=N` > lane lite + `unit_tier: xs` = 1 > config `max_retries:` > 3; flag sampah diabaikan). Aggregator ngitung tiap dispatch `bolt-implementer` yang **lolos** di `bolts/U-XXX/attempts.json` dan **nolak** dispatch yang ngelewatin `1 + retry_budget` — halt `review_critical_unresolved` (nggak ada halt type baru), alasan nyebut hitungan, budget + sumbernya, finding yang masih open, plus keterangan. Dispatch yang ditolak gate LAIN nggak makan budget.
+- **Verdict dini di `merge-panel-findings.sh`:** ringkasannya bawa `budget_left` + `dispatches`, dan `gate: "halt"` (bukan `re-dispatch`) kalau budget habis dengan finding gating masih open — controller berhenti sebelum buang satu turn nyusun dispatch yang pasti ditolak.
+- **`attempts.json` masuk anti-self-bypass** (5 titik pola; Bash redirect / `rm` / Write ditolak). Reset itu keputusan manusia: hapus file-nya (atau naikin `max_retries:`) lalu jalanin ulang.
+- Config baru `max_retries:` (top-level, `references/project-config.md`).
+
+### Changed
+- **`execute-bolts` 2.53.0** — `--max-retries` didokumentasiin sebagai hook-enforced; pemanggilan router nerusin `--max-retries` / `--lite`; §Merge gate + §Attempt rounds nunjuk ke mekanismenya; `halt-recovery.md` dapet jalur reset. `CLAUDE.md` §"What is actually enforced" nyatet gate barunya.
+
+### Notes
+- **Jaminan migrasi:** nggak ada `review-tier.json`, atau ada tapi tanpa `retry_budget` (ditulis plugin lama) → gate diam. Nggak pernah retro-block.
+- **Biaya:** 0 fork baru di hot path; jalur ALLOW dispatch implementer nambah satu `git rev-parse` (stamp `head` di log) di cabang yang memang udah jalanin sembilan re-derive. Jalur tolak: ±120 token alasan, gantiin satu ronde implementer + verifier + L0 penuh.
+- `attempts.json` itu artefak yang DIBACA (kayak B2/B4), bukan recompute — riwayat dispatch nggak bisa diturunin dari git. Ditulis jujur, bukan disembunyiin.
+- **Over-count yang diterima:** hitungan ditulis pas aggregator ALLOW; kalau user lalu nolak permission prompt, dispatch itu kehitung tapi nggak jalan. Arahnya fail-safe (halt lebih awal yang bisa di-reset manusia).
+- **Sengaja TIDAK dibangun:** anti-spin buat bolt loop (OD-2, nunggu data lapangan) dan cap buat `--max-cycles` / eskalasi model / partial-resume (nol breach tercatat → evidence-first bilang jangan).
+- Pin: `tests/hooks/attempt-cap-gate.test.sh` (24 assertion).
+
 ## [8.5.1] - 2026-09-20 — FSD §10: keputusan teknis AI kelihatan di dokumen tim + OQ yang masih open nggak lagi hilang
 
 Follow-up 8.5.0 (spec `2026-09-20-oq-business-only-design.md` §9.12). Keputusan AI itu `resolved`, jadi tabel OQ di FSD nggak pernah nampilin — tim yang cuma baca FSD nggak bakal lihat pilihan yang boleh mereka override. Pas ngetes ini ketemu bug lama yang lebih serius di section yang sama.

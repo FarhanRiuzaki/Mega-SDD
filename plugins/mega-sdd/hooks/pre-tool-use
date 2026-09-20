@@ -361,7 +361,7 @@ elif tool_name == "Bash":
         # GUARD_SKIP fold — the prot regex below is a byte-copy of the
         # dedicated interpreter'"'"'s (kept in lockstep by the parity pin).
         root = sc_root.rstrip("/")
-        prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.handoff-validation-state\.json|\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance|findings|review-tier|binding)\.json|lens-inputs/[^\s\"'"'"';|&<>]*l0-results\.json|bolts/_batch-suite\.json|uat/evidence/[^\s\"'"'"';|&<>]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
+        prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.handoff-validation-state\.json|\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance|attempts|findings|review-tier|binding)\.json|lens-inputs/[^\s\"'"'"';|&<>]*l0-results\.json|bolts/_batch-suite\.json|uat/evidence/[^\s\"'"'"';|&<>]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
         def _rel(t):
             if root and t.startswith(root + "/"):
                 return t[len(root) + 1:]
@@ -401,7 +401,7 @@ elif tool_name in ("Edit", "Write"):
                 verdict = "protected"
             elif re.search(r"(?:^|/)\.mega-sdd/\.cache/pack-resolver/[^/]+$", rel):
                 verdict = "evidence"
-            elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance|findings|review-tier|binding)\.json|_batch-suite\.json)$", rel):
+            elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance|attempts|findings|review-tier|binding)\.json|_batch-suite\.json)$", rel):
                 verdict = "evidence"
             elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/lens-inputs/[^/]+/l0-results\.json$", rel):
                 # F-08 7.11.0: the L0 record is script-written (run-code-gates.sh --write) and gate-read — guarded like the bolt evidence.
@@ -1103,6 +1103,42 @@ if IN_RUN and os.environ.get("AGENT_UNIT"):
         cmds = ex[0].get("commands", [])[:3]
         fails.append(("acceptance-expects", "unit %s has %d acceptance_test `type: test` entr%s with a command but no `expects` (acceptance_expects_missing): %s. The B4 gate would then measure only rc==0 of a test the implementer writes — vacuous evidence (69/69 entries on the field run, zero failures ever observed). Add `expects: \"<substring the output must contain>\"` to each entry in the unit file, then re-dispatch. Keterangan: setiap acceptance_test bertipe test wajib menyebut substring output yang membuktikan lulus. State: %s/.unit-spec-state.json" % (au, len(ex[0].get("commands", [])), "y" if len(ex[0].get("commands", [])) == 1 else "ies", cmds, md)))
 
+# attempt-cap (spec 2026-09-20-hook-enforced-attempt-cap-design.md), IN-RUN and
+# PER UNIT: `--max-retries` was a number the controller was trusted to count —
+# and a count that lives in model context does not survive compaction or a
+# --resume (field: U-008 ran 4 fix rounds against a budget of 3). The budget is
+# READ from review-tier.json (resolve-review-tier.sh, D2); the dispatch count is
+# attempts.json, written HERE and only on a final ALLOW (a denied dispatch costs
+# no budget). No review-tier.json / no retry_budget in it (a bolt dispatched by an
+# older plugin) = silent — never a retro-block. Exempt from the in-flight drop:
+# it is about the in-flight unit by definition. Corrupt attempts.json reads as 0
+# (only the moat file is fail-closed).
+ATTEMPT_PATH = None
+ATTEMPT_N = 0
+if IN_RUN and os.environ.get("AGENT_UNIT"):
+    au = os.environ["AGENT_UNIT"]
+    try:
+        _rtp = vault_layouts.find_bolt_artifact(os.environ["PROJECT_ROOT"], au, "review-tier.json")
+        _rt = json.load(open(_rtp)) if _rtp else {}
+    except Exception:
+        _rtp, _rt = None, {}
+    _bud = _rt.get("retry_budget") if isinstance(_rt, dict) else None
+    if _rtp and isinstance(_bud, int) and not isinstance(_bud, bool) and _bud >= 0:
+        ATTEMPT_PATH = os.path.join(os.path.dirname(_rtp), "attempts.json")
+        try:
+            ATTEMPT_N = int((json.load(open(ATTEMPT_PATH)) or {}).get("dispatches", 0))
+        except Exception:
+            ATTEMPT_N = 0
+        if ATTEMPT_N >= 1 + _bud:
+            _open = []
+            try:
+                _fj = json.load(open(os.path.join(os.path.dirname(_rtp), "findings.json")))
+                _open = [str(f.get("id")) for f in (_fj.get("findings") or []) if f.get("status") == "open"][:8]
+            except Exception:
+                pass
+            fails.append(("attempt-cap", "unit %s has spent its implementer budget (review_critical_unresolved): %d bolt-implementer dispatch(es) already ran against a budget of 1 + %d retr%s (source: %s)%s. Another implementer round is not allowed — write the halt YAML and the bolt-report `## Review panel` section, then stop this unit (quarantine it when the halt class allows, SKILL.md 3.10). Keterangan: jatah percobaan unit ini habis; pipeline berhenti supaya biaya tidak jalan terus tanpa hasil. Lanjutnya keputusan manusia: perbaiki akar masalahnya, lalu hapus %s (atau naikkan `max_retries:` di .mega-sdd/config.yaml) dan jalankan ulang." % (au, ATTEMPT_N, _bud, "y" if _bud == 1 else "ies", _rt.get("retry_budget_source", "?"), (" — open finding(s): " + ", ".join(_open)) if _open else "", ATTEMPT_PATH)))
+            ATTEMPT_PATH = None
+
 # flow-coverage (status==FAIL)
 d = L(".flow-coverage-state.json")
 if d and d.get("status") == "FAIL":
@@ -1167,6 +1203,31 @@ if fails:
         print(os.environ.get("GATE_SUBJECT", "mega-sdd:execute-bolts") + " is blocked — " + prefix + body)
     else:
         print(os.environ.get("GATE_SUBJECT", "mega-sdd:execute-bolts") + " is blocked — " + fails[0][1])
+elif ATTEMPT_PATH:
+    # final ALLOW of a bolt-implementer dispatch: count it (sole writer; the file
+    # is in the anti-self-bypass set). Silent on any error — never a block.
+    try:
+        import datetime, subprocess
+        try:
+            _prev = json.load(open(ATTEMPT_PATH))
+            _log = _prev.get("log") if isinstance(_prev, dict) and isinstance(_prev.get("log"), list) else []
+        except Exception:
+            _log = []
+        try:
+            _head = subprocess.run(["git", "-C", os.environ["PROJECT_ROOT"], "rev-parse", "--short", "HEAD"],
+                                   capture_output=True, text=True, timeout=5).stdout.strip() or None
+        except Exception:
+            _head = None
+        _n = ATTEMPT_N + 1
+        _log = (_log + [{"n": _n, "head": _head,
+                         "at": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")}])[-20:]
+        _tmp = ATTEMPT_PATH + ".tmp.%d" % os.getpid()
+        with open(_tmp, "w") as _fh:
+            json.dump({"schema": 1, "unit": os.environ.get("AGENT_UNIT"), "dispatches": _n,
+                       "log": _log, "written_by": "pre-tool-use"}, _fh, indent=1)
+        os.replace(_tmp, ATTEMPT_PATH)
+    except Exception:
+        pass
 ' 2>/dev/null)
       if [ -n "$GATE_REASON" ]; then emit_block "$GATE_REASON"; fi
     fi
@@ -1366,7 +1427,7 @@ elif re.search(r"(?:^|/)\.mega-sdd/\.cache/pack-resolver/[^/]+$", rel):
     # The Bash lane already denies this path; this closes the Write/Edit lane
     # (the _GUARDED tuple is exact-basename and cannot express the path).
     print("evidence")
-elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance|findings|review-tier|binding)\.json|_batch-suite\.json)$", rel):
+elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance|attempts|findings|review-tier|binding)\.json|_batch-suite\.json)$", rel):
     # Anchored to a real vault prefix (S6 EB-VAL-7 fix): a user project'"'"'s OWN
     # top-level or unrelated bolts/…/postflight.json is no longer false-blocked;
     # a forged mega-sdd artifact always lives under <vault>/bolts/ so it still matches.
@@ -1570,7 +1631,7 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
 import os, re, sys
 cmd = sys.stdin.read()
 root = (os.environ.get("PROJECT_ROOT", "") or "").rstrip("/")
-prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.handoff-validation-state\.json|\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance|findings|review-tier|binding)\.json|lens-inputs/[^\s\"'"'"';|&<>]*l0-results\.json|bolts/_batch-suite\.json|uat/evidence/[^\s\"'"'"';|&<>]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
+prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.handoff-validation-state\.json|\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance|attempts|findings|review-tier|binding)\.json|lens-inputs/[^\s\"'"'"';|&<>]*l0-results\.json|bolts/_batch-suite\.json|uat/evidence/[^\s\"'"'"';|&<>]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
 def rel(t):
     if root and t.startswith(root + "/"):
         return t[len(root) + 1:]
@@ -1598,7 +1659,7 @@ else:
     # S6 EB-GATE-4: the B1/B2 evidence artifacts join — their deterministic
     # writers run as `bash <script>` commands that never NAME the artifact, so
     # the guard only ever fires on direct forging/tampering verbs.)
-    PROTECTED='\.handoff-validation-state\.json|\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^[:space:]]*((pre|post)flight|acceptance|findings|review-tier|binding)\.json|lens-inputs/[^[:space:]]*l0-results\.json|bolts/_batch-suite\.json|uat/evidence/[^[:space:]]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^[:space:]]*'
+    PROTECTED='\.handoff-validation-state\.json|\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|bolts/[^[:space:]]*((pre|post)flight|acceptance|attempts|findings|review-tier|binding)\.json|lens-inputs/[^[:space:]]*l0-results\.json|bolts/_batch-suite\.json|uat/evidence/[^[:space:]]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^[:space:]]*'
     # S4 BC-BINDING-DELETE rail: deleting binding docs is a one-indirection
     # bypass (orphaned units re-validate to PASS). rm/unlink of a binding doc
     # under .mega-sdd/vaults/ is denied; re-binds OVERWRITE via Write, never rm.

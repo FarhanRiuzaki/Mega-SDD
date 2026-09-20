@@ -1,6 +1,6 @@
-# Hook-enforced attempt cap for the bolt loop — design spec (PROPOSAL)
+# Hook-enforced attempt cap for the bolt loop — design spec (SHIPPED 8.6.0)
 
-**Status:** SPEC ONLY — nothing built. Owner gate required before implementation (touches the PreToolUse aggregator = rails-adjacent). Source: `research/2026-09-20-agent-loop-goal-and-run-bounding.md` §3 (the agent-loop map) — the only in-run loop whose cap a script recomputes today is the factory ledger (`scripts/validate-factory-ledger.sh:13` `CAP=3`); every bolt-loop cap is prose the controller is trusted to count.
+**Status:** SHIPPED in 8.6.0 (owner gate 2026-09-20: "gas nomor 4, lanjut nomor 5" — OD-1 option (a), OD-2 stays parked, OD-3 = 8.6.0). Where the build differs from the design below, **§8 Implementation notes wins**. Touches the PreToolUse aggregator = rails-adjacent. Source: `research/2026-09-20-agent-loop-goal-and-run-bounding.md` §3 (the agent-loop map) — the only in-run loop whose cap a script recomputes today is the factory ledger (`scripts/validate-factory-ledger.sh:13` `CAP=3`); every bolt-loop cap is prose the controller is trusted to count.
 
 **One-line:** make `--max-retries` a *mechanism* — the hook counts `bolt-implementer` dispatches per unit and denies the dispatch that would exceed the budget — with zero new forks, zero new skills, zero new halt types.
 
@@ -74,3 +74,15 @@ Producer-grammar sweep (release rule 7.24.0): `findings.json` gains no field con
 - **OD-1 — ceiling on a flag-supplied budget.** A model can forward `--max-retries=50` and defeat the cap. Options: (a) no ceiling, record the source, surface any value > 3 in the bolt-report *(recommended — the flag is the user's by design, and the record makes abuse visible)*; (b) the flag may only LOWER the budget, raising requires `config.yaml` (a human-owned file); (c) hard clamp at 5.
 - **OD-2 — Phase 2 anti-spin** (§3): build after one field run shows whether same-finding recurrence still happens outside xs-lite, or never.
 - **OD-3 — release number.** Behavior change to a gate → MINOR. The tree is shared with a parallel session; the free version number must be confirmed at ship time.
+
+## 8. Implementation notes (8.6.0) — where the build differs from §2, and why
+
+1. **The config key is top-level `max_retries:`**, not the nested `execute_bolts.max_retries` of D2 — `.mega-sdd/config.yaml` is read by line-regex on top-level keys (`parallel_max:` precedent, `_lib/vault_layouts`), and one grammar beats two.
+2. **Budget precedence: flag > xs-lite > config > default.** D2 listed xs-lite first. An explicit `--max-retries=N` on THIS run is the user's call and wins; the measured W2 rule (lane lite + `unit_tier: xs` → 1) still beats a project-wide config default. A non-integer / negative flag is ignored, never trusted. Lane lite = `--lite`, or `lane: lite` in the config, or a layout-3 vault (`context.md`).
+3. **The ledger's `attempt` is NOT rewritten (amends D4).** `merge-panel-findings.sh` keeps `attempt = --round` (the round-discipline pins stay valid) and ADDS `dispatches` + `budget_left` to its summary, plus `gate: "halt"` when the budget is spent with a gating finding open. The hook never reads `attempt`, so nothing depends on the controller's round number any more.
+4. **One definition of the budget** — `_lib/vault_layouts.retry_budget()`; `resolve-review-tier.sh` calls it and persists the result; the hook only READS `review-tier.json`. Fail-soft: a layout surprise leaves the field absent, and an absent field = the gate stays silent (never a wrong number).
+5. **Corrupt `attempts.json` reads as 0** (fail-open) — the hook doctrine keeps ONLY the moat file fail-closed; the file is in the anti-self-bypass set (5 pattern sites, inserted before `findings` so the jit-bind alternation pins still hold).
+6. **Known, accepted over-count:** the count is written on the aggregator's ALLOW; if the USER then declines the permission prompt, that dispatch was counted but never ran. The direction is fail-safe (an early halt a human resets), and auto/accept modes never hit it.
+7. **Cost as built:** 0 new forks on the hot path; the counter adds one `git rev-parse --short HEAD` on the ALLOW path of a `bolt-implementer` dispatch only (it stamps `log[].head`), inside a branch that already runs nine re-derives.
+8. **Pins:** `tests/hooks/attempt-cap-gate.test.sh` — 24 assertions: budget resolution ×6, count-on-allow + deny ×7, denied-elsewhere costs nothing ×1, migration guarantee ×3, anti-self-bypass ×3, merge early verdict ×3. Not added: the `tests/blackbox` e2e arm of §5 — the hook test drives the real hook end-to-end already; a blackbox arm would re-prove the same path.
+

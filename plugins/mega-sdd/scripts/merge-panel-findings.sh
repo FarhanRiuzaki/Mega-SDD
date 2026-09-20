@@ -290,6 +290,24 @@ open_count = len([f for f in findings if f.get("status") == "open"])
 advisory_count = len([f for f in findings if f.get("status") == "advisory"])
 resolved_count = len([f for f in findings if f.get("status") == "resolved"])
 
+# attempt-cap early verdict (spec 2026-09-20-hook-enforced-attempt-cap-design.md
+# D4): the PreToolUse gate will DENY a dispatch past the budget — say so here,
+# before the controller spends a turn building one. Both files are written by
+# their own sole writers (resolve-review-tier.sh / the hook); absent = unknown,
+# and unknown never invents a verdict (gate stays re-dispatch | clear).
+budget_left = None
+dispatches = None
+try:
+    _b = json.load(open(os.path.join(bolt_dir, "review-tier.json"))).get("retry_budget")
+    if isinstance(_b, int) and not isinstance(_b, bool) and _b >= 0:
+        try:
+            dispatches = int(json.load(open(os.path.join(bolt_dir, "attempts.json"))).get("dispatches", 0))
+        except Exception:
+            dispatches = 0
+        budget_left = max(0, 1 + _b - dispatches)
+except Exception:
+    pass
+
 ledger = {"schema": 1, "unit": unit, "attempt": rnd, "head": head,
           "spec_verdict": spec_verdict, "findings": findings,
           "dropped_no_evidence": dropped,
@@ -313,6 +331,7 @@ print(json.dumps({"unit": unit, "attempt": rnd, "ledger": ledger_path,
                   "dropped_no_evidence": dropped,
                   "spec_verdict": spec_verdict,
                   # the gate condition, computed here so no caller re-derives it
-                  "gate": "re-dispatch" if (open_count or spec_fail) else "clear"},
+                  "budget_left": budget_left, "dispatches": dispatches,
+                  "gate": ("halt" if budget_left == 0 else "re-dispatch") if (open_count or spec_fail) else "clear"},
                  separators=(",", ":")))
 PYEOF

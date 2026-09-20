@@ -46,6 +46,10 @@ parallel_max: 4              # execute-bolts in-flight implementer cap (Claude C
                              # acceptance passed but whose panel has not merged yet is "panel-pending",
                              # and the gate lets the next dispatch through only while ≤ parallel_max
                              # such units exist (execute-bolts references/batch-and-fanout.md).
+max_retries: 3             # execute-bolts re-dispatch budget per unit (an explicit `--max-retries=N` wins;
+                           # lane lite + unit_tier xs is always 1). SCRIPT-READ + HOOK-ENFORCED:
+                           # `_lib/vault_layouts.retry_budget()` → `review-tier.json` `retry_budget`; the
+                           # PreToolUse gate denies the bolt-implementer dispatch past 1 + retry_budget.
 code_gates: true           # false → skip the L0 toolchain + SAST gates (execute-bolts references/code-gates.md).
                            #   The secret scan and new-dep existence check ALWAYS run — no key disables them.
 gateguard: true            # false → disable the LOCKED-file deny-once investigation gate (PreToolUse

@@ -119,6 +119,51 @@ def parallel_max(cwd, default=4):
     return default
 
 
+def _config_scalar(cwd, key):
+    """Top-level `<key>: <value>` from .mega-sdd/config.yaml (same line grammar
+    as parallel_max) — None when absent / unreadable."""
+    try:
+        with open(os.path.join(cwd, ".mega-sdd", "config.yaml"),
+                  encoding="utf-8", errors="replace") as f:
+            for ln in f:
+                m = re.match(r"^%s:\s*([^#\s]+)\s*(?:#.*)?$" % re.escape(key), ln)
+                if m:
+                    return m.group(1)
+    except OSError:
+        pass
+    return None
+
+
+def retry_budget(cwd, vault_root, unit_tier, flag=None, lite_flag=False):
+    """(budget, source) — how many RE-dispatches of bolt-implementer a unit may
+    get after its first one (spec 2026-09-20-hook-enforced-attempt-cap-design.md
+    D2). Resolved once at dispatch by resolve-review-tier.sh and persisted in
+    review-tier.json; the PreToolUse gate only ever READS that record.
+      flag     — an explicit `--max-retries=N` on this run (the user's call wins)
+      xs-lite  — lane lite + unit_tier xs → 1 (the measured W2 rule: fix rounds
+                 were 25 % of the clinic bolt-stage wall)
+      config   — top-level `max_retries:` in .mega-sdd/config.yaml
+      default  — 3
+    A non-integer / negative value is ignored, never trusted."""
+    def _int(v):
+        try:
+            v = int(str(v).strip())
+            return v if v >= 0 else None
+        except (TypeError, ValueError):
+            return None
+    f = _int(flag)
+    if f is not None:
+        return f, "flag"
+    lite = bool(lite_flag) or _config_scalar(cwd, "lane") == "lite" \
+        or os.path.isfile(os.path.join(vault_root, "context.md"))
+    if lite and unit_tier == "xs":
+        return 1, "xs-lite"
+    c = _int(_config_scalar(cwd, "max_retries"))
+    if c is not None:
+        return c, "config"
+    return 3, "default"
+
+
 def _json_status_pass(path):
     try:
         with open(path, encoding="utf-8") as f:

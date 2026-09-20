@@ -40,7 +40,8 @@ blocker:
   emitted_by: execute-bolts
   details:
     unit_id: U-XXX
-    retries_attempted: <N>
+    retries_attempted: <N>          # = attempts.json `dispatches` − 1 (hook-written; never your own count)
+    retry_budget: <N>               # review-tier.json `retry_budget` (+ `retry_budget_source`)
     tier: <minimal|standard|full>
     open_criticals:
       - lens: <spec|quality|security|standards|design>
@@ -48,6 +49,8 @@ blocker:
         anchor: <file:line>   # the unmet requirement IS the open finding
   next_action: "Review the open finding(s) in bolt-report.md ## Review panel — open Critical(s) and/or the spec lens's unmet requirement; fix the committed code (or revert the bolt commit) and re-run the unit. The finding survived the shared --max-retries budget — do not raise the cap to outlast it."
 ```
+
+**The budget is hook-enforced.** The same halt fires when the PreToolUse `attempt-cap` gate DENIES a `bolt-implementer` dispatch (the unit already used `1 + retry_budget` dispatches) — write this YAML + the bolt-report `## Review panel` section and stop the unit; never retry the dispatch. **Reset is the human's:** after fixing the root cause, delete `<vault>/bolts/U-XXX/attempts.json` (or raise `max_retries:` in `.mega-sdd/config.yaml`) and re-run — the file is in the anti-self-bypass set, so the controller cannot do it.
 
 ## Propose-and-confirm halt UX
 
