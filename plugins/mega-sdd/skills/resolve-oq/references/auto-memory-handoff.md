@@ -59,7 +59,7 @@ For each OQ/CONFLICT during the walk:
 When `orchestrate-flow --converge` hits `bind_conflict`:
 
 ```
-🔁 Cycle 1/5: invoking resolve-oq --binding --auto-accept --confidence-min=0.80
+🔁 Cycle 1/3: invoking resolve-oq --binding --auto-accept --confidence-min=0.80
 
 resolve-oq walking 3 conflicts:
   ✓ C-007 (auth) → KEEP_CODE (codebase anchor evidence; conf 0.95) → AUTO-ACCEPTED

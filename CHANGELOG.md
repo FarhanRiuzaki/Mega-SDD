@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [8.4.3] - 2026-09-20 — contoh convergence disamain ke default kanonik 3 + dua spec proposal (docs saja)
+
+Riset agent-loop (`research/2026-09-20-agent-loop-goal-and-run-bounding.md`) nemu doc drift: `--max-cycles` default-nya **3** (kanonik, `convergence-loops.md` §`--converge` flag), tapi contoh kerja di dua reference masih nulis 5 cycle. Model yang baca contoh bisa ngira budget-nya 5. Nol perubahan perilaku pipeline, hook, gate, maupun skrip.
+
+### Fixed
+- **`orchestrate-flow` 2.29.0 → 2.29.1** — `references/convergence-loops.md`: `Cycle 1/5` → `Cycle 1/3`, `cycles_attempted: 5` → `3`, "after 5 cycles" → "after 3 cycles" (halt_history di contoh yang sama memang cuma 3 cycle).
+- **`resolve-oq` 2.15.0 → 2.15.1** — `references/auto-memory-handoff.md` §Use case — convergence loops: `Cycle 1/5` → `Cycle 1/3`.
+- **Test** — `tests/surface/test-p9-audit-phase1.sh` dapet pin `A1c`: contoh kerja convergence di dua file itu nggak boleh nunjukin 5 cycle lagi.
+
+### Notes
+- **Dua spec PROPOSAL (belum ada yang dibangun):** `docs/superpowers/specs/2026-09-20-hook-enforced-attempt-cap-design.md` — `--max-retries` jadi mekanisme (hook ngitung dispatch `bolt-implementer` per unit; sekarang cap-nya cuma prosa, dan U-008 di baseline klinik jalan 4 fix round lawan budget 3); `docs/superpowers/specs/2026-09-20-oq-business-only-design.md` — OQ cuma buat yang AI nggak bisa jawab (bisnis), teknis diputus AI sebagai keputusan berlabel + bersitasi + bisa di-override (33 dari 64 OQ di 10 snapshot P3 itu teknis, 31 di antaranya udah bawa jawaban AI).
+- **Riset:** `/goal` itu user-typed only (nggak ada API buat plugin) → paling jauh jadi resep pemakaian, bukan fitur; satu-satunya plafon dolar deterministik = `--max-budget-usd` (headless only).
+
 ## [8.4.2] - 2026-09-17 — jalur install publik: semua referensi repo pindah ke GitHub (docs + manifest saja)
 
 Persiapan rilis publik di `github.com/FarhanRiuzaki/Mega-SDD`. Sebelumnya README, manifest, dan beberapa contoh masih nunjuk ke host SCM internal kantor yang cuma bisa diakses dari jaringan internal — instruksi install-nya gagal untuk user publik, dan hostname internal ikut ter-publish. Nol perubahan perilaku pipeline, hook, gate, maupun skrip.

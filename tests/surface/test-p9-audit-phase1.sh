@@ -21,6 +21,11 @@ else fail "A1: front door still carries a convergence default or example"; fi
 grep -qF 'default 3; canonical' "$OF/convergence-loops.md" \
   && pass "A1b: convergence-loops keeps the canonical default" \
   || fail "A1b: canonical default lost from convergence-loops"
+# A1c — the worked examples must agree with the canonical default (they drifted to 5 once)
+if ! grep -qE 'Cycle [0-9]+/5|cycles_attempted: 5|after 5 cycles' "$OF/convergence-loops.md" \
+   "$P/skills/resolve-oq/references/auto-memory-handoff.md"; then
+  pass "A1c: convergence worked examples agree with the canonical default 3"
+else fail "A1c: a convergence worked example still shows 5 cycles (canonical default is 3)"; fi
 if ! grep -qF '| **A — Starterkit-first**' "$FD" && ! grep -qF '`lint-units --changed-only` | Quality gate' "$FD"; then
   pass "B: starterkit + diagnostics tables removed from the front door"
 else fail "B: a duplicated chain-logic table survives at the front door"; fi

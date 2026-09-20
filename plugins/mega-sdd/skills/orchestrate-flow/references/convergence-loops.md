@@ -80,7 +80,7 @@ loop until clean OR max-cycles reached:
 ```
 ▶ Phase 3 of 5: bind-codebase
 ⛔ Halt: bind_conflict (3 conflicts detected)
-🔁 Cycle 1/5: auto-resolving via resolve-oq...
+🔁 Cycle 1/3: auto-resolving via resolve-oq...
    ↳ C-007 (auth conflict) → recommendation: KEEP_CODE (vault D-004 + code anchor; conf: 0.95) → ACCEPTED
    ↳ C-009 (sanctum vs passport) → recommendation: KEEP_VAULT (per constitution §B-001) → ACCEPTED
    ↳ C-011 (audit table schema) → recommendation: SPLIT (per past pattern) → ACCEPTED
@@ -101,13 +101,13 @@ blocker:
   emitted_at: <ISO8601>
   emitted_by: orchestrate-flow
   details:
-    cycles_attempted: 5
+    cycles_attempted: 3
     halt_history:
       - cycle: 1, halt: bind_conflict, auto-resolved: yes
       - cycle: 2, halt: bind_conflict (different conflicts), auto-resolved: yes
       - cycle: 3, halt: bind_conflict (recurring), auto-resolved: no — recommendation confidence dropped to 0.65
     last_halt: bind_conflict (C-019, auth-related; sources disagree)
-  next_action: "Recurring conflict detected after 5 cycles. Run resolve-oq --binding manually OR re-configure vault claim."
+  next_action: "Recurring conflict detected after 3 cycles. Run resolve-oq --binding manually OR re-configure vault claim."
 ```
 
 ## Anti-halu rails
