@@ -195,14 +195,16 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 
 ## Section 10 — Risks & Open Issues
 
-**Slots:** `{{section-10-oq-table}}`, `{{section-10-bolt-concerns-content}}`, `{{section-10-out-of-scope-content}}`
+**Slots:** `{{section-10-oq-table}}`, `{{section-10-bolt-concerns-content}}`, `{{section-10-out-of-scope-content}}`, `{{section-10-ai-decisions-table}}`
 **Source:**
 1. `<vault>/03-open-questions.md` (or `vault.json.open_questions[]`) — filter where `status != resolved`
 2. Bolt-reports `acceptance_test_concern:` aggregated
 3. the vault Overview §Non-Goals (`vault.md ## Overview`; legacy `01-overview.md`) — out-of-scope items
+4. `vault.json.open_questions[]` where `resolved_by == "ai"` — the tech OQs the AI decided. They are `resolved`, so source 1 never lists them; §10.4 is where the team sees the picks it may override.
 
 **Extraction:**
 - OQs: per unresolved OQ emit row `| {oq_id} | {question} | {priority} | {category} |`
+- AI decisions: per `resolved_by: ai` OQ, P1 first, emit row `| {tag} | {priority} | {text} | {resolution} | {scan_citations} | {fallback_if_wrong} |` — every cell copied VERBATIM from `vault.json` (script-filled; the model authors nothing here); none → one `(none)` row.
 - Bolt concerns: per concern emit `**{unit_id}:** {concern_text} (raised by {bolt_subagent_id})`
 - Out-of-scope: extract from 01-overview §Non-Goals (re-used from Section 2 but reformatted as risk-framing)
 

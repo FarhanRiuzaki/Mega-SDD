@@ -244,6 +244,14 @@ Per-FR detail format:
 
 {{section-10-out-of-scope-content}}
 
+### 10.4 AI Technical Decisions
+
+> Pertanyaan teknis yang diputus AI (bukan ditanyakan) — tinjau, dan override kapan saja: `resolve-oq single-oq <OQ ID>`.
+
+| OQ ID | Priority | Question | Decision | Basis (citation) | If wrong |
+|---|---|---|---|---|---|
+{{section-10-ai-decisions-table}}
+
 {{section-10-citations}}
 ```
 

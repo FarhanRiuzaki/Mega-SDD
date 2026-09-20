@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [8.5.1] - 2026-09-20 — FSD §10: keputusan teknis AI kelihatan di dokumen tim + OQ yang masih open nggak lagi hilang
+
+Follow-up 8.5.0 (spec `2026-09-20-oq-business-only-design.md` §9.12). Keputusan AI itu `resolved`, jadi tabel OQ di FSD nggak pernah nampilin — tim yang cuma baca FSD nggak bakal lihat pilihan yang boleh mereka override. Pas ngetes ini ketemu bug lama yang lebih serius di section yang sama.
+
+### Added
+- **`emit-fsd` 1.8.0 — §10.4 AI Technical Decisions.** Satu baris per OQ `resolved_by: ai` (P1 duluan): OQ ID · priority · pertanyaan · keputusan · dasar/sitasi · kalau salah, plus perintah override (`resolve-oq single-oq <OQ ID>`). Diisi SCRIPT (`build-fsd-core.sh`) verbatim dari `vault.json` — model nggak ngarang satu sel pun; `|` di dalam sel di-escape; nggak ada keputusan → satu baris `(none)` yang jujur. Sengaja cuma di FSD: PRD itu dokumen bisnis, pilihan teknis bukan tempatnya di sana.
+
+### Fixed
+- **§10.1 nyembunyiin OQ yang masih open di setiap vault layout-2 / layout-3.** Builder FSD nyari heading `## OQ-NNN` (grammar 7-file lama); di layout-2/3 OQ ditulis sebagai baris checkbox, jadi nggak ada yang ke-parse — lalu karena cabang `vault.json`-nya `elif`, yang kecetak malah baris palsu "format tidak dikenali" dan OQ bisnis yang beneran nunggu jawaban **nggak muncul di FSD**. Sekarang jatuh ke `vault.json` persis kayak `build-prd-core.sh` (ADV-009); baris format-gap cuma tersisa buat kasus yang memang bener (nggak ada heading DAN `vault.json` nggak punya daftar OQ). Jalur heading legacy nggak berubah.
+
+### Notes
+- Pin: `tests/oq-business-only/test-fsd-ai-decisions.sh` (7 assertion — F4 nge-pin bug di atas). Lima suite builder FSD yang lama tetap hijau.
+
 ## [8.5.0] - 2026-09-20 — OQ cuma buat yang AI nggak bisa jawab: pertanyaan teknis DIPUTUS AI, nggak ditanyain lagi
 
 Mandat owner (2026-09-20): *"oq itu wajib yg benar2 tidak bisa di jawab ai misal terkait keputusan bisnis, klo teknis harus take decision yg terbaik dan terefisien by ai."* Spec + evidence: `docs/superpowers/specs/2026-09-20-oq-business-only-design.md` (§9 = catatan implementasi). Angkanya: dari 64 OQ di 10 snapshot vault P3, **33 (52 %) teknis**, dan 31 di antaranya udah bawa jawaban AI lengkap (rekomendasi + rationale + sitasi + fallback) — tapi pipeline tetap nyodorin ke manusia karena walk `resolve-oq` dan `oq_gate` nggak punya filter kategori. Keluhan tim "28 OQ utk 3 screen" (triage 2026-08-23) statusnya masih BELUM kejawab sampai rilis ini.

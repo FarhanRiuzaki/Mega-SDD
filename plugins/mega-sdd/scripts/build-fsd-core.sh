@@ -695,8 +695,10 @@ else:
 # ── §10 Risks & open issues ──
 oq = vtext("03-open-questions.md")
 rows10 = []
+heading_hits = 0   # `## OQ-…` headings seen (resolved ones included) — the legacy 7-file grammar
 if oq:
     for m in re.finditer(r"(?ms)^#{2,4}\s+(OQ-[\w-]+)\s*[—:-]?\s*(.*?)$(.*?)(?=^#{2,4}\s|\Z)", oq):
+        heading_hits += 1
         blk = m.group(3)
         # field lines arrive as `**Priority:** P1` (colon inside the bold) or bare
         # `Priority: P1` — `\**` on both sides of the colon covers both shapes
@@ -708,12 +710,13 @@ if oq:
                                                  pr.group(1) if pr else "—", ct.group(1) if ct else "—"))
     if rows10:
         cite(10, "vault/" + vdoc_name("03-open-questions.md"))
-    elif oq.strip():
-        # the file EXISTS with content but no `## OQ-...` heading parsed — a
-        # sourced "(none)" would hide open risks (F7); surface the format gap
-        rows10.append("| — | [Pending — 03-open-questions.md ada tetapi formatnya tidak dikenali (butuh heading `## OQ-NNN`) — tinjau manual] | — | — |")
-        pending_count += 1
-elif isinstance(vj.get("open_questions"), list):
+# Layout-2 / layout-3 author OQs as checkbox lines (`- [ ] **OQ-…**`), never as
+# `## OQ-…` headings, and vault.json is the structured mirror of exactly those
+# lines — the same fall-through build-prd-core.sh has (ADV-009). This used to be
+# an `elif` of `if oq:`, so on every layout-2/3 vault the resolved doc had content,
+# no heading parsed, and §10.1 rendered a bogus "format tidak dikenali" row while
+# HIDING the vault's real unresolved OQs.
+if not heading_hits and isinstance(vj.get("open_questions"), list):
     for q in vj["open_questions"]:
         # resolved + out_of_scope are closed decisions; `deferred` stays LISTED
         # (A6: a defer that never resurfaces is a silent assumption)
@@ -727,6 +730,12 @@ elif isinstance(vj.get("open_questions"), list):
             q.get("question") or q.get("text") or "—",
             q.get("priority") or "—", q.get("category") or "—"))
     cite(10, "vault.json")
+elif not heading_hits and oq and oq.strip():
+    # the OQ doc EXISTS with content, no `## OQ-...` heading parsed, and there is
+    # no vault.json list to fall back on — a sourced "(none)" would hide open
+    # risks (F7); surface the format gap
+    rows10.append("| — | [Pending — dokumen OQ ada tetapi formatnya tidak dikenali dan vault.json tidak memuat open_questions — jalankan derive-vault-json.sh lalu re-emit] | — | — |")
+    pending_count += 1
 if not rows10:
     # honesty backstop (round doc-16): a vault whose OQs live only in the
     # 00-index roll-up (no 03-open-questions.md, no readable vault.json) must
@@ -736,6 +745,30 @@ if not rows10:
         rows10.append("| — | [Pending — OQ ada di 00-index roll-up tetapi vault.json tidak terbaca — jalankan derive-vault-json.sh lalu re-emit] | — | — |")
         pending_count += 1
 slots["section-10-oq-table"] = "\n".join(rows10) if rows10 else "| — | (none) | — | — |"
+
+# §10.4 AI technical decisions (spec 2026-09-20-oq-business-only-design.md §9.12):
+# a tech OQ the AI decided is `resolved`, so §10.1 above never lists it — a team
+# that reads only the FSD would never see the pick it is entitled to override.
+# vault.json is the ONLY source (`resolved_by` is md-derived there); every cell is
+# copied verbatim — nothing here is authored. `|` and newlines are flattened so a
+# rationale can never break the table.
+def _cell(v):
+    if isinstance(v, (list, tuple)):
+        v = ", ".join(str(x) for x in v if x)
+    return re.sub(r"\s+", " ", str(v or "")).replace("|", "\\|").strip() or "—"
+ai_rows = []
+if isinstance(vj.get("open_questions"), list):
+    decided = [q for q in vj["open_questions"]
+               if isinstance(q, dict) and str(q.get("resolved_by") or "").lower() == "ai"]
+    decided.sort(key=lambda q: (str(q.get("priority") or "P9"), str(q.get("tag") or q.get("id") or "")))
+    for q in decided:
+        ai_rows.append("| %s | %s | %s | %s | %s | %s |" % (
+            _cell(q.get("tag") or q.get("id")), _cell(q.get("priority")),
+            _cell(q.get("text") or q.get("question")), _cell(q.get("resolution")),
+            _cell(q.get("scan_citations")), _cell(q.get("fallback_if_wrong"))))
+    if ai_rows:
+        cite(10, "vault.json")
+slots["section-10-ai-decisions-table"] = "\n".join(ai_rows) if ai_rows else "| — | — | (none) | — | — | — |"
 bc = ["**%s:** %s (raised by %s)" % (uid, b["concern"], b["agent"]) for uid, b in sorted(bolts.items()) if b["concern"]]
 slots["section-10-bolt-concerns-content"] = "\n".join(bc) if bc else "(none)"
 for uid in sorted(bolts):
