@@ -197,5 +197,52 @@ PYEOF
 [ $? -eq 0 ] && ok "a13 six events; SessionStart = [session-start, session-note(sync)]" || fail "a13 hooks.json wiring wrong"
 [ -x "$P/hooks/session-note" ] && ok "a13b hook body is executable" || fail "a13b hooks/session-note not executable"
 
+echo "── a14: the parse recipe IN THE CONTRACT survives the consumer's storage encoding ──"
+# 8.7.1: the recipe first shipped (`[^\n]*` + `\S+`) was right on raw text and WRONG
+# once the gateway's log stores `input` as JSON — a newline is the two chars \n and a
+# string ends in "} — so the LAST key read `v=8.7.0\n\nSessionStart` / `v=8.7.0"},`.
+# This arm reads the recipe OUT OF docs/gateway-contract.md (document and behavior
+# cannot drift) and runs it over REAL hook output in raw + both JSON shapes, framed
+# exactly as the field trace showed it: a hook prefix before, more hook text after.
+# ClickHouse uses RE2; the recipe holds nothing python's `re` reads differently.
+A14_LINE="$(note "$W/r1")"
+A14_LINE="$A14_LINE" "$PY" - "$REPO_ROOT/docs/gateway-contract.md" <<'PYEOF'
+import json, os, re, sys
+doc = open(sys.argv[1], encoding="utf-8").read()
+m = re.search(r"extractAll\(input, '([^']+)'\)\[-1\]", doc)
+assert m, "contract no longer carries an extractAll(input, '…')[-1] recipe"
+note_re = m.group(1)
+keys = re.findall(r"extract\(note, '([^']+)'\)\s+AS (\w+)", doc)
+assert len(keys) == 6, "contract must carry six per-key extract() lines, found %d" % len(keys)
+assert "\\n" not in note_re and "\\S" not in note_re, "recipe regressed to newline/\\S cutting: " + note_re
+
+line = os.environ["A14_LINE"]
+want = dict(kv.split("=", 1) for kv in line.split(": ", 1)[1].split(" "))
+want["plugin_version"] = want.pop("v")
+framed = "<</EXTREMELY_IMPORTANT>>\n\nSessionStart:startup hook success: " + line + "\n\nSessionStart hook additional context: more text key=value"
+shapes = {
+    "raw text": framed,
+    "JSON, one string": json.dumps([{"role": "user", "content": framed}]),
+    "JSON, content blocks": json.dumps([{"role": "user", "content": [
+        {"type": "text", "text": "SessionStart:startup hook success: " + line},
+        {"type": "text", "text": "SessionStart hook additional context: x"}]}]),
+    "resumed (older line above)": "SessionStart:resume hook success: mega-sdd-note: repo=old.example/x/y branch=old head=0000000 dir=old sdd=0 v=0.0.0\n\n" + framed,
+}
+bad = []
+for name, s in shapes.items():
+    hits = re.findall(note_re, s)
+    if not hits:
+        bad.append("%s: recipe found no note" % name); continue
+    note = hits[-1]                                   # last occurrence wins
+    for pat, col in keys:
+        g = re.search(pat, note)
+        got = g.group(1) if g else None
+        if got != want[col]:
+            bad.append("%s: %s=%r want %r" % (name, col, got, want[col]))
+assert not bad, "; ".join(bad)
+print("recipe ok over %d shapes x %d keys" % (len(shapes), len(keys)))
+PYEOF
+[ $? -eq 0 ] && ok "a14 contract recipe parses real hook output in raw + JSON + resumed shapes" || fail "a14 the recipe in docs/gateway-contract.md mis-parses the note"
+
 echo "session-note: $PASS ok, $FAIL fail"
 [ "$FAIL" -eq 0 ]

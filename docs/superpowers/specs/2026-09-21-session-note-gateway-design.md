@@ -106,7 +106,8 @@ Repository id, branch, short head and folder name enter the request body, so the
 ## 4. Gateway-side contract (their build)
 
 - The note is a line in the logged **input** of main-thread generations: `mega-sdd-note: repo=… branch=… head=… dir=… sdd=… v=…`. Parse `key=value` pairs by key, not by position — additive keys may appear later and must be ignored when unknown.
-- **Last occurrence in an input wins** — a resumed or compacted session carries an older line above a newer one (ClickHouse: `extractAll(input, 'mega-sdd-note: ([^\n]*)')[-1]`).
+- **Last occurrence in an input wins** — a resumed or compacted session carries an older line above a newer one.
+- **Cut on the contract's charset, never on "up to the newline" or `\S+`** (corrected in 8.7.1, §9.1): extract the note with `mega-sdd-note: ((?:[a-z_]+=[A-Za-z0-9._/~+-]+ ?)+)`, then each key with `(?:^| )<key>=([^ ]+)`. Never anchor to `^` — the hook prefix `SessionStart:<source> hook success: ` precedes the line.
 - Subagent (sidechain) requests start from a fresh context and do NOT carry the line. Attribute them through whatever session grouping the gateway already applies — Claude Code sends `x-claude-code-session-id` on every request (documented in its LLM-gateway protocol) if the gateway logs headers; otherwise the existing per-NIP window.
 - `repo` equals the publisher manifest's `project_id` for the same repository — the join key between the audit and the published artifacts. `repo=invalid` and `repo=local/<dir>` are honest non-identities, never to be merged.
 - `sdd=0` with no `mega-sdd-trace:*` in the session = work outside the pipeline — the governance signal v6.19.2 wanted, now derivable without a session marker.
@@ -142,7 +143,7 @@ Hermetic: scratch repos, a PATH-shimmed `git` that counts calls, `env -u ANTHROP
 
 Both test trees run before claiming green (the CI-runs-both lesson).
 
-## 7. Field checkpoints (pending at the office — not release blockers)
+## 7. Field checkpoints (status as of 8.7.1: 1 half-closed, 2 closed, 3 open — see §9.1)
 
 1. The line is visible in a real Langfuse trace of a gateway session, in a non-adopted repo and in an adopted one.
 2. The office Stop/SessionStart hook environment really carries `ANTHROPIC_BASE_URL` (the same open checkpoint the publisher's condition (c) has).
@@ -164,3 +165,17 @@ Plan: `docs/superpowers/plans/2026-09-21-session-note-gateway.md`. Deltas from t
 - **End-to-end proof (headless, 2026-09-21):** `ANTHROPIC_BASE_URL=https://api.anthropic.com claude -p … --plugin-dir plugins/mega-sdd` in a NON-adopted scratch repo whose remote carried `user:s3cret@` — the model quoted the line back verbatim: `mega-sdd-note: repo=git.example.com/demo/e2e-proof branch=Main head=51d9c7d dir=e2e sdd=0 v=8.7.0`. That settles three mechanism questions at once: a second SessionStart hook's PLAIN stdout does reach model context next to the first hook's JSON; SessionStart fires under `claude -p`; the credential never rides. What is left of field checkpoint 1 is only the last hop — the line showing up in the office Langfuse trace.
 - **Producer-grammar sweep:** three suites enumerate hook bodies and were updated — `tests/hooks/direct-dispatch.test.sh` (D2 `HOOK_SELF` guard), `tests/platform/test-line-endings.sh` (9 paths), `tests/hooks/bounded-subprocess.test.sh` (7 entry points).
 - **Observed while porting, NOT changed (pre-existing, owner's call):** `norm_project_id` drops userinfo at the FIRST `@`; a remote whose password contains a raw (un-percent-encoded) `@` would leave the tail of that password in the publisher's `project_id`. Such a URL is malformed, and on the note side the `@` fails the whitelist → `repo=invalid`, so nothing leaks here. The port mirrors the python exactly on purpose — fixing one side alone would split identity.
+
+### 9.1 Field confirmation + parse-recipe correction (8.7.1, 2026-09-21)
+
+The owner pulled a real office Langfuse trace the same day. What it settled:
+
+- **The line reaches the log** — first `user` message of the main thread, as `SessionStart:startup hook success: mega-sdd-note: …`, directly after the anchor block. An office Windows + Git Bash laptop, an adopted repo (`sdd=1`), plugin already on 8.7.0.
+- **The hook environment at the office carries `ANTHROPIC_BASE_URL`** (checkpoint 2 — the line cannot print without it). The publisher's condition (c) shares this checkpoint and is closed by the same evidence for SessionStart; Stop is still unproven.
+- **The values are right:** `branch` and `head` matched Claude Code's own native `gitStatus` block in the same trace; `dir` was the repo root's basename although the cwd was a subfolder; the folder name differed from the repository name — the live case for "identity is `repo`, never `dir`". The remote appears nowhere in the native block, so the note fills a real gap.
+- **Still open:** a non-adopted (`sdd=0`) sample — the case the audit cares most about; whether the gateway logs `x-claude-code-session-id`; SessionStart latency on Windows + CrowdStrike (checkpoint 3).
+
+**The defect it exposed — mine.** §4 shipped `extractAll(input, 'mega-sdd-note: ([^\n]*)')[-1]` with `\S+` per key. Tested against the real line, that recipe is correct on raw text and WRONG on the two shapes a JSON-serialized `input` takes: the newline is the two characters `\n` and a string ends in `"}`, so the LAST key reads `v=8.7.0\n\nSessionStart` or `v=8.7.0"},`. The corrected recipe leans on what §3.4 already guarantees — a value never holds a backslash, a quote or a space — and is right in all three shapes. **Lesson: a consumer-side recipe in a contract must be tested against the consumer's STORAGE encoding, not against the text as a human reads it.** Suite arm a14 now reads the recipe OUT OF `docs/gateway-contract.md` and runs it over real hook output in raw + both JSON shapes, so the document and the behavior cannot drift apart again.
+
+**Second finding from the same trace:** Claude Code's system prompt already carries, with no plugin, the working directory, current branch, git user, the dirty-file `Status:` list and five `Recent commits:`. "What was worked on" is therefore answerable gateway-side today. The contract records it as a best-effort, non-contract source (internal prose, version-dependent, git repos only, no remote URL). It confirms §2 decision 3 — nothing per prompt — and argues against ever building the per-turn dirty-file list.
+

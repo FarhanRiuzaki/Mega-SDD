@@ -54,10 +54,26 @@ mega-sdd-note: repo=<project_id> branch=<branch> head=<sha7> dir=<work_dir> sdd=
 
 **Aturan parse buat gateway:**
 - Parse `key=value` **per key, bukan per posisi** — key baru bisa nambah (additive); yang nggak dikenal di-ignore.
-- **Kemunculan TERAKHIR di satu input yang menang** — sesi hasil `resume`/`compact` bawa baris lama di atas baris baru. ClickHouse: `extractAll(input, 'mega-sdd-note: ([^\n]*)')[-1]`.
+- **Kemunculan TERAKHIR di satu input yang menang** — sesi hasil `resume`/`compact` bawa baris lama di atas baris baru.
+- **Potong pakai charset kontrak, JANGAN pakai "sampai newline" atau `\S+`** (dikoreksi 8.7.1 — resep 8.7.0 rapuh). Kalau `input` disimpan sebagai JSON, newline jadi dua karakter `\n` dan akhir string jadi `"}` → key terakhir kebaca `v=8.7.0\n\nSessionStart` atau `v=8.7.0"},` (diuji terhadap trace kantor asli). Value dijamin cuma berisi `A-Z a-z 0-9 . _ / ~ + -` — nggak pernah backslash, kutip, atau spasi — jadi resep ini benar di bentuk mentah maupun JSON. Barisnya juga TIDAK di awal baris (di depannya ada prefix `SessionStart:<source> hook success: `), jadi jangan anchor ke `^`. Letaknya di pesan `user` PERTAMA main-thread, bukan di system prompt. Nama kolom (`input`) sesuaikan skema kalian:
+
+  ```
+  extractAll(input, 'mega-sdd-note: ((?:[a-z_]+=[A-Za-z0-9._/~+-]+ ?)+)')[-1]  AS note,
+  extract(note, '(?:^| )repo=([^ ]+)')    AS repo,
+  extract(note, '(?:^| )branch=([^ ]+)')  AS branch,
+  extract(note, '(?:^| )head=([^ ]+)')    AS head,
+  extract(note, '(?:^| )dir=([^ ]+)')     AS dir,
+  extract(note, '(?:^| )sdd=([01])')      AS sdd,
+  extract(note, '(?:^| )v=([^ ]+)')       AS plugin_version
+  ```
+
 - `repo` == `project_id` di manifest publisher buat repo yang sama → kunci join audit sesi ↔ artefak yang di-publish. `repo=invalid` dan `repo=local/<dir>` itu non-identitas yang jujur — jangan pernah di-merge.
 - Request subagent (sidechain) mulai dari context kosong → TIDAK bawa baris ini. Atribusikan lewat pengelompokan sesi yang gateway udah pakai: Claude Code ngirim header `x-claude-code-session-id` di tiap request (terdokumentasi di LLM-gateway protocol-nya) kalau gateway nge-log header; kalau nggak, window per-NIP yang sekarang.
 - `sdd=0` tanpa satu pun `mega-sdd-trace:*` di sesi itu = kerja di luar pipeline — sinyal governance yang dulu dicari v6.19.2, sekarang bisa diturunin tanpa marker sesi.
+
+**Terkonfirmasi di lapangan (2026-09-21):** barisnya kelihatan di trace Langfuse kantor — laptop Windows + Git Bash, repo ter-adopsi (`sdd=1`), plugin 8.7.0 — di pesan `user` pertama tepat setelah blok anchor; `branch` dan `head` cocok dengan blok `gitStatus` native Claude Code di trace yang sama; `dir` = root repo walau cwd-nya subfolder; nama folder ≠ nama repo (itu sebabnya identitas = `repo`, bukan `dir`). Artinya env hook kantor memang bawa `ANTHROPIC_BASE_URL`. Belum ada sampel: repo non-adopsi (`sdd=0`), header `x-claude-code-session-id`, latensi SessionStart di Windows + CrowdStrike.
+
+**Yang udah ada di log TANPA plugin (bukan kontrak, best-effort):** system prompt Claude Code sendiri udah bawa working directory, `Current branch`, `Git user`, daftar `Status:` dan 5 `Recent commits:` (blok `gitStatus`). Gateway boleh nambang dari situ buat "lagi ngerjain apa" — tapi itu prosa internal Claude Code (format bisa berubah antar versi, cuma ada kalau cwd repo git, snapshot awal sesi) dan TIDAK berisi remote URL. Yang jadi pegangan tetap `mega-sdd-note`; simpan hasil tambang native di kolom terpisah.
 
 **Blind spot yang diterima (v1):** commit manual / pindah branch di luar Claude di tengah sesi nggak tercatat (baris cuma dicetak di SessionStart). Baris delta per-prompt = lever yang ditunda, dibangun hanya kalau data gateway nunjukin itu beneran bolong.
 
@@ -67,4 +83,4 @@ mega-sdd-note: repo=<project_id> branch=<branch> head=<sha7> dir=<work_dir> sdd=
 - **Field manifest** (`manifest.json`, entry root PERTAMA di tar.gz): `{schema: "mega-sdd-publish/1", project_id (git remote ter-normalisasi — kredensial/userinfo dibuang, port ssh dibuang, `.git` dipotong; tanpa remote → `local/<work_dir>`), vault, git_head, generated_at, files (map path→sha256), graph_meta, work_dir (basename saja), plugin_version}`.
 - **Perilaku:** fail-open by contract (kegagalan network/kredensial exit 0, tidak pernah blokir pipeline) + sha-self-debounce via `.mega-sdd/.publish-state.json` (hanya file yang sha-nya berubah yang dikirim; manifest selalu FULL, gateway self-heal via respons `{"missing":[...]}`).
 
-Pin test: `tests/session-note/test-session-note.sh` (catatan sesi: grammar, sanitasi, hening vanilla, budget git, wiring; normalizer `repo` di-pin ke `project_id` publisher lewat corpus bersama `tests/fixtures/project-id-corpus.tsv` — sisi python: `tests/publisher/test-publish-artifacts.sh` r3d), `tests/surface/test-p9-audit-phase1.sh` (kelengkapan announce + template), `tests/derived-artifacts/test-dispatch-prompt-builder-shape.sh` + `plugins/mega-sdd/tests/moat/test-dispatch-prompt-cascade.sh` (tag di prompt/inline_core), `tests/weighted-routing/test-tier-s-hooks.sh` (echo turn = 0 fork; non-SDD hening).
+Pin test: `tests/session-note/test-session-note.sh` (catatan sesi: grammar, sanitasi, hening vanilla, budget git, wiring, dan a14 — resep parse DI DOKUMEN INI dibaca lalu diuji terhadap output hook asli dalam bentuk mentah + dua bentuk JSON; normalizer `repo` di-pin ke `project_id` publisher lewat corpus bersama `tests/fixtures/project-id-corpus.tsv` — sisi python: `tests/publisher/test-publish-artifacts.sh` r3d), `tests/surface/test-p9-audit-phase1.sh` (kelengkapan announce + template), `tests/derived-artifacts/test-dispatch-prompt-builder-shape.sh` + `plugins/mega-sdd/tests/moat/test-dispatch-prompt-cascade.sh` (tag di prompt/inline_core), `tests/weighted-routing/test-tier-s-hooks.sh` (echo turn = 0 fork; non-SDD hening).

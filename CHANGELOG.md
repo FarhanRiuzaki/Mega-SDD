@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [8.7.1] - 2026-09-21 — catatan sesi terkonfirmasi di lapangan + resep parse di kontrak dikoreksi (docs + 1 pin test)
+
+Beberapa jam setelah 8.7.0, owner narik trace Langfuse kantor yang asli. Hasilnya dua: mekanismenya terbukti jalan, dan resep parse yang gue tulis di kontrak ternyata rapuh. Nol perubahan kode / hook / gate.
+
+### Fixed
+- **Resep ClickHouse di `docs/gateway-contract.md` salah begitu log nyimpen `input` sebagai JSON.** Resep 8.7.0 (`extractAll(input, 'mega-sdd-note: ([^\n]*)')[-1]` + `\S+` per key) benar di teks mentah, tapi di JSON newline itu dua karakter `\n` dan akhir string itu `"}` → key TERAKHIR kebaca `v=8.7.0\n\nSessionStart` atau `v=8.7.0"},`. Diuji terhadap baris asli dari trace kantor. Resep baru motong pakai charset yang memang DIJAMIN kontrak (value nggak pernah berisi backslash, kutip, atau spasi): `mega-sdd-note: ((?:[a-z_]+=[A-Za-z0-9._/~+-]+ ?)+)` lalu `(?:^| )<key>=([^ ]+)` — benar di bentuk mentah, JSON satu-string, JSON content-blocks, dan sesi hasil resume. Kontrak juga sekarang bilang terang: barisnya TIDAK di awal baris (ada prefix `SessionStart:<source> hook success: `) → jangan anchor ke `^`; dan letaknya di pesan `user` PERTAMA, bukan di system prompt.
+
+### Added
+- **Arm `a14` di `tests/session-note/test-session-note.sh`** (36 → 37 assertion): resepnya DIBACA dari `docs/gateway-contract.md` lalu dijalanin terhadap output hook asli di empat bentuk penyimpanan — dokumen dan perilaku nggak bisa drift lagi. Mutation-proved: resep lama dibalikin ke salinan kontrak → arm merah.
+- Kontrak: paragraf **"Terkonfirmasi di lapangan"** + **"Yang udah ada di log TANPA plugin"**.
+
+### Notes
+- **Bukti lapangan (2026-09-21):** baris `mega-sdd-note:` kelihatan di trace Langfuse kantor — laptop Windows + Git Bash, repo ter-adopsi (`sdd=1`), plugin udah 8.7.0 — di pesan `user` pertama tepat setelah blok anchor. `branch` + `head` cocok dengan blok `gitStatus` native Claude Code di trace yang sama; `dir` = root repo walau cwd-nya subfolder; nama folder ≠ nama repo (contoh hidup kenapa identitas = `repo`, bukan `dir`). Menutup checkpoint "env hook kantor bawa `ANTHROPIC_BASE_URL`" dan separuh checkpoint "kelihatan di Langfuse". **Masih terbuka:** sampel repo non-adopsi (`sdd=0`) — justru kasus terpenting buat audit; header `x-claude-code-session-id` ke-log atau nggak; latensi SessionStart di Windows + CrowdStrike.
+- **Temuan kedua dari trace yang sama:** system prompt Claude Code sendiri udah bawa working directory, branch, git user, daftar `Status:`, dan 5 `Recent commits:` — tanpa plugin. "Lagi ngerjain apa" udah bisa dijawab gateway HARI INI. Dicatat di kontrak sebagai sumber best-effort non-kontrak (prosa internal, format tergantung versi Claude Code, cuma di repo git, TANPA remote URL). Nilai unik catatan kita: `repo`, `v`, dan `sdd` yang konsisten. Ini sekaligus alasan kuat buat TIDAK PERNAH membangun daftar file dirty per turn.
+- **Pelajaran:** resep sisi-konsumen yang ditulis di kontrak harus diuji terhadap ENCODING PENYIMPANAN konsumennya, bukan terhadap teks seperti yang dibaca manusia. Dua koreksi desain hari ini (transport out-of-band → in-band, lalu resep ini) dua-duanya datang dari satu log asli yang di-paste — minta trace asli DULU sebelum mendesain apa pun yang bentuknya audit.
+- Spec: `docs/superpowers/specs/2026-09-21-session-note-gateway-design.md` §9.1.
+
 ## [8.7.0] - 2026-09-21 — catatan sesi in-band: gateway sekarang tau sesi ini jalan di repo mana
 
 Spec `docs/superpowers/specs/2026-09-21-session-note-gateway-design.md` · kontrak `docs/gateway-contract.md` §Catatan sesi. Gateway kantor udah pegang seluruh percakapan (dia proxy-nya; semua ke-log di Langfuse → ClickHouse) — yang dia NGGAK bisa tau: percakapan itu terjadi di **repo / branch / commit mana**. `project_id` dari publisher cuma ada per project/vault, cuma kalau ada vault/graph, dan cuma saat artefak berubah; repo yang belum adopsi mega-sdd nggak kelihatan sama sekali. Rilis ini nutup celah itu dengan SATU baris di context sesi. Additive — nol perubahan perilaku gate.
@@ -31,7 +48,7 @@ Spec `docs/superpowers/specs/2026-09-21-session-note-gateway-design.md` · kontr
 - **Blind spot yang diterima (v1):** commit manual / pindah branch di luar Claude di tengah sesi nggak tercatat. Baris delta per-prompt = lever yang ditunda, dibangun hanya kalau data gateway nunjukin itu beneran bolong.
 - **Terbukti end-to-end (headless, 2026-09-21):** `claude -p --plugin-dir plugins/mega-sdd` di repo scratch NON-adopsi dengan remote ber-kredensial (`user:s3cret@…`) — model ngutip barisnya balik verbatim: `mega-sdd-note: repo=git.example.com/demo/e2e-proof branch=Main head=51d9c7d dir=e2e sdd=0 v=8.7.0`. Artinya: stdout polos hook KEDUA di SessionStart beneran masuk context model, SessionStart nyala di `claude -p`, dan kredensial nggak ikut.
 - **Checkpoint lapangan (pending di kantor, bukan blocker):** barisnya kelihatan di trace Langfuse sungguhan (repo adopsi + non-adopsi); env hook kantor beneran bawa `ANTHROPIC_BASE_URL`; latensi SessionStart di laptop Windows + CrowdStrike dengan body tambahan ini.
-- Buat tim gateway: aturan parse ada di kontrak — per key bukan per posisi, kemunculan TERAKHIR menang (`extractAll(input, 'mega-sdd-note: ([^\n]*)')[-1]`), `repo=invalid` / `repo=local/…` jangan pernah di-merge, sidechain nggak bawa baris ini.
+- Buat tim gateway: aturan parse ada di kontrak — per key bukan per posisi, kemunculan TERAKHIR menang (`extractAll(input, 'mega-sdd-note: ([^\n]*)')[-1]` — **resep ini rapuh di log ber-JSON, dikoreksi di 8.7.1**), `repo=invalid` / `repo=local/…` jangan pernah di-merge, sidechain nggak bawa baris ini.
 
 ## [8.6.1] - 2026-09-20 — hasil review mata-kedua atas 8.5.0: 1 BLOCKER + 14 temuan, semuanya di-fix
 
