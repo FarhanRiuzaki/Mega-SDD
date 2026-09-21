@@ -238,7 +238,7 @@ probe_paths:
 |---|---|---|
 | Visibility | Visible in file tree | Hidden by default (most tools/IDEs hide dotfiles) |
 | Discoverability for AI tools | Mixed with project docs | Clearly separated as mega-sdd state |
-| Git tracking | Often tracked (developer-facing) | Per-project decision (recommend track `vaults/`; gitignore `.internal/`, `.memory/`, `codebase/.dirty-paths.jsonl`, `.cache/`) |
+| Git tracking | Often tracked (developer-facing) | Track `vaults/` (incl. `bolts/` — gate evidence); always gitignore the derived gate/hook state at the `.mega-sdd/` root; the rest is a per-project decision (§Recommended `.gitignore` entries) |
 | Convention parity | Mixed with markdown docs | Matches `.git/`, `.vscode/`, `.idea/` patterns (tool state) |
 | Migration cost | n/a | One-time `/mega-sdd:migrate-paths` |
 
@@ -252,17 +252,55 @@ Migration is opt-in. Existing projects continue to work with legacy paths via ba
 
 ## Recommended `.gitignore` entries
 
-For project repo `.gitignore`:
+For project repo `.gitignore`. Two groups with different standing — the first is a recommendation for EVERY team, the second is a per-project call:
 
 ```
-# Mega-SDD ephemeral state (per-project decision; uncomment what you want untracked)
-# .mega-sdd/codebase/.dirty-paths.jsonl # per-dev journal (always gitignore)
+# --- always: derived / per-machine state (safe to be absent; see the table below) ---
+.mega-sdd/.validation-blockers.json
+.mega-sdd/.ui-quality-blockers.json
+.mega-sdd/.*-state.json
+.mega-sdd/.analyze-freshness.json
+.mega-sdd/.locked-files-index.json
+.mega-sdd/.stop-scan-stamp
+.mega-sdd/.ptu-scan-stamp
+.mega-sdd/.cache/
+.mega-sdd/codebase/.dirty-paths.jsonl
+
+# --- per-project decision (uncomment what you want untracked) ---
 # .mega-sdd/vaults/*/.internal/          # checkpoints (stale symbol-graph.json caches from <5.29.0 are inert — safe to delete)
 # .mega-sdd/vaults/*/.memory/            # per-vault ephemeral memory
-# .mega-sdd/vaults/*/bolts/              # bolt reports (regenerable)
 # .mega-sdd/vaults/*/lens-inputs/        # review-lens inputs (derived per bolt; regenerable)
 # .mega-sdd/vaults/*/claims-ledger.json  # derived claim index (regenerable; re-derived on every express bind)
 ```
+
+Why the first group is safe to leave out of git — each entry is either rebuilt from ground truth before anything reads it, or is a per-machine marker whose absence only costs one re-scan:
+
+| Entry | Why absence is safe |
+|---|---|
+| `.validation-blockers.json`, `.ui-quality-blockers.json`, `.*-state.json` | The PreToolUse gate re-runs every validator and OVERWRITES these before the aggregator reads them — an absent, stale or forged file cannot open or close a gate. Pinned: `plugins/mega-sdd/tests/moat/test-moat-corrupt-fail-closed.sh` (absent + clean tree allows; absent + real CONFLICT re-derives and blocks). `.publish-state.json` rides the same glob: absent = the publisher resends, and ingest is idempotent. |
+| `.locked-files-index.json` | Rebuilt lazily when absent or older than the newest `binding.md`. Tracking it actively HURTS: a checkout stamps a fresh mtime on a possibly stale index, so the staleness check never fires. |
+| `.analyze-freshness.json` | analyze output, re-written on the next run. |
+| `.stop-scan-stamp`, `.ptu-scan-stamp`, `.cache/` | per-machine turn-gate stamps and derived caches (§Derived caches). |
+| `codebase/.dirty-paths.jsonl` | per-developer edit journal. |
+
+Tracking the first group is not neutral — it costs the team: the tree is dirty at every session start, whole-file regenerated JSON conflicts on every merge between two developers, and the anti-self-bypass guard (correctly) refuses to let Claude edit or delete those files, so the conflict has to be resolved by hand.
+
+**Already tracked?** Untrack once, from your own terminal — the guard denies these commands when Claude runs them, by design:
+
+```
+git rm --cached --ignore-unmatch \
+  .mega-sdd/.validation-blockers.json .mega-sdd/.ui-quality-blockers.json \
+  '.mega-sdd/.*-state.json' .mega-sdd/.analyze-freshness.json \
+  .mega-sdd/.locked-files-index.json .mega-sdd/.stop-scan-stamp .mega-sdd/.ptu-scan-stamp \
+  .mega-sdd/codebase/.dirty-paths.jsonl
+git rm -r --cached --ignore-unmatch .mega-sdd/.cache
+```
+
+**NEVER gitignore — the gate READS these and cannot rebuild them:**
+
+- `vaults/*/bolts/` — `bolt-report.md` (a bolt commit without one is an orphan → `bolt_orphans`), `acceptance.json` (B4, keyed to the `SDD-Acceptance: v5` commit trailer → `acceptance_evidence_missing`), `_batch-suite.json` (B2), `attempts.json` (dispatch history is not derivable from git), plus the human attestations carried in `postflight.json`. A teammate who clones a repo that ignores `bolts/` inherits the bolt commits without their evidence, and the execute-bolts gate closes on the first run.
+- `factory-ledger.json` — chain history; the ledger gate reads it in both directions.
+- vault documents, `units/`, `binding.md`, `constitution.md`, `config.yaml` — the source of truth.
 
 Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to track per team norms.
 

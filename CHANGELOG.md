@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [8.7.2] - 2026-09-21 — panduan `.gitignore`: state gate turunan WAJIB di-ignore, dan `bolts/` JANGAN PERNAH (docs + 1 pin test)
+
+Sumber: trace Langfuse kantor yang sama dengan 8.7.1. `git status` di repo tim nunjukin `.mega-sdd/.validation-blockers.json` + `.locked-files-index.json` ke-track dan selalu modified. Nol perubahan kode / hook / gate.
+
+### Fixed
+- **`references/paths.md` §Recommended `.gitignore` nggak nyebut state gate turunan sama sekali** — padahal semuanya di-derive ulang di gate sebelum dibaca. Akibat di tim: tree dirty di tiap awal sesi, konflik merge whole-file antar dev, dan guard anti-self-bypass (dengan benar) nolak Claude ngedit/ngapus file-file itu → konfliknya harus diberesin manual. Sekarang ada blok **"always"**: `.validation-blockers.json`, `.ui-quality-blockers.json`, `.*-state.json`, `.analyze-freshness.json`, `.locked-files-index.json`, dua scan-stamp, `.cache/`, `codebase/.dirty-paths.jsonl` — plus tabel KENAPA tiap entry aman kalau nggak ada, dan resep `git rm --cached` sekali-jalan (dari terminal sendiri — guard memang nolak perintah itu kalau Claude yang jalanin). Tiap entry dibuktikan dulu, bukan ditebak: sembilan state di-derive ulang paralel di gate (`hooks/pre-tool-use`), `.locked-files-index.json` di-rebuild lazy, dan test moat yang udah ada nge-pin "absent + CONFLICT nyata → re-derive → BLOCK".
+- **Panduan yang sama menawarkan `vaults/*/bolts/` buat di-gitignore dengan label "regenerable" — itu jebakan lockout.** `bolts/` sekarang isinya evidence yang gate BACA dan nggak bisa dibangun ulang: `bolt-report.md` (tanpa itu commit bolt = orphan → `bolt_orphans`), `acceptance.json` (B4), `_batch-suite.json` (B2), `attempts.json`, atestasi manusia di `postflight.json`. Clone yang nge-ignore `bolts/` mewarisi commit bolt tanpa evidence-nya → gate execute-bolts nutup di run pertama. Baris itu dihapus; ada daftar **"NEVER gitignore"** (`bolts/`, `factory-ledger.json`, dokumen vault / units / binding / constitution / config).
+- Catatan tambahan yang ketemu waktu pembuktian: nge-track `.locked-files-index.json` bukan cuma berisik tapi MERUGIKAN — checkout ngasih mtime baru ke index yang mungkin basi, jadi cek staleness berbasis mtime nggak pernah nyala.
+
+### Added
+- `tests/surface/test-gitignore-guidance.sh` — 34 assertion. Pola-polanya DIBACA dari `paths.md` lalu dijalanin lewat `git check-ignore` sungguhan di repo scratch: state turunan ke-ignore (G1); evidence gate + ledger + sumber kebenaran TIDAK ke-ignore, termasuk nama yang nyaris kena glob — `state.json` / `vault.json` vs `.*-state.json` (G2); dokumen nggak boleh lagi nawarin `bolts/` (G3); dan tiap entry "always" harus beneran ada di daftar prune derived-output `hooks/stop` — dokumen nggak boleh nyebut sesuatu "turunan" kalau mekanismenya nggak (G4). Empat guard mutation-proved.
+
+### Notes
+- **Buat tim yang repo-nya udah terlanjur nge-track file-file itu:** tambahin blok "always" ke `.gitignore`, jalanin resep `git rm --cached` dari terminal sendiri, commit. Nggak ada yang hilang — gate nge-derive ulang semuanya di dispatch berikutnya.
+- **Overhead context mega-sdd diukur di rilis ini (owner nanya "over nggak?"):** listing skill+command+agent ±3,4k token di SEMUA sesi, anchor ±1,1k token cuma di project ter-adopsi — total ±4,5k token tetap, ke-cache setelah request pertama. Verdict: wajar, TIDAK dipangkas (memangkas ±600 token ter-cache tanpa gain terukur = item DO-NOT evidence-first). Dua hipotesis lain dari trace yang sama sengaja BELUM disentuh karena belum terukur: dua router `EXTREMELY_IMPORTANT` yang saling kontradiksi di kerjaan tier-S (mega-sdd "kerjain inline" vs superpowers "wajib invoke skill"), dan rasio commit bookkeeping pipeline di vault legacy + lane klasik. Dua-duanya nunggu angka dari dashboard gateway.
+
 ## [8.7.1] - 2026-09-21 — catatan sesi terkonfirmasi di lapangan + resep parse di kontrak dikoreksi (docs + 1 pin test)
 
 Beberapa jam setelah 8.7.0, owner narik trace Langfuse kantor yang asli. Hasilnya dua: mekanismenya terbukti jalan, dan resep parse yang gue tulis di kontrak ternyata rapuh. Nol perubahan kode / hook / gate.
