@@ -49,7 +49,7 @@
 
 ## Upgrading to 7.3–7.5 (observability removal, surface cull, direct dispatch)
 
-**v7.3.0 — observability/memory removed (pipeline-only).** The whole memory/telemetry/advisor lane is gone: `/mega-sdd:memory` no longer registers, there is no token-cost report, no compaction advisor, no PreCompact/SubagentStop hooks. Old `.mega-sdd/memory/` and `~/.mega-sdd/memory/` dirs are inert — delete when convenient; user defaults moved to `~/.mega-sdd/config.yaml`. The only observability artifact left is the `mega-sdd-trace:*` gateway tag family (`docs/gateway-contract.md`).
+**v7.3.0 — observability/memory removed (pipeline-only).** The whole memory/telemetry/advisor lane is gone: `/mega-sdd:memory` no longer registers, there is no token-cost report, no compaction advisor, no PreCompact/SubagentStop hooks. Old `.mega-sdd/memory/` and `~/.mega-sdd/memory/` dirs are inert — delete when convenient; user defaults moved to `~/.mega-sdd/config.yaml`. The only observability artifact left is the `mega-sdd-trace:*` gateway tag family (`docs/gateway-contract.md`) — since 8.7.0 joined by one `mega-sdd-note:` repo/branch line per gateway-routed session (same doc; git facts only, no token or cost counting came back).
 
 **v7.4.0 — surface cull.** `/mega-sdd:slice` + the slice-design skill are removed (owner decision), the vendored superpowers tree is removed (first-class `agents/` are the only path), and the tree-sitter slice engine is removed (`ast-grep → regex` is the scan ladder). Surface = 3 verbs + 3 one-timers.
 

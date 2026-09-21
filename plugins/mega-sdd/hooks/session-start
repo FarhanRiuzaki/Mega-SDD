@@ -109,7 +109,9 @@ fi
 
 # ─── No-signal CWD: fully silent (v7.3.0) ────────────────────────────────────
 # The trace/governance marker is REMOVED with the rest of observability — a CWD
-# without SDD signals gets zero injected text. Gateway-side session detection,
+# without SDD signals gets zero injected text FROM THIS BODY (8.7.0: the separate
+# hooks/session-note body prints its one `mega-sdd-note:` line on gateway-routed
+# sessions in ANY cwd — docs/gateway-contract.md). Gateway-side session detection,
 # if the gateway team still wants it, is a gateway concern, not this plugin.
 if [ "$has_sdd_signal" -eq 0 ]; then
   exit 0

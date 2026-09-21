@@ -25,7 +25,7 @@ fail=0
 ok()  { echo "PASS: $1"; }
 bad() { echo "FAIL: $1"; fail=1; }
 
-HOOK_BODIES="pre-tool-use post-tool-use session-start stop user-prompt-submit user-prompt-expansion"
+HOOK_BODIES="pre-tool-use post-tool-use session-start session-note stop user-prompt-submit user-prompt-expansion"
 
 # ── D1: hooks.json → direct, existing targets, zero run-hook residue ─────────
 if grep -q 'run-hook' "$PLUGIN/hooks/hooks.json"; then

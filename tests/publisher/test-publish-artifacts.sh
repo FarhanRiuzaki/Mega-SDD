@@ -206,6 +206,19 @@ norm() { ( cd "$P2" && git remote remove origin 2>/dev/null; git remote add orig
 [ "$(norm 'https://user:s3cret@git.example.com/grup/repo.git')" = "git.example.com/grup/repo" ] && ok "r3a creds stripped" || fail "r3a creds leaked into project_id"
 [ "$(norm 'ssh://git@git.example.com:2222/grup/repo.git')" = "git.example.com/grup/repo" ] && ok "r3b ssh port dropped (identity unified)" || fail "r3b port split identity"
 [ "$(norm 'git@git.example.com:grup/repo.git')" = "git.example.com/grup/repo" ] && ok "r3c scp-form normalized" || fail "r3c scp wrong"
+# r3d (8.7.0): ONE corpus, two normalizers. hooks/session-note carries a bash
+# port of norm_project_id (that hook must never spawn python); drift would split
+# project_id between the artifact store and the session audit. The bash side is
+# driven on this SAME file by tests/session-note/test-session-note.sh a3.
+CORPUS="$(cd "$(dirname "$0")/../fixtures" && pwd)/project-id-corpus.tsv"
+R3D_BAD=0; R3D_ROWS=0
+while IFS=$'\t' read -r c_in c_exp; do
+  [ -n "$c_in" ] || continue
+  R3D_ROWS=$((R3D_ROWS+1))
+  c_got="$(norm "$c_in")"
+  [ "$c_got" = "$c_exp" ] || { R3D_BAD=1; echo "    corpus drift: '$c_in' → '$c_got' (want '$c_exp')"; }
+done < "$CORPUS"
+[ "$R3D_BAD" -eq 0 ] && [ "$R3D_ROWS" -ge 8 ] && ok "r3d shared project-id corpus, python side ($R3D_ROWS rows)" || fail "r3d python norm_project_id drifted from the corpus (rows=$R3D_ROWS)"
 
 echo "── r4 (round MINOR-5): over-cap bundle NOT sent ──"
 printf 'y\n' >> "$MS2/vaults/app/00-index.md"

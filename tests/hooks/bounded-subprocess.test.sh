@@ -598,10 +598,11 @@ else
 fi
 
 case "$hooks_st" in
-  # v7.5.0 №A: hooks.json dispatches each of the SIX extensionless entry bodies
-  # DIRECTLY — run-hook.sh (the old dispatcher) is deleted. Six entry scripts,
+  # v7.5.0 №A: hooks.json dispatches each extensionless entry body DIRECTLY —
+  # run-hook.sh (the old dispatcher) is deleted. SEVEN entry scripts since 8.7.0
+  # (six events; SessionStart runs session-start + session-note),
   # no dispatcher. Spelling that out here so the count is not re-derived.
-  0) pass "all $hooks_n embedded subprocess call(s) in hooks/ are bounded (across $(printf '%s\n' "$hooks_out" | grep -c '^ENUMERATED ') enumerated shell file(s): 6 extensionless entry points, direct dispatch)" ;;
+  0) pass "all $hooks_n embedded subprocess call(s) in hooks/ are bounded (across $(printf '%s\n' "$hooks_out" | grep -c '^ENUMERATED ') enumerated shell file(s): 7 extensionless entry points, direct dispatch)" ;;
   # v7.3.0: pre-compact (the one historical subprocess carrier) is DELETED with
   # observability — hooks/ now legitimately embeds ZERO python-subprocess calls.
   # Zero-total is accepted as green ONLY together with the enumeration check

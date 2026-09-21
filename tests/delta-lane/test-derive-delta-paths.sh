@@ -67,7 +67,10 @@ if [ $RC -eq 0 ] && [ -f "$PF" ] \
    && grep -qx 'NasabahController.php' "$PF"; then
   pass "a: touched docs (03,04) -> both anchors of C-001 + basename anchor of C-002 land in .delta-changed-paths.txt"
 else fail "a: expected anchor paths missing (rc=$RC, out=$OUT, file: $(cat "$PF" 2>/dev/null | tr '\n' ' '))"; fi
-sort -c "$PF" 2>/dev/null && pass "a2: paths file sorted" || fail "a2: paths file not sorted"
+# LC_ALL=C: the producer sorts by codepoint (python sorted()); a bare `sort -c` checks the
+# CALLER's collation instead — red on macOS 27 / en_US.UTF-8 (`app/…` before `Nasabah…`),
+# green on CI. The contract is byte order, so the check pins byte order.
+LC_ALL=C sort -c "$PF" 2>/dev/null && pass "a2: paths file sorted" || fail "a2: paths file not sorted"
 
 # ── (b) untouched claims contribute nothing (05-decisions only in Unchanged) ──
 grep -qx 'app/Services/Untouched.php' "$PF" \

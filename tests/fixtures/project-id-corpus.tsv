@@ -1,0 +1,8 @@
+https://git.example.com/grup/repo.git	git.example.com/grup/repo
+https://user:s3cret@git.example.com/grup/repo.git	git.example.com/grup/repo
+ssh://git@git.example.com:2222/grup/repo.git	git.example.com/grup/repo
+git@git.example.com:grup/repo.git	git.example.com/grup/repo
+http://git.example.com:8080/grup/repo	git.example.com/grup/repo
+git://git.example.com/grup/repo.git/	git.example.com/grup/repo
+https://token@git.example.com/grup/sub/repo.git	git.example.com/grup/sub/repo
+https://git.example.com/~user/repo.git	git.example.com/~user/repo

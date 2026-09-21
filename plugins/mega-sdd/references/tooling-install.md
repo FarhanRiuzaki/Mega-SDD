@@ -4,7 +4,7 @@
 
 ## Platform support matrix
 
-How much of mega-sdd works per environment (verified 2026-08-23 against the shipped hooks/scripts — all 6 hooks are bash; 4 of them (session-start, pre-tool-use, post-tool-use, user-prompt-expansion) parse stdin through python3, while stop and user-prompt-submit are pure shell; no `.ps1` ports ship yet):
+How much of mega-sdd works per environment (verified 2026-08-23 against the shipped hooks/scripts — all 6 hooks are bash; 4 of them (session-start, pre-tool-use, post-tool-use, user-prompt-expansion) parse stdin through python3, while stop and user-prompt-submit are pure shell — as is `session-note`, the seventh body, which SessionStart runs next to session-start on gateway-routed sessions; no `.ps1` ports ship yet):
 
 | Environment | Skills & commands | Hooks (gates, journal, staleness) | Scripts/validators | Moat enforcement | Verdict |
 |---|---|---|---|---|---|

@@ -95,7 +95,7 @@ plugins/mega-sdd/
 │   ├── claim-verifier.md         # extract-intelligence adversarial per-module verify lane (grades citations EXACT/IMPRECISE/WRONG; 100% of [LOCKED] + money-class rules)
 ├── commands/                     # exactly 6: 3 public verbs (mega-sdd · sync · emit) + 3 maintenance one-timers (migrate-paths · install-deps · update-plugin)
 ├── references/                   # paths.md (canonical layout), framework-conventions/, tooling-install.md, …
-├── hooks/                        # 6 events, dispatched direct (no run-hook shim): SessionStart anchor · PreToolUse gate · PostToolUse journal · Stop · UserPromptExpansion · UserPromptSubmit (gateway tag + sync offer)
+├── hooks/                        # 6 events, dispatched direct (no run-hook shim): SessionStart anchor + gateway session note · PreToolUse gate · PostToolUse journal · Stop · UserPromptExpansion · UserPromptSubmit (gateway tag + sync offer)
 ├── scripts/                      # /analyze engine (run-analyze.sh) + validators + sync scripts
 ├── tests/                        # moat / drift / handoff / state suites (more under repo-root tests/)
 ├── CLAUDE.md                     # AI-agent contributor guide (contracts + invariants)
@@ -104,7 +104,7 @@ plugins/mega-sdd/
 
 ## Gateway contract
 
-The `mega-sdd-trace:*` tag family is the plugin's ONLY observability artifact — the office AI gateway filters mega-sdd sessions on it; all token/cost/session accounting lives gateway-side. Spec: [`../../docs/gateway-contract.md`](../../docs/gateway-contract.md).
+The plugin emits exactly two in-band artifacts for an LLM gateway, and nothing else: the `mega-sdd-trace:*` tag family (the gateway filters mega-sdd sessions on it) and, on gateway-routed sessions only, one sanitized `mega-sdd-note:` line at session start carrying the repository, branch and commit the session ran in — a vanilla session gets neither cost nor output from it. All token/cost/session accounting lives gateway-side. Spec: [`../../docs/gateway-contract.md`](../../docs/gateway-contract.md).
 
 ## How it prevents hallucination
 

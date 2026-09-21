@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+# SessionStart leg for mega-sdd — the SESSION NOTE (gateway audit join line).
+# Spec: docs/superpowers/specs/2026-09-21-session-note-gateway-design.md
+# Contract: docs/gateway-contract.md §Catatan sesi.
+#
+# On a GATEWAY-ROUTED session this prints ONE line into the session context:
+#   mega-sdd-note: repo=<project_id> branch=<b> head=<sha7> dir=<d> sdd=<0|1> v=<ver>
+# The office AI gateway reads it from its Langfuse log — the same path the
+# `mega-sdd-trace:turn` tag rides (hook stdout → context → request body). The
+# gateway already holds the whole conversation; what it cannot know is WHERE it
+# happened. This line is that, and nothing more.
+#
+# Contract:
+# - Vanilla session (ANTHROPIC_BASE_URL unset/empty) → exit before ANY work: no
+#   output, no git, no tokens.
+# - Namespace is `mega-sdd-note:` ON PURPOSE, never `mega-sdd-trace:` — this
+#   fires in NON-adopted repos too, and the gateway's mega-sdd session filter is
+#   `contains "mega-sdd-trace"`.
+# - Pure shell + at most TWO git spawns. No python, no network, no file written.
+# - .git/config is UNTRUSTED input headed for the model's context (prompt
+#   injection) and for a log (credentialed remotes): `repo` is exact-or-`invalid`
+#   — whitelisted, never a lossy rewrite, because a mangled id would silently
+#   split one repository in two; branch/dir are lossy-sanitized; only the FIRST
+#   line of any git output is read; nothing from stdin or git is ever eval'd.
+# - Every failure path: exit 0 with no output. This body can never break a session.
+set -u
+# Byte-wise bracket ranges for the whitelists below + stable git output.
+export LC_ALL=C
+
+# Direct dispatch (v7.5.0 Fase 7 №A): hooks.json runs this body straight. On
+# Windows $0 can arrive with backslash separators; one builtin substitution
+# keeps every $0-derived path sane.
+HOOK_SELF="${0//\\//}"
+
+# Gateway-routed sessions only. settings.json `env` is injected into hook
+# processes, so a gateway-managed session always carries this.
+[ -n "${ANTHROPIC_BASE_URL:-}" ] || exit 0
+
+STDIN_JSON=""
+IFS= read -r -d '' STDIN_JSON || true
+
+# First-match cwd extraction (same fork-free pattern as the other hooks);
+# SessionStart without a cwd field falls back to the process cwd.
+CWD_SN=""
+case "$STDIN_JSON" in
+  *'"cwd"'*)
+    _t="${STDIN_JSON#*\"cwd\"}"
+    _t="${_t#*\"}"
+    CWD_SN="${_t%%\"*}"
+    ;;
+esac
+[ -n "$CWD_SN" ] || CWD_SN="${PWD:-}"
+case "${OSTYPE:-}" in msys*|cygwin*|win32*) CWD_SN="${CWD_SN//\\\\//}"; CWD_SN="${CWD_SN//\\//}" ;; esac
+[ -n "$CWD_SN" ] && [ -d "$CWD_SN" ] || exit 0
+
+# Lossy sanitizer (branch, dir): anything outside the safe set becomes `_`.
+# The bracket pattern lives in a VARIABLE — a literal `/` inside
+# ${var//pattern/repl} would end the pattern.
+_SN_LOSSY_PAT='[^A-Za-z0-9._/-]'
+_sn_lossy() {  # $1=value $2=cap → REPLY
+  local v="${1//$_SN_LOSSY_PAT/_}"
+  REPLY="${v:0:$2}"
+}
+
+# Bash port of norm_project_id (scripts/publish-artifacts.sh) — line for line,
+# so the audit's `repo` and the publisher's `project_id` are ONE identity.
+# Parity is pinned by tests/fixtures/project-id-corpus.tsv, driven from BOTH
+# suites (tests/session-note + tests/publisher r3d).
+_sn_norm_repo() {  # $1=remote url → REPLY (may be empty)
+  local r="$1" p first head rest h p2
+  for p in "ssh://" "https://" "http://" "git://"; do
+    case "$r" in "$p"*) r="${r#"$p"}" ;; esac
+  done
+  first="${r%%/*}"
+  case "$first" in *@*) r="${r#*@}" ;; esac          # userinfo (incl. embedded creds) — drop
+  head="${r%%/*}"
+  case "$r" in */*) rest="${r#*/}" ;; *) rest="" ;; esac
+  case "$head" in
+    *:*)
+      h="${head%%:*}"; p2="${head#*:}"
+      case "$p2" in
+        ""|*[!0-9]*)                                  # scp-like host:path
+          head="$h"
+          if [ -n "$rest" ]; then rest="${p2}/${rest}"; else rest="$p2"; fi ;;
+        *) head="$h" ;;                               # ssh/https port — drop
+      esac ;;
+  esac
+  if [ -n "$rest" ]; then r="${head}/${rest}"; else r="$head"; fi
+  while [ "${r%/}" != "$r" ]; do r="${r%/}"; done
+  r="${r%.git}"
+  REPLY="$r"
+}
+
+# ── git facts: at most two spawns ────────────────────────────────────────────
+# ONE rev-parse yields toplevel + sha + branch. Its exit code is IGNORED and each
+# line is validated alone: an unborn repo exits 128 yet still prints the toplevel,
+# then echoes the literal `HEAD`, and prints no third line. Option order matters:
+# `--abbrev-ref` is sticky, so the plain HEAD must come before it.
+TOP_SN=""; SHA_SN=""; BR_SN=""; REMOTE_SN=""
+if command -v git >/dev/null 2>&1; then
+  _rp="$(git -C "$CWD_SN" rev-parse --show-toplevel HEAD --abbrev-ref HEAD 2>/dev/null)"
+  { IFS= read -r TOP_SN; IFS= read -r SHA_SN; IFS= read -r BR_SN; } <<< "$_rp" || true
+  TOP_SN="${TOP_SN%$'\r'}"; SHA_SN="${SHA_SN%$'\r'}"; BR_SN="${BR_SN%$'\r'}"
+  if [ -n "$TOP_SN" ]; then
+    _rm="$(git -C "$CWD_SN" remote get-url origin 2>/dev/null)"
+    # Default-IFS read: FIRST line only, surrounding whitespace trimmed (the
+    # python side strips too). A multi-line config value can never add a line.
+    read -r REMOTE_SN <<< "$_rm" || true
+    REMOTE_SN="${REMOTE_SN%$'\r'}"
+  fi
+fi
+
+# dir — basename of the repo root (or of cwd), never a full path.
+_d="${TOP_SN:-$CWD_SN}"
+while [ "${_d%/}" != "$_d" ] && [ -n "${_d%/}" ]; do _d="${_d%/}"; done
+_sn_lossy "${_d##*/}" 64
+DIR_SN="${REPLY:-unknown}"
+
+# head — 7 chars of a ≥40 lowercase-hex sha (sha256 repos are 64), else none.
+HEAD_SN="none"
+case "$SHA_SN" in
+  ""|*[!0-9a-f]*) ;;
+  *) [ "${#SHA_SN}" -ge 40 ] && HEAD_SN="${SHA_SN:0:7}" ;;
+esac
+
+# branch — git prints `HEAD` when detached; absent line (unborn / not a repo) → none.
+_sn_lossy "$BR_SN" 100
+BRANCH_SN="${REPLY:-none}"
+
+# repo — exact or `invalid`, never rewritten.
+if [ -z "$REMOTE_SN" ]; then
+  REPO_SN="local/${DIR_SN}"
+else
+  _sn_norm_repo "$REMOTE_SN"
+  case "$REPLY" in
+    "") REPO_SN="local/${DIR_SN}" ;;
+    *[!A-Za-z0-9._/~-]*) REPO_SN="invalid" ;;
+    *) if [ "${#REPLY}" -le 200 ]; then REPO_SN="$REPLY"; else REPO_SN="invalid"; fi ;;
+  esac
+fi
+
+# sdd — adopted project? Walk up to the outermost .mega-sdd/ parent (shared
+# shell resolver; sourced, no exec).
+case "$HOOK_SELF" in */*) SC_DIR_SN="${HOOK_SELF%/*}" ;; *) SC_DIR_SN="." ;; esac
+SDD_SN=0
+_rpr="${SC_DIR_SN}/../scripts/_lib/resolve-project-root.sh"
+if [ -f "$_rpr" ]; then
+  # shellcheck disable=SC1090
+  . "$_rpr"
+  [ -d "$(resolve_project_root "$CWD_SN")/.mega-sdd" ] && SDD_SN=1
+elif [ -d "${CWD_SN}/.mega-sdd" ]; then
+  SDD_SN=1
+fi
+
+# v — the plugin's own version (builtin line scan; first "version" key wins).
+VER_SN="unknown"
+_pj="${SC_DIR_SN}/../.claude-plugin/plugin.json"
+if [ -f "$_pj" ]; then
+  while IFS= read -r _l || [ -n "$_l" ]; do
+    case "$_l" in
+      *'"version"'*)
+        _v="${_l#*\"version\"}"; _v="${_v#*\"}"; _v="${_v%%\"*}"
+        case "$_v" in
+          ""|*[!0-9A-Za-z.+-]*) ;;
+          *) [ "${#_v}" -le 32 ] && VER_SN="$_v" ;;
+        esac
+        break ;;
+    esac
+  done < "$_pj" 2>/dev/null
+fi
+
+printf 'mega-sdd-note: repo=%s branch=%s head=%s dir=%s sdd=%s v=%s\n' \
+  "$REPO_SN" "$BRANCH_SN" "$HEAD_SN" "$DIR_SN" "$SDD_SN" "$VER_SN"
+exit 0

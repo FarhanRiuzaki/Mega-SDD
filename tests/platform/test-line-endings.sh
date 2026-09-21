@@ -31,9 +31,10 @@ pass() { echo "PASS: $1"; }
 
 CR=$'\r'
 
-# The six hook entry points have NO extension — this is the exact set a `*.sh`
+# The seven hook entry points (six events; SessionStart runs two bodies since
+# 8.7.0 — session-start + session-note) have NO extension — this is the exact set a `*.sh`
 # rule would miss, so it is the exact set we interrogate.
-HOOK_ENTRIES="pre-tool-use post-tool-use session-start stop user-prompt-submit user-prompt-expansion"
+HOOK_ENTRIES="pre-tool-use post-tool-use session-start session-note stop user-prompt-submit user-prompt-expansion"
 
 # One more real path beyond the hooks, so a future narrowing to something like
 # `**/hooks/* text eol=lf` cannot keep this test green while re-opening the
@@ -49,8 +50,8 @@ EXTRA_PATHS="$P/scripts/_lib/resolve-project-root.sh"
 # every file added tomorrow must be covered too.
 FUTURE_PATH="$P/scripts/zz-future-file-that-does-not-exist.sh"
 
-# 6 hooks + 1 extra + 1 future = the vacuity floor for L2.
-EXPECT_CHECKED=8  # v7.5.0: 6 hook entry points + resolve-project-root.sh + the future-file probe (run-hook.sh deleted, direct dispatch)
+# 7 hooks + 1 extra + 1 future = the vacuity floor for L2.
+EXPECT_CHECKED=9  # 8.7.0: 7 hook entry points (session-note added) + resolve-project-root.sh + the future-file probe (run-hook.sh deleted v7.5.0, direct dispatch)
 
 have_git=0
 if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
