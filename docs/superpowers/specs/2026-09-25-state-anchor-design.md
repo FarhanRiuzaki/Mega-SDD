@@ -1,6 +1,6 @@
 # State anchor — code at HEAD is the source of truth — design spec (Fase 1)
 
-**Status:** DESIGN v3 (three adversarial review rounds applied). The owner answered the Fase-1 gate with "gas lanjut fase 2" without resolving §0, so Fase 2 builds every **[ASSUMED]** default below. Slice 1 is implemented (§18 records where the build differs from this text and why); Slice 2 is built from this revision.
+**Status:** DESIGN v3 (three adversarial review rounds) — **Slices 1 and 2 IMPLEMENTED in 8.8.0** (local commit, not pushed). The owner answered the Fase-1 gate with "gas lanjut fase 2" without resolving §0, so every **[ASSUMED]** default below was built; §18 and §19 record where the build differs from this text and why. Still open before the drift can be called fixed: the D33 acceptance run and the D32 Windows check (release gates of this spec).
 
 This is Fase 1 of the owner's three-phase program: Fase 0 audit → Fase 1 design → Fase 2 implementation + proof.
 - Evidence base: `research/2026-09-25-state-anchor-audit.md` (Fase 0).
@@ -1248,6 +1248,7 @@ Slice 1 (the view) is implemented as specified above, with these recorded differ
 | `staleness_notice: false` | header `mega-sdd state @ <sha12> (<branch>):` + rule line | — |
 | no git repository | header `mega-sdd state · no git repository at this project root:` + rule line | the rule still applies to memory claims |
 | the gates' walk window | also applied in the view's own-commit drop | one rule for view and gate |
+| miss-path worktree | the miss `git diff` runs in the LIVE worktree top (the builtin walk), not the cached `top=` | the before/after repro showed a copied checkout diffing the original directory → "later moves UNVERIFIED" |
 | miss-path cap | 200 changed paths (D34 said 2,000); the diff always starts at `checked`, the overlay stores ≤3 paths + a count per vault | the implementation review measured the bash matching at 130 s for 2,000 paths; now < 100 ms at 150 and 2,000 |
 
 **Measured on the final text:** rule line 342 B; UPS line 160 B (both `len(s.encode())`). The whole block on the Fase-0 playground (two vaults, pre-Slice-2 stamps, so every line carries a hint tag): A 557 B, ctl-B 658 B, ctl-C1 757 B, ctl-C2 649 B, ctl-D 582 B, behind-upstream 635 B. The always-on cost is therefore **+559 to +759 B** per startup/clear/compact on this playground — above the DERIVED +440…+720 of §6, because the hint-tier wording is longer than the prototype's. It stays under the 1,200 B cap; a `unit-binding/2` vault collapses to `- FRESH: <v>`.

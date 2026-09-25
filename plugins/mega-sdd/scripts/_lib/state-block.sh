@@ -279,7 +279,9 @@ _mb_render_miss() {
   elif [ "$unver" -eq 0 ]; then
     specs=(${sspec[@]+"${sspec[@]}"})   # repeated pathspecs are harmless to git
     if [ "${#specs[@]}" -gt 0 ]; then
-      x=$(MSYS_NO_PATHCONV=1 GIT_OPTIONAL_LOCKS=0 exec git -C "$MB_TOP" -c core.quotepath=false -c core.fsmonitor=false \
+      # the LIVE worktree top (the builtin walk), never the cached one: a copied or moved
+      # checkout still carries the old absolute top= in its git dir
+      x=$(MSYS_NO_PATHCONV=1 GIT_OPTIONAL_LOCKS=0 exec git -C "$GH_TOP" -c core.quotepath=false -c core.fsmonitor=false \
             diff --name-only --no-renames --no-relative "$MB_CHECKED" "$head" -- "${specs[@]}" 2>/dev/null) || rc=$?
       if [ "$rc" -ne 0 ]; then
         unver=1

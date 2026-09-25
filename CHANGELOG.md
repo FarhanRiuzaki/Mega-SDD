@@ -78,9 +78,11 @@ Sumber: feedback tim dari monorepo. Di sesi tim FE, Claude baca memory dan artef
 
   Nggak ada ceiling yang dinaikin.
 - **Byte:** blok di playground Fase 0 terukur **+559 sampai +759 B** per startup/clear/compact. Ini di atas estimasi DERIVED spec (+440…+720), karena teks tier "hint" lebih panjang. Tetap di bawah cap 1.200 B. Vault dengan stamp `/2` collapse jadi `- FRESH: <v>`.
-- **Belum terbukti (jujur):**
-  - arm benchmark D33 (tingkat override CONFLICT D22, biaya serialisasi D10) belum dijalanin, karena butuh sesi interaktif dan keputusan budget owner;
-  - verifikasi Windows di laptop kantor (D32) juga belum.
+- **Belum terbukti (jujur) — dan dua di antaranya GATE RILIS di spec:**
+  - **Acceptance run Slice 1 (D33)** belum jalan: 30 run tier-S, blok vs tanpa blok, di tiga permukaan yang ditanam (MEMORY.md, CLAUDE.md, dokumen vault). Spec sendiri bilang **belum boleh ada yang klaim "drift FE sudah beres" sebelum run ini lulus**. Yang udah terbukti baru mekanismenya: blok muncul, isinya benar, dan gate nolak.
+  - **Verifikasi Windows di laptop kantor (D32)** belum jalan. Skrip sekali-jalan udah disiapin: `research/2026-09-26-state-anchor-fase2/windows-check.sh`.
+  - Arm benchmark lite D33 buat Slice 2 (tingkat override CONFLICT D22, biaya serialisasi D10) juga belum. Butuh sesi interaktif dan keputusan budget owner.
+  - **Artinya:** push 8.8.0 sebelum D32 + D33 jalan = owner sengaja nge-waive gate rilis yang ditulis spec ini sendiri. Itu keputusan owner, dan dicatat di sini supaya kelihatan.
 - **Dua ronde review adversarial sebelum rilis:**
   - ronde 3 atas spec (24 agen): 8 BLOCKER, lima di antaranya regresi dari perbaikan ronde 2;
   - satu ronde atas implementasi (18 agen): 11 temuan BLOCKER/HIGH, semuanya dikonfirmasi skeptic lalu diperbaiki.
@@ -93,6 +95,9 @@ Sumber: feedback tim dari monorepo. Di sesi tim FE, Claude baca memory dan artef
   - jalur miss di awal sesi butuh **130 detik** untuk 2.000 path berubah. Sekarang < 100 ms, dengan cap 200 path → "later moves UNVERIFIED".
 
   Semua perbedaan terhadap teks spec dicatat di §18/§19 spec.
+- **Before/after di repro Fase 0:** `research/2026-09-26-state-anchor-fase2/before-after.md`. Di kasus ctl-C2-green (teammate geser `login()` 5 baris, suite hijau lagi):
+  - 8.7.2 ngirim anchor basi `client.ts:6` ke implementer dan dispatch-nya ALLOW;
+  - 8.8.0 nge-repair ke `:11` di bind, dispatch ditolak sampai binding-nya jujur, lalu ALLOW dengan anchor yang benar.
 - **Test baru:**
   - `tests/state-anchor/` — engine, blok, gate, scope parity, posisi GROUND, attribution parity;
   - `tests/hooks/ups-head-move.test.sh`;
