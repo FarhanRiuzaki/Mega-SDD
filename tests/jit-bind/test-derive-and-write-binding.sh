@@ -80,7 +80,9 @@ python3 - "$V" <<'EOF' && pass "b: fs present/absent → CONFIRMED/CONFLICT with
 import json, sys, os
 V = sys.argv[1]
 d2 = json.load(open(os.path.join(V, "bolts/U-002/binding.json"))); by = {c["id"]: c for c in d2["claims"]}
-assert d2["schema"] == "unit-binding/1" and d2["unit"] == "U-002" and d2["generated_by"].startswith("write-unit-binding.sh")
+# state anchor (8.8.0): schema unit-binding/2 carries the honest stamp + scope + dirty snapshot
+assert d2["schema"] == "unit-binding/2" and d2["unit"] == "U-002" and d2["generated_by"].startswith("write-unit-binding.sh")
+assert len(d2["based_on_sha"] or "") == 40 and d2["head"] == d2["based_on_sha"][:8] and "app/Models/Nasabah.php" in d2["scope"], d2
 assert by["C-U002-01"]["verdict"] == "CONFLICT" and by["C-U002-01"]["state"] == "MISSING"
 assert by["C-U002-02"]["verdict"] == "CONFIRMED" and by["C-U002-02"]["state"] == "NEW"
 assert by["C-U002-03"]["verdict"] == "OQ" and "ladder" in by["C-U002-03"]["evidence"]

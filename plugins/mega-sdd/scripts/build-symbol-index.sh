@@ -228,10 +228,25 @@ symbols.sort(key=lambda s: (s["file"], s["line"], s["kind"]))
 
 os.makedirs(os.path.dirname(out), exist_ok=True)
 from datetime import datetime, timezone
+# State anchor (spec 2026-09-25-state-anchor-design.md §3 "A dirty index"): the index
+# records the dirty map of the files it READ — the ONE freshness.dirty_map() (2 git
+# execs) over its enumerated set — so a binding can tell whether its symbol verdicts
+# came from the same working tree it captured. Best-effort: null when unavailable.
+dirty = None
+try:
+    import freshness
+    _g = freshness.find_git(os.path.abspath(cwd))
+    if _g and _git_ok:
+        _top = {freshness.to_top(_g, f.replace(os.sep, "/")) for f in files} - {None}
+        dirty = {freshness.to_proj(_g, q): v for q, v in freshness.dirty_map(_g, _top).items()}
+except Exception:
+    dirty = None
 doc = {"generated_by": "mega-sdd:build-symbol-index",
        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
        "head_commit": head, "astgrep_version": agv,
        "file_count": len(files), "symbol_count": len(symbols),
+       "dirty": dirty,
+       "files": sorted(f.replace(os.sep, "/") for f in files) if dirty is not None else None,
        "symbols": symbols}
 tmp = out + ".tmp"
 with open(tmp, "w", encoding="utf-8") as fh:

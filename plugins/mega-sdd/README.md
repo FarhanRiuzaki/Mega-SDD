@@ -60,7 +60,7 @@ flowchart LR
 
 `/mega-sdd` wraps all of it: single upfront confirmation, diagnostics (lint / analyze / drift) auto-invoked at the right phases, halt-protocol preserved throughout. Brownfield runs bind claim-scoped via `bind-codebase --express` (default spine — `scan-codebase` is on-demand / classic); the legacy-rebuild lane starts from `extract-intelligence`. Two lanes: the chain above is the classic DEFAULT for all of 8.x; `--lite` (or `lane: lite`) folds generate-intent + generate-units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` (`bolts/U-XXX/binding.json`).
 
-**And it loops.** Development never actually ends — so after the pipeline "finishes", every out-of-pipeline change (a manual hotfix, an AI-prompted edit in any session, a `git pull`) is captured ambiently (a PostToolUse journal + the map's git stamp), surfaced as a one-line session-start notice, and reconciled by `/mega-sdd:sync`:
+**And it loops.** Development never actually ends — so after the pipeline "finishes", every out-of-pipeline change (a manual hotfix, an AI-prompted edit in any session, a `git pull`) is captured ambiently (a PostToolUse journal + per-unit binding stamps checked against HEAD), surfaced in the session-start state block (HEAD, FRESH/STALE per vault, and the rule "code at HEAD decides what the code IS"), blocked at dispatch when a unit's binding no longer describes HEAD, and reconciled by `/mega-sdd:sync`:
 
 ```mermaid
 flowchart LR
@@ -144,7 +144,7 @@ Optional `.mega-sdd/config.yaml` at the project root — every key has a default
 
 ```yaml
 dirty_journal: true       # false → living-vault journaling off (git channel still covers sync)
-staleness_notice: true    # false → suppress the session-start "codebase moved" line
+staleness_notice: true    # false → session-start state block keeps only header + rule line; no "HEAD moved" prompt line
 layout: new               # legacy → pre-migration scattered output paths
 auto_verify_on_edit: false # true → inline edit of a unit's target_file offers its acceptance run
 spine: express            # classic → restore the scan-first chain + Stop-hook analyze aggregate

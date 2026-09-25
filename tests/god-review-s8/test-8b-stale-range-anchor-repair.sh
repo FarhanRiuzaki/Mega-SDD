@@ -81,11 +81,14 @@ echo "$Bc" | python3 -c 'import json,sys; c=json.load(sys.stdin); assert c["verd
   && ok "R1: 8-10 whose authoring content moved to 6-8 → CONFIRMED, shifted (content sha match)" || bad "R1 shift: $Bc"
 grep -q '^- src/b.txt:6-8 — a block' "$V/units/U-001.md" && ok "R1: unit anchor rewritten to 6-8" || bad "R1 unit rewrite: $(grep 'src/b.txt' "$V/units/U-001.md")"
 
-# ── CONFLICT: c.txt 2-4 content changed — range still fits, so today it is CONFIRMED by
-#    range-fit (unchanged behavior, out of P3 scope); the repair machinery must NOT touch it ──
+# ── CONFLICT: c.txt 2-4 content changed — the range still fits. Until 8.7.x it was CONFIRMED by
+#    range-fit alone; the 8.8.0 state-anchor content ladder (spec 2026-09-25 §9, D22) makes a
+#    block rewritten by someone else (no own-commit trail, no label token) a CONFLICT
+#    anchor_content_drift. The repair machinery still must NOT touch it ──
 Cc="$(claim src/c.txt)"
-echo "$Cc" | python3 -c 'import json,sys; c=json.load(sys.stdin); assert "repair" not in c and c["anchor"]=="src/c.txt:2-4", c' \
-  && ok "changed content inside a fitting range: no repair attempted, anchor untouched (range-fit verdict unchanged)" || bad "c.txt touched: $Cc"
+echo "$Cc" | python3 -c 'import json,sys; c=json.load(sys.stdin); assert "repair" not in c and c["verdict"]=="CONFLICT" and "anchor_content_drift" in c["evidence"], c' \
+  && ok "changed content inside a fitting range: CONFLICT anchor_content_drift (D22), no repair attempted" || bad "c.txt touched: $Cc"
+grep -q '^- src/c.txt:2-4 — a block' "$V/units/U-001.md" && ok "the drifted anchor is left verbatim in the unit" || bad "c.txt anchor was rewritten"
 
 # ── CONFLICT: d.txt 5-40 on a 28-line file — PARTIAL range, overshoot 12, never clamped ──
 Dc="$(claim src/d.txt)"

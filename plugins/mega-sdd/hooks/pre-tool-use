@@ -267,7 +267,7 @@ fi
 # regex + _GUARDED tuple + evidence regexes are byte-copies) from the
 # dedicated interpreters below, which remain the fallback when SC_ROOT is
 # absent (extraction doubt) — same code, same verdicts.
-PARSE_OUTPUT=$(printf '%s' "$STDIN_JSON" | MEGA_SDD_SC_ROOT="${SC_ROOT:-}" python3 -c '
+PARSE_OUTPUT=$(printf '%s' "$STDIN_JSON" | PYTHONIOENCODING=utf-8 MEGA_SDD_SC_ROOT="${SC_ROOT:-}" python3 -c '
 import json
 import shlex
 import sys
@@ -309,6 +309,20 @@ elif tool_name == "Agent":
            or re.search(r"(?m)^\s*UNIT:\s*(U-[A-Za-z0-9_-]+)", _pr)
            or re.search(r"mega-sdd-trace:execute-bolts:(U-[A-Za-z0-9_-]+)", _pr))
     emit("AGENT_UNIT", _mu.group(1) if _mu else "")
+    # state anchor (spec 2026-09-25 §8 Identity): EVERY unit marker, so the gate can
+    # deny a prompt whose pointer / UNIT: line / trace tag disagree, plus the first
+    # dispatch-prompt pointer (realpath-checked against the vaults in the aggregator)
+    # the builder prints the pointer on its own READ FIRST line as an ABSOLUTE path, which
+    # may contain spaces (~/My Projects) or backslashes (native Windows python): read that
+    # whole line first; a whitespace-free token is only the fallback
+    _pn = _pr.replace(chr(92), "/")
+    _ptrs = (re.findall(r"(?m)^[ \t]*READ FIRST, IN FULL:[ \t]*[\"`<]?(.*?bolts/(U-[A-Za-z0-9_-]+)/dispatch-prompt\.md)[\"`>]?[ \t\r]*$", _pn)
+             or re.findall(r"(\S*?bolts/(U-[A-Za-z0-9_-]+)/dispatch-prompt\.md)", _pn))
+    _ids = ([u for _, u in _ptrs] + re.findall(r"bolts/(U-[A-Za-z0-9_-]+)/dispatch-prompt\.md", _pn)
+            + re.findall(r"(?m)^\s*UNIT:\s*(U-[A-Za-z0-9_-]+)", _pr)
+            + re.findall(r"mega-sdd-trace:execute-bolts:(U-[A-Za-z0-9_-]+)", _pr))
+    emit("AGENT_UNITS_ALL", ",".join(sorted(set(_ids))))
+    emit("AGENT_POINTER", _ptrs[0][0].strip("\"`<>()") if _ptrs else "")
 elif tool_name == "Bash":
     cmd = tool_input.get("command", "")
     emit("BASH_CMD_B64", base64.b64encode(cmd.encode()).decode())
@@ -402,6 +416,10 @@ elif tool_name in ("Edit", "Write"):
             elif re.search(r"(?:^|/)\.mega-sdd/\.cache/pack-resolver/[^/]+$", rel):
                 verdict = "evidence"
             elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance|attempts|findings|review-tier|binding)\.json|_batch-suite\.json)$", rel):
+                verdict = "evidence"
+            elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:_wave-claims\.json|[^/]+/_claims\.json|[^/]+/dispatch-prompt\.md)$", rel):
+                # state anchor D27 (spec 2026-09-25 §8): the JIT capture and the built dispatch
+                # prompt are script-written and gate-read — never agent-written
                 verdict = "evidence"
             elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/lens-inputs/[^/]+/l0-results\.json$", rel):
                 # F-08 7.11.0: the L0 record is script-written (run-code-gates.sh --write) and gate-read — guarded like the bolt evidence.
@@ -522,7 +540,7 @@ emit_block() {
   local reason="$1"
   # Escape for JSON string (basic)
   local reason_json
-  reason_json=$(printf '%s' "$reason" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)
+  reason_json=$(printf '%s' "$reason" | PYTHONIOENCODING=utf-8 python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)
   if [ -z "$reason_json" ]; then
     # no-python3 fallback: strip JSON-hostile chars so the deny JSON stays valid
     reason_json="\"$(printf '%s' "$reason" | tr '"\\' "'/" | tr -d '\n')\""
@@ -937,7 +955,10 @@ except Exception as e:
         ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-factory-ledger.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         wait  # settle all nine state files before the aggregator reads
       fi
-      GATE_REASON=$(PROJECT_ROOT="$PROJECT_ROOT" GATE_MODE="${GATE_MODE:-run}" GATE_SUBJECT="${GATE_SUBJECT:-mega-sdd:execute-bolts}" AGENT_UNIT="${AGENT_UNIT:-}" MEGA_SDD_LIB_DIR="${SCRIPT_DIR_RPR}/../scripts/_lib" python3 -c '
+      # D24a (state anchor §8): utf-8 stdout (a cp1252 console must not crash the gate
+      # into an ALLOW) and, on an in-run bolt-implementer dispatch, a non-zero
+      # interpreter exit is a DENY — never the silent ALLOW an empty capture meant.
+      GATE_REASON=$(PYTHONIOENCODING=utf-8 PROJECT_ROOT="$PROJECT_ROOT" GATE_MODE="${GATE_MODE:-run}" GATE_SUBJECT="${GATE_SUBJECT:-mega-sdd:execute-bolts}" AGENT_UNIT="${AGENT_UNIT:-}" AGENT_UNITS_ALL="${AGENT_UNITS_ALL:-}" AGENT_POINTER="${AGENT_POINTER:-}" MEGA_SDD_LIB_DIR="${SCRIPT_DIR_RPR}/../scripts/_lib" python3 -c '
 import json, os, sys
 md = os.path.join(os.environ["PROJECT_ROOT"], ".mega-sdd")
 def L(fn):
@@ -1103,6 +1124,158 @@ if IN_RUN and os.environ.get("AGENT_UNIT"):
         cmds = ex[0].get("commands", [])[:3]
         fails.append(("acceptance-expects", "unit %s has %d acceptance_test `type: test` entr%s with a command but no `expects` (acceptance_expects_missing): %s. The B4 gate would then measure only rc==0 of a test the implementer writes — vacuous evidence (69/69 entries on the field run, zero failures ever observed). Add `expects: \"<substring the output must contain>\"` to each entry in the unit file, then re-dispatch. Keterangan: setiap acceptance_test bertipe test wajib menyebut substring output yang membuktikan lulus. State: %s/.unit-spec-state.json" % (au, len(ex[0].get("commands", [])), "y" if len(ex[0].get("commands", [])) == 1 else "ies", cmds, md)))
 
+# binding-freshness (state anchor, spec docs/superpowers/specs/2026-09-25-state-anchor-design.md §8),
+# IN-RUN and PER UNIT: a bolt must never run on a binding whose evidence no longer
+# describes HEAD. Anti-hallucination, not observability: the leg writes NOTHING (no
+# report, metric or log) — it only appends a deny. Fail-CLOSED: any exception is a
+# deny "freshness NOT evaluated", never an ALLOW. A deny spends no attempt.
+AGENT_VAULT_DIR = None
+def _bf_leg():
+    global AGENT_VAULT_DIR
+    import glob as _gl, re as _re, subprocess as _sp
+    sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+    import freshness as _fr, vault_scope as _vs
+    root = os.path.realpath(os.environ["PROJECT_ROOT"])
+    au = os.environ.get("AGENT_UNIT", "")
+    ids = [u for u in os.environ.get("AGENT_UNITS_ALL", "").split(",") if u]
+    ptr = os.environ.get("AGENT_POINTER", "")
+    vaults = [os.path.realpath(v) for v in _vs.vaults(root)]
+    def _lite(vd):
+        if os.path.isfile(os.path.join(vd, "context.md")):
+            return True
+        try:
+            return json.load(open(os.path.join(vd, "vault.json"))).get("vault_layout") in (3, "3")
+        except Exception:
+            return False
+    cfg_lite = False
+    try:
+        cfg_lite = any(_re.match(r"^lane:\s*[\"\x27]?lite\b", l) for l in open(os.path.join(root, ".mega-sdd", "config.yaml")))
+    except Exception:
+        pass
+    in_scope = cfg_lite or any(_lite(v) or _gl.glob(os.path.join(v, "bolts", "U-*", "binding.json")) for v in vaults)
+    REM = {
+        "rebind": "step 3.9b: `bash <plugin>/scripts/rebind-units.sh --cwd=<project-root> --vault=%s --units=%s`, then rebuild dispatch-prompt.md with scripts/build-dispatch-prompt.sh and re-dispatch",
+        "prompt": "rebuild the prompt with `bash <plugin>/scripts/build-dispatch-prompt.sh` (never a re-bind), then dispatch with its pointer",
+        "quarantine": "quarantine the unit: `bash <plugin>/scripts/write-unit-quarantine.sh --cwd=<project-root> --vault=%s --unit=%s --halt=binding_stale` — never a second 3.9b at this HEAD",
+    }
+    KET = {
+        "binding_absent": "unit ini wajib punya binding per-unit tapi belum ada",
+        "binding_unparseable": "binding.json unit ini rusak / tidak terbaca",
+        "binding_legacy": "binding.json masih format lama (tanpa stamp jujur) — sekali re-bind saat upgrade",
+        "stamp_null": "stamp binding kosong: bukti yang dipakai saat bind tidak konsisten dengan HEAD",
+        "dispatch_prompt_stale": "dispatch-prompt dibangun dari binding lain (binding berubah setelah prompt dibuat)",
+        "unit_changed_since_bind": "file unit berubah setelah di-bind",
+        "diverged": "HEAD tidak lagi turunan dari stamp binding (rebase / pindah branch)",
+        "stamp_unreachable": "commit stamp binding sudah tidak ada (history ditulis ulang / gc)",
+        "binding_stale": "kode di scope unit ini berubah sejak di-bind (commit orang lain)",
+        "uncommitted_in_scope": "ada perubahan belum di-commit di scope unit ini yang berbeda dari saat bind",
+        "rebind_exhausted": "sudah di-re-bind sekali di HEAD ini dan masih belum segar — keputusan manusia",
+        "not_evaluated": "git gagal dibaca (mis. safe.directory / timeout) — gate tidak bisa menilai",
+        "unit_identity_conflict": "prompt menyebut lebih dari satu unit (pointer, baris UNIT: dan tag trace harus sama)",
+        "unit_identity_foreign": "pointer dispatch-prompt menunjuk ke luar vault project ini",
+        "dispatch_prompt_missing": "dispatch tidak membawa dispatch-prompt.md hasil builder (prompt diketik tangan)",
+        "unit_ambiguous": "ID unit ada di lebih dari satu vault dan prompt tidak menunjuk vault-nya",
+    }
+    def deny(uid, vname, reason, detail=None, remedy=""):
+        d = detail or {}
+        paths = [_fr.sanitize(p, 80) for p in (d.get("paths") or [])][:5]
+        cms = [_fr.sanitize(c, 70) for c in (d.get("commits") or [])][:3]
+        extra = ""
+        if d.get("null_cause"):
+            extra += " (null_cause=%s)" % _fr.sanitize(d["null_cause"], 40)
+        if d.get("cause"):
+            extra += " (after a 3.9b at this HEAD: %s)" % _fr.sanitize(d["cause"], 40)
+        if paths:
+            extra += " · path(s): %s" % ", ".join(paths)
+        if cms:
+            extra += " · commit(s): %s" % "; ".join(cms)
+        if d.get("error"):
+            extra += " · git: %s" % _fr.sanitize(d["error"], 120)
+        return ("binding-freshness", "unit %s (vault %s): %s%s. Remedy: %s. Keterangan: %s." % (
+            uid or "?", vname or "?", reason, extra, remedy, KET.get(reason, reason)))
+    # ── identity ──
+    if len(set(ids)) > 1:
+        return deny(au, "", "unit_identity_conflict", {"paths": sorted(set(ids))},
+                    "dispatch ONE unit per prompt: the pointer, the UNIT: line and the mega-sdd-trace tag must name the same unit")
+    if not au:
+        return deny("", "", "dispatch_prompt_missing", None, REM["prompt"]) if in_scope else None
+    vault = None
+    if ptr:
+        rp = os.path.realpath(ptr if os.path.isabs(ptr) else os.path.join(root, ptr))
+        cand = os.path.dirname(os.path.dirname(os.path.dirname(rp)))
+        if in_scope:
+            if not (rp.startswith(root + os.sep) and cand in vaults):
+                return deny(au, "", "unit_identity_foreign", {"paths": [ptr]},
+                            "point the dispatch at <vault>/bolts/%s/dispatch-prompt.md inside this project (the absolute path the builder printed)" % au)
+            if not os.path.isfile(rp):
+                return deny(au, os.path.basename(cand), "dispatch_prompt_missing", None, REM["prompt"])
+            vault = cand
+        elif cand in vaults:
+            vault = cand
+    if vault is None:
+        homes = [v for v in vaults if _vs.unit_file(v, au)]
+        if len(homes) > 1:
+            return deny(au, "", "unit_ambiguous", {"paths": [os.path.relpath(h, root) for h in homes]},
+                        "dispatch with the builder pointer <vault>/bolts/%s/dispatch-prompt.md so the vault is explicit" % au)
+        if in_scope:
+            return deny(au, os.path.basename(homes[0]) if homes else "", "dispatch_prompt_missing", None, REM["prompt"])
+        vault = homes[0] if homes else None
+    if vault is None:
+        return None
+    AGENT_VAULT_DIR = vault
+    vname = os.path.basename(vault)
+    vrel = os.path.relpath(vault, root).replace(os.sep, "/")
+    # ── classification (§8): the hook approximation of the step-3.9 trigger ──
+    uf = _vs.unit_file(vault, au)
+    utext = open(uf, encoding="utf-8", errors="replace").read() if uf else ""
+    bound = (cfg_lite or _lite(vault) or os.path.isfile(os.path.join(vault, "bolts", au, "binding.json"))
+             or _re.search(r"(?m)^##\s+Claims\b", utext) or _re.search(r"(?m)^existing_interfaces:", utext))
+    if bound:
+        prompt = os.path.realpath(ptr if os.path.isabs(ptr) else os.path.join(root, ptr)) if ptr else None
+        try:
+            reason, detail = _fr.gate_check(root, vault, au, prompt)
+        except _fr.GitError as e:
+            return deny(au, vname, "not_evaluated", {"error": str(e)},
+                        "a human halt: fix git access (`git config --global --add safe.directory %s`, a wedged index.lock or fsmonitor), then re-dispatch" % root)
+        if not reason:
+            return None
+        if reason in ("dispatch_prompt_stale", "dispatch_prompt_missing"):
+            rem = REM["prompt"]
+        elif reason == "rebind_exhausted":
+            rem = REM["quarantine"] % (vrel, au)
+        elif reason == "uncommitted_in_scope":
+            rem = ("NEVER git stash or commit edits you did not make. (i) if the implementer of another unit is running and "
+                   "owns a listed path: HOLD this unit until it returns, then 3.9b; (ii) otherwise quarantine "
+                   "`bash <plugin>/scripts/write-unit-quarantine.sh --cwd=<project-root> --vault=%s --unit=%s --halt=binding_stale` "
+                   "listing the paths for a human" % (vrel, au))
+        elif reason == "stamp_null" and (detail or {}).get("null_cause") == "writer_capture_moved":
+            rem = "HOLD while a moved path belongs to another running implementer, then " + REM["rebind"] % (vrel, au)
+        else:
+            rem = REM["rebind"] % (vrel, au)
+        return deny(au, vname, reason, detail, rem)
+    # ── classic unit: only an unreachable SHA-shaped vault head denies (D9) ──
+    try:
+        h = str((json.load(open(os.path.join(vault, "binding.json"))) or {}).get("head") or "").lower()
+    except Exception:
+        h = ""
+    if _re.fullmatch(r"[0-9a-f]{7,64}", h):
+        g = _fr.find_git(root)
+        if g:
+            head, _ = _fr.read_head(g)
+            if head and not head.startswith(h):
+                if _fr._ancestry(g, head, h) == "unreachable":
+                    return deny(au, vname, "stamp_unreachable", {"paths": [h[:12]]},
+                                "re-run bind-codebase for vault %s (or /mega-sdd:sync) — never 3.9b" % vrel)
+    return None
+
+if IN_RUN:
+    try:
+        _bf = _bf_leg()
+        if _bf:
+            fails.append(_bf)
+    except Exception as _bfe:
+        fails.append(("binding-freshness", "freshness NOT evaluated (%s) — failing CLOSED; a bolt never runs on a binding the gate could not check. Keterangan: gate kesegaran binding gagal dievaluasi; perbaiki penyebabnya lalu dispatch ulang." % type(_bfe).__name__))
+
 # attempt-cap (spec 2026-09-20-hook-enforced-attempt-cap-design.md), IN-RUN and
 # PER UNIT: `--max-retries` was a number the controller was trusted to count —
 # and a count that lives in model context does not survive compaction or a
@@ -1118,7 +1291,12 @@ ATTEMPT_N = 0
 if IN_RUN and os.environ.get("AGENT_UNIT"):
     au = os.environ["AGENT_UNIT"]
     try:
-        _rtp = vault_layouts.find_bolt_artifact(os.environ["PROJECT_ROOT"], au, "review-tier.json")
+        if AGENT_VAULT_DIR:
+            # identity resolved the vault: the budget is THAT unit dir, never a same-ID unit elsewhere
+            _rtp = os.path.join(AGENT_VAULT_DIR, "bolts", au, "review-tier.json")
+            _rtp = _rtp if os.path.isfile(_rtp) else None
+        else:
+            _rtp = vault_layouts.find_bolt_artifact(os.environ["PROJECT_ROOT"], au, "review-tier.json")
         _rt = json.load(open(_rtp)) if _rtp else {}
     except Exception:
         _rtp, _rt = None, {}
@@ -1228,7 +1406,12 @@ elif ATTEMPT_PATH:
         os.replace(_tmp, ATTEMPT_PATH)
     except Exception:
         pass
-' 2>/dev/null)
+' 2>/dev/null) || {
+        _GRC=$?
+        if [ "${GATE_MODE:-run}" = "in-run" ]; then
+          GATE_REASON="${GATE_SUBJECT:-bolt-implementer dispatch} is blocked — gate NOT evaluated (aggregator exit ${_GRC}); failing CLOSED. Keterangan: gate execute-bolts gagal dievaluasi (interpreter error / encoding); perbaiki penyebabnya lalu dispatch ulang."
+        fi
+      }
       if [ -n "$GATE_REASON" ]; then emit_block "$GATE_REASON"; fi
     fi
 
@@ -1431,6 +1614,12 @@ elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^
     # Anchored to a real vault prefix (S6 EB-VAL-7 fix): a user project'"'"'s OWN
     # top-level or unrelated bolts/…/postflight.json is no longer false-blocked;
     # a forged mega-sdd artifact always lives under <vault>/bolts/ so it still matches.
+    print("evidence")
+elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:_wave-claims\.json|[^/]+/_claims\.json|[^/]+/dispatch-prompt\.md)$", rel):
+    # State anchor D27 (spec 2026-09-25 §8): the JIT capture and the built dispatch
+    # prompt are script-written (derive-unit-claims.sh / build-dispatch-prompt.sh) and
+    # gate-read (the binding_sha256 header, the dirty capture) — a Write/Edit of either
+    # would forge what the BOLTS gate compares against.
     print("evidence")
 elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/lens-inputs/[^/]+/l0-results\.json$", rel):
     # F-08 7.11.0: the L0 record is script-written (run-code-gates.sh --write) and gate-read — guarded like the bolt evidence.

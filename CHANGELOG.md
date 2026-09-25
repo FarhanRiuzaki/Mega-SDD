@@ -7,6 +7,100 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [8.8.0] - 2026-09-26 — state anchor: kode di HEAD = sumber kebenaran (tampilan di awal sesi + gate BOLTS + binding yang jujur)
+
+Sumber: feedback tim dari monorepo. Di sesi tim FE, Claude baca memory dan artefak yang udah basi, lalu salah ngejelasin kondisi repo. Program owner jalan tiga fase: audit Fase 0 (`research/2026-09-25-state-anchor-audit.md`), desain Fase 1 (`docs/superpowers/specs/2026-09-25-state-anchor-design.md`, v3 setelah tiga ronde review adversarial), lalu Fase 2 = rilis ini. Owner bilang "lanjut fase 2" tanpa jawab §0 spec, jadi semua default **[ASSUMED]** di sana yang dibangun.
+
+**Aturan barunya satu kalimat:** kode di HEAD yang nentuin kode itu APA (file, simbol, baris, apa yang udah dibangun). Memory, CLAUDE.md, dan klaim vault/unit/bolt-report soal kode itu turunan: tanpa SHA = petunjuk, bertentangan dengan HEAD = STALE; sebut terang-terangan, jangan dipakai diam-diam. Soal kode SEHARUSNYA ngapain tetap di vault: kalau spec dan kode nggak cocok, itu CONFLICT buat manusia (invariant #5 utuh).
+
+### Added — Slice 1: tampilan
+- **Blok state di awal sesi** (`hooks/session-start`, gantiin notice lama "codebase moved" yang cuma repo-wide):
+  - isinya HEAD + branch, status FRESH/STALE per vault (file yang berubah, commit, unit pending, dirty), dan baris aturan di atas;
+  - cache hit = 0 exec, miss = tepat 1 `git diff`;
+  - FRESH cuma untuk stamp `unit-binding/2` hasil skrip; head short-8 lama dan head classic yang diketik model ditandai "hint".
+- **Engine freshness** (`scripts/_lib/freshness.py`, satu grammar scope di `_lib/vault_scope.py`):
+  - verdict pakai tree diff per scope (bukan `log --cc`, yang terbukti false-FRESH di merge ke sisi basi);
+  - commit bolt milik unit itu sendiri di-drop lewat atribusi yang sama dengan gate B1/B3/B4 (`unit_of()` + baris identitas di body + unit ber-key v5 + walk 300 + subset B3);
+  - jalan di GROUND (numpang di exec python POSITION) dan sekali di Stop (async) kalau cache belum ada;
+  - nulis cuma ke cache per-worktree di git dir: nggak pernah ke-track, nggak ada report/metric/log.
+- **Baris "HEAD moved this session"** di UserPromptSubmit: 0 fork, satu baris per perpindahan HEAD per sesi (ring per-sesi di git dir). Tag `mega-sdd-trace:turn` tetap baris pertama, byte-verbatim.
+- `scripts/check-freshness.sh`: cek on demand.
+
+### Added — Slice 2: gate + binding yang jujur
+- **Gate BOLTS `binding-freshness`**, leg in-run di aggregator execute-bolts:
+  - dispatch `bolt-implementer` ditolak kalau binding per-unit-nya udah nggak menggambarkan HEAD. Alasannya: `binding_stale`, `diverged`, `stamp_unreachable`, `stamp_null`, `uncommitted_in_scope`, `unit_changed_since_bind`, `dispatch_prompt_stale`, identitas unit bentrok / asing / hilang, `rebind_exhausted`, `not_evaluated`;
+  - fail-closed: exception di leg, atau interpreter aggregator crash di dispatch in-run (D24a), sekarang = DENY, bukan ALLOW diam-diam kayak dulu;
+  - deny nggak makan jatah attempt;
+  - remedy: satu re-bind 3.9b (`rebind-units.sh --units=U`). Deny kedua di HEAD yang sama otomatis jadi `rebind_exhausted` → karantina. Batas satu re-bind ini mekanisme, bukan hitungan yang dipegang controller;
+  - `uncommitted_in_scope` nggak pernah disuruh `git stash`: HOLD kalau path-nya punya sibling yang lagi jalan, selain itu karantina.
+- **Writer `write-unit-binding.sh` → schema `unit-binding/2`** (body di `_lib/unit_binding.py`):
+  - stamp jujur: `based_on_sha` = SHA bukti TERTUA, atau null plus `null_cause`;
+  - field baru: scope, own_targets, `unit_sha256`, snapshot `dirty` (satu `dirty_map()` untuk semua pemakai), `index_head`, `content_sha` per klaim, `absent_at`, `claims_path`/`claims_sha256`, dan `rebind_head`;
+  - cek integritas claim set pakai parser yang sama (`_lib/unit_claims.py`, dipindah keluar dari heredoc);
+  - ladder konten di dalam range (D22): identik / pindah verbatim / berubah cuma lewat commit unit sendiri / label masih ada / selain itu CONFLICT `anchor_content_drift`;
+  - `IMPLEMENTED_BY_UNIT` induktif untuk target create;
+  - resolusi manusia di-carry forward.
+- `rebind-units.sh --units=<list>`: index dibangun ulang dulu kalau basi, capture per unit (`bolts/U-XXX/_claims.json`, file wave bersama nggak pernah ditimpa), plus `--rebind`.
+- `derive-unit-claims.sh` sekarang nyatet HEAD penuh + capture `dirty`.
+- `build-symbol-index.sh` nyatet dirty map-nya.
+- `build-dispatch-prompt.sh` nyetempel `binding_sha256` dan label `ANCHOR CHANGED`.
+- Guard anti-self-bypass Write/Edit sekarang juga nutup `_wave-claims.json`, `_claims.json`, dan `dispatch-prompt.md`.
+
+### Changed
+- `using-mega-sdd` (anchor core): "(one session-start notice line)" → "(the session-start state block)". Byte-for-byte sama panjang, jadi cap 4.000 tetap aman.
+- execute-bolts:
+  - 3.9 sekarang juga jalan di setiap vault layout-3;
+  - index dibangun ulang per bind kalau basi;
+  - langkah baru 3.9b;
+  - `binding_stale` masuk kelas DEFER;
+  - builder prompt dijalanin ulang setelah re-bind atau `--resolve`.
+- `docs/gateway-contract.md`: baris opsional "HEAD moved" disahkan.
+- `staleness_notice: false` sekarang nyisain header + baris aturan saja.
+
+### Verdict yang berubah (sengaja, dan dinamai di test)
+- Blok di dalam range anchor yang ditulis ulang orang lain dulu CONFIRMED cuma karena range-nya pas. Sekarang CONFLICT `anchor_content_drift` (D22), kecuali ketemu lewat pindah verbatim, commit unit sendiri, atau label yang masih ada.
+- Pin test yang ikut: `god-review-s8/test-8b` (c.txt), `v8-layout3/test-state-sync-lite` b2 (hotfix di baris ter-anchor), `jit-bind/test-derive-and-write-binding` b (schema `/2`).
+- **Upgrade:** setiap binding `unit-binding/1` yang udah ada ditolak SEKALI (`binding_legacy`), lalu satu 3.9b, lalu jalan normal.
+
+### Notes
+- **Angka terukur** (shim PATH di jalur production, macOS, dibandingin dengan 8.7.2 di fixture yang sama):
+
+  | Jalur | 8.7.2 | 8.8.0 |
+  |---|---|---|
+  | UserPromptSubmit | 2 proses | 1 |
+  | SessionStart hit | 2 | 1 |
+  | SessionStart miss | 2 | 2 |
+  | Stop steady | 8 | 7 |
+  | Stop bootstrap (sekali) | 34 | 36 |
+  | GROUND dengan 1 stamp bergeser | 17 | 22 |
+  | gate in-run C8b | 87 | 89 |
+  | C10 / C11 | 4 | 5 |
+
+  Nggak ada ceiling yang dinaikin.
+- **Byte:** blok di playground Fase 0 terukur **+559 sampai +759 B** per startup/clear/compact. Ini di atas estimasi DERIVED spec (+440…+720), karena teks tier "hint" lebih panjang. Tetap di bawah cap 1.200 B. Vault dengan stamp `/2` collapse jadi `- FRESH: <v>`.
+- **Belum terbukti (jujur):**
+  - arm benchmark D33 (tingkat override CONFLICT D22, biaya serialisasi D10) belum dijalanin, karena butuh sesi interaktif dan keputusan budget owner;
+  - verifikasi Windows di laptop kantor (D32) juga belum.
+- **Dua ronde review adversarial sebelum rilis:**
+  - ronde 3 atas spec (24 agen): 8 BLOCKER, lima di antaranya regresi dari perbaikan ronde 2;
+  - satu ronde atas implementasi (18 agen): 11 temuan BLOCKER/HIGH, semuanya dikonfirmasi skeptic lalu diperbaiki.
+
+  Yang paling penting dari implementasi:
+  - target `target_files` berbentuk glob nggak kelihatan oleh gate (ALLOW palsu);
+  - path project yang ada spasinya bikin setiap dispatch ditolak;
+  - `sg` (shadow-utils di Linux) dikira ast-grep → buntu ke karantina;
+  - perbandingan index-dirty yang kurang lengkap;
+  - jalur miss di awal sesi butuh **130 detik** untuk 2.000 path berubah. Sekarang < 100 ms, dengan cap 200 path → "later moves UNVERIFIED".
+
+  Semua perbedaan terhadap teks spec dicatat di §18/§19 spec.
+- **Test baru:**
+  - `tests/state-anchor/` — engine, blok, gate, scope parity, posisi GROUND, attribution parity;
+  - `tests/hooks/ups-head-move.test.sh`;
+  - `tests/jit-bind/test-writer-stamp.sh`;
+  - pin spawn C1 dan C17–C20.
+- **Review pin MCP (checklist rilis):** `@playwright/mcp@0.0.79` dan `@upstash/context7-mcp@4.0.2` masih ke-resolve di registry. Versi lebih baru udah ada (0.0.82 / 4.1.1), tapi nggak dinaikin — di luar scope rilis ini.
+- **Pin yang di-retire (D7):** `plugins/mega-sdd/tests/state/test-derive-state.sh` f9 dan `tests/express-default/test-p2-ground-express-default.sh` F3 masih nge-pin notice lama — dua pin ini harus ditulis ulang ke bentuk blok sebelum rilis ini hijau di CI (izin baca file-nya lagi diminta ke owner).
+
 ## [8.7.2] - 2026-09-21 — panduan `.gitignore`: state gate turunan WAJIB di-ignore, dan `bolts/` JANGAN PERNAH (docs + 1 pin test)
 
 Sumber: trace Langfuse kantor yang sama dengan 8.7.1. `git status` di repo tim nunjukin `.mega-sdd/.validation-blockers.json` + `.locked-files-index.json` ke-track dan selalu modified. Nol perubahan kode / hook / gate.

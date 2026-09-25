@@ -69,9 +69,14 @@ VP="${H1##* }"; VABS="$A/$VP"; [ -d "$VABS" ] || VABS="$VP"   # the vault path e
   || fail "b1: rc=$RC set=$(cat "$VABS/.sync-changed-paths.txt" 2>/dev/null | tr '\n' ',')"
 OUT="$(bash "$S/rebind-units.sh" --cwd="$A" --vault="$VABS" --paths=@"$VABS/.sync-changed-paths.txt" 2>&1)"; RC=$?
 AFF="$(python3 -c 'import json,sys; d=json.loads(sys.argv[1]); print(d["affected"], d["gate"])' "$OUT" 2>/dev/null)"
-[ $RC -eq 4 ] && [ "$AFF" = "['U-001'] PASS" ] && [ ! -e "$VABS/bolts/U-002/binding.json" ] \
-  && pass "b2: hop 3 rebind-units.sh --paths=@ → exit 4, ONLY U-001 re-bound, gate PASS; U-002 untouched (claim-scoped, not a full re-bind)" \
-  || fail "b2: rc=$RC aff=$AFF out=${OUT:0:200}"
+# 8.8.0 state anchor (spec 2026-09-25 §9, D22): the hotfix rewrote the ANCHORED line
+# (src/a/one.ts:1) and no own-commit trail or label token explains it, so the re-bind now
+# reports that drift honestly as a CONFLICT for a human (until 8.7.x it passed on range-fit
+# alone). The claim-scoping this case pins is unchanged: ONLY U-001 is re-bound.
+DRIFT="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(any(c["verdict"]=="CONFLICT" and "anchor_content_drift" in (c.get("evidence") or "") for c in d["claims"]))' "$VABS/bolts/U-001/binding.json" 2>/dev/null)"
+[ $RC -eq 4 ] && [ "$AFF" = "['U-001'] FAIL" ] && [ "$DRIFT" = True ] && [ ! -e "$VABS/bolts/U-002/binding.json" ] \
+  && pass "b2: hop 3 rebind-units.sh --paths=@ → exit 4, ONLY U-001 re-bound; its drifted anchor is a CONFLICT (D22), U-002 untouched (claim-scoped, not a full re-bind)" \
+  || fail "b2: rc=$RC aff=$AFF drift=$DRIFT out=${OUT:0:200}"
 python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d.get("unit")=="U-001" and isinstance(d.get("claims"), list) and len(d["claims"])>0' "$VABS/bolts/U-001/binding.json" 2>/dev/null \
   && pass "b3: bolts/U-001/binding.json rewritten by the sanctioned JIT writer (claims present)" || fail "b3: binding.json content"
 

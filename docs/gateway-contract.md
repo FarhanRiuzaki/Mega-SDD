@@ -6,7 +6,7 @@
 
 | Tag | Format (verbatim, satu token per baris) | Muncul di | Emitter |
 |---|---|---|---|
-| `mega-sdd-trace:turn` | **baris PERTAMA**, verbatim | Satu kali per user prompt, HANYA di project ter-adopsi (ada `.mega-sdd/`); CWD non-SDD = hening total. Sejak v7.5.0 №G hook yang sama BOLEH menambahkan satu baris kedua (tawaran sync dari census kalimat "selesai" — pure shell, nol spawn); filter gateway tetap key pada baris pertama | `hooks/user-prompt-submit` (pure shell, nol spawn) |
+| `mega-sdd-trace:turn` | **baris PERTAMA**, verbatim | Satu kali per user prompt, HANYA di project ter-adopsi (ada `.mega-sdd/`); CWD non-SDD = hening total. Sejak v7.5.0 №G hook yang sama BOLEH menambahkan satu baris kedua (tawaran sync dari census kalimat "selesai" — pure shell, nol spawn), dan sejak 8.8.0 satu baris opsional "HEAD moved" (state anchor, lihat di bawah); filter gateway tetap key pada baris pertama | `hooks/user-prompt-submit` (pure shell, nol spawn) |
 | `mega-sdd-trace:<skill>` | akhir announce line skill, dalam backtick | Setiap kali sebuah skill mega-sdd mulai (14 skill ber-announce) | announce line tiap `skills/*/SKILL.md` |
 | `mega-sdd-trace:<skill>` / `mega-sdd-trace:execute-bolts:<unit-id>` | baris tunggal di dalam prompt dispatch | Setiap prompt subagent (bolt implementer, lens panel, verifier, deep-scan extractor, wave extractor) — subagent berjalan fresh-context sehingga tanpa baris ini tidak terlihat filter gateway | `scripts/build-dispatch-prompt.sh` (T1 + `inline_core`), controller (lens/verifier), template deep-scan/wave |
 
@@ -26,6 +26,18 @@ mega-sdd: user menyiratkan pekerjaan selesai dan ada perubahan kode ter-journal 
 ```
 
 Baris ini TIDAK memakai prefix `mega-sdd-trace` (namespace tag eksklusif; filter gateway tetap key pada baris pertama).
+
+## Baris "HEAD moved" (state anchor, 8.8.0)
+
+Baris opsional berikutnya dari `hooks/user-prompt-submit`, SETELAH baris census (kalau ada). Muncul sekali per perpindahan HEAD per sesi: session-start nyatet HEAD yang dilihat sesi ini di ring per-worktree (`<gitdir>/mega-sdd-seen`, isinya cuma `<session_id> <sha> <branch>`), terus tiap prompt hook ngebandingin HEAD sekarang (baca builtin `.git/HEAD` + loose ref — nol spawn, nol fork). Beda sha atau beda branch → satu baris ini, verbatim kecuali tiga slot:
+
+```
+mega-sdd: HEAD moved this session (<old8> -> <new8>, <branch>) — the session-start state block is outdated; re-check memory/vault claims against code at HEAD.
+```
+
+Satu varian: kalau branch berpindah dan ref branch barunya cuma ada di `packed-refs` (umum setelah `gc` + checkout), sha barunya nggak dibaca per prompt, jadi slot kedua berisi nama branch: `(<old8> -> <branch>)`.
+
+Baris ini buat MODEL (biar klaim memory/vault dicek ulang ke kode di HEAD), bukan data audit gateway; nggak pakai prefix `mega-sdd-trace`. `staleness_notice: false` di `.mega-sdd/config.yaml` mematikannya. Spec: `docs/superpowers/specs/2026-09-25-state-anchor-design.md` §7. Catatan sesi di bawah tetap cuma dicetak di SessionStart — baris ini nggak mengubah kontrak `mega-sdd-note`.
 
 ## Catatan sesi (`mega-sdd-note:`) — 8.7.0
 

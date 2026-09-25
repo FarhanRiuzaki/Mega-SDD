@@ -113,8 +113,10 @@ printf '{"message":{"role":"user","content":"lanjut"}}\n{"message":{"role":"assi
 # ── C1: UserPromptSubmit, SDD project — gateway tag through the real dispatch ─
 reset_counts
 OUT=$(run_ev UserPromptSubmit "{\"session_id\":\"s\",\"cwd\":\"$FIXA\"}")
-[ "$(total)" -le 2 ] && [ "$OUT" = "mega-sdd-trace:turn" ] \
-  && ok "C1 UPS SDD: ≤2 spawns via production dispatch ($(total)), tag intact" \
+# 8.8.0 state anchor: the resolver is called without a command substitution and the
+# HEAD check is builtin — the hook itself is the ONLY process (spec 2026-09-25 §7).
+[ "$(total)" -le 1 ] && [ "$OUT" = "mega-sdd-trace:turn" ] \
+  && ok "C1 UPS SDD: ≤1 spawn via production dispatch ($(total)), tag intact" \
   || bad "C1 UPS SDD: spawns=$(total) out=[$OUT]"
 
 # ── C2: PreToolUse Edit tier-S — the '0 fork' contract, dispatcher included ──
@@ -232,13 +234,52 @@ reset_counts; run_script "bash $SCR/derive-plan-pins.sh --cwd=$FIXJ --prd=docs/P
   || bad "C16 derive-plan-pins: spawns=$(total)"
 # C8b: the in-run F-09 gate (PreToolUse Agent bolt-implementer → AGENT_UNIT) with a
 # per-unit binding.json present — the JIT pass must add NO interpreter over C8.
+# 8.8.0 state anchor (spec 2026-09-25 §13 "C8b fixture"): the pin must measure the
+# binding-freshness leg's ALLOW path — an absolute pointer to a built prompt carrying the
+# binding's sha256 (what build-dispatch-prompt.sh stamps), a unit-binding/2 binding at HEAD.
+printf 'mega-sdd-trace:execute-bolts:U-001\n  binding_sha256: %s\n' \
+  "$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$JV/bolts/U-001/binding.json")" \
+  > "$JV/bolts/U-001/dispatch-prompt.md"
 reset_counts
-run_ev PreToolUse "{\"session_id\":\"$SID\",\"cwd\":\"$FIXJ\",\"transcript_path\":\"$TRANS\",\"tool_name\":\"Agent\",\"tool_input\":{\"subagent_type\":\"mega-sdd:bolt-implementer\",\"prompt\":\"mega-sdd-trace:execute-bolts:U-001\\nRead bolts/U-001/dispatch-prompt.md\"}}" "$FIXJ" >/dev/null
+C8B_OUT=$(run_ev PreToolUse "{\"session_id\":\"$SID\",\"cwd\":\"$FIXJ\",\"transcript_path\":\"$TRANS\",\"tool_name\":\"Agent\",\"tool_input\":{\"subagent_type\":\"mega-sdd:bolt-implementer\",\"prompt\":\"mega-sdd-trace:execute-bolts:U-001\\nREAD FIRST, IN FULL: $JV/bolts/U-001/dispatch-prompt.md\"}}" "$FIXJ")
 sleep 1
 JITU=$(python3 -c "import json;d=json.load(open('$FIXJ/.mega-sdd/.validation-blockers.json'));print(len(d.get('jit_units') or []))" 2>/dev/null || echo 0)
+case "$C8B_OUT" in *binding-freshness*) bad "C8b: the fixture no longer reaches the leg's ALLOW path: ${C8B_OUT:0:300}" ;; esac
 [ "$(total)" -le 95 ] && [ "$JITU" = "1" ] \
-  && ok "C8b PRE Agent bolt-implementer in-run gate + JIT pass: ≤95 spawns ($(total), python $(count python3)), jit_units re-derived for U-001" \
-  || bad "C8b in-run JIT gate: spawns=$(total) python=$(count python3) jit_units=$JITU"
+  && ok "C8b PRE Agent bolt-implementer in-run gate + JIT pass + binding-freshness ALLOW: ≤95 spawns ($(total), python $(count python3), git $(count git)), jit_units re-derived for U-001" \
+  || bad "C8b in-run JIT gate: spawns=$(total) python=$(count python3) git=$(count git) jit_units=$JITU"
+
+
+# ── C17–C20: the 8.8.0 state anchor (spec 2026-09-25-state-anchor-design.md §10).
+# MEASURED at ship (macOS, vs 8.7.2 on the same fixture): SessionStart HIT 2 → 1,
+# MISS 2 → 2 (one `git diff`), Stop steady 8 → 7 (builtin HEAD probe), Stop with no
+# view cache 34 → 36 (the one-time engine bootstrap), GROUND with one moved stamp
+# 17 → 22 (the engine rides GROUND's POSITION python: +0 interpreter, +5 git).
+FIXS="$WORK/state"; mkfix "$FIXS"
+mkdir -p "$FIXS/.mega-sdd/vaults/v1/units" "$FIXS/.mega-sdd/vaults/v1/bolts/U-001"
+printf -- '---\nid: U-001\ntarget_files:\n  - path: src/app.js\n    operation: modify\n---\n' > "$FIXS/.mega-sdd/vaults/v1/units/U-001.md"
+printf '{"schema":"unit-binding/2","based_on_sha":"%s","claims":[]}' "$(git -C "$FIXS" rev-parse HEAD)" > "$FIXS/.mega-sdd/vaults/v1/bolts/U-001/binding.json"
+sleep 1  # the HIT needs the cache STRICTLY newer (whole seconds on bash 3.2)
+reset_counts
+run_ev Stop "{\"session_id\":\"s\",\"cwd\":\"$FIXS\",\"transcript_path\":\"/nonexistent\"}" "$FIXS" >/dev/null
+[ "$(total)" -le 40 ] && [ "$(count python3)" -le 8 ] && [ -f "$FIXS/.git/mega-sdd-freshness" ] \
+  && ok "C17 Stop with no view cache: ≤40 spawns ($(total), python $(count python3)), cache bootstrapped" \
+  || bad "C17 Stop bootstrap: spawns=$(total) python=$(count python3)"
+sleep 1
+reset_counts
+OUT=$(run_ev SessionStart '{"source":"startup","session_id":"sess-ceil-0001"}' "$FIXS")
+[ "$(total)" -le 1 ] && printf '%s' "$OUT" | grep -q "^mega-sdd state @" \
+  && ok "C18 SessionStart state block HIT: ≤1 spawn ($(total))" || bad "C18 SS hit: spawns=$(total)"
+( cd "$FIXS" && echo "x" >> src/app.js && git -c user.email=t@t -c user.name=t commit -qam y ) >/dev/null 2>&1
+reset_counts
+OUT=$(run_ev SessionStart '{"source":"startup","session_id":"sess-ceil-0002"}' "$FIXS")
+[ "$(total)" -le 2 ] && [ "$(count git)" -le 1 ] && printf '%s' "$OUT" | grep -q "as of check" \
+  && ok "C19 SessionStart state block MISS: ≤2 spawns, ≤1 git ($(total))" || bad "C19 SS miss: spawns=$(total) git=$(count git)"
+reset_counts
+( cd "$FIXS" && HOME="$SSHOME" PATH="$SHIM:$PATH" bash "$PLUGIN/scripts/ground.sh" --cwd="$FIXS" ) >/dev/null 2>&1
+[ "$(total)" -le 26 ] && [ "$(count python3)" -le 6 ] \
+  && ok "C20 GROUND with the engine (one moved stamp): ≤26 spawns ($(total), python $(count python3))" \
+  || bad "C20 GROUND: spawns=$(total) python=$(count python3)"
 
 if [ "$fail" -eq 0 ]; then echo "PASS production-path spawn ceilings"; exit 0
 else echo "production-path spawn ceilings FAILED"; exit 1; fi

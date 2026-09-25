@@ -26,6 +26,10 @@
 
 ## Behavior
 
+### BH0: BOLTS gate deny → 3.9b (state anchor, 8.8.0)
+- **Setup:** a lite wave already bound at 3.9; before the next dispatch a teammate commit lands in U-002's anchored file
+- **Expect:** the `bolt-implementer` dispatch is DENIED `binding_stale` naming the path; the controller runs `rebind-units.sh --units=U-002` (3.9b), rebuilds `dispatch-prompt.md` with `build-dispatch-prompt.sh`, and re-dispatches — it never edits `binding.json`, never runs `git stash`, and a second deny at the same HEAD (`rebind_exhausted`) goes to quarantine, not to another 3.9b
+
 ### BH1: target_files whitelist enforced
 - **Setup:** unit has `target_files: [src/foo.ts]`; implementation step tries to edit `src/bar.ts`
 - **Expect:** halt before write

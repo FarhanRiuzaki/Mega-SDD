@@ -6,7 +6,7 @@ One config surface per project (NOT `.claude/*.local.md` — mega-sdd predates t
 # All keys optional. Shown with defaults.
 dirty_journal: true        # false → living-vault dirty-paths journaling off (git channel still works;
                            #   /mega-sdd:sync falls back to the last_scanned_commit diff alone)
-staleness_notice: true     # false → suppress the session-start "codebase moved" line
+staleness_notice: true     # false → session-start state block keeps only header + rule line; no "HEAD moved" prompt line
 auto_verify_on_edit: false # true → editing a file listed in a unit's target_files (unit with an
                            # acceptance_test) makes the PostToolUse hook OFFER running that unit's
                            # acceptance (one line, never auto-run). Default false = zero extra cost.

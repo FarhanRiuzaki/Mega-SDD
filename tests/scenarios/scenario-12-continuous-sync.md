@@ -13,17 +13,21 @@ A project that already completed the pipeline: `.mega-sdd/codebase/codebase-map.
 2. **Manual edit** — a teammate renames `failed_debit_count` → `failed_attempts` in a model and commits.
 3. **git pull** — upstream merges land. (2 and 3 are caught by the git channel: HEAD ≠ the map's `last_scanned_commit`.)
 
-Since v7.5.0, an inline edit of a `[LOCKED]`-anchored file gets an immediate one-line context notice (0 fork), before the session-start notice.
+Since v7.5.0, an inline edit of a `[LOCKED]`-anchored file gets an immediate one-line context notice (0 fork), before the session-start state block.
 
 ## Act 2 — the system notices (ambient, zero effort)
 
-Open a new session in the project. Session start prints ONE line:
+Open a new session in the project. Since 8.8.0 (the state anchor, spec `docs/superpowers/specs/2026-09-25-state-anchor-design.md` §6) session start prints the **state block** — HEAD, the per-vault verdict from the last engine check, and the rule line (the old repo-wide "codebase moved" line is gone). HEAD moved past the last check (the teammate commit + the pull), so this is the MISS form: the cached status word, plus a content-only delta from ONE `git diff`:
 
 ```
-mega-sdd: codebase moved since last scan (1 journaled write(s); map stamp a1b2c3d4 ≠ HEAD f6e5d4c3) — sync tersedia saat masuk lane M/L (`/mega-sdd`).
+mega-sdd state @ f6e5d4c3b2a1 (main) · as of check a1b2c3d4; later moves checked by content only:
+- shop: no scope change since a1b2c3d4 (stamp model-typed: hint) (as of a1b2c3d4) · changed since: app/Services/PriceCalc.php
+Rule: code at HEAD decides what the code IS (files, symbols, lines, what is built). Memory, CLAUDE.md and vault/unit/bolt-report claims about what the code IS are derived: no SHA = hint, contradicts HEAD = STALE; say so, never use them silently. What the code SHOULD do stays with the vault: a spec-vs-code mismatch is a CONFLICT for a human.
 ```
 
-(v7: the notice is informational — a continuation prompt like `lanjut` with no chain marker this session stays tier S; the sync proposal appears when YOU enter an M/L lane. Open the front door or invoke sync yourself:)
+After the next GROUND (M/L entry — the front door or sync) the engine recomputes and the line reads `shop: STALE since a1b2c3d4 · 1 file(s): app/Services/PriceCalc.php · f6e5d4c fix: price rounding (stamp model-typed: hint)`.
+
+(The block is informational and never tells the model to run `/mega-sdd` or sync — a continuation prompt like `lanjut` with no chain marker this session stays tier S; the sync proposal appears when YOU enter an M/L lane. Open the front door or invoke sync yourself:)
 
 ## Act 3 — autonomous reconcile (one confirmation, zero mid-chain questions)
 
@@ -69,7 +73,7 @@ Open `PENDING-SYNC.md`: the rename drift asks *vault stale (code is right) vs co
 ## Pass criteria
 
 - [ ] All three change channels detected (journal for in-session; git for manual/pull)
-- [ ] Staleness notice appeared at session start; cleared after a clean sync
+- [ ] The session-start state block named the moved path under the vault (miss form: "changed since: …"); GROUND then named it STALE (file + commit); after a clean sync + GROUND it no longer does
 - [ ] No mid-chain questions under `--auto`; human decisions queued, chain completed
 - [ ] Untouched map/binding rows byte-identical; carried-forward verdicts tagged
 - [ ] No prior ACTIVE CONFLICT silently carried (always re-validated)

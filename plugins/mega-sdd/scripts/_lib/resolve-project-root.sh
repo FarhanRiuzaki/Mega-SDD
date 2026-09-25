@@ -7,7 +7,10 @@
 # of the project — naively writing to ${CWD}/.mega-sdd/... creates nested
 # .mega-sdd/knowledge-base/.mega-sdd/ paths. Walking up corrects this.
 #
-# Source this file then call resolve_project_root "$CWD".
+# Source this file then call resolve_project_root "$CWD". The result is echoed AND
+# left in the global RPR_ROOT, so a hot path can call it WITHOUT a command
+# substitution (`resolve_project_root "$d" >/dev/null; root="$RPR_ROOT"` — a
+# redirect of a function call runs in the current shell: zero forks).
 #
 # Resolution rule (S6 EB-GATE-6):
 #   1. Walk up from the passed-in path. The FIRST ancestor whose .mega-sdd/ is
@@ -42,6 +45,7 @@ _rpr_has_bound_vault() {
 }
 
 resolve_project_root() {
+  RPR_ROOT=""
   local d="${1:-$PWD}"
   # ── Windows separator normalization (MUST precede any suffix arithmetic) ───
   # Claude Code hands hooks a NATIVE cwd on Windows (C:\Users\me\proj). Without
@@ -84,6 +88,7 @@ resolve_project_root() {
          || [ -d "$d/.mega-sdd/codebase" ] || [ -f "$d/.mega-sdd/config.yaml" ] \
          || [ -f "$d/.mega-sdd/factory-ledger.json" ] || [ -d "$d/.mega-sdd/memory" ] \
          || [ -d "$d/docs/mega-sdd/vaults" ] || _rpr_has_bound_vault "$d"; then
+        RPR_ROOT="$d"
         echo "$d"
         return 0
       fi
@@ -107,8 +112,10 @@ resolve_project_root() {
   # No substantive root anywhere: nearest plain candidate (greenfield), else
   # the original input (no .mega-sdd ancestor at all).
   if [ -n "$first_match" ]; then
+    RPR_ROOT="$first_match"
     echo "$first_match"
     return 0
   fi
+  RPR_ROOT="$orig"
   echo "$orig"
 }

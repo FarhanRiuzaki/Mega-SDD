@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 4.2.2
+version: 4.2.3
 description: Session-start router for spec-driven development — weighs every task S/M/L and routes only M/L through a mega-sdd skill; S answers inline. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, revamp, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang.
 ---
 
@@ -28,7 +28,7 @@ For an M/L trigger: **STOP**, invoke the skill via the `Skill` tool, and announc
 
 **Tier S prohibitions: do NOT invoke any `mega-sdd:*` skill, do NOT open `/mega-sdd`, do NOT propose sync. Work inline.**
 
-A `.mega-sdd/` dir in the CWD is a STATUS signal only (one session-start notice line) — never, by itself, a reason to invoke a skill. Prior chains exist in the project (factory-ledger present) + a continuation prompt → offer `/mega-sdd --resume` in one line; do not auto-invoke.
+A `.mega-sdd/` dir in the CWD is a STATUS signal only (the session-start state block) — never, by itself, a reason to invoke a skill. Prior chains exist in the project (factory-ledger present) + a continuation prompt → offer `/mega-sdd --resume` in one line; do not auto-invoke.
 
 **Gateway marker:** announce lines end with `` `mega-sdd-trace:<skill>` ``; every subagent dispatch prompt carries one `mega-sdd-trace:<skill>` line. Verbatim, no variants (docs/gateway-contract.md).
 
@@ -64,7 +64,7 @@ Side lanes (as needed): `resolve-oq` (OQ walk), `detect-drift` (code vs vault), 
 
 Diagnostic & output lanes compress to the front-door rule — any M/L lane phrase routes to `/mega-sdd`; the side-lane skills (`analyze` "check consistency", `graph` "impact / blast radius", `emit-fsd`/`emit-prd`/`emit-sit`/`emit-uat` (`UAT`, `test script`, `skrip uji`, `berita acara UAT`) via `/mega-sdd:emit`, `emit-agents-md`, `install-deps`) each carry their own trigger census in their always-loaded description and may be invoked directly. "render html" / "html-kan" / "share dokumen ke tim tanpa Claude" → `/mega-sdd:emit html <file|dir>` (the render-html script lane — tier S-sized, but the emit command owns the procedure).
 
-Maintenance lane (never-ending development): when the code moved outside the pipeline (manual edit, AI-prompted edit, hotfix, git pull), `/mega-sdd:sync` (→ `orchestrate-flow --sync`) reconciles: incremental re-scan → drift triage → re-bind → unit reconcile. Sync is OFFERED at the next M/L entry — the front door surfaces the change signal there; it is never a mandatory follow-up to an inline tier-S fix, and the session-start staleness notice is informational only.
+Maintenance lane (never-ending development): when the code moved outside the pipeline (manual edit, AI-prompted edit, hotfix, git pull), `/mega-sdd:sync` (→ `orchestrate-flow --sync`) reconciles: incremental re-scan → drift triage → re-bind → unit reconcile. Sync is OFFERED at the next M/L entry — the front door surfaces the change signal there; it is never a mandatory follow-up to an inline tier-S fix, and the session-start state block is informational only (it never tells the model to run `/mega-sdd` or sync).
 
 
 Multi-PRD lane (a project that grows PRD-by-PRD — PRD 1 ships, PRD 2 adds an epic, doc can be PRD/BRD/Figma/brief): route a NEW doc by what changed, never guess (full contract → `plugins/mega-sdd/references/multi-prd-lifecycle.md`):

@@ -526,6 +526,62 @@ fi
 bash "$SCRIPT_DIR/derive-state.sh" --cwd="$CWD"
 STATE_RC=$?
 
+# ─── State anchor (spec 2026-09-25-state-anchor-design.md §5 entry 1, D16a) ────
+# ONE python exec (the one that already read POSITION): it prints POSITION on
+# line 1 FIRST (try/finally — an engine failure can never change it; the round-F1
+# sync-pending guard below depends on it), then runs the freshness engine inside
+# try/except on the RESOLVED project root (a subdir --cwd no longer hides it) and
+# prints the state block. It runs after derive-state and BEFORE the index rebuild:
+# the view keys on binding stamps, so the index restamp below cannot launder it.
+SA_ROOT="$CWD"
+SA_ABS="$CWD"
+case "$SA_ABS" in /*|[A-Za-z]:/*) ;; *) SA_ABS="${PWD}/${CWD#./}" ;; esac   # the walk needs an absolute start
+if [ -f "$SCRIPT_DIR/_lib/resolve-project-root.sh" ]; then
+  # shellcheck disable=SC1091
+  . "$SCRIPT_DIR/_lib/resolve-project-root.sh"
+  resolve_project_root "$SA_ABS" >/dev/null
+  SA_ROOT="${RPR_ROOT:-$CWD}"
+fi
+SA_PY="python3"
+if [ -f "$SCRIPT_DIR/_lib/resolve-python.sh" ]; then
+  # shellcheck disable=SC1091
+  . "$SCRIPT_DIR/_lib/resolve-python.sh"
+  mega_sdd_python >/dev/null 2>&1 && SA_PY="$MEGA_SDD_PY"
+fi
+POSITION=""
+SA_BLOCK=""
+if [ -d "${CWD}/.mega-sdd" ] || [ -d "${SA_ROOT}/.mega-sdd" ]; then
+  # shellcheck disable=SC2086
+  SA_OUT=$(V_CWD="$CWD" V_ROOT="$SA_ROOT" V_LIB="$SCRIPT_DIR/_lib" PYTHONIOENCODING=utf-8 $SA_PY - 2>/dev/null <<'PYEOF'
+import json, os, sys
+cwd = os.environ["V_CWD"]
+pos = ""
+try:
+    try:
+        pos = json.load(open(os.path.join(cwd, ".mega-sdd", "state.json"))).get("derived", {}).get("position", "") or ""
+    except Exception:
+        pos = ""
+finally:
+    print(pos if isinstance(pos, str) else "")
+    sys.stdout.flush()
+try:
+    sys.path.insert(0, os.environ["V_LIB"])
+    import freshness
+    root = os.path.abspath(os.environ["V_ROOT"])
+    if os.path.isdir(os.path.join(root, ".mega-sdd")):
+        r = freshness.run(root)
+        freshness.write_view(r)
+        rel = os.path.relpath(os.path.abspath(cwd), root).replace(os.sep, "/")
+        print(freshness.render(r, "" if rel == "." or rel.startswith("..") else rel))
+except Exception as e:
+    print("mega-sdd state · freshness check failed (%s) — treat memory/vault claims as hints." % type(e).__name__)
+PYEOF
+)
+  POSITION="${SA_OUT%%$'\n'*}"
+  case "$SA_OUT" in *$'\n'*) SA_BLOCK="${SA_OUT#*$'\n'}" ;; esac
+fi
+[ -n "$SA_BLOCK" ] && printf '%s\n' "$SA_BLOCK"
+
 # Pre-init CWD: probes only, never mint .mega-sdd/ from a status view (the
 # EB-GATE-6 phantom-root doctrine; round F10 — build-symbol-index would
 # otherwise makedirs .mega-sdd/codebase/ and arm the dirty journal on a
@@ -540,13 +596,6 @@ fi
 # consumes the old stamp as its diff baseline — the changed set would derive
 # empty and the sync would reconcile nothing. Defer; bind --express E0
 # rebuilds AFTER the re-verdict, advancing the stamp at the correct point.
-POSITION=$(python3 -c "
-import json
-try:
-    print(json.load(open('${CWD}/.mega-sdd/state.json')).get('derived', {}).get('position', ''))
-except Exception:
-    print('')
-" 2>/dev/null)
 if [ "$POSITION" = "maintenance_sync" ]; then
   echo "GROUND: state rc=$STATE_RC · index: rebuild DEFERRED (sync pending — the stale stamp IS the changed-set baseline; bind --express E0 rebuilds after the re-verdict)"
   exit 0

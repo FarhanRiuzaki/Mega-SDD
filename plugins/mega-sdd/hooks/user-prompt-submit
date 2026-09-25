@@ -6,12 +6,14 @@
 # mega-sdd sessions on the `mega-sdd-trace:*` tag family. Line 1 of this hook's
 # output is the gateway tag `mega-sdd-trace:turn` (byte-verbatim, unconditional in
 # an adopted SDD project); the OPTIONAL line 2 is the v7.5.0 №G completion-census
-# sync OFFER (see the contract note below). Both are pure shell.
+# sync OFFER (see the contract note below), and the OPTIONAL state-anchor line
+# "HEAD moved this session" (spec 2026-09-25-state-anchor-design.md §7). All pure shell.
 #
 # Contract (docs/gateway-contract.md):
-# - Pure shell, ZERO subprocess spawns (no python, no transcript scan, no advisor —
-#   none of the removed observability comes back through this file; the census
-#   is a bash regex over the prompt text, 0 forks).
+# - Pure shell, ZERO subprocess spawns and ZERO forks (no python, no transcript
+#   scan, no advisor, no command substitution — none of the removed observability
+#   comes back through this file; the census is a bash regex over the prompt text,
+#   the HEAD check is builtin file reads of .git/HEAD + the loose ref).
 # - Non-SDD cwd → exit silently with no output.
 # - stdin is parsed with bash string ops only and NOTHING from it is eval'd or
 #   executed — a hostile cwd value can only make the directory probe fail closed.
@@ -40,14 +42,16 @@ esac
 case "${OSTYPE:-}" in msys*|cygwin*|win32*) CWD_SS="${CWD_SS//\\\\//}"; CWD_SS="${CWD_SS//\\//}" ;; esac
 [ -d "$CWD_SS" ] || exit 0
 
-# Walk up to the outermost .mega-sdd/ parent (shared shell resolver; sourced, no fork).
+# Walk up to the outermost .mega-sdd/ parent (shared shell resolver; sourced, and
+# called WITHOUT a command substitution — the result lands in RPR_ROOT: 0 forks).
 case "$HOOK_SELF" in */*) SC_DIR="${HOOK_SELF%/*}" ;; *) SC_DIR="." ;; esac
 RPR="${SC_DIR}/../scripts/_lib/resolve-project-root.sh"
 ROOT_SS="$CWD_SS"
 if [ -f "$RPR" ]; then
   # shellcheck disable=SC1090
   . "$RPR"
-  ROOT_SS=$(resolve_project_root "$CWD_SS")
+  resolve_project_root "$CWD_SS" >/dev/null
+  ROOT_SS="${RPR_ROOT:-$CWD_SS}"
 fi
 [ -d "${ROOT_SS}/.mega-sdd" ] || exit 0
 
@@ -76,6 +80,58 @@ if [ -s "${ROOT_SS}/.mega-sdd/codebase/.dirty-paths.jsonl" ]; then
   if [ -n "$UP_PROMPT" ] \
      && [[ "$UP_PROMPT" =~ (^|[^[:alnum:]])([Uu]dah|[Ss]udah|[Ss]elesai|[Bb]eres|[Kk]elar|[Cc]ommit|[Pp]ush|[Mm]erge[d]?|[Dd]one|PR)([^[:alnum:]]|$) ]]; then
     echo "mega-sdd: user menyiratkan pekerjaan selesai dan ada perubahan kode ter-journal — TAWARKAN /mega-sdd:sync dalam SATU baris (jangan auto-invoke; kalau user menolak, lanjut tanpa mengungkit lagi)."
+  fi
+fi
+
+# ── State anchor (spec 2026-09-25-state-anchor-design.md §7): HEAD moved THIS session?
+# 0 exec, 0 fork: builtin reads of .git/HEAD + the LOOSE ref only (packed-refs is
+# never read per prompt — its cost grows with the repo). The per-worktree seen ring
+# (`<gitdir>/mega-sdd-seen`, written by session-start) says which HEAD this session
+# last saw; a different sha or branch prints ONE line and updates the ring. Two
+# sessions on one worktree each get their own line (the ring is keyed by session).
+# `staleness_notice: false` silences it. A missing loose ref on the same branch
+# (packed after `gc`) is not a move. The session id is validated, never eval'd.
+UP_SID=""
+case "$STDIN_JSON" in
+  *'"session_id"'*)
+    _us="${STDIN_JSON#*\"session_id\"}"
+    _us="${_us#*\"}"
+    UP_SID="${_us%%\"*}"
+    ;;
+esac
+case "$UP_SID" in *[!A-Za-z0-9-]*|"") UP_SID="" ;; esac
+[ "${#UP_SID}" -ge 8 ] && [ "${#UP_SID}" -le 64 ] || UP_SID=""
+GH_LIB="${SC_DIR}/../scripts/_lib/git-head.sh"
+if [ -n "$UP_SID" ] && [ -f "$GH_LIB" ]; then
+  UP_ON=1
+  if [ -f "${ROOT_SS}/.mega-sdd/config.yaml" ]; then
+    while IFS= read -r _uc || [ -n "$_uc" ]; do
+      if [[ "$_uc" =~ ^[[:space:]]*staleness_notice:[[:space:]]*false ]]; then UP_ON=0; break; fi
+    done < "${ROOT_SS}/.mega-sdd/config.yaml" 2>/dev/null
+  fi
+  # shellcheck disable=SC1090
+  . "$GH_LIB"
+  if [ "$UP_ON" -eq 1 ] && mega_git_dir "$ROOT_SS"; then
+    mega_git_head
+    UP_OLD=""
+    if [ -f "$GH_GITDIR/mega-sdd-seen" ]; then
+      while IFS= read -r _ul || [ -n "$_ul" ]; do
+        [ "${_ul%% *}" = "$UP_SID" ] && UP_OLD="${_ul#* }"
+      done < "$GH_GITDIR/mega-sdd-seen" 2>/dev/null
+    fi
+    if [ -z "$UP_OLD" ]; then
+      [ -n "$GH_HEAD" ] && mega_seen_ring_put "$GH_GITDIR" "$UP_SID" "$GH_HEAD" "$GH_BRANCH"
+    else
+      UP_OSHA="${UP_OLD%% *}"; UP_OBR="${UP_OLD#* }"
+      UP_BR="${GH_BRANCH//[^A-Za-z0-9._\/-]/_}"
+      if [ -n "$GH_HEAD" ] && { [ "$GH_HEAD" != "$UP_OSHA" ] || [ "$GH_BRANCH" != "$UP_OBR" ]; }; then
+        echo "mega-sdd: HEAD moved this session (${UP_OSHA:0:8} -> ${GH_HEAD:0:8}, ${UP_BR}) — the session-start state block is outdated; re-check memory/vault claims against code at HEAD."
+        mega_seen_ring_put "$GH_GITDIR" "$UP_SID" "$GH_HEAD" "$GH_BRANCH"
+      elif [ -z "$GH_HEAD" ] && [ -n "$GH_BRANCH" ] && [ "$GH_BRANCH" != "$UP_OBR" ]; then
+        echo "mega-sdd: HEAD moved this session (${UP_OSHA:0:8} -> ${UP_BR}) — the session-start state block is outdated; re-check memory/vault claims against code at HEAD."
+        mega_seen_ring_put "$GH_GITDIR" "$UP_SID" "$UP_OSHA" "$GH_BRANCH"
+      fi
+    fi
   fi
 fi
 exit 0

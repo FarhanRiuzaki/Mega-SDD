@@ -85,6 +85,10 @@ else
   PROJECT_ROOT="$CWD"
 fi
 
+GH_LIB_SP="${SCRIPT_DIR_RPR}/../scripts/_lib/git-head.sh"
+# shellcheck disable=SC1090
+[ -f "$GH_LIB_SP" ] && . "$GH_LIB_SP"
+
 # ─── HANDOFF VALIDATION: leg REMOVED (v7 Fase 2 №2) ─────────────────────────
 # The Stop-side handoff-validation leg (v3.53.0 → v7.0.0 transitional) is gone:
 # PreToolUse Branch 1a now derives the verdict at EVERY guarded mega-sdd:*
@@ -119,7 +123,16 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
     # re-scans next turn), and only when HEAD resolved.
     STOP_SCAN_STAMP="${PROJECT_ROOT}/.mega-sdd/.stop-scan-stamp"
     NEED_ARTIFACT_SCAN=1
-    CUR_HEAD_SS=$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || printf '')
+    # builtin HEAD read first (0 exec, state-anchor git-head.sh); the fallback is a
+    # single process — `exec` inside the substitution replaces the subshell
+    CUR_HEAD_SS=""
+    if declare -F mega_git_dir >/dev/null && mega_git_dir "$PROJECT_ROOT" && mega_git_head packed; then
+      CUR_HEAD_SS="$GH_HEAD"
+    else
+      # keep whatever rev-parse prints (the literal `HEAD` on an unborn branch): a stable
+      # turn-gate stamp, exactly as before — an empty one would re-scan every turn
+      CUR_HEAD_SS=$(exec git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null) || :
+    fi
     if [ -f "$STOP_SCAN_STAMP" ] && [ -n "$CUR_HEAD_SS" ]; then
       LAST_HEAD_SS=""
       IFS= read -r LAST_HEAD_SS < "$STOP_SCAN_STAMP" 2>/dev/null || LAST_HEAD_SS=""
@@ -242,6 +255,39 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd/vaults" ] || [ -f "${PROJECT_ROOT}/.mega-sdd/
   PUBLISH_SCRIPT="${SCRIPT_DIR_PUB}/../scripts/publish-artifacts.sh"
   if [ -f "$PUBLISH_SCRIPT" ]; then
     bash "$PUBLISH_SCRIPT" --cwd="$PROJECT_ROOT" >/dev/null 2>&1 || true
+  fi
+fi
+
+# ─── State anchor: view-cache bootstrap (spec 2026-09-25-state-anchor-design.md §5, D6a)
+# LAST leg on purpose: the legs above may write under <vault>/bolts/, and the
+# SessionStart reader takes a HIT only when the cache is STRICTLY newer than every
+# input — a cache written before them would cost the next session a `git diff`.
+# The freshness engine normally runs at GROUND (M/L entry). A machine whose work
+# never enters M/L would otherwise never get per-vault lines at session start, so
+# THIS (async) hook computes the view once when the cache is absent or torn — and
+# only when a usable interpreter exists (the builtin probe; no stub spawn). A
+# present cache costs 0 exec here. The engine writes only into the git dir.
+PY_LIB_SP="${SCRIPT_DIR_RPR}/../scripts/_lib/resolve-python.sh"
+if [ -d "${PROJECT_ROOT}/.mega-sdd" ] && declare -F mega_git_dir >/dev/null && [ -f "$PY_LIB_SP" ]; then
+  # an unborn repo (no commit yet) has no HEAD to anchor a view: never bootstrap there,
+  # or the engine would run on every turn of a greenfield plan phase
+  if mega_git_dir "$PROJECT_ROOT" && mega_git_head packed; then
+    SP_FC="$GH_GITDIR/mega-sdd-freshness"; SP_FIRST=""; SP_LAST=""
+    if [ -f "$SP_FC" ]; then
+      while IFS= read -r _spl || [ -n "$_spl" ]; do
+        [ -z "$SP_FIRST" ] && SP_FIRST="$_spl"
+        SP_LAST="$_spl"
+      done < "$SP_FC" 2>/dev/null
+    fi
+    case "$SP_LAST" in end=*) ;; *) SP_FIRST="" ;; esac
+    if [ "$SP_FIRST" != "v=1" ]; then
+      # shellcheck disable=SC1090
+      . "$PY_LIB_SP"
+      if mega_sdd_python >/dev/null 2>&1; then
+        # shellcheck disable=SC2086
+        $MEGA_SDD_PY "${SCRIPT_DIR_RPR}/../scripts/_lib/freshness.py" --cwd="$PROJECT_ROOT" >/dev/null 2>&1 || true
+      fi
+    fi
   fi
 fi
 

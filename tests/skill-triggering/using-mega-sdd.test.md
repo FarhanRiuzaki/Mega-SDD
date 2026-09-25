@@ -29,6 +29,16 @@ Manual-run test fixture. Open a fresh Claude Code session in a dir matching trig
 - **Prompt:** `/mega-sdd:scan-codebase`
 - **Expect:** one-line Indonesian deprecation keterangan first, then Skill tool call with `scan-codebase` exactly as before (flags pass through)
 
+### Case T7: State block says STALE, tier-S code question (state anchor, 8.8.0)
+- **Setup:** an adopted project whose session-start state block shows `- web: STALE since <s8> · 1 file(s): apps/web/src/api/client.ts · <h7> <subject> · pending: U-002`; MEMORY.md (or CLAUDE.md) states that `client.ts` still exports `login()`, but the teammate commit renamed it
+- **Prompt:** `fungsi login di client.ts parameternya apa aja?`
+- **Expect:** the agent READS `apps/web/src/api/client.ts` at HEAD, answers from the code, and names the memory/vault claim as STALE (contradicted by HEAD) — NO skill invocation, NO `/mega-sdd` proposal, NO sync proposal (the block never tells it to run one)
+
+### Case T8: Pending requirement vs HEAD is not "STALE" (the IS/SHOULD split)
+- **Setup:** a vault flow says the login form must disable submit while empty; HEAD does not do that yet (the unit is pending)
+- **Prompt:** `login form udah disable submit kalau kosong belum?`
+- **Expect:** the agent reads HEAD, says the requirement is **pending** (or a CONFLICT for a human if the vault and a finished unit disagree) — never calls the vault requirement "STALE" and never treats HEAD as overruling what the code SHOULD do
+
 ## Non-trigger cases (must NOT invoke mega-sdd)
 
 ### Case NT1: Casual question
@@ -45,4 +55,4 @@ Manual-run test fixture. Open a fresh Claude Code session in a dir matching trig
 
 ## Pass criteria
 
-T1, T2, T4–T6 invoke a mega-sdd skill; **T3 (v7) must NOT invoke one** (tier S — inline answer, optional one-line offer). None of NT1-NT3 invokes one.
+T1, T2, T4–T6 invoke a mega-sdd skill; **T3 (v7), T7 and T8 must NOT invoke one** (tier S — inline answer, optional one-line offer; T7/T8 additionally pin the state-anchor rule line's behaviour). None of NT1-NT3 invokes one.

@@ -1330,6 +1330,26 @@ t1.append("```")
 t1.append("Provenance values:")
 t1.append("  unit_id: %s" % unit_id)
 t1.append("  provenance_path: %s" % os.path.relpath(os.path.join(VAULT, "bolts", unit_id, "dispatch-prompt.md"), CWD).replace(os.sep, "/"))
+# State anchor (spec 2026-09-25-state-anchor-design.md §8 reason 5): the prompt names the
+# exact per-unit binding it was built from; the BOLTS gate denies a dispatch whose binding
+# changed after this prompt was built (a re-bind or --resolve without a rebuild).
+_UB_PATH = os.path.join(VAULT, "bolts", unit_id, "binding.json")
+_UB_CHANGED = set()          # (path, first line) of anchors the content ladder marked changed
+_UB_V2 = False
+if os.path.isfile(_UB_PATH):
+    try:
+        with open(_UB_PATH, "rb") as _ubf:
+            _ub_raw = _ubf.read()
+        t1.append("  binding_sha256: %s" % __import__("hashlib").sha256(_ub_raw).hexdigest())
+        _ub = json.loads(_ub_raw.decode("utf-8"))
+        _UB_V2 = _ub.get("schema") == "unit-binding/2"
+        for _c in _ub.get("claims") or []:
+            if isinstance(_c, dict) and _c.get("anchor_changed"):
+                _m = re.match(r"^(.+?):(\d+)", str(_c.get("anchor") or _c.get("expect") or ""))
+                if _m:
+                    _UB_CHANGED.add((_m.group(1), int(_m.group(2))))
+    except (OSError, ValueError, UnicodeDecodeError):
+        pass
 if vault_sha256:
     t1.append("  vault_sha256: %s" % vault_sha256)
 PROV_CLAIM_SLOT = len(t1)            # claims are filled in after binding.md loads
@@ -1337,7 +1357,8 @@ t1.append(None)                      # placeholder, replaced below
 if anchor_rows:
     t1.append("  anchors_consulted:")
     for p, ln, stale in anchor_rows:
-        t1.append("    - %s:%d%s" % (p, ln, "  ANCHOR STALE (verify before use)" if stale else ""))
+        t1.append("    - %s:%d%s" % (p, ln, "  ANCHOR STALE (verify before use)" if stale else (
+            "  ANCHOR CHANGED (verify before use)" if (p, ln) in _UB_CHANGED else "")))
     # halts-and-handoff.md:90-95 — never print a verified count no check produced.
     # The line MUST STATE WHAT WAS PROBED (context-enrichment.md §Anchor
     # freshness): the residual gap is real — an anchor whose file content was
@@ -1345,8 +1366,9 @@ if anchor_rows:
     # bind-time excerpt/sha field that no binding schema records. Naming the
     # probe's scope is the honest alternative to either a bare count (which
     # over-claims) or a comparison invented against an input that does not exist.
-    t1.append("  anchors_verified: %d/%d (path + line-range only — content drift NOT checked)"
-              % (anchors_fresh, len(anchor_rows)))
+    t1.append("  anchors_verified: %d/%d (%s)" % (anchors_fresh, len(anchor_rows),
+              "path + line-range here; block content checked at bind by the content ladder — binding.json"
+              if _UB_V2 else "path + line-range only — content drift NOT checked"))
 else:
     t1.append("  anchors_consulted: (none)")
 # 8.0.3: the verbatim `hard_rules_active:` list was dropped from this block — it duplicated the
