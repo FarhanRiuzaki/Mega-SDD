@@ -204,11 +204,11 @@ printf -- '---\nid: U-001\ntitle: t\ntask_type: create\nvault_source: model.md#a
 printf '# PRD\n\n## Halaman A\n\nx\n' > "$FIXJ/docs/PRD.md"; echo '{"open_questions":[]}' > "$JV/vault.json"
 SCR="$PLUGIN/scripts"
 run_script() { ( cd "$FIXJ" && PATH="$SHIM:$PATH" /bin/sh -c "$1" ) >/dev/null 2>&1; }
-reset_counts; run_script "bash $SCR/derive-unit-claims.sh --cwd=$FIXJ --vault=$JV --units=U-001"
+reset_counts; run_script "bash '$SCR'/derive-unit-claims.sh --cwd=$FIXJ --vault=$JV --units=U-001"
 [ "$(total)" -le 6 ] && [ -f "$JV/bolts/_wave-claims.json" ] \
   && ok "C10 derive-unit-claims: ≤6 spawns ($(total)), wave claims written" \
   || bad "C10 derive-unit-claims: spawns=$(total) out=$([ -f "$JV/bolts/_wave-claims.json" ] && echo yes || echo no)"
-reset_counts; run_script "bash $SCR/write-unit-binding.sh --cwd=$FIXJ --vault=$JV --unit=U-001 --claims=$JV/bolts/_wave-claims.json"
+reset_counts; run_script "bash '$SCR'/write-unit-binding.sh --cwd=$FIXJ --vault=$JV --unit=U-001 --claims=$JV/bolts/_wave-claims.json"
 [ "$(total)" -le 6 ] && [ -f "$JV/bolts/U-001/binding.json" ] \
   && ok "C11 write-unit-binding (fs-only wave, 0 model tokens): ≤6 spawns ($(total)), binding.json written" \
   || bad "C11 write-unit-binding: spawns=$(total) out=$([ -f "$JV/bolts/U-001/binding.json" ] && echo yes || echo no)"
@@ -234,28 +234,28 @@ SDD-Acceptance: v5" -m "Co-Authored-By: Claude <noreply@anthropic.com>"
 echo r > "$FIXW/README.md"; wg add -A; wg commit -qm "docs: teammate"
 bash "$SCR/derive-unit-claims.sh" --cwd="$FIXW" --vault="$WV" --units=U-001 >/dev/null 2>&1
 reset_counts
-( cd "$FIXW" && PATH="$SHIM:$PATH" /bin/sh -c "bash $SCR/write-unit-binding.sh --cwd=$FIXW --vault=$WV --unit=U-001 --claims=$WV/bolts/_wave-claims.json" ) >/dev/null 2>&1
+( cd "$FIXW" && PATH="$SHIM:$PATH" /bin/sh -c "bash '$SCR'/write-unit-binding.sh --cwd=$FIXW --vault=$WV --unit=U-001 --claims=$WV/bolts/_wave-claims.json" ) >/dev/null 2>&1
 C11B_ST=$(python3 -c 'import json,sys;print(",".join(c.get("state") or "" for c in json.load(open(sys.argv[1]))["claims"]))' "$WV/bolts/U-001/binding.json" 2>/dev/null)
 [ "$(total)" -le 20 ] && [ "$C11B_ST" = "IMPLEMENTED,IMPLEMENTED_BY_UNIT,IMPLEMENTED_BY_UNIT" ] \
   && ok "C11b write-unit-binding conditional paths (rung 3 + absent_at + ordering + carry-forward): ≤20 spawns ($(total), git $(count git))" \
   || bad "C11b write-unit-binding conditional: spawns=$(total) git=$(count git) states=$C11B_ST"
-reset_counts; run_script "bash $SCR/validate-handoff-binding-units.sh --cwd=$FIXJ --units=U-001 --quiet"
+reset_counts; run_script "bash '$SCR'/validate-handoff-binding-units.sh --cwd=$FIXJ --units=U-001 --quiet"
 [ "$(total)" -le 9 ] && [ -f "$FIXJ/.mega-sdd/.validation-blockers.json" ] \
   && ok "C12 validate-handoff-binding-units --units=: ≤9 spawns ($(total)), unit-scoped blockers written" \
   || bad "C12 validate-handoff-binding-units --units=: spawns=$(total)"
-reset_counts; run_script "bash $SCR/write-unit-quarantine.sh --cwd=$FIXJ --vault=$JV --unit=U-002 --halt=acceptance_red --reason=x"
+reset_counts; run_script "bash '$SCR'/write-unit-quarantine.sh --cwd=$FIXJ --vault=$JV --unit=U-002 --halt=acceptance_red --reason=x"
 [ "$(total)" -le 4 ] && [ -f "$JV/bolts/U-002/quarantine.json" ] \
   && ok "C13 write-unit-quarantine: ≤4 spawns ($(total))" \
   || bad "C13 write-unit-quarantine: spawns=$(total)"
-reset_counts; run_script "bash $SCR/validate-plan-coverage.sh --cwd=$FIXJ --prd=$FIXJ/docs/PRD.md --vault=$JV --quiet"
+reset_counts; run_script "bash '$SCR'/validate-plan-coverage.sh --cwd=$FIXJ --prd=$FIXJ/docs/PRD.md --vault=$JV --quiet"
 [ "$(total)" -le 4 ] && [ -f "$FIXJ/.mega-sdd/.plan-coverage-state.json" ] \
   && ok "C14 validate-plan-coverage: ≤4 spawns ($(total)), coverage state written" \
   || bad "C14 validate-plan-coverage: spawns=$(total)"
-reset_counts; run_script "bash $SCR/derive-ready-units.sh --cwd=$FIXJ --vault=$JV"
+reset_counts; run_script "bash '$SCR'/derive-ready-units.sh --cwd=$FIXJ --vault=$JV"
 [ "$(total)" -le 8 ] \
   && ok "C15 derive-ready-units (W2 lite readiness; wraps compute-unit-staleness): ≤8 spawns ($(total))" \
   || bad "C15 derive-ready-units: spawns=$(total)"
-reset_counts; run_script "bash $SCR/derive-plan-pins.sh --cwd=$FIXJ --prd=docs/PRD.md"
+reset_counts; run_script "bash '$SCR'/derive-plan-pins.sh --cwd=$FIXJ --prd=docs/PRD.md"
 [ "$(total)" -le 8 ] \
   && ok "C16 derive-plan-pins (plan Step 0 pins; wraps derive-project-scale + git config, sha in python): ≤8 spawns ($(total))" \
   || bad "C16 derive-plan-pins: spawns=$(total)"
