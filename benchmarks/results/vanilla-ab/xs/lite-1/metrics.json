@@ -85,6 +85,9 @@
   "processes": 1,
   "resume_or_outage_keys": [],
   "purity": "PASS mega-sdd 8.8.1 loaded from mega-sdd@inline",
+  "api_retries": 0,
+  "api_retry_delay_s": 0.0,
+  "api_retry_errors": [],
   "is_clean": true
  }
 }

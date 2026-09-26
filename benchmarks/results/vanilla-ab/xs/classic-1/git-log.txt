@@ -1,0 +1,17 @@
+3ce37fd 2026-09-26T13:30:47+07:00 chore(sdd): carry constitution C-001/D-001 into U-003; consistency report
+9623671 2026-09-26T13:30:14+07:00 chore(sdd): drift report + AGENTS.mega-sdd.md export
+5ecbb69 2026-09-26T13:26:08+07:00 chore(sdd): batch summary + full-suite gate evidence
+47cb3cc 2026-09-26T13:25:35+07:00 chore(sdd): evidence U-003 — bind, L0, panel, postflight, acceptance
+798e8ec 2026-09-26T13:20:45+07:00 feat(U-003): Create Kontak page with contact form and Server Action
+c686bec 2026-09-26T13:19:40+07:00 chore(sdd): evidence U-005 — bind, L0, panel, postflight, acceptance
+0ef7e01 2026-09-26T13:14:04+07:00 feat(U-005): Create Tentang Kami page with profile and team list
+7bd5978 2026-09-26T13:13:24+07:00 chore(sdd): evidence U-004 — bind, L0, panel, postflight, acceptance
+975422b 2026-09-26T13:10:10+07:00 feat(U-004): Replace scaffold home page with the Beranda page
+fc01614 2026-09-26T13:09:05+07:00 chore(sdd): evidence U-002 — bind, L0, panel, postflight, acceptance
+5fea39c 2026-09-26T13:06:45+07:00 feat(U-002): Create contact-message validator, SQLite store and submit logic
+5a58e11 2026-09-26T13:05:29+07:00 chore(sdd): evidence U-001 — bind, L0, panel, postflight, acceptance
+1b5bce8 2026-09-26T13:03:05+07:00 feat(U-001): Create typed static-content config with placeholder content
+5f1b7bc 2026-09-26T13:01:57+07:00 chore(sdd): preflight baselines; drop untracked node_modules anchor from U-003
+5b2f95e 2026-09-26T13:01:37+07:00 chore(sdd): vault, binding and units for company-profile-mini
+ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
+da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

@@ -1,0 +1,55 @@
+4ae1bc3 2026-09-26T20:38:43+07:00 chore(sdd): drift gate report + pending-sync queue (25 findings, none on LOCKED)
+a272613 2026-09-26T20:29:04+07:00 chore(sdd): evidence batch — _summary, _batch-suite (green 220/220), recomputed postflight records
+df3e47d 2026-09-26T20:27:04+07:00 chore(sdd): evidence U-019 — bolt-report, gates, panel ledger
+c568bd0 2026-09-26T20:22:56+07:00 chore(sdd): evidence U-022 — bolt-report, gates, panel ledger
+f6e4232 2026-09-26T20:22:04+07:00 feat(U-019): Build the /staff/schedule doctor page (today + week, own column only)
+9d6ae75 2026-09-26T20:11:30+07:00 chore(sdd): evidence U-014 — bolt-report, gates, panel ledger
+531dc63 2026-09-26T20:10:53+07:00 chore(sdd): evidence U-016 — bolt-report, gates, panel ledger
+c05232b 2026-09-26T20:10:40+07:00 feat(U-022): Build the /staff/reception board with all schedules, data table and actions
+5075bbf 2026-09-26T20:09:09+07:00 chore(sdd): evidence U-011 — bolt-report, gates, panel ledger
+8b8a3d6 2026-09-26T20:09:05+07:00 feat(U-014): Implement the idempotent DB-backed reminder sweep and cron Route Handler
+2633a80 2026-09-26T20:08:46+07:00 chore(sdd): evidence U-013 — bolt-report, gates, panel ledger
+8f5d8d6 2026-09-26T20:06:12+07:00 chore(sdd): evidence U-012 — bolt-report, gates, panel ledger
+4fac573 2026-09-26T20:05:08+07:00 chore(sdd): evidence U-021 — bolt-report, gates, panel ledger
+2b0ccd5 2026-09-26T20:03:58+07:00 feat(U-016): Build the /staff/login page with a Server Action sign-in
+6c791cd 2026-09-26T19:58:38+07:00 feat(U-013): Implement atomic token-based rescheduling with re-sent confirmation
+b4335f1 2026-09-26T19:58:24+07:00 fix(U-012): generate the cancel-page test token at runtime instead of a literal
+fa2f23c 2026-09-26T19:57:35+07:00 chore(sdd): evidence U-018 — bolt-report, gates, panel ledger
+46fe4a8 2026-09-26T19:57:27+07:00 chore(sdd): evidence U-010 — bolt-report, gates, panel ledger
+4f86ac7 2026-09-26T19:57:05+07:00 chore(sdd): evidence U-007 — bolt-report, gates, panel ledger
+6de6771 2026-09-26T19:56:19+07:00 feat(U-011): Build the /book multi-step booking wizard with confirmation email
+d3581e4 2026-09-26T19:55:01+07:00 feat(U-012): Implement token-based cancellation (confirmation page + Route Handler)
+af6a1b2 2026-09-26T19:54:09+07:00 feat(U-021): Build the reception reassign and walk-in dialogs
+c7a7068 2026-09-26T19:52:35+07:00 chore(sdd): evidence U-020 — panel ledger (merge landed after the first evidence commit)
+138a603 2026-09-26T19:52:24+07:00 chore(sdd): evidence U-020 — bolt-report, gates, panel ledger
+f31d53d 2026-09-26T19:50:24+07:00 feat(U-007): Apply the AA-safe brand tokens, fonts, theme provider and site shell
+1beb57c 2026-09-26T19:48:35+07:00 chore(sdd): evidence U-009 — bolt-report, gates, panel ledger
+8ce432e 2026-09-26T19:48:35+07:00 chore(sdd): evidence U-003 — bolt-report, gates, panel ledger
+2fb6065 2026-09-26T19:46:25+07:00 feat(U-020): Implement receptionist reassignment and staff/walk-in booking services
+59986a8 2026-09-26T19:45:11+07:00 feat(U-018): Build the accessible schedule grid with status badge and detail dialog
+83358cf 2026-09-26T19:45:04+07:00 feat(U-010): Build the accessible date and slot picker component
+a9a8aee 2026-09-26T19:44:17+07:00 chore(sdd): evidence U-015 — bolt-report, gates, panel ledger
+279613e 2026-09-26T19:44:17+07:00 chore(sdd): evidence U-002 — re-baseline after U-003 journal modify (acceptance+postflight re-run PASS)
+1bab80d 2026-09-26T19:43:25+07:00 feat(U-009): Implement the booking service with DB-enforced double-book protection
+87b092f 2026-09-26T19:42:26+07:00 feat(U-003): Seed the three service types with a custom migration
+c3984d6 2026-09-26T19:41:19+07:00 chore(sdd): evidence U-008 — bolt-report, gates, panel ledger
+ec454c9 2026-09-26T19:41:19+07:00 chore(sdd): evidence U-004 — bolt-report, gates, panel ledger
+4f45aee 2026-09-26T19:40:43+07:00 fix(U-015): generate the staff test password at runtime instead of a literal
+fc14728 2026-09-26T19:40:36+07:00 chore(sdd): evidence U-017 — panel ledger (standards lens late; earlier evidence commit preceded the merge)
+5d0025d 2026-09-26T19:39:11+07:00 chore(sdd): evidence U-017 — bolt-report, gates, panel ledger
+82117d1 2026-09-26T19:38:03+07:00 feat(U-004): Build the timezone-aware 15-minute slot engine
+ed720ac 2026-09-26T19:36:33+07:00 feat(U-015): Configure Better Auth for staff, role guards and the /staff proxy
+55c3514 2026-09-26T19:36:06+07:00 chore(sdd): evidence U-006 — bolt-report, gates, panel ledger
+04604b0 2026-09-26T19:35:37+07:00 feat(U-017): Implement the role-scoped schedule query (doctor own, receptionist all)
+7a0146e 2026-09-26T19:34:58+07:00 chore(sdd): evidence U-002 — bolt-report, gates, panel ledger
+df7f507 2026-09-26T19:34:25+07:00 feat(U-008): Vendor the shadcn/ui primitives used by the booking and staff screens
+e29c35d 2026-09-26T19:34:10+07:00 chore(sdd): evidence U-005 — bolt-report, gates, panel ledger
+3df8f73 2026-09-26T19:32:16+07:00 chore(sdd): evidence U-001 — bolt-report, gates, panel ledger
+c8a6911 2026-09-26T19:30:55+07:00 feat(U-002): Define the Drizzle schema, initial migration and PGlite test database
+7b2f114 2026-09-26T19:29:56+07:00 feat(U-006): Add the Resend transport and the React Email templates
+b477b3f 2026-09-26T19:29:18+07:00 feat(U-005): Implement the signed one-time appointment token and manage links
+c0b1c69 2026-09-26T19:26:44+07:00 chore(U-001): Install the PRD stack dependencies, Vitest harness and typed server env
+2778319 2026-09-26T19:24:34+07:00 chore(plan): clinic lite vault — context.md, constitution, 22 units
+2f1c78c 2026-09-26T12:48:09+07:00 fixture: clinic PRD
+ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
+da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

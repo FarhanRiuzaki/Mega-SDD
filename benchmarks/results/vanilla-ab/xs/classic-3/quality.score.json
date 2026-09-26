@@ -1,0 +1,47 @@
+{
+ "completion": 0.9166666666666666,
+ "ac_pass": 11,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "FAIL"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 4,
+ "rubric": 82,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "package.json:5-10",
+   "what": "No `test` script; `npm test` fails with 'Missing script: test' even though 41 node:test tests pass when run directly (X12 FAIL)"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/page.tsx:1-50 / src/app/layout.tsx:21-29",
+   "what": "No site navigation; Beranda does not link to Tentang Kami, which can only be reached by typing /tentang"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-validation.ts:38-40",
+   "what": "Required check only tests length===0; whitespace-only name/message pass validation and are stored"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-repository.ts:35,46",
+   "what": "DB path defaults to cwd-relative data/contact.db; created_at stored as TEXT ISO string rather than a timestamp type"
+  }
+ ],
+ "blind_label": "QR",
+ "scorer_sid": "819e0646-1a03-46ec-9c6d-bf0572b7fa8c"
+}

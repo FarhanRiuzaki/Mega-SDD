@@ -1,0 +1,60 @@
+{
+ "completion": 0.9,
+ "ac_pass": 9,
+ "ac_total": 10,
+ "ac": {
+  "C1": "PASS",
+  "C2": "PASS",
+  "C3": "PASS",
+  "C4": "PASS",
+  "C5": "PASS",
+  "C6": "PASS",
+  "C7": "PASS",
+  "C8": "PASS",
+  "C9": "PASS",
+  "C10": "FAIL"
+ },
+ "critical": 0,
+ "important": 2,
+ "minor": 5,
+ "rubric": 87,
+ "findings": [
+  {
+   "severity": "Important",
+   "where": "src/lib/auth-guard.ts:23",
+   "what": "getAuth() reads env before headers() runs, so Next prerenders the staff pages at build time and throws; plain `npm run build` fails without secrets (.env.example is empty)"
+  },
+  {
+   "severity": "Important",
+   "where": "src/lib/reminders/sweep.ts:13 (no vercel.json / croner in repo)",
+   "what": "Nothing triggers the reminder sweep; the \u00b15 min window needs a ~5-min scheduler, so out of the box reminders never go out"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/rate-limit.ts; src/app/book/actions.ts:103",
+   "what": "Rate limiter keeps counts in memory (no effect across serverless instances) and trusts the spoofable x-forwarded-for header"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/staff/operations.ts:69-130",
+   "what": "Reassignment doesn't check the new doctor's working hours or whether the appointment is already past"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/appointments/booking.ts:117",
+   "what": "Bookings made <24h ahead get a reminder_at in the past and silently never get a reminder"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/staff/(shell)/reception/page.tsx:931",
+   "what": "Schedule shows one color per doctor instead of the Schedule-X rows-per-doctor resource view the PRD asks for"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/staff/actions.ts:340-404",
+   "what": "Walk-in/phone bookings send no confirmation email, so those patients never get cancel/reschedule links"
+  }
+ ],
+ "blind_label": "DB",
+ "scorer_sid": "66cfef7c-0a5e-4c5c-9ea3-6e5863666ab1"
+}

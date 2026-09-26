@@ -1,0 +1,55 @@
+{
+ "completion": 1.0,
+ "ac_pass": 10,
+ "ac_total": 10,
+ "ac": {
+  "C1": "PASS",
+  "C2": "PASS",
+  "C3": "PASS",
+  "C4": "PASS",
+  "C5": "PASS",
+  "C6": "PASS",
+  "C7": "PASS",
+  "C8": "PASS",
+  "C9": "PASS",
+  "C10": "PASS"
+ },
+ "critical": 0,
+ "important": 2,
+ "minor": 4,
+ "rubric": 90,
+ "findings": [
+  {
+   "severity": "Important",
+   "where": "src/server/appointments.ts bookAppointment/createStaffAppointment -> sendAppointmentEmail; src/app/book/actions.ts bookAction",
+   "what": "Confirmation email sent after commit without error handling; a mail-transport failure returns an error to the patient although the appointment is booked, and a retry hits SLOT_TAKEN on their own booking"
+  },
+  {
+   "severity": "Important",
+   "where": "src/app/staff/(app)/reception/page.tsx (dayRange(date)); src/components/staff/schedule-grid.tsx",
+   "what": "Staff views skip the \u00a78.1 Schedule-X resource view and TanStack data table in favor of a custom grid; reception board is day-only and doctor week view is 5 days only"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/book/actions.ts clientKey; src/lib/rate-limit.ts",
+   "what": "Rate limit keyed on spoofable x-forwarded-for and held in memory per process"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/components/booking/calendar.tsx:30-35",
+   "what": "Past/weekday disabling uses browser timezone instead of the clinic timezone (server re-validates)"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts runReminderSweep",
+   "what": "Strict \u00b15 min window on reminder_at means a missed cron window permanently skips that reminder (no catch-up)"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts insertAppointment",
+   "what": "A new patient row is created on every booking with no dedup by email"
+  }
+ ],
+ "blind_label": "GG",
+ "scorer_sid": "682e6024-d6fc-4c92-961d-e1f706d418af"
+}

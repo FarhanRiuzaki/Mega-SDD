@@ -68,6 +68,13 @@ run "$T/wake" 10 100 50 2 0 30
 python3 "$S/arm-metrics.py" "$T/wake" --json "$T/wake.json" >/dev/null
 python3 -c "import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if (d['clean']['is_clean'] and d['tokens']['cost_usd']==10 and d['tokens']['total']==165) else 1)" "$T/wake.json" \
   || fail "metrics: a repeated cumulative result (same process) must count once and stay clean"
+# An empty completion record mid-process (cost unchanged, api 0) must not split the process.
+run "$T/empty" 10 100 50 1 0 30
+printf '{"type":"result","total_cost_usd":10,"duration_ms":0,"duration_api_ms":0,"num_turns":0,"modelUsage":{}}\n' >> "$T/empty/stream.jsonl"
+printf '{"type":"result","total_cost_usd":10,"duration_ms":1000,"duration_api_ms":30000,"modelUsage":{"m":{"inputTokens":100,"outputTokens":50,"cacheReadInputTokens":10,"cacheCreationInputTokens":5}}}\n' >> "$T/empty/stream.jsonl"
+python3 "$S/arm-metrics.py" "$T/empty" --json "$T/empty.json" >/dev/null
+python3 -c "import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if (d['clean']['processes']==1 and d['tokens']['cost_usd']==10) else 1)" "$T/empty.json" \
+  || fail "metrics: an empty mid-process result record must not start a new process (double count)"
 run "$T/resumed" 10 100 50 1 0 30
 printf '{"type":"result","total_cost_usd":4,"duration_ms":60000,"duration_api_ms":1000,"modelUsage":{"m":{"inputTokens":7,"outputTokens":3,"cacheReadInputTokens":0,"cacheCreationInputTokens":0}}}\n' >> "$T/resumed/stream.jsonl"
 python3 "$S/arm-metrics.py" "$T/resumed" --json "$T/resumed.json" >/dev/null

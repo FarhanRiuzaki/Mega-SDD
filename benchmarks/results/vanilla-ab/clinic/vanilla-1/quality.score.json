@@ -1,0 +1,55 @@
+{
+ "completion": 1.0,
+ "ac_pass": 10,
+ "ac_total": 10,
+ "ac": {
+  "C1": "PASS",
+  "C2": "PASS",
+  "C3": "PASS",
+  "C4": "PASS",
+  "C5": "PASS",
+  "C6": "PASS",
+  "C7": "PASS",
+  "C8": "PASS",
+  "C9": "PASS",
+  "C10": "PASS"
+ },
+ "critical": 0,
+ "important": 2,
+ "minor": 4,
+ "rubric": 89,
+ "findings": [
+  {
+   "severity": "Important",
+   "where": "README.md:87 (no vercel.json / croner worker)",
+   "what": "Reminder sweep endpoint exists but no scheduler is configured; reminders never fire out of the box"
+  },
+  {
+   "severity": "Important",
+   "where": "src/components/staff/schedule-views.tsx:1",
+   "what": "PRD-specified Schedule-X resource view replaced by custom table grid (documented deviation, OQ-006)"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/rate-limit.ts:26-28",
+   "what": "In-memory rate limiter keyed on spoofable x-forwarded-for; not shared across instances"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/appointments.ts:278-280",
+   "what": "Unauthenticated booking with an existing email overwrites that patient's stored name/phone"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/appointments.ts:271-274",
+   "what": "Overlap guard is READ COMMITTED and unique index is start_time-only; >15-min services or off-grid override walk-ins can overlap concurrently"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/reminders.ts:25",
+   "what": "No lower bound on reminder window; bookings made <24h ahead get an immediate 'reminder'"
+  }
+ ],
+ "blind_label": "MS",
+ "scorer_sid": "955734ef-8d6b-4eba-ac53-e30586f3ee41"
+}

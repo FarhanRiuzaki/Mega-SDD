@@ -71,6 +71,9 @@
   "processes": 1,
   "resume_or_outage_keys": [],
   "purity": "PASS no mega-sdd surface loaded",
+  "api_retries": 0,
+  "api_retry_delay_s": 0.0,
+  "api_retry_errors": [],
   "is_clean": true
  }
 }

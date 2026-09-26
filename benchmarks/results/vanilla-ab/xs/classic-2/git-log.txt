@@ -1,0 +1,18 @@
+44e0f00 2026-09-26T14:08:12+07:00 chore(sdd): consistency report (analyze WARN, 0 FAIL)
+ee0aac7 2026-09-26T14:08:02+07:00 chore(sdd): carry constitution C-001/C-002 into U-004/U-005 hard rules
+db42839 2026-09-26T14:07:30+07:00 chore(sdd): drift report + pending-sync queue after bolts
+ef7d295 2026-09-26T14:04:15+07:00 chore(sdd): batch summary + full-suite evidence (48/48 green)
+c38a134 2026-09-26T14:03:43+07:00 chore(sdd): evidence U-005 — panel clear, postflight + acceptance pass
+f223dd7 2026-09-26T14:00:40+07:00 feat(U-005): Create the Kontak page with the server-validated contact form
+bb8b424 2026-09-26T13:58:46+07:00 chore(sdd): evidence U-003 — panel clear, postflight + acceptance pass
+8f9e414 2026-09-26T13:56:14+07:00 feat(U-003): Create the Tentang Kami page at /tentang-kami
+4d1b793 2026-09-26T13:55:16+07:00 chore(sdd): evidence U-002 — panel clear, postflight + acceptance pass
+e3d7b04 2026-09-26T13:53:10+07:00 feat(U-002): Replace the scaffold home page with the Beranda page
+4aa5e32 2026-09-26T13:51:31+07:00 chore(sdd): evidence U-001, U-004 — panel clear, postflight + acceptance pass
+160e6c7 2026-09-26T13:48:31+07:00 chore(sdd): pin node:test tap reporter so acceptance expects match runner output
+01c1f31 2026-09-26T13:47:53+07:00 feat(U-004): Create contact-form validation and the contact_messages SQLite store
+19733dc 2026-09-26T13:47:17+07:00 feat(U-001): Create the static site content module and the shared page-test server helper
+dafb17a 2026-09-26T13:45:41+07:00 chore(sdd): drop untracked node_modules anchor from U-005
+e62f2fd 2026-09-26T13:45:31+07:00 chore(sdd): vault, binding and units for company-profile-mini
+ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
+da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

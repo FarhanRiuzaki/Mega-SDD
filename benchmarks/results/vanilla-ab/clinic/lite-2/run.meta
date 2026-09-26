@@ -1,0 +1,16 @@
+sid=5bb76e27-6df3-4138-94e7-95b2bed0a856
+arm=/private/tmp/claude-501/mega-sdd-bench/work/clinic-lite-2
+prd=PRD/prd-clinic.md
+model=opus
+flags=--lite
+arm_kind=megasdd
+transcript=/Users/riuzaki/.claude/projects/-private-tmp-claude-501-mega-sdd-bench-work-clinic-lite-2/5bb76e27-6df3-4138-94e7-95b2bed0a856.jsonl
+started_at=2026-09-26T12:03:29Z
+head_before=2f1c78c
+plugin=Version: 8.7.2
+plugin_dir=/private/tmp/claude-501/mega-sdd-bench/plugin-8.8.1
+pid=33350
+purity=PASS mega-sdd 8.8.1 loaded from mega-sdd@inline
+plugins=mega-sdd@8.8.1,superpowers@6.4.1,agents-md@?,telemetry@?
+megasdd_surfaces=36
+finished_at=2026-09-26T13:39:17Z

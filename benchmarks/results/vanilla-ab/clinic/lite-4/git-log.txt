@@ -1,0 +1,57 @@
+edd0585 2026-09-27T00:29:10+07:00 chore(sdd): analyze — CONSISTENCY-REPORT overall PASS
+893479d 2026-09-27T00:28:57+07:00 chore(sdd): re-bind 20 units under constitution v1.1 (rebind-units gate PASS, 0 conflicts); plan --reconcile: 0 task_type flips
+526367b 2026-09-27T00:27:09+07:00 chore(sdd): execute-bolts batch complete — 20/20 units, full suite green (221 tests), _summary.md
+860adb7 2026-09-27T00:26:14+07:00 chore(sdd): evidence U-013 — panel clear, acceptance + postflight pass
+f857cad 2026-09-27T00:22:55+07:00 chore(sdd): evidence U-020 — panel clear, acceptance + postflight pass
+d00d019 2026-09-27T00:22:55+07:00 chore(sdd): evidence U-015 — panel clear, acceptance + postflight pass
+eaea6c5 2026-09-27T00:22:41+07:00 style(U-020): biome import order in ReceptionBoard
+f66b207 2026-09-27T00:21:59+07:00 fix(U-013): Build the /book multi-step booking wizard with the shared SlotPicker
+5a73f6d 2026-09-27T00:20:21+07:00 feat(U-020): Build the /staff/reception page with all schedules, the TanStack reception board and reassign / walk-in dialogs
+f08103e 2026-09-27T00:18:44+07:00 chore(sdd): evidence U-019 — panel clear, acceptance + postflight pass
+fe77991 2026-09-27T00:18:21+07:00 feat(U-015): Build the /reschedule/[token] page and its Server Action with the re-sent confirmation
+9846b6f 2026-09-27T00:15:29+07:00 chore(sdd): evidence U-014 — panel clear, acceptance + postflight pass
+80e9641 2026-09-27T00:14:56+07:00 feat(U-013): Build the /book multi-step booking wizard with the shared SlotPicker
+0316198 2026-09-27T00:14:20+07:00 feat(U-019): Build the Schedule-X ScheduleView and the doctor's /staff/schedule page with appointment details
+b53259f 2026-09-27T00:13:52+07:00 chore(sdd): evidence U-018 — panel clear, acceptance + postflight pass
+b5fdae1 2026-09-27T00:13:51+07:00 chore(sdd): evidence U-011 — panel clear, acceptance + postflight pass
+27d4fea 2026-09-27T00:13:37+07:00 feat(U-014): Build the token cancel Route Handler and the /cancel/[token] confirm + result page
+f731a00 2026-09-27T00:10:54+07:00 chore(sdd): evidence U-012 — panel clear, acceptance + postflight pass
+64396c6 2026-09-27T00:09:50+07:00 chore(sdd): evidence U-017 — panel clear, acceptance + postflight pass
+f51c76a 2026-09-27T00:09:44+07:00 feat(U-018): Implement role-scoped staff schedule queries and the reassign / walk-in Server Actions
+90fbad3 2026-09-27T00:09:12+07:00 chore(sdd): evidence repair — U-006 report frontmatter restored; U-003/U-007 self-report transcribed
+567a833 2026-09-27T00:09:12+07:00 feat(U-011): Build the idempotent reminder sweep and the CRON_SECRET-guarded cron Route Handler
+c4ea8a1 2026-09-27T00:08:32+07:00 chore(sdd): evidence U-002 — panel clear, acceptance + postflight pass
+f87cc1f 2026-09-27T00:08:32+07:00 chore(sdd): evidence U-010 — panel clear, acceptance + postflight pass
+5cace04 2026-09-27T00:07:46+07:00 feat(U-012): Add the booking Server Actions with Zod validation, rate limiting and the confirmation email
+43188e0 2026-09-27T00:07:31+07:00 feat(U-017): Add the staff login page, the /staff proxy redirect and the role-aware staff shell layout
+d3166c5 2026-09-27T00:06:43+07:00 chore(sdd): evidence U-009 — panel clear, acceptance + postflight pass
+b757545 2026-09-27T00:06:43+07:00 chore(sdd): evidence U-016 — panel clear, acceptance + postflight pass
+f14c7f5 2026-09-27T00:06:21+07:00 feat(U-010): Implement token-based lookup, cancel and atomic reschedule services
+925f94e 2026-09-27T00:04:29+07:00 docs(sdd): cite constitution A-004 in remaining units' hard rules
+36480cd 2026-09-27T00:04:09+07:00 docs(sdd): amend clinic vault v1.1 — OQ-DM-4 standard timestamps (pack _universal), constitution A-004 no credential literals in tests
+c9fd384 2026-09-27T00:03:01+07:00 fix(U-016): generate test passwords at runtime instead of hard-coded literals
+fb8c0c7 2026-09-27T00:02:09+07:00 chore(sdd): evidence U-006 — panel clear, acceptance + postflight pass
+e9335ae 2026-09-27T00:02:09+07:00 chore(sdd): evidence U-003 — panel clear, acceptance + postflight pass
+ca2ae6a 2026-09-27T00:02:09+07:00 chore(sdd): evidence U-007 — panel clear, acceptance + postflight pass
+603f344 2026-09-27T00:02:09+07:00 chore(sdd): evidence U-008 — panel clear, acceptance + postflight pass
+e84f63e 2026-09-27T00:01:57+07:00 feat(U-009): Implement DB-aware availability and the transactional bookAppointment service
+8779026 2026-09-27T00:01:34+07:00 feat(U-016): Configure Better Auth for staff with roles, the auth route, server guards and staff provisioning
+b5e182e 2026-09-26T23:59:59+07:00 fix(U-007): Add the shadcn/ui form primitives (button, input, label, textarea, select)
+6033ac3 2026-09-26T23:59:37+07:00 fix(U-008): Add the shadcn/ui display primitives and the text+icon+color appointment status badge
+3ad8b44 2026-09-26T23:59:22+07:00 feat(U-003): Build the pure slot engine for BR-001 bookable hours in the clinic timezone
+7543f80 2026-09-26T23:58:01+07:00 fix(U-006): unit anchor range repaired by write-unit-binding (layout.tsx:1-33 -> 1-29, R2 whole-file clamp)
+fe1d13b 2026-09-26T23:57:58+07:00 feat(U-002): Define the Drizzle schema, generate migrations with the service seed, and add the DB client + PGlite test harness
+ad6dac0 2026-09-26T23:57:49+07:00 chore(sdd): evidence U-005 — panel clear, acceptance + postflight pass
+32e443c 2026-09-26T23:57:34+07:00 feat(U-006): Apply the AA-safe OKLCH brand tokens, fonts, theme provider and branded header/footer to the root layout
+8e07ec8 2026-09-26T23:55:14+07:00 chore(sdd): evidence U-004 — panel clear, acceptance + postflight pass
+507ec6f 2026-09-26T23:54:53+07:00 fix(U-005): generate test signing keys at runtime instead of a hard-coded literal
+209bb13 2026-09-26T23:51:25+07:00 feat(U-008): Add the shadcn/ui display primitives and the text+icon+color appointment status badge
+8fd2bb3 2026-09-26T23:50:30+07:00 feat(U-007): Add the shadcn/ui form primitives (button, input, label, textarea, select)
+3992757 2026-09-26T23:50:30+07:00 chore(sdd): evidence U-001 — panel clear, acceptance + postflight pass
+3f047a1 2026-09-26T23:50:15+07:00 feat(U-004): Add the email sender (Resend + React Email) and the confirmation, reminder and reassignment templates
+5d8e180 2026-09-26T23:50:00+07:00 feat(U-005): Implement the one-time signed appointment token and the patient cancel/reschedule links
+e26b5db 2026-09-26T23:46:29+07:00 build(U-001): Install the PRD stack dependencies and set up Vitest, Biome and the env module
+961adb8 2026-09-26T23:42:18+07:00 chore(sdd): plan clinic vault (lite lane) — context.md + 20 units
+2f1c78c 2026-09-26T12:48:09+07:00 fixture: clinic PRD
+ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
+da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

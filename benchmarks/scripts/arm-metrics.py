@@ -53,6 +53,7 @@ def scan_stream(path, sid_prefix):
     tools, reads = collections.Counter(), set()
     stamps, init = [], None
     segments, last = [], None
+    retries = [0, 0.0, set()]   # count, Σ delay s, error kinds — environment noise, reported not judged
     for line in open(path, encoding='utf-8', errors='replace'):
         try:
             e = json.loads(line)
@@ -66,15 +67,23 @@ def scan_stream(path, sid_prefix):
                 pass
         if e.get('type') == 'system' and e.get('subtype') == 'init' and init is None:
             init = e
+        if e.get('type') == 'system' and e.get('subtype') == 'api_retry':
+            retries[0] += 1
+            retries[1] += (e.get('retry_delay_ms') or 0) / 1000.0
+            if e.get('error'):
+                retries[2].add(str(e.get('error')))
         if e.get('type') == 'result':
             # total_cost_usd / duration_api_ms / modelUsage are CUMULATIVE per process and are
             # repeated on every turn completion of that process (background wake-ups included);
             # duration_ms is per turn. A counter that goes DOWN = a new process (--resume).
             dur_ms += e.get('duration_ms') or 0
+            # Only a DROP in cumulative cost starts a new process. An empty completion record
+            # (num_turns 0, duration_api_ms 0 — seen mid-run in clinic lite-2) must not split
+            # the process: that double-counted $73.27 as $146.54. Keep the segment's max record.
             c, a = e.get('total_cost_usd') or 0.0, e.get('duration_api_ms') or 0
-            if last is None or c < last[0] or (c == last[0] and a < last[1]):
+            if last is None or c < last[0]:
                 segments.append(e)
-            else:
+            elif (c, a) >= ((segments[-1].get('total_cost_usd') or 0.0), (segments[-1].get('duration_api_ms') or 0)):
                 segments[-1] = e
             last = (c, a)
         if e.get('type') == 'assistant':
@@ -93,7 +102,7 @@ def scan_stream(path, sid_prefix):
             for k in ('inputTokens', 'outputTokens', 'cacheReadInputTokens', 'cacheCreationInputTokens'):
                 usage[model][k] += u.get(k) or 0
     processes = len(segments)
-    return usage, cost, processes, dur_ms, api_ms, tools, reads, sorted(stamps), init
+    return usage, cost, processes, dur_ms, api_ms, tools, reads, sorted(stamps), init, retries
 
 
 def git_log(rdir):
@@ -155,7 +164,7 @@ def main():
         print(f'UNREADABLE: {stream} missing', file=sys.stderr)
         return 2
     sid = (meta.get('sid') or '')[:8]
-    usage, cost, processes, dur_ms, api_ms, tools, reads, stamps, init = scan_stream(stream, sid)
+    usage, cost, processes, dur_ms, api_ms, tools, reads, stamps, init, retries = scan_stream(stream, sid)
     start = stamps[0] if stamps else None
     wall = (stamps[-1] - stamps[0]).total_seconds() if len(stamps) > 1 else None
     silence = sum(g for g in ((b - a).total_seconds() for a, b in zip(stamps, stamps[1:])) if g > SILENCE_S) if stamps else None
@@ -199,6 +208,9 @@ def main():
             'processes': processes,
             'resume_or_outage_keys': sorted(k for k in meta if k.startswith(('resume_', 'outage_'))),
             'purity': meta.get('purity'),
+            'api_retries': retries[0],
+            'api_retry_delay_s': round(retries[1], 1),
+            'api_retry_errors': sorted(retries[2]),
         },
     }
     out['clean']['is_clean'] = processes == 1 and not out['clean']['resume_or_outage_keys'] \

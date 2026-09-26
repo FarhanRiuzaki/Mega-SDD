@@ -1,0 +1,57 @@
+{
+ "completion": 0.9166666666666666,
+ "ac_pass": 11,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "FAIL"
+ },
+ "critical": 0,
+ "important": 2,
+ "minor": 4,
+ "rubric": 77,
+ "findings": [
+  {
+   "severity": "Important",
+   "where": "package.json:5-10",
+   "what": "No \"test\" script; `npm test` fails with 'Missing script: test'. Tests (33, pass via manual `node --test tests/*.test.ts`) also require a prior `npm run build`."
+  },
+  {
+   "severity": "Important",
+   "where": "src/app/page.tsx:14-19, src/app/layout.tsx:26",
+   "what": "No navigation link to /tentang-kami anywhere; the About page is unreachable by clicking from Beranda/Kontak."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact/validate.ts:18-35",
+   "what": "Required checks only reject the empty string; whitespace-only name/email/message pass and get stored."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact/validate.ts:29-33",
+   "what": "Email length not capped at 255 despite varchar(255) in data model; SQLite does not enforce it."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/layout.tsx:15-18,23",
+   "what": "Scaffold metadata 'Create Next App' and lang=\"en\" left on an Indonesian site; README is create-next-app boilerplate."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact/store.ts:30-36",
+   "what": "Relies on node:sqlite via getBuiltinModule (recent Node only) without an engines constraint."
+  }
+ ],
+ "blind_label": "ZP",
+ "scorer_sid": "7ca37b73-32dc-4570-be99-7738dc232d35"
+}

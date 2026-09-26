@@ -6,3 +6,5 @@ clinic vanilla 1 PRD/prd-clinic.md
 clinic vanilla 2 PRD/prd-clinic.md
 clinic lite 3 PRD/prd-clinic.md
 clinic vanilla 3 PRD/prd-clinic.md
+# replacement attempt: lite-1 hit a system sleep (outage_sleep) -> not clean; runbook §4 allows up to 5 attempts per arm
+clinic lite 4 PRD/prd-clinic.md

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
-## [Unreleased] — pembanding vanilla Claude Code + complexity budget (belum dirilis, belum ada run)
+## [Unreleased] — pembanding vanilla Claude Code + complexity budget + hasil terukur pertama vs vanilla (belum dirilis)
 
 Sumber: audit 2026-09-26. Semua benchmark di repo ini membandingkan mega-sdd dengan mega-sdd versi lain; arm Claude Code tanpa plugin belum pernah ada. Rilis ini cuma nambah alat ukur dan aturan. Perilaku pipeline, gate, lens, dan default lane nggak diubah.
 
@@ -28,6 +28,24 @@ Sumber: audit 2026-09-26. Semua benchmark di repo ini membandingkan mega-sdd den
   - Yang dikunci: listing description yang selalu dimuat (13.639 char), trace T01 lite/default (470.979 / 482.657 B), total byte SKILL.md (370.419 B), baris script/hook yang ter-track (45.024 / 3.327).
   - Menaikkan ceiling wajib pakai entri `raises` beserta buktinya: perbandingan vanilla untuk fitur/performa, regression test untuk fix bug.
 - `plugins/mega-sdd/CLAUDE.md` §Release evidence & complexity budget. `tests/benchmarks/test-vanilla-arm-harness.sh` (fixture, tanpa proses claude).
+
+### Notes — vanilla vs mega-sdd, MEASURED (2026-09-26/27, n=3 run bersih per arm, opus, plugin 8.8.1)
+Laporan: `research/2026-09-27-vanilla-vs-megasdd-results.md`. Data per run: `benchmarks/results/vanilla-ab/`.
+
+| | vanilla | lite | classic |
+|---|---|---|---|
+| **xs** review-ready (median) | 3,2 m | 20,2 m | 38,5 m |
+| xs biaya | $1,03 | $11,29 | $22,47 |
+| xs AC / rubric | 12/12 / 95 | 11/12 / 84 | 11/12 / 82 |
+| **klinik** review-ready | 30,0 m | 70,5 m | belum diukur |
+| klinik biaya | $7,68 | $67,33 | belum diukur |
+| klinik AC / rubric | 10/10 / 90 | 9–10/10 / 85 | belum diukur |
+
+- Speed / token / biaya / lightness: **WORSE** vs vanilla di setiap arm dan skenario (rentang run tidak overlap). Critical 0 di semua run. Kualitas klinik tidak terbukti berbeda; kualitas xs lebih rendah.
+- Tidak ada klaim "mega-sdd lebih cepat / hemat / ringan / kuat dari Claude Code" yang boleh ditulis (`plugins/mega-sdd/CLAUDE.md` §Release evidence).
+- Default lane **tidak diubah**. Aturan yang dikunci butuh lite vs classic di kedua skenario, dan klinik classic belum diukur. Di xs, lite mengalahkan classic dengan rentang tidak overlap.
+- Harness: `sleep-check.py` (sistem sleep mengeluarkan satu run klinik), `blind-score.sh` (strip trailer di semua file teks), `arm-metrics.py` (hitungan API retry; record `result` kosong di tengah proses tidak lagi dihitung sebagai proses baru — sebelumnya menggandakan $73,27 jadi $146,54).
+- Fix test: `tests/weighted-routing/test-spawn-ceilings.sh` mengutip path script di dalam `sh -c`. Di path repo yang mengandung spasi, C10–C16 + C8b sebelumnya tidak pernah menjalankan script-nya (C15/C16 lolos palsu).
 
 ### Notes — yang terukur dari data yang sudah ada (MEASURED, `arm-metrics.py`, n=1 per baris, mega-sdd saja)
 - Run klinik lite 8.3.0 (`benchmarks/results/p3/clinic-lite-8.3.0-levers`, 2026-09-17): wall 102 m, $106,18, 102,7 M token. Run ini belum pernah masuk CHANGELOG, dan kualitas/gate-nya belum diekstrak.

@@ -1,0 +1,93 @@
+{
+ "arm": "lite-4",
+ "arm_kind": "megasdd",
+ "model": "opus",
+ "speed": {
+  "wall_min": 65.41,
+  "process_duration_min": 65.45,
+  "api_time_min": 184.85,
+  "stream_silence_over_5m_min": 0.0,
+  "first_commit_min": 18.11,
+  "review_ready_min": 64.98
+ },
+ "tokens": {
+  "per_model": {
+   "claude-opus-5-5": {
+    "inputTokens": 1722,
+    "outputTokens": 757249,
+    "cacheReadInputTokens": 124603066,
+    "cacheCreationInputTokens": 2748208
+   },
+   "claude-sonnet-5": {
+    "inputTokens": 1312,
+    "outputTokens": 341372,
+    "cacheReadInputTokens": 16647810,
+    "cacheCreationInputTokens": 1766325
+   }
+  },
+  "input": 3034,
+  "output": 1098621,
+  "cache_read": 141250876,
+  "cache_creation": 4514533,
+  "total": 146867064,
+  "cost_usd": 67.33
+ },
+ "light": {
+  "tool_calls": 2043,
+  "tool_calls_by_name": {
+   "Bash": 959,
+   "Read": 697,
+   "Write": 136,
+   "Agent": 134,
+   "Grep": 76,
+   "Edit": 31,
+   "Skill": 7,
+   "ToolSearch": 1,
+   "Monitor": 1,
+   "Glob": 1
+  },
+  "subagent_dispatches": 134,
+  "skill_calls": 7,
+  "ask_attempts": 0,
+  "distinct_files_read": 377,
+  "init_plugins": 4,
+  "init_skills": 62,
+  "commits": 54,
+  "diff_shape": {
+   "code": {
+    "files": 64,
+    "added": 7770,
+    "deleted": 22
+   },
+   "test": {
+    "files": 25,
+    "added": 4677,
+    "deleted": 0
+   },
+   "docs_md": {
+    "files": 0,
+    "added": 0,
+    "deleted": 0
+   },
+   "process": {
+    "files": 548,
+    "added": 123683,
+    "deleted": 0
+   },
+   "other": {
+    "files": 7,
+    "added": 12983,
+    "deleted": 4504
+   }
+  }
+ },
+ "clean": {
+  "processes": 1,
+  "resume_or_outage_keys": [],
+  "purity": "PASS mega-sdd 8.8.1 loaded from mega-sdd@inline",
+  "api_retries": 0,
+  "api_retry_delay_s": 0.0,
+  "api_retry_errors": [],
+  "is_clean": true
+ }
+}

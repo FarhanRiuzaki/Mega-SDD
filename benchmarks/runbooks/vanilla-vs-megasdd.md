@@ -1,6 +1,6 @@
 # Runbook — vanilla Claude Code vs mega-sdd (xs + klinik, n ≥ 3 per arm)
 
-**Status:** RUNBOOK SIAP — hasil **BELUM ADA**. Tidak ada run di runbook ini yang sudah dijalankan. Semua sel hasil berisi "belum diukur" sampai file metrics + skor kualitas di-commit di `benchmarks/results/vanilla-ab/`.
+**Status:** blok xs (vanilla / lite / classic, n=3 bersih masing-masing) dan klinik (vanilla / lite, n=3 bersih masing-masing) **SUDAH DIUKUR** 2026-09-26/27 — hasil §8, analisis `research/2026-09-27-vanilla-vs-megasdd-results.md`. Klinik classic **belum diukur**.
 **Kenapa ada:** setiap benchmark di repo ini (`benchmarks/results/{baseline,comparison,optimized,p0-baseline,p2-w2,p3}`) membandingkan mega-sdd dengan **mega-sdd versi lain**. Belum pernah ada arm Claude Code tanpa plugin. Jadi klaim "mega-sdd lebih cepat/hemat/ringan/kuat" belum punya pembanding. Aturan repo sejak runbook ini: klaim itu **tidak boleh** ditulis sebelum tabel §8 terisi dan verdict-nya `BETTER` (`plugins/mega-sdd/CLAUDE.md §Release evidence`).
 
 ## 1. "Seperti Feather", dijadikan angka
@@ -126,21 +126,36 @@ python3 benchmarks/scripts/compare-arms.py benchmarks/results/vanilla-ab/manifes
 
 ## 8. Hasil
 
-### 8a. vanilla vs mega-sdd — xs
+### 8a. vanilla vs mega-sdd — xs (fixture `ff006be`, plugin 8.8.1, opus, 2026-09-26)
 
-| arm | run | status | review-ready (min) | wall (min) | tokens total | cost (USD) | asks | md lines | AC | Critical | rubric |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| vanilla | 1–3 | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur |
-| lite | 1–3 | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur |
-| classic | 1–3 | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur |
+| arm | run | status | review-ready (min) | wall (min) | tokens total | cost (USD) | asks | subagents | baris `.mega-sdd/` | baris kode+test | AC | Critical | Important | rubric |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| vanilla | 1 | bersih | 3.2 | 3.4 | 1.0 M | 1.03 | 0 | 0 | 0 | 741 | 12/12 | 0 | 0 | 96 |
+| vanilla | 2 | bersih | 5.7 | 6.0 | 1.6 M | 1.45 | 0 | 0 | 0 | 1.042 | 12/12 | 0 | 0 | 95 |
+| vanilla | 3 | bersih | 3.1 | 3.4 | 0.8 M | 0.91 | 0 | 0 | 0 | 700 | 12/12 | 0 | 0 | 95 |
+| lite | 1 | bersih | 20.2 | 20.6 | 21.3 M | 11.90 | 0 | 21 | 48.182 | 906 | 11/12 | 0 | 2 | 89 |
+| lite | 2 | bersih | 15.1 | 18.9 | 17.1 M | 9.83 | 0 | 17 | 3.797 | 656 | 11/12 | 0 | 2 | 84 |
+| lite | 3 | bersih | 23.1 | 23.4 | 20.2 M | 11.29 | 0 | 19 | 40.335 | 922 | 11/12 | 0 | 2 | 80 |
+| classic | 1 | bersih | 41.8 | 42.1 | 55.4 M | 22.52 | 0 | 30 | 39.455 | 816 | 11/12 | 0 | 2 | 77 |
+| classic | 2 | bersih | 36.7 | 37.0 | 54.0 M | 21.87 | 0 | 32 | 39.712 | 1.166 | 11/12 | 0 | 3 | 87 |
+| classic | 3 | bersih | 38.5 | 38.9 | 52.2 M | 22.47 | 0 | 36 | 40.267 | 1.183 | 11/12 | 0 | 0 | 82 |
 
-### 8b. vanilla vs mega-sdd — klinik
+Median run bersih (n=3 per arm; rentang di `benchmarks/results/vanilla-ab/REPORT.md`): review-ready vanilla 3,2 · lite 20,2 · classic 38,5 menit; cost $1,03 · $11,29 · $22,47; token 1,0 M · 20,2 M · 54,0 M; AC 12/12 · 11/12 · 11/12; rubric 95 · 84 · 82. Verdict `compare-arms.py` vs vanilla: speed / token / cost / lightness **WORSE** untuk lite dan classic (rentang tidak overlap); Critical OVERLAP (0 semua); AC rate + rubric WORSE; Important lite WORSE, classic OVERLAP.
 
-| arm | run | status | review-ready (min) | wall (min) | tokens total | cost (USD) | asks | md lines | AC | Critical | rubric |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| vanilla | 1–3 | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur |
-| lite | 1–3 | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur |
-| classic | 1–3 | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur |
+### 8b. vanilla vs mega-sdd — klinik (fixture `2f1c78c`, plugin 8.8.1, opus, 2026-09-26/27)
+
+| arm | run | status | review-ready (min) | wall (min) | tokens total | cost (USD) | asks | subagents | baris `.mega-sdd/` | baris kode+test | AC | Critical | Important | rubric |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| vanilla | 1 | bersih | 30.0 | 30.4 | 13.1 M | 7.68 | 0 | 0 | 0 | 6.561 | 10/10 | 0 | 2 | 89 |
+| vanilla | 2 | bersih | 35.8 | 36.0 | 13.7 M | 7.81 | 0 | 0 | 0 | 5.886 | 10/10 | 0 | 1 | 90 |
+| vanilla | 3 | bersih | 25.5 | 25.9 | 9.2 M | 6.29 | 0 | 0 | 0 | 5.045 | 10/10 | 0 | 2 | 90 |
+| lite | 1 | **TIDAK bersih** — sistem sleep (23 event, mulai sebelum commit terakhir); tidak masuk median | 55.9 | 255.2 | 57.2 M | 31.78 | 0 | 82 | 125.407 | 5.963 | tidak dinilai | — | — | — |
+| lite | 2 | bersih (23 API retry, ±90 s) | 93.9 | 94.2 | 190.5 M | 73.27 | 0 | 115 | 126.463 | 10.597 | 9/10 | 0 | 3 | 85 |
+| lite | 3 | bersih | 70.5 | 70.9 | 90.4 M | 53.29 | 0 | 126 | 123.824 | 9.147 | 10/10 | 0 | 2 | 85 |
+| lite | 4 | bersih (pengganti lite-1) | 65.0 | 65.4 | 146.9 M | 67.33 | 0 | 134 | 123.683 | 12.447 | 9/10 | 0 | 2 | 87 |
+| classic | — | belum diukur (ditunda: ±$260/run historis) | belum diukur | belum diukur | belum diukur | belum diukur | — | — | — | — | — | — | — | — |
+
+Median run bersih (n=3 per arm): review-ready vanilla 30,0 · lite 70,5 menit; cost $7,68 · $67,33; token 13,1 M · 146,9 M; AC 10/10 · 9/10 (rentang 9–10); Important 2 · 2; rubric 90 · 85. Verdict vs vanilla: speed / token / cost / lightness **WORSE**; AC rate, Critical, Important **OVERLAP**; rubric WORSE.
 
 ### 8c. Konteks historis — mega-sdd saja, TIDAK sebanding dengan vanilla
 
@@ -164,8 +179,10 @@ Run yang dicatat TERCEMAR di log pengukurannya (mis. `xs-lite-8.3.0-levers-run1`
 | Tanggal | Keputusan | Oleh |
 |---|---|---|
 | 2026-09-26 | Runbook + harness dibuat. Run TIDAK dijalankan (owner: tanpa biaya di sesi ini) | owner |
+| 2026-09-26 | Owner: "gas semua, gue terima beres" → blok xs (vanilla + lite) dijalankan, lalu xs classic + klinik (vanilla + lite). Klinik classic ditunda (biaya) | owner |
+| 2026-09-26 | Klinik lite-1 kena sistem sleep (lid ditutup, baterai) → TIDAK bersih; pengganti `lite 4` ditambahkan di akhir `plan-clinic.txt` (§4: maks 5 percobaan) | Claude |
 | 2026-09-26 | **Dikunci:** target §1 persis seperti tertulis (usulan diterima apa adanya), seed urutan xs `20260926` → `vanilla, lite, vanilla, lite, lite, vanilla` (`results/vanilla-ab/plan-xs.txt`), budget blok xs (6 run). Klinik dan arm classic ditunda sampai hasil xs keluar (§runbook "next") | Claude atas delegasi owner ("gas semua, gue terima beres") |
 | 2026-09-26 | **Deviasi fixture:** `training-nextjs @ c6821ad` tidak tersedia di mesin ini (SCM internal tidak ter-resolve). Blok ini memakai fixture baru yang di-pin: `create-next-app@16.3.6` (`--ts --app --eslint --tailwind --src-dir`, npm) + PRD xs, commit `ff006be`, `npm install` di luar jam ukur. Semua arm di blok ini memakai fixture yang SAMA. Angka blok ini tidak sebanding dengan run historis §8c (starter berbeda: tanpa MUI / next-auth) | Claude |
-| 2026-09-26 | **Plugin di arm mega-sdd:** tree repo ini (`P0_PLUGIN_DIR=plugins/mega-sdd`, 8.8.1 @ branch `bench/vanilla-arm`) dimuat sebagai `mega-sdd@inline`, salinan marketplace 8.7.2 dimatikan per sesi. Roster lain identik di kedua arm (probe: superpowers 6.4.1, agents-md, telemetry) | Claude |
+| 2026-09-26 | **Plugin di arm mega-sdd:** salinan `git archive` dari `plugins/mega-sdd` di branch `bench/vanilla-arm` (8.8.1) di path TANPA spasi (`P0_PLUGIN_DIR=/private/tmp/claude-501/mega-sdd-bench/plugin-8.8.1`) dimuat sebagai `mega-sdd@inline`, salinan marketplace 8.7.2 dimatikan per sesi. Roster lain identik di kedua arm (probe: superpowers 6.4.1, agents-md, telemetry) | Claude |
 
 **Estimasi biaya (EST, dari run historis §8c):** xs ≈ $25–80 per arm-run (vanilla belum diketahui), klinik ≈ $105–260. 2 arm mega-sdd (lite + classic) × 3 run: xs 6 × $25–80 ≈ $150–480, klinik 6 × $105–260 ≈ $630–1.560. Total ≈ $780–2.040, ditambah arm vanilla (belum diketahui) dan scorer. Keputusan budget ada di owner.

@@ -1,0 +1,4 @@
+b87b14a 2026-09-26T21:09:29+07:00 feat: implement clinic appointment system (PRD/prd-clinic.md)
+2f1c78c 2026-09-26T12:48:09+07:00 fixture: clinic PRD
+ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
+da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

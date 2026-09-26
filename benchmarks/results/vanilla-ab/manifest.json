@@ -3,6 +3,9 @@
  "targets": {
   "xs": {
    "review_ready_min": 60
+  },
+  "clinic": {
+   "review_ready_min": 120
   }
  },
  "runs": [
@@ -47,6 +50,76 @@
    "run": "vanilla-3",
    "metrics": "xs/vanilla-3/metrics.json",
    "quality": "xs/vanilla-3/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "classic",
+   "run": "classic-1",
+   "metrics": "xs/classic-1/metrics.json",
+   "quality": "xs/classic-1/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "classic",
+   "run": "classic-2",
+   "metrics": "xs/classic-2/metrics.json",
+   "quality": "xs/classic-2/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "classic",
+   "run": "classic-3",
+   "metrics": "xs/classic-3/metrics.json",
+   "quality": "xs/classic-3/quality.score.json"
+  },
+  {
+   "scenario": "clinic",
+   "arm": "lite",
+   "run": "lite-1",
+   "metrics": "clinic/lite-1/metrics.json",
+   "quality": "clinic/lite-1/quality.score.json"
+  },
+  {
+   "scenario": "clinic",
+   "arm": "lite",
+   "run": "lite-2",
+   "metrics": "clinic/lite-2/metrics.json",
+   "quality": "clinic/lite-2/quality.score.json"
+  },
+  {
+   "scenario": "clinic",
+   "arm": "vanilla",
+   "run": "vanilla-1",
+   "metrics": "clinic/vanilla-1/metrics.json",
+   "quality": "clinic/vanilla-1/quality.score.json"
+  },
+  {
+   "scenario": "clinic",
+   "arm": "vanilla",
+   "run": "vanilla-2",
+   "metrics": "clinic/vanilla-2/metrics.json",
+   "quality": "clinic/vanilla-2/quality.score.json"
+  },
+  {
+   "scenario": "clinic",
+   "arm": "lite",
+   "run": "lite-3",
+   "metrics": "clinic/lite-3/metrics.json",
+   "quality": "clinic/lite-3/quality.score.json"
+  },
+  {
+   "scenario": "clinic",
+   "arm": "vanilla",
+   "run": "vanilla-3",
+   "metrics": "clinic/vanilla-3/metrics.json",
+   "quality": "clinic/vanilla-3/quality.score.json"
+  },
+  {
+   "scenario": "clinic",
+   "arm": "lite",
+   "run": "lite-4",
+   "metrics": "clinic/lite-4/metrics.json",
+   "quality": "clinic/lite-4/quality.score.json"
   }
  ]
 }
