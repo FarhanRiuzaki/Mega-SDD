@@ -1,0 +1,13 @@
+{
+ "_doc": "Complexity budget — a RATCHET, not a target (plugins/mega-sdd/CLAUDE.md §Release evidence & complexity budget). tests/benchmarks/test-complexity-budget.sh fails when a measured value exceeds its ceiling. Shrinking is always allowed; lower the ceiling in the same change to lock the gain. Raising a ceiling requires a `raises` entry {change, metric, measured_benefit}: a feature / new stage / new lens / new gate / performance claim cites benchmarks/runbooks/vanilla-vs-megasdd.md results (n >= 3 per arm, vs vanilla); a defect fix cites the regression test that fails without it. No evidence, no raise. Units: bytes / chars / lines exactly as the test measures them.",
+ "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only)",
+ "ceilings": {
+  "always_loaded_description_chars": 13639,
+  "t01_lite_commanded_bytes": 470979,
+  "t01_default_commanded_bytes": 482657,
+  "skill_md_total_bytes": 370419,
+  "scripts_total_lines": 45024,
+  "hooks_total_lines": 3327
+ },
+ "raises": []
+}

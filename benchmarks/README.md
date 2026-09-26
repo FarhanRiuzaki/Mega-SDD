@@ -31,6 +31,8 @@ python3 benchmarks/scripts/compare-results.py
 - `results/p0-baseline/` — v8 P0 per-phase baseline arms (`<arm>.json` from `research/2026-08-04-p5-extract.py --json`; **empty until the owner's interactive runs** — runbook `research/2026-09-10-p0-baseline/README.md`).
 - `surveys/dx-survey.md` — the human DX instrument (**PENDING HUMAN VALIDATION** — no fabricated responses).
 - `runbooks/velocity-live-ab.md` — the interactive A/B experiment velocity numbers require (**NOT MEASURED** here; headless arms are non-representative per recorded evidence).
+- `runbooks/vanilla-vs-megasdd.md` — **the vanilla Claude Code control arm**: every comparative claim ("faster / cheaper / lighter / stronger than Claude Code") needs it. xs + clinic, n ≥ 3 per arm, blind quality scoring, decision rules locked before any run (**NOT RUN** — results read "belum diukur"). Tooling: `scripts/p0-headless-run.sh` (`P0_ARM=vanilla`), `scripts/arm-purity.py` (the vanilla arm is killed if any mega-sdd surface loads), `scripts/arm-metrics.py` (arm-agnostic speed / token / lightness metrics from `stream.jsonl`), `scripts/compare-arms.py` (per-run table + median/range + BETTER/WORSE/OVERLAP/INSUFFICIENT; no p-values).
+- `config/complexity-budget.json` — the footprint ratchet enforced by `tests/benchmarks/test-complexity-budget.sh`.
 
 ## Method in one paragraph
 

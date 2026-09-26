@@ -74,6 +74,14 @@ These are the rules v4 was built to. They are **derived from Anthropic's publish
 
 > Sources: Anthropic *Skill authoring best practices* (platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) · Claude Code *Plugins reference* + *Create custom subagents* (code.claude.com) · superpowers "rules vs gates vs hooks" (blog.fsck.com). Full analysis: `research/2026-06-04-architecture-modernization-audit.md`.
 
+## Release evidence & complexity budget
+
+Mega-SDD is judged against **vanilla Claude Code on the same task**, not only against its own previous version. Anthropic's guidance: add complexity only when it demonstrably improves outcomes.
+
+- **No comparative claim without the comparison.** "Faster / cheaper / lighter / stronger than Claude Code" may be written (README, CHANGELOG, specs, chat) only for a metric whose `compare-arms.py` verdict is `BETTER` vs the vanilla arm, n ≥ 3 clean runs per arm, with Critical findings not `WORSE`. Protocol, arms, blind quality scoring and pre-registered decision rules: `benchmarks/runbooks/vanilla-vs-megasdd.md`.
+- **Ship and default decisions use n ≥ 3 per arm and report the spread** (every run, then median + range), relative to vanilla **and** the absolute target side by side — an absolute budget never hides a regression against the baseline, and a relative win never hides a missed budget. n = 1 figures are labelled n = 1 and decide nothing.
+- **Complexity budget = a ratchet** (`benchmarks/config/complexity-budget.json`, enforced by `tests/benchmarks/test-complexity-budget.sh`): the always-loaded description listing, the T01 commanded-context traces, SKILL.md bytes (bytes, not only lines), and the executed plane (scripts + hooks lines) may not grow past their ceilings. A raise needs a `raises` entry with its evidence — a feature, new stage, lens, gate or performance claim cites the vanilla comparison; a defect fix cites its regression test. Shrinking is always welcome; lower the ceiling in the same change.
+
 ## What we will not accept
 
 - **Extra runtime dependencies.** Mega-SDD runs standalone; superpowers is an optional enhancement, not a requirement (the vendored tree was removed in v7.4.0 — never re-vendor it).

@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [Unreleased] — pembanding vanilla Claude Code + complexity budget (belum dirilis, belum ada run)
+
+Sumber: audit 2026-09-26. Semua benchmark di repo ini membandingkan mega-sdd dengan mega-sdd versi lain; arm Claude Code tanpa plugin belum pernah ada. Rilis ini cuma nambah alat ukur dan aturan. Perilaku pipeline, gate, lens, dan default lane nggak diubah.
+
+### Added
+- **Arm vanilla di launcher headless:** `P0_ARM=vanilla benchmarks/scripts/p0-headless-run.sh …`. Launcher, model, allowlist, permission mode, dan aturan headless-nya sama. Plugin mega-sdd dimatikan per sesi, dan prompt-nya task produk polos. `arm-purity.py` membaca record `system/init`: arm vanilla yang masih memuat permukaan mega-sdd di-kill dan dicatat `purity=FAIL`. Roster plugin kedua arm dicatat di `plugins=`.
+- **`benchmarks/scripts/arm-metrics.py`:** metrik yang agnostik terhadap arm (speed / token / lightness / clean) dari `stream.jsonl`, `git-log.txt`, dan diff shape.
+  - Counter `total_cost_usd` / `modelUsage` / `duration_api_ms` itu kumulatif per proses. Yang dihitung record terakhir tiap proses, lalu dijumlahkan antar `--resume`.
+  - Sudah dicek ke angka yang dipublikasikan: klinik classic P0 $259,66, xs classic $77,47, klinik lite 7.38.0 $213,75.
+  - Menjumlahkan semua record `result` begitu saja akan menghasilkan $7.530 untuk klinik P0.
+- **`benchmarks/scripts/compare-arms.py`:** tabel per run, median + rentang dari run bersih, dan rasio terhadap vanilla. Target absolut ditaruh di samping verdict relatif. Verdict `BETTER`/`WORSE` hanya keluar kalau rentang kedua arm tidak overlap; selain itu `OVERLAP`, atau `INSUFFICIENT` kalau run bersih kurang dari 3. Tidak ada p-value.
+- **`benchmarks/runbooks/vanilla-vs-megasdd.md`:**
+  - "seperti Feather" dijadikan target relatif ke vanilla (usulan; owner mengunci sebelum run pertama).
+  - Arm dan kondisi yang disamakan, urutan acak ber-seed, aturan berhenti.
+  - Checklist AC tersembunyi (xs X1–X12, klinik C1–C8), review buta dengan scorer tanpa plugin mega-sdd.
+  - Aturan keputusan dikunci sebelum ada angka. Hipotesis overhead H1–H3 didaftarkan, belum diterapkan.
+  - Semua hasil: "belum diukur".
+- **Complexity budget sebagai ratchet:** `benchmarks/config/complexity-budget.json` + `tests/benchmarks/test-complexity-budget.sh`.
+  - Yang dikunci: listing description yang selalu dimuat (13.639 char), trace T01 lite/default (470.979 / 482.657 B), total byte SKILL.md (370.419 B), baris script/hook yang ter-track (45.024 / 3.327).
+  - Menaikkan ceiling wajib pakai entri `raises` beserta buktinya: perbandingan vanilla untuk fitur/performa, regression test untuk fix bug.
+- `plugins/mega-sdd/CLAUDE.md` §Release evidence & complexity budget. `tests/benchmarks/test-vanilla-arm-harness.sh` (fixture, tanpa proses claude).
+
+### Notes — yang terukur dari data yang sudah ada (MEASURED, `arm-metrics.py`, n=1 per baris, mega-sdd saja)
+- Run klinik lite 8.3.0 (`benchmarks/results/p3/clinic-lite-8.3.0-levers`, 2026-09-17): wall 102 m, $106,18, 102,7 M token. Run ini belum pernah masuk CHANGELOG, dan kualitas/gate-nya belum diekstrak.
+- Dua run xs lite 8.3.0 yang bersih (fixture dan versi sama): wall 35 m dan 97 m (yang kedua memuat stall API ±56 m). Variansi lingkungan sebesar ini melebihi selisih yang dipakai buat memutuskan ship 8.0.0.
+
 ## [8.8.1] - 2026-09-26 — state anchor: audit cakupan test §13 + fix bootstrap view di repo reftable
 
 Sumber: audit cakupan test §13 di spec state anchor (`docs/superpowers/specs/2026-09-25-state-anchor-design.md`). Tiap bullet §13 dicocokkan ke assertion yang beneran ada. Yang belum ada ditulis, dan salah satunya nemu bug. Gate nggak ada yang dilonggarkan.
