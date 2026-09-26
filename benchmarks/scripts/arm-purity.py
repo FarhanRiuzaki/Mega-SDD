@@ -11,7 +11,7 @@ slash commands, agents) and prints run.meta lines:
   megasdd_surfaces=<n>                plugins + skills + slash commands + agents naming mega-sdd
 
 vanilla  PASS iff megasdd_surfaces == 0
-megasdd  PASS iff a mega-sdd plugin is loaded
+megasdd  PASS iff exactly ONE mega-sdd plugin is loaded (two copies = installed + --plugin-dir)
 Exit 0 on PASS, 1 on FAIL, 2 when no init record exists (UNREADABLE — never PASS by absence).
 """
 import json, sys
@@ -46,13 +46,16 @@ def main():
     names += [str(x) for x in rec.get("slash_commands") or []]
     names += [str(x) for x in rec.get("agents") or []]
     hits = sorted({n for n in names if "mega-sdd" in n})
-    has_plugin = any("mega-sdd" == p.get("name") for p in plugins)
+    mega = [p for p in plugins if p.get("name") == "mega-sdd"]
+    has_plugin = len(mega) == 1
     if sys.argv[2] == "vanilla":
         ok = not hits
         reason = "no mega-sdd surface loaded" if ok else "mega-sdd loaded: " + ",".join(hits[:6])
     else:
         ok = has_plugin
-        reason = "mega-sdd plugin loaded" if ok else "mega-sdd plugin NOT loaded"
+        reason = (f"mega-sdd {mega[0].get('version')} loaded from {mega[0].get('source')}" if ok else
+                  "mega-sdd plugin NOT loaded" if not mega else
+                  f"{len(mega)} mega-sdd copies loaded (installed + --plugin-dir?)")
     print(f"purity={'PASS' if ok else 'FAIL'} {reason}")
     print(f"plugins={roster}")
     print(f"megasdd_surfaces={len(hits)}")

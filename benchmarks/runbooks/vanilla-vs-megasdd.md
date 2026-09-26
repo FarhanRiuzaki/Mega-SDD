@@ -164,6 +164,8 @@ Run yang dicatat TERCEMAR di log pengukurannya (mis. `xs-lite-8.3.0-levers-run1`
 | Tanggal | Keputusan | Oleh |
 |---|---|---|
 | 2026-09-26 | Runbook + harness dibuat. Run TIDAK dijalankan (owner: tanpa biaya di sesi ini) | owner |
-| — | Dikunci: target §1, seed urutan §4, budget | belum |
+| 2026-09-26 | **Dikunci:** target §1 persis seperti tertulis (usulan diterima apa adanya), seed urutan xs `20260926` → `vanilla, lite, vanilla, lite, lite, vanilla` (`results/vanilla-ab/plan-xs.txt`), budget blok xs (6 run). Klinik dan arm classic ditunda sampai hasil xs keluar (§runbook "next") | Claude atas delegasi owner ("gas semua, gue terima beres") |
+| 2026-09-26 | **Deviasi fixture:** `training-nextjs @ c6821ad` tidak tersedia di mesin ini (SCM internal tidak ter-resolve). Blok ini memakai fixture baru yang di-pin: `create-next-app@16.3.6` (`--ts --app --eslint --tailwind --src-dir`, npm) + PRD xs, commit `ff006be`, `npm install` di luar jam ukur. Semua arm di blok ini memakai fixture yang SAMA. Angka blok ini tidak sebanding dengan run historis §8c (starter berbeda: tanpa MUI / next-auth) | Claude |
+| 2026-09-26 | **Plugin di arm mega-sdd:** tree repo ini (`P0_PLUGIN_DIR=plugins/mega-sdd`, 8.8.1 @ branch `bench/vanilla-arm`) dimuat sebagai `mega-sdd@inline`, salinan marketplace 8.7.2 dimatikan per sesi. Roster lain identik di kedua arm (probe: superpowers 6.4.1, agents-md, telemetry) | Claude |
 
 **Estimasi biaya (EST, dari run historis §8c):** xs ≈ $25–80 per arm-run (vanilla belum diketahui), klinik ≈ $105–260. 2 arm mega-sdd (lite + classic) × 3 run: xs 6 × $25–80 ≈ $150–480, klinik 6 × $105–260 ≈ $630–1.560. Total ≈ $780–2.040, ditambah arm vanilla (belum diketahui) dan scorer. Keputusan budget ada di owner.

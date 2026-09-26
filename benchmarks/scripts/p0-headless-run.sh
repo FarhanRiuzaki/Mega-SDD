@@ -29,7 +29,7 @@
 #   mega-sdd surface is KILLED and marked purity=FAIL (not data). Both arms record the full
 #   plugin roster (plugins=) — other plugins are a confound to hold equal across arms, not hide.
 #
-# usage: [P0_ARM=megasdd|vanilla] [P0_FLAGS="--lite"] p0-headless-run.sh <arm-dir> <prd-rel-path> <log-dir> [model]
+# usage: [P0_ARM=megasdd|vanilla] [P0_FLAGS="--lite"] [P0_PLUGIN_DIR=<plugin tree>] p0-headless-run.sh <arm-dir> <prd-rel-path> <log-dir> [model]
 #   prints the session id + transcript path; runs detached (nohup); exit 0 = launched.
 #   P0_FLAGS (v8 P2, 2026-09-11): front-door flags spliced into the prompt verbatim
 #   ("jalankan mega-sdd --lite dari …") so the classic and lite arms differ ONLY by
@@ -52,10 +52,17 @@ PROMPT="jalankan mega-sdd${FLAGS:+ $FLAGS} dari $PRD sampai semua unit selesai (
 # with no method prescribed — Claude Code decides how to plan, test and review.
 VPROMPT="implementasikan $PRD sepenuhnya di repo ini: setiap requirement dan setiap Definition of Done / acceptance criterion di PRD terpenuhi, dengan test untuk tiap kriteria, seluruh test suite hijau, dan pekerjaan di-commit ke git dengan pesan yang jelas."
 VSYS="Benchmark run on a disposable fixture (vanilla control arm, benchmarks/runbooks/vanilla-vs-megasdd.md). The human owner is not present and AskUserQuestion is unavailable in this session. Whenever you would ask the user something, choose the MOST CONSERVATIVE option yourself (the one easiest to revert: defer, do not invent UI, do not widen scope), write one line '[ASSUMED-BY-RUNNER: <question> -> <choice>: <reason>]' in your reply, and CONTINUE. Never stop to wait for a human. Never weaken, skip or delete a test to make it pass — a failing test is fixed by fixing the code. NEVER end your turn while any background agent or task is still running — this is a headless session: an ended turn exits the process 10 minutes later. Only end the turn when the work is complete and committed."
-EXTRA=()   # the mega-sdd arm launches exactly as before; only the vanilla arm adds --settings
+# The mega-sdd arm launches exactly as before, unless P0_PLUGIN_DIR pins a plugin TREE (the
+# installed marketplace copy is then disabled and the tree is loaded as mega-sdd@inline — a
+# release candidate measured without touching the user's global plugin cache).
+DISABLE='{"enabledPlugins":{"mega-sdd@mega-sdd":false,"mega-sdd-extras@mega-sdd":false}}'
+EXTRA=()
 if [ "$KIND" = vanilla ]; then
   PROMPT="$VPROMPT"
-  EXTRA=(--settings '{"enabledPlugins":{"mega-sdd@mega-sdd":false,"mega-sdd-extras@mega-sdd":false}}')
+  EXTRA=(--settings "$DISABLE")
+elif [ -n "${P0_PLUGIN_DIR:-}" ]; then
+  [ -f "$P0_PLUGIN_DIR/.claude-plugin/plugin.json" ] || { echo "P0_PLUGIN_DIR is not a plugin tree: $P0_PLUGIN_DIR" >&2; exit 2; }
+  EXTRA=(--settings "$DISABLE" --plugin-dir "$P0_PLUGIN_DIR")
 fi
 SYS="Benchmark run on a disposable fixture (v8 P0 measurement, research/2026-09-10-v8-autonomous-runbook.md §1). The human owner is not present and AskUserQuestion is unavailable in this session. Whenever the mega-sdd chain would ask the user something (front-door confirmation, batched OQ, scope, toolchain, halts that wait for a human), choose the MOST CONSERVATIVE option yourself (the one easiest to revert: defer, keep vault, do not invent UI, do not widen scope), write one line '[ASSUMED-BY-RUNNER: <question> -> <choice>: <reason>]' in your reply, and CONTINUE the chain. Never stop to wait for a human. Do not skip or loosen any gate, validator, acceptance test or review — a failing gate is fixed by fixing the code, never by editing evidence files. NEVER end your turn while any background implementer, panel lens or task is still running — this is a headless session: an ended turn exits the process 10 minutes later and the chain dies (v8 P2 lite 7.37.0 arm, 2026-09-14). Wait for background results with a blocking poll and only end the turn after /mega-sdd:analyze has run."
 [ "$KIND" = vanilla ] && SYS="$VSYS"
@@ -63,7 +70,7 @@ ALLOWED="Bash,Read,Write,Edit,MultiEdit,Glob,Grep,Skill,Agent,ToolSearch,TodoWri
 {
   echo "sid=$SID"; echo "arm=$ARM"; echo "prd=$PRD"; echo "model=$MODEL"; echo "flags=$FLAGS"; echo "arm_kind=$KIND"; echo "transcript=$TRANSCRIPT"
   echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"; echo "head_before=$(cd "$ARM" && git rev-parse --short HEAD)"
-  echo "plugin=$(claude plugin list 2>/dev/null | grep -A1 'mega-sdd@' | grep -o 'Version: .*' | head -1)"
+  echo "plugin=$(claude plugin list 2>/dev/null | grep -A1 'mega-sdd@' | grep -o 'Version: .*' | head -1)"; echo "plugin_dir=${P0_PLUGIN_DIR:-}"
 } > "$LOG/run.meta"
 BENCH="$(cd "$(dirname "$0")" && pwd -P)"   # before the cd below: $0 may be relative
 cd "$ARM" || exit 2
