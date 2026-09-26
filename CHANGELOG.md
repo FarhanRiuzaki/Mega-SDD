@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [8.8.1] - 2026-09-26 — state anchor: audit cakupan test §13 + fix bootstrap view di repo reftable
+
+Sumber: audit cakupan test §13 di spec state anchor (`docs/superpowers/specs/2026-09-25-state-anchor-design.md`). Tiap bullet §13 dicocokkan ke assertion yang beneran ada. Yang belum ada ditulis, dan salah satunya nemu bug. Gate nggak ada yang dilonggarkan.
+
+### Fixed
+- **Repo reftable nggak pernah dapat view state di awal sesi dari Stop** (`hooks/stop`, leg bootstrap). Reader HEAD builtin memang nggak bisa baca reftable (`.git/HEAD` = `ref: refs/heads/.invalid`). Leg bootstrap nganggap itu repo unborn, jadi cache view nggak pernah ditulis. Akibatnya mesin yang cuma kerja tier-S dapat header "per-vault freshness not computed yet" terus sampai ada GROUND.
+  - Sekarang di reftable leg ini pakai sha dari probe turn-gate di hook yang sama, yang memang udah bayar satu `rev-parse`. Jadi nggak ada proses tambahan.
+  - Repo files-backend nggak berubah. Repo unborn tetap nggak di-bootstrap.
+  - Terukur (git 2.52): bootstrap nulis cache, SessionStart HIT 2 / MISS 3, sama dengan angka DERIVED spec §10.
+
+### Added — test yang diminta §13 tapi belum ada
+- `tests/state-anchor/test-gate-binding-freshness.sh` (+8 assertion; tanpa ast-grep arm kontrol two-wave jadi baris skip):
+  - tulisan Bash ke `binding.json` (python `open(...,'w')`, `sed -i`, `cp`, `mv`, `tee`, redirect) ditolak, `cat` tetap lolos;
+  - file scope skip-worktree + gitignored yang udah ada waktu bind → dispatch setelah 3.9 ALLOW, dan perubahan berikutnya di file gitignored tetap kena `uncommitted_in_scope`;
+  - edit C2 Fase 0 (+5 baris di atas anchor) yang di-**stage** setelah 3.9 → DENY `uncommitted_in_scope`. Di 8.7.2 ini ALLOW;
+  - dirt di luar scope unit → ALLOW, dan bind di atasnya tetap dapat stamp jujur (nggak null);
+  - dua wave: commit bolt wave 1 geser simbol di scope unit wave 2. Step 0 (index dulu, per bind) → dispatch wave 2 ALLOW tanpa 3.9b. Arm kontrol tanpa step 0 → `stamp_null (index_stale)`, jadi kelihatan index-nya memang basi.
+- `tests/weighted-routing/test-spawn-ceilings.sh`:
+  - **C11b** — jalur kondisional writer (rung 3 + `absent_at` + ordering + carry-forward + authoring snapshot): **20 spawn** (git 17);
+  - **C21** — reftable: bootstrap Stop nulis cache (pin regresi fix di atas), SessionStart HIT ≤3 / MISS ≤3;
+  - **C22** — tanpa python, leg bootstrap = 0 spawn (Stop tanpa cache = Stop dengan cache = 6, python 0, cache nggak ditulis).
+
+### Koreksi catatan 8.8.0
+- **Satu flip verdict belum dinamai di "Verdict yang berubah" 8.8.0.** Dispatch `bolt-implementer` dengan prompt yang diketik tangan (tanpa pointer `dispatch-prompt.md` dari builder) di project lite: dulu ALLOW, sekarang DENY `dispatch_prompt_missing` (D20a). Fixture C8b udah dipindah ke pointer builder di 8.8.0; di sini cuma dicatat supaya nggak ada flip yang diam-diam.
+
+### Notes — buat owner (nggak diputusin sendiri)
+- **C11b = 20, di atas DERIVED spec 18** (steady 6 + kondisional 12). Kelebihan 2 itu dari authoring snapshot yang belum di-batch (§19: `git log` + satu `git show` per commit unit, bukan `cat-file --batch`), dan angkanya ikut naik seiring jumlah commit unit. Per D30 angka ini ke owner. Pin-nya = nilai terukur, bukan ceiling C11 yang dinaikin.
+- **False CONFLICT di anchor ke file yang git nggak pernah track** (gitignored / untracked).
+  - Anchor `path:baris` ke file begitu langsung CONFLICT `anchor_content_drift` di bind PERTAMA. Alasan yang dicetak ("the anchored block changed since it was bound") faktanya salah: authoring snapshot memang nggak punya file itu, jadi ladder nggak punya referensi sama sekali.
+  - Usulan: kalau file nggak ada di snapshot DAN nggak ke-track di HEAD, blok sekarang = referensi (sama kayak anchor yang ditulis terhadap working tree). Biayanya +1 exec, cuma di jalur langka ini.
+  - Kelas masalahnya lebih lebar: file yang di-commit SETELAH unit ditulis juga nggak punya referensi.
+  - Sengaja NGGAK diubah di rilis ini, karena arahnya CONFLICT→CONFIRMED (moat #2) dan spec belum ngatur kasus ini. Sekarang gagalnya aman: satu `--resolve=KEEP_CODE` dari manusia, lalu di-carry forward.
+- **Cap jalur miss SessionStart 200 path (D34 awalnya 2.000)**, diukur dan dicatat di §18. D34 nandai semua cap "owner confirm".
+- **Residual:** file D27 (`_wave-claims.json`, `_claims.json`, `dispatch-prompt.md`) cuma dijaga di jalur Write/Edit, persis sesuai D27. Guard Bash cuma nutup `binding.json` dan artefak evidence lama.
+- Cakupan §13 lain yang sengaja nggak ditulis ulang:
+  - pin proses `BASHPID` buat C1 udah ketutup pin fork statis di `tests/hooks/ups-head-move.test.sh` (nggak ada `$(`/backtick/pipeline di jalur UPS);
+  - kasus identitas yang disebut "extended `agent-dispatch-gate.test.sh`" ada di suite gate baru.
+- **Review pin (checklist rilis):** `@playwright/mcp@0.0.79`, `@upstash/context7-mcp@4.0.2`, `@playwright/test@1.62.1` (`build-uat-e2e.sh`) dan CLI CI `@anthropic-ai/claude-code@2.1.233` masih ke-resolve di registry (`npm view`, 2026-09-26). Nggak ada yang dinaikin.
+
 ## [8.8.0] - 2026-09-26 — state anchor: kode di HEAD = sumber kebenaran (tampilan di awal sesi + gate BOLTS + binding yang jujur)
 
 Sumber: feedback tim dari monorepo. Di sesi tim FE, Claude baca memory dan artefak yang udah basi, lalu salah ngejelasin kondisi repo. Program owner jalan tiga fase: audit Fase 0 (`research/2026-09-25-state-anchor-audit.md`), desain Fase 1 (`docs/superpowers/specs/2026-09-25-state-anchor-design.md`, v3 setelah tiga ronde review adversarial), lalu Fase 2 = rilis ini. Owner bilang "lanjut fase 2" tanpa jawab §0 spec, jadi semua default **[ASSUMED]** di sana yang dibangun.

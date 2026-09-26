@@ -212,6 +212,33 @@ reset_counts; run_script "bash $SCR/write-unit-binding.sh --cwd=$FIXJ --vault=$J
 [ "$(total)" -le 6 ] && [ -f "$JV/bolts/U-001/binding.json" ] \
   && ok "C11 write-unit-binding (fs-only wave, 0 model tokens): ≤6 spawns ($(total)), binding.json written" \
   || bad "C11 write-unit-binding: spawns=$(total) out=$([ -f "$JV/bolts/U-001/binding.json" ] && echo yes || echo no)"
+# C11b (spec 2026-09-25 §10 / D30): the writer's CONDITIONAL paths — a re-bind after the
+# unit's own bolt commit edited its anchored block (rung-3 attribution), created its create
+# target (absent_at) and a teammate commit landed after it (ordering), over a prior binding
+# (carry-forward), with the authoring snapshot fetched. MEASURED at 8.8.1 (macOS): 20
+# (git 17). §10 DERIVED at most 18 (steady 6 + conditional 12) — the 2 over are the
+# unbatched authoring snapshot (§19: `git log` + one `git show` per unit commit, not the
+# batched cat-file), which also grows with the unit's commit count. The number went to the
+# owner with the release (D30); this pin is the measured value, not a raised C11 ceiling.
+FIXW="$WORK/writer"; WV="$FIXW/.mega-sdd/vaults/web"; mkdir -p "$FIXW/src" "$WV/units"
+printf 'lane: lite\n' > "$FIXW/.mega-sdd/config.yaml"; printf 'a1\na2\n' > "$FIXW/src/a.ts"; printf 'c1\nc2\n' > "$FIXW/src/c.ts"
+printf -- '---\nid: U-001\ntitle: t\ntarget_files:\n  - path: src/c.ts\n    operation: modify\n  - path: src/New.ts\n    operation: create\nacceptance_test:\n  - type: test\n    command: x\n    expects: "ok"\n---\n## Anchors\n- `src/c.ts:1` — c header\n' > "$WV/units/U-001.md"
+wg() { git -C "$FIXW" -c user.email=t@t -c user.name=t -c commit.gpgsign=false "$@" >/dev/null 2>&1; }
+wg init -q -b main .; wg add -A; wg commit -qm seed
+bash "$SCR/derive-unit-claims.sh" --cwd="$FIXW" --vault="$WV" --units=U-001 >/dev/null 2>&1
+bash "$SCR/write-unit-binding.sh" --cwd="$FIXW" --vault="$WV" --unit=U-001 --claims="$WV/bolts/_wave-claims.json" >/dev/null 2>&1
+printf 'C1-own\nc2\n' > "$FIXW/src/c.ts"; echo new > "$FIXW/src/New.ts"; wg add -A
+wg commit -qm "feat(U-001): own edit" -m "Unit: U-001
+SDD-PROVENANCE: mega-sdd/execute-bolts unit=U-001
+SDD-Acceptance: v5" -m "Co-Authored-By: Claude <noreply@anthropic.com>"
+echo r > "$FIXW/README.md"; wg add -A; wg commit -qm "docs: teammate"
+bash "$SCR/derive-unit-claims.sh" --cwd="$FIXW" --vault="$WV" --units=U-001 >/dev/null 2>&1
+reset_counts
+( cd "$FIXW" && PATH="$SHIM:$PATH" /bin/sh -c "bash $SCR/write-unit-binding.sh --cwd=$FIXW --vault=$WV --unit=U-001 --claims=$WV/bolts/_wave-claims.json" ) >/dev/null 2>&1
+C11B_ST=$(python3 -c 'import json,sys;print(",".join(c.get("state") or "" for c in json.load(open(sys.argv[1]))["claims"]))' "$WV/bolts/U-001/binding.json" 2>/dev/null)
+[ "$(total)" -le 20 ] && [ "$C11B_ST" = "IMPLEMENTED,IMPLEMENTED_BY_UNIT,IMPLEMENTED_BY_UNIT" ] \
+  && ok "C11b write-unit-binding conditional paths (rung 3 + absent_at + ordering + carry-forward): ≤20 spawns ($(total), git $(count git))" \
+  || bad "C11b write-unit-binding conditional: spawns=$(total) git=$(count git) states=$C11B_ST"
 reset_counts; run_script "bash $SCR/validate-handoff-binding-units.sh --cwd=$FIXJ --units=U-001 --quiet"
 [ "$(total)" -le 9 ] && [ -f "$FIXJ/.mega-sdd/.validation-blockers.json" ] \
   && ok "C12 validate-handoff-binding-units --units=: ≤9 spawns ($(total)), unit-scoped blockers written" \
@@ -280,6 +307,56 @@ reset_counts
 [ "$(total)" -le 26 ] && [ "$(count python3)" -le 6 ] \
   && ok "C20 GROUND with the engine (one moved stamp): ≤26 spawns ($(total), python $(count python3))" \
   || bad "C20 GROUND: spawns=$(total) python=$(count python3)"
+
+# ── C21: a reftable repository (spec §10 "reftable / unborn": the builtin HEAD reader
+# cannot read it, one `git rev-parse` does). The Stop bootstrap must still write the
+# view cache — 8.8.0 took reftable for an unborn repo and never bootstrapped; 8.8.1 reads
+# the sha the turn-gate probe already paid for. Then SessionStart HIT ≤3 / MISS ≤3 (§13
+# C5 "reftable 3"). MEASURED at 8.8.1 (macOS, git 2.52): hit 2, miss 3.
+FIXR="$WORK/reftable"
+if git init -q --ref-format=reftable -b main "$FIXR" >/dev/null 2>&1; then
+  mkdir -p "$FIXR/src" "$FIXR/.mega-sdd/vaults/v1/units" "$FIXR/.mega-sdd/vaults/v1/bolts/U-001"
+  echo x > "$FIXR/src/app.js"
+  printf -- '---\nid: U-001\ntarget_files:\n  - path: src/app.js\n    operation: modify\n---\n' > "$FIXR/.mega-sdd/vaults/v1/units/U-001.md"
+  ( cd "$FIXR" && git -c user.email=t@t -c user.name=t add -A && git -c user.email=t@t -c user.name=t commit -qm seed ) >/dev/null 2>&1
+  printf '{"schema":"unit-binding/2","based_on_sha":"%s","claims":[]}' "$(git -C "$FIXR" rev-parse HEAD)" > "$FIXR/.mega-sdd/vaults/v1/bolts/U-001/binding.json"
+  sleep 1
+  run_ev Stop "{\"session_id\":\"s\",\"cwd\":\"$FIXR\",\"transcript_path\":\"/nonexistent\"}" "$FIXR" >/dev/null
+  [ -f "$FIXR/.git/mega-sdd-freshness" ] && ok "C21 reftable: the Stop bootstrap writes the view cache" \
+    || bad "C21 reftable: no view cache after Stop (reftable taken for an unborn repo)"
+  sleep 1
+  reset_counts
+  OUT=$(run_ev SessionStart '{"source":"startup","session_id":"sess-rt-0001"}' "$FIXR")
+  if [ "$(total)" -le 3 ] && printf '%s' "$OUT" | grep -q '^- ' && ! printf '%s' "$OUT" | grep -q 'not computed yet'; then
+    ok "C21 reftable SessionStart HIT: ≤3 spawns ($(total)), per-vault lines rendered"
+  else bad "C21 reftable SS hit: spawns=$(total) out=$(printf '%s' "$OUT" | grep -m2 -E '^mega-sdd state|^- ')"; fi
+  ( cd "$FIXR" && echo y >> src/app.js && git -c user.email=t@t -c user.name=t commit -qam y ) >/dev/null 2>&1
+  reset_counts
+  OUT=$(run_ev SessionStart '{"source":"startup","session_id":"sess-rt-0002"}' "$FIXR")
+  [ "$(total)" -le 3 ] && printf '%s' "$OUT" | grep -q "as of check" \
+    && ok "C21 reftable SessionStart MISS: ≤3 spawns ($(total))" || bad "C21 reftable SS miss: spawns=$(total)"
+else
+  ok "C21 reftable: this git cannot create a reftable repository (< 2.45) — skipped"
+fi
+
+# ── C22: the gated bootstrap spawns NOTHING on the no-python path (§13). PATH holds only
+# the counting shim minus every python, so the builtin interpreter probe finds none. A
+# warm-up Stop pays the one-time legs; then a Stop with NO cache must cost exactly what a
+# Stop with the cache present costs, with 0 python and no cache written.
+NOPY="$WORK/nopy"; mkdir -p "$NOPY"
+for f in "$SHIM"/*; do case "${f##*/}" in python*) ;; *) cp "$f" "$NOPY/" ;; esac; done
+FIXN="$WORK/nopython"; mkfix "$FIXN"; mkdir -p "$FIXN/.mega-sdd/vaults/v1/units"
+printf -- '---\nid: U-001\ntarget_files:\n  - path: src/app.js\n    operation: modify\n---\n' > "$FIXN/.mega-sdd/vaults/v1/units/U-001.md"
+stop_nopy() { ( cd "$FIXN" && printf '{"session_id":"s","cwd":"%s","transcript_path":"/nonexistent"}' "$FIXN" \
+  | HOME="$SSHOME" PATH="$NOPY" /bin/sh -c "$(dispatch_cmd Stop)" ) >/dev/null 2>&1; sleep 1; }
+stop_nopy
+reset_counts; stop_nopy; NOCACHE=$(total); NOCACHE_PY=$(count python3)
+[ -f "$FIXN/.git/mega-sdd-freshness" ] && NOCACHE_FILE=1 || NOCACHE_FILE=0
+python3 "$PLUGIN/scripts/_lib/freshness.py" --cwd="$FIXN" >/dev/null 2>&1; sleep 1
+reset_counts; stop_nopy; WITHCACHE=$(total)
+[ "$NOCACHE" -eq "$WITHCACHE" ] && [ "$NOCACHE_PY" -eq 0 ] && [ "$NOCACHE_FILE" -eq 0 ] \
+  && ok "C22 Stop with no python: the bootstrap leg spawns nothing ($NOCACHE without a cache = $WITHCACHE with one, python 0, no cache written)" \
+  || bad "C22 no-python bootstrap: no-cache=$NOCACHE with-cache=$WITHCACHE python=$NOCACHE_PY cache_written=$NOCACHE_FILE"
 
 if [ "$fail" -eq 0 ]; then echo "PASS production-path spawn ceilings"; exit 0
 else echo "production-path spawn ceilings FAILED"; exit 1; fi

@@ -267,5 +267,100 @@ bash "$S/write-unit-binding.sh" --cwd="$D" --vault="$V" --unit=U-001 --claims="$
 mkprompt "$D"; echo '// more' >> "$D/src/client.ts"
 O=$(dispatch "$D"); deny_of "$O" && has "$O" "rebind_exhausted" && ok "3.9b + its E3 pass, then new dirt at the same HEAD: DENY rebind_exhausted" || bad "E3 bound: [$O]"
 
+# 26. §13: common programmatic writes to binding.json are denied by the Bash guard; a read is not
+D=$(fresh z1); BJ=".mega-sdd/vaults/web/bolts/U-001/binding.json"
+bash_call() { # <dir> <command> — hook stdout for a Bash tool call
+  python3 -c 'import json,sys;print(json.dumps({"session_id":"s","cwd":sys.argv[1],"tool_name":"Bash","tool_input":{"command":sys.argv[2]}}))' "$1" "$2" \
+    | ( cd "$1" && bash "$HOOK" 2>/dev/null )
+}
+for c in "python3 -c \"open('$BJ','w').write('{}')\"" "sed -i.bak 's/a/b/' $BJ" "cp /tmp/forged.json $BJ" \
+         "mv /tmp/forged.json $BJ" "echo '{}' | tee $BJ" "echo '{}' > $BJ"; do
+  deny_of "$(bash_call "$D" "$c")" || bad "Bash write of binding.json allowed: $c"
+done
+deny_of "$(bash_call "$D" "cat $BJ")" && bad "cat of binding.json denied (a read must stay open)"
+[ "$fail" -eq 0 ] && ok "Bash python open-write / sed -i / cp / mv / tee / redirect into binding.json: denied; cat stays open"
+
+# 27. skip-worktree and gitignored exact scope files present at bind → the dispatch after 3.9 ALLOWs;
+#     a later change to the ignored one is still dirt (it is watched, not skipped)
+D=$(fresh z2); V="$D/.mega-sdd/vaults/web"
+python3 - "$V/units/U-001.md" <<'PY'
+import sys; p = sys.argv[1]; s = open(p).read()   # an exact scope path: a gitignored modify target
+open(p, "w").write(s.replace("    operation: modify\n", "    operation: modify\n  - path: src/local.config.ts\n    operation: modify\n", 1))
+PY
+printf 'src/local.config.ts\n' > "$D/.gitignore"; ( cd "$D" && G add -A && G commit -qm "units: local config" )
+echo 'export const k = 1' > "$D/src/local.config.ts"
+( cd "$D" && git update-index --skip-worktree src/Login.tsx && echo '// sw' >> src/Login.tsx )
+bind "$D"; O=$(dispatch "$D")
+[ -z "$O" ] && ok "skip-worktree + gitignored exact scope files present at bind: the dispatch after 3.9 ALLOWs" || bad "sw/ignored: [$O]"
+echo 'export const k = 2' > "$D/src/local.config.ts"
+O=$(dispatch "$D"); deny_of "$O" && has "$O" "uncommitted_in_scope" && has "$O" "src/local.config.ts" \
+  && ok "…a later change to the gitignored scope file: DENY uncommitted_in_scope" || bad "ignored change: [$O]"
+
+# 28. the Fase-0 C2 edit (+5 lines above the anchor) STAGED after 3.9: ALLOW in 8.7.2, DENY now
+D=$(fresh z3); python3 -c 'import sys;p=sys.argv[1];s=open(p).read();open(p,"w").write("// a\n// b\n// c\n// d\n// e\n"+s)' "$D/src/client.ts"
+( cd "$D" && G add src/client.ts )
+O=$(dispatch "$D"); deny_of "$O" && has "$O" "uncommitted_in_scope" && has "$O" "src/client.ts" \
+  && ok "C2 staged after 3.9 (+5 lines above the anchor): DENY uncommitted_in_scope" || bad "C2 staged: [$O]"
+
+# 29. dirt OUTSIDE the unit scope: no deny, and a bind over it keeps an honest (non-null) stamp
+D=$(fresh z4); echo '// sibling wip' >> "$D/README.md"
+O=$(dispatch "$D"); [ -z "$O" ] && ok "uncommitted edit outside the unit scope: ALLOW" || bad "outside dirt: [$O]"
+bind "$D"; O=$(dispatch "$D")
+python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));assert d["based_on_sha"]==sys.argv[2] and not d.get("null_cause"),d' \
+  "$D/.mega-sdd/vaults/web/bolts/U-001/binding.json" "$(git -C "$D" rev-parse HEAD)" 2>/dev/null && [ -z "$O" ] \
+  && ok "a sibling's dirt outside this unit's scope does not null the stamp (bind → ALLOW)" || bad "outside dirt bind: [$O]"
+
+# 30. two waves: wave 1's own bolt commit moves a symbol in wave 2's scope after the run's index build.
+#     3.9 step 0 (index first, per bind) → the wave-2 dispatch ALLOWs with NO 3.9b. The control arm
+#     (no step 0) shows the index really was stale: the honest writer nulls the stamp.
+D=$(fresh z5); V="$D/.mega-sdd/vaults/web"
+python3 - "$V/units/U-001.md" <<'PY'
+import sys; p = sys.argv[1]; s = open(p).read()
+open(p, "w").write(s.replace("    operation: modify\n", "    operation: modify\n  - path: src/client.ts\n    operation: modify\n", 1))
+PY
+cat > "$V/units/U-002.md" <<'U'
+---
+id: U-002
+title: profile
+target_files:
+  - path: src/Profile.tsx
+    operation: create
+existing_interfaces:
+  - file: src/client.ts
+    symbol: api
+acceptance_test:
+  - type: test
+    command: npm test
+    expects: "ok"
+---
+U
+( cd "$D" && G add -A && G commit -qm "units: wave 2" )
+bash "$S/build-symbol-index.sh" --cwd="$D" >/dev/null 2>&1; AG=$?          # step 5: once per run
+bind "$D"                                                                    # wave 1: U-001
+( cd "$D" && python3 -c 'import sys;p=sys.argv[1];s=open(p).read();open(p,"w").write("// v2 header\n"+s)' src/client.ts \
+  && G add -A && G commit -q -F <(FIELD_MSG U-001 "feat(U-001): client header") )
+bind2() { # wave 2: 3.9 for U-002 (derive + write) and its built prompt
+  bash "$S/derive-unit-claims.sh" --cwd="$1" --vault="$1/.mega-sdd/vaults/web" --units=U-002 >/dev/null 2>&1
+  bash "$S/write-unit-binding.sh" --cwd="$1" --vault="$1/.mega-sdd/vaults/web" --unit=U-002 --claims="$1/.mega-sdd/vaults/web/bolts/_wave-claims.json" >/dev/null 2>&1
+  local B2="$1/.mega-sdd/vaults/web/bolts/U-002"; mkdir -p "$B2"
+  printf 'mega-sdd-trace:execute-bolts:U-002\n  binding_sha256: %s\n' \
+    "$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$B2/binding.json")" > "$B2/dispatch-prompt.md"
+}
+P2="mega-sdd-trace:execute-bolts:U-002\\nUNIT: U-002 \\\"profile\\\"\\nREAD FIRST, IN FULL:"
+if [ "$AG" -eq 0 ]; then
+  rm -rf "$WORK/z5c"; cp -a "$D" "$WORK/z5c"; bind2 "$WORK/z5c"
+  O=$(dispatch "$WORK/z5c" "$P2 $WORK/z5c/.mega-sdd/vaults/web/bolts/U-002/dispatch-prompt.md")
+  deny_of "$O" && has "$O" "stamp_null" && has "$O" "index_stale" \
+    && ok "two waves, control (no step 0): the run's index is stale → DENY stamp_null (index_stale)" || bad "two-wave control: [$O]"
+  bash "$S/build-symbol-index.sh" --cwd="$D" >/dev/null 2>&1                 # 3.9 step 0: index first
+else
+  ok "ast-grep not installed here: the two-wave index_stale control arm is skipped (symbol claims stay OQ)"
+fi
+bind2 "$D"
+O=$(dispatch "$D" "$P2 $D/.mega-sdd/vaults/web/bolts/U-002/dispatch-prompt.md")
+python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));assert d["based_on_sha"]==sys.argv[2] and not d.get("rebind_head"),d' \
+  "$V/bolts/U-002/binding.json" "$(git -C "$D" rev-parse HEAD)" 2>/dev/null && [ -z "$O" ] \
+  && ok "two waves: wave 1 commits into wave 2's scope → step 0 + 3.9 → the wave-2 dispatch ALLOWs with no 3.9b" || bad "two-wave: [$O]"
+
 [ "$fail" -eq 0 ] && { echo "PASS state-anchor gate binding-freshness"; exit 0; }
 echo "state-anchor gate binding-freshness FAILED"; exit 1

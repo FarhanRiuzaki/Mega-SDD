@@ -270,8 +270,16 @@ fi
 PY_LIB_SP="${SCRIPT_DIR_RPR}/../scripts/_lib/resolve-python.sh"
 if [ -d "${PROJECT_ROOT}/.mega-sdd" ] && declare -F mega_git_dir >/dev/null && [ -f "$PY_LIB_SP" ]; then
   # an unborn repo (no commit yet) has no HEAD to anchor a view: never bootstrap there,
-  # or the engine would run on every turn of a greenfield plan phase
-  if mega_git_dir "$PROJECT_ROOT" && mega_git_head packed; then
+  # or the engine would run on every turn of a greenfield plan phase. The builtin reader
+  # cannot read a reftable repo; there the turn-gate probe above already paid its one
+  # rev-parse, so its sha decides born vs unborn at 0 extra processes
+  SP_BORN=0
+  if mega_git_dir "$PROJECT_ROOT"; then
+    if mega_git_head packed; then SP_BORN=1
+    elif [ -d "$GH_COMMONDIR/reftable" ] && _gh_hex "${CUR_HEAD_SS:-}"; then SP_BORN=1
+    fi
+  fi
+  if [ "$SP_BORN" -eq 1 ]; then
     SP_FC="$GH_GITDIR/mega-sdd-freshness"; SP_FIRST=""; SP_LAST=""
     if [ -f "$SP_FC" ]; then
       while IFS= read -r _spl || [ -n "$_spl" ]; do
