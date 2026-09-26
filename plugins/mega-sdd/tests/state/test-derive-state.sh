@@ -16,8 +16,10 @@
 #      (one library, one truth).
 #   4. derive-state NEVER creates .mega-sdd/ in a directory that lacks it
 #      (no minted SDD signals), and stays fast (no subprocess storms).
-#   5. session-start's staleness notice reads the digest and emits the SAME
-#      notice strings as the pre-P1 bash computation.
+#   5. session-start prints the 8.8.0 state-anchor block (spec
+#      2026-09-25-state-anchor-design.md §6, D7): the old repo-wide "codebase moved"
+#      notice is retired, the journal is never read at session start, and the
+#      PENDING-SYNC queue stays at M/L entry.
 #
 # Run: bash plugins/mega-sdd/tests/state/test-derive-state.sh
 set -uo pipefail
@@ -413,30 +415,39 @@ note "  derive-state on f6: ${ms}ms"
 [ "$ms" -lt 2000 ] && ok "derive-state completes fast (${ms}ms < 2000ms CI bound; local target <300ms)" \
   || fail "derive-state too slow: ${ms}ms — subprocess storm?"
 
-# ── 5. session-start staleness notice reads the digest (same strings) ───────
-note "== 5. session-start digest parity =="
+# ── 5. session-start state block (8.8.0 state anchor; the old notice is retired, D7) ──
+note "== 5. session-start state block =="
+RULE_TXT='Rule: code at HEAD decides what the code IS (files, symbols, lines, what is built).'
 out=$( cd "$WORK/f9-dirty-journal" && printf '{"session_id":"t","source":"startup"}' | bash "$SS" 2>/dev/null )
-printf '%s' "$out" | grep -qF 'mega-sdd: codebase moved since last scan (3 journaled write(s)) — sync tersedia saat masuk lane M/L (`/mega-sdd`).' \
-  && ok "f9: staleness notice (digest path) byte-matches the v7 notice-only string" \
-  || fail "f9: staleness notice missing/reworded"
+printf '%s' "$out" | grep -q '^mega-sdd state @ [0-9a-f]\{12\} (' && printf '%s' "$out" | grep -qF "$RULE_TXT" \
+  && ok "f9: session-start prints the state block header + the rule line" \
+  || fail "f9: state block missing"
+printf '%s' "$out" | grep -qF 'codebase moved since last scan' \
+  && fail "f9: the retired repo-wide notice came back (D7)" \
+  || ok "f9: the retired 'codebase moved' notice stays gone (the journal is not read at session start)"
+# the engine's view (GROUND / the Stop bootstrap) is what names the vault — not the journal
+python3 "${PLUGIN_ROOT}/scripts/_lib/freshness.py" --cwd="$WORK/f9-dirty-journal" >/dev/null 2>&1; sleep 1
+out=$( cd "$WORK/f9-dirty-journal" && printf '{"session_id":"t2","source":"startup"}' | bash "$SS" 2>/dev/null )
+printf '%s' "$out" | grep -q '^- .*v1' \
+  && ok "f9: once the engine view exists, the block reports the vault (v1)" \
+  || fail "f9: engine view written but no vault line in the block"
 printf -- '- [ ] decide A\n- [ ] decide B\n' > "$WORK/f9-dirty-journal/.mega-sdd/vaults/v1/PENDING-SYNC.md"
-out=$( cd "$WORK/f9-dirty-journal" && printf '{"session_id":"t","source":"startup"}' | bash "$SS" 2>/dev/null )
+out=$( cd "$WORK/f9-dirty-journal" && printf '{"session_id":"t3","source":"startup"}' | bash "$SS" 2>/dev/null )
 # v7.5.0 №B (Fase-7 audit §3): the PENDING-SYNC open-count leg LEFT session-start
-# with the probe engine — the notice is builtin-only (journal + stamp signals);
-# the queue surfaces at M/L entry, where derive-state's pending_sync_open probe
-# (pinned by the digest arms above) is actually read. Negative pin: the queue
-# text must NOT come back to session-start.
+# with the probe engine; the queue surfaces at M/L entry, where derive-state's
+# pending_sync_open probe (pinned by the digest arms above) is actually read.
+# Negative pin: the queue text must NOT come back to session-start.
 printf '%s' "$out" | grep -qF 'open sync decision(s) queued' \
   && fail "f9+queue: session-start re-grew the PENDING-SYNC leg (№B moved it to M/L entry)" \
-  || ok "f9+queue: session-start stays queue-silent (notice-only; queue lives at M/L entry)"
-printf '%s' "$out" | grep -qF 'codebase moved since last scan (3 journaled write(s))' \
-  && ok "f9+queue: the plain moved-notice still fires alongside an open queue" \
-  || fail "f9+queue: moved-notice lost when a queue exists"
+  || ok "f9+queue: session-start stays queue-silent (the queue lives at M/L entry)"
+printf '%s' "$out" | grep -q '^mega-sdd state @' \
+  && ok "f9+queue: the state block still prints alongside an open queue" \
+  || fail "f9+queue: state block lost when a queue exists"
 rm -f "$WORK/f9-dirty-journal/.mega-sdd/vaults/v1/PENDING-SYNC.md"
 out=$( cd "$WORK/f6-units-no-bolts" && printf '{"session_id":"t","source":"startup"}' | bash "$SS" 2>/dev/null )
 printf '%s' "$out" | grep -qF 'codebase moved since last scan' \
-  && fail "f6: clean fixture got a staleness notice" \
-  || ok "f6: clean fixture stays silent (no notice)"
+  && fail "f6: clean fixture got the retired notice" \
+  || ok "f6: clean fixture: no retired notice (the state block replaces it)"
 
 # ── 6. foreign-SDD adoption probe (P2) ──────────────────────────────────────
 note "== 6. foreign-SDD adoption probe (P2) =="

@@ -342,11 +342,17 @@ sidx = p.get('symbol_index') or {}
 istamp = sidx.get('head_commit') if not cmap.get('present') else None
 head = (p.get('git') or {}).get('head')
 print('MOVED' if (istamp and head and head != istamp) else 'CLEAN')")
+# 8.8.0 state anchor (spec 2026-09-25-state-anchor-design.md §6, D7): the map/index-stamp
+# notice leg is retired; session-start prints the state block on ANY adopted project —
+# an express-born one (index, no map) included — and never needs a codebase map for it.
+# The derive-state change signal above stays the M/L-entry truth.
+SS_BLOCK=$( cd "$SY" && printf '{"session_id":"f3-sess-0001","source":"startup"}' | HOME="$WORK" bash "$P/hooks/session-start" 2>/dev/null )
 [ "$SS_OUT" = "MOVED" ] \
-  && grep -q 'LV_IDX' "$P/hooks/session-start" \
-  && grep -qF 'if { [ -f "$LV_MAP" ] || [ -f "$LV_IDX" ]; }' "$P/hooks/session-start" \
-  && pass "F3: index substrate opens the staleness gate (dead-code leg revived)" \
-  || fail "F3: session-start gate still map-only or signal dead ($SS_OUT)"
+  && printf '%s' "$SS_BLOCK" | grep -q '^mega-sdd state @ ' \
+  && printf '%s' "$SS_BLOCK" | grep -qF 'Rule: code at HEAD decides what the code IS' \
+  && ! printf '%s' "$SS_BLOCK" | grep -qF 'codebase moved since last scan' \
+  && pass "F3: express-born project (index, no map): derive-state says MOVED and session-start prints the state block (no map needed)" \
+  || fail "F3: express-born signal or state block missing ($SS_OUT)"
 
 # ══ 5. Lint + wrapper ════════════════════════════════════════════════════════
 BADPACK="$WORK/badpack.md"

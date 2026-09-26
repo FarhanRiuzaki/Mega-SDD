@@ -104,7 +104,9 @@ Sumber: feedback tim dari monorepo. Di sesi tim FE, Claude baca memory dan artef
   - `tests/jit-bind/test-writer-stamp.sh`;
   - pin spawn C1 dan C17–C20.
 - **Review pin MCP (checklist rilis):** `@playwright/mcp@0.0.79` dan `@upstash/context7-mcp@4.0.2` masih ke-resolve di registry. Versi lebih baru udah ada (0.0.82 / 4.1.1), tapi nggak dinaikin — di luar scope rilis ini.
-- **Pin yang di-retire (D7):** `plugins/mega-sdd/tests/state/test-derive-state.sh` f9 dan `tests/express-default/test-p2-ground-express-default.sh` F3 masih nge-pin notice lama — dua pin ini harus ditulis ulang ke bentuk blok sebelum rilis ini hijau di CI (izin baca file-nya lagi diminta ke owner).
+- **Pin yang di-retire (D7), ditulis ulang (nggak dihapus):**
+  - `plugins/mega-sdd/tests/state/test-derive-state.sh` §5 (f9 / f9+queue / f6) sekarang ngecek header blok state + baris aturan. Notice lama nggak boleh balik, vault dilaporkan dari view engine (bukan journal), dan antrian PENDING-SYNC tetap di M/L entry.
+  - `tests/express-default/test-p2-ground-express-default.sh` F3 sekarang ngecek project express-born (index, tanpa map): derive-state bilang MOVED dan awal sesi mencetak blok state tanpa butuh map.
 
 ## [8.7.2] - 2026-09-21 — panduan `.gitignore`: state gate turunan WAJIB di-ignore, dan `bolts/` JANGAN PERNAH (docs + 1 pin test)
 

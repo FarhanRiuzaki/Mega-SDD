@@ -1077,7 +1077,7 @@ H4 (the `vaults[0]` digest) and H5 (a stale `state.json` read after a python fai
 
 **C8b fixture** (spawn pin): it must exercise the leg's ALLOW path — an absolute pointer to a builder-made `dispatch-prompt.md`, a `unit-binding/2` binding at HEAD — or the pin measures a cheaper deny path.
 
-**Retired pins (D7).** Suites that byte-pin the removed "codebase moved" notice are rewritten to the block, never deleted: `plugins/mega-sdd/tests/state/test-derive-state.sh` (the f9 notice byte-match and its f9+queue arm → a vault line with `dirty`, never the old string), `tests/express-default/test-p2-ground-express-default.sh` F3 (the index-substrate notice leg → the block from an index-only project), and `tests/scenarios/scenario-12-continuous-sync.md`.
+**Retired pins (D7).** Suites that byte-pin the removed "codebase moved" notice are rewritten to the block, never deleted: `plugins/mega-sdd/tests/state/test-derive-state.sh` (the f9 notice byte-match and its f9+queue arm → the block header + rule line, the vault named from the engine view, never the old string), `tests/express-default/test-p2-ground-express-default.sh` F3 (the index-substrate notice leg → the block from an index-only project), and `tests/scenarios/scenario-12-continuous-sync.md`.
 
 **`tests/jit-bind/test-writer-stamp.sh`:**
 - Full-hex stamp, with `head` as its prefix.
@@ -1253,7 +1253,7 @@ Slice 1 (the view) is implemented as specified above, with these recorded differ
 
 **Measured on the final text:** rule line 342 B; UPS line 160 B (both `len(s.encode())`). The whole block on the Fase-0 playground (two vaults, pre-Slice-2 stamps, so every line carries a hint tag): A 557 B, ctl-B 658 B, ctl-C1 757 B, ctl-C2 649 B, ctl-D 582 B, behind-upstream 635 B. The always-on cost is therefore **+559 to +759 B** per startup/clear/compact on this playground — above the DERIVED +440…+720 of §6, because the hint-tier wording is longer than the prototype's. It stays under the 1,200 B cap; a `unit-binding/2` vault collapses to `- FRESH: <v>`.
 
-**Retired pins.** Two existing suites byte-pin the removed notice (§13): `plugins/mega-sdd/tests/state/test-derive-state.sh` f9 and `tests/express-default/test-p2-ground-express-default.sh` F3. Rewriting them is part of Slice 1's release.
+**Retired pins (done).** The two suites that byte-pinned the removed notice (§13) now pin the block: `plugins/mega-sdd/tests/state/test-derive-state.sh` §5 (header + rule line, the retired string never returns, the vault named from the engine view, the queue still at M/L entry) and `tests/express-default/test-p2-ground-express-default.sh` F3 (an express-born project, index and no map, still gets the block).
 
 ## 19. Slice 2 as built
 
