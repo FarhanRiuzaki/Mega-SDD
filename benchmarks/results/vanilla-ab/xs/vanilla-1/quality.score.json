@@ -1,0 +1,47 @@
+{
+ "completion": 1.0,
+ "ac_pass": 12,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 4,
+ "rubric": 96,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/contact-form.tsx:48",
+   "what": "Form remounts via key=JSON.stringify(values) after each submit; keyboard focus is lost after a failed validation, focus is not moved to the first invalid field, and per-field errors are not in a live region, so screen readers don't announce them"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/actions.ts:19-28",
+   "what": "Public unauthenticated server action writes to DB with no rate limiting or spam protection; contact_messages can be flooded"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/db.ts:11-17",
+   "what": "SQLite file at cwd/data/app.db is created at runtime (breaks on read-only/serverless hosts) and relies on node:sqlite with no engines pin in package.json"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-validation.ts:37,45",
+   "what": "Length limits use String.length (UTF-16 code units), so emoji count double; SQLite does not enforce VARCHAR(n), so the DB layer doesn't back up these limits"
+  }
+ ],
+ "blind_label": "FF",
+ "scorer_sid": "5e8405f3-9d06-4bdb-986f-ccc40d441869"
+}

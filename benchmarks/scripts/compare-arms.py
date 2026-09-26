@@ -43,7 +43,9 @@ METRICS = [
     ('light', 'subagent_dispatches', 'subagent dispatches', True),
     ('light', 'ask_attempts', 'interaction points', True),
     ('light', 'distinct_files_read', 'distinct files read', True),
-    ('light', 'docs_md_added', 'markdown lines added (review burden)', True),
+    ('light', 'docs_md_added', 'markdown lines added outside .mega-sdd/', True),
+    ('light', 'process_added', 'process artefact lines committed (.mega-sdd/)', True),
+    ('light', 'code_test_added', 'code + test lines added', True),
     ('quality', 'completion', 'task completion (0-1)', False),
     ('quality', 'ac_rate', 'acceptance criteria pass rate', False),
     ('quality', 'critical', 'Critical findings', True),
@@ -71,9 +73,13 @@ def value(run, group, key):
             return q['ac_pass'] / q['ac_total'] if q.get('ac_total') else None
         return q.get(key)
     m = run.get('_m') or {}
-    if key == 'docs_md_added':
+    if key in ('docs_md_added', 'process_added', 'code_test_added'):
         shape = (m.get('light') or {}).get('diff_shape')
-        return shape['docs_md']['added'] if shape else None
+        if not shape:
+            return None
+        if key == 'code_test_added':
+            return shape['code']['added'] + shape['test']['added']
+        return shape['docs_md' if key == 'docs_md_added' else 'process']['added']
     return (m.get(group) or {}).get(key)
 
 
@@ -139,8 +145,10 @@ def main():
                 if a == 'vanilla':
                     continue
                 s = stats[a][k]
-                if not v or v['median'] in (None, 0) or s['median'] is None:
+                if not v or v['median'] is None or s['median'] is None:
                     rel.append('belum diukur')
+                elif v['median'] == 0:
+                    rel.append('n/a (vanilla = 0)')
                 else:
                     rel.append(f"{s['median'] / v['median']:.2f}×")
                 if not v or v['n'] < need or s['n'] < need:

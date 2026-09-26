@@ -1,0 +1,57 @@
+{
+ "completion": 0.9166666666666666,
+ "ac_pass": 11,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "FAIL"
+ },
+ "critical": 0,
+ "important": 2,
+ "minor": 4,
+ "rubric": 80,
+ "findings": [
+  {
+   "severity": "Important",
+   "where": "package.json:5-10",
+   "what": "No \"test\" script; `npm test` fails with 'Missing script: \"test\"' although 30 node:test tests exist and pass when run directly"
+  },
+  {
+   "severity": "Important",
+   "where": "src/app/layout.tsx:26, src/app/page.tsx:18-25",
+   "what": "No page or layout links to /tentang-kami; the About page cannot be reached by navigation"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/layout.tsx:15-18,23",
+   "what": "Metadata still 'Create Next App' and html lang=\"en\" for Indonesian content"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-messages.ts:25-31",
+   "what": "Opens SQLite, runs CREATE TABLE and closes on every submit; sync cwd-relative path.resolve triggers a Turbopack build warning"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-validation.ts:34,48",
+   "what": "Length limits use UTF-16 .length, so emoji and other astral characters count double against the 100/2000 limits"
+  },
+  {
+   "severity": "Minor",
+   "where": "README.md:1-36",
+   "what": "README is the untouched create-next-app template; no mention of DB location, CONTACT_DB_PATH or how to run tests"
+  }
+ ],
+ "blind_label": "FM",
+ "scorer_sid": "728ea91d-b67d-4c71-a9f3-5f28d9ce7f85"
+}

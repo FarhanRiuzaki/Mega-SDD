@@ -1,0 +1,14 @@
+859c99c 2026-09-26T11:58:13+07:00 chore(sdd): batch evidence — full-suite green, bolt_completed x4, _summary
+2086403 2026-09-26T11:58:13+07:00 chore(sdd): evidence U-004 — preflight/binding/l0/panel/postflight/acceptance/bolt-report
+29c77ff 2026-09-26T11:58:13+07:00 chore(sdd): evidence U-002 — preflight/binding/l0/panel/postflight/acceptance/bolt-report
+dc09385 2026-09-26T11:58:13+07:00 chore(sdd): evidence U-003 — preflight/binding/l0/panel/postflight/acceptance/bolt-report
+df8c8a0 2026-09-26T11:58:13+07:00 chore(sdd): evidence U-001 — preflight/binding/l0/panel/postflight/acceptance/bolt-report
+c4fe5ed 2026-09-26T11:52:14+07:00 feat(U-002): Create the Tentang Kami page from the site content config
+5c46d91 2026-09-26T11:51:58+07:00 feat(U-004): Create the Kontak page with a server-action contact form
+813d525 2026-09-26T11:50:09+07:00 fix(spec): acceptance expects matches Node 24 default reporter ('fail 0')
+e46e7e8 2026-09-26T11:49:22+07:00 feat(U-003): Create contact message validation and the contact_messages SQLite store
+1c1fdd8 2026-09-26T11:48:49+07:00 feat(U-001): Add static site content config and rebuild the Beranda page from it
+b06d674 2026-09-26T11:47:32+07:00 chore(bind): R2-clamp U-001 layout anchor (JIT bind writer repair)
+e2fbf66 2026-09-26T11:47:12+07:00 chore(plan): company-profile vault + units (lite lane)
+ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
+da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

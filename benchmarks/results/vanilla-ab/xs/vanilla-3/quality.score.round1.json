@@ -1,0 +1,47 @@
+{
+ "completion": 1.0,
+ "ac_pass": 12,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 4,
+ "rubric": 93,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/lib/db.ts:1, package.json",
+   "what": "Relies on experimental node:sqlite (Node >=22.5) without declaring an engines constraint; on older Node the contact action fails at runtime."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/db.ts:19-23",
+   "what": "SQLite file is written to <cwd>/data/app.db by default; on read-only or serverless deploys messages fail to save or are lost, and this is undocumented."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-validation.ts:24,32",
+   "what": "Length limits use String.length (UTF-16 code units), so astral characters such as emoji count double; limits are checked after trim, unlike the client maxLength."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/contact-form.tsx:80-86",
+   "what": "The role=status paragraph is always rendered and styled red when not in success state (including idle); validation failures set no summary message."
+  }
+ ],
+ "blind_label": "EG",
+ "scorer_sid": "7bb9fc42-965c-458f-9ad8-b21f072bf0a2"
+}

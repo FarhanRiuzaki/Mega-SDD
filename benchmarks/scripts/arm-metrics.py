@@ -21,7 +21,7 @@ leaves the field null, never 0):
            input / output / cache_read / cache_creation per model and total, cost
   light    tool calls by name, subagent dispatches, Skill calls, ask attempts (interaction
            points), distinct files Read, init roster size (plugins / skills), diff shape split
-           code / test / docs-markdown (review burden)
+           code / test / docs-markdown / process (.mega-sdd/** committed artefacts) / other
   clean    processes (1 = no resume), resume_* / outage_* keys in run.meta, purity line
 Quality is NOT here: it is scored after the run, blind to the arm, per
 benchmarks/runbooks/vanilla-vs-megasdd.md §Quality.
@@ -116,10 +116,12 @@ def diff_shape(repo, base):
                              capture_output=True, text=True, check=True).stdout
     except (OSError, subprocess.CalledProcessError):
         return None
-    shape = {k: {'files': 0, 'added': 0, 'deleted': 0} for k in ('code', 'test', 'docs_md', 'other')}
+    shape = {k: {'files': 0, 'added': 0, 'deleted': 0} for k in ('code', 'test', 'docs_md', 'process', 'other')}
     for line in raw.splitlines():
         a, d, path = line.split('\t', 2)
-        if a == '-':
+        if path.startswith('.mega-sdd/'):
+            kind = 'process'   # pipeline artefacts committed to the repo (vault, units, bolts, rendered html, state)
+        elif a == '-':
             kind = 'other'
         elif path.endswith('.md'):
             kind = 'docs_md'

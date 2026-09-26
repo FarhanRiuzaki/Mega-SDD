@@ -1,0 +1,52 @@
+{
+ "min_clean_runs": 3,
+ "targets": {
+  "xs": {
+   "review_ready_min": 60
+  }
+ },
+ "runs": [
+  {
+   "scenario": "xs",
+   "arm": "vanilla",
+   "run": "vanilla-1",
+   "metrics": "xs/vanilla-1/metrics.json",
+   "quality": "xs/vanilla-1/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "lite",
+   "run": "lite-1",
+   "metrics": "xs/lite-1/metrics.json",
+   "quality": "xs/lite-1/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "vanilla",
+   "run": "vanilla-2",
+   "metrics": "xs/vanilla-2/metrics.json",
+   "quality": "xs/vanilla-2/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "lite",
+   "run": "lite-2",
+   "metrics": "xs/lite-2/metrics.json",
+   "quality": "xs/lite-2/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "lite",
+   "run": "lite-3",
+   "metrics": "xs/lite-3/metrics.json",
+   "quality": "xs/lite-3/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "vanilla",
+   "run": "vanilla-3",
+   "metrics": "xs/vanilla-3/metrics.json",
+   "quality": "xs/vanilla-3/quality.score.json"
+  }
+ ]
+}

@@ -1,0 +1,52 @@
+{
+ "completion": 0.9166666666666666,
+ "ac_pass": 11,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "FAIL"
+ },
+ "critical": 0,
+ "important": 2,
+ "minor": 3,
+ "rubric": 88,
+ "findings": [
+  {
+   "severity": "Important",
+   "where": "package.json:5-10",
+   "what": "No `test` script; `npm test` fails with 'Missing script: \"test\"'. Suite only runs via `node --test` and its HTTP tests require a prior `npm run build` that nothing wires up."
+  },
+  {
+   "severity": "Important",
+   "where": "src/app/layout.tsx:20-28; src/app/page.tsx:33-34",
+   "what": "Tentang Kami page is not linked from anywhere (no nav, Beranda only links /kontak); visitors cannot discover the profile page."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/actions.ts:39",
+   "what": "saveContactMessage errors are not caught; a DB failure produces an unhandled server-action error with no user-facing message and lost form input."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/layout.tsx:16-17,23",
+   "what": "Starter metadata 'Create Next App' left in place and html lang='en' for Indonesian content (a11y/SEO)."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-messages.ts:33",
+   "what": "SQLite file at relative path data/contact-messages.db is undocumented and breaks on read-only/serverless hosts."
+  }
+ ],
+ "blind_label": "RY",
+ "scorer_sid": "0d942e92-e421-45dc-8ac4-2cd4dc63188d"
+}

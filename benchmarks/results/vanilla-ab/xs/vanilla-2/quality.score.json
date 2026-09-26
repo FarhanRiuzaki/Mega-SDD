@@ -1,0 +1,47 @@
+{
+ "completion": 1.0,
+ "ac_pass": 12,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 4,
+ "rubric": 95,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/actions.ts:23",
+   "what": "insertContactMessage is not wrapped in error handling; a DB failure throws from the server action, showing a generic error page instead of an inline form error and possibly losing the visitor's input."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/contact-form.tsx:61,82",
+   "what": "Client maxLength counts UTF-16 code units while server validation (src/lib/contact.ts:28-30) counts code points, so astral-plane input (emoji) is truncated client-side before reaching the server's 100/2000 limit."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/db.ts:26-28",
+   "what": "SQLite file defaults to process.cwd()/data; persistence depends on a writable, non-ephemeral filesystem, which is not documented as a deployment constraint."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/actions.ts:11",
+   "what": "Public form has no rate limiting or spam protection; anyone can flood contact_messages."
+  }
+ ],
+ "blind_label": "TL",
+ "scorer_sid": "1449c65a-d2cc-44e1-b8af-58b4a6dac838"
+}
