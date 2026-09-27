@@ -1,0 +1,48 @@
+{
+ "completion": 1.0,
+ "ac_pass": 13,
+ "ac_total": 13,
+ "ac": {
+  "B1": "PASS",
+  "B2": "PASS",
+  "B3": "PASS",
+  "B4": "PASS",
+  "B5": "PASS",
+  "B6": "PASS",
+  "B7": "PASS",
+  "B8": "PASS",
+  "T1c": "PASS",
+  "T2c": "PASS",
+  "T3c": "PASS",
+  "T4c": "PASS",
+  "T5c": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 4,
+ "rubric": 91,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/server/leave.ts:37 / src/server/appointments.ts:204",
+   "what": "recordLeave does not take lockDoctor and createAppointment checks isOnLeave outside its transaction; a concurrent online booking can commit a booked appointment on a leave date that is never flagged rescheduling_required"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:274-311",
+   "what": "acceptOffer claims the offer and creates the appointment in separate steps; on createAppointment failure the offer is voided and the slot is not re-offered to the next patient (a non-domain error also loses the patient's offer)"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:170-193",
+   "what": "Concurrent cancellations can select the same first entry; the second insert hits waitlist_offers_pending_entry_uq and returns null, so that freed slot is offered to nobody"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:35-87",
+   "what": "Waitlist entries for past dates stay 'waiting' forever; nothing cleans them up and only reads filter them out"
+  }
+ ],
+ "blind_label": "GP",
+ "scorer_sid": "760fd579-e70a-4e46-bb54-372f2d0682d8"
+}

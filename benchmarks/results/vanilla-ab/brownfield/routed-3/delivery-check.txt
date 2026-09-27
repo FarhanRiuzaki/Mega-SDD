@@ -1,0 +1,7 @@
+delivery-check @ 4b3e691 (/private/tmp/claude-501/mega-sdd-bench/work/brownfield-routed-3)
+  D1 PASS scripts.test = vitest run
+  D2 PASS npm test (TZ=UTC) exit 0
+  D3 PASS npm test (TZ=Pacific/Kiritimati) exit 0
+  D4 PASS npm run build on a fresh checkout, empty env: exit 0
+  D5 PASS every static page route (7) is linked from another source file
+VERDICT: PASS

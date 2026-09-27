@@ -30,7 +30,7 @@ When `<input>` is empty:
 
 **Step 0 — pick the lane FIRST (a PRD/brief file or quoted free text; a directory or a vault `.json` skips this step).** `Run: bash "${CLAUDE_PLUGIN_ROOT}/scripts/route-lane.sh" --cwd=<root> (--prd=<file> | --text="<brief>") [--lane=<forced>]` — read-only, zero model tokens, prints `{lane, signals_fired, evidence}`. `--direct` / `--assisted` / `--guarded` force the lane (`--lane=`); `--lite`, `--classic`, `--weight=L` and every pipeline-only flag (`--greenfield`, `--scope`, `--step-after`, `--stop-after`, `--resume`, `--express`) imply `--guarded`.
 - `direct` / `assisted` → follow `plugins/mega-sdd/references/direct-lane.md` and STOP here: no GROUND, no orchestrate-flow, no confirmation prompt, no `.mega-sdd/` writes. The run is done only when `scripts/delivery-check.sh` prints `VERDICT: PASS` on the last commit. (Measured on greenfield PRDs: the pipeline cost 9–22× vanilla Claude Code with equal or lower quality — the pipeline is kept for what it can check.)
-- `guarded` → continue with the input-shape rules below (the spec pipeline, unchanged).
+- `guarded` (vault exists, or forced) → the input-shape rules below (spec pipeline).
 
 Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-design.md` §4 Pillar 4):
 

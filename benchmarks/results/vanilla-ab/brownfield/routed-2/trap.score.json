@@ -1,0 +1,40 @@
+{
+ "traps": {
+  "T1": {
+   "surfaced": true,
+   "quote": "PRD menyebut slot 20 menit; kode v1 memakai 15 menit.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T2": {
+   "surfaced": true,
+   "quote": "PRD menyebut reminder 48 jam; kode v1 memakai 24 jam.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T3": {
+   "surfaced": true,
+   "quote": "disebut \"existing\" padahal belum ada di v1. Saya tambahkan karena \u00a74.2 memerlukannya.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T4": {
+   "surfaced": true,
+   "quote": "says \"Late cancellations are penalised\" with no definition of the penalty",
+   "judge_said": true,
+   "verified": true
+  },
+  "T5": {
+   "surfaced": true,
+   "quote": "but neither the PRD nor v1 defines who is a VIP",
+   "judge_said": true,
+   "verified": true
+  }
+ },
+ "surfaced": 5,
+ "total": 5,
+ "overturned": [],
+ "bundle_chars": 51164,
+ "judge_sid": "2cf87531-4651-4915-b4e8-c2839e48b7fe",
+ "judge_cost_usd": 0.30519019999999997
+}

@@ -1,0 +1,13 @@
+# brownfield block (benchmarks/runbooks/brownfield-ambiguous-prd.md), seed 20261001:
+# python3 -c "import random; a=['vanilla']*3+['routed']*3; random.seed(20261001); random.shuffle(a); print(a)"
+# -> ['vanilla', 'routed', 'routed', 'routed', 'vanilla', 'vanilla']
+# fixture: fixture-brown @ 015ecf3 (clinic-vanilla-2 app + PRD v2 with seeded traps T1-T7); plugin = git archive of d447a6d2
+# routed = /mega-sdd:mega-sdd PRD/prd-clinic-v2.md — the router sends it to guarded (existing_code), new PRD -> lite
+brownfield vanilla 1 PRD/prd-clinic-v2.md
+brownfield routed 1 PRD/prd-clinic-v2.md
+brownfield routed 2 PRD/prd-clinic-v2.md
+brownfield routed 3 PRD/prd-clinic-v2.md
+brownfield vanilla 2 PRD/prd-clinic-v2.md
+brownfield vanilla 3 PRD/prd-clinic-v2.md
+# replacement for vanilla-1 (outage_sleep: idle + maintenance sleep on battery at run start), runbook §4
+brownfield vanilla 4 PRD/prd-clinic-v2.md

@@ -1,0 +1,63 @@
+{
+ "completion": 1.0,
+ "ac_pass": 13,
+ "ac_total": 13,
+ "ac": {
+  "B1": "PASS",
+  "B2": "PASS",
+  "B3": "PASS",
+  "B4": "PASS",
+  "B5": "PASS",
+  "B6": "PASS",
+  "B7": "PASS",
+  "B8": "PASS",
+  "T1c": "PASS",
+  "T2c": "PASS",
+  "T3c": "PASS",
+  "T4c": "PASS",
+  "T5c": "PASS"
+ },
+ "critical": 0,
+ "important": 2,
+ "minor": 5,
+ "rubric": 91,
+ "findings": [
+  {
+   "severity": "Important",
+   "where": "src/server/waitlist-offers.ts:210 + vercel.json (cron */5)",
+   "what": "Offer expiry is passed on only by a 5-minute cron sweep; next patient may get the offer up to ~5 min after the 30-min deadline, or never if cron is not running"
+  },
+  {
+   "severity": "Important",
+   "where": "src/server/waitlist-offers.ts:39-40",
+   "what": "Freed slot is not held while offered; any online booker can take it before the waitlisted patient accepts, weakening 'take the freed slot'"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist-offers.ts:158-195",
+   "what": "Nonce rotated before booking; a non-domain error in createAppointment leaves the entry 'offered' with a dead link until the sweep expires it"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:331-395",
+   "what": "Patient reschedule frees the old slot but does not offer it to the waitlist"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/staff.ts:105-143",
+   "what": "v1 reassignAppointment does not check target doctor leave (new leave-resolution path does)"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:183-186",
+   "what": "Staff walk-ins can still book a doctor on leave; deliberate but not specified by the PRD"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/leave.ts:33-75",
+   "what": "No edit/delete for leave records and no overlap check between leave ranges"
+  }
+ ],
+ "blind_label": "FK",
+ "scorer_sid": "f801e171-1769-4e0c-b1c4-2ca0f70ca2d9"
+}

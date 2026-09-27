@@ -1,0 +1,53 @@
+{
+ "completion": 1.0,
+ "ac_pass": 13,
+ "ac_total": 13,
+ "ac": {
+  "B1": "PASS",
+  "B2": "PASS",
+  "B3": "PASS",
+  "B4": "PASS",
+  "B5": "PASS",
+  "B6": "PASS",
+  "B7": "PASS",
+  "B8": "PASS",
+  "T1c": "PASS",
+  "T2c": "PASS",
+  "T3c": "PASS",
+  "T4c": "PASS",
+  "T5c": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 5,
+ "rubric": 91,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:234; src/server/leave.ts:38-54",
+   "what": "Leave check is outside the booking transaction and recordLeave takes no lock; a booking committed right after the leave UPDATE stays 'booked' on a leave day and is missing from the affected list"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:79-92; src/server/staff.ts:153",
+   "what": "Waitlist offer holds are protected only by a read check with no DB constraint; a concurrent reassign or booking can take a held slot (offer acceptance then fails cleanly)"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:424; src/server/staff.ts:165",
+   "what": "Slots freed by patient reschedule or reassignment of a booked appointment are not offered to the waitlist"
+  },
+  {
+   "severity": "Minor",
+   "where": "vercel.json",
+   "what": "Expiry sweep runs every 5 minutes, so an offer can take up to ~35 min to pass to the next patient unless the expired link is opened"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/leave.ts:131-157",
+   "what": "freeDoctorsAt runs several queries per affected appointment x doctor pair"
+  }
+ ],
+ "blind_label": "MG",
+ "scorer_sid": "f2438877-a52b-45a1-b3c9-15d3808f701f"
+}

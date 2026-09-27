@@ -1,4 +1,331 @@
 {
+ "brownfield": {
+  "stats": {
+   "vanilla": {
+    "n_clean": 3,
+    "review_ready_min": {
+     "n": 3,
+     "median": 19.1,
+     "min": 18.88,
+     "max": 21.89
+    },
+    "wall_min": {
+     "n": 3,
+     "median": 19.35,
+     "min": 19.17,
+     "max": 22.12
+    },
+    "api_time_min": {
+     "n": 3,
+     "median": 16.68,
+     "min": 16.01,
+     "max": 18.19
+    },
+    "stream_silence_over_5m_min": {
+     "n": 3,
+     "median": 0.0,
+     "min": 0.0,
+     "max": 0.0
+    },
+    "total": {
+     "n": 3,
+     "median": 11210864,
+     "min": 9103025,
+     "max": 13150575
+    },
+    "input": {
+     "n": 3,
+     "median": 134,
+     "min": 114,
+     "max": 144
+    },
+    "output": {
+     "n": 3,
+     "median": 119188,
+     "min": 118585,
+     "max": 134056
+    },
+    "cache_read": {
+     "n": 3,
+     "median": 10852150,
+     "min": 8752097,
+     "max": 12760141
+    },
+    "cost_usd": {
+     "n": 3,
+     "median": 6.46,
+     "min": 5.99,
+     "max": 7.28
+    },
+    "tool_calls": {
+     "n": 3,
+     "median": 69,
+     "min": 62,
+     "max": 74
+    },
+    "subagent_dispatches": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "ask_attempts": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "distinct_files_read": {
+     "n": 3,
+     "median": 1,
+     "min": 1,
+     "max": 2
+    },
+    "docs_md_added": {
+     "n": 3,
+     "median": 51,
+     "min": 45,
+     "max": 53
+    },
+    "process_added": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "code_test_added": {
+     "n": 3,
+     "median": 3294,
+     "min": 3173,
+     "max": 3424
+    },
+    "completion": {
+     "n": 3,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "ac_rate": {
+     "n": 3,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "critical": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "important": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "rubric": {
+     "n": 3,
+     "median": 91,
+     "min": 91,
+     "max": 93
+    }
+   },
+   "routed": {
+    "n_clean": 3,
+    "review_ready_min": {
+     "n": 3,
+     "median": 60.82,
+     "min": 39.83,
+     "max": 63.57
+    },
+    "wall_min": {
+     "n": 3,
+     "median": 61.14,
+     "min": 40.31,
+     "max": 63.87
+    },
+    "api_time_min": {
+     "n": 3,
+     "median": 109.59,
+     "min": 104.94,
+     "max": 116.04
+    },
+    "stream_silence_over_5m_min": {
+     "n": 3,
+     "median": 0.0,
+     "min": 0.0,
+     "max": 0.0
+    },
+    "total": {
+     "n": 3,
+     "median": 74536985,
+     "min": 73025617,
+     "max": 77897025
+    },
+    "input": {
+     "n": 3,
+     "median": 1686,
+     "min": 1612,
+     "max": 1736
+    },
+    "output": {
+     "n": 3,
+     "median": 640616,
+     "min": 633357,
+     "max": 696386
+    },
+    "cache_read": {
+     "n": 3,
+     "median": 71127619,
+     "min": 69406743,
+     "max": 74409698
+    },
+    "cost_usd": {
+     "n": 3,
+     "median": 38.93,
+     "min": 37.64,
+     "max": 39.32
+    },
+    "tool_calls": {
+     "n": 3,
+     "median": 1160,
+     "min": 1071,
+     "max": 1160
+    },
+    "subagent_dispatches": {
+     "n": 3,
+     "median": 78,
+     "min": 77,
+     "max": 78
+    },
+    "ask_attempts": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "distinct_files_read": {
+     "n": 3,
+     "median": 145,
+     "min": 122,
+     "max": 171
+    },
+    "docs_md_added": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "process_added": {
+     "n": 3,
+     "median": 15332,
+     "min": 14886,
+     "max": 15371
+    },
+    "code_test_added": {
+     "n": 3,
+     "median": 4020,
+     "min": 3915,
+     "max": 4519
+    },
+    "completion": {
+     "n": 3,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "ac_rate": {
+     "n": 3,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "critical": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "important": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 2
+    },
+    "rubric": {
+     "n": 3,
+     "median": 91,
+     "min": 89,
+     "max": 91
+    }
+   }
+  },
+  "verdicts": {
+   "review_ready_min": [
+    "routed: WORSE"
+   ],
+   "wall_min": [
+    "routed: WORSE"
+   ],
+   "api_time_min": [
+    "routed: WORSE"
+   ],
+   "stream_silence_over_5m_min": [
+    "routed: OVERLAP"
+   ],
+   "total": [
+    "routed: WORSE"
+   ],
+   "input": [
+    "routed: WORSE"
+   ],
+   "output": [
+    "routed: WORSE"
+   ],
+   "cache_read": [
+    "routed: WORSE"
+   ],
+   "cost_usd": [
+    "routed: WORSE"
+   ],
+   "tool_calls": [
+    "routed: WORSE"
+   ],
+   "subagent_dispatches": [
+    "routed: WORSE"
+   ],
+   "ask_attempts": [
+    "routed: OVERLAP"
+   ],
+   "distinct_files_read": [
+    "routed: WORSE"
+   ],
+   "docs_md_added": [
+    "routed: BETTER"
+   ],
+   "process_added": [
+    "routed: WORSE"
+   ],
+   "code_test_added": [
+    "routed: WORSE"
+   ],
+   "completion": [
+    "routed: OVERLAP"
+   ],
+   "ac_rate": [
+    "routed: OVERLAP"
+   ],
+   "critical": [
+    "routed: OVERLAP"
+   ],
+   "important": [
+    "routed: OVERLAP"
+   ],
+   "rubric": [
+    "routed: OVERLAP"
+   ]
+  }
+ },
  "clinic": {
   "stats": {
    "vanilla": {

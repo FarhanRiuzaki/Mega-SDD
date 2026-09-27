@@ -1,0 +1,41 @@
+de51856 2026-09-27T10:51:04+07:00 chore(drift): post-bolt detect-drift report + PENDING-SYNC queue (clinic-v2)
+7299994 2026-09-27T10:46:00+07:00 chore(bolts): batch summary, full-suite gate record, gate-recomputed evidence
+4239e4c 2026-09-27T10:44:18+07:00 fix(delivery): register /staff/leave and /staff/waitlist in the proxy route policy
+53d9e22 2026-09-27T10:42:24+07:00 chore(bolts): verify-unit report for U-015 (AC-207 regression gate)
+a720b54 2026-09-27T10:40:23+07:00 chore(bolts): evidence for U-011 (round 2) + refreshed evidence for U-004/005/006/008/010
+ccc68c3 2026-09-27T10:36:32+07:00 fix(U-011): Trigger waitlist offers on every cancellation and sweep expired offers from the cron route
+61dfe99 2026-09-27T10:35:32+07:00 chore(bolts): evidence for U-014 (report, ledger, gates)
+99894c0 2026-09-27T10:33:31+07:00 fix(U-011): declare waitlist-offers.test.ts helper edit in target_files (spec amendment for panel finding F-1)
+8c761aa 2026-09-27T10:33:05+07:00 chore(bolts): evidence for U-013 (report, ledger, gates)
+0f0f3c9 2026-09-27T10:32:20+07:00 feat(U-014): Staff waitlist page — each doctor's waitlist per date with remove
+2dd48e9 2026-09-27T10:30:34+07:00 chore(units): U-014 anchor corrected after KEEP_CODE binding resolution
+3b68e62 2026-09-27T10:29:47+07:00 chore(bolts): evidence for U-012 (report, ledger, gates)
+f1e0ab8 2026-09-27T10:29:47+07:00 chore(bolts): evidence for U-008 (report, ledger, gates)
+e8efc76 2026-09-27T10:29:46+07:00 chore(bolts): evidence for U-010 (report, ledger, gates)
+c0bdde4 2026-09-27T10:28:27+07:00 feat(U-011): Trigger waitlist offers on every cancellation and sweep expired offers from the cron route
+73bb5fb 2026-09-27T10:27:19+07:00 feat(U-013): Public page to accept a waitlist offer through its one-time link
+bd41717 2026-09-27T10:25:53+07:00 chore(units): JIT-bind anchor repair (R1-shift) for U-011
+5dd2e1f 2026-09-27T10:24:58+07:00 chore(bolts): evidence for U-006 (report, ledger, gates)
+aff7c98 2026-09-27T10:24:58+07:00 chore(bolts): evidence for U-009 (report, ledger, gates)
+25b66d6 2026-09-27T10:24:06+07:00 feat(U-010): Waitlist offer engine — offer freed slot, accept via one-time link, expire and pass on
+0779d61 2026-09-27T10:23:57+07:00 feat(U-008): Add the staff Doctor leave page, its server actions and the nav link
+f255621 2026-09-27T10:23:50+07:00 feat(U-012): Offer "Join the waitlist" in the booking wizard when a date has no free slot
+9f675e8 2026-09-27T10:21:21+07:00 chore(bolts): evidence for U-005 (report, ledger, gates)
+ea7982b 2026-09-27T10:20:42+07:00 feat(U-006): List, reassign and cancel appointments affected by leave (single + bulk)
+7e0ac16 2026-09-27T10:20:12+07:00 feat(U-009): Waitlist core — join, list per doctor/date, remove
+4f44c38 2026-09-27T10:18:43+07:00 chore(units): JIT-bind anchor repairs for U-006, U-009 + gate-recomputed postflight evidence
+5d1997d 2026-09-27T10:18:24+07:00 chore(units): JIT-bind anchor repair (R1-shift) for U-005
+77e90bf 2026-09-27T10:18:10+07:00 chore(bolts): evidence for U-007 (report, ledger, gates)
+b2c1bc9 2026-09-27T10:18:09+07:00 chore(bolts): evidence for U-004 (report, ledger, gates)
+a970e60 2026-09-27T10:17:31+07:00 feat(U-005): Record doctor leave and hide the doctor's slots on leave dates
+1b03d16 2026-09-27T10:14:45+07:00 feat(U-007): Build the leave manager component (record form + affected list with reassign/cancel)
+7f35d6a 2026-09-27T10:13:16+07:00 feat(U-004): Enforce the cancellation window on patient cancel/reschedule links
+e079752 2026-09-27T10:11:30+07:00 chore(bolts): evidence for U-002 (report, ledger, gates)
+69b0c33 2026-09-27T10:11:19+07:00 chore(bolts): refresh acceptance evidence for U-001, U-003
+688f377 2026-09-27T10:08:29+07:00 chore(U-003): bolt evidence (report, ledger, gates)
+1206532 2026-09-27T10:08:29+07:00 chore(U-001): bolt evidence (report, ledger, gates)
+732edcf 2026-09-27T10:06:58+07:00 feat(U-002): Plumb the rescheduling_required status, window setting and new error codes
+96dca9a 2026-09-27T10:04:08+07:00 feat(U-003): Add the cancellation and waitlist-offer email templates
+d612815 2026-09-27T10:02:46+07:00 feat(U-001): Add waitlist, doctor-leave tables and the rescheduling_required status (schema + migration)
+1f2051b 2026-09-27T09:59:55+07:00 plan(clinic-v2): lite-lane vault context + 15 units from PRD v2
+015ecf3 2026-09-27T08:25:21+07:00 fixture: Harbor Clinic v1 app (from vanilla clinic run) + PRD v2

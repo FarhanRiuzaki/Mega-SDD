@@ -1,0 +1,48 @@
+{
+ "completion": 1.0,
+ "ac_pass": 13,
+ "ac_total": 13,
+ "ac": {
+  "B1": "PASS",
+  "B2": "PASS",
+  "B3": "PASS",
+  "B4": "PASS",
+  "B5": "PASS",
+  "B6": "PASS",
+  "B7": "PASS",
+  "B8": "PASS",
+  "T1c": "PASS",
+  "T2c": "PASS",
+  "T3c": "PASS",
+  "T4c": "PASS",
+  "T5c": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 4,
+ "rubric": 93,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:131-139",
+   "what": "Offer selection skips waiting patients who hold a pending offer for another slot, so the offer may not go to the literal first patient in the queue; this is not documented as a deviation"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/leave.ts:124-127",
+   "what": "listAffectedAppointments loads all doctor_leave rows for all doctors with no date filter, so it slows down as leave history grows"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:373",
+   "what": "A slot freed by patient reschedule is not offered to the waitlist (only cancellations trigger offers); documented, but partly works against Goal 1"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:190-193",
+   "what": "If the offer email fails it is only logged; the offer still blocks the slot for other waitlisted patients for 30 minutes"
+  }
+ ],
+ "blind_label": "BL",
+ "scorer_sid": "2ab253f0-62a5-4127-beb1-0c006e63be28"
+}

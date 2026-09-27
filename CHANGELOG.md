@@ -35,6 +35,14 @@ Sumber: `research/2026-09-27-vanilla-vs-megasdd-results.md`. Pada PRD greenfield
   - Diterapkan tanpa A/B atas mandat owner. Efeknya pada run **belum diukur**.
   - Pin: `tests/size-weighted/test-standards-lens-h1.sh`.
 
+- **App yang sudah ada tidak lagi otomatis masuk pipeline** (`existing_code` → assisted, sesuai aturan yang dikunci di runbook brownfield).
+  - Diukur pada PRD brownfield dengan 7 jebakan yang ditanam, n=3 run bersih per arm (`research/2026-09-27-brownfield-results.md`).
+  - Jebakan tersuarakan 5/5 di semua run pada kedua arm. AC 13/13, Critical 0, dan tanpa regresi suite v1 di kedua arm.
+  - Pipeline guarded 3,2× lebih lambat (60,8 vs 19,1 menit) dan 6,0× lebih mahal ($38,93 vs $6,46), dengan 78 subagent.
+  - Gate CONFLICT menyala 3× dan semuanya false positive (anchor buatan pipeline sendiri). Tidak ada jebakan yang ditangkap gate ini.
+  - Guarded sekarang hanya jalan untuk vault yang sudah ada, atau dengan `--guarded` / `--lite` / `--classic`.
+  - Biaya blok: $148,30.
+
 ### Added
 - **`scripts/delivery-check.sh`:** cek dari sudut pandang reviewer pada checkout HEAD yang fresh.
   - Blocking: `scripts.test` asli; test lolos di TZ=UTC dan UTC+14; `build` lolos dengan env kosong.

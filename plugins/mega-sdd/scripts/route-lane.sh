@@ -17,17 +17,16 @@
 #   assisted  direct + ONE batched ask for the spec's open business items
 #             BEFORE coding (when it has any) + ONE blind review subagent over
 #             the whole diff before the final commit
-#   guarded   the spec pipeline (classic by default, --lite opt-in): vault,
-#             binding verdicts + CONFLICT gate, units, bolts, review panel —
-#             only where there is existing code or a vault for binding to check
+#   guarded   the spec pipeline (lite for a new PRD): vault, binding verdicts +
+#             CONFLICT gate, units, bolts, review panel — only for an existing
+#             vault or on request (--guarded); see the brownfield result below
 #
 # Signals (a signal fires on evidence, never on judgment):
 #   guarded   vault_present     a mega-sdd vault already exists (delta/revision)
-#             existing_code     >= CODE_MIN (10) git-tracked source files outside
+#   assisted  existing_code     >= CODE_MIN (10) git-tracked source files outside
 #                               config/type stubs — an app, not a scaffold.
-#                               guarded for a PRD file; for a free-text brief
-#                               it buys assisted (too few claims to bind)
-#   assisted  spec_open_items   list items under an "Open questions" /
+#                               (research/2026-09-27-brownfield-results.md)
+#             spec_open_items   list items under an "Open questions" /
 #                               "Pertanyaan terbuka" heading that are not
 #                               "none / tidak ada / resolved", or inline TBD,
 #                               TBC, TODO, ??, [OPEN], "to be decided/confirmed",
@@ -138,9 +137,9 @@ if sc.get('project_scale'):
     if sc['project_scale'] != 'xs':
         fired.append('multi_flow')
 
-# existing code buys binding only for a spec DOCUMENT (claims to check against the code); a
-# one-line brief on an app has too few claims to bind — it gets the assisted review instead
-if 'vault_present' in fired or ('existing_code' in fired and prd):
+# existing code does NOT buy the pipeline (brownfield block: same 5/5 traps as vanilla at ~6x
+# the cost). Only an existing vault — the user's own pipeline artefact — keeps it by default.
+if 'vault_present' in fired:
     lane = 'guarded'
 elif any(s in fired for s in ('existing_code', 'spec_open_items', 'security_surface', 'multi_flow')):
     lane = 'assisted'

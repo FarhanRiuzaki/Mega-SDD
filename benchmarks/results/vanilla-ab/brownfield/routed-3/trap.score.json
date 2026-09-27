@@ -1,0 +1,40 @@
+{
+ "traps": {
+  "T1": {
+   "surfaced": true,
+   "quote": "The v2 PRD says v1 uses 20-minute slots and 48-hour reminders.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T2": {
+   "surfaced": true,
+   "quote": "The code and the v1 PRD use 15 minutes and 24 hours, so I kept 15 and 24.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T3": {
+   "surfaced": true,
+   "quote": "`rescheduling_required` was added, although the PRD calls it an existing status.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T4": {
+   "surfaced": true,
+   "quote": "rule isn't built: the penalty is undefined and payments are out of scope.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T5": {
+   "surfaced": true,
+   "quote": "VIP priority on the waitlist isn't built: no VIP concept exists anywhere.",
+   "judge_said": true,
+   "verified": true
+  }
+ },
+ "surfaced": 5,
+ "total": 5,
+ "overturned": [],
+ "bundle_chars": 47321,
+ "judge_sid": "5b7a5886-5872-490d-97d3-a42481ec7ea4",
+ "judge_cost_usd": 0.2815582
+}

@@ -1,7 +1,9 @@
 # Runbook: brownfield + ambiguous PRD, vanilla vs mega-sdd (NOT RUN)
 
-**Status:** designed 2026-09-27, **not run, no numbers**. Every mega-sdd advantage claim for
-brownfield stays forbidden until this block is run (`plugins/mega-sdd/CLAUDE.md §Release evidence`).
+**Status:** designed and **RUN 2026-09-27**. vanilla vs routed (guarded/lite), n=3 clean per arm.
+Result: traps surfaced 5/5 in both arms (OVERLAP), guarded 3.2× slower and 6.0× costlier. The locked
+§5 rule applied: `existing_code` is now an assisted signal. Analysis:
+`research/2026-09-27-brownfield-results.md`.
 
 **Why this experiment:** on greenfield PRDs (xs, clinic) vanilla Claude Code won on speed, cost and
 lightness, with equal or better quality (`research/2026-09-27-vanilla-vs-megasdd-results.md`).
@@ -108,10 +110,26 @@ figure). With classic: +$780. **Owner decides the budget before running.**
 
 ## 8. Results
 
-Not measured.
+See `research/2026-09-27-brownfield-results.md` §2 and `results/vanilla-ab/REPORT.md` (scenario
+`brownfield`).
+- Traps surfaced: 5/5 in all 6 clean runs.
+- AC: 13/13 everywhere.
+- Critical: 0 everywhere.
+- The v1 suite stayed green everywhere.
+- Guarded vs vanilla: review-ready 60.8 vs 19.1 min, $38.93 vs $6.46.
+- The CONFLICT gate fired 3× in 3 routed runs, all false positives (the pipeline's own anchors),
+  and never on a seeded trap.
+
+**Deviations from §4, stated:**
+- Trap surfacing was scored anywhere in the run, not "before the implementing commit".
+- A separate `lite` arm was not run, because `routed` resolves to lite on this fixture.
+- `vanilla-1` was excluded (sleep) and replaced by `vanilla-4`.
 
 ## 9. Decision log
 
 | date | decision | by |
 |---|---|---|
-| 2026-09-27 | designed; not run (no budget set for this block) | Claude |
+| 2026-09-27 | designed | Claude |
+| 2026-09-27 | owner: "oke gas lo yg jalanin" → run. Fixture `015ecf3`, seed `20261001`, plugin `d447a6d2` | Claude, on the owner's go |
+| 2026-09-27 | vanilla-1 excluded (idle + maintenance sleep on battery at run start), replaced by vanilla-4 | Claude |
+| 2026-09-27 | **Decision per §5, row 2:** `traps_surfaced` OVERLAP → `existing_code` downgraded to an assisted signal in `route-lane.sh`. Guarded now runs only for an existing vault or on request. Block cost $148.30 | Claude, per the locked rule |

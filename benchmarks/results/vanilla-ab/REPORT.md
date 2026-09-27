@@ -1,3 +1,49 @@
+## Scenario `brownfield`
+
+### Runs
+
+| arm | run | status | time to review-ready (min) | wall (min) | API time (min) | silence >5 m (min, proxy idle) | tokens total | tokens input (uncached) | tokens output | tokens cache read | cost (USD) | tool calls | subagent dispatches | interaction points | distinct files read | markdown lines added outside .mega-sdd/ | process artefact lines committed (.mega-sdd/) | code + test lines added | task completion (0-1) | acceptance criteria pass rate | Critical findings | Important findings | blind rubric score (0-100) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| vanilla | vanilla-1 | not clean: processes=1 keys=['outage_sleep'] purity=PASS no mega-sdd surface loaded | 26.61 | 26.87 | 17.20 | 5.09 | 10,824,129 | 124 | 131,922 | 10,441,808 | 6.73 | 69 | 0 | 0 | 1 | 58 | 0 | 3,596 | belum diukur | belum diukur | belum diukur | belum diukur | belum diukur |
+| vanilla | vanilla-2 | clean | 21.89 | 22.12 | 18.19 | 0.00 | 13,150,575 | 144 | 134,056 | 12,760,141 | 7.28 | 74 | 0 | 0 | 1 | 53 | 0 | 3,424 | 1.00 | 1.00 | 0 | 0 | 93 |
+| vanilla | vanilla-3 | clean | 19.10 | 19.35 | 16.01 | 0.00 | 11,210,864 | 134 | 118,585 | 10,852,150 | 6.46 | 69 | 0 | 0 | 1 | 51 | 0 | 3,173 | 1.00 | 1.00 | 0 | 0 | 91 |
+| vanilla | vanilla-4 | clean | 18.88 | 19.17 | 16.68 | 0.00 | 9,103,025 | 114 | 119,188 | 8,752,097 | 5.99 | 62 | 0 | 0 | 2 | 45 | 0 | 3,294 | 1.00 | 1.00 | 0 | 0 | 91 |
+| routed | routed-1 | clean | 39.83 | 40.31 | 109.59 | 0.00 | 77,897,025 | 1,612 | 633,357 | 74,409,698 | 39.32 | 1,071 | 78 | 0 | 122 | 0 | 15,371 | 4,519 | 1.00 | 1.00 | 0 | 0 | 89 |
+| routed | routed-2 | clean | 60.82 | 61.14 | 104.94 | 0.00 | 74,536,985 | 1,686 | 640,616 | 71,127,619 | 37.64 | 1,160 | 77 | 0 | 171 | 0 | 14,886 | 3,915 | 1.00 | 1.00 | 0 | 2 | 91 |
+| routed | routed-3 | clean | 63.57 | 63.87 | 116.04 | 0.00 | 73,025,617 | 1,736 | 696,386 | 69,406,743 | 38.93 | 1,160 | 78 | 0 | 145 | 0 | 15,332 | 4,020 | 1.00 | 1.00 | 0 | 0 | 91 |
+
+### Summary (clean runs only)
+
+| metric | vanilla median [min–max] (n) | routed median [min–max] (n) | routed / vanilla | verdict vs vanilla |
+|---|---|---|---|---|
+| time to review-ready (min) | 19.10 [18.88–21.89] (3) | 60.82 [39.83–63.57] (3) | 3.18× | routed: WORSE |
+| wall (min) | 19.35 [19.17–22.12] (3) | 61.14 [40.31–63.87] (3) | 3.16× | routed: WORSE |
+| API time (min) | 16.68 [16.01–18.19] (3) | 109.59 [104.94–116.04] (3) | 6.57× | routed: WORSE |
+| silence >5 m (min, proxy idle) | 0.00 [0.00–0.00] (3) | 0.00 [0.00–0.00] (3) | n/a (vanilla = 0) | routed: OVERLAP |
+| tokens total | 11,210,864 [9,103,025–13,150,575] (3) | 74,536,985 [73,025,617–77,897,025] (3) | 6.65× | routed: WORSE |
+| tokens input (uncached) | 134 [114–144] (3) | 1,686 [1,612–1,736] (3) | 12.58× | routed: WORSE |
+| tokens output | 119,188 [118,585–134,056] (3) | 640,616 [633,357–696,386] (3) | 5.37× | routed: WORSE |
+| tokens cache read | 10,852,150 [8,752,097–12,760,141] (3) | 71,127,619 [69,406,743–74,409,698] (3) | 6.55× | routed: WORSE |
+| cost (USD) | 6.46 [5.99–7.28] (3) | 38.93 [37.64–39.32] (3) | 6.03× | routed: WORSE |
+| tool calls | 69 [62–74] (3) | 1,160 [1,071–1,160] (3) | 16.81× | routed: WORSE |
+| subagent dispatches | 0 [0–0] (3) | 78 [77–78] (3) | n/a (vanilla = 0) | routed: WORSE |
+| interaction points | 0 [0–0] (3) | 0 [0–0] (3) | n/a (vanilla = 0) | routed: OVERLAP |
+| distinct files read | 1 [1–2] (3) | 145 [122–171] (3) | 145.00× | routed: WORSE |
+| markdown lines added outside .mega-sdd/ | 51 [45–53] (3) | 0 [0–0] (3) | 0.00× | routed: BETTER |
+| process artefact lines committed (.mega-sdd/) | 0 [0–0] (3) | 15,332 [14,886–15,371] (3) | n/a (vanilla = 0) | routed: WORSE |
+| code + test lines added | 3,294 [3,173–3,424] (3) | 4,020 [3,915–4,519] (3) | 1.22× | routed: WORSE |
+| task completion (0-1) | 1.00 [1.00–1.00] (3) | 1.00 [1.00–1.00] (3) | 1.00× | routed: OVERLAP |
+| acceptance criteria pass rate | 1.00 [1.00–1.00] (3) | 1.00 [1.00–1.00] (3) | 1.00× | routed: OVERLAP |
+| Critical findings | 0 [0–0] (3) | 0 [0–0] (3) | n/a (vanilla = 0) | routed: OVERLAP |
+| Important findings | 0 [0–0] (3) | 0 [0–2] (3) | n/a (vanilla = 0) | routed: OVERLAP |
+| blind rubric score (0-100) | 91 [91–93] (3) | 91 [89–91] (3) | 1.00× | routed: OVERLAP |
+
+### Absolute targets (reported beside the relative verdict, never instead of it)
+
+| target | vanilla | routed |
+|---|---|---|
+| review_ready_min ≤ 120 | PASS (median 19.10) | PASS (median 60.82) |
+
 ## Scenario `clinic`
 
 ### Runs

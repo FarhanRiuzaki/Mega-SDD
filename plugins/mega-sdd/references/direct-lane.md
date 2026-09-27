@@ -7,9 +7,10 @@ is the procedure for the first two. `guarded` is the spec pipeline (`orchestrate
 **Why these lanes exist (measured, `research/2026-09-27-vanilla-vs-megasdd-results.md`).** On a
 greenfield PRD, vanilla Claude Code shipped 12/12 (xs) and 10/10 (clinic) acceptance criteria in
 3–30 min for $1–8. The lite and classic pipelines took 2.3–12× longer, cost 9–22× more and scored
-equal or lower. The pipeline's reason to exist is to check a spec against existing code (binding
-CONFLICT), and a greenfield repo has none. So a task without existing code or a vault is built
-here: no vault, no units, no subagent per unit, no `.mega-sdd/` writes.
+equal or lower. On a brownfield PRD with seeded spec-vs-code traps the pipeline surfaced the same 5/5
+traps as vanilla at 5.2–6.6× the cost (`research/2026-09-27-brownfield-results.md`). So every task
+without an existing vault is built here: no vault, no units, no subagent per unit, no `.mega-sdd/`
+writes. Assisted adds the batched ask — the part of the pipeline that did its job (surfacing).
 
 **Done means `delivery-check.sh` printed `VERDICT: PASS` on your last commit, and its output is quoted in your report.** Not "tests pass locally". The check runs on a fresh checkout, which is where the pipeline's own defects hid. A report without that line is an unfinished run.
 
@@ -92,5 +93,5 @@ The user can also force any lane: `--direct`, `--assisted` or `--guarded`. `--li
 - They don't run `detect-drift`, `analyze`, the HTML renderer, `emit-*`, or a per-unit review
   panel.
 - They don't add provenance trailers to commits or code.
-- A later `/mega-sdd` PRD on this repo sees ordinary code (`existing_code`) and routes to guarded; a short brief routes to assisted.
+- A later `/mega-sdd` PRD or brief on this repo sees ordinary code (`existing_code`) and routes to assisted. The pipeline stays available with `--guarded`.
   That is correct: from then on the spec has something real to be checked against.

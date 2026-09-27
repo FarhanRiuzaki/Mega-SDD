@@ -3,10 +3,10 @@
  "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only); raised 2026-09-27 (see raises[])",
  "ceilings": {
   "always_loaded_description_chars": 13639,
-  "t01_lite_commanded_bytes": 473371,
-  "t01_default_commanded_bytes": 484933,
+  "t01_lite_commanded_bytes": 473368,
+  "t01_default_commanded_bytes": 484930,
   "skill_md_total_bytes": 371391,
-  "scripts_total_lines": 45356,
+  "scripts_total_lines": 45355,
   "hooks_total_lines": 3327
  },
  "raises": [

@@ -1,0 +1,58 @@
+{
+ "completion": 1.0,
+ "ac_pass": 13,
+ "ac_total": 13,
+ "ac": {
+  "B1": "PASS",
+  "B2": "PASS",
+  "B3": "PASS",
+  "B4": "PASS",
+  "B5": "PASS",
+  "B6": "PASS",
+  "B7": "PASS",
+  "B8": "PASS",
+  "T1c": "PASS",
+  "T2c": "PASS",
+  "T3c": "PASS",
+  "T4c": "PASS",
+  "T5c": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 6,
+ "rubric": 89,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist-offers.ts:201-213,243-256",
+   "what": "If the offered slot was booked directly in the meantime, accept fails and the entry reverts to 'offered'; the sweep then marks it 'expired', so the patient drops off the waitlist and loses their queue place with no slot."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/leave.ts:51-75",
+   "what": "Recording leave does not touch waitlist entries or offers already sent for that doctor/date; those patients stay 'waiting' forever and are never told."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:181; src/server/leave.ts:62-73",
+   "what": "The leave check runs before the booking transaction; if leave is recorded at the same moment as an online booking, a booked appointment can land inside the leave range without being flagged rescheduling_required."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:37-51",
+   "what": "Nothing stops the same email from joining the same doctor+date several times, so one patient can take several queue places."
+  },
+  {
+   "severity": "Minor",
+   "where": "README.md (Decisions & assumptions, OQ-003)",
+   "what": "README still says patients can cancel any time before the start and does not mention v2 at all (no waitlist, leave, CANCELLATION_WINDOW_HOURS or offer sweep); VIP and the penalty were dropped without saying they were deferred."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist-offers.ts:21-25",
+   "what": "The freed slot is not held while the offer is out, so a direct booking can take it first; documented in the code comment but weakens 'take the freed slot'."
+  }
+ ],
+ "blind_label": "GI",
+ "scorer_sid": "05d6ca67-4240-4f52-9c03-e5e2926615ad"
+}

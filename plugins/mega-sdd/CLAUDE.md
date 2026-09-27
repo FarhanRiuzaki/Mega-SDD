@@ -36,12 +36,12 @@ Skill bodies shape behavior but cannot *enforce* it — the model may or may not
 
 - **The lane router comes first (2026-09-27, `scripts/route-lane.sh`).** A PRD or brief reaching the front door is routed from OBSERVABLE signals before any pipeline step. Signals are listed in the script header; the tests are in `<repo-root>/tests/lanes/test-lanes.sh`.
   - **direct**: no signal. The main session builds it like plain Claude Code: no vault, no units, no subagents, no `.mega-sdd/` writes.
-  - **assisted**: open business items, a security surface, a multi-flow product, or a short brief on an existing app. Direct, plus ONE batched ask before coding and ONE blind review after.
-  - **guarded**: an existing vault, or a PRD file on an existing app. The spec pipeline below, where the moat has code to check.
+  - **assisted**: open business items, a security surface, a multi-flow product, or an existing app (PRD or brief). Direct, plus ONE batched ask before coding and ONE blind review after.
+  - **guarded**: an existing vault, or `--guarded` / `--lite` / `--classic`. The spec pipeline below.
 
   Procedure: `references/direct-lane.md`. Every lane ends with `scripts/delivery-check.sh`, a fresh checkout of HEAD: test script present, tests pass under UTC and UTC+14, build passes with an empty env, pages reachable.
 
-  **Why:** on greenfield PRDs the pipeline cost 9–22× vanilla Claude Code with equal or lower quality (`research/2026-09-27-vanilla-vs-megasdd-results.md`). The moat below is untouched inside guarded. Whether guarded earns its cost on brownfield is the open experiment `benchmarks/runbooks/brownfield-ambiguous-prd.md`. Until it runs, no brownfield advantage may be claimed.
+  **Why:** on greenfield PRDs the pipeline cost 9–22× vanilla Claude Code with equal or lower quality (`research/2026-09-27-vanilla-vs-megasdd-results.md`). The moat below is untouched inside guarded, but it is no longer the default for existing code: on a brownfield PRD with seeded spec-vs-code contradictions and ambiguities (n=3 clean per arm, `research/2026-09-27-brownfield-results.md`) guarded surfaced the same 5/5 traps as vanilla at 5.2–6.6× the cost, and its CONFLICT gate fired only on its own anchor errors. Headless only — the interactive value of a CONFLICT halt is unmeasured.
 - **Artefact diet.** Pipeline hand-offs no longer auto-render HTML (`render_html: on` to opt in; the render was 78–88% of committed `.mega-sdd/` lines). `derive-state.sh` also keeps a managed `.mega-sdd/.gitignore` for regenerable copies and gate caches.
   - **Stays tracked:** spec, units, bolt evidence, and `dispatch-prompt.md`.
   - **Measured on the benchmark repos:** 80–90% fewer committed `.mega-sdd/` lines.

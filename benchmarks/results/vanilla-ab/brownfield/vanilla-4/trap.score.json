@@ -1,0 +1,40 @@
+{
+ "traps": {
+  "T1": {
+   "surfaced": true,
+   "quote": "PRD \u00a71 menyebut slot 20 menit dan reminder 48 jam, padahal kode v1 memakai 15 menit dan 24 jam",
+   "judge_said": true,
+   "verified": true
+  },
+  "T2": {
+   "surfaced": true,
+   "quote": "the PRD describes 20-minute slots and a 48-hour reminder",
+   "judge_said": true,
+   "verified": true
+  },
+  "T3": {
+   "surfaced": true,
+   "quote": "did not exist in v1; it was added as a new appointment status.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T4": {
+   "surfaced": true,
+   "quote": "No penalty is defined (payments are out of scope).",
+   "judge_said": true,
+   "verified": true
+  },
+  "T5": {
+   "surfaced": true,
+   "quote": "The system has no notion of a VIP patient (patients have no accounts)",
+   "judge_said": true,
+   "verified": true
+  }
+ },
+ "surfaced": 5,
+ "total": 5,
+ "overturned": [],
+ "bundle_chars": 11911,
+ "judge_sid": "4ee1469e-61f3-4782-8170-0b7592630c39",
+ "judge_cost_usd": 0.1385062
+}
