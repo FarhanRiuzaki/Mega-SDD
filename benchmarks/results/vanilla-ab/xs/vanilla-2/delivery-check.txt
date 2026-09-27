@@ -1,0 +1,7 @@
+delivery-check @ 67993d3 (/private/tmp/claude-501/mega-sdd-bench/work/xs-vanilla-2)
+  D1 PASS scripts.test = npm run test:unit && npm run test:e2e
+  D2 PASS npm test (TZ=UTC) exit 0
+  D3 PASS npm test (TZ=Pacific/Kiritimati) exit 0
+  D4 PASS npm run build on a fresh checkout, empty env: exit 0
+  D5 PASS every static page route (2) is linked from another source file
+VERDICT: PASS

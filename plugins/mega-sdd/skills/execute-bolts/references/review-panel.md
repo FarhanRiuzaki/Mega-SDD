@@ -36,7 +36,7 @@ Resolve the tier BEFORE dispatch, once per unit:
 | Lens | Fires when |
 |---|---|
 | `spec` | ALWAYS — the moat lens, never skipped |
-| `standards` | always above `minimal` (sonnet, cheap; judges conventions on any new code) |
+| `standards` | only with `quality` (H1: 1 unique fix in 5 field dispatches — `research/2026-08-30-lens-yield-field.md`) |
 | `quality` | `file_count ≥ 3` OR `risk: high\|critical` — surface area to judge |
 | `security` | `auth_globs` ∪ `manifest` ∪ `constitution_b` ∪ `vocabulary`\* ∪ `risk: critical` — evidence of a security surface |
 | `design` | UI-bearing (below; added by the controller, not the router script) |
@@ -48,8 +48,8 @@ Resolve the tier BEFORE dispatch, once per unit:
 | Tier | Lens set | Means |
 |---|---|---|
 | `minimal` | spec | `task_type: verify` with zero signals, OR 1–2 declared target files with zero signals. Zero DECLARED files on a non-verify unit is unknown scope → `standard`, never minimal. The 1 lens sits ON TOP of the executed acceptance test + the L0 gates, which run under EVERY tier — never instead of them |
-| `standard` | spec + standards (+ quality) | no security signal |
-| `full` | spec + standards + quality + security | a security signal is in play |
+| `standard` | spec (+ quality + standards) | no security signal |
+| `full` | spec + security (+ quality + standards) | a security signal is in play |
 
 **Why this replaced `if ANY signal: full`.** That predicate was an OR over six facts measuring different things — `file_count ≥ 4` is a SIZE fact, not a risk fact, and it fired 22/30 on a live vault. With six loose OR-ed predicates, P(at least one fires) → 1 on any real project: measured `full` **30/30**, `minimal` **0/30**, while the script's own header claimed `minimal` was reachable. The tier table's stated cost control ("routine bolts pay for one lens, risky bolts pay for four") controlled nothing. Re-measured after the change on the same vault: full 17, standard 13, **minimal 1** — and the implementer model routing, which keys on the same verdict, drops from 31/31 opus to 17.
 

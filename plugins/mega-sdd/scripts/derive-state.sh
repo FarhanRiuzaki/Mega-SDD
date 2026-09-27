@@ -90,6 +90,33 @@ if os.path.isdir(state_dir):
         os.replace(tmp, state_file)
     except Exception:
         state_file = None  # digest still valid on stdout
+    # Managed .mega-sdd/.gitignore — keep regenerable copies and gate caches out of the
+    # user's diff (2026-09 benchmark: 40k-124k committed .mega-sdd/ lines per run next to
+    # 0.9k-10.6k lines of code; 78-88% was HTML render, the rest mostly per-lens copies of
+    # the unit body/pack and gate-state caches — all re-derived on disk). Stays tracked:
+    # context/vault/constitution/units, bolt-report, binding.json, findings.json,
+    # pre/postflight, acceptance, attempts, l0-results, dispatch-prompt (what the
+    # implementer was told). A .gitignore without the marker is the user's — never touched.
+    gi = os.path.join(state_dir, ".gitignore")
+    marker = "# mega-sdd-managed v1"
+    body = marker + """ — regenerable or transient; remove this line to take ownership
+state.json
+.cache/
+.*-state.json
+.*-blockers.json
+.analyze-*.json
+html/
+**/html/
+**/lens-inputs/*/*
+!**/lens-inputs/*/l0-results.json
+"""
+    try:
+        cur = open(gi).read() if os.path.isfile(gi) else None
+        if cur is None or (cur.startswith("# mega-sdd-managed") and cur != body):
+            with open(gi, "w") as f:
+                f.write(body)
+    except Exception:
+        pass  # advisory hygiene, never a failure of the digest
 
 if json_only:
     print(json.dumps(payload, indent=2))

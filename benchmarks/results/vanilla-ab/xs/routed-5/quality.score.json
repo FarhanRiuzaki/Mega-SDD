@@ -1,0 +1,47 @@
+{
+ "completion": 1.0,
+ "ac_pass": 12,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 4,
+ "rubric": 94,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "tests/site.test.mts:26-42",
+   "what": "Navigation/label tests are string greps on source; no rendered-component or server-action integration test"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/contact-form.tsx:18,37",
+   "what": "Form remount via key on every result drops keyboard focus; focus not moved to first invalid field after failed submit"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/contact-form.tsx:53,69",
+   "what": "No maxLength attributes on name/message; 100/2000 limits only discovered after submit"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/db.ts:30-32",
+   "what": "Default SQLite path is cwd-relative; starting the app from another directory stores messages in an unexpected DB"
+  }
+ ],
+ "blind_label": "KY",
+ "scorer_sid": "392b2eb5-72d3-4607-9da5-ab340d0f2801"
+}

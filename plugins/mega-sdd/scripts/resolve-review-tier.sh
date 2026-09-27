@@ -16,7 +16,9 @@
 # `file_count>=4` (a SIZE fact) fired 22/30. Each signal now buys the lens it
 # justifies:
 #   spec      = always (the moat lens)
-#   standards = always above minimal (cheap; conventions on any new code)
+#   standards = only alongside quality (2026-09-27, hypothesis H1: field yield
+#               research/2026-08-30-lens-yield-field.md — 5 dispatches, 0 Critical,
+#               1 unique fix (a key name) for ~335k tokens; quality 5 → 22 fixes)
 #   quality   = file_count>=3 OR risk: high|critical      (surface area)
 #   security  = auth_globs|manifest|constitution_b|vocabulary OR risk: critical
 #   design    = added by the CONTROLLER for UI-bearing units, not here
@@ -246,8 +248,8 @@ if risk in ("high", "critical"):
 #   auth_globs / manifest /
 #   constitution_b /
 #   vocabulary / risk:critical -> a security surface    -> security
-# spec is unconditional (the moat lens); standards is unconditional above
-# minimal (sonnet, cheap, judges conventions on any new code). design is added
+# spec is unconditional (the moat lens); standards rides with quality only (H1 —
+# on its own it found 1 unique naming fix in 5 field dispatches). design is added
 # by the CONTROLLER for UI-bearing units — this script never sees target_files
 # content, only paths, and the design slice is resolved elsewhere.
 SECURITY_SIGNALS = {"auth_globs", "manifest", "constitution_b", "vocabulary"}
@@ -262,9 +264,9 @@ if parse_note or task_type == "":
 if minimal_ok:
     lenses = ["spec"]
 else:
-    lenses = ["spec", "standards"]
+    lenses = ["spec"]
     if quality:
-        lenses.insert(1, "quality")
+        lenses += ["quality", "standards"]
     if security:
         lenses.insert(2 if quality else 1, "security")
 

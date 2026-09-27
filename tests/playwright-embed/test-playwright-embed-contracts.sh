@@ -78,7 +78,9 @@ n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
 # args: 3846 → 3844. Still a shrink; the 4030 cap stands.
 # 8.4.0 re-baseline (spec 2026-09-16-doc-audit-debt-gate-design.md §3): the Hard-gate line now carries the lite-lane
 # qualifier (binding_conflict at execute-bolts dispatch) — +125 B, still under the 4030 cap.
-[ "$n" -eq 3969 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3969, 7.17.0: +register natural di baris narrate — spec 2026-08-31-natural-register.md; under the 4030 cap)"
+# 2026-09-27 re-baseline (research/2026-09-27-lane-router-results.md): the tier-L row names the lane router
+# (route-lane.sh → direct / assisted / guarded) — +13 B, still under the 4030 cap.
+[ "$n" -eq 3982 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3982, 7.17.0: +register natural di baris narrate — spec 2026-08-31-natural-register.md; under the 4030 cap)"
 # C1b: the COMPACT-mode extraction ('## Hard rule' awk, session-start:150-153 —
 # no frontmatter strip) is pinned separately: a line matching /^## Hard rule/ or
 # 'ANCHOR-CORE ends' inside the frontmatter would move THIS region without

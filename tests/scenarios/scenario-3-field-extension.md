@@ -3,7 +3,7 @@
 **Time**: ~20 minutes
 **Goal**: Add a missing field to an existing model. Demonstrates PARTIAL_FIELDS_MISSING auto-detection — the "PRD says (nip, nama, password), code has (nip, password), skill should know to add `nama`" use case.
 
-This walkthrough follows the classic chain (the DEFAULT for every 8.x release); the opt-in `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
+This walkthrough follows the standard (classic) chain — since 2026-09-27 reached only with `lane: standard` or an existing layout-2 vault: a clear greenfield PRD now takes the direct lane (`plugins/mega-sdd/references/direct-lane.md`) and a new PRD on the guarded lane defaults to lite; the `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
 
 ## Prerequisites
 

@@ -58,8 +58,12 @@ preview_url: ""            # dev-server base URL (e.g. http://localhost:5173) �
                            #   `scripts/uat-run.sh` (UAT e2e); the execute-bolts controller passes
                            #   the URL into the capture ladder as an argument — `capture-views.sh`
                            #   never reads config. Empty → design lens is code-only.
-# render_html: on          # ABSENT = on: every emit lane (prd/fsd/sit/uat + vault/KB renders) also writes the
-                           #   self-contained offline HTML beside the md. `off` skips the render step.
+# render_html: on          # ABSENT = off for the PIPELINE hand-offs (generate-intent / generate-units / plan /
+                           #   execute-bolts / extract-intelligence): no HTML beside the md — the render is
+                           #   regenerable via `/mega-sdd:emit html` and was 78–88% of committed .mega-sdd/
+                           #   lines in the 2026-09 benchmark. `on` restores the auto-render. The emit lanes
+                           #   (prd/fsd/sit/uat/html — a user asked for a document) always render; `off`
+                           #   skips even those.
 # unit_granularity: fine   # ABSENT = default (medium) unit size in generate-units; `coarse` = story-sized units
                            #   (600 LOC / 8 files — same as `--max-complexity=large`), `fine` = smaller.
                            #   Precedence: flag > config > default.

@@ -1,0 +1,82 @@
+{
+ "arm": "routed-1",
+ "arm_kind": "megasdd",
+ "model": "opus",
+ "speed": {
+  "wall_min": 3.68,
+  "process_duration_min": 3.71,
+  "api_time_min": 3.24,
+  "stream_silence_over_5m_min": 0.0,
+  "first_commit_min": 3.33,
+  "review_ready_min": 3.33
+ },
+ "tokens": {
+  "per_model": {
+   "claude-opus-5-5": {
+    "inputTokens": 62,
+    "outputTokens": 22008,
+    "cacheReadInputTokens": 2070623,
+    "cacheCreationInputTokens": 70863
+   }
+  },
+  "input": 62,
+  "output": 22008,
+  "cache_read": 2070623,
+  "cache_creation": 70863,
+  "total": 2163556,
+  "cost_usd": 1.42
+ },
+ "light": {
+  "tool_calls": 41,
+  "tool_calls_by_name": {
+   "Bash": 23,
+   "Write": 12,
+   "Edit": 4,
+   "ToolSearch": 1,
+   "mcp__plugin_mega-sdd_playwright__browser_run_code_unsafe": 1
+  },
+  "subagent_dispatches": 0,
+  "skill_calls": 0,
+  "ask_attempts": 0,
+  "distinct_files_read": 0,
+  "init_plugins": 4,
+  "init_skills": 62,
+  "commits": 1,
+  "diff_shape": {
+   "code": {
+    "files": 11,
+    "added": 368,
+    "deleted": 67
+   },
+   "test": {
+    "files": 2,
+    "added": 125,
+    "deleted": 0
+   },
+   "docs_md": {
+    "files": 0,
+    "added": 0,
+    "deleted": 0
+   },
+   "process": {
+    "files": 0,
+    "added": 0,
+    "deleted": 0
+   },
+   "other": {
+    "files": 4,
+    "added": 27,
+    "deleted": 14
+   }
+  }
+ },
+ "clean": {
+  "processes": 1,
+  "resume_or_outage_keys": [],
+  "purity": "PASS mega-sdd 8.8.1 loaded from mega-sdd@inline",
+  "api_retries": 0,
+  "api_retry_delay_s": 0.0,
+  "api_retry_errors": [],
+  "is_clean": true
+ }
+}

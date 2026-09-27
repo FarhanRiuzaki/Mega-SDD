@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [Unreleased] — lane router: tugas yang jelas dikerjakan seperti Claude Code biasa, pipeline hanya untuk yang butuh (belum dirilis)
+
+Sumber: `research/2026-09-27-vanilla-vs-megasdd-results.md`. Pada PRD greenfield, pipeline (lite/classic) 2,3–12× lebih lama dan 9–22× lebih mahal daripada vanilla Claude Code, sementara kualitasnya setara atau lebih rendah. Perubahan ini memindahkan default, bukan menghapus moat. Pipeline (binding CONFLICT, OQ, panel) tetap utuh di lane `guarded`.
+
+### Changed
+- **Front door merutekan dulu, baru menjalankan pipeline.**
+  - `scripts/route-lane.sh` bersifat deterministik, read-only, dan tanpa token model. Dari sinyal yang bisa diamati ia memilih salah satu lane:
+    - `direct`: tanpa sinyal. Dikerjakan di sesi utama tanpa vault, unit, subagent, atau tulisan ke `.mega-sdd/`.
+    - `assisted`: ada open item bisnis, security surface, produk multi-flow, atau brief pendek di app yang sudah ada. Isinya direct + satu batched ask sebelum coding + satu review buta.
+    - `guarded`: ada vault, atau file PRD di app yang sudah ada. Isinya pipeline seperti sebelumnya.
+  - Flag `--direct` / `--assisted` / `--guarded` memaksa lane. `--lite`, `--classic`, dan flag khusus pipeline otomatis berarti guarded.
+  - Prosedur: `references/direct-lane.md`.
+- **Render HTML di hand-off pipeline jadi opt-in** (`render_html: on`). Lane emit tetap merender. Pada 10 repo benchmark, HTML adalah 78–88% baris `.mega-sdd/` yang ter-commit.
+- **`.mega-sdd/.gitignore` dikelola `derive-state.sh`.**
+  - Di-ignore: salinan per-lens unit/pack, cache gate-state, `state.json`, `html/`.
+  - Tetap di-track: spec, unit, bukti bolt, `l0-results`, dan `dispatch-prompt.md`.
+  - `.gitignore` tanpa marker dianggap milik user dan tidak pernah ditimpa.
+  - Diukur pada repo benchmark: baris `.mega-sdd/` ter-commit turun 80–90% (xs ±40k → 4–8k, klinik ±124k → 19–21k).
+
+- **PRD baru di lane guarded → lite secara default.**
+  - Front door mencatatnya sebagai `lane: lite` di config. Vault lama tetap di lane-nya, dan `lane: standard` mengembalikan chain classic. Flag `--classic` tetap switch spine.
+  - Dasar: xs n=3, lite BETTER vs classic di waktu dan biaya dengan kualitas OVERLAP; klinik classic historis $260/102 menit vs lite $53–73.
+  - **Deviasi dari aturan yang dikunci:** aturan meminta kedua skenario, sedangkan klinik classic belum diukur di fixture ini. Dicatat di runbook §9.
+- **Lens `standards` hanya ikut bila `quality` ikut** (H1, `resolve-review-tier.sh`).
+  - Bukti lapangan: 5 dispatch, 0 Critical, 1 fix unik (nama key), ±335k token. Quality: 5 dispatch, 22 fix.
+  - Diterapkan tanpa A/B atas mandat owner. Efeknya pada run **belum diukur**.
+  - Pin: `tests/size-weighted/test-standards-lens-h1.sh`.
+
+### Added
+- **`scripts/delivery-check.sh`:** cek dari sudut pandang reviewer pada checkout HEAD yang fresh.
+  - Blocking: `scripts.test` asli; test lolos di TZ=UTC dan UTC+14; `build` lolos dengan env kosong.
+  - Advisory: halaman Next.js app-router yang tidak di-link dari mana pun.
+  - Wajib di akhir setiap lane. Di guarded, temuannya ditutup dalam satu commit `fix(delivery)` oleh controller.
+  - Dijalankan ke 16 repo benchmark: 6/6 vanilla PASS dan 9/9 run mega-sdd bersih FAIL. Ini mereproduksi secara mekanis semua defect yang sebelumnya ditemukan manual. Temuan baru: klinik lite-3 juga gagal build dengan env kosong, jadi 3/3, bukan 2/3 seperti laporan awal.
+- `bolt-implementer` step 5b: zona waktu dipin, secret divalidasi saat request (bukan saat import/prerender), dan test tanpa `scripts.test` dilaporkan.
+- `tests/lanes/test-lanes.sh`: 32 cek untuk router, delivery-check, `.gitignore`, dan wiring.
+- Harness: arm `routed` (`P0_ENTRY=frontdoor`, prompt `/mega-sdd:mega-sdd <PRD>`).
+- `benchmarks/runbooks/brownfield-ambiguous-prd.md`: eksperimen berikutnya. **Belum dijalankan.**
+
+### Notes — hasil arm `routed` vs vanilla (MEASURED 2026-09-27, n=3 run bersih per arm, opus)
+Laporan: `research/2026-09-27-lane-router-results.md`. Router memilih `direct` untuk xs dan `assisted` untuk klinik.
+
+| | vanilla | routed | lite (pipeline lama) |
+|---|---|---|---|
+| xs review-ready | 3,2 m | 2,7 m | 20,2 m |
+| xs biaya | $1,03 | $1,16 | $11,29 |
+| xs AC / rubric | 12/12 / 95 | 12/12 / 94 | 11/12 / 84 |
+| klinik review-ready | 30,0 m | 26,6 m | 70,5 m |
+| klinik biaya | $7,68 | $9,30 | $67,33 |
+| klinik subagent / baris `.mega-sdd/` | 0 / 0 | 1 / 0 | 126 / 123.824 |
+| klinik AC / Critical / rubric | 10/10 / 0 / 90 | 10/10 / 0 / 91 | 9–10/10 / 0 / 85 |
+| delivery-check | 8/8 PASS (termasuk vanilla-4) | 9/9 PASS | 0/6 (classic xs juga 0/3) |
+
+**Verdict:** routed **setara** dengan vanilla (OVERLAP), dan **tidak lebih baik**.
+- xs review-ready formalnya `BETTER`, tapi tidak diklaim. Alasannya: harinya berbeda dengan vanilla 1–3, prompt-nya asimetris, dan selisihnya cuma ±0,5 menit.
+- Rubric xs formalnya `WORSE` sebesar ≤2 poin antar sesi scorer. Vanilla yang dinilai di sesi yang sama mendapat 94.
+
+Yang terukur adalah hilangnya overhead pipeline di jalur default greenfield. Lane `guarded` dan moat-nya **belum diukur** (lihat runbook brownfield). Biaya blok: $47,45.
+
+
 ## [Unreleased] — pembanding vanilla Claude Code + complexity budget + hasil terukur pertama vs vanilla (belum dirilis)
 
 Sumber: audit 2026-09-26. Semua benchmark di repo ini membandingkan mega-sdd dengan mega-sdd versi lain; arm Claude Code tanpa plugin belum pernah ada. Rilis ini cuma nambah alat ukur dan aturan. Perilaku pipeline, gate, lens, dan default lane nggak diubah.

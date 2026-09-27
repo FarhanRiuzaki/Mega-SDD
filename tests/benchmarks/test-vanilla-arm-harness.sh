@@ -121,6 +121,7 @@ grep -q 'review_ready_min ≤ 60 | PASS' "$T/cmp.md" || fail "compare: absolute 
 mkdir -p "$T/arm/.git"; echo x > "$T/arm/prd.md"
 P0_ARM=bogus bash "$S/p0-headless-run.sh" "$T/arm" prd.md "$T/log" >/dev/null 2>&1; [ $? -eq 2 ] || fail "launcher: unknown P0_ARM must exit 2"
 P0_ARM=vanilla P0_FLAGS=--lite bash "$S/p0-headless-run.sh" "$T/arm" prd.md "$T/log" >/dev/null 2>&1; [ $? -eq 2 ] || fail "launcher: --lite on vanilla must exit 2"
+P0_ENTRY=bogus bash "$S/p0-headless-run.sh" "$T/arm" prd.md "$T/log" >/dev/null 2>&1; [ $? -eq 2 ] || fail "launcher: unknown P0_ENTRY must exit 2"
 
 # --- launcher end-to-end with a stub `claude` on PATH (relative $0, as the runbook invokes it) ---
 mkdir -p "$T/bin" "$T/arm2"
@@ -136,7 +137,12 @@ for kind in vanilla megasdd; do
   ( cd "$ROOT" && STUB_ARGS="$T/args-$kind" PATH="$T/bin:$PATH" P0_ARM=$kind \
       bash benchmarks/scripts/p0-headless-run.sh "$T/arm2" prd.md "$T/log-$kind" >/dev/null 2>&1 )
 done
+( cd "$ROOT" && STUB_ARGS="$T/args-frontdoor" PATH="$T/bin:$PATH" P0_ARM=megasdd P0_ENTRY=frontdoor \
+    bash benchmarks/scripts/p0-headless-run.sh "$T/arm2" prd.md "$T/log-frontdoor" >/dev/null 2>&1 )
 sleep 1
+grep -qx -- '/mega-sdd:mega-sdd prd.md' "$T/args-frontdoor" || fail "launcher: P0_ENTRY=frontdoor must prompt the front door with the PRD and nothing else"
+grep -q 'analyze' "$T/args-frontdoor" && fail "launcher: the frontdoor entry must not prescribe an analyze pass"
+grep -q '^entry=frontdoor' "$T/log-frontdoor/run.meta" || fail "launcher: entry= must be recorded in run.meta"
 grep -q '^purity=PASS' "$T/log-vanilla/run.meta" || fail "launcher: vanilla arm with a plugin-free roster must record purity=PASS"
 grep -qx -- '--settings' "$T/args-vanilla" || fail "launcher: vanilla arm must pass --settings (plugins disabled)"
 grep -qx -- '--settings' "$T/args-megasdd" && fail "launcher: mega-sdd arm must launch exactly as before (no --settings)"

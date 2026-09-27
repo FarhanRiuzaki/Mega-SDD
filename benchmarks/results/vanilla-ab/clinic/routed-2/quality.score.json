@@ -1,0 +1,50 @@
+{
+ "completion": 1.0,
+ "ac_pass": 10,
+ "ac_total": 10,
+ "ac": {
+  "C1": "PASS",
+  "C2": "PASS",
+  "C3": "PASS",
+  "C4": "PASS",
+  "C5": "PASS",
+  "C6": "PASS",
+  "C7": "PASS",
+  "C8": "PASS",
+  "C9": "PASS",
+  "C10": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 5,
+ "rubric": 91,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/server/action-utils.ts:11",
+   "what": "Public rate-limit key derives from client-supplied x-forwarded-for (spoofable) and limiter is in-process only (rate-limit.ts:6)"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/components/schedule-grid.tsx",
+   "what": "PRD \u00a78.1 specifies Schedule-X resource view for doctor/reception schedule grid; a custom grid is used instead"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/reminders.ts:26",
+   "what": "Appointments booked <24h ahead have reminder_at in the past and get a 'reminder' immediately on next sweep instead of being skipped/handled explicitly"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/api/appointments/[id]/cancel/route.ts:24",
+   "what": "On failed cancel POST the one-time token is re-placed in the redirect query string, exposing it to logs/history"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/staff.ts:175",
+   "what": "Emergency override bypasses the future-time check, allowing staff to create 'booked' appointments in the past without warning"
+  }
+ ],
+ "blind_label": "MK",
+ "scorer_sid": "71da2b1a-f695-4d4a-812c-2a3a74274fe4"
+}

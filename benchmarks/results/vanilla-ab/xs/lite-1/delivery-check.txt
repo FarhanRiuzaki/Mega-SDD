@@ -1,0 +1,5 @@
+delivery-check @ 8a47497 (/private/tmp/claude-501/mega-sdd-bench/work/xs-lite-1)
+  D1 FAIL package.json has no real scripts.test — a reviewer's `npm test` fails; add the command the tests actually run with
+  D4 PASS npm run build on a fresh checkout, empty env: exit 0
+  D5 WARN 1 of 2 page route(s) are linked from no other source file: /tentang — a user can only reach them by typing the URL
+VERDICT: FAIL (1 blocking)

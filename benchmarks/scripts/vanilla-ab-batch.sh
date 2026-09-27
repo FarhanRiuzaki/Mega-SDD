@@ -2,7 +2,8 @@
 # vanilla-ab-batch.sh — run a vanilla-vs-mega-sdd block SEQUENTIALLY, one fresh fixture copy per
 # run (benchmarks/runbooks/vanilla-vs-megasdd.md §4, §6). Each line of <plan> is
 #   <scenario> <arm> <run-id> <prd-rel-path>
-# with <arm> = vanilla | lite | classic. Per run:
+# with <arm> = vanilla | lite | classic | routed (routed = the front door with the PRD and no flag:
+# the lane router decides — P0_ENTRY=frontdoor). Per run:
 #   1. cp -R <fixture> (node_modules included — installed OUTSIDE the clock) → <work>/<scenario>-<run-id>
 #   2. vanilla only: the user-level /mega-sdd wrapper (~/.claude/commands/mega-sdd.md) is moved
 #      aside for the run and restored after (the mega-sdd arm's session-start re-heals it anyway);
@@ -32,11 +33,13 @@ while read -r SCEN ARMNAME RID PRD; do
     vanilla) KIND=vanilla; FLAGS="" ;;
     lite)    KIND=megasdd; FLAGS="--lite" ;;
     classic) KIND=megasdd; FLAGS="" ;;
+    routed)  KIND=megasdd; FLAGS="" ;;
     *) echo "unknown arm: $ARMNAME" >&2; continue ;;
   esac
   [ "$KIND" = vanilla ] && [ -f "$WRAP" ] && mv -f "$WRAP" "$WRAP_BAK"
   echo "== $(date -u +%H:%M:%SZ) launch $SCEN $ARMNAME $RID"
-  P0_ARM=$KIND P0_FLAGS="$FLAGS" P0_PLUGIN_DIR="${P0_PLUGIN_DIR:-}" \
+  ENTRY=chain; [ "$ARMNAME" = routed ] && ENTRY=frontdoor
+  P0_ARM=$KIND P0_ENTRY=$ENTRY P0_FLAGS="$FLAGS" P0_PLUGIN_DIR="${P0_PLUGIN_DIR:-}" \
     bash "$BENCH/p0-headless-run.sh" "$ARMDIR" "$PRD" "$OUT" "$MODEL" > "$OUT.launch.log" 2>&1
   PID=$(grep -m1 '^pid=' "$OUT/run.meta" 2>/dev/null | cut -d= -f2)
   START=$(date +%s)

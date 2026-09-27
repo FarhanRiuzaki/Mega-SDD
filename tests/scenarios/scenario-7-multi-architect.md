@@ -3,7 +3,7 @@
 **Time**: 60 minutes total (20 min per architect)
 **When to use**: Project where PRD is shared across multiple IT architects (BE, MW, FE) — each architect generates their own vault for their scope only
 
-This walkthrough follows the classic chain (the DEFAULT for every 8.x release); the opt-in `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
+This walkthrough follows the standard (classic) chain — since 2026-09-27 reached only with `lane: standard` or an existing layout-2 vault: a clear greenfield PRD now takes the direct lane (`plugins/mega-sdd/references/direct-lane.md`) and a new PRD on the guarded lane defaults to lite; the `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
 
 **Prerequisites**:
 - Mega-sdd v7.4+ (multi-scope picker)

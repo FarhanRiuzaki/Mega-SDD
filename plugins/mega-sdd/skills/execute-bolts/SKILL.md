@@ -1,6 +1,6 @@
 ---
 name: execute-bolts
-version: 2.54.0
+version: 2.55.0
 description: Executes units into code commits (bolts) via the first-class mega-sdd bolt agents (implementer + parallel blind review panel), with Hard Rule pre/post-flight scans that HALT on violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
@@ -167,7 +167,7 @@ Per unit: a `<vault>/bolts/U-XXX/` dir (created deterministically at Procedure S
 
 ## Hand-off
 
-After the last unit: suggest `detect-drift` to verify the bolts honored the vault; show a summary (N done, M failed, P skipped). **Auto-render HTML (0 model tokens):** run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-html.sh" <vault>/bolts/_summary.md` and name the html path in the summary — the batch report as a shareable offline page. Fail-open (one warning line, never a halt); skip when `.mega-sdd/config.yaml` has `render_html: off`. Under `--auto`, emit the handoff YAML (artifacts one-line-per-bolt with NO range shorthand; `starterkit_context` + `metrics` incl. `acceptance_test_concerns`; conditional `scope:` block). End-of-chain phase advancement (multi-phase rebuild) and the full handoff YAML schema → `references/halts-and-handoff.md`.
+After the last unit: **delivery check (deterministic, every run).** `Run: bash "${CLAUDE_PLUGIN_ROOT}/scripts/delivery-check.sh" --cwd=<root>` — a fresh checkout of HEAD: real `scripts.test`, tests green under UTC and UTC+14, `build` green with an empty env, every page route linked (advisory). Units are atomized per artifact, so no unit owns cross-cutting delivery (the manifest's test script, the navigation shell): all 6 xs pipeline runs shipped without `npm test` and without a link to one of the pages, and 3/3 clinic lite runs failed `build` without `.env`. On `VERDICT: FAIL` the controller fixes the findings in ONE commit `fix(delivery): <what>` (no `Unit:` trailer — it is not a bolt), re-runs the check, and lists each fix in the summary; a finding it cannot fix inside the spec is reported, never hidden. Then suggest `detect-drift` to verify the bolts honored the vault; show a summary (N done, M failed, P skipped). **HTML render — only with `render_html: on` in `.mega-sdd/config.yaml`:** run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-html.sh" <vault>/bolts/_summary.md` and name the html path in the summary — the batch report as a shareable offline page. Fail-open. Absent key = no render (`/mega-sdd:emit html` regenerates it any time). Under `--auto`, emit the handoff YAML (artifacts one-line-per-bolt with NO range shorthand; `starterkit_context` + `metrics` incl. `acceptance_test_concerns`; conditional `scope:` block). End-of-chain phase advancement (multi-phase rebuild) and the full handoff YAML schema → `references/halts-and-handoff.md`.
 
 ## Specialist references (load on the stated condition)
 

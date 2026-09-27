@@ -8,7 +8,7 @@ This repository **is** the `mega-sdd` Claude Code plugin (plus its marketplace m
 
 - The **5 non-negotiable invariants** (the spec↔code grounding moat — binding verdicts + the CONFLICT gate, citation discipline, halt taxonomy, no fabrication).
 - The **enforcement doctrine** — *gates > rules > hooks*; "prose that says HALT enforces nothing."
-- The **v4 architecture** (lean skills + progressive disclosure, Hybrid hook enforcement, first-class `agents/`, commands as CLI entry points) and the **two 8.x lanes** (classic default chain + the opt-in `--lite` plan → bolts lane, JIT bind per unit).
+- The **v4 architecture** (lean skills + progressive disclosure, Hybrid hook enforcement, first-class `agents/`, commands as CLI entry points) and the **lane router** (`route-lane.sh`: direct / assisted / guarded — only guarded runs a pipeline) and the **two pipelines** inside guarded (lite plan → bolts with JIT bind per unit, the default for a new PRD; the standard/classic chain via `lane: standard` or an existing layout-2 vault).
 - The **Authoring standards** — derived from current Claude Code / Anthropic guidance, NOT invented: SKILL.md ≤ 500 lines + progressive disclosure; description = what + when with **no version archaeology**; **valid-YAML frontmatter** (no bare `key: value` colon-space in a description); references one level deep; plugin-agent frontmatter constraints; canonical nested vault paths.
 
 **Follow those standards; do not regress to the pre-v4 anti-patterns.** They exist because v4 was a ground-up modernization to align the plugin with how Claude Code skills/plugins are meant to work.

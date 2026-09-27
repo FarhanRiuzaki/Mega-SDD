@@ -1,0 +1,60 @@
+{
+ "completion": 1.0,
+ "ac_pass": 10,
+ "ac_total": 10,
+ "ac": {
+  "C1": "PASS",
+  "C2": "PASS",
+  "C3": "PASS",
+  "C4": "PASS",
+  "C5": "PASS",
+  "C6": "PASS",
+  "C7": "PASS",
+  "C8": "PASS",
+  "C9": "PASS",
+  "C10": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 7,
+ "rubric": 90,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/server/client-ip.ts:6",
+   "what": "Rate limiter keys on the leftmost client-controlled X-Forwarded-For value; spoofing it bypasses /book rate limits (limiter is also in-memory per instance)."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/reminders.ts:87-95",
+   "what": "Claim-then-send gives at-most-once delivery: a crash between the claim UPDATE and the send loses that reminder permanently."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:410-422",
+   "what": "Reassign does not check the new doctor's working hours or whether the appointment is in the past."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:265",
+   "what": "Staff override skips all availability checks, including past dates."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:189",
+   "what": "Every appointment is fixed at 15 minutes; service.duration_minutes is ignored."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/components/schedule-grid.tsx",
+   "what": "Custom grid replaces the Schedule-X resource view named in PRD \u00a78.1; receptionists get only a day view, not today plus week."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/reminders.ts:31",
+   "what": "Appointments booked less than 24h ahead never get a reminder (grace-window skip), and this is not surfaced to the user."
+  }
+ ],
+ "blind_label": "HT",
+ "scorer_sid": "b795d50c-e9ee-4091-81cb-114cd88c1716"
+}

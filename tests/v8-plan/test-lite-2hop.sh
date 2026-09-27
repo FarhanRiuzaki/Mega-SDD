@@ -50,5 +50,5 @@ grep -q 'plan <input> --lite --mode=<existing|new>' "$P/commands/mega-sdd.md" &&
 grep -q 'P2 2-hop lane' "$P/skills/orchestrate-flow/SKILL.md" && pass "e: orchestrate-flow --lite line names the 2-hop lane" || fail "e: orchestrate-flow prose"
 grep -q '^| \*\*Lane lite\*\*' "$P/skills/orchestrate-flow/references/routing-rules.md" && pass "e: routing-rules carries the lane-lite row" || fail "e: routing-rules row"
 grep -q '^## Lite lane exemption' "$P/skills/orchestrate-flow/references/handoff-consumption.md" && pass "e: handoff-consumption documents the plan exemption" || fail "e: handoff-consumption"
-grep -q 'Lite lane (`--lite` / config `lane: lite`, v8 P2, opt-in): `plan`' "$P/skills/using-mega-sdd/SKILL.md" && pass "e: router mentions the lite lane" || fail "e: router prose"
+grep -q 'Lite lane (`--lite` / `lane: lite`; guarded-PRD default): `plan`' "$P/skills/using-mega-sdd/SKILL.md" && pass "e: router mentions the lite lane" || fail "e: router prose"
 [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"; exit $rc

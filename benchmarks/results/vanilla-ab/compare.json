@@ -258,71 +258,371 @@
      "min": 85,
      "max": 87
     }
+   },
+   "routed": {
+    "n_clean": 3,
+    "review_ready_min": {
+     "n": 3,
+     "median": 26.59,
+     "min": 22.73,
+     "max": 29.64
+    },
+    "wall_min": {
+     "n": 3,
+     "median": 27.37,
+     "min": 23.58,
+     "max": 30.57
+    },
+    "api_time_min": {
+     "n": 3,
+     "median": 22.96,
+     "min": 19.09,
+     "max": 23.05
+    },
+    "stream_silence_over_5m_min": {
+     "n": 3,
+     "median": 0.0,
+     "min": 0.0,
+     "max": 0.0
+    },
+    "total": {
+     "n": 3,
+     "median": 18109030,
+     "min": 10945030,
+     "max": 20143526
+    },
+    "input": {
+     "n": 3,
+     "median": 232,
+     "min": 168,
+     "max": 240
+    },
+    "output": {
+     "n": 3,
+     "median": 163112,
+     "min": 137869,
+     "max": 166565
+    },
+    "cache_read": {
+     "n": 3,
+     "median": 17601049,
+     "min": 10517061,
+     "max": 19620930
+    },
+    "cost_usd": {
+     "n": 3,
+     "median": 9.3,
+     "min": 6.95,
+     "max": 9.79
+    },
+    "tool_calls": {
+     "n": 3,
+     "median": 141,
+     "min": 85,
+     "max": 185
+    },
+    "subagent_dispatches": {
+     "n": 3,
+     "median": 1,
+     "min": 1,
+     "max": 1
+    },
+    "ask_attempts": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "distinct_files_read": {
+     "n": 3,
+     "median": 9,
+     "min": 3,
+     "max": 30
+    },
+    "docs_md_added": {
+     "n": 3,
+     "median": 51,
+     "min": 35,
+     "max": 54
+    },
+    "process_added": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "code_test_added": {
+     "n": 3,
+     "median": 5275,
+     "min": 5067,
+     "max": 7561
+    },
+    "completion": {
+     "n": 3,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "ac_rate": {
+     "n": 3,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "critical": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "important": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "rubric": {
+     "n": 3,
+     "median": 91,
+     "min": 90,
+     "max": 91
+    }
+   },
+   "vanilla-day2": {
+    "n_clean": 1,
+    "review_ready_min": {
+     "n": 1,
+     "median": 30.98,
+     "min": 30.98,
+     "max": 30.98
+    },
+    "wall_min": {
+     "n": 1,
+     "median": 31.28,
+     "min": 31.28,
+     "max": 31.28
+    },
+    "api_time_min": {
+     "n": 1,
+     "median": 22.79,
+     "min": 22.79,
+     "max": 22.79
+    },
+    "stream_silence_over_5m_min": {
+     "n": 1,
+     "median": 0.0,
+     "min": 0.0,
+     "max": 0.0
+    },
+    "total": {
+     "n": 1,
+     "median": 15548267,
+     "min": 15548267,
+     "max": 15548267
+    },
+    "input": {
+     "n": 1,
+     "median": 196,
+     "min": 196,
+     "max": 196
+    },
+    "output": {
+     "n": 1,
+     "median": 167915,
+     "min": 167915,
+     "max": 167915
+    },
+    "cache_read": {
+     "n": 1,
+     "median": 15140624,
+     "min": 15140624,
+     "max": 15140624
+    },
+    "cost_usd": {
+     "n": 1,
+     "median": 8.3,
+     "min": 8.3,
+     "max": 8.3
+    },
+    "tool_calls": {
+     "n": 1,
+     "median": 158,
+     "min": 158,
+     "max": 158
+    },
+    "subagent_dispatches": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "ask_attempts": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "distinct_files_read": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "docs_md_added": {
+     "n": 1,
+     "median": 98,
+     "min": 98,
+     "max": 98
+    },
+    "process_added": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "code_test_added": {
+     "n": 1,
+     "median": 6027,
+     "min": 6027,
+     "max": 6027
+    },
+    "completion": {
+     "n": 1,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "ac_rate": {
+     "n": 1,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "critical": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "important": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "rubric": {
+     "n": 1,
+     "median": 91,
+     "min": 91,
+     "max": 91
+    }
    }
   },
   "verdicts": {
    "review_ready_min": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "wall_min": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "api_time_min": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "stream_silence_over_5m_min": [
-    "lite: OVERLAP"
+    "lite: OVERLAP",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "total": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "input": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "output": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "cache_read": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "cost_usd": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "tool_calls": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "subagent_dispatches": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: WORSE",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "ask_attempts": [
-    "lite: OVERLAP"
+    "lite: OVERLAP",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "distinct_files_read": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: WORSE",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "docs_md_added": [
-    "lite: BETTER"
+    "lite: BETTER",
+    "routed: BETTER",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "process_added": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "code_test_added": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "completion": [
-    "lite: OVERLAP"
+    "lite: OVERLAP",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "ac_rate": [
-    "lite: OVERLAP"
+    "lite: OVERLAP",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "critical": [
-    "lite: OVERLAP"
+    "lite: OVERLAP",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "important": [
-    "lite: OVERLAP"
+    "lite: OVERLAP",
+    "routed: BETTER",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "rubric": [
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ]
   }
  },
@@ -714,92 +1014,542 @@
      "min": 80,
      "max": 89
     }
+   },
+   "routed": {
+    "n_clean": 3,
+    "review_ready_min": {
+     "n": 3,
+     "median": 2.65,
+     "min": 2.41,
+     "max": 2.69
+    },
+    "wall_min": {
+     "n": 3,
+     "median": 3.04,
+     "min": 2.83,
+     "max": 3.04
+    },
+    "api_time_min": {
+     "n": 3,
+     "median": 2.65,
+     "min": 2.64,
+     "max": 2.73
+    },
+    "stream_silence_over_5m_min": {
+     "n": 3,
+     "median": 0.0,
+     "min": 0.0,
+     "max": 0.0
+    },
+    "total": {
+     "n": 3,
+     "median": 1307107,
+     "min": 1021684,
+     "max": 1479546
+    },
+    "input": {
+     "n": 3,
+     "median": 40,
+     "min": 34,
+     "max": 44
+    },
+    "output": {
+     "n": 3,
+     "median": 18097,
+     "min": 15798,
+     "max": 18899
+    },
+    "cache_read": {
+     "n": 3,
+     "median": 1220474,
+     "min": 946740,
+     "max": 1394156
+    },
+    "cost_usd": {
+     "n": 3,
+     "median": 1.16,
+     "min": 0.98,
+     "max": 1.18
+    },
+    "tool_calls": {
+     "n": 3,
+     "median": 28,
+     "min": 25,
+     "max": 32
+    },
+    "subagent_dispatches": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "ask_attempts": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "distinct_files_read": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "docs_md_added": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "process_added": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "code_test_added": {
+     "n": 3,
+     "median": 565,
+     "min": 529,
+     "max": 582
+    },
+    "completion": {
+     "n": 3,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "ac_rate": {
+     "n": 3,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "critical": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "important": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "rubric": {
+     "n": 3,
+     "median": 94,
+     "min": 93,
+     "max": 94
+    }
+   },
+   "routed-v1": {
+    "n_clean": 3,
+    "review_ready_min": {
+     "n": 3,
+     "median": 2.37,
+     "min": 2.29,
+     "max": 3.33
+    },
+    "wall_min": {
+     "n": 3,
+     "median": 2.73,
+     "min": 2.64,
+     "max": 3.68
+    },
+    "api_time_min": {
+     "n": 3,
+     "median": 2.43,
+     "min": 2.08,
+     "max": 3.24
+    },
+    "stream_silence_over_5m_min": {
+     "n": 3,
+     "median": 0.0,
+     "min": 0.0,
+     "max": 0.0
+    },
+    "total": {
+     "n": 3,
+     "median": 1003719,
+     "min": 751480,
+     "max": 2163556
+    },
+    "input": {
+     "n": 3,
+     "median": 34,
+     "min": 26,
+     "max": 62
+    },
+    "output": {
+     "n": 3,
+     "median": 17028,
+     "min": 14821,
+     "max": 22008
+    },
+    "cache_read": {
+     "n": 3,
+     "median": 928289,
+     "min": 680756,
+     "max": 2070623
+    },
+    "cost_usd": {
+     "n": 3,
+     "median": 0.99,
+     "min": 0.88,
+     "max": 1.42
+    },
+    "tool_calls": {
+     "n": 3,
+     "median": 26,
+     "min": 23,
+     "max": 41
+    },
+    "subagent_dispatches": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "ask_attempts": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "distinct_files_read": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "docs_md_added": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "process_added": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "code_test_added": {
+     "n": 3,
+     "median": 502,
+     "min": 493,
+     "max": 526
+    },
+    "completion": {
+     "n": 3,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "ac_rate": {
+     "n": 3,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "critical": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "important": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "rubric": {
+     "n": 3,
+     "median": 95,
+     "min": 93,
+     "max": 96
+    }
+   },
+   "vanilla-day2": {
+    "n_clean": 1,
+    "review_ready_min": {
+     "n": 1,
+     "median": 3.68,
+     "min": 3.68,
+     "max": 3.68
+    },
+    "wall_min": {
+     "n": 1,
+     "median": 3.89,
+     "min": 3.89,
+     "max": 3.89
+    },
+    "api_time_min": {
+     "n": 1,
+     "median": 3.16,
+     "min": 3.16,
+     "max": 3.16
+    },
+    "stream_silence_over_5m_min": {
+     "n": 1,
+     "median": 0.0,
+     "min": 0.0,
+     "max": 0.0
+    },
+    "total": {
+     "n": 1,
+     "median": 1178329,
+     "min": 1178329,
+     "max": 1178329
+    },
+    "input": {
+     "n": 1,
+     "median": 48,
+     "min": 48,
+     "max": 48
+    },
+    "output": {
+     "n": 1,
+     "median": 22857,
+     "min": 22857,
+     "max": 22857
+    },
+    "cache_read": {
+     "n": 1,
+     "median": 1104207,
+     "min": 1104207,
+     "max": 1104207
+    },
+    "cost_usd": {
+     "n": 1,
+     "median": 1.09,
+     "min": 1.09,
+     "max": 1.09
+    },
+    "tool_calls": {
+     "n": 1,
+     "median": 34,
+     "min": 34,
+     "max": 34
+    },
+    "subagent_dispatches": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "ask_attempts": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "distinct_files_read": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "docs_md_added": {
+     "n": 1,
+     "median": 15,
+     "min": 15,
+     "max": 15
+    },
+    "process_added": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "code_test_added": {
+     "n": 1,
+     "median": 845,
+     "min": 845,
+     "max": 845
+    },
+    "completion": {
+     "n": 1,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "ac_rate": {
+     "n": 1,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "critical": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "important": {
+     "n": 1,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "rubric": {
+     "n": 1,
+     "median": 94,
+     "min": 94,
+     "max": 94
+    }
    }
   },
   "verdicts": {
    "review_ready_min": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: BETTER",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "wall_min": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: BETTER",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "api_time_min": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "stream_silence_over_5m_min": [
     "classic: OVERLAP",
-    "lite: OVERLAP"
+    "lite: OVERLAP",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "total": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "input": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "output": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: BETTER",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "cache_read": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "cost_usd": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "tool_calls": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "subagent_dispatches": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "ask_attempts": [
     "classic: OVERLAP",
-    "lite: OVERLAP"
+    "lite: OVERLAP",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "distinct_files_read": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "docs_md_added": [
     "classic: OVERLAP",
-    "lite: OVERLAP"
+    "lite: OVERLAP",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "process_added": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "code_test_added": [
     "classic: OVERLAP",
-    "lite: OVERLAP"
+    "lite: OVERLAP",
+    "routed: BETTER",
+    "routed-v1: BETTER",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "completion": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "ac_rate": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "critical": [
     "classic: OVERLAP",
-    "lite: OVERLAP"
+    "lite: OVERLAP",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "important": [
     "classic: OVERLAP",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: OVERLAP",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ],
    "rubric": [
     "classic: WORSE",
-    "lite: WORSE"
+    "lite: WORSE",
+    "routed: WORSE",
+    "routed-v1: OVERLAP",
+    "vanilla-day2: INSUFFICIENT"
    ]
   }
  }

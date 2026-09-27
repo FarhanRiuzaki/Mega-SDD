@@ -14,10 +14,10 @@ Manual-run fixture for the `plan` skill — the lite-lane pre-code phase (PRD �
 - **Prompt:** `/mega-sdd docs/PRD-leave.md`
 - **Expect:** same lite chain as P1 (the config key is the durable form of the flag)
 
-### P3: Classic default is untouched (negative)
-- **Setup:** no `lane:` key, no `--lite`
+### P3: `lane: standard` keeps the classic chain (negative)
+- **Setup:** `.mega-sdd/config.yaml` has `lane: standard`; the repo is an existing app (router → guarded)
 - **Prompt:** `/mega-sdd docs/PRD-leave.md`
-- **Expect:** the classic chain (`generate-intent → scan → bind → units → bolts`); `plan` is NOT invoked
+- **Expect:** the classic chain (`generate-intent → bind → units → bolts`); `plan` is NOT invoked. (Without the key, a new PRD on the guarded lane now runs `plan` — the lite default since 2026-09-27; a clear greenfield PRD takes the direct lane and invokes neither.)
 
 ### P4: Natural English
 - **Prompt:** `plan this PRD --lite` / `PRD straight to units`
@@ -84,4 +84,4 @@ Manual-run fixture for the `plan` skill — the lite-lane pre-code phase (PRD �
 
 ## Pass criteria
 
-P1/P2/P4/P5 invoke `plan`; P3/P7 do NOT (classic default and Mode B untouched); P6 refuses off-lane. B1–B9 hold: layout-3 output set, dual citations, contracts-not-verdicts, `--cwd` validators with read exit codes, one batched keterangan ask, xs deferral, regenerate guard, reconcile = task_type only, no handoff YAML.
+P1/P2/P4/P5 invoke `plan`; P3/P7 do NOT (`lane: standard` and Mode B untouched); P6 refuses off-lane. B1–B9 hold: layout-3 output set, dual citations, contracts-not-verdicts, `--cwd` validators with read exit codes, one batched keterangan ask, xs deferral, regenerate guard, reconcile = task_type only, no handoff YAML.

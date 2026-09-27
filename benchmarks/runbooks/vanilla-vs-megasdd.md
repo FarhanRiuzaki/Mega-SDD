@@ -1,6 +1,6 @@
 # Runbook — vanilla Claude Code vs mega-sdd (xs + klinik, n ≥ 3 per arm)
 
-**Status:** blok xs (vanilla / lite / classic, n=3 bersih masing-masing) dan klinik (vanilla / lite, n=3 bersih masing-masing) **SUDAH DIUKUR** 2026-09-26/27 — hasil §8, analisis `research/2026-09-27-vanilla-vs-megasdd-results.md`. Klinik classic **belum diukur**.
+**Status:** arm `routed` (lane router) diukur 2026-09-27 (§8d). Blok xs (vanilla / lite / classic, n=3 bersih masing-masing) dan klinik (vanilla / lite, n=3 bersih masing-masing) **SUDAH DIUKUR** 2026-09-26/27 — hasil §8, analisis `research/2026-09-27-vanilla-vs-megasdd-results.md`. Klinik classic **belum diukur**.
 **Kenapa ada:** setiap benchmark di repo ini (`benchmarks/results/{baseline,comparison,optimized,p0-baseline,p2-w2,p3}`) membandingkan mega-sdd dengan **mega-sdd versi lain**. Belum pernah ada arm Claude Code tanpa plugin. Jadi klaim "mega-sdd lebih cepat/hemat/ringan/kuat" belum punya pembanding. Aturan repo sejak runbook ini: klaim itu **tidak boleh** ditulis sebelum tabel §8 terisi dan verdict-nya `BETTER` (`plugins/mega-sdd/CLAUDE.md §Release evidence`).
 
 ## 1. "Seperti Feather", dijadikan angka
@@ -27,6 +27,7 @@ Semua angka di kolom target adalah **usulan**. Owner mengubah atau mengesahkanny
 | `vanilla` | `P0_ARM=vanilla benchmarks/scripts/p0-headless-run.sh …`. Plugin mega-sdd dimatikan per sesi (`--settings enabledPlugins false`); prompt = task produk polos | **ya** |
 | `lite` | `P0_FLAGS=--lite benchmarks/scripts/p0-headless-run.sh …` | ya (kandidat default) |
 | `classic` | `benchmarks/scripts/p0-headless-run.sh …` (default lane hari ini) | ya bila keputusan default lane mau dibuat |
+| `routed` | batch arm `routed` (`P0_ENTRY=frontdoor`): prompt = `/mega-sdd:mega-sdd <PRD>`, tanpa flag. Lane router (`route-lane.sh`) yang memilih direct / assisted / guarded; lane yang dipilih terlihat di stream | ya, sejak 2026-09-27 (arm produk setelah router) |
 | `gate-only` (diagnostik) | vanilla + hanya CONFLICT gate | **belum ada mekanismenya** — belum ada config yang mematikan semua kecuali gate. Arm ini tidak menggantikan vanilla |
 
 **Kemurnian arm dicek mesin.** Launcher membaca record `system/init` stream (`arm-purity.py`). Arm vanilla yang masih memuat permukaan mega-sdd apa pun (plugin, skill, slash command termasuk wrapper user-level `/mega-sdd`, agent) di-KILL, dan `purity=FAIL` ditulis di `run.meta` (bukan data). Daftar plugin lengkap tercatat di `plugins=` untuk kedua arm.
@@ -120,7 +121,7 @@ python3 benchmarks/scripts/compare-arms.py benchmarks/results/vanilla-ab/manifes
 | Rilis yang mengklaim perbaikan speed/token | arm rilis vs arm rilis sebelumnya **dan** vs vanilla, n ≥ 3. Kalau memburuk terhadap salah satunya, tulis apa adanya |
 
 **Hipotesis overhead yang diuji dengan harness ini (belum diterapkan di kode):**
-- **H1 — lens `standards` hanya ikut bila `quality` ikut.** Bukti saat ini: yield lapangan 0 Critical dan 1 fix unik dari 5 dispatch di satu project (`research/2026-08-30-lens-yield-field.md` §2). n kecil dan statusnya "owner memutuskan". Uji: arm `lite` vs `lite+H1`, n=3 xs + n=3 klinik. Diterapkan hanya bila Critical/Important tidak `WORSE` dan cost `BETTER`.
+- **H1 — lens `standards` hanya ikut bila `quality` ikut. DITERAPKAN 2026-09-27 tanpa A/B** (mandat owner: buang proses tanpa manfaat sepadan). Dasarnya bukti lapangan di bawah; pin `tests/size-weighted/test-standards-lens-h1.sh`. Efek biaya/kualitas pada run belum diukur. Bukti saat ini: yield lapangan 0 Critical dan 1 fix unik dari 5 dispatch di satu project (`research/2026-08-30-lens-yield-field.md` §2). n kecil dan statusnya "owner memutuskan". Uji: arm `lite` vs `lite+H1`, n=3 xs + n=3 klinik. Diterapkan hanya bila Critical/Important tidak `WORSE` dan cost `BETTER`.
 - **H2 — `plan` berhenti membaca `generate-units/SKILL.md` (31 KB) lintas-skill.** Diganti digest di `plan-procedure.md`. Statis: −31.184 B dari 470.979 B jejak T01 lite (−6,6 %, `measure-context.sh`). Efek runtime belum diukur.
 - **H3 — re-derive gate di PreToolUse di-cache per HEAD + hash evidence.** Belum ada angka latency jalur dispatch (lihat 6c). Ukur dulu, baru diputuskan.
 
@@ -157,6 +158,12 @@ Median run bersih (n=3 per arm; rentang di `benchmarks/results/vanilla-ab/REPORT
 
 Median run bersih (n=3 per arm): review-ready vanilla 30,0 · lite 70,5 menit; cost $7,68 · $67,33; token 13,1 M · 146,9 M; AC 10/10 · 9/10 (rentang 9–10); Important 2 · 2; rubric 90 · 85. Verdict vs vanilla: speed / token / cost / lightness **WORSE**; AC rate, Critical, Important **OVERLAP**; rubric WORSE.
 
+### 8d. routed (lane router) vs vanilla — xs + klinik (fixture sama, 2026-09-27)
+
+Detail per run, verdict, dan batasan: `research/2026-09-27-lane-router-results.md` + `results/vanilla-ab/REPORT.md` (arm `routed`, `routed-v1`, `vanilla-day2`).
+- Median: xs 2,7 menit / $1,16 / AC 12/12 / rubric 94; klinik 26,6 menit / $9,30 / AC 10/10 / rubric 91. Semua OVERLAP dengan vanilla, kecuali xs review-ready (`BETTER` formal, tidak diklaim karena beda hari dan prompt asimetris) dan xs rubric (`WORSE` formal, ≤2 poin, beda sesi scorer).
+- Delivery-check 9/9 PASS.
+
 ### 8c. Konteks historis — mega-sdd saja, TIDAK sebanding dengan vanilla
 
 Diukur ulang 2026-09-26 dengan `arm-metrics.py` dari `stream.jsonl` yang sudah di-commit. Run yang tidak bersih ada di file-nya, tidak di sini. Fixture dan PRD sama, tapi versi plugin berbeda-beda. Tabel ini menunjukkan **variansi**, bukan perbandingan.
@@ -184,5 +191,8 @@ Run yang dicatat TERCEMAR di log pengukurannya (mis. `xs-lite-8.3.0-levers-run1`
 | 2026-09-26 | **Dikunci:** target §1 persis seperti tertulis (usulan diterima apa adanya), seed urutan xs `20260926` → `vanilla, lite, vanilla, lite, lite, vanilla` (`results/vanilla-ab/plan-xs.txt`), budget blok xs (6 run). Klinik dan arm classic ditunda sampai hasil xs keluar (§runbook "next") | Claude atas delegasi owner ("gas semua, gue terima beres") |
 | 2026-09-26 | **Deviasi fixture:** `training-nextjs @ c6821ad` tidak tersedia di mesin ini (SCM internal tidak ter-resolve). Blok ini memakai fixture baru yang di-pin: `create-next-app@16.3.6` (`--ts --app --eslint --tailwind --src-dir`, npm) + PRD xs, commit `ff006be`, `npm install` di luar jam ukur. Semua arm di blok ini memakai fixture yang SAMA. Angka blok ini tidak sebanding dengan run historis §8c (starter berbeda: tanpa MUI / next-auth) | Claude |
 | 2026-09-26 | **Plugin di arm mega-sdd:** salinan `git archive` dari `plugins/mega-sdd` di branch `bench/vanilla-arm` (8.8.1) di path TANPA spasi (`P0_PLUGIN_DIR=/private/tmp/claude-501/mega-sdd-bench/plugin-8.8.1`) dimuat sebagai `mega-sdd@inline`, salinan marketplace 8.7.2 dimatikan per sesi. Roster lain identik di kedua arm (probe: superpowers 6.4.1, agents-md, telemetry) | Claude |
+| 2026-09-27 | **Lane router + direct lane** diterapkan (brief owner: "rombak berdasarkan bukti"). Arm baru `routed` diukur pada fixture xs + klinik yang SAMA, n=3, plus satu vanilla per skenario (vanilla-4) sebagai cek drift hari-berbeda terhadap vanilla 1–3. Seed urutan `20260929` (xs) / `20260930` (klinik), plan `results/vanilla-ab/plan-routed-*.txt`. Plugin = snapshot working tree `bench/vanilla-arm` (belum di-commit) di `plugin-routed/` | Claude atas delegasi owner |
+| 2026-09-27 | **PRD baru di lane guarded → lite secara default** (vault lama tetap di lane-nya; `lane: standard` = classic). **Deviasi dari aturan §7 yang dikunci:** aturan meminta lite vs classic di KEDUA skenario, sedangkan klinik classic belum pernah diukur di fixture ini. Dasar keputusan: xs n=3 (lite BETTER di waktu dan biaya, AC/rubric/Critical OVERLAP), klinik historis classic $259,66 / 102 menit (n=1, fixture lain) vs lite $53–73 / 65–94 menit, dan mandat owner "pertahankan hanya kompleksitas dengan nilai terukur" (classic menambah tiga fase model tanpa manfaat terukur). Bisa dibalik lewat config. Classic klinik tetap jadi arm opsional di blok brownfield | Claude atas mandat owner |
+| 2026-09-27 | Eksperimen brownfield + PRD ambigu dirancang, TIDAK dijalankan: `brownfield-ambiguous-prd.md` | Claude |
 
 **Estimasi biaya (EST, dari run historis §8c):** xs ≈ $25–80 per arm-run (vanilla belum diketahui), klinik ≈ $105–260. 2 arm mega-sdd (lite + classic) × 3 run: xs 6 × $25–80 ≈ $150–480, klinik 6 × $105–260 ≈ $630–1.560. Total ≈ $780–2.040, ditambah arm vanilla (belum diketahui) dan scorer. Keputusan budget ada di owner.

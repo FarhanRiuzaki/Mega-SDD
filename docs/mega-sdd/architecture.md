@@ -4,7 +4,7 @@ This document is the durable architecture record. For implementation details, se
 
 ## The 4-layer model
 
-**Intent → Bind → Unit → Bolt** (Bind is brownfield-only) — the classic lane, the DEFAULT through 8.x. The opt-in `--lite` lane (8.0.0) folds Intent + Unit into one `plan` phase and performs Bind just-in-time per unit inside the Bolt phase.
+**Intent → Bind → Unit → Bolt** (Bind is brownfield-only) — the classic lane (`lane: standard`). The `--lite` lane (8.0.0; the default for a new PRD on the guarded lane since 2026-09-27 — a clear greenfield PRD takes the direct lane, no pipeline) folds Intent + Unit into one `plan` phase and performs Bind just-in-time per unit inside the Bolt phase.
 
 Each layer has a different audience, different anti-hallucination rails, and different artifacts. They compose into a single pipeline.
 

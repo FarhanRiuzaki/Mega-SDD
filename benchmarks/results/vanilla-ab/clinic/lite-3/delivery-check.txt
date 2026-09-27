@@ -1,0 +1,7 @@
+delivery-check @ 4bf93c0 (/private/tmp/claude-501/mega-sdd-bench/work/clinic-lite-3)
+  D1 PASS scripts.test = vitest run
+  D2 PASS npm test (TZ=UTC) exit 0
+  D3 PASS npm test (TZ=Pacific/Kiritimati) exit 0
+  D4 FAIL npm run build fails on a fresh checkout with an empty env (exit 1) — a missing secret must fail at request time with a clear message, not at import/prerender — tail: Error occurred prerendering page "/staff/schedule". Read more: https://nextjs.org/docs/messages/prerender-error Error: DATABASE_URL is not set > 18 |       throw new Error("DATABASE_URL is not set"); 
+  D5 PASS every static page route (4) is linked from another source file
+VERDICT: FAIL (1 blocking)

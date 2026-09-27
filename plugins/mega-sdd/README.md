@@ -54,7 +54,7 @@ flowchart LR
     LEG[legacy] --> EXT["extract-intelligence<br/>census → PRD-kontrak"]
     EXT --> PRD[PRD / idea] --> GI[generate-intent]
     GI --> SB[scan + bind<br/>brownfield] --> GU[generate-units] --> EB[execute-bolts]
-    PRD -.->|"--lite (opt-in, 8.0.0)"| PL["plan<br/>context.md + units (layout-3)"] -.-> EB
+    PRD -.->|"--lite (default for a new guarded PRD)"| PL["plan<br/>context.md + units (layout-3)"] -.-> EB
     EB --> EMIT[emit-agents-md<br/>+ emit prd / fsd / sit / uat]
 ```
 

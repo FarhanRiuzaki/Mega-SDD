@@ -1,0 +1,52 @@
+{
+ "completion": 1.0,
+ "ac_pass": 12,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 5,
+ "rubric": 96,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "package.json:5-11",
+   "what": "Tests/app depend on node:sqlite and native TS type-stripping but no engines field declares the Node version; tests also emit MODULE_TYPELESS_PACKAGE_JSON warning"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact/submit.ts:12",
+   "what": "DB insert failures are not caught; the server action throws, the user sees a generic error and loses form input"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact/validation.ts:24-38",
+   "what": "Length limits use UTF-16 .length (astral chars count double) on trimmed values rather than true character count"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact/validation.ts:13",
+   "what": "Email regex is permissive (accepts e.g. a@b..c)"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/actions.ts:7-12",
+   "what": "No rate limiting or spam protection on a public form that writes to the DB (not required by PRD)"
+  }
+ ],
+ "blind_label": "EP",
+ "scorer_sid": "4d2d58ad-1ea9-4d43-af06-474cd549b5c5"
+}

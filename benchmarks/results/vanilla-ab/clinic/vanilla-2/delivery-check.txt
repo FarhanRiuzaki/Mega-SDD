@@ -1,0 +1,7 @@
+delivery-check @ 63df219 (/private/tmp/claude-501/mega-sdd-bench/work/clinic-vanilla-2)
+  D1 PASS scripts.test = vitest run
+  D2 PASS npm test (TZ=UTC) exit 0
+  D3 PASS npm test (TZ=Pacific/Kiritimati) exit 0
+  D4 PASS npm run build on a fresh checkout, empty env: exit 0
+  D5 PASS every static page route (5) is linked from another source file
+VERDICT: PASS

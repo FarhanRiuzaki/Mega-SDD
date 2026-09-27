@@ -130,7 +130,7 @@ A sample PRD to match expected outputs exactly: [`sample-prd-clinic.md`](tests/s
 
 ```bash
 /mega-sdd ./prd.md                   # PRD → working code (4 phases, express)
-/mega-sdd ./prd.md --lite            # opt-in v8 lite lane: plan → execute-bolts --all --lite (JIT bind per wave)
+/mega-sdd ./prd.md --lite            # force the lite pipeline (already the default for a new PRD on the guarded lane): plan → execute-bolts --all --lite (JIT bind per wave)
 /mega-sdd ./legacy-php/ --out=./new/ # Legacy → PRD-kontrak KB → vault → code (5 phases, express)
 /mega-sdd "build a clinic system"    # Free-text brief → code (4 phases; 3 with --greenfield)
 /mega-sdd                            # no arg → status view, then proposes next chain
@@ -211,7 +211,7 @@ flowchart TB
         EXTRACT["extract-intelligence<br/>legacy → PRD-kontrak (census)"]:::phase --> INTENT["generate-intent<br/>(vault + OQs)"]:::phase
         INTENT --> GROUND["ground + bind (express)<br/>ast-grep AST · CONFIRMED/CONFLICT/OQ"]:::phase
         GROUND --> UNITS["generate-units<br/>atomic + Anchors + Hard Rules"]:::phase --> BOLTS["execute-bolts<br/>sprint waves (parallel) · pre/post-flight + L0 gates<br/>--lite: JIT bind per wave"]:::phase
-        PLAN["plan (--lite, opt-in since 8.0.0)<br/>context.md + constitution.md + units (layout-3)"]:::phase -.-> BOLTS
+        PLAN["plan (lite — default for a new guarded PRD)<br/>context.md + constitution.md + units (layout-3)"]:::phase -.-> BOLTS
     end
 
     subgraph EXEC["🤖 Execution agents"]
@@ -361,7 +361,7 @@ Single-confirm pipeline-end execution with auto-continue, progress indication, C
 
 ```bash
 /mega-sdd ./prd.md                    # detect → propose chain → confirm once → run
-/mega-sdd ./prd.md --lite             # opt-in v8 lite lane: plan → execute-bolts --all --lite; durable form: lane: lite in .mega-sdd/config.yaml
+/mega-sdd ./prd.md --lite             # force the lite pipeline: plan → execute-bolts --all --lite; durable form: lane: lite in .mega-sdd/config.yaml
 /mega-sdd --resume                    # continue paused chain (CWD + checkpoint driven)
 /mega-sdd --step-after=bind-codebase  # manual handoff after binding
 /mega-sdd --shallow                   # opt-out of --deep (cap-3 default)

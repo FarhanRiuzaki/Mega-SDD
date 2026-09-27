@@ -1,0 +1,7 @@
+# routed block (lane router, 2026-09-27), seed 20260929: python3 -c "import random; a=['routed']*3+['vanilla']; random.seed(20260929); random.shuffle(a); print(a)"
+# -> ['routed', 'routed', 'routed', 'vanilla']   vanilla-4 = same-day drift check against vanilla 1-3 (2026-09-26)
+# plugin tree: working tree of bench/vanilla-arm at launch, snapshot copied to plugin-routed/ (uncommitted changes included)
+xs routed 1 PRD/prd-company-profile.md
+xs routed 2 PRD/prd-company-profile.md
+xs routed 3 PRD/prd-company-profile.md
+xs vanilla 4 PRD/prd-company-profile.md

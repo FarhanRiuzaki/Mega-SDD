@@ -1,0 +1,5 @@
+58e974f 2026-09-27T02:14:41+07:00 fix: keep override bookings on the slot grid; re-check reminders before sending
+20732f8 2026-09-27T02:11:28+07:00 feat: clinic appointment system (booking, token cancel/reschedule, reminders, staff views)
+2f1c78c 2026-09-26T12:48:09+07:00 fixture: clinic PRD
+ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
+da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

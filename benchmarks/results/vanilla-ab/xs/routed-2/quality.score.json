@@ -1,0 +1,47 @@
+{
+ "completion": 1.0,
+ "ac_pass": 12,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 4,
+ "rubric": 95,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/contact-form.tsx:44",
+   "what": "Client maxLength counts UTF-16 code units while server counts code points (contact-validation.ts:16-18); astral-character input can be blocked client-side although server-valid"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/contact-form.tsx:28",
+   "what": "key={JSON.stringify(state)} remounts the form after each submit, losing keyboard focus; no focus management to first invalid field"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-store.ts:43",
+   "what": "DB path defaults to cwd-relative data/contact.sqlite using experimental node:sqlite; breaks on read-only/serverless hosts, undocumented"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-submission.ts:40",
+   "what": "store.save errors are not caught; a DB failure throws out of the server action instead of showing an inline form error"
+  }
+ ],
+ "blind_label": "SP",
+ "scorer_sid": "73d5d790-70dc-4d7c-85e1-742ae0ff0a60"
+}

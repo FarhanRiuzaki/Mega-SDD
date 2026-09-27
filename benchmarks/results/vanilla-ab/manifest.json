@@ -120,6 +120,84 @@
    "run": "lite-4",
    "metrics": "clinic/lite-4/metrics.json",
    "quality": "clinic/lite-4/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "routed-v1",
+   "run": "routed-1",
+   "metrics": "xs/routed-1/metrics.json",
+   "quality": "xs/routed-1/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "routed-v1",
+   "run": "routed-2",
+   "metrics": "xs/routed-2/metrics.json",
+   "quality": "xs/routed-2/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "routed-v1",
+   "run": "routed-3",
+   "metrics": "xs/routed-3/metrics.json",
+   "quality": "xs/routed-3/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "routed",
+   "run": "routed-4",
+   "metrics": "xs/routed-4/metrics.json",
+   "quality": "xs/routed-4/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "routed",
+   "run": "routed-5",
+   "metrics": "xs/routed-5/metrics.json",
+   "quality": "xs/routed-5/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "routed",
+   "run": "routed-6",
+   "metrics": "xs/routed-6/metrics.json",
+   "quality": "xs/routed-6/quality.score.json"
+  },
+  {
+   "scenario": "xs",
+   "arm": "vanilla-day2",
+   "run": "vanilla-4",
+   "metrics": "xs/vanilla-4/metrics.json",
+   "quality": "xs/vanilla-4/quality.score.json"
+  },
+  {
+   "scenario": "clinic",
+   "arm": "routed",
+   "run": "routed-1",
+   "metrics": "clinic/routed-1/metrics.json",
+   "quality": "clinic/routed-1/quality.score.json"
+  },
+  {
+   "scenario": "clinic",
+   "arm": "routed",
+   "run": "routed-2",
+   "metrics": "clinic/routed-2/metrics.json",
+   "quality": "clinic/routed-2/quality.score.json"
+  },
+  {
+   "scenario": "clinic",
+   "arm": "routed",
+   "run": "routed-3",
+   "metrics": "clinic/routed-3/metrics.json",
+   "quality": "clinic/routed-3/quality.score.json"
+  },
+  {
+   "scenario": "clinic",
+   "arm": "vanilla-day2",
+   "run": "vanilla-4",
+   "metrics": "clinic/vanilla-4/metrics.json",
+   "quality": "clinic/vanilla-4/quality.score.json"
   }
- ]
+ ],
+ "_arms_note": "routed = plugin snapshot v2 (plugin-routed/: done = delivery-check PASS); routed-v1 = xs routed 1-3 on the first snapshot (delivery-check not yet the definition of done). vanilla-day2 = one vanilla run per scenario on the routed block's day (drift check, NOT pooled into the pre-registered vanilla arm)."
 }

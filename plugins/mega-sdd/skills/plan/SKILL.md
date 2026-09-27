@@ -1,6 +1,6 @@
 ---
 name: plan
-version: 1.2.0
+version: 1.2.1
 description: v8 lite-lane PLAN — ONE model phase turns a PRD into the layout-3 vault (`context.md` flows + DBML + NFR + OQ, `constitution.md`, `vault.json`) AND the atomic units (`units/U-*.md` + `_index.md`) with `prd_source`/`context_source` citations, then raises ONE batched ask for P1 business OQs. Runs only on the lite lane (`--lite`, or config lane=lite; the classic chain keeps generate-intent → bind → generate-units). Use when the chain routes here or the user says "plan PRD ini", "rencanakan dari PRD", "plan this PRD", "PRD langsung ke units", or paraphrases.
 ---
 
@@ -56,7 +56,7 @@ Identical to `generate-intent` + `generate-units`, restated because they are the
 
 **6. ONE batched ask — the only interaction point of this phase.** Collect the open **P1 `[business]`** OQs (plus L0 toolchain items the chain handed over). Present ONE `AskUserQuestion` with ≤4 questions, each: the OQ text + its PRD context (side-by-side quote), `[1]` recommended answer (grounded or "no recommendation — needs stakeholder"), `[2]` Defer, `[3]` Out of scope, + "Other" free text; **keterangan mandatory** (question source + per-option explanation, Indonesian for ID users). More than 4 P1 business OQs → ask the 4 with the largest unit blast radius; the rest stay `blocking` (listed in the report; their units stay blocked at bolts). Apply answers to `context.md ## Open Questions` (`→ **Resolved**` / `**Deferred**` / `→ Out of Scope`), re-run `derive-vault-json.sh`, refresh `binding_refs` on the units that cite them. Headless (`AskUserQuestion` unavailable) → the business OQs stay open; never self-answer a business OQ inside the skill (tech OQs were already decided at Step 3).
 
-**7. Self-check + present.** Verdict table vs the Step-2 contract (screens / entities / flows / OQs / units — counts must reconcile; a mismatch is fixed, never explained away); anti-halu + readability checklist (`../generate-intent/references/self-check.md`). Chat summary: vault path, counts, project_scale, top blocker OQs, `NEXT: /mega-sdd --resume` (the front door dispatches `execute-bolts --all --lite`). **Auto-render HTML (0 model tokens):** `bash "<plugin-root>/scripts/render-html.sh" <vault> --index` fail-open. No "I have created…" preamble.
+**7. Self-check + present.** Verdict table vs the Step-2 contract (screens / entities / flows / OQs / units — counts must reconcile; a mismatch is fixed, never explained away); anti-halu + readability checklist (`../generate-intent/references/self-check.md`). Chat summary: vault path, counts, project_scale, top blocker OQs, `NEXT: /mega-sdd --resume` (the front door dispatches `execute-bolts --all --lite`). **HTML render (opt-in):** only with `render_html: on` in `.mega-sdd/config.yaml` — `bash "<plugin-root>/scripts/render-html.sh" <vault> --index` fail-open; default: none (regenerable via `/mega-sdd:emit html`). No "I have created…" preamble.
 
 ## Halt conditions (index — YAML per type in `plugins/mega-sdd/references/halt-protocol.md`)
 

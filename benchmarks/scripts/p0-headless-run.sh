@@ -29,7 +29,7 @@
 #   mega-sdd surface is KILLED and marked purity=FAIL (not data). Both arms record the full
 #   plugin roster (plugins=) — other plugins are a confound to hold equal across arms, not hide.
 #
-# usage: [P0_ARM=megasdd|vanilla] [P0_FLAGS="--lite"] [P0_PLUGIN_DIR=<plugin tree>] p0-headless-run.sh <arm-dir> <prd-rel-path> <log-dir> [model]
+# usage: [P0_ARM=megasdd|vanilla] [P0_ENTRY=chain|frontdoor] [P0_FLAGS="--lite"] [P0_PLUGIN_DIR=<plugin tree>] p0-headless-run.sh <arm-dir> <prd-rel-path> <log-dir> [model]
 #   prints the session id + transcript path; runs detached (nohup); exit 0 = launched.
 #   P0_FLAGS (v8 P2, 2026-09-11): front-door flags spliced into the prompt verbatim
 #   ("jalankan mega-sdd --lite dari …") so the classic and lite arms differ ONLY by
@@ -47,6 +47,12 @@ SID="$(python3 -c 'import uuid;print(uuid.uuid4())')"
 ENC="$(python3 -c 'import sys,re;print(re.sub(r"[^A-Za-z0-9]", "-", sys.argv[1]))' "$(cd "$ARM" && pwd -P)")"
 TRANSCRIPT="$HOME/.claude/projects/$ENC/$SID.jsonl"
 PROMPT="jalankan mega-sdd${FLAGS:+ $FLAGS} dari $PRD sampai semua unit selesai (DONE), lalu jalankan /mega-sdd:analyze di akhir."
+# P0_ENTRY=frontdoor (2026-09-27, lane router): the way a user starts the plugin — the front
+# door command with the PRD, nothing about units or analyze in the prompt (that wording presumed
+# the pipeline and forced an analyze pass). The front door's route-lane.sh then picks the lane.
+ENTRY="${P0_ENTRY:-chain}"
+case "$ENTRY" in chain|frontdoor) ;; *) echo "P0_ENTRY must be chain|frontdoor: $ENTRY" >&2; exit 2 ;; esac
+[ "$ENTRY" = frontdoor ] && PROMPT="/mega-sdd:mega-sdd${FLAGS:+ $FLAGS} $PRD"
 # Vanilla task = the same deliverable the mega-sdd chain is judged on (every requirement +
 # Definition of Done / acceptance criterion of the PRD, tests, green suite, committed code),
 # with no method prescribed — Claude Code decides how to plan, test and review.
@@ -65,10 +71,11 @@ elif [ -n "${P0_PLUGIN_DIR:-}" ]; then
   EXTRA=(--settings "$DISABLE" --plugin-dir "$P0_PLUGIN_DIR")
 fi
 SYS="Benchmark run on a disposable fixture (v8 P0 measurement, research/2026-09-10-v8-autonomous-runbook.md §1). The human owner is not present and AskUserQuestion is unavailable in this session. Whenever the mega-sdd chain would ask the user something (front-door confirmation, batched OQ, scope, toolchain, halts that wait for a human), choose the MOST CONSERVATIVE option yourself (the one easiest to revert: defer, keep vault, do not invent UI, do not widen scope), write one line '[ASSUMED-BY-RUNNER: <question> -> <choice>: <reason>]' in your reply, and CONTINUE the chain. Never stop to wait for a human. Do not skip or loosen any gate, validator, acceptance test or review — a failing gate is fixed by fixing the code, never by editing evidence files. NEVER end your turn while any background implementer, panel lens or task is still running — this is a headless session: an ended turn exits the process 10 minutes later and the chain dies (v8 P2 lite 7.37.0 arm, 2026-09-14). Wait for background results with a blocking poll and only end the turn after /mega-sdd:analyze has run."
+[ "$ENTRY" = frontdoor ] && SYS="${SYS% Wait for background results*} Wait for background results with a blocking poll and only end the turn when the work is complete and committed."
 [ "$KIND" = vanilla ] && SYS="$VSYS"
 ALLOWED="Bash,Read,Write,Edit,MultiEdit,Glob,Grep,Skill,Agent,ToolSearch,TodoWrite,NotebookEdit,WebFetch"
 {
-  echo "sid=$SID"; echo "arm=$ARM"; echo "prd=$PRD"; echo "model=$MODEL"; echo "flags=$FLAGS"; echo "arm_kind=$KIND"; echo "transcript=$TRANSCRIPT"
+  echo "sid=$SID"; echo "arm=$ARM"; echo "prd=$PRD"; echo "model=$MODEL"; echo "flags=$FLAGS"; echo "entry=$ENTRY"; echo "arm_kind=$KIND"; echo "transcript=$TRANSCRIPT"
   echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"; echo "head_before=$(cd "$ARM" && git rev-parse --short HEAD)"
   echo "plugin=$(claude plugin list 2>/dev/null | grep -A1 'mega-sdd@' | grep -o 'Version: .*' | head -1)"; echo "plugin_dir=${P0_PLUGIN_DIR:-}"
 } > "$LOG/run.meta"

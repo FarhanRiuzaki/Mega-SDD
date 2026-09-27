@@ -1,0 +1,55 @@
+{
+ "completion": 1.0,
+ "ac_pass": 10,
+ "ac_total": 10,
+ "ac": {
+  "C1": "PASS",
+  "C2": "PASS",
+  "C3": "PASS",
+  "C4": "PASS",
+  "C5": "PASS",
+  "C6": "PASS",
+  "C7": "PASS",
+  "C8": "PASS",
+  "C9": "PASS",
+  "C10": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 6,
+ "rubric": 91,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/lib/appointments/service.ts (sweepReminders)",
+   "what": "Reminders are only sent while reminder_at is within \u00b15 min of now; a cron outage over 5 min or a booking made under 24h ahead means that reminder is never sent"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/appointments/service.ts (reassignAppointment)",
+   "what": "Reassign doesn't check the target doctor's working days/hours or whether the appointment is already in the past"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/appointments/service.ts (bookAppointment override branch)",
+   "what": "Staff override skips all checks, allowing bookings in the past or at arbitrary minutes"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/rate-limit.ts; src/app/(public)/reschedule/[token]/actions.ts",
+   "what": "Rate limiter keeps counts in memory per process and keys on the spoofable x-forwarded-for header; reschedule actions have no rate limit"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/components/staff/schedule-grid.tsx",
+   "what": "Custom schedule grid instead of the Schedule-X resource view named in PRD \u00a78.1/F-S-001"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/appointments/service.ts",
+   "what": "Nothing ever sets an appointment to 'completed', so that status can't occur"
+  }
+ ],
+ "blind_label": "CP",
+ "scorer_sid": "3defb714-8396-46f0-8b9a-8f0c3b8778f8"
+}

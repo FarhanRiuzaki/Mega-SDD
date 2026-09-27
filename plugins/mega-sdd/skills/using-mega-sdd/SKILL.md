@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 4.2.3
+version: 4.3.0
 description: Session-start router for spec-driven development — weighs every task S/M/L and routes only M/L through a mega-sdd skill; S answers inline. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, revamp, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang.
 ---
 
@@ -14,7 +14,7 @@ Weigh the task FIRST; only tiers M and L route through a mega-sdd skill — the 
 |---|---|---|
 | **S — direct** (DEFAULT when unsure) | bug hunt / fix / debug / local refactor (~1-3 files); questions about code; no PRD / vault / unit / bolt / spec / sync / binding / OQ mention; no artifact argument; continuation prompt (`lanjut`, `ok`, `next`) when no mega-sdd skill ran this session | NO pipeline — answer as plain Claude Code. May Read AT MOST ONE vault doc (read-only) if the prompt names a domain the vault owns; no ground, no derive-state, no status view, zero mega-sdd scripts. If relevant, end with ONE line: `mau masuk pipeline? → /mega-sdd` |
 | **M — delta** | a spec/feature change to existing scope — "tambah field", "ubah flow", "ganti validasi", "fitur baru di …", a 1-2 sentence feature brief | `/mega-sdd` front door → its MECHANICAL ownership check (vault.json entity/flow match) decides: match → delta lane with ONE confirmation; no match → drop to S + the one-line offer (do NOT interrogate) |
-| **L — full** | artifact argument (PRD/BRD file, legacy dir, vault); `--greenfield`; a new epic; explicit `/mega-sdd`; `sync` after the code moved | the full chain as today via the front door (→ `orchestrate-flow`) |
+| **L — full** | artifact argument (PRD/BRD file, legacy dir, vault); `--greenfield`; a new epic; explicit `/mega-sdd`; `sync` after the code moved | front door: `route-lane.sh` → direct/assisted/guarded (→ `orchestrate-flow`) |
 
 Override always wins: `--weight=S|M|L` (the only weight flag — `--full` already means the diagnostics profile); "skip SDD" / "just write the code" → S — the user is in control.
 
@@ -52,7 +52,7 @@ Narrate (chat, halts, recommendations) in **natural Indonesian-English mix — t
 generate-intent → (bind-codebase --express if brownfield — claim-scoped, zero map load; scan-codebase is ON-DEMAND / classic-spine only) → generate-units → execute-bolts
 ```
 
-Lite lane (`--lite` / config `lane: lite`, v8 P2, opt-in): `plan` (PRD → `context.md` + units, ONE batched ask at the end) → `execute-bolts --all --lite` (JIT bind per wave, unit-level readiness). Default lane unchanged.
+Lite lane (`--lite` / `lane: lite`; guarded-PRD default): `plan` (PRD → `context.md` + units, ONE batched ask at the end) → `execute-bolts --all --lite` (JIT bind per wave, unit-level readiness). Default lane unchanged.
 
 Legacy-rebuild upstream lane (code is the only spec):
 

@@ -1,0 +1,47 @@
+{
+ "completion": 1.0,
+ "ac_pass": 12,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 4,
+ "rubric": 93,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact.ts:73",
+   "what": "save() is not wrapped in error handling; a DB failure throws out of the server action, the user sees an error boundary, and their input is lost with no 'failed to send' message"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact.ts:47",
+   "what": "Length limits use UTF-16 .length, so emoji/astral characters count double against the 100/2000 character limits"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/db.ts:29",
+   "what": "Single-file SQLite at cwd/data via experimental node:sqlite; messages won't persist on serverless/read-only deployments and this limit is not documented"
+  },
+  {
+   "severity": "Minor",
+   "where": "tests/pages.test.mts:29",
+   "what": "Navigation/label/escaping tests regex the source text instead of rendering pages, so they are weak regression protection"
+  }
+ ],
+ "blind_label": "MY",
+ "scorer_sid": "3ee38a17-03b1-462f-8967-df3afe9b7f89"
+}
