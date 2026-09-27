@@ -7,6 +7,13 @@
 # ai-consumer-guide and generate-units' grammar references (unit-schema, task-typing, decomposition rails,
 # validation passes, adversarial prompt) as its Tier-3 pointers; the lite execute-bolts hop adds
 # jit-bind-and-quarantine.md. Published as MEASURED per release.
+# 9.0 (P1, 2026-09-27): the four classic skills were deleted; plan's Tier-3 pointers now resolve to the
+# relocated contracts (plugins references/vault-core.md; plan/references/context-authoring.md replaces the
+# generation-guide + self-check reads; unit-procedure.md replaces generate-units SKILL.md + auto-and-memory;
+# unit-schema / unit template / task-typing / decomposition-rails / validation-passes / adversarial prompt moved
+# whole). scope-flow / kb-input / brief-input / pbt-integration are conditional (flag or input shape) and not traced.
+# This trace is the GUARDED lane (an existing vault or --guarded); a clear greenfield PRD takes the direct lane
+# (files.optimized.txt).
 plugins/mega-sdd/skills/using-mega-sdd/SKILL.md
 plugins/mega-sdd/commands/mega-sdd.md
 plugins/mega-sdd/skills/orchestrate-flow/SKILL.md
@@ -20,18 +27,16 @@ plugins/mega-sdd/skills/plan/SKILL.md
 plugins/mega-sdd/skills/plan/references/plan-procedure.md
 plugins/mega-sdd/skills/plan/references/templates/context.md
 plugins/mega-sdd/skills/plan/references/unit-grammar-cheatsheet.md
-plugins/mega-sdd/skills/generate-intent/references/vault-core.md
-plugins/mega-sdd/skills/generate-intent/references/generation-guide.md [SECTION:Step3+templates+readability]
-plugins/mega-sdd/skills/generate-intent/references/self-check.md
-plugins/mega-sdd/skills/generate-intent/references/templates/ai-consumer-guide.md
-plugins/mega-sdd/skills/generate-units/SKILL.md
-plugins/mega-sdd/skills/generate-units/references/unit-schema.md
-plugins/mega-sdd/skills/generate-units/references/templates/unit.md
-plugins/mega-sdd/skills/generate-units/references/task-typing.md
-plugins/mega-sdd/skills/generate-units/references/decomposition-rails.md [SECTION:dependency-graph]
-plugins/mega-sdd/skills/generate-units/references/validation-passes.md
-plugins/mega-sdd/skills/generate-units/references/adversarial-test-prompt.md
-plugins/mega-sdd/skills/generate-units/references/auto-and-memory.md [SECTION:scope-propagation+_index]
+plugins/mega-sdd/references/vault-core.md
+plugins/mega-sdd/skills/plan/references/context-authoring.md
+plugins/mega-sdd/skills/plan/references/templates/ai-consumer-guide.md
+plugins/mega-sdd/skills/plan/references/unit-procedure.md
+plugins/mega-sdd/skills/plan/references/unit-schema.md
+plugins/mega-sdd/skills/plan/references/templates/unit.md
+plugins/mega-sdd/skills/plan/references/task-typing.md
+plugins/mega-sdd/skills/plan/references/decomposition-rails.md [SECTION:dependency-graph]
+plugins/mega-sdd/skills/plan/references/validation-passes.md
+plugins/mega-sdd/skills/plan/references/adversarial-test-prompt.md
 plugins/mega-sdd/skills/execute-bolts/SKILL.md
 plugins/mega-sdd/skills/execute-bolts/references/jit-bind-and-quarantine.md
 plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md

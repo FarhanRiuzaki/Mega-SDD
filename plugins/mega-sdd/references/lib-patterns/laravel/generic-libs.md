@@ -1,12 +1,12 @@
 # Laravel — Generic Library Catalog
 
-> Catalog consumed by `libs-extractor` subagent in `scan-codebase` v2.6.0+ deep-scan.
+> Detection catalog for the legacy `starterkit-context.yaml §libs[]` array (producer removed in 9.0).
 
 **Output target:** `starterkit-context.yaml §libs[]` array
 
 ## Purpose
 
-`libs-extractor` produces a complete inventory of packages from `composer.json` + `package.json`, categorized by purpose + annotated with usage hints. Auth/RBAC/UI libs are also covered by their domain-specific extractors; libs-extractor adds the remaining categories.
+The pre-9.0 `libs-extractor` produced a complete inventory of packages from `composer.json` + `package.json`, categorized by purpose + annotated with usage hints. Auth/RBAC/UI libs were also covered by their domain-specific extractors; libs-extractor added the remaining categories.
 
 ## Categories enum
 

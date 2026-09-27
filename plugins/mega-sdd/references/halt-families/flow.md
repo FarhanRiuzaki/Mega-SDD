@@ -1,6 +1,6 @@
 # Halt guidance — flow family
 
-Per-type guidance for halts emitted by: orchestrate-flow / front door / sync (detect-drift) / install-deps (+ anti-recursive guards).
+Per-type guidance for halts emitted by: orchestrate-flow / front door / sync (detect-drift) / install-deps / GROUND (`ground.sh` guards) / shared tooling (`dep_missing`) (+ anti-recursive guards).
 Split from the canonical registry `plugins/mega-sdd/references/halt-protocol.md`
 (spec 2026-08-17-halt-registry-family-split.md) — the registry keeps the envelope
 schema, escalation discipline, subtype enums, and the per-type index that routes
@@ -16,11 +16,11 @@ Registry one-liner (absorbed, same type):
 
 ### constitution_drift_detected
 
-- `constitution_drift_detected` — detect-drift: §B Security or §F Compliance constitution clause drift detected in code, or `constitution.md`'s hash no longer matches the one the binding was made against. ALWAYS STOP in the detect-drift lane — CONFLICT-like (the hard-rule grounding the binding relied on is stale; resolution = `/mega-sdd:sync` / re-bind), kept blocking by owner decision 2026-09-10 (v8 W1 exception); at generate-units 12.4 it stays unit-level DEFER.
+- `constitution_drift_detected` — detect-drift: §B Security or §F Compliance constitution clause drift detected in code, or `constitution.md`'s hash no longer matches the one the binding was made against. ALWAYS STOP in the detect-drift lane — CONFLICT-like (the hard-rule grounding the binding relied on is stale), kept blocking by owner decision 2026-09-10 (v8 W1 exception); at plan Step 4 constitution inject it stays unit-level DEFER. Resolution: a clause violation → fix the code, re-run detect-drift. A hash mismatch → revert `constitution.md` to the pinned state, OR accept the change (bolts already read the live `constitution.md` at dispatch) until a re-pin path exists. `/mega-sdd:sync` does NOT clear it: no JIT bind (`rebind-units.sh`) reads the constitution or re-pins `constitution_hash`, and `derive-vault-json.sh` carries the pinned layout-3 `vault.json` hash forward, so an accepted change re-fires this halt on each detect-drift run.
 
 ### memory_in_use
 
-- `memory_in_use` — pipeline file-lock collision (the halt NAME is historical): the lock is `vault.json.lock` (`derive-vault-json.sh`) or the starterkit-context lock; a concurrent writer holds it. The writer retries 3 times with backoff (0.1s → 0.5s → 1.5s, ~2.1s total); still locked → exit 4 and the skill surfaces the envelope. Resolution: wait 5s + retry; remove an orphaned `.lock` older than 30s manually.
+- `memory_in_use` — pipeline file-lock collision (the halt NAME is historical): the lock is `vault.json.lock` (`derive-vault-json.sh`); a concurrent writer holds it. The writer retries 3 times with backoff (0.1s → 0.5s → 1.5s, ~2.1s total); still locked → exit 4 and the skill surfaces the envelope. Resolution: wait 5s + retry; remove an orphaned `.lock` older than 30s manually.
 
 ### mode_migrate
 
@@ -60,7 +60,7 @@ Registry one-liner (absorbed, same type):
 
 ### oq_business_p1_unresolved
 
-- `oq_business_p1_unresolved` — orchestrate-flow: a P1 business OQ blocks downstream pipeline; chain pauses until user resolves via `resolve-oq`. ALWAYS STOP. Details `{oq_id, priority: P1, category: business, blocked_units}`. Resolution: user answers OQ interactively; vault.json updated; chain resumes. Source skill: `orchestrate-flow` (re-emits from generate-intent's prose claim). **Deprecation note:** older skill bodies may emit `oq_blocker` (legacy name); both are accepted during transition. New code should use `oq_business_p1_unresolved` as canonical name.
+- `oq_business_p1_unresolved` — orchestrate-flow: a P1 business OQ blocks downstream pipeline; chain pauses until user resolves via `resolve-oq`. ALWAYS STOP. Details `{oq_id, priority: P1, category: business, blocked_units}`. Resolution: user answers OQ interactively; vault.json updated; chain resumes. Source skill: `orchestrate-flow` (re-emits for a P1 business OQ that plan left blocking after its Step 6 batched ask or a headless run). **Deprecation note:** older skill bodies may emit `oq_blocker` (legacy name); both are accepted during transition. New code should use `oq_business_p1_unresolved` as canonical name.
 
 ### no_starterkit_detected
 
@@ -68,7 +68,7 @@ Registry one-liner (absorbed, same type):
 
 ### adoption_demote_confirm
 
-- `adoption_demote_confirm` — orchestrate-flow / auto (P2 adoption lane, LOCKED): `scripts/certify-artifact.sh` returned verdict `DEMOTE` for an externally-authored artifact (foreign vault/KB grammar → PRD-rung re-ingest; degenerate map → re-scan). **C2 — business gate, ALWAYS a halt under `--auto`, never unconfirmed**: the demotion burns generate-intent tokens and produces a DIFFERENT vault than the artifact the user placed. Displayer renders the certify keterangan block verbatim FIRST (per step 0 — it already carries why + per-option consequences in Indonesian), then ONE AskUserQuestion-shaped confirmation with glossed options `RE_INGEST` (jalankan re-ingest di rung PRD — artefak BARU ber-grammar mega-sdd, burn token) / `MANUAL_FIX` (berhenti; user perbaiki artefak mengikuti template lalu jalankan ulang certify) / `CANCEL` (batal — artefak tidak diadopsi). After the answer the chain PROCEEDS per the choice (this is confirm-then-proceed, NOT an always-stop-re-run halt). Never fires for a v4-mega-sdd-authored artifact (migration guarantee: CERTIFIED_DEGRADED floor, REJECTED forbidden). Source skill: `orchestrate-flow`.
+- `adoption_demote_confirm` — orchestrate-flow / auto (P2 adoption lane, LOCKED): `scripts/certify-artifact.sh` returned verdict `DEMOTE` for an externally-authored artifact (foreign vault/KB grammar → PRD-rung re-ingest). **C2 — business gate, ALWAYS a halt under `--auto`, never unconfirmed**: the demotion burns plan tokens and produces a DIFFERENT vault than the artifact the user placed. Displayer renders the certify keterangan block verbatim FIRST (per step 0 — it already carries why + per-option consequences in Indonesian), then ONE AskUserQuestion-shaped confirmation with glossed options `RE_INGEST` (jalankan re-ingest di rung PRD — artefak BARU ber-grammar mega-sdd, burn token) / `MANUAL_FIX` (berhenti; user perbaiki artefak mengikuti template lalu jalankan ulang certify) / `CANCEL` (batal — artefak tidak diadopsi). After the answer the chain PROCEEDS per the choice (this is confirm-then-proceed, NOT an always-stop-re-run halt). Never fires for a v4-mega-sdd-authored artifact (migration guarantee: CERTIFIED_DEGRADED floor, REJECTED forbidden). Source skill: `orchestrate-flow`.
 
 ### convergence_max_reached
 
@@ -82,12 +82,6 @@ Registry one-liner (absorbed, same type):
 
 - `anti_spin` — factory-line: a phase re-ran with an identical unresolved set (no progress); the loop stops to avoid spinning, human resolution required. ALWAYS STOP.
 
-### starterkit_metrics_inconsistent
-
-*Subtype of `quality_gate_failed` (`details.subtype: starterkit_metrics_inconsistent`) — enum + dispatch rule live in the registry §`quality_gate_failed` subtypes.*
-
-- `starterkit_metrics_inconsistent` — orchestrate-flow: generate-units handoff reports `units_with_starterkit_rules > 0` but `starterkit-context.yaml` flags `partial: true` (rules pulled from incomplete framework slice may cite missing conventions). Resolution: re-run `scan-codebase` (since the failed-slice fix, a plain re-run re-dispatches failed slices — they carry no per_slice cache signature; `--no-cache` is the belt-and-braces option that re-dispatches everything; `--force-deep` is only needed when a LOW-confidence trigger skipped deep-scan entirely) then regenerate units. Detection is in-skill prose since v7.5.0 №C (the Skill-matcher validator was deleted) — it fires at the orchestrate-flow handoff-consumption step, not at write time.
-
 ### drift_inputs_missing
 
 - `drift_inputs_missing` — detect-drift Step 0 (fork-ready — it cannot ask): the vault or code dir is unresolvable from the args / CWD. ALWAYS STOP; re-invoke with `--code=<repo-root>` and/or `--vault=<vault-dir>`.
@@ -99,3 +93,23 @@ Registry one-liner (absorbed, same type):
 ### vault_json_corrupt
 
 - `vault_json_corrupt` — `scripts/ground.sh` Guard 1: a `vault.json` fails to parse; the mode guard skips it and prints the file. **[C1 SELF-RESOLVE — never halts on the primary path]** Resolution: `derive-vault-json.sh --vault <dir>`.
+
+### framework_pack_missing
+
+- `framework_pack_missing` — `scripts/ground.sh` Guard 5 (pack-integrity scan): a framework convention pack `extends` a pack whose file is absent. **C1 SELF-RESOLVE:** the missing `extends` reference is dropped and a `[self-resolved]` notice printed. NEVER halts. Resolution (optional): create the pack or remove the reference.
+
+### framework_pack_cycle
+
+- `framework_pack_cycle` — `scripts/ground.sh` Guard 5: pack inheritance has a cycle (A extends B extends A). **C1 SELF-RESOLVE:** the cycle is broken at the most-derived edge and a notice printed. NEVER halts.
+
+### framework_pack_unparseable
+
+- `framework_pack_unparseable` — `scripts/ground.sh` Guard 5: a pack file is unreadable / fails parse. **C1 SELF-RESOLVE:** the pack is skipped and a notice printed. NEVER halts.
+
+### deep_scan_cache_corrupt
+
+- `deep_scan_cache_corrupt` — `scripts/ground.sh` Guard 7 / execute-bolts `build-dispatch-prompt.sh` (`soft_halts[]`): a legacy `starterkit-context.yaml` exists but fails YAML parse. **C1 SELF-RESOLVE:** GROUND renames it aside (`.corrupt-<ts>`) with a notice; the dispatch prompt skips the starterkit slice and the bolt proceeds. Nothing rebuilds the file.
+
+### dep_missing
+
+- `dep_missing` — a required binary is missing: execute-bolts pre-flight 3.5 (the project's test runner) or pre-flight 4 (`run-preflight-scan.sh` exit 6 — ast-grep absent under v2 Hard-rule grammar), the `bolt-implementer` agent, or the emit lane. ALWAYS STOP. Details per the registry §Type-specific schemas (`dep_missing`). Resolution: install it (`/mega-sdd:install-deps`), re-run. `scripts/ground.sh` Guard 6 only prints a C1 notice (non-interactive) and degrades gracefully.

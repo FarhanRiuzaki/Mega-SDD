@@ -1,6 +1,6 @@
 # execute-bolts — Starterkit slice enrichment (Step 4.5.b-starterkit)
 
-**This file is the SPECIFICATION for the starterkit half of `scripts/build-dispatch-prompt.sh`, not a procedure the model runs.** It defines the read/build/§patterns/code-slice/inject machinery for the T2.3 "Starterkit context (relevant slice)" section of the bolt dispatch prompt, and the builder implements it and is tested against it. **The builder applies this whole file ONLY when `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists** (same trigger as generate-units' `starterkit-derivation.md`) — when the file is absent it skips this entire slice and the Map §6 fallback + the Design slice in `context-enrichment.md` (which also owns the budgets + T2 truncation cascade) apply instead. Read it to review or amend builder behavior; where the pseudocode below describes a known defect it is annotated as such and the builder **reproduces it as written** — do not silently "fix" one side.
+**This file is the SPECIFICATION for the starterkit half of `scripts/build-dispatch-prompt.sh`, not a procedure the model runs.** It defines the read/build/§patterns/code-slice/inject machinery for the T2.3 "Starterkit context (relevant slice)" section of the bolt dispatch prompt, and the builder implements it and is tested against it. **The builder applies this whole file ONLY when `<project>/.mega-sdd/codebase/starterkit-context.yaml` exists** (written only by the pre-9.0 deep scan; no 9.0 producer — an existing file stays readable) — when the file is absent it skips this entire slice and the Map §6 fallback + the Design slice in `context-enrichment.md` (which also owns the budgets + T2 truncation cascade) apply instead. Read it to review or amend builder behavior; where the pseudocode below describes a known defect it is annotated as such and the builder **reproduces it as written** — do not silently "fix" one side.
 
 ## Contents
 - Starterkit slice: read
@@ -21,7 +21,7 @@ IF file absent → skip build + inject; do not inject the starterkit slice into 
 IF file present → parse YAML
   IF parse fails → log warning; emit `deep_scan_cache_corrupt` soft halt; skip
   IF starterkit_context.partial == true → note partial_slices for slice availability
-Read unit.frontmatter.starterkit_relevance array (from generate-units Step 7.7.e)
+Read unit.frontmatter.starterkit_relevance array (stamped by the pre-9.0 unit generator; `plan` does not write it)
 IF unit.starterkit_relevance is missing OR empty → skip build + inject
 ```
 
@@ -42,7 +42,7 @@ IF "ui_ux" in unit.starterkit_relevance AND starterkit_context.ui_ux exists:
   slice.ui_ux = starterkit_context.ui_ux (layout_extends, notification_lib, idioms, AND design_tokens — exclude _source)
   # TEMPLATE FLOW IS AUTHORITATIVE: the starterkit design_tokens/layout/idioms above WIN. Anything
   # from design_system only SUPPLEMENTS them — it must never override the scanned template.
-  IF vault.design_system present (vault-contract.md §design_system):
+  IF vault.design_system present (plugins/mega-sdd/references/vault-core.md §design_system):
     slice.design_system = vault.design_system (style, palette, typography, a11y_level, source — exclude provenance, which is audit-only)
     IF design_system.source == "scanned-template":
       # the `Design system:` line restates the TEMPLATE's own style/tokens; the design-intelligence
@@ -140,8 +140,8 @@ FOR each (category, source_list) in [
     CONTINUE
 
   # EXEMPLAR SELECTION: choose by exemplar_selection: linter-clean — the cleanest/most-idiomatic
-  # sample, NOT source_list[0]. scan-codebase tags each pattern category with `exemplar_selection`
-  # + orders `_source` best-first (cleanest first). Pick the FIRST entry whose file lints clean /
+  # sample, NOT source_list[0]. starterkit-context.yaml (written by the pre-9.0 deep scan) tags each
+  # pattern category with `exemplar_selection` + orders `_source` best-first (cleanest first). Pick the FIRST entry whose file lints clean /
   # carries no scaffold tells; fall back to source_list[0] only if none is tagged. NEVER blindly
   # take [0] for view/component — a raw-scaffold view would anchor the bolt to exactly the tells
   # the UI-quality gate flags.

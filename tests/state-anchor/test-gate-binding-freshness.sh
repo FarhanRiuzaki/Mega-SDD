@@ -195,17 +195,22 @@ for f in ".mega-sdd/vaults/web/bolts/_wave-claims.json" ".mega-sdd/vaults/web/bo
 done
 [ "$fail" -eq 0 ] && ok "Write/Edit of _wave-claims.json / _claims.json / dispatch-prompt.md: denied (script-written, gate-read)"
 
-# 19. classic project (no per-unit binding): an unreachable SHA-shaped vault head denies; a reachable one does not
+# 19. layout-2 (classic-born) vault — vault-level binding.json, no per-unit binding: an
+# unreachable SHA-shaped vault head denies; a reachable one does not. 9.0: the leg stays
+# (layout-2 vaults remain readable, design 2026-09-27 §3 Hooks / §4); bind-codebase is gone,
+# so the remedy is the migrate-paths --vault-layout=3 one-timer (then the full JIT re-bind).
 C="$WORK/classic"; CV="$C/.mega-sdd/vaults/api"; mkdir -p "$C/src" "$CV/units"
 printf -- '---\nid: U-010\ntarget_files:\n  - path: src/svc.php\n    operation: modify\nacceptance_test:\n  - type: test\n    command: x\n    expects: "ok"\n---\n' > "$CV/units/U-010.md"
 echo x > "$C/src/svc.php"; ( cd "$C" && git init -q -b main . && G add -A && G commit -qm seed )
 printf '{"head":"%s","claims":[]}\n' "$(git -C "$C" rev-parse HEAD)" > "$CV/binding.json"; ( cd "$C" && G add -A && G commit -qm bind )
 CP="mega-sdd-trace:execute-bolts:U-010\\nUNIT: U-010"
 O=$(printf '{"session_id":"s","cwd":"%s","tool_name":"Agent","tool_input":{"subagent_type":"mega-sdd:bolt-implementer","prompt":"%s"}}' "$C" "$CP" | ( cd "$C" && bash "$HOOK" 2>/dev/null ))
-has "$O" "binding-freshness" && bad "classic reachable head denied: [$O]" || ok "classic vault, reachable (older) head: the leg stays advisory"
+has "$O" "binding-freshness" && bad "layout-2 reachable head denied: [$O]" || ok "layout-2 vault, reachable (older) head: the leg stays advisory"
 printf '{"head":"0123456789abcdef0123456789abcdef01234567","claims":[]}\n' > "$CV/binding.json"
 O=$(printf '{"session_id":"s","cwd":"%s","tool_name":"Agent","tool_input":{"subagent_type":"mega-sdd:bolt-implementer","prompt":"%s"}}' "$C" "$CP" | ( cd "$C" && bash "$HOOK" 2>/dev/null ))
-deny_of "$O" && has "$O" "stamp_unreachable" && has "$O" "bind-codebase" && ok "classic vault, unreachable head: DENY stamp_unreachable → bind-codebase" || bad "classic unreachable: [$O]"
+deny_of "$O" && has "$O" "stamp_unreachable" && has "$O" "migrate-paths --vault-layout=3 --vault=.mega-sdd/vaults/api" \
+  && has "$O" "never 3.9b" && ! has "$O" "bind-codebase" \
+  && ok "layout-2 vault, unreachable head: DENY stamp_unreachable → migrate-paths --vault-layout=3 (never 3.9b)" || bad "layout-2 unreachable: [$O]"
 
 # 20. binding_absent / binding_unparseable / diverged / per-unit stamp_unreachable
 D=$(fresh s); rm -f "$D/.mega-sdd/vaults/web/bolts/U-001/binding.json"

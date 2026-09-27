@@ -38,6 +38,12 @@ BAD=0
 # "code in working tree" (not just stays/remains/preserved) is also a detect-after
 # residue — the broadened `code[^.]{0,20}working tree` catches it (a prior narrow
 # pattern let it survive in vault-contract.md + halt-taxonomy.md).
+# 9.0 P1: generate-intent is deleted. Its vault-core.md moved to the plugin-root
+# references/vault-core.md (repointed). vault-contract.md is deleted on purpose.
+# Its §Starterkit-binding half belonged to the retired `--scan` classic lane and has
+# no successor. Its §Multi-scope overlay now lives in plan/references/scope-flow.md,
+# so that file takes its slot in the net. Its old §halt-protocol text had already
+# moved to references/halt-protocol.md, which the net scans.
 TOPO_BAD='halts?[[:space:]]+pre-commit|pre-commit[[:space:]]+halts?|halts? before commit|re-validate[^.]*before commit|code[^.]{0,20}working tree|preserved in (the )?working tree|remains? in[^.]{0,20}\(not committed\)'
 for f in "$EB/SKILL.md" "$EB/references/hard-rule-scan.md" "$EB/references/hard-rule-grammar-v2.md" \
          "$EB/references/code-gates.md" "$EB/references/review-panel.md" "$EB/references/batch-and-fanout.md" \
@@ -45,8 +51,8 @@ for f in "$EB/SKILL.md" "$EB/references/hard-rule-scan.md" "$EB/references/hard-
          "${ROOT}/tests/skill-triggering/auto.test.md" "${ROOT}/tests/scenarios/scenario-2-prd-driven-feature.md" \
          "${ROOT}/tests/scenarios/scenario-6-recovery-from-halt.md" \
          "${ROOT}/tests/integration/e2e-iter6.test.md" \
-         "${P}/skills/generate-intent/references/vault-contract.md" \
-         "${P}/skills/generate-intent/references/vault-core.md" \
+         "${P}/skills/plan/references/scope-flow.md" \
+         "${P}/references/vault-core.md" \
          "${P}/references/halt-protocol.md" \
          "${P}/skills/orchestrate-flow/references/halt-taxonomy.md"; do
   [ -f "$f" ] || { fail "EB-GATE-3 scan target missing: $f"; BAD=1; continue; }

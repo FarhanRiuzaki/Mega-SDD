@@ -12,10 +12,10 @@
 # advisory warnings. This avoids the false-stop risk the audit flagged for over-eager gates.
 #
 # Checks (highest-signal subset of the catalog):
-#   bind-codebase   : needs a vault AND a codebase-map.md         → FATAL if absent
-#   generate-units  : needs a (bound) vault                        → FATAL if absent
 #   execute-bolts   : needs units/U-*.md                           → FATAL if absent
-#   scan-codebase   : ast-grep present (else regex fallback)       → WARN
+#   plan            : target vault is layout-2 (no context.md)     → FATAL (migrate-paths --vault-layout=3)
+#   generate-intent / bind-codebase / generate-units / scan-codebase
+#                   : removed in 9.0                               → FATAL (one line: use plan)
 #
 # Usage: validate-preflight.sh --cwd=<root> --skill=<mega-sdd:NAME> [--quiet]
 # Output: stdout JSON (suppressed by --quiet); OVERWRITE <cwd>/.mega-sdd/.preflight-state.json
@@ -54,8 +54,6 @@ if [ -z "$CWD" ]; then CWD="$(pwd)"; fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
 export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
-MEGA_SDD_PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." 2>/dev/null && pwd)"
-export MEGA_SDD_PLUGIN_ROOT
 
 CWD="$CWD" CHAIN="$CHAIN" python3 <<'PYEOF'
 import glob, json, os, re, shutil, subprocess, sys, time
@@ -68,7 +66,6 @@ except Exception:
 
 cwd = os.path.abspath(os.environ.get("CWD") or os.getcwd())
 chain = [s.strip() for s in os.environ.get("CHAIN", "").split(",") if s.strip()]
-plugin_root = os.environ.get("MEGA_SDD_PLUGIN_ROOT", "")
 
 counts = {"ok": 0, "warn": 0, "fatal": 0}
 
@@ -117,56 +114,33 @@ def writable_target(path):
     return os.path.isdir(p) and os.access(p, os.W_OK)
 
 
-def spine():
-    """derived.spine from state.json; absent/unreadable → 'express', the
-    same default state_probes.py applies (probes.get('spine', 'express'))."""
-    try:
-        with open(os.path.join(cwd, ".mega-sdd", "state.json"),
-                  encoding="utf-8") as f:
-            d = json.load(f)
-        return (d.get("derived", {}).get("spine")
-                or d.get("probes", {}).get("spine") or "express")
-    except Exception:
-        return "express"
-
-
-def lane():
-    """derived.lane from state.json, else the config probe directly (state.json
-    may predate the key); absent/unreadable → 'standard' (v8 P1 --lite lane)."""
-    try:
-        with open(os.path.join(cwd, ".mega-sdd", "state.json"),
-                  encoding="utf-8") as f:
-            d = json.load(f)
-        v = d.get("derived", {}).get("lane") or d.get("probes", {}).get("lane")
-        if v in ("standard", "lite"):
-            return v
-    except Exception:
-        pass
-    try:
-        return state_probes.probe_lane(cwd) if state_probes else "standard"
-    except Exception:
-        return "standard"
-
-
 def c_plan_coverage_pass(_):
-    """--lite lane rail (v8 P1 F5, 7.34.0 debt #2): bolts may not start while the
-    PRD→units coverage census is missing or FAIL. The state is written by
-    validate-plan-coverage.sh (generate-units Step 12.8)."""
+    """The PRD→units coverage rail (v8 P1 F5, 7.34.0 debt #2): bolts may not
+    start while the coverage census is missing or FAIL. The state is written by
+    validate-plan-coverage.sh (plan Step 5)."""
     p = os.path.join(cwd, ".mega-sdd", ".plan-coverage-state.json")
     if not os.path.isfile(p):
-        return False  # missing census under --lite = skipped, not a pass (fatal, not fail-open)
+        return False  # missing census = skipped, not a pass (fatal, not fail-open)
     with open(p, encoding="utf-8") as f:
         return json.load(f).get("status") == "PASS"
 
 
-LITE_LANE_CHECKS = [
+def plan_coverage_exempt():
+    """9.0: lite is the one pipeline, so the rail is ON by default — no config
+    key switches it off. Exempt: a MIGRATED layout-2 vault (spec §7 #12 —
+    classic-born units carry no prd_source)."""
+    return os.path.isdir(os.path.join(VAULT, "_meta", "archive", "layout2"))
+
+
+PLAN_COVERAGE_CHECKS = [
     ("lite_plan_coverage_pass", True, c_plan_coverage_pass,
-     "lane: lite — .mega-sdd/.plan-coverage-state.json is missing or FAIL "
+     ".mega-sdd/.plan-coverage-state.json is missing or FAIL "
      "(plan_coverage_gap): every PRD requirement heading must be owned by a "
      "unit's prd_source or quoted by an open question BEFORE execute-bolts. "
-     "Run validate-plan-coverage.sh --cwd --prd --vault (generate-units Step "
-     "12.8) and close the listed gaps; a missing state under --lite is a "
-     "skipped census, not a pass."),
+     "Run validate-plan-coverage.sh --cwd --prd --vault (plan Step 5; legacy "
+     "KB: --kb=<kb-dir>) and close the listed gaps; a missing state is a "
+     "skipped census, not a pass. A layout-2 vault: /mega-sdd:migrate-paths "
+     "--vault-layout=3 first (a migrated vault is exempt)."),
 ]
 
 
@@ -214,28 +188,11 @@ def as_list(val):
 # ── check functions: return True (pass) / False (mismatch); raise = probe err ─
 
 def c_ast_engine(_):
-    # v7.4.0: the tree-sitter lane is gone — ast-grep IS the AST engine, but a
-    # legacy tree-sitter binary on PATH is still not an error (just irrelevant).
-    return which_any("ast-grep")
-
-
-def c_framework_pack(_):
-    # <detected-framework> is a runtime value; the statically checkable
-    # invariant is the guaranteed _universal.md fallback the on_fail names.
-    return os.path.isfile(os.path.join(
-        plugin_root, "references", "framework-conventions", "_universal.md"))
-
-
-def c_binding_input(_):
-    vault_ok = os.path.isfile(os.path.join(VAULT, "vault.json"))
-    if spine() != "classic":
-        return vault_ok  # express carve-out: vault.json arm only
-    if state_probes is not None:
-        return vault_ok and state_probes.has_codebase_map(cwd)
-    return vault_ok and (
-        os.path.isfile(os.path.join(cwd, ".mega-sdd", "codebase",
-                                    "codebase-map.md"))
-        or os.path.isfile(os.path.join(cwd, "codebase-map.md")))
+    # ast-grep IS the AST engine (the tree-sitter lane is gone since v7.4.0).
+    # A repo with no source needs no symbol index → pass (greenfield).
+    if which_any("ast-grep"):
+        return True
+    return not state_probes.probe_code_files(cwd)["has_code_files"]
 
 
 def c_units_dir(_):
@@ -279,6 +236,12 @@ def c_oq_inputs(_):
     # Layout-aware (leftover fix 7.29.1): OQs live in constraints.md (layout-2)
     # or 06-constraints.md (legacy 7-file); no layout ever produced
     # 03-open-questions.md, so the old predicate was fatal on EVERY real vault.
+    # No vault but an extract-intelligence KB → resolve-oq KB mode (the
+    # PRD-kontrak §6 OQs; same probe order as resolve-oq Step 0).
+    if state_probes is not None and \
+            not os.path.isfile(os.path.join(VAULT, "vault.json")) and \
+            state_probes.probe_knowledge_base(cwd)["present"]:
+        return True
     return (os.path.isfile(os.path.join(VAULT, "vault.json"))
             and any(os.path.isfile(os.path.join(VAULT, f))
                     for f in ("context.md",              # v8 P2 layout-3 (`## Open Questions`)
@@ -287,11 +250,15 @@ def c_oq_inputs(_):
 
 
 def c_oq_status_field(_):
+    if not os.path.isfile(os.path.join(VAULT, "vault.json")):
+        return True  # KB mode / no vault: vault_present_for_oq owns the absence
     v = load_vault_json()
     return any("status" in oq for oq in v.get("open_questions", []))
 
 
 def c_oq_unresolved(_):
+    if not os.path.isfile(os.path.join(VAULT, "vault.json")):
+        return True  # KB mode / no vault: vault_present_for_oq owns the absence
     v = load_vault_json()
     return any(oq.get("status") != "resolved"
                for oq in v.get("open_questions", []))
@@ -411,42 +378,34 @@ def c_verify_no_targets(_):
 # ── registry: skill → [(check_id, fatal, fn, on_fail hint)] ─────────────────
 
 CHECKS = {
-    "scan-codebase": [
-        ("ast_engine_present", False, c_ast_engine,
-         "ast-grep not installed; scan-codebase will fall back to the regex "
-         "engine (lower precision). Install: brew install ast-grep / scoop "
-         "install ast-grep — OR run `/mega-sdd:install-deps` for "
-         "auto-install. (The tree-sitter lane was removed in v7.4.0.)"),
-        ("framework_pack_present", False, c_framework_pack,
-         "no framework pack for <framework>; scan-codebase will use "
-         "_universal.md fallback patterns (lower starterkit detection "
-         "precision)"),
-    ],
-    "bind-codebase": [
-        ("binding_input_complete", True, c_binding_input,
-         "bind-codebase requires both vault.json AND codebase-map.md. Run "
-         "scan-codebase first if codebase-map.md absent; run generate-intent "
-         "first if vault.json absent."),
-    ],
     "execute-bolts": [
         ("units_directory_present", True, c_units_dir,
-         "execute-bolts requires generated units. Run generate-units first."),
+         "execute-bolts requires generated units. Run `plan <prd>` first (it "
+         "writes units in the same phase; for a legacy KB use "
+         "`plan --kb=<kb-dir>`; a plan-born vault with no units -> "
+         "`plan <prd> --regenerate`)."),
     ],
-    "generate-intent": [
-        # prd_or_kb_input_present is flag/positional-dependent (header
-        # skip-list): the <prd-path> positional is invisible to
-        # --cwd/--chain, and the root-only arm false-fails positional PRDs
-        # — a fatal:yes false halt. The model runs it from the catalog when
-        # it knows the positional.
+    "plan": [
+        # The <prd> positional and --kb=<kb-dir> are invisible to
+        # --cwd/--chain, so the input check stays model-run from the catalog
+        # (a root-only arm would false-fail positional PRDs — a fatal:yes
+        # false halt).
+        ("ast_engine_present", False, c_ast_engine,
+         "ast-grep not installed; GROUND builds no symbol index "
+         "(build-symbol-index.sh exit 3), so plan's brownfield task_type probe "
+         "and the JIT bind lose symbol evidence. Install: brew/scoop install "
+         "ast-grep or /mega-sdd:install-deps."),
     ],
     "detect-drift": [
         ("vault_present_for_drift", True, c_vault_json,
-         "detect-drift requires a vault. Run generate-intent first."),
+         "detect-drift requires a vault. Run `plan <prd>` first (legacy code: "
+         "extract-intelligence -> `plan --kb=<kb-dir>`)."),
         ("binding_present_for_drift", True, c_binding_confirmed,
-         "detect-drift compares against bound vault state. Run bind-codebase "
-         "first to establish binding (classic lane); on a layout-3 vault the "
-         "verdicts come from execute-bolts --all --lite (JIT bind per unit) or "
-         "scripts/rebind-units.sh --units=all."),
+         "detect-drift compares against bound vault state. On a layout-3 vault "
+         "the verdicts come from execute-bolts --all --lite (JIT bind per unit) "
+         "or scripts/rebind-units.sh --units=all; a layout-2 vault with no "
+         "binding.md: /mega-sdd:migrate-paths --vault-layout=3, then the full "
+         "JIT re-bind."),
         ("clean_working_tree_for_drift", False, c_clean_tree,
          "detect-drift may conflate uncommitted user edits with actual "
          "drift. Commit or stash local changes first for clean drift "
@@ -455,7 +414,7 @@ CHECKS = {
     "diff-vault": [
         ("current_vault_present_for_diff", True, c_vault_json,
          "diff-vault requires current vault to compare new source against. "
-         "Run generate-intent first."),
+         "Run `plan <prd>` first."),
         ("vault_version_parseable", True, c_vault_version,
          "current vault.json malformed OR missing vault_version field. "
          "diff-vault cannot determine version bump target."),
@@ -464,12 +423,13 @@ CHECKS = {
         ("vault_present_for_oq", True, c_oq_inputs,
          "resolve-oq requires a vault with vault.json + the OQ doc (context.md on "
          "layout-3, constraints.md, or 06-constraints.md on the legacy layout). Run "
-         "generate-intent / plan first."),
+         "`plan <prd>` first."),
         ("oq_status_field_present", False, c_oq_status_field,
          "vault.json open_questions[] entries lack 'status' field (pre-v1.1 "
          "schema). resolve-oq cannot track Resolve/Out-of-Scope/Defer "
-         "outcomes without status field. Re-run generate-intent on the PRD "
-         "(or `derive-vault-json.sh --vault <dir>` to re-derive vault.json from the docs)."),
+         "outcomes without status field. Run `derive-vault-json.sh --vault "
+         "<dir>` (re-derives vault.json from the docs, any layout), or "
+         "`plan <prd> --regenerate` on a plan-born vault."),
         ("unresolved_oqs_exist", False, c_oq_unresolved,
          "No open OQ is left in the vault — a plain resolve-oq walk is a no-op (`resolve-oq single-oq <OQ-ID>` still overrides an AI technical decision)."),
     ],
@@ -482,11 +442,11 @@ CHECKS = {
     ],
     "emit-agents-md": [
         ("vault_present_for_agents_md", True, c_vault_json,
-         "emit-agents-md requires a vault. Run generate-intent first."),
+         "emit-agents-md requires a vault. Run `plan <prd>` first."),
         ("units_present_for_agents_md", False, c_units_for_agents,
          "emit-agents-md is unit-aware (lists units in AGENTS.md). Run "
-         "generate-units first OR pass --no-units for vault-only "
-         "AGENTS.md."),
+         "`plan <prd>` first (it writes units in the same phase) OR pass "
+         "--no-units for a vault-only AGENTS.md."),
     ],
     "install-deps": [
         ("pkg_mgr_detected", True, c_pkg_mgr,
@@ -502,7 +462,7 @@ CHECKS = {
     ],
     "emit-fsd": [
         ("vault_present_for_fsd", True, c_vault_json,
-         "emit-fsd requires a vault. Run generate-intent first."),
+         "emit-fsd requires a vault. Run `plan <prd>` first."),
         ("pandoc_installed", False, c_pandoc,
          "pandoc not installed; emit-fsd will produce FSD.md only (no PDF "
          "render). Install: brew install pandoc (macOS) / apt install "
@@ -529,7 +489,8 @@ COLD_HALT_CHECKS = [
     ("units_have_acceptance_tests", True, c_acceptance_tests,
      "One or more units lack acceptance_test field. execute-bolts will "
      "halt unit_underspecified. Edit affected units OR re-run "
-     "generate-units --strict."),
+     "`plan <prd> --regenerate` (validate-unit-spec.sh at plan Step 5 halts "
+     "unit_underspecified)."),
     ("verify_units_have_no_target_files", True, c_verify_no_targets,
      "One or more task_type: verify units have non-empty target_files. "
      "execute-bolts will halt verify_unit_writable. Edit affected units "
@@ -539,38 +500,27 @@ COLD_HALT_CHECKS = [
 
 
 # ── chain-aware inputs (v8 P0 live finding, 2026-09-10) ──────────────────────
-# A predictive run over a WHOLE chain (--chain=generate-intent,bind-codebase,
-# generate-units,execute-bolts) used to report FATAL for inputs that an EARLIER
-# hop of the same chain produces (vault.json for bind, units/ for bolts): a
-# false fatal on every greenfield chain, and in the xs baseline arm the model
-# had to work around it by re-running preflight per hop. An input that is
-# missing NOW but produced by a hop that precedes this skill in --chain is
-# satisfied by the chain itself → "ok" with the reason; the PreToolUse gate
-# re-checks it at that hop anyway. Inputs no earlier hop produces stay fatal.
-PRODUCES = {"generate-intent": {"vault"}, "scan-codebase": {"codebase_map"},
-            "bind-codebase": {"bound"},
-            # generate-units Step 12.8 / plan Step 5 write .plan-coverage-state.json
-            "generate-units": {"units", "plan_coverage"},
-            # v8 P2 lite lane: plan = context.md + vault.json + units + coverage in ONE hop
-            "plan": {"vault", "units", "plan_coverage"}}
+# A predictive run over a WHOLE chain (--chain=plan,execute-bolts) used to
+# report FATAL for inputs that an EARLIER hop of the same chain produces
+# (units/ and plan_coverage for bolts, produced by plan): a false fatal on every
+# greenfield chain, and in the xs baseline arm the model had to work around it
+# by re-running preflight per hop. An input that is missing NOW but produced by
+# a hop that precedes this skill in --chain is satisfied by the chain itself →
+# "ok" with the reason; the PreToolUse gate re-checks it at that hop anyway.
+# Inputs no earlier hop produces stay fatal.
+# plan = context.md + vault.json + units + coverage in ONE hop; plan Step 5
+# writes .plan-coverage-state.json.
+PRODUCES = {"plan": {"vault", "units", "plan_coverage"}}
 
 
 def _missing_inputs(check_id):
     miss = set()
-    if check_id == "binding_input_complete":
-        if not os.path.isfile(os.path.join(VAULT, "vault.json")):
-            miss.add("vault")
-        if spine() == "classic":
-            has_map = (state_probes.has_codebase_map(cwd) if state_probes is not None
-                       else os.path.isfile(os.path.join(cwd, ".mega-sdd", "codebase", "codebase-map.md")))
-            if not has_map:
-                miss.add("codebase_map")
-    elif check_id == "units_directory_present":
+    if check_id == "units_directory_present":
         if not unit_files():
             miss.add("units")
     elif check_id == "lite_plan_coverage_pass":
-        # produced by the plan / generate-units hop that precedes bolts on the
-        # chain — a missing state at chain START is not a skipped census
+        # produced by the plan hop that precedes bolts on the chain — a
+        # missing state at chain START is not a skipped census
         if not os.path.isfile(os.path.join(cwd, ".mega-sdd", ".plan-coverage-state.json")):
             miss.add("plan_coverage")
     elif check_id == None:
@@ -602,15 +552,21 @@ def run_checks(skill, entries, earlier=()):
                 emit(skill, check_id, "fatal" if fatal else "warn", hint)
 
 
+REMOVED = state_probes.REMOVED_SKILLS if state_probes is not None else {}
+
 for idx, skill in enumerate(chain):
+    if skill in REMOVED:
+        # a stale 8.x chain (e.g. a paused --resume) naming a removed skill
+        emit(skill, "skill_removed_in_9", "fatal", REMOVED[skill])
+        continue
     entries = CHECKS.get(skill)
     if entries is None:
         continue  # unknown skill → skip silently (forward-compat)
     run_checks(skill, entries, earlier=chain[:idx])
     if skill == "execute-bolts":
         run_checks(skill, COLD_HALT_CHECKS)
-        if lane() == "lite":
-            run_checks(skill, LITE_LANE_CHECKS, earlier=chain[:idx])
+        if not plan_coverage_exempt():
+            run_checks(skill, PLAN_COVERAGE_CHECKS, earlier=chain[:idx])
 
 print("PREFLIGHT: %d ok, %d warn, %d fatal"
       % (counts["ok"], counts["warn"], counts["fatal"]))
@@ -647,72 +603,38 @@ if [ ! -d "${CWD}/.mega-sdd" ]; then
   exit 0
 fi
 
-# Probe AST-engine availability for the scan warn-check (cheap; no file scan).
-# D2 ladder: ast-grep -> regex (the tree-sitter lane was removed v7.4.0);
-# the warn fires only when ast-grep is absent.
-AG_PRESENT=0
-command -v ast-grep >/dev/null 2>&1 && AG_PRESENT=1
-
 # P1 (v4.93.0, decision 8): the probe predicates live in the SHARED library
 # scripts/_lib/state_probes.py — one probe set for preflight AND the routing
 # digest (derive-state.sh), so the two surfaces can never re-diverge again.
-# Semantics are IDENTICAL to the inline functions this script carried pre-P1
-# (incl. S4 BC-PREFLIGHT-LEGACY: the map probe accepts the legacy repo-root
-# location; probing only the canonical path FATAL-blocked every bind on a
-# pre-migration project whose map bind would happily consume).
+# Semantics are IDENTICAL to the inline functions this script carried pre-P1.
 export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 
-CWD="$CWD" SKILL="$SKILL" ARGS_B64="$ARGS_B64" AG_PRESENT="$AG_PRESENT" QUIET="$QUIET" python3 <<'PYEOF'
-import base64, json, os, re, sys
+CWD="$CWD" SKILL="$SKILL" ARGS_B64="$ARGS_B64" QUIET="$QUIET" python3 <<'PYEOF'
+import base64, glob, json, os, re, shlex, sys
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
 from state_probes import (
-    has_vault as _has_vault,
-    has_bound_or_vault as _has_bound_or_vault,
+    REMOVED_SKILLS,
     has_units as _has_units,
-    has_codebase_map as _has_codebase_map,
-    probe_spine as _probe_spine,
+    probe_knowledge_base,
 )
 
 cwd = os.environ["CWD"]
 skill = os.environ.get("SKILL", "")
-ag_present = os.environ.get("AG_PRESENT", "0") == "1"
 quiet = os.environ.get("QUIET", "0") == "1"
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
-# P2: the express lane reads NO codebase-map — the map arm of the bind check
-# must not falsely FATAL a valid express dispatch. Express is detected from
-# the dispatch args (--express token, word-boundary; --no-express/--classic
-# override it off) falling back to the config spine (express is the P2
-# default). The vault arm stays FATAL either way.
+# `_args` = the decoded dispatch args, read by the --vault= / --kb= / <prd> resolution.
 try:
     _args = base64.b64decode(os.environ.get("ARGS_B64", "")).decode(
         "utf-8", errors="replace")
 except Exception:
     _args = ""
-if re.search(r"(?:^|\s)--(?:no-express|classic)(?:\s|$)", _args):
-    express = False
-elif re.search(r"(?:^|\s)--express(?:\s|$|=)", _args):
-    express = True
-else:
-    express = _probe_spine(cwd) == "express"
-
-
-def has_vault():
-    return _has_vault(cwd)
-
-
-def has_bound_or_vault():
-    return _has_bound_or_vault(cwd)
 
 
 def has_units():
     return _has_units(cwd)
-
-
-def has_codebase_map():
-    return _has_codebase_map(cwd)
 
 
 fatal = None          # {check_id, on_fail}
@@ -722,132 +644,120 @@ checks = []
 name = skill.split(":")[-1] if skill else ""
 
 
-def _lane():
-    """Dispatch-time lane probe (the predictive block has its own lane()):
-    state_probes.probe_lane when importable, else the config.yaml `lane:` key."""
+def _kebab(s):
+    return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
+
+
+def _kb_slug(kb):
+    """The --kb slug rule of derive-plan-pins.sh: basename of the census.json
+    `legacy_root`, else the README H1 title (first segment), else "kb". None
+    when <kb>/README.md is unreadable (derive-plan-pins exits 3; plan stops)."""
     try:
-        if state_probes is not None:
-            return state_probes.probe_lane(cwd)
-    except Exception:
-        pass
-    try:
-        with open(os.path.join(cwd, ".mega-sdd", "config.yaml"), encoding="utf-8") as f:
-            for ln in f:
-                m = re.match(r"^\s*lane\s*:\s*([A-Za-z]+)", ln)
-                if m:
-                    return "lite" if m.group(1).lower() == "lite" else "standard"
+        with open(os.path.join(kb, "README.md"), encoding="utf-8", errors="replace") as f:
+            text = f.read()
     except OSError:
-        pass
-    return "standard"
+        return None
+    legacy = ""
+    census = os.path.join(kb, "census.json")
+    if os.path.isfile(census):
+        try:
+            with open(census, encoding="utf-8") as f:
+                legacy = str(json.load(f).get("legacy_root") or "")
+        except Exception:
+            legacy = ""
+    title = next((m.group(1) for m in re.finditer(r"^#[ \t]+(.+?)\s*$", text, re.M)), "")
+    title = re.split(r"\s+[—–|:-]\s+", title)[0]
+    return _kebab(os.path.basename(legacy.rstrip("/\\"))) or _kebab(title) or "kb"
 
 
-def _layout3_vault_present():
-    """The vault THIS dispatch targets is plan-born (layout-3: ONE context.md, verdicts
-    per unit) — the classic three phases have nothing to read or write there.
-    Per-vault, not project-wide (doc-audit v8 finding #3: one layout-3 vault used to
-    fold bind/units for EVERY vault of a multi-PRD project): `--vault=<name|dir>` on
-    the args names the target; without it every vault dir must be layout-3 (a single
-    vault keeps the 8.0.0 behavior; a mixed project stays free to run the classic
-    phases on its classic vault)."""
-    import glob as _g
+def _target_vault():
+    """Resolve the dispatch's target vault dir the way derive-plan-pins.sh
+    does: `--vault=<name|dir>` wins; else .mega-sdd/vaults/<slug> from
+    `--kb=<kb-dir>` (the census/README slug rule), from the <prd> positional,
+    or — no positional and no --reconcile — from the KB plan auto-detects
+    (kb-input §KB auto-detection, the state_probes probe). None when nothing
+    resolves — never every vault dir: a mixed project would false-FATAL."""
     root = os.path.join(cwd, ".mega-sdd", "vaults")
-    m = re.search(r"(?:^|\s)--vault=(\S+)", _args)
-    if m:
-        v = m.group(1).strip("\"'")
-        for cand in (v, os.path.join(cwd, v), os.path.join(root, v)):
-            if os.path.isdir(cand):
-                return os.path.isfile(os.path.join(cand, "context.md"))
+    try:
+        toks = shlex.split(_args)
+    except ValueError:
+        toks = _args.split()
+    vault = kb = None
+    positional = []
+    i = 0
+    while i < len(toks):
+        t = toks[i]
+        if t in ("--vault", "--kb") and i + 1 < len(toks) and not toks[i + 1].startswith("-"):
+            v, i = toks[i + 1], i + 1
+        elif t.startswith(("--vault=", "--kb=")):
+            v = t.split("=", 1)[1]
+        else:
+            if not t.startswith("-"):
+                positional.append(t)
+            i += 1
+            continue
+        if t.startswith("--vault"):
+            vault = v if vault is None else vault
+        else:
+            kb = v if kb is None else kb
+        i += 1
+    if vault is not None:
+        for cand in (vault, os.path.join(cwd, vault), os.path.join(root, vault)):
+            if vault and os.path.isdir(cand):
+                return cand
+        return None
+    if kb is None and not positional and "--reconcile" not in toks:
+        probe = probe_knowledge_base(cwd)
+        if probe.get("present") and probe.get("path"):
+            kb = os.path.dirname(probe["path"])
+    if kb is not None:
+        kb = os.path.expanduser(kb.rstrip("/\\"))
+        if not kb:
+            return None
+        slug = _kb_slug(kb if os.path.isabs(kb) else os.path.join(cwd, kb))
+        return os.path.join(root, slug) if slug else None
+    for t in positional:
+        p = t if os.path.isabs(t) else os.path.join(cwd, t)
+        if not os.path.isfile(p):
+            continue
+        base = re.sub(r"\.[A-Za-z0-9]+$", "", os.path.basename(os.path.realpath(p)))
+        base = re.sub(r"^(?i:prd)[-_ ]+", "", base)
+        return os.path.join(root, _kebab(base) or "vault")
+    return None
+
+
+def _layout2(vdir):
+    """layout-2 / legacy docs and no context.md (a migrated vault has one)."""
+    if os.path.isfile(os.path.join(vdir, "context.md")):
         return False
-    dirs = [d for d in _g.glob(os.path.join(root, "*"))
-            if os.path.isdir(d) and not os.path.basename(d).startswith(".")
-            and not os.path.basename(d).endswith("-bound")]
-    return bool(dirs) and all(os.path.isfile(os.path.join(d, "context.md")) for d in dirs)
+    return (os.path.isfile(os.path.join(vdir, "vault.md"))
+            or bool(glob.glob(os.path.join(vdir, "0[0-6]-*.md"))))
 
 
-def _lite_requested():
-    """lane lite by config OR `--lite` on this dispatch (the front door forwards the
-    flag to every hop; the config write is the durable form, the flag the immediate one)."""
-    return _lane() == "lite" or bool(re.search(r"(?:^|\s)--lite(?:\s|$)", _args))
-
-
-def _folded():
-    """The three classic phases are FOLDED on the lite lane / a layout-3 vault (v8 P3 →
-    8.0.0, spec 2026-09-10 §7 P3, owner amendment: the alias must say WHY in one line —
-    it is a message to the team that gave the feedback, not a bare redirect). The
-    demotion ladder holds: these skills keep resolving on the classic lane for the whole
-    8.x cycle; removal is a 9.0 decision after a usage review."""
-    return _lite_requested() or _layout3_vault_present()
-
-
-if name == "bind-codebase":
-    if _folded():
-        fatal = {"check_id": "bind_folded_into_bolts",
-                 "on_fail": ("KENAPA: di lane lite / vault layout-3, bind-codebase dilipat ke JIT bind saat dispatch "
-                             "execute-bolts — verdict ditulis per unit (`bolts/U-XXX/binding.json`) tepat ketika unit itu "
-                             "dibangun, bukan sebagai fase terpisah untuk seluruh vault (feedback tim: fase bind terasa "
-                             "tidak perlu karena tidak ada yang membaca verdict-nya sebelum bolt). Jalankan "
-                             "`execute-bolts --all --lite`; audit sinkronisasi penuh = `scripts/rebind-units.sh --units=all` "
-                             "(atau `sync --full-bind`). Lane classic tetap tersedia sepanjang 8.x: hapus `lane: lite` dari "
-                             ".mega-sdd/config.yaml pada vault layout-2.")}
-    elif not has_vault():
-        fatal = {"check_id": "binding_input_vault_missing",
-                 "on_fail": "bind-codebase needs a vault (.mega-sdd/vaults/<vault>/) — run generate-intent first."}
-    elif not express and not has_codebase_map():
-        # classic lane only: express reads no map (express-bind.md), so a
-        # map-missing FATAL here would falsely block the default P2 spine.
-        fatal = {"check_id": "binding_input_map_missing",
-                 "on_fail": "bind-codebase needs a codebase-map.md (.mega-sdd/codebase/codebase-map.md) — run scan-codebase first."}
-    checks.append({"check": "binding_input_complete", "status": "FAIL" if fatal else "PASS",
-                   "lane": "express" if express else "classic"})
+if name in REMOVED_SKILLS:
+    fatal = {"check_id": "skill_removed_in_9", "on_fail": REMOVED_SKILLS[name]}
+    checks.append({"check": "skill_removed_in_9", "status": "FAIL"})
 
 elif name == "plan":
-    # v8 P2: plan runs on the lite lane ONLY (the classic chain keeps
-    # generate-intent → bind → generate-units); off-lane = fatal, never a
-    # silent second writer of the vault.
-    if not _lite_requested():
-        fatal = {"check_id": "plan_off_lane",
-                 "on_fail": "plan runs on the lite lane only — pass --lite on the front door / chain, or set `lane: lite` in .mega-sdd/config.yaml; the default lane uses generate-intent → bind-codebase → generate-units."}
-    checks.append({"check": "plan_lane_lite", "status": "FAIL" if fatal else "PASS"})
-
-elif name == "generate-units":
-    if _folded():
-        fatal = {"check_id": "units_folded_into_plan",
-                 "on_fail": ("KENAPA: di lane lite / vault layout-3, generate-units dilipat ke `plan` — units lahir bersama "
-                             "context.md dari PRD yang sama dalam SATU fase (kontrak tidak ditulis berkali-kali: vault → bind → "
-                             "units dulu menulis ulang hal yang sama tiga kali). Jalankan `plan <prd> --lite --regenerate` "
-                             "(unit belum ada) atau `plan --reconcile` (kode bergerak; task_type mengikuti bukti "
-                             "`bolts/U-XXX/binding.json`). Lane classic tetap tersedia sepanjang 8.x.")}
-    elif not has_bound_or_vault():
-        fatal = {"check_id": "units_input_vault_missing",
-                 "on_fail": "generate-units needs a (bound-)vault — run generate-intent (and bind-codebase) first."}
-    checks.append({"check": "units_input_complete", "status": "FAIL" if fatal else "PASS"})
-
-elif name == "generate-intent":
-    if _lite_requested():
-        fatal = {"check_id": "intent_folded_into_plan",
-                 "on_fail": ("KENAPA: di lane lite, generate-intent dilipat ke `plan` — PRD → context.md (satu file, section "
-                             "Flows/Data model/Constraints/Open Questions) + units ditulis SEKALI, satu batched ask di ujung; "
-                             "vault 4-file + fase bind + fase units yang menulis ulang kontrak yang sama tidak ada lagi di lane "
-                             "ini. Jalankan `plan <prd> --lite --mode=existing|new`. Lane classic tetap tersedia sepanjang 8.x: "
-                             "hapus `lane: lite` dari .mega-sdd/config.yaml.")}
-    checks.append({"check": "intent_lane", "status": "FAIL" if fatal else "PASS"})
+    # 9.0: plan is the only spec producer and writes layout-3 only, so it
+    # refuses a layout-2 TARGET vault (a migrated vault has context.md and
+    # stays open to --regenerate, spec §7 #12).
+    tv = _target_vault()
+    if tv and _layout2(tv):
+        rel = os.path.relpath(tv, cwd)
+        fatal = {"check_id": "plan_layout2_vault",
+                 "on_fail": ("plan writes layout-3 only and the target vault %s is layout-2 (no context.md) — "
+                             "run /mega-sdd:migrate-paths --vault-layout=3 --vault=%s first (a legacy 7-file vault "
+                             "takes --vault-layout first; then the mandatory full JIT re-bind), or pass "
+                             "--vault=<new-dir> for a separate plan-born vault." % (rel, rel))}
+    checks.append({"check": "plan_target_layout", "status": "FAIL" if fatal else "PASS"})
 
 elif name == "execute-bolts":
     if not has_units():
         fatal = {"check_id": "bolts_units_missing",
-                 "on_fail": "execute-bolts needs units (.mega-sdd/vaults/<vault>/units/U-*.md) — run generate-units first."}
+                 "on_fail": "execute-bolts needs units (.mega-sdd/vaults/<vault>/units/U-*.md) — run `plan <prd>` first "
+                            "(legacy KB: `plan --kb=<kb-dir>`; a plan-born vault with no units: `plan <prd> --regenerate`)."}
     checks.append({"check": "units_directory_present", "status": "FAIL" if fatal else "PASS"})
-
-elif name == "scan-codebase":
-    if not ag_present:
-        warnings.append({"check_id": "ast_engine_present",
-                         "detail": "ast-grep not installed; scan-codebase falls back to the regex "
-                                   "engine (lower precision; bind-codebase field-level diff will "
-                                   "degrade). Install via /mega-sdd:install-deps or `brew install "
-                                   "ast-grep` / `scoop install ast-grep`."})
-    # tree-sitter absence is the NORMAL D2 happy path (auto = ast-grep -> regex;
-    # tree-sitter is an explicit opt-in lane) — not warn-worthy.
-    checks.append({"check": "ast_engine_present", "status": "WARN" if warnings else "PASS"})
 
 status = "FATAL" if fatal else ("WARN" if warnings else "PASS")
 report = {

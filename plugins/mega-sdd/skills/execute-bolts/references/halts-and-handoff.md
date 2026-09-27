@@ -62,7 +62,7 @@ After `bolt-report.md` is written, scan the `bolt_self_report` block (and adjace
 3. After all bolts complete (`--all`), assemble the aggregate into handoff `metrics.acceptance_test_concerns: [{unit, concern}]`.
 4. Also surfaced via `_summary.md` (a new "## Acceptance-test concerns" sub-section).
 
-No new halt type — concerns are warnings, not blockers. The re-validation path is `generate-units --regenerate --adversarial-subagent` (scoped to the affected units) to author stronger acceptance tests, then re-run the affected bolts. orchestrate-flow Step 7's final summary surfaces the count + unit list when non-empty.
+No new halt type — concerns are warnings, not blockers. The re-validation path: re-run plan's Step 9.5 adversarial review on the affected units only (`plan/references/adversarial-test-prompt.md` §Opt-in subagent mode), merge the gaps into each `acceptance_test` in place (update `_authored_by`), then `execute-bolts U-XXX --force`. Never `plan --regenerate` (it rewrites every unit). orchestrate-flow Step 7's final summary surfaces the count + unit list when non-empty.
 
 ## Provenance trailer enforcement
 
@@ -83,7 +83,7 @@ After post-flight Hard Rule validation passes (or a proposed-and-confirmed fix i
 
 a. Read `vault.json` scope (if a multi-scope vault) OR skip the scope filter.
 b. For each file in the unit's `target_files` modified this bolt:
-   - Compare current state vs the vault's expected state (from `binding.md` anchors on the classic lane, or the unit's `bolts/U-XXX/binding.json` on lite, when present).
+   - Compare current state vs the vault's expected state (the unit's `bolts/U-XXX/binding.json` on layout-3, or `binding.md` anchors on a pre-9.0 layout-2 vault, when present).
    - Detect name drift, type drift, behavior drift (per detect-drift categories).
 c. If drift is detected on a LOCKED entity (per `data-mutation-policy.md`) → halt `bolt_introduces_locked_drift` (pure-pause; override-only — never propose-and-confirm).
 d. If drift is detected on an INTENT/ARTIFACT entity → log to `bolt-report.md` `## Drift introduced` + continue (will surface at the batch-end detect-drift gate).
@@ -242,11 +242,11 @@ The handoff YAML may include a `scope:` block per `orchestrate-flow/references/h
 
 ## Hand-off + end-of-chain phasing
 
-After the last unit: suggest `detect-drift` to verify all bolts honored the vault; show a summary (N units done, M failed, P skipped).
+After the last unit: the delivery check, then the chat report in the result-contract shape (SKILL.md §Hand-off — criterion → test table, delivery-check verdict, assumptions and decisions, commits), plus the counts (N units done, M failed, P skipped) and the `detect-drift` suggestion.
 
 **End-of-chain phase context.** After the final bolt completes successfully (status==completed AND blockers==[]), inspect `vault.json` for `phase` + `phase_total`.
 
-**Single source of truth.** BOTH branches below MUST match §Handoff emission (`--auto`) `next_action` (the `next_action:` block of the handoff template below) and the contract's execute-bolts routing row (`orchestrate-flow/references/handoff-contract.md §Per-skill expected emissions`): `suggested_skill: mega-sdd:detect-drift`. detect-drift is the DEFAULT-ON auto-gate that runs after every execute-bolts batch (`orchestrate-flow/references/chain-execution.md §Hybrid drift gate phase`), so **execute-bolts is never terminal** — the canonical hop is always detect-drift. Phase status is carried as an informational `next_action.hint` (per `chain-execution.md §Final summary appendix (--deep)` — "This complements the execute-bolts handoff `next_action.hint`"), **never** as `suggested_skill`: advancing to the next KB-rebuild phase is a MANUAL user checkpoint (`generate-intent/references/generation-guide.md §Phase context`; `chain-execution.md §Final summary appendix (--deep)`), NOT an auto-route. Emitting the phase advance as a `suggested_skill` would let the orchestrator consumption loop pass `suggested_args` straight through and auto-cross into the next phase, bypassing that checkpoint.
+**Single source of truth.** BOTH branches below MUST match §Handoff emission (`--auto`) `next_action` (the `next_action:` block of the handoff template below) and the contract's execute-bolts routing row (`orchestrate-flow/references/handoff-contract.md §Per-skill expected emissions`): `suggested_skill: mega-sdd:detect-drift`. detect-drift is the DEFAULT-ON auto-gate that runs after every execute-bolts batch (`orchestrate-flow/references/chain-execution.md §Hybrid drift gate phase`), so **execute-bolts is never terminal** — the canonical hop is always detect-drift. Phase status is carried as an informational `next_action.hint` (per `chain-execution.md §Final summary appendix (--deep)` — "This complements the execute-bolts handoff `next_action.hint`"), **never** as `suggested_skill`: advancing to the next KB-rebuild phase is a MANUAL user checkpoint (`chain-execution.md §Final summary appendix (--deep)`), NOT an auto-route. Emitting the phase advance as a `suggested_skill` would let the orchestrator consumption loop pass `suggested_args` straight through and auto-cross into the next phase, bypassing that checkpoint.
 
 IF `vault.phase < vault.phase_total`:
 ```yaml
@@ -254,7 +254,7 @@ next_action:
   suggested_skill: mega-sdd:detect-drift
   suggested_args: []                     # → ["--scope=<id>"] when the vault has scope_metadata (mirror §Handoff emission `suggested_args` + the contract execute-bolts routing row)
   rationale: "All bolts executed; recommend a periodic drift check."
-  hint: "Phase <N> of <M> complete. To start Phase <N+1> (MANUAL checkpoint — not auto-routed): generate-intent --kb=<KB-path-from-vault.json.kb_source> --phase=<N+1>. Plan: .mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>."
+  hint: "Phase <N> of <M> complete. To start Phase <N+1> (MANUAL checkpoint — not auto-routed): plan --kb=<KB dir of context.md prd_path_at_generation> --phase=<N+1>. Plan: .mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>."
 ```
 
 IF `vault.phase == vault.phase_total` (final phase) OR `phase_total == 1`:

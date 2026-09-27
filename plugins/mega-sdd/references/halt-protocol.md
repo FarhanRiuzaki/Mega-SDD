@@ -1,6 +1,6 @@
 # Halt Protocol — Canonical Cross-Skill Halt Registry
 
-> Single source of truth for the halt machinery: **§halt-escalation-discipline** (C1/C2/C3 categories + self-resolve protocol) and **§halt-protocol** (unified `blocker` envelope + canonical halt registry + `quality_gate_failed` subtypes). Relocated **verbatim** from `skills/generate-intent/references/vault-contract.md` (which keeps a tombstone pointer). Cite as `plugins/mega-sdd/references/halt-protocol.md §halt-protocol` / `§halt-escalation-discipline`.
+> Single source of truth for the halt machinery: **§halt-escalation-discipline** (C1/C2/C3 categories + self-resolve protocol) and **§halt-protocol** (unified `blocker` envelope + canonical halt registry + `quality_gate_failed` subtypes). Cite as `plugins/mega-sdd/references/halt-protocol.md §halt-protocol` / `§halt-escalation-discipline`.
 
 ## Contents
 
@@ -56,7 +56,7 @@ This discipline is LIVE: the auto-propose flow and its `halt_auto_propose` confi
 
 ### C3 enforcement via [HOOK-VALIDATE]
 
-C3 halts are enforced by `plugins/mega-sdd/scripts/validate-handoff-*.sh` validators + `PreToolUse` hooks per `docs/mega-sdd/fork-a-recovery-map.md` (repo docs, maintainer-facing since v7.4.0). Skill bodies declaring C3 halts can mention them as design vocabulary, but the actual enforcement is the hook layer. The binding→units OQ-ID slice is hook-enforced today; CONFLICT-IDs / Hard Rules / vault→binding / units→bolts follow the same pattern.
+C3 halts are enforced by `plugins/mega-sdd/scripts/validate-handoff-*.sh` validators + `PreToolUse` hooks per `docs/mega-sdd/fork-a-recovery-map.md` (repo docs, maintainer-facing since v7.4.0). Skill bodies declaring C3 halts can mention them as design vocabulary, but the actual enforcement is the hook layer. The CONFLICT slice (`validate-handoff-binding-units.sh --units=`, per unit from `bolts/U-XXX/binding.json`) is hook-enforced today; the OQ-ID propagation slice runs only on a layout-2 `binding.md`.
 
 ### Backward compatibility
 
@@ -72,14 +72,14 @@ The envelope is uniform across types so a single consumer can handle all of them
 
 ```yaml
 blocker:
-  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | binding_conflict | dep_missing | test_fail | ambiguous_spec | cycle_detected | cross_module_dep_invalid | module_cycle_detected | unit_oq_trace_missing | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_subagent_failed | deep_scan_cache_corrupt | deep_scan_subagent_all_failed | starterkit_rule_citation_missing | bind_conflict_constitution_violation | bind_inputs_missing | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid | predictive_check_failed | invalid_handoff | handoff_type_mismatch | model_tier_unknown | pbt_citation_invalid | pbt_property_violated | handoff_missing | artifact_missing | partial_state_corrupt | dedup_ambiguous | hard_rule_unparseable | hard_rule_violated | prd_no_scopes_block_user_rejected_retrofit | prd_path_missing | prd_retrofit_low_confidence | quality_gate_failed | scope_not_declared_in_prd | install_failed | pkg_mgr_not_found | oq_tech_missing_mode | oq_recommend_underspecified | oq_scan_missing_query | oq_tech_undecided | oq_decided_business_signal | oq_business_p1_unresolved | no_starterkit_detected | module_blocked_by | sprint_blocked_by | acceptance_path_unowned | hard_rule_unanchored | unit_underspecified | prd_source_unresolvable | plan_coverage_gap | verify_unit_writable | verify_grounding_untrusted | adoption_demote_confirm | delta_too_large | secret_in_code | sast_critical_finding | dep_not_found | review_critical_unresolved | batch_suite_red | batch_suite_gate_missing | postflight_evidence_missing | acceptance_evidence_missing | acceptance_red | build_broken | panel_evidence_missing | l0_evidence_missing | acceptance_expects_missing | anchor_missing | whitelist_violation | commit_rejected_by_hook | scope_creep_detected | bolt_artifacts_missing | hard_rule_mixed_grammar | convergence_max_reached | phase_stuck | anti_spin | drift_inputs_missing | scope_args_missing | vault_json_corrupt | scan_repo_too_large | scan_primary_app_ambiguous | scan_spawn_budget_exceeded | codebase_map_derive_failed | codebase_map_invalid | user_authored_conflict | vault_not_found | vault_corrupt | greenfield_no_bind_context
+  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | binding_conflict | dep_missing | test_fail | ambiguous_spec | cycle_detected | cross_module_dep_invalid | module_cycle_detected | unit_oq_trace_missing | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_cache_corrupt | starterkit_rule_citation_missing | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid | predictive_check_failed | invalid_handoff | handoff_type_mismatch | model_tier_unknown | pbt_citation_invalid | pbt_property_violated | handoff_missing | artifact_missing | partial_state_corrupt | dedup_ambiguous | hard_rule_unparseable | hard_rule_violated | prd_path_missing | quality_gate_failed | scope_not_declared_in_prd | install_failed | pkg_mgr_not_found | oq_tech_missing_mode | oq_recommend_underspecified | oq_scan_missing_query | oq_tech_undecided | oq_decided_business_signal | oq_business_p1_unresolved | no_starterkit_detected | module_blocked_by | sprint_blocked_by | acceptance_path_unowned | hard_rule_unanchored | unit_underspecified | prd_source_unresolvable | plan_coverage_gap | verify_unit_writable | verify_grounding_untrusted | adoption_demote_confirm | delta_too_large | secret_in_code | sast_critical_finding | dep_not_found | review_critical_unresolved | batch_suite_red | batch_suite_gate_missing | postflight_evidence_missing | acceptance_evidence_missing | acceptance_red | build_broken | panel_evidence_missing | l0_evidence_missing | acceptance_expects_missing | anchor_missing | whitelist_violation | commit_rejected_by_hook | scope_creep_detected | bolt_artifacts_missing | hard_rule_mixed_grammar | convergence_max_reached | phase_stuck | anti_spin | drift_inputs_missing | scope_args_missing | vault_json_corrupt | user_authored_conflict | vault_not_found | vault_corrupt | greenfield_no_bind_context
   tag: <stable identifier — OQ-AR-1, D-007, etc.>
   priority: P1 | P2 | P3 | n/a
   context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying diff-vault Step 6'>"
   resolver_owner: "<name or role, e.g. 'Mike Patel (Eng Lead)'>"
   resolver_route: "<where to find them, e.g. 'ask in #timeoff-team'>"
   vault_version: "<current vault version, e.g. '1.1'>"
-  source_skill: generate-intent | diff-vault | detect-drift | bind-codebase | scan-codebase | generate-units | execute-bolts | extract-intelligence | resolve-oq | plan | orchestrate-flow | emit-agents-md | emit-fsd | emit-prd | emit-sit | emit-uat | install-deps
+  source_skill: diff-vault | detect-drift | execute-bolts | extract-intelligence | resolve-oq | plan | orchestrate-flow | emit-agents-md | emit-fsd | emit-prd | emit-sit | emit-uat | install-deps
   # type-specific fields below
   conflict_old: "<vault state>"            # diff_conflict only
   conflict_new: "<new PRD state>"          # diff_conflict only
@@ -121,7 +121,7 @@ next_action: "<one-line prose string>"         # plain string form
 Consumer dispatch (ANY halt-displaying surface — orchestrate-flow is the chain-path displayer; a skill halting on a STANDALONE run renders the same way):
 
 0. **Keterangan block FIRST (MANDATORY — the keterangan contract, `references/output-language.md §Prompt surfaces`).** BEFORE printing the envelope YAML, render a plain-language block in Tier-2 narration (Indonesian-mix by default):
-   - **Apa yang ditanya:** resolve `tag` to the ACTUAL text — quote the OQ question / CONFLICT claim pair / decision at stake verbatim from the source artifact (the vault doc, `binding.md`, the diff report). A bare `OQ-AR-1` is never a question.
+   - **Apa yang ditanya:** resolve `tag` to the ACTUAL text — quote the OQ question / CONFLICT claim pair / decision at stake verbatim from the source artifact (the vault doc, `bolts/U-XXX/binding.json` or a legacy layout-2 `binding.md`, the diff report). A bare `OQ-AR-1` is never a question.
    - **Kenapa berhenti:** one line — which phase halted and why this blocks it.
    - **Pilihan lo:** when the envelope carries choices (`options`, `suggested_action`, an action menu), list each as `CODE — keterangan konsekuensi` (Tier-1 code stays English; the description says what choosing it DOES). Mark the recommended default with its one-line reason when one exists.
    - Then print the envelope YAML below the block (the YAML is the machine record; the block is for the human).
@@ -141,63 +141,44 @@ Rows below are the halt-type index — this index is the registry-existence surf
 
 **intent-and-vault** (`halt-families/intent-and-vault.md`):
 
-- `oq_blocker` — emitted by `generate-intent` (when generation surfaces a P1 that would block downstream…
+- `oq_blocker` — AI consumers reading the vault non-interactively (`_meta/ai-consumer-guide.md`, copied by plan Step 3; `source_skill: plan`); plan never halts on it — an open P1 business OQ surfaces at bolts as `oq_business_p1_unresolved`
 - `diff_conflict` — emitted by `diff-vault` Step 5 when a Resolved-OQ conflict or Decision conflict require…
 - `delta_too_large` — diff-vault (`--from-prompt` cap, Step 3): a chat-brief delta exceeds the ticket-scale c…
-- `oq_recommend_citation_invalid` — generate-intent: OQ recommendation cites non-existent KB…
-- `prd_no_scopes_block_user_rejected_retrofit` — generate-intent: PRD lacks `scopes:` frontmatter AND user rejected AI retrofit AND chos…
+- `oq_recommend_citation_invalid` — plan / `validate-vault-oqs.sh`: OQ recommendation cites non-existent KB…
 - `prd_path_missing` — diff-vault: `vault.json.prd_path_at_generation` points to non-existent PRD file. ALWAYS…
-- `prd_retrofit_low_confidence` — generate-intent: AI retrofit subagent returned `overall_confidence: LOW`. ALWAYS STOP.…
-- `scope_not_declared_in_prd` — generate-intent: `--scope=<id>` flag references a scope ID that's not in the PRD's `sco…
-- `oq_tech_missing_mode` — generate-intent: PRD declares technical OQ but `resolution_mode` field missing on the O…
-- `oq_scan_missing_query` — generate-intent: an OQ marked `resolution_mode: scan` lacks the `scan_query` field that…
-- `oq_tech_undecided` — generate-intent / plan: a tech OQ was left open for a human instead of being decided…
-- `oq_decided_business_signal` — generate-intent / plan / bind: the AI decided an OQ that reads as business…
+- `scope_not_declared_in_prd` — plan (`--scope=<id>`) / scope-flag PreToolUse gate (`validate-scope-flag.sh`): the scope ID is not in the PRD's `sco…
+- `oq_tech_missing_mode` — plan Step 5 (`validate-vault-oqs.sh` on `context.md`): technical OQ without a `resolution_mode`…
+- `oq_scan_missing_query` — plan Step 5 (`validate-vault-oqs.sh`): an OQ marked `resolution_mode: scan` lacks the `scan_query` field that…
+- `oq_tech_undecided` — plan (`validate-vault-oqs.sh --strict-tech`): a tech OQ was left open for a human instead of being decided…
+- `oq_decided_business_signal` — plan (`validate-vault-oqs.sh --strict-tech`): the AI decided an OQ that reads as business…
+- `oq_recommend_underspecified` — plan (`validate-vault-oqs.sh` on `context.md`): an OQ marked `resolution_mode: recommend` lacks one or…
 
 **extract** (`halt-families/extract.md`):
 
 - `quality_gate_failed` — extract-intelligence: a module's per-module quality gate failed twice for the same module (frontmatter / sections / gotcha floor / Mermaid flow / citation discipline). ALWAYS STOP; gate output verbatim. → `halt-families/extract.md`
 - `claim_verify_failed` *(subtype of `quality_gate_failed`)* — extract-intelligence claim-verify lane: the same module's verify report shows `wrong_load_bearing > 0` twice. ALWAYS STOP; findings verbatim in the halt. → `halt-families/extract.md`
 
-**scan** (`halt-families/scan.md`):
-
-- `deep_scan_subagent_failed` — scan-codebase: a deep-scan slice subagent (auth/authz/ui-ux/libs/reuse) failed once. So… **[Soft halt — auto-retried, warn-only]**
-- `deep_scan_cache_corrupt` — scan-codebase: starterkit-context.yaml exists but fails YAML parse. Soft halt: cache au…
-- `deep_scan_subagent_all_failed` — scan-codebase: ALL 5 deep-scan slice subagents failed (likely API outage). ALWAYS STOP:…
-- `dep_missing` — scan-codebase: a FORCED engine's binary not found (ast-grep under --engine=ast-grep… *(also emitted by execute-bolts — test runner absent (preflight 3.5) or ast-grep absent under v2 grammar — and the emit lane)*
-- `scan_repo_too_large` — scan-codebase: repo > 100k files and no `--force-large`. ALWAYS STOP; re-run with `--force-large` or narrow `--include=`. → `halt-families/scan.md`
-- `scan_primary_app_ambiguous` — scan-codebase: monorepo with ≥2 app-root manifests, no `--include`, no root manifest. ALWAYS STOP; re-run with `--include=<app dir>`. → `halt-families/scan.md`
-- `scan_spawn_budget_exceeded` — scan-codebase (undecided STANDALONE lane only): estimated extraction > 60 s with no explicit `--engine=` / `--include=`. ALWAYS STOP; re-run with an explicit engine or include, or unattended (`--auto`). → `halt-families/scan.md`
-- `codebase_map_derive_failed` — scan-codebase Step 10: `derive-codebase-map.sh` exit 2 — a delta gap. ALWAYS STOP; fix the named delta and re-run the same scan. → `halt-families/scan.md`
-- `codebase_map_invalid` — scan-codebase Step 10: `derive-codebase-map.sh` exit 4 — the derived map fails its own validation. ALWAYS STOP; read the deriver stderr, re-run. → `halt-families/scan.md`
-
 **bind** (`halt-families/bind.md`):
 
-- `bind_conflict_constitution_violation` — bind-codebase: claim conflicts with constitution.md security clause. ALWAYS STOP. Resol…
-- `framework_pack_missing` — bind-codebase: framework convention pack referenced but file absent. ALWAYS STOP. Resol…
-- `framework_pack_cycle` — bind-codebase: pack inheritance has cycle (A extends B ex…
-- `framework_pack_unparseable` — bind-codebase: pack file fails YAML/markdown parse. ALWAY…
-- `oq_recommend_underspecified` — generate-intent / bind-codebase: an OQ marked `resolution_mode: recommend` lacks one or…
-- `bind_conflict` — bind-codebase: binding produced ≥1 CONFLICT verdict; downstream generation is hook-blocked until each is resolved. Schema + resolution-code legend: §Type-specific schemas (`bind_conflict`); guidance: `halt-families/bind.md`.
-- `binding_conflict` — execute-bolts pre-flight 3.9 (v8 P1): a unit's JIT claim CONFLICTs with the code. ALWAYS STOP for that unit; resolve via `resolve-oq --binding`.
-- `bind_inputs_missing` — bind-codebase Step 0: a required input (`vault` | `codebase_map` | `vault_index`) is absent, ambiguous, malformed, or outside the vaults glob root. ALWAYS STOP. Schema: `bind-codebase/references/auto-memory-handoff.md`; guidance: `halt-families/bind.md`.
+- `bind_conflict` — legacy name (layout-2 `binding.md`) of `binding_conflict`; 9.0 emits `binding_conflict` (execute-bolts pre-flight 3.9). A layout-2 vault builds only after `migrate-paths --vault-layout=3` + the full JIT re-bind. Schema + resolution-code legend: §Type-specific schemas (`binding_conflict`); guidance: `halt-families/bind.md`.
+- `binding_conflict` — execute-bolts pre-flight 3.9: a unit's JIT claim CONFLICTs with the code. ALWAYS STOP for that unit; resolve via `resolve-oq --binding`.
 
 **units** (`halt-families/units.md`):
 
-- `starterkit_rule_citation_missing` — generate-units: a starterkit-derived Hard Rule lacks `Citation: starterkit-context.yaml…
-- `dedup_ambiguous` — generate-units: dedupe step finds multiple existing units that could match a new claim…
-- `hard_rule_unparseable` — generate-units: a unit's `## Hard Rules` block contains ast-grep YAML that fails parse…
-- `prd_source_unresolvable` — generate-units: `prd_source` unresolvable. ALWAYS STOP.
-- `plan_coverage_gap` — generate-units 12.8 (v8 P1): PRD heading with no unit `prd_source` and no OQ. ALWAYS STOP.
-- `unit_underspecified` — generate-units: a generated unit lacks one or more required spec fields (`target_files`…
-- `cycle_detected` — generate-units: the unit dependency DAG has a cycle. Schema: §Type-specific schemas (`cycle_detected`); guidance: `halt-families/units.md`.
-- `cross_module_dep_invalid` — generate-units Step 4.5: a cross-module `depends_on` edge lacks its `blocked_by` in `_meta/modules.yaml`. ALWAYS STOP. Guidance: `halt-families/units.md`.
-- `module_cycle_detected` — generate-units Step 4.5: the module-level DAG has a cycle. ALWAYS STOP. Guidance: `halt-families/units.md`.
-- `unit_oq_trace_missing` — generate-units Step 12.5 g (MOAT-CRITICAL — the binding→units handoff): an implementation-relevant OQ-ID is absent from a unit's `binding_refs:`. ALWAYS STOP. Schema: `generate-units/references/halt-protocol.md`; guidance: `halt-families/units.md`.
-- `cross_squad_dep_invalid` — generate-units (multi-squad): a unit's `depends_on` references a unit in a different squad. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
-- `cross_squad_ambiguous` — generate-units (multi-squad): two or more squads claim the same artifact at the same precedence. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
+- `starterkit_rule_citation_missing` — plan Step 5 (`validate-unit-spec.sh`): a starterkit-derived Hard Rule lacks `Citation:`…
+- `dedup_ambiguous` — plan Step 4 dedup (12.6): a `create` unit's `target_files` all already exist…
+- `hard_rule_unparseable` — plan Step 5 (`validate-unit-spec.sh`) / execute-bolts pre-flight 4 (`run-preflight-scan.sh` exit 3): a unit's `## Hard rules` fails the grammar…
+- `prd_source_unresolvable` — plan Step 5 (`validate-unit-spec.sh`): a unit's `prd_source` is unresolvable. ALWAYS STOP.
+- `plan_coverage_gap` — plan Step 5 (`validate-plan-coverage.sh` exit 1; FATAL in `validate-preflight.sh`): PRD heading with no unit `prd_source` and no OQ. ALWAYS STOP.
+- `unit_underspecified` — plan Step 5 (`validate-unit-spec.sh`): a unit lacks a required spec field (`target_files`…
+- `cycle_detected` — plan Step 4: the unit `depends_on` DAG has a cycle. Schema: §Type-specific schemas (`cycle_detected`); guidance: `halt-families/units.md`.
+- `cross_module_dep_invalid` — plan Step 4 (modules): a cross-module `depends_on` edge lacks its `blocked_by` in `_meta/modules.yaml`. ALWAYS STOP. Guidance: `halt-families/units.md`.
+- `module_cycle_detected` — plan Step 4 (modules): the module-level DAG has a cycle. ALWAYS STOP. Guidance: `halt-families/units.md`.
+- `unit_oq_trace_missing` — plan Step 4 render pass 12.5 g (prose rail; MOAT-CRITICAL): an implementation-relevant OQ-ID is absent from a unit's `binding_refs:`. ALWAYS STOP. Schema + guidance: `halt-families/units.md`.
+- `cross_squad_dep_invalid` — plan Step 4 (multi-squad): a unit's `depends_on` references a unit in a different squad. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
+- `cross_squad_ambiguous` — plan Step 4 (multi-squad): two or more squads claim the same artifact at the same precedence. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
 - `cross_squad_interface_draft` — execute-bolts (`--per-squad`/`--squad=`): a consumed interface is still `status: draft`. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
-- `interface_ref_missing` — generate-units: `produces_interfaces`/`consumes_interfaces` references an interface ID with no file in `<vault>/interfaces/`. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
+- `interface_ref_missing` — plan Step 4: `produces_interfaces`/`consumes_interfaces` names an ID with no `<vault>/interfaces/` file. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
 
 **bolts** (`halt-families/bolts.md`):
 
@@ -208,7 +189,7 @@ Rows below are the halt-type index — this index is the registry-existence surf
 - `bolt_introduces_locked_drift` — execute-bolts: bolt drift hits a LOCKED entity. ALWAYS STOP (override-only; CONFLICT-li…
 - `self_assessment_missing` — execute-bolts: bolt-report.md lacks self-assessment secti…
 - `pbt_citation_invalid` — execute-bolts: a PBT property block declares `Cites: §Decision-D-NNN` but the cited ADR…
-- `pbt_property_violated` — execute-bolts post-flight: an error-severity PBT property failed; counterexample preserved; propose-and-confirm bridge. (Registered 6.14.0 — the type predates the registry row; owners: generate-units pbt-integration.md + convergence-loops.md.)
+- `pbt_property_violated` — execute-bolts post-flight: an error-severity PBT property failed; counterexample preserved; propose-and-confirm bridge. (Owners: `skills/plan/references/pbt-integration.md` + convergence-loops.md.)
 - `partial_state_corrupt` — execute-bolts: `--resume` mode loaded `<vault>/bolts/U-XXX/partial-state.json` (canonic… **[C1 SELF-RESOLVE — never halts on the primary path]**
 - `hard_rule_violated` — execute-bolts: the post-flight scan of the ALREADY-COMMITTED bolt found a Hard Rule vio…
 - `module_blocked_by` — execute-bolts: bolt invocation blocked because prerequisite module hasn't completed yet…
@@ -242,7 +223,7 @@ Rows below are the halt-type index — this index is the registry-existence surf
 
 - `drift_framework_mismatch` — emitted by `detect-drift` Step 1.5 when the vault implies one framework but the codebas…
 - `constitution_drift_detected` — detect-drift: §B Security or §F Compliance constitution clause drift detected in code.…
-- `memory_in_use` — advisory file-lock collision (vault.json.lock via `derive-vault-json.sh` exit 4, or the starterkit-context lock): concurrent writer holds the lock. Surface the envelope (wait 5s + retry; check for an orphaned `.lock` older than 30s and remove it manually). The halt NAME is historical (pre-v7.3.0); the lock class it names is pipeline concurrency, not the removed memory lane.
+- `memory_in_use` — advisory file-lock collision (vault.json.lock via `derive-vault-json.sh` exit 4): concurrent writer holds the lock. Surface the envelope (wait 5s + retry; check for an orphaned `.lock` older than 30s and remove it manually). The halt NAME is historical (pre-v7.3.0); the lock class it names is pipeline concurrency, not the removed memory lane.
 - `mode_migrate` — orchestrate-flow: vault.json `mode` field (greenfield | existing) doesn't match CWD sig… **[C1 SELF-RESOLVE — never halts on the primary path]**
 - `predictive_check_failed` — orchestrate-flow: predictive preflight check marked `fatal: yes` failed. ALWAYS STOP. R…
 - `invalid_handoff` — orchestrate-flow: handoff YAML from sub-skill fails schema validation (missing REQUIRED… **[C1 SELF-RESOLVE — never halts on the primary path]**
@@ -261,7 +242,11 @@ Rows below are the halt-type index — this index is the registry-existence surf
 - `drift_inputs_missing` — detect-drift Step 0 (fork-ready — it cannot ask): the vault or code dir is unresolvable from the args / CWD. ALWAYS STOP; re-invoke with `--code=<repo-root>` and/or `--vault=<vault-dir>`. → `halt-families/flow.md`
 - `scope_args_missing` — `validate-handoff-yaml.sh`: an execute-bolts handoff carries a `scope:` block and routes to detect-drift without `--scope=<id>` in `next_action.suggested_args` — the scope would die at the seam. ALWAYS STOP; add the flag. → `halt-families/flow.md`
 - `vault_json_corrupt` — `scripts/ground.sh` Guard 1: a `vault.json` fails to parse; the mode guard skips it and prints the file. **[C1 SELF-RESOLVE — never halts on the primary path]** Resolution: `derive-vault-json.sh --vault <dir>`. → `halt-families/flow.md`
-- `starterkit_metrics_inconsistent` *(subtype of `quality_gate_failed`)* — orchestrate-flow: generate-units handoff reports `units_with_starterkit_rules > 0` but…
+- `framework_pack_missing` — `scripts/ground.sh` Guard 5 (pack-integrity scan): a pack `extends` a missing pack. **[C1 SELF-RESOLVE — reference dropped, notice logged]** → `halt-families/flow.md`
+- `framework_pack_cycle` — `scripts/ground.sh` Guard 5: pack inheritance cycle. **[C1 SELF-RESOLVE — cycle broken at the most-derived edge]** → `halt-families/flow.md`
+- `framework_pack_unparseable` — `scripts/ground.sh` Guard 5: pack file unreadable. **[C1 SELF-RESOLVE — pack skipped]** → `halt-families/flow.md`
+- `deep_scan_cache_corrupt` — `ground.sh` Guard 7 / execute-bolts `build-dispatch-prompt.sh` `soft_halts[]`: a legacy `starterkit-context.yaml` fails to parse. **[C1 SELF-RESOLVE — renamed aside, starterkit slice skipped, bolt proceeds]** → `halt-families/flow.md`
+- `dep_missing` — execute-bolts (test runner absent, pre-flight 3.5; ast-grep absent under v2 grammar, `run-preflight-scan.sh` exit 6), `ground.sh` Guard 6 (C1 notice), the emit lane: a required binary is missing. Schema: §Type-specific schemas (`dep_missing`). → `halt-families/flow.md`
 
 **emit** (`halt-families/emit.md`):
 
@@ -280,9 +265,9 @@ Rows below are the halt-type index — this index is the registry-existence surf
 
 The `quality_gate_failed` halt carries a `subtype:` discriminator. Canonical subtype enum — these are emitted as `type: quality_gate_failed` + `details.subtype: <name>`, **NOT** as standalone halt types:
 
-*(omitted / `module_quality_threshold_unmet`)* · `starterkit_metrics_inconsistent` · `pdf_render_failed` · `template_slot_unfilled` · `citation_unresolvable` · `signoff_fabricated` · `execution_fabricated` · `marker_stripped` · `claim_verify_failed`
+*(omitted / `module_quality_threshold_unmet`)* · `pdf_render_failed` · `template_slot_unfilled` · `citation_unresolvable` · `signoff_fabricated` · `execution_fabricated` · `marker_stripped` · `claim_verify_failed`
 
-Consumer dispatch logic MUST branch on `details.subtype` field. If `subtype` is absent OR empty, treat as the `module_quality_threshold_unmet` semantic (extract-intelligence; pre-v7.6 records may carry the historical label `wave_quality_threshold_unmet` — same semantic). Full guidance per subtype lives in the family files the index routes to (emit-lane subtypes → `halt-families/emit.md`; starterkit/budget guards → `halt-families/flow.md`; the extract default → `halt-families/extract.md`).
+Consumer dispatch logic MUST branch on `details.subtype` field. If `subtype` is absent OR empty, treat as the `module_quality_threshold_unmet` semantic (extract-intelligence; pre-v7.6 records may carry the historical label `wave_quality_threshold_unmet` — same semantic). Full guidance per subtype lives in the family files the index routes to (emit-lane subtypes → `halt-families/emit.md`; the extract default → `halt-families/extract.md`).
 
 ### Multiple blockers in one run
 
@@ -297,7 +282,7 @@ blockers:
     resolver_owner: "Mike Patel"
     resolver_route: "ask in #timeoff-team"
     vault_version: "1.0"
-    source_skill: generate-intent
+    source_skill: plan
   - type: diff_conflict
     tag: OQ-DC-2
     priority: n/a
@@ -327,16 +312,19 @@ Only the unified `blocker:` envelope is accepted — the pre-1.0 bare `oq_blocke
 ### Type-specific schemas
 
 ```yaml
-# bind_conflict — emitted by bind-codebase when CONFLICT count > 0
+# binding_conflict (alias bind_conflict) — execute-bolts pre-flight 3.9:
+# a CONFLICT in bolts/U-XXX/binding.json
 details:
-  vault: <path>
-  conflict_count: N
+  unit_id: U-XXX
+  binding: <vault>/bolts/U-XXX/binding.json
   conflicts:
-    - id: C-001
-      vault_claim: <text>
-      codebase_reality: <text>
+    - id: <claim-id>
+      kind: <claim kind>
+      expect: <what the unit claims>
+      anchor: <file:line or null>
+      evidence: <what the code shows>
       suggested_action: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT
-      suggested_action_rationale: <one line — why, citing the evidence>   # keterangan contract: the enum never surfaces bare; the displayer also renders the 4-code legend (KEEP_VAULT = code harus diubah mengikuti vault; KEEP_CODE = vault di-update mengikuti kenyataan code; DEFER = jadi OQ — gate binding terbuka, unit digenerate membawa OQ-nya, execute-bolts prompt sebelum bolt final; SPLIT = claim dipecah jadi sub-claim)
+      suggested_action_rationale: <one line — why, citing the evidence>   # keterangan contract: the enum never surfaces bare; the displayer also renders the 4-code legend (KEEP_VAULT = code harus diubah mengikuti vault; KEEP_CODE = vault di-update mengikuti kenyataan code; DEFER = jadi OQ yang dibawa unit — gate terbuka, execute-bolts prompt sebelum bolt final; SPLIT = claim dipecah jadi sub-claim)
 
 # dep_missing — emitted by execute-bolts when the project's test runner is absent
 # (preflight 3.5) or ast-grep is absent under v2 Hard-rule grammar (preflight 4)
@@ -352,7 +340,7 @@ details:
   last_failure_output: <verbatim test output>
   files_touched: [...]
 
-# cycle_detected — emitted by generate-units when dependency DAG has cycle
+# cycle_detected — emitted by plan (Step 4) when the unit dependency DAG has a cycle
 details:
   cycle_path: [U-001, U-002, U-001]
 
@@ -362,7 +350,7 @@ details:
   cwd_signals: [.git, package.json, ...]
   resolution: "update vault mode" | "re-detect"
 
-# cross_squad_dep_invalid — emitted by generate-units in multi-squad mode
+# cross_squad_dep_invalid — emitted by plan (Step 4) in multi-squad mode
 # when a unit's depends_on references a unit in a different squad
 details:
   unit_id: U-XXX
@@ -370,7 +358,7 @@ details:
   dependency_id: U-YYY
   dependency_squad: <squad-id-different>
 
-# interface_ref_missing — emitted by generate-units when a unit's
+# interface_ref_missing — emitted by plan (Step 4) when a unit's
 # produces_interfaces or consumes_interfaces references an interface ID
 # that has no corresponding file in <vault>/interfaces/
 details:
@@ -378,7 +366,7 @@ details:
   missing_interface_id: <kebab-id>
   referenced_in: consumes_interfaces | produces_interfaces
 
-# cross_squad_ambiguous — emitted by generate-units when two or more
+# cross_squad_ambiguous — emitted by plan (Step 4, squad assignment) when two or more
 # squads in _meta/squads.yaml claim ownership of the same artifact at
 # the same precedence level
 details:
@@ -405,7 +393,7 @@ details:
   verdict: DEMOTE
   certify_keterangan: <the certify KETERANGAN block, verbatim — incl. the
                        derive-vault-json exit-2 lines when the rung is vault>
-  demote_target: "generate-intent (PRD-rung re-ingest)" | "scan-codebase (re-scan)" | "extract-intelligence (re-extract)"
+  demote_target: "plan (PRD-rung re-ingest)" | "GROUND (drop the foreign map; scripts/ground.sh derives state + symbol index)" | "extract-intelligence (re-extract)"
   options: [{code: RE_INGEST, keterangan: <apa yang terjadi + biaya token>},
             {code: MANUAL_FIX, keterangan: <perbaiki mengikuti template, lalu certify ulang>},
             {code: CANCEL, keterangan: <artefak tidak diadopsi, chain berhenti>}]

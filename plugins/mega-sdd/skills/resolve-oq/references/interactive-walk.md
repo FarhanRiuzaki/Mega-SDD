@@ -25,7 +25,7 @@ Loaded by `resolve-oq` for the standard (non-`--binding`) walk. The SKILL.md bod
 2. **Verify integrity**:
    - Layout-3: `context.md` exists and has `## Open Questions`. Layout-2: the 4 files exist (`vault.md`, `model.md`, `flows.md`, `constraints.md`) and `constraints.md` has `## Open Questions`. Legacy: the 7 files exist and `00-index.md` has the roll-up.
    - At least one `[ ]` OQ entry exists in the authored OQ surface.
-   - If any check fails → STOP, surface the issue. Suggest the user run `generate-intent` first if the vault is malformed/missing.
+   - If any check fails → STOP, surface the issue. Missing → suggest `/mega-sdd <prd>` (`plan`) or `plan --kb=<kb-dir>`; KB present → KB mode (SKILL Step 0); malformed → surface the issue, never regenerate.
 
 3. **Lock check**: layout-3/2 — the frontmatter lock scalars (`locked_at` / `locked_by`; a vault is LOCKED when `locked_at` is set); legacy — the `00-index.md` Vault Lock Status section `Status:` line.
    - If `Status: 🔒 LOCKED` → ask via `AskUserQuestion`: *"This vault is LOCKED for `<scope>`. Resolving OQs will edit it and require re-sign-off after. Proceed?"* → options `["Unlock and proceed (re-sign-off needed after)", "Cancel"]`.
@@ -64,7 +64,7 @@ Persist: `RESOLUTION_SCOPE=<choice>`. Echo back so the user sees the plan.
 ## Step 1 — Parse OQ list
 
 1. Read the authored OQ surface (layout-3: `context.md ## Open Questions`; layout-2: `constraints.md ## Open Questions`; legacy: the 7 files' per-doc sections + roll-up).
-2. Extract entries that are still `[ ]` (open) — skip `[x]` (resolved) and `[~]` (out of scope). **Tech OQs never reach this queue**: the authoring phase / bind decided them (`generate-intent/references/vault-core.md §AI technical decisions`), so they are `[x]`. **One exception — override:** `single-oq <tag>` naming an `[x]` OQ whose annotation carries `(AI decision …)` queues that OQ. Build its prompt as usual with slot `[1]` = the AI's pick (its `recommendation` + `rationale` + `fallback_if_wrong` from `vault.json` are the description, labelled "keputusan AI saat ini"), and on the answer REPLACE the annotation with `→ **Resolved v{X.Y}** (<date>): <human answer>` — no `(AI decision …)` marker, so the next derive drops `resolved_by` — and record the replaced pick in the `derive-vault-json.sh --event` (`{"event":"ai_decision_overridden","oq":"<tag>","was":"<AI pick>"}`). Keeping the AI's pick (slot `[1]`) changes nothing. A `[x]` OQ WITHOUT the marker is a human answer — `single-oq` on it stays what it was (not re-opened here).
+2. Extract entries that are still `[ ]` (open) — skip `[x]` (resolved) and `[~]` (out of scope). **Tech OQs never reach this queue**: `plan` decided them (`plugins/mega-sdd/references/vault-core.md §AI technical decisions`), so they are `[x]`. **One exception — override:** `single-oq <tag>` naming an `[x]` OQ whose annotation carries `(AI decision …)` queues that OQ. Build its prompt as usual with slot `[1]` = the AI's pick (its `recommendation` + `rationale` + `fallback_if_wrong` from `vault.json` are the description, labelled "keputusan AI saat ini"), and on the answer REPLACE the annotation with `→ **Resolved v{X.Y}** (<date>): <human answer>` — no `(AI decision …)` marker, so the next derive drops `resolved_by` — and record the replaced pick in the `derive-vault-json.sh --event` (`{"event":"ai_decision_overridden","oq":"<tag>","was":"<AI pick>"}`). Keeping the AI's pick (slot `[1]`) changes nothing. A `[x]` OQ WITHOUT the marker is a human answer — `single-oq` on it stays what it was (not re-opened here).
 3. For each OQ, capture:
    - Tag (`OQ-{CODE}-{N}`)
    - Priority (`P1 | P2 | P3`)
@@ -122,7 +122,7 @@ carries it verbatim. Render it and the `AskUserQuestion` together.
 
 ### Step 2b — The single prompt (ONE `AskUserQuestion` per OQ)
 
-> **Express-batched variant (P3 — chain-routed express path only).** The SAME per-OQ question shape (4 slots + Other, every keterangan rule below intact, exactly one `(recommended)` per question) packs up to **4 blocking-tier OQs into ONE `AskUserQuestion` call** (the tool takes 1–4 questions per call — the contract SKILL.md §Flags already states). >4 open P1s → ceil(N/4) sequential calls, disclosed upfront ("N blocker, K prompt"). Slot semantics, write-back, and the derive-per-outcome contract are UNCHANGED — batching changes the round-trip count, never the grammar. Esc ends the whole walk as usual — and in a BATCHED call it discards EVERY answer in the interrupted call (AskUserQuestion is atomic); those OQs stay open. The no-recommendation 3-option shape applies per question independently. This variant never fires on a standalone/classic invocation.
+> **Express-batched variant (P3 — chain-routed express path only).** The SAME per-OQ question shape (4 slots + Other, every keterangan rule below intact, exactly one `(recommended)` per question) packs up to **4 blocking-tier OQs into ONE `AskUserQuestion` call** (the tool takes 1–4 questions per call — the contract SKILL.md §Flags already states). >4 open P1s → ceil(N/4) sequential calls, disclosed upfront ("N blocker, K prompt"). Slot semantics, write-back, and the derive-per-outcome contract are UNCHANGED — batching changes the round-trip count, never the grammar. Esc ends the whole walk as usual — and in a BATCHED call it discards EVERY answer in the interrupted call (AskUserQuestion is atomic); those OQs stay open. The no-recommendation 3-option shape applies per question independently. This variant never fires on a standalone invocation.
 
 > **The common path costs exactly ONE human round trip.** The action choice, the answer text, and
 > the destination confirmation are the SAME surface: picking an option IS answering, and IS
@@ -234,7 +234,8 @@ options:
     description: "Belum bisa dijawab sekarang. OQ tetap `[ ]` open dan ditandai
                   `**Deferred (v{X.Y})**`; aku tanya SATU kali lagi — satu prompt berisi dua
                   pertanyaan: alasan/PIC/kapan{, dan (brownfield) apakah `defer_to: binding`
-                  supaya diselesaikan di fase bind-codebase} — lalu catatan itu masuk ke vault."
+                  supaya ditanyakan lagi saat unit yang memakainya dieksekusi (execute-bolts),
+                  dengan anchor kodenya di depan mata} — lalu catatan itu masuk ke vault."
   - label: "Out of scope"
     description: "OQ dinyatakan di luar scope proyek: entri pindah ke section `## Out of Scope`
                   di {origin doc} dan ditandai `[~]`; aku minta SATU kalimat alasan dulu."
@@ -295,7 +296,8 @@ options:
     description: "Belum bisa dijawab sekarang. OQ tetap `[ ]` open dan ditandai
                   `**Deferred (v{X.Y})**`; aku tanya SATU kali lagi — satu prompt berisi dua
                   pertanyaan: alasan/PIC/kapan{, dan (brownfield) apakah `defer_to: binding`
-                  supaya diselesaikan di fase bind-codebase} — lalu catatan itu masuk ke vault."
+                  supaya ditanyakan lagi saat unit yang memakainya dieksekusi (execute-bolts),
+                  dengan anchor kodenya di depan mata} — lalu catatan itu masuk ke vault."
   - label: "Out of scope"
     description: "OQ dinyatakan di luar scope proyek: entri pindah ke section `## Out of Scope`
                   di {origin doc} dan ditandai `[~]`; aku minta SATU kalimat alasan dulu."
@@ -486,11 +488,11 @@ Then:
 
 **If `Defer`** (the ONE sanctioned second prompt on this path — who/when is recorded state and may not be invented):
 
-There are TWO defer targets (per `vault-core.md §OQ status tracking`, `defer_to` field — a
+There are TWO defer targets (per `plugins/mega-sdd/references/vault-core.md §OQ status tracking`, `defer_to` field — a
 closed two-value set with **no declared default**):
 
 - **`defer_to: stakeholder`** — waiting on a human decision (legal review, PM, security, target date); also the only legal value in greenfield, where it is written explicitly rather than defaulted
-- **`defer_to: binding`** — code-aware OQ; offered ONLY in brownfield context (vault.mode=existing AND repo signals present); resolved at `bind-codebase` phase against codebase-map
+- **`defer_to: binding`** — code-aware OQ; offered ONLY in brownfield context (vault.mode=existing AND repo signals present); asked again at the citing unit's execute-bolts dispatch (`TBD: OQ-XXX`, `execute-bolts/references/bolt-contract.md`), code anchor in view; uncited ones resurface in the delivery report
 
 **The sub-target and the reason are collected in ONE `AskUserQuestion` CALL carrying TWO questions.**
 The platform's 4-option cap is **per question**, not per call: `AskUserQuestion` takes a `questions`
@@ -501,10 +503,10 @@ one-call-many-questions shape anywhere else a follow-up needs more than one valu
 
 Q1 (`defer_to`) is present ONLY in brownfield (vault `mode: existing` AND repo signals). In
 greenfield the call carries Q2 alone and `defer_to` is written EXPLICITLY as `stakeholder` by the
-derive patch in step 5 below. **It is not a schema default — `vault-core.md §OQ status
-tracking` declares none for `defer_to`** (it declares one only for `status`); `stakeholder` is the
-single LEGAL value in that context, because `binding` means "resolved at `bind-codebase` against a
-codebase-map" and greenfield has no repo to bind against. A determined value, not a derived answer.
+derive patch in step 5 below. **It is not a schema default — `plugins/mega-sdd/references/vault-core.md
+§OQ status tracking` declares none for `defer_to`** (it declares one only for `status`); `stakeholder` is the
+single LEGAL value in that context, because `binding` means "asked at the citing unit's execute-bolts
+dispatch, against existing code" and greenfield has none. A determined value, not a derived answer.
 Same language precedence as Step 2b.
 
 Because Q1 disappears in greenfield, **Q2 carries the OQ tag and the verbatim question text in its
@@ -529,8 +531,8 @@ questions:
                       `resolve-oq` berikutnya — bukan oleh fase otomatis mana pun."
       - label: "binding"
         description: "OQ ini bisa dijawab oleh KODE yang sudah ada. Tersimpan `defer_to: binding`;
-                      fase `bind-codebase` yang akan mencocokkannya ke codebase-map dan
-                      menyelesaikannya di sana. Hanya masuk akal di repo brownfield."
+                      kamu ditanya lagi saat unit yang memakainya dieksekusi (execute-bolts),
+                      dengan kode yang ada di depan mata. Hanya masuk akal di repo brownfield."
   - question: |            # ← Q2: ALWAYS present; it repeats the tag + question text itself, because Q1 (which carries them) is OMITTED in greenfield
       Defer: "{full OQ question text, verbatim}"  ({OQ tag}, dari {origin doc})
 
@@ -662,7 +664,7 @@ Output to chat (no file generation needed at this step):
 5. Suggested next step: re-run `resolve-oq` after stakeholder follow-up. To lock the vault for sprint implementation, edit the lock home manually (vault.md frontmatter; legacy: 00-index.md Vault Lock Status) — set 🔒 LOCKED + locked_at/locked_by, append a Changelog entry.
 
 After completion, if any OQs were deferred to binding, suggest:
-- For brownfield: `bind-codebase <vault> --express` (the express-spine lane — auto-resolves deferred OQs from index/manifest probes, no scan needed; classic spine: `scan-codebase && bind-codebase <vault>`)
-- For greenfield: warn the user — deferred OQs in greenfield have no resolution path (no binding phase will run)
+- For brownfield: `/mega-sdd --resume` (`execute-bolts --all --lite`); each citing unit re-asks its `TBD: OQ-XXX` at dispatch
+- For greenfield: warn the user — deferred OQs in greenfield have no resolution path (no existing code to answer them against; re-defer them to a stakeholder)
 
 Do NOT pad with "I have resolved..." preamble. Just report numbers and surface remaining blockers.

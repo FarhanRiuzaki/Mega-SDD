@@ -17,8 +17,10 @@ pass() { echo "PASS: $1"; }
   || fail "A: literal .git/ state probes still present"
 grep -q -- '--git-path hooks' "$P/skills/execute-bolts/SKILL.md" \
   && pass "A2: hook probe worktree-safe" || fail "A2: hook probe still literal"
-grep -q 'test `-e` not `-d`' "$P/skills/scan-codebase/references/scan-procedure.md" \
-  && pass "A3: scan walk-up handles .git-as-file" || fail "A3: walk-up still -d only"
+# A3 (scan walk-up `test -e not -d`) RETIRED 9.0 P1: it pinned prose in the deleted
+# scan-codebase skill's scan-procedure.md (the classic scan-first spine, removed by
+# design — spec 2026-09-27-v9-simplification-design.md §3). No relocated equivalent;
+# the surviving worktree-safe git probes stay pinned by A/A2 above.
 
 # B/F — capability decisions recorded (do not silently re-propose)
 grep -q 'context: fork.*PILOT LIVE' "$P/CLAUDE.md" \
@@ -46,10 +48,12 @@ grep -q "Don't auto-resolve PENDING-SYNC.md in CI" "$P/references/ci-recipe.md" 
   && pass "D2: CI recipe preserves the moat (no auto-resolve)" \
   || fail "D2: CI moat rule missing"
 
-# E — EARS optional tier (backward-compatible)
-grep -q 'ears:' "$P/skills/generate-units/references/unit-schema.md" \
-  && grep -q 'OPTIONAL (additive, backward-compatible)' "$P/skills/generate-units/references/unit-schema.md" \
-  && grep -q 'Absent → `expects:` (a literal output substring, or empty' "$P/skills/generate-units/references/unit-schema.md" \
+# E — EARS optional tier (backward-compatible). The unit schema moved from the deleted
+# generate-units skill to plan/references/unit-schema.md (9.0 P1 relocation).
+US="$P/skills/plan/references/unit-schema.md"
+grep -q 'ears:' "$US" \
+  && grep -q 'OPTIONAL (additive, backward-compatible)' "$US" \
+  && grep -q 'Absent → `expects:` (a literal output substring, or empty' "$US" \
   && pass "E: EARS tier optional + backward-compatible" \
   || fail "E: EARS tier missing or not optional"
 

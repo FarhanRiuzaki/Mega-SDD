@@ -1,75 +1,79 @@
-# Scenario 8 — Starterkit-Aware Generation (full pipeline)
+# Scenario 8 — Starterkit-Aware Generation (framework pack)
 
 **Time**: ~30 min
-**When to use**: Validate that the pipeline correctly captures a Laravel starterkit's patterns and propagates them through generate-units (Anchors + Hard Rules) and execute-bolts (T2 slice injection) to produce code that matches the starterkit by default.
+**When to use**: Validate that the guarded pipeline recognises a Laravel starterkit and carries its conventions to every bolt: GROUND matches the framework pack from the manifest, `plan` types units against the existing code, `execute-bolts` puts the pack slices into each dispatch prompt, and the pack-driven gates hold the generated code to the pack.
 
-> Integration scenario covering scan-codebase deep-scan → generate-units consumption → execute-bolts T2 injection. The deep-scan is a scan-codebase feature, so this scenario runs the **classic spine** (`--classic`); on the express default, pack matching happens via the GROUND matcher without a scan phase.
+> **What changed in 9.0.** The deep-scan starterkit derivation is gone (spec `docs/superpowers/specs/2026-09-27-v9-simplification-design.md` §7 decision #1): nothing writes `.mega-sdd/codebase/starterkit-context.yaml` or `reuse-index.yaml` any more, and `plan` writes no `starterkit_context_consumed` / `starterkit_relevance` fields and no starterkit-cited Hard Rules. What reaches the bolt is the framework-pack chain, matched from the manifest by GROUND (a script, seconds — no scan phase). A pre-9.0 `starterkit-context.yaml` left on disk is still read by the dispatch builder (`plugins/mega-sdd/skills/execute-bolts/references/starterkit-enrichment.md`): its `patterns` slice reaches any unit whose `target_files` match a pattern location, while the auth / authz / UI / libs slices need `starterkit_relevance`, which `plan` never writes.
+>
+> This scenario checks plumbing — what reaches the bolt and which gate reads the pack — not a quality edge. No benchmark showed the guarded pipeline writing better code than the direct/assisted lanes, which build in the main session from the repo's own conventions (spec §1).
 
 ## Prerequisites
 
-- Laravel starterkit project at `<project_root>` with:
-  - `composer.json` includes `laravel/sanctum` (^4.0), `spatie/laravel-permission` (^6.0)
-  - `package.json` includes `alpinejs` (^3.0), `tailwindcss` (^3.0), `sweetalert2` (^11.0)
-  - `tailwind.config.js` exists with custom `theme.extend.colors.primary`
+- Laravel starterkit project at `<project_root>` (a git repo) with:
+  - `composer.json` requires `laravel/framework` → the `laravel` pack. The base-laravel-26 starterkit also carries `pixinvent/vuexy-laravel-bootstrap-jetstream` (or `joelbutcher/socialstream`) → the more specific `laravel-base-26` pack wins (`detection_priority: 10` vs 100)
   - `resources/views/layouts/app.blade.php` exists
   - `resources/js/app.js` imports SweetAlert2 and uses `document.addEventListener('DOMContentLoaded', ...)`
   - `app/Models/User.php` uses `HasRoles` trait (Spatie/permission)
   - `database/seeders/RoleSeeder.php` creates `admin` and `user` roles
-- PRD at `<project_root>/prd.md` describing "User management feature with CRUD page"
-- mega-sdd plugin v7.4+ installed
+- PRD at `<project_root>/prd.md` describing "User management feature with CRUD views"
+- mega-sdd plugin 9.0+ installed; `ast-grep` on PATH (`/mega-sdd:install-deps`) so GROUND can build the symbol index
 
 ## Scenario steps
 
-### Step 1: Invoke the front door on the classic spine
+### Step 1: Verify GROUND matches the framework pack
 
-```
-/mega-sdd ./prd.md --classic
-```
-
-The front door detects PRD + starterkit + no vault → classic starterkit-first chain (Phase 1: scan-codebase).
-
-### Step 2: Verify scan-codebase deep-scan produced starterkit-context.yaml
+Both commands only read the repo. On a repo with no `.mega-sdd/` yet they write nothing; once `.mega-sdd/` exists, `derive-state.sh` refreshes `.mega-sdd/state.json` and the resolver its derived cache (`.mega-sdd/.cache/pack-resolver/`):
 
 ```bash
-test -f .mega-sdd/codebase/starterkit-context.yaml && cat .mega-sdd/codebase/starterkit-context.yaml | head -50
+bash <plugin>/scripts/derive-state.sh --cwd=. --json-only \
+  | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["derived"]["framework_pack"], d["probes"]["framework_pack"]["candidates"])'
+bash <plugin>/scripts/_lib/resolve-framework-pack.sh --cwd=.
 ```
 
-**Assertions:**
-- File exists
-- `starterkit_context.framework` == `laravel`
-- `starterkit_context.auth.lib` == `sanctum`
-- `starterkit_context.authz.lib` == `spatie/permission`
-- `starterkit_context.ui_ux.notification_lib` == `sweetalert2`
-- `starterkit_context.libs[]` includes ≥3 entries (laravel/sanctum, spatie/laravel-permission, sweetalert2)
-- `cache_signatures.locks_sha256.php` is a 64-char hex string; `cache_signatures.app_ecosystem` == `php` (the `cache_key.composer_lock_sha256` form is the deprecated v1.0 schema, treated fully-stale on read)
-- `_source:` arrays present for each block (anti-halu citation rail)
+**Assertions (base-laravel-26):**
+- `derived.framework_pack` == `laravel-base-26`; candidates list `laravel-base-26(composer.json,p10)` ahead of `laravel(composer.json,p100)`
+- The resolver prints the chain `laravel-base-26.md laravel.md _universal.md` (most specific first)
+- A plain Laravel app (no starterkit marker) resolves `laravel` → chain `laravel.md _universal.md`
 
-Deep-scan is triggered automatically by scan-codebase Step 10.5 when framework confidence ≥ MEDIUM.
+### Step 2: Run the guarded pipeline
 
-### Step 3: Verify generate-units consumed starterkit-context
+```
+/mega-sdd ./prd.md --guarded
+```
+
+The repo carries code, so without `--guarded` the router picks the assisted lane (`existing_code`): the main session builds the feature from the repo's own `CLAUDE.md` / `AGENTS.md` / existing code, with no dispatch prompt and no pack slices to inspect. `--guarded` runs GROUND (state digest + symbol index) → `plan ./prd.md --lite --mode=existing` → `execute-bolts --all --lite`.
+
+### Step 3: Verify `plan` typed the units against the existing code
 
 ```bash
 ls .mega-sdd/vaults/*/units/
-grep -l "starterkit_context_consumed: true" .mega-sdd/vaults/*/units/U-*.md | head -3
+grep -l "task_type: extend\|task_type: verify" .mega-sdd/vaults/*/units/U-*.md
+grep -A3 "^## Anchors" .mega-sdd/vaults/*/units/U-*.md | head
+grep -l "starterkit_context_consumed\|starterkit_relevance" .mega-sdd/vaults/*/units/U-*.md   # expect: no output
 ```
 
 **Assertions:**
-- ≥1 unit file exists in `units/` directory
-- ≥1 unit has `starterkit_context_consumed: true` in frontmatter (added by generate-units Step 7.7)
-- That unit's body has `## Hard Rules` section with ≥1 rule citing `starterkit-context.yaml §<path>`
-- That unit's anchors[] includes `resources/views/layouts/app.blade.php` (if it's a UI-touching unit)
+- ≥1 unit file exists in `units/`
+- A unit that touches an existing starterkit symbol (e.g. `app/Models/User.php`) is typed `extend` or `verify` from a symbol-index hit, with `## Anchors` (`file:line`) and `## Claims` — claims are contracts; the verdict is written at dispatch, never in the unit
+- No unit carries `starterkit_context_consumed` / `starterkit_relevance`, and no Hard Rule cites `starterkit-context.yaml`
+- No pack rule is copied into a unit's `## Hard rules` (`plan/references/validation-passes.md` §12.4.5: pack rules reach the bolt as the advisory dispatch slice, never a B1 post-flight obligation)
 
-### Step 4: Verify execute-bolts injected T2.3 slices
+### Step 4: Verify execute-bolts injected the pack slices
 
 ```bash
-ls .mega-sdd/vaults/*/bolts/
-grep -l "Starterkit context (relevant to this unit)" .mega-sdd/vaults/*/bolts/U-*/dispatch-prompt.md | head -3
+grep -l "^FRAMEWORK: laravel-base-26" .mega-sdd/vaults/*/bolts/U-*/dispatch-prompt.md
+grep -l "## Framework pack rules (filtered by your target_files glob match)" .mega-sdd/vaults/*/bolts/U-*/dispatch-prompt.md
+grep -l "## Code style (from laravel-base-26" .mega-sdd/vaults/*/bolts/U-*/dispatch-prompt.md
+grep -A4 "DO NOT WRITE:" .mega-sdd/vaults/*/bolts/U-*/dispatch-prompt.md | head
 ```
 
 **Assertions:**
-- ≥1 bolt-report exists in `bolts/` directory
-- ≥1 bolt's dispatch-prompt contains the T2.3 "Starterkit context (relevant to this unit)" section (injected by execute-bolts Step 4.5.b-starterkit)
-- The slice in that section is ≤2KB (verify via byte count)
+- Every dispatch prompt names the active pack (`FRAMEWORK: laravel-base-26`, or `SCOPE: … — framework: …` on a scoped vault)
+- A controller unit's prompt carries `## Framework pack rules` with the `## Hard Rules emitted` entries whose `path_glob` matches its `target_files` — e.g. "Controllers MUST extend BaseController" (`laravel-base-26.md`) and the `Controller` suffix rule (`laravel.md`), each citing its pack and the matched glob
+- `## Code style` comes from the most specific pack that has one (`laravel-base-26.md`)
+- `DO NOT WRITE:` lists the chain's `## Forbidden patterns`, each with its source pack — e.g. `$(document).ready(...)` and native `alert(...)` / `confirm(...)` (`laravel-base-26.md`)
+
+A section with no matching input is omitted, never padded: a unit whose `target_files` match no pack `path_glob` has no `## Framework pack rules` section.
 
 ### Step 5: Verify generated code matches starterkit patterns
 
@@ -78,68 +82,65 @@ For a UI-CRUD bolt (e.g., user-management feature):
 ```bash
 grep "@extends('layouts.app')" resources/views/users/index.blade.php
 grep "Swal.fire" resources/js/users.js
-grep "middleware('role:" routes/web.php
+grep "middleware('permission:" routes/web.php
 grep "document.addEventListener('DOMContentLoaded'" resources/js/users.js
 ```
 
 **Assertions:**
-- Generated Blade view uses `@extends('layouts.app')` (matches starterkit layout_extends)
-- Generated JS uses `Swal.fire(...)` for confirmations (matches starterkit notification_lib)
-- Generated routes use Spatie middleware (e.g., `middleware('role:admin')`)
-- Generated JS uses `document.addEventListener('DOMContentLoaded', ...)` (matches starterkit idiom)
+- Generated Blade view uses `@extends('layouts.app')` (the pack's `layout-extends` required element)
+- Generated JS uses `Swal.fire(...)` for confirmations, never native `alert`/`confirm` (pack forbidden pattern; inside a Blade view also the `native-alert` scaffold tell)
+- Generated management routes use Spatie permission middleware (e.g., `middleware('permission:users.view')` — the `laravel-base-26.md` route rule; inline role checks are a pack forbidden pattern)
+- Generated JS uses `document.addEventListener('DOMContentLoaded', ...)` (pack forbidden pattern: `$(document).ready`)
 
-### Step 6: Verify cache reuse on re-run
+### Step 6: Verify the pack-driven gates read the same chain
 
 ```bash
-mtime_before=$(stat -f %m .mega-sdd/codebase/starterkit-context.yaml)
-# say "scan codebase ini" (phrase-routes to scan-codebase; typed skill commands were removed at 6.0.0)
-mtime_after=$(stat -f %m .mega-sdd/codebase/starterkit-context.yaml)
-echo "Before: $mtime_before; After: $mtime_after"
+cat .mega-sdd/.ui-quality-blockers.json
 ```
 
 **Assertions:**
-- mtime_before == mtime_after (cache hit; file not rewritten)
-- Handoff YAML from second scan-codebase invocation has `starterkit_context: reused: true`
+- `validate-ui-quality.sh` read the merged `## UI quality signatures` of the chain (`laravel.md` scaffold tells + `laravel-base-26.md` required elements `layout-extends` / `responsive`) and recorded no violation for the generated views
+- A view with a scaffold tell (a `Customer Id` label, a raw `*_id` echo, unformatted money, native `alert(`) or a non-trivial view missing the layout extend / responsive grid blocks the next `execute-bolts` until it is fixed (the state is re-derived at the execute-bolts PreToolUse gate)
+- The other pack-driven gates resolve the same chain: flow coverage (`## Flow-artifact derivation`) and sibling consistency (`## Cross-cutting concerns`)
 
 ## Pass criteria
 
 ALL of:
-- starterkit-context.yaml exists with ≥3 detected libs
-- Generated units cite starterkit-context.yaml in ≥1 Hard Rule
-- Executed bolts produce code using layouts.app + SweetAlert2 + Spatie middleware
-- Re-scan reuses cache (no subagent re-dispatch; mtime unchanged)
+- GROUND matches `laravel-base-26` (or `laravel`) from `composer.json`; the resolver chain is printed most-specific first
+- No `starterkit-context.yaml` is written; no unit carries starterkit fields
+- Brownfield units carry symbol-index `## Anchors` / `## Claims`
+- Dispatch prompts carry `FRAMEWORK:`, the glob-matched `## Framework pack rules`, `## Code style`, and `DO NOT WRITE:` from the chain
+- Executed bolts produce code using layouts.app + SweetAlert2 + Spatie `permission:` middleware, and the UI-quality gate records no violation
+- The run ends with the result contract every lane delivers: the acceptance-criterion → test table, `delivery-check.sh` `VERDICT: PASS` on the final commit, and the assumptions and decisions made
 
 ## Failure modes to watch
 
-- Subagent timeout → expect `deep_scan_subagent_failed` soft halt + partial output (verify partial_slices: [...] populated)
-- All subagents fail → expect `deep_scan_subagent_all_failed` hard halt + no starterkit-context.yaml written
-- Generated code missing SweetAlert2 despite starterkit having it → BUG in T2.3 slice injection (execute-bolts Step 4.5.b-starterkit)
-- Generated unit Hard Rule missing Citation → `starterkit_rule_citation_missing` halt expected (generate-units Step 7.7)
+- Pack resolves to `_universal` despite a Laravel manifest → read `probes.framework_pack.candidates` in the `derive-state.sh --json-only` output: an empty list means no pack's `dependency_marker` matched the manifest
+- Dispatch prompt header reads `FRAMEWORK: (pack chain UNRESOLVED — resolver exit <N>; NOT a packless project)` → the resolver failed (e.g. the Windows App-Execution-Alias `python3` stub); the pack slices are missing for that reason, not because the pack is silent (`execute-bolts/references/context-enrichment.md` §Pack-resolver exit codes)
+- A generated Blade view uses native `alert(...)` despite the pack → the UI-quality gate blocks the next `execute-bolts` (`native-alert` tell); fix the view, not the gate
+- A pre-9.0 `starterkit-context.yaml` that fails to parse → `deep_scan_cache_corrupt` (C1): GROUND renames it aside, the bolt proceeds without that slice
 
 ## Field test (real starterkit verification)
 
-Run this scenario against the user's actual starterkit (spec §6.4 acceptance criterion #10):
+Run Step 1 against the user's actual starterkit:
 
 ```bash
 cd <your-starterkit-repo>
-# in Claude Code: say "scan codebase ini"
-cat .mega-sdd/codebase/starterkit-context.yaml
+bash <plugin>/scripts/derive-state.sh --cwd=. --json-only | python3 -c 'import json,sys; print(json.load(sys.stdin)["derived"]["framework_pack"])'
+bash <plugin>/scripts/_lib/resolve-framework-pack.sh --cwd=. --section="UI quality signatures"
 ```
 
 Expected outcomes for `laravel-base-26`:
-- `auth.lib` correctly identifies auth lib in use
-- `authz.lib` == `spatie/permission` (if Spatie is installed)
-- `ui_ux.notification_lib` == `sweetalert2` (per standing user pref)
-- `ui_ux.idioms` includes `"use document.addEventListener('DOMContentLoaded', ...) over $(document).ready"`
-- `ui_ux.idioms` includes `"responsive mobile-first (sm/md/lg breakpoints)"`
-- Subsequent `generate-units` on a real feature PRD produces units that USE those libs by default
-- Subsequent `execute-bolts` produces code matching starterkit patterns (layout, notification lib, auth guard)
+- `framework_pack` == `laravel-base-26`
+- The `UI quality signatures` bodies of `laravel-base-26.md` and `laravel.md` print, most specific first (the gate merges their lists)
+- A subsequent `/mega-sdd <feature-prd> --guarded` run produces dispatch prompts carrying the base-26 rules (BaseController, UUID migrations, SweetAlert2, DOMContentLoaded) and code that follows them
 
-This field test validates the spec against real-world data — confirms the design works on the actual project, not just theoretical Laravel.
+A starterkit without a plugin pack gets one by authoring a project pack at `<root>/.mega-sdd/packs/<framework>.md` (`extends: laravel` + a `detection_signature`); it beats a same-named plugin pack and is linted by `scripts/validate-pack.sh <pack.md>`.
 
 ## Related artifacts
 
-- `docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design.md` (design source)
-- `docs/superpowers/plans/2026-05-24-iter-32-starterkit-aware-deep-scan.md` (this plan)
-- `plugins/mega-sdd/references/starterkit-context-schema.md` (canonical schema)
-- `plugins/mega-sdd/references/lib-patterns/laravel/*.md` (detection catalogs)
+- `docs/superpowers/specs/2026-09-27-v9-simplification-design.md` §7 decisions #1–#2 (why the deep-scan derivation was dropped; pack rules stay an advisory slice)
+- `plugins/mega-sdd/references/framework-conventions/laravel-base-26.md` + `laravel.md` (the packs this scenario exercises)
+- `plugins/mega-sdd/skills/execute-bolts/references/context-enrichment.md` (the dispatch prompt's pack sections: `FRAMEWORK:` header, `DO NOT WRITE:`, priorities 7a/7b)
+- `plugins/mega-sdd/skills/execute-bolts/references/starterkit-enrichment.md` (the legacy `starterkit-context.yaml` reader)
+- `docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design.md` + `docs/superpowers/plans/2026-05-24-iter-32-starterkit-aware-deep-scan.md` (the original, pre-9.0 deep-scan design and plan — historical)

@@ -16,7 +16,7 @@ P5 — PRD emitter on the shared emission engine (`--doc=prd`): forward (vault �
 ### EP3: Forward mode from a vault
 - **Setup:** vault present (any binding/units state)
 - **Prompt:** "generate PRD"
-- **Expect:** mode=forward; sections from vault sources (01-overview, 02-functional, 04-flows, 03-open-questions); missing source → `[Pending — X not yet generated]`
+- **Expect:** mode=forward, PRD at `<vault>/prd/`. Layout-3 (`context.md`, plan-born): §1 quoted VERBATIM from the PRD pinned at `vault.json.prd_path_at_generation`, §3 one row per PRD requirement heading when no FR doc exists, journeys from `context.md ## Flows`, §6 from `vault.json.open_questions[]` (unresolved only). A pre-9.0 layout-2/legacy vault is still read from its own docs (`vault.md` / `flows.md` …; legacy `01-overview` … `03-open-questions`). Missing source → `[Pending — X not yet generated]`
 
 ### EP4: User journeys are Mermaid
 - **Setup:** vault flows / KB workflows with Mermaid bodies
@@ -24,14 +24,14 @@ P5 — PRD emitter on the shared emission engine (`--doc=prd`): forward (vault �
 
 ### EP5: Open Items are read-only
 - **Setup:** unresolved OQs exist
-- **Expect:** §6 lists them as a view; the skill NEVER prompts to resolve them (docs are outputs — resolution stays in resolve-oq / generate-intent Q&A)
+- **Expect:** §6 lists them as a view; the skill NEVER prompts to resolve them (docs are outputs — resolution stays in resolve-oq, or the one batched ask of `plan --kb` in the reverse lane)
 
 ### EP6: Maturity rungs are human-gated
 - **Expect:** Step 6 stamps `draft-from-legacy` via `refresh-doc-stamps.sh`; the model NEVER stamps `reviewed`/`final` on its own — those bumps happen only on the user's explicit word
 
 ### EP7: Reverse lane is a mention, never auto-chained
 - **Setup:** chain/routing sees `knowledge_base: present` + no vault
-- **Expect:** routing MENTIONS `/mega-sdd:emit-prd` (one line); the proposed pipeline chain stays `generate-intent --kb=<kb>`
+- **Expect:** routing MENTIONS `/mega-sdd:emit prd` (one line); the proposed pipeline chain stays `plan --kb=<kb> --lite --mode=<existing|new>` → `execute-bolts --all --lite` (the reverse-mode handoff also suggests `plan --kb`)
 
 ## Pass criteria
 

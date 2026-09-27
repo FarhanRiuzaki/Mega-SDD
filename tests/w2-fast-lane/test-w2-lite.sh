@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# v8 P2 W2 fast lane (lane lite; research/2026-09-11-v8-p2-report.md §1): unit-level
-# readiness via derive-ready-units.sh + the three lite clauses in execute-bolts prose.
-# The DEFAULT lane keeps its pinned "Wave boundary = review boundary" sentence.
+# v8 P2 W2 fast lane (research/2026-09-11-v8-p2-report.md §1): unit-level readiness via
+# derive-ready-units.sh + the three W2 clauses in execute-bolts prose.
+# 9.0 P1: the lite pipeline is the ONLY pipeline (lane:standard / the classic spine retired,
+# docs/superpowers/specs/2026-09-27-v9-simplification-design.md), so the DEFAULT lane's
+# "Wave boundary = review boundary" barrier sentence is retired and the W2 clauses are no
+# longer lane-conditional ("execute-bolts runs the lite lane only").
 # Run: bash tests/w2-fast-lane/test-w2-lite.sh </dev/null
 set -u
 rc=0; pass() { echo "PASS: $1"; }; fail() { echo "FAIL: $1"; rc=1; }
@@ -27,9 +30,13 @@ assert "U-007" in d["in_progress"], d["in_progress"]
 EOF2
 bash "$S/derive-ready-units.sh" --cwd="$T" >/dev/null 2>&1; [ $? -eq 2 ] && pass "b: missing --vault → exit 2" || fail "b: usage exit wrong"
 EB="$P/skills/execute-bolts"
-grep -qF 'Wave boundary = review boundary' "$EB/references/batch-and-fanout.md" && grep -q 'Lane lite (v8 W2' "$EB/references/batch-and-fanout.md" && grep -q 'derive-ready-units.sh' "$EB/references/batch-and-fanout.md" \
-  && pass "c: default wave barrier sentence intact; lite clause names the readiness script and the blocking rules" || fail "c: batch-and-fanout prose"
-grep -q 'lane lite (v8 W2) + `unit_tier: xs`: the fix-round budget is 1' "$EB/references/review-panel.md" && pass "d: xs fix-round budget 1 under lite, then quarantine" || fail "d: review-panel prose"
+BF="$EB/references/batch-and-fanout.md"
+grep -qF 'Unit-level readiness replaces the wave barrier (v8 W2; execute-bolts runs the lite lane only)' "$BF" \
+  && grep -qF 'bash <plugin-root>/scripts/derive-ready-units.sh --cwd=<root> --vault=<vault>' "$BF" \
+  && grep -qF 'A dependency that is quarantined, red, stale, or missing evidence BLOCKS its dependents' "$BF" \
+  && grep -qF 'never by cap-sized slices with a barrier' "$BF" && ! grep -qF 'Wave boundary = review boundary' "$BF" \
+  && pass "c: readiness clause (unconditional — lite is the only lane) names the readiness script and the blocking rules; retired wave barrier gone" || fail "c: batch-and-fanout prose"
+grep -qF '**`unit_tier: xs` (v8 W2): the fix-round budget is 1 — one verifier round, then quarantine' "$EB/references/review-panel.md" && pass "d: xs fix-round budget 1, then quarantine" || fail "d: review-panel prose"
 grep -q 'w2_model_cell: xs→sonnet' "$EB/SKILL.md" && grep -q 'Lane lite (v8 W2 measured cell)' "$EB/SKILL.md" && pass "e: xs→sonnet cell under lite recorded in the bolt-report, override chain intact" || fail "e: SKILL model routing prose"
 # v8 P3 (research/2026-09-15-v8-p3-report.md §2): per-unit pipelining rules + the cap doc drift (5 → parallel_max 4)
 grep -q 'P3 pipelining rules' "$EB/references/batch-and-fanout.md" && grep -q 'panel_pending_units' "$EB/references/batch-and-fanout.md" \

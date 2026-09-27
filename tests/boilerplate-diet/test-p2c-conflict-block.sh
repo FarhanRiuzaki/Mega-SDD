@@ -3,14 +3,23 @@
 # the Conflicts summary table is DROPPED — the claim/reality pair lives in the
 # `### CONFLICT-N` detail block (the machine-read form is the sole carrier).
 #
-#   1  template: `- **Vault claim**:` / `- **Codebase reality**:` in the detail-block
-#      grammar; NO summary-table header row
+#   1  grammar: `- **Vault claim**:` / `- **Codebase reality**:` / `- **Claim**:` in
+#      the detail-block grammar; NO summary-table header row; sole-carrier rule
 #   2  binding-mode walks detail blocks (menu from the headings); summary-table
 #      write-back gone; legacy-table fallback documented
-#   3  binding-contract required-sections entry updated
+#   3  the expected-sections entry for `## Conflicts` names the detail blocks
 #   4  EMPIRICAL: CLAIM_LINE_RE does NOT match the new pair lines (regex-collision
 #      guard) AND a fixture binding.md carrying the pair lines parses correctly
 #      (resolution maps to the right claim id, zero errors)
+#
+# 9.0 P1 (spec 2026-09-27-v9-simplification-design.md §7 decision 10): the classic
+# bind-codebase skill — the only binding.md PRODUCER — is deleted, and its
+# binding-md-template.md / binding-contract.md / SKILL.md are NOT relocated (the
+# layout-2 grammar is owned by scripts/_lib/binding_md.py). The layout-2 binding.md
+# READ path survives (resolve-oq's layout-2 leg until P1b; build-dispatch-prompt.sh
+# still reads the `- **Vault claim**:` line), so pins 1 and 3 are repointed from the
+# deleted producer docs to the surviving reader contract, resolve-oq binding-mode.md
+# (its "Expect sections" entry + conflict prompt carry the same grammar strings).
 #
 # Run: bash tests/boilerplate-diet/test-p2c-conflict-block.sh
 set -uo pipefail
@@ -18,11 +27,8 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 P="${ROOT}/plugins/mega-sdd"
-BMT="$P/skills/bind-codebase/references/binding-md-template.md"
-BC="$P/skills/bind-codebase/references/binding-contract.md"
 BM="$P/skills/resolve-oq/references/binding-mode.md"
 RSK="$P/skills/resolve-oq/SKILL.md"
-BSK="$P/skills/bind-codebase/SKILL.md"
 LIB="$P/scripts/_lib"
 
 FAILED=0
@@ -31,13 +37,13 @@ fail() { printf '  \342\234\227 FAIL: %s\n' "$*"; FAILED=1; }
 
 echo "== P2c: the CONFLICT detail block is the sole conflict carrier =="
 
-# ── 1: template grammar ──
-grep -qF -- '- **Vault claim**:' "$BMT" && ok "1: detail block carries the Vault-claim line" || fail "1: Vault-claim line missing"
-grep -qF -- '- **Codebase reality**:' "$BMT" && ok "1: detail block carries the Codebase-reality line (+ anchor)" || fail "1: Codebase-reality line missing"
-if grep -qF '| ID | Vault Claim | Codebase Reality |' "$BMT"; then fail "1: summary-table header row survives in the template"; else ok "1: summary table gone from the template"; fi
-grep -qF -- '- **Claim**:' "$BMT" && ok "1: the machine-read Claim line survives (W2 grammar intact)" || fail "1: Claim line lost"
-grep -qF 'evidence anchor file:line' "$BMT" && ok "1: reality line mandates the evidence anchor" || fail "1: evidence-anchor mandate missing"
-grep -qF 'no summary table' "$BSK" && ok "1: bind SKILL Step 4 states the sole-carrier rule" || fail "1: SKILL sole-carrier note missing"
+# ── 1: detail-block grammar (layout-2 reader contract, binding-mode.md) ──
+grep -qF -- '- **Vault claim**:' "$BM" && ok "1: detail block carries the Vault-claim line" || fail "1: Vault-claim line missing"
+grep -qF -- '- **Codebase reality**:' "$BM" && ok "1: detail block carries the Codebase-reality line (+ anchor)" || fail "1: Codebase-reality line missing"
+if grep -qF '| ID | Vault Claim | Codebase Reality |' "$BM"; then fail "1: summary-table header row survives in the grammar doc"; else ok "1: summary table absent from the grammar doc"; fi
+grep -qF -- '- **Claim**:' "$BM" && ok "1: the machine-read Claim line survives (W2 grammar intact)" || fail "1: Claim line lost"
+grep -qF 'evidence anchor file:line' "$BM" && ok "1: reality line mandates the evidence anchor" || fail "1: evidence-anchor mandate missing"
+grep -qF 'the only conflict carrier' "$BM" && ok "1: the sole-carrier rule is stated" || fail "1: sole-carrier note missing"
 
 # ── 2: binding-mode walk ──
 grep -qF 'detail block' "$BM" && ok "2: binding-mode walks the detail blocks" || fail "2: detail-block walk missing"
@@ -48,9 +54,9 @@ grep -qF 'pre-P2 bindings' "$BM" && grep -qF 'never update it' "$BM" \
 grep -qF 'State Map' "$BM" && ok "2: legacy anchor fallback via the State Map Anchor column" || fail "2: legacy anchor fallback missing"
 grep -qF 'CONFLICT detail-block walk' "$RSK" && ok "2: resolve-oq SKILL router line updated" || fail "2: SKILL router still says table walk"
 
-# ── 3: binding-contract ──
-grep -qF 'Conflict detail blocks' "$BC" && grep -qF 'no summary table' "$BC" \
-  && ok "3: binding-contract required-sections entry updated" || fail "3: binding-contract still lists the Conflicts table"
+# ── 3: expected-sections entry (was binding-contract.md; now binding-mode.md Load step) ──
+grep -qF '"## Conflicts (N) — BLOCKING" carrying one `### CONFLICT-N` detail block per conflict' "$BM" \
+  && ok "3: expected-sections entry names the Conflicts detail blocks" || fail "3: expected-sections entry does not name the detail blocks"
 
 # ── 4: EMPIRICAL — CLAIM_LINE_RE non-collision + correct parse with pair lines ──
 MEGA_SDD_LIB_DIR="$LIB" python3 <<'PYEOF'

@@ -1414,8 +1414,10 @@ case "$J_WARNINGS" in *"T1 exceeded its ${J_CAP_T1}-byte reporting threshold"*)
   *) nok "F1 must warn about the T1 overrun — warnings: $J_WARNINGS" ;; esac
 # The amendment did not only move the number — it changed what the warning MEANS.
 # cap_t1 no longer claims to bound anything; the residual signal is a
-# generate-units atomicity smell. Pinned so a revert to budget framing is caught.
-case "$J_WARNINGS" in *"ATOMICITY signal for generate-units, not a budget failure"*)
+# unit-atomicity smell routed to the unit author. Pinned so a revert to budget
+# framing is caught. 9.0 P1: generate-units was retired and `plan` is now the
+# only unit author, so the warning names plan ("split the unit") as the actor.
+case "$J_WARNINGS" in *"ATOMICITY signal for plan (split the unit), not a budget failure"*)
     ok "F1 the T1 warning is framed as an ATOMICITY signal, not a budget failure" ;;
   *) nok "F1 T1 warning must carry the amended atomicity framing — warnings: $J_WARNINGS" ;; esac
 # F1 and F2 unsatisfy the conjunction through DIFFERENT terms — F1 via (a), F2

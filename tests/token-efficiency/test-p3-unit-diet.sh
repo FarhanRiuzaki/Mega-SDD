@@ -3,7 +3,7 @@
 # AND per-review-lens; every frontmatter byte multiplies ~5-6x per full-tier attempt).
 #
 # Pins the diet contract (spec 2026-07-19-batch2-derive-and-diet.md, item P3):
-#   (a) generate-units stops WRITING the gate-inert frontmatter surfaces —
+#   (a) the unit writer (`plan` since 9.0; generate-units before) stops WRITING the gate-inert frontmatter surfaces —
 #       grounding_evidence block, superpowers_skills, estimated_complexity, the
 #       nested mutability map (source + rebuild_freedom) — mutability collapses to
 #       ONE QUOTED line `<TIER> — <rationale incl. source>`; legacy units tolerated.
@@ -24,13 +24,18 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 P="${ROOT}/plugins/mega-sdd"
-US="${P}/skills/generate-units/references/unit-schema.md"
-TU="${P}/skills/generate-units/references/templates/unit.md"
-DG="${P}/skills/generate-units/references/defensive-generation.md"
+# 9.0 P1: generate-units was deleted; its unit contract moved to plan/references.
+# defensive-generation.md was not relocated as a file — its surviving halves live in
+# unit-procedure.md (writer diet), validation-passes.md §12.3 (anchor verification
+# outcome → chat + body footer) and unit-schema.md (grounding_confidence labels).
+US="${P}/skills/plan/references/unit-schema.md"
+TU="${P}/skills/plan/references/templates/unit.md"
+UP="${P}/skills/plan/references/unit-procedure.md"
+VP="${P}/skills/plan/references/validation-passes.md"
 RP="${P}/skills/execute-bolts/references/review-panel.md"
 BR="${P}/skills/execute-bolts/references/superpowers-bridge.md"
 V="${P}/scripts/validate-unit-spec.sh"
-for f in "$US" "$TU" "$DG" "$RP" "$BR" "$V"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+for f in "$US" "$TU" "$UP" "$VP" "$RP" "$BR" "$V"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
 ok()   { printf '  \xe2\x9c\x93 %s\n' "$*"; }
@@ -59,11 +64,17 @@ for key in superpowers_skills estimated_complexity grounding_evidence; do
   if grep -qE "^${key}:" "$TU"; then fail "templates/unit.md still scaffolds \`${key}:\`"; else ok "templates/unit.md no longer scaffolds \`${key}:\`"; fi
 done
 
-# defensive-generation example sheds grounding_evidence, keeps grounding_confidence
-if grep -qE "^grounding_evidence:" "$DG"; then fail "defensive-generation example still emits grounding_evidence"; else ok "defensive-generation example sheds grounding_evidence"; fi
-grep -qF 'grounding_confidence: HIGH | MEDIUM | LOW' "$DG" && ok "grounding_confidence kept (A1 trigger condition)" || fail "grounding_confidence lost from defensive-generation"
-grep -qF 'no frontmatter block needed' "$DG" && ok "anchor tally rerouted to chat summary line + body footer" || fail "chat-summary rerouting line missing"
-grep -qF 'no longer written; legacy units carrying it are tolerated' "$DG" && ok "anti-halu rail speaks the diet (tolerated legacy)" || fail "anti-halu rail wording stale"
+# unit-writer procedure sheds grounding_evidence (and its anchors_verified tally), keeps grounding_confidence
+# (was pinned on the generate-units defensive-generation reference, deleted in 9.0 P1 — repointed to the
+#  plan references that now carry the same halves)
+for f in "$UP" "$VP"; do
+  if grep -qE "^\s*(grounding_evidence|anchors_verified):" "$f"; then fail "$(basename "$f") still emits a grounding_evidence / anchors_verified frontmatter block"; else ok "$(basename "$f") sheds the grounding_evidence block"; fi
+done
+grep -qF 'grounding_confidence: HIGH | MEDIUM | LOW' "$US" && ok "grounding_confidence kept (A1 trigger condition)" || fail "grounding_confidence lost from unit-schema"
+grep -qF 'Warnings surface visually in chat output + unit body footer' "$VP" && ok "anchor-verification outcome rerouted to chat output + body footer (no frontmatter block)" || fail "chat + body-footer rerouting line missing from validation-passes §12.3"
+grep -qF 'do NOT write the zero-reader fields `mutability`, `estimated_complexity`, `grounding_evidence`, `superpowers_skills`' "$UP" \
+  && grep -qF 'Legacy units may carry `grounding_evidence`' "$US" \
+  && ok "writer procedure speaks the diet (grounding_evidence not written; legacy units tolerated)" || fail "writer-diet / legacy-tolerance wording stale"
 
 # ── (b) ears: roadmap pins survive + sharpened emission guidance ──
 grep -q 'ears:' "$US" && ok "roadmap pin: \`ears:\` key survives (optional tier)" || fail "roadmap pin lost: ears: key"

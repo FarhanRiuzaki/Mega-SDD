@@ -1,13 +1,13 @@
 {
  "_doc": "Complexity budget \u2014 a RATCHET, not a target (plugins/mega-sdd/CLAUDE.md \u00a7Release evidence & complexity budget). tests/benchmarks/test-complexity-budget.sh fails when a measured value exceeds its ceiling. Shrinking is always allowed; lower the ceiling in the same change to lock the gain. Raising a ceiling requires a `raises` entry {change, metric, measured_benefit}: a feature / new stage / new lens / new gate / performance claim cites benchmarks/runbooks/vanilla-vs-megasdd.md results (n >= 3 per arm, vs vanilla); a defect fix cites the regression test that fails without it. No evidence, no raise. Units: bytes / chars / lines exactly as the test measures them.",
- "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only); raised 2026-09-27 (see raises[])",
+ "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only); raised 2026-09-27 (see raises[]); LOWERED 2026-09-27 at 9.0 P1: generate-intent / bind-codebase / generate-units / scan-codebase deleted, their surviving contracts relocated into skills/plan/references/ + references/. T01 lite = the guarded pipeline trace re-pointed to the relocated successors (benchmarks/tasks/T01-greenfield-chain/files.lite.txt header). T01 default = what a default run on a clear greenfield PRD commands since the lane router: the DIRECT lane (using-mega-sdd + the front door + references/direct-lane.md; files.optimized.txt) \u2014 a redefinition, not a like-for-like shrink: the pre-9.0 default traced the classic chain (484,930 B).",
  "ceilings": {
-  "always_loaded_description_chars": 13639,
-  "t01_lite_commanded_bytes": 473368,
-  "t01_default_commanded_bytes": 484930,
-  "skill_md_total_bytes": 371391,
-  "scripts_total_lines": 45355,
-  "hooks_total_lines": 3327
+  "always_loaded_description_chars": 12499,
+  "t01_lite_commanded_bytes": 451893,
+  "t01_default_commanded_bytes": 39307,
+  "skill_md_total_bytes": 274863,
+  "scripts_total_lines": 45326,
+  "hooks_total_lines": 3326
  },
  "raises": [
   {
@@ -47,6 +47,28 @@
     ]
    },
    "measured_benefit": "benchmarks/results/vanilla-ab REPORT.md xs, n=3 clean each: lite vs classic review-ready 20.2 [15.1-23.1] vs 38.5 [36.7-41.8] min, cost 11.29 [9.83-11.90] vs 22.47 [21.87-22.52] USD (non-overlapping), AC 11/12 both, Critical 0 both, rubric 84 vs 82 (OVERLAP). Clinic classic not measured on this fixture (historical n=1: 259.66 USD / 102 min vs lite 53-73 USD) \u2014 deviation from the locked two-scenario rule logged in benchmarks/runbooks/vanilla-vs-megasdd.md section 9."
+  },
+  {
+   "date": "2026-09-27",
+   "change": "direct/assisted lanes emit the gateway trace tags (mega-sdd-trace:direct / :assisted in the lane announce line, mega-sdd-trace:assisted-review in the one review dispatch prompt)",
+   "metric": {
+    "t01_default_commanded_bytes": [
+     38876,
+     39307
+    ]
+   },
+   "measured_benefit": "Defect fix, owner-mandated contract (docs/gateway-contract.md): the lanes write no .mega-sdd/ (so mega-sdd-trace:turn is silent) and call no skill (so no announce tag) \u2014 a session run through them was invisible to the gateway filter contains \"mega-sdd-trace\". Regression test: tests/v9/test-gateway-trace.sh fails without it."
+  },
+  {
+   "date": "2026-09-27",
+   "change": "commands/mega-sdd.md: an ambiguous bare `references/chain-execution.md` pointer written in the cross-skill form `orchestrate-flow/references/chain-execution.md` (authoring standard)",
+   "metric": {
+    "t01_lite_commanded_bytes": [
+     451874,
+     451893
+    ]
+   },
+   "measured_benefit": "Defect fix: the bare form did not resolve from the command (no references/ next to it). Regression test: tests/v9/test-no-removed-skill-refs.sh (every reference path named by a SKILL.md / command resolves) fails without it."
   }
  ]
 }

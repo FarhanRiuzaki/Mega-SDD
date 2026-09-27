@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# derive-changed-paths.sh — the express-born Mode D changed-set producer.
-# Map-bearing projects keep `scan-codebase --changed-only` (which refreshes
-# the map AND writes this file); projects that never grew a map (express
-# spine) derive the durable changed set deterministically instead:
+# derive-changed-paths.sh — the Mode D changed-set producer. It derives the
+# durable changed set deterministically:
 #   changed = git diff --name-only <symbol-index head_commit>..HEAD
 #           ∪ git status --porcelain (working tree — uncommitted/untracked;
 #             half of sync's purpose, round P2 blocker 1a)
@@ -20,8 +18,8 @@
 # succeeds (round F6 — a failed write must not consume the hints); consumed
 # files are deleted after their rows land in a successful write.
 # Output: <vault>/.sync-changed-paths.txt (one path per line, repo-relative,
-# sorted, deduped) — the SAME consumer contract detect-drift --scope=@ and
-# bind-codebase --paths=@ already read.
+# sorted, deduped) — the SAME consumer contract detect-drift --scope=@,
+# sync-intersect.sh --paths=@ and rebind-units.sh --paths=@ read.
 # Exit 0 = written; 2 = usage; 3 = no baseline stamp / git unavailable /
 # write failed — the caller falls back to a full re-bind, never guesses.
 set -u
@@ -63,7 +61,7 @@ if not stamp:
 if not stamp:
     print("FAIL: no symbol-index head_commit baseline (state.json or live "
           "index) — cannot derive a changed set; fall back to a full re-bind "
-          "(bind-codebase <vault> --auto).", file=sys.stderr)
+          "(scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=all).", file=sys.stderr)
     sys.exit(3)
 
 def _git(*args):
@@ -151,7 +149,7 @@ except OSError as e:
     sys.exit(3)
 
 # 5. NOW consume: rotate the live journal; delete consumed files whose rows
-# are safely inside the just-written set (scan --changed-only parity).
+# are safely inside the just-written set.
 for src in sources:
     try:
         if src == journal:

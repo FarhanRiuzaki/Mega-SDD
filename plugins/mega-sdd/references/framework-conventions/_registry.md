@@ -2,8 +2,9 @@
 
 # Framework Pack Registry
 
-Auto-generated readiness table. Frameworks enumerated from §8.5 of
-`scan-codebase/references/scan-procedure.md` (the framework detection table).
+Auto-generated readiness table. Frameworks enumerated from each pack's
+`framework:` frontmatter, the set GROUND's manifest->pack matcher
+(`state_probes.probe_framework_pack`) resolves.
 
 **Status key:**
 - `ready` — pack file exists, `pack_tier: full`, lints clean

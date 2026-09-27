@@ -21,7 +21,7 @@ Every pack MUST contain ALL six of the following `## ` headings (in any order):
 1. `## File location standards` — table mapping artifact kinds to filesystem paths
 2. `## Naming standards` — table of naming conventions (class, method, file, column, etc.)
 3. `## Idioms` — bullet list of the framework's preferred patterns
-4. `## Hard Rules emitted` — fenced block of `HARD_RULE:` entries that merge into `binding.md`
+4. `## Hard Rules emitted` — fenced block of `HARD_RULE:` entries; the dispatch builder (`build-dispatch-prompt.sh` priority 7) filters the glob-matched records into the bolt's advisory T2 `framework_pack_rules`
 5. `## Testing conventions` — test runner, test file location, naming, and fixture conventions
 6. `## Code style (self-documenting)` — the stack's code-style DELTA over Iron Rule 6 (since 8.2.0; shape in Check 6)
 
@@ -60,7 +60,7 @@ A pack's BODY (everything after the frontmatter closing `---`) MUST NOT contain 
 
 The token map below is the machine-readable source for this check. The script reads the `## Cross-framework token map` section, determines the pack's `framework:` value, and greps the body for every OTHER framework's tokens. Any match outside a "contrast example" fence is a violation.
 
-Rationale: a token leak indicates the pack was copy-edited from another framework's pack and not properly cleaned, or the author accidentally documented the wrong stack's idioms. Leaks confuse every pack consumer (the classic bind step, the validators, the dispatch builder).
+Rationale: a token leak indicates the pack was copy-edited from another framework's pack and not properly cleaned, or the author accidentally documented the wrong stack's idioms. Leaks confuse every pack consumer (the code gates, the validators, the dispatch builder).
 
 ---
 

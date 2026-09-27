@@ -417,7 +417,7 @@ run_family() {
 #   validate-handoff-yaml.sh  — needs chat output text (gate-time context)
 # (validate-starterkit-metrics.sh was DELETED in v7.5.0 №C — its state file had
 #  zero readers anywhere; the starterkit_metrics_inconsistent halt lives in the
-#  generate-units/orchestrate-flow prose recomputation, not in a validator.)
+#  orchestrate-flow prose recomputation, not in a validator.)
 
 run_validator() {
   local script="$1"
@@ -718,7 +718,7 @@ validator_results = {
     # surfaced here read-only from their gate-written state files so /analyze is a true
     # pre-flight of what WILL block bolts (a FAIL here flips overall, as it should).
     "flow_coverage": {"rc": "STATE_FILE", "state_file": ".flow-coverage-state.json"},
-    # v8 P1.d (spec 2026-09-10 App. F5): written by generate-units Step 12.8 via validate-plan-coverage.sh; absent = SKIP
+    # v8 P1.d (spec 2026-09-10 App. F5): written by plan Step 5 via validate-plan-coverage.sh (halt plan_coverage_gap); absent = SKIP
     "plan_coverage": {"rc": "STATE_FILE", "state_file": ".plan-coverage-state.json"},
     "sibling_consistency": {"rc": "STATE_FILE", "state_file": ".sibling-consistency-state.json"},
     "cross_cutting_registration": {"rc": "STATE_FILE", "state_file": ".cross-cutting-state.json"},

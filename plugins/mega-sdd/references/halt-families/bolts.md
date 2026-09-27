@@ -28,7 +28,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### pbt_citation_invalid
 
-- `pbt_citation_invalid` — execute-bolts: a PBT property block declares `Cites: §Decision-D-NNN` but the cited ADR ID does not exist in the bound vault's decisions surface (`vault.md ## Decisions` on layout-2; `05-decisions.md` / `decisions/` on legacy). ALWAYS STOP. Resolution: fix the citation in the unit's PBT block (or remove the property if the underlying decision was rescinded), then re-run the bolt.
+- `pbt_citation_invalid` — execute-bolts: a PBT property block declares `Cites: §Decision-D-NNN` but the cited ADR ID does not exist in the vault's decisions surface (`context.md ## Decisions` on layout-3; `vault.md ## Decisions` on layout-2; `05-decisions.md` / `decisions/` on legacy). ALWAYS STOP. Resolution: fix the citation in the unit's PBT block (or remove the property if the underlying decision was rescinded), then re-run the bolt.
 
 ### partial_state_corrupt
 
@@ -44,7 +44,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### acceptance_path_unowned
 
-- `acceptance_path_unowned` — generate-units/execute-bolts gate: a unit whose `acceptance_test` command runs a path that NO unit declares in `target_files` and that does not exist on disk. ALWAYS STOP. The unit is unfinishable by construction: committing the file trips the B3 whitelist observer (`whitelist_violation`), skipping it fails the acceptance command — the implementer can only discover this after a full dispatch has burned (field case: HOST-AS400 U-001, `scope_creep_detected` after ~70k tokens). Details `{unit_id, unowned_paths[]}`. Resolution: add the path to that unit `target_files` (`operation: create`), or point the command at a path a unit already owns. Source skill: `generate-units` (detected by `scripts/validate-unit-spec.sh`; gated at the execute-bolts PreToolUse re-derive).
+- `acceptance_path_unowned` — plan/execute-bolts gate: a unit whose `acceptance_test` command runs a path that NO unit declares in `target_files` and that does not exist on disk. ALWAYS STOP. The unit is unfinishable by construction: committing the file trips the B3 whitelist observer (`whitelist_violation`), skipping it fails the acceptance command — the implementer can only discover this after a full dispatch has burned (field case: HOST-AS400 U-001, `scope_creep_detected` after ~70k tokens). Details `{unit_id, unowned_paths[]}`. Resolution: add the path to that unit `target_files` (`operation: create`), or point the command at a path a unit already owns. Source skill: `plan` (Step 5 `validate-unit-spec.sh`; re-gated at the execute-bolts PreToolUse re-derive).
 
 ### sprint_blocked_by
 
@@ -52,7 +52,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### hard_rule_unanchored
 
-- `hard_rule_unanchored` — execute-bolts: a unit's `## Hard Rules` block references an ANCHOR (file path / function signature) that cannot be resolved against the current codebase-map. ALWAYS STOP. Details `{unit_id, rule, missing_anchor}`. Resolution: user fixes anchor reference (rename to current symbol) OR removes obsolete rule. Source skill: `execute-bolts`.
+- `hard_rule_unanchored` — execute-bolts: a unit's `## Hard Rules` block references an ANCHOR (file path / function signature) whose symbol is not found in tracked source (`run-preflight-scan.sh` exit 5, shared `find_decl_line`). ALWAYS STOP. Details `{unit_id, rule, missing_anchor}`. Resolution: user fixes anchor reference (rename to current symbol) OR removes obsolete rule. Source skill: `execute-bolts`.
 
 ### verify_unit_writable
 
@@ -140,7 +140,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### pbt_property_violated
 
-- `pbt_property_violated` — execute-bolts post-flight (properties born in generate-units `references/pbt-integration.md`): a property-based test failure with `severity: error` halts (severity `warning` → log + commit anyway, per pbt-integration.md Step 3); the counterexample input + failing property definition are preserved in the envelope. Bridged via propose-and-confirm in convergence loops (`orchestrate-flow/references/convergence-loops.md` — propose fix → user approve → re-execute → continue).
+- `pbt_property_violated` — execute-bolts post-flight (properties authored by `plan` step 4 per `plan/references/pbt-integration.md`): a property-based test failure with `severity: error` halts (severity `warning` → log + commit anyway, per pbt-integration.md §Execute-bolts integration); the counterexample input + failing property definition are preserved in the envelope. Bridged via propose-and-confirm in convergence loops (`orchestrate-flow/references/convergence-loops.md` — propose fix → user approve → re-execute → continue).
 
 ### test_fail
 

@@ -65,7 +65,10 @@ assert "from unit_tier import size_proxy" in r and "from unit_tier import size_p
 assert r.count("def _section_items") == 0, "resolver still carries the inline proxy"
 EOF2
 # c: prose — writer contract names the diet and the advisory
+# 9.0 P1: generate-units was deleted; its unit walk (Step 10), unit template and
+# unit schema were relocated verbatim under skills/plan/references/ — repointed.
 P="$ROOT/plugins/mega-sdd"
-grep -q 'xs_body_advisory' "$P/skills/generate-units/SKILL.md" && grep -q 'xs' "$P/skills/generate-units/references/templates/unit.md" && grep -q 'xs body diet' "$P/skills/generate-units/references/unit-schema.md" \
-  && pass "c: generate-units Step 10 + template + schema carry the xs body diet" || fail "c: writer prose missing the diet"
+PR="$P/skills/plan/references"
+grep -Eq '^\*\*10\. Write each unit file\*\*.*xs body diet.*xs_body_advisory' "$PR/unit-procedure.md" && grep -q 'xs' "$PR/templates/unit.md" && grep -q 'xs body diet' "$PR/unit-schema.md" \
+  && pass "c: plan unit-procedure Step 10 + template + schema carry the xs body diet" || fail "c: writer prose missing the diet"
 echo; [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"; exit $rc

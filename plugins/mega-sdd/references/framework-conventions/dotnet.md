@@ -67,7 +67,7 @@ Conventions for general .NET / C# projects (console apps, worker services, class
 
 ## Hard Rules emitted
 
-These rules merge into `binding.md` §Suggested Unit Hard Rules on the classic lane (`bind-codebase` 2.9); on every lane the dispatch builder filters the glob-matched records into the bolt's T2 `framework_pack_rules`.
+The dispatch builder (`build-dispatch-prompt.sh` priority 7) filters the glob-matched records into the bolt's T2 `framework_pack_rules`.
 
 ```
 HARD_RULE: Interface types MUST be named `I` + PascalCase

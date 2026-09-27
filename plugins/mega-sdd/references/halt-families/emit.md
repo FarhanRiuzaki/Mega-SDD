@@ -20,7 +20,7 @@ The `pdf_render_failed` / `template_slot_unfilled` / `citation_unresolvable` sub
 
 ### citation_unresolvable
 
-- `citation_unresolvable` — emit-fsd: `scripts/build-citation-map.sh` exited 1, for either (or both) of two causes: FSD.md cites a source path that does not resolve to an existing file (fabricated or stale citation), OR a leftover `pending` sha256 stamp sits outside code fences with no resolvable path candidate before it. Details carry the script's verbatim output lines — `UNRESOLVED <section> <path>` (one per unresolvable citation) and `LEFTOVER <lineno>: <line>` (one per orphaned pending stamp). Resolution: correct the citation to a real artifact (or remove/repair the orphaned stamp) OR run the producing phase (scan-codebase / bind-codebase / generate-units / execute-bolts), then re-run emit-fsd.
+- `citation_unresolvable` — emit-fsd: `scripts/build-citation-map.sh` exited 1, for either (or both) of two causes: FSD.md cites a source path that does not resolve to an existing file (fabricated or stale citation), OR a leftover `pending` sha256 stamp sits outside code fences with no resolvable path candidate before it. Details carry the script's verbatim output lines — `UNRESOLVED <section> <path>` (one per unresolvable citation) and `LEFTOVER <lineno>: <line>` (one per orphaned pending stamp). Resolution: correct the citation to a real artifact (or remove/repair the orphaned stamp) OR run the producing phase (plan / execute-bolts), then re-run emit-fsd.
 
 ### signoff_fabricated
 

@@ -10,6 +10,18 @@
 #       stated; the superseded "empirical optimum is 3" claim is gone; the
 #       soft-warn >5 + hard cap 8 rails are intact.
 #
+# 9.0 (spec 2026-09-27 §2/§7): generate-units and the classic chain are gone;
+# the one pipeline is plan → execute-bolts --all --lite. The plan→bolts hop
+# carries `--all --lite`, not `--parallel`: wave execution is the DEFAULT on
+# `--all` (pinned below from batch-and-fanout), so `--all` alone is the
+# wave-parallel form and `--parallel` stays on the units_pending_bolts rows the
+# engine proposes. The generate-units pins (its handoff suggested_args, its
+# standalone suggestion) moved to the surviving units producer `plan` and to the
+# orchestrator's lite-lane exemption (plan emits no handoff YAML by contract).
+# The default-lane "Wave boundary = review boundary" barrier is retired — the
+# lite-only execute-bolts replaced it with unit-level readiness; that rail is
+# pinned in its place.
+#
 # Run: bash tests/token-efficiency/test-2a2d-chain-parallel.sh
 set -uo pipefail
 
@@ -18,15 +30,16 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 RR="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md"
 CE="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md"
 HC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md"
+HN="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md"
 OF="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/SKILL.md"
-AM="${ROOT}/plugins/mega-sdd/skills/generate-units/references/auto-and-memory.md"
+PL="${ROOT}/plugins/mega-sdd/skills/plan/SKILL.md"
 BF="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/batch-and-fanout.md"
 EB="${ROOT}/plugins/mega-sdd/skills/execute-bolts/SKILL.md"
 EX="${ROOT}/plugins/mega-sdd/skills/extract-intelligence/SKILL.md"
 XC="${ROOT}/plugins/mega-sdd/skills/extract-intelligence/SKILL.md"
 PC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/predictive-checks.md"
 TT="${ROOT}/tests/skill-triggering/orchestrate-flow.test.md"
-for f in "$RR" "$CE" "$HC" "$OF" "$AM" "$BF" "$EB" "$EX" "$XC" "$PC" "$TT"; do
+for f in "$RR" "$CE" "$HC" "$HN" "$OF" "$PL" "$BF" "$EB" "$EX" "$XC" "$PC" "$TT"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -39,14 +52,27 @@ note "== 2a: every chain routing surface dispatches --all --parallel =="
 n=$(grep -c -- 'execute-bolts --all --parallel' "$RR")
 [ "$n" -ge 3 ] && ok "routing-rules carries --all --parallel on $n rows (state row + decision matrix + 1-phase chain)" || fail "routing-rules rows missing --parallel (found $n, want >=3)"
 grep -q -- 'already parallel by procedure' "$RR" && ok "the --per-squad leg is documented as parallel by procedure (no flag needed)" || fail "per-squad parallel note missing"
-grep -q -- 'execute-bolts --all --parallel → bolts/' "$OF" && ok "orchestrate-flow pipeline example carries --parallel" || fail "SKILL.md example missing --parallel"
-grep -qF -- 'mega-sdd:execute-bolts --all --parallel --auto' "$HC" && ok "handoff routing index dispatches --all --parallel --auto" || fail "handoff-contract row missing --parallel"
-grep -qF -- '"--all", "--parallel", "--auto"' "$AM" && ok "generate-units emission suggested_args carries --parallel" || fail "auto-and-memory suggested_args missing --parallel"
+# 9.0: the classic example row ('execute-bolts --all --parallel → bolts/') left
+# with the classic chain; the one pipeline's example is the wave-default --all
+# batch and must not opt out of waves.
+EXL=$(grep -E -- '^ +2\. execute-bolts --all --lite +→ bolts/' "$OF")
+[ -n "$EXL" ] && ! printf '%s\n' "$EXL" | grep -q -- '--sequential' \
+  && ok "orchestrate-flow pipeline example dispatches the wave-default --all batch (execute-bolts --all --lite → bolts/, no --sequential)" \
+  || fail "SKILL.md pipeline example lost the --all batch hop (or opts out of waves)"
+# 9.0: the units producer row is `plan` (generate-units deleted).
+grep -E -- '^\| `plan` \|' "$HC" | grep -qF -- '→ `mega-sdd:execute-bolts --all --lite`' \
+  && ok "handoff routing index: the plan producer row dispatches mega-sdd:execute-bolts --all --lite" \
+  || fail "handoff-contract plan row does not route to execute-bolts --all --lite"
+# 9.0: plan emits no handoff YAML (no suggested_args to pin); the chain's
+# bolts-hop args live in the orchestrator's lite-lane exemption instead.
+grep -qF -- '(3) dispatch `execute-bolts --all --lite`' "$HN" \
+  && ok "handoff-consumption lite-lane exemption dispatches the bolts hop as execute-bolts --all --lite" \
+  || fail "handoff-consumption lite exemption lost the execute-bolts --all dispatch step"
 
 note "== 2a: the DETERMINISTIC proposer emits the flag (the engine, not just its docs) =="
 SP="${ROOT}/plugins/mega-sdd/scripts/_lib/state_probes.py"
 DT="${ROOT}/plugins/mega-sdd/tests/state/test-derive-state.sh"
-grep -qF 'execute-bolts --all --parallel' "$SP" && ok "state_probes.py units_pending_bolts proposes --all --parallel (routing-rules row :56 documents THIS script's output)" || fail "state_probes.py still proposes sequential --all — the front-door path dispatches sequential while the docs claim parallel"
+grep -qF 'execute-bolts --all --parallel' "$SP" && ok "state_probes.py units_pending_bolts proposes --all --parallel (routing-rules row units_pending_bolts documents THIS script's output)" || fail "state_probes.py still proposes sequential --all — the front-door path dispatches sequential while the docs claim parallel"
 grep -qF "execute-bolts --all --parallel']" "$DT" && ok "derive-state fixture f6 pins the parallel proposal" || fail "test-derive-state.sh f6 still pins the sequential form"
 
 note "== 2a: the wave-plan channel is named, not asserted =="
@@ -68,7 +94,14 @@ AP="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/diagnostics-proc
 grep -qF 'never suggest the halting form' "$AP" && ok "analyze-parallelism suggestion is squad-count-conditional (--per-squad halts on single-squad)" || fail "analyze-parallelism still suggests the halting --per-squad form unconditionally"
 
 note "== 2a: failure semantics at the wave boundary =="
-grep -qF 'Wave boundary = review boundary' "$BF" && ok "next wave waits for the current wave's panels (never pipelined against a review tail)" || fail "wave-boundary review rule missing"
+# 9.0: 'Wave boundary = review boundary' (the default-lane barrier) is retired —
+# execute-bolts runs the lite lane only, where unit-level readiness replaces the
+# barrier. The rail that survives at that boundary: a dependent dispatches only
+# on its upstream's written green evidence, never on missing/red evidence.
+grep -qF 'Unit-level readiness replaces the wave barrier' "$BF" \
+  && grep -qF 'never pipeline against missing/red evidence' "$BF" \
+  && ok "dependents wait for upstream acceptance+postflight evidence (never pipelined against missing/red evidence)" \
+  || fail "unit-level readiness rail (the barrier's replacement) missing"
 grep -qF 'complete the detect-after pipeline for every unit already dispatched in that wave' "$BF" && ok "in-flight units complete their verdict trail on failure (commits already landed)" || fail "in-flight completion semantics missing"
 grep -qF 'remediation of started work, not new work' "$BF" && ok "a sibling's fix re-dispatch is remediation within its cap, unambiguous" || fail "sibling re-dispatch ambiguity unresolved"
 grep -qF 'dispatch no further unit and no further wave' "$BF" && ok "no skip-ahead preserved: never START new work past a failure" || fail "no-further-wave rule missing"
@@ -82,8 +115,11 @@ grep -qF 'the flag DEFAULT stays off for standalone non-`--all` invocations' "$E
 # contract still has to be stated somewhere deterministic.
 grep -qF 'wave execution is the DEFAULT' "$BF" && ok "batch-and-fanout: --all wave-default sentence present" || fail "wave-default sentence lost"
 grep -qF -- '--sequential' "$BF" && ok "batch-and-fanout: --sequential opt-out documented" || fail "--sequential opt-out missing"
-grep -qF 'Suggested next: `execute-bolts --all` to execute in order' "${ROOT}/plugins/mega-sdd/skills/generate-units/SKILL.md" \
-  && ok "generate-units standalone suggestion deliberately stays plain --all" || fail "standalone suggestion drifted"
+# 9.0: generate-units (and its standalone 'Suggested next') is deleted; the
+# surviving units producer is plan, whose standalone NEXT hands to the front
+# door, which dispatches the plain wave-default --all form (no --parallel flag).
+grep -qF '`NEXT: /mega-sdd --resume` (the front door dispatches `execute-bolts --all --lite`)' "$PL" \
+  && ok "plan standalone NEXT hands off to the front door's plain execute-bolts --all --lite" || fail "plan standalone NEXT suggestion drifted"
 
 note "== 2a: trigger fixtures updated with the routing =="
 grep -q -- 'execute-bolts --all --parallel' "$TT" && ok "orchestrate-flow trigger fixtures expect --parallel" || fail "trigger fixtures not updated"

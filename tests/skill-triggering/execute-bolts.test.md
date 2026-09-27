@@ -26,6 +26,15 @@
 
 ## Behavior
 
+### BJ1: JIT bind at pre-flight 3.9 — the CONFLICT gate closes per unit
+- **Setup:** a wave of U-003 + U-004 (U-005 `depends_on: [U-004]`); U-004's `## Claims` expects `POST /api/orders` to use Bearer auth, the code uses session cookies
+- **Expect:**
+  - `derive-unit-claims.sh --units=U-003,U-004` (ONE call per wave) → `write-unit-binding.sh` per unit (the sole writer) → `bolts/U-003/binding.json` + `bolts/U-004/binding.json`; a wave with zero symbol/text claims is reported as costing zero model tokens
+  - `validate-handoff-binding-units.sh --units=…` drops `conflict_unresolved` for U-004 → halt `binding_conflict` (ALWAYS STOP for U-004; one-screen shape: the claim, the code reality with `file:line`, KEEP_VAULT / KEEP_CODE / SPLIT)
+  - U-003 proceeds; U-005 is skipped with the reason; no verdict is ever hand-written and `binding.json` is never edited (hook-guarded)
+  - the PreToolUse gate re-runs the validator with `--units=U-004` on any `bolt-implementer` dispatch — a hand dispatch cannot bypass it
+  - resolution via `resolve-oq --binding` (`write-unit-binding.sh --resolve=<claim-id>=<ACTION> --by=user`)
+
 ### BH0: BOLTS gate deny → 3.9b (state anchor, 8.8.0)
 - **Setup:** a lite wave already bound at 3.9; before the next dispatch a teammate commit lands in U-002's anchored file
 - **Expect:** the `bolt-implementer` dispatch is DENIED `binding_stale` naming the path; the controller runs `rebind-units.sh --units=U-002` (3.9b), rebuilds `dispatch-prompt.md` with `build-dispatch-prompt.sh`, and re-dispatches — it never edits `binding.json`, never runs `git stash`, and a second deny at the same HEAD (`rebind_exhausted`) goes to quarantine, not to another 3.9b
@@ -46,10 +55,10 @@
 ### BH4 (v1.1+): --per-squad requires multi-squad config
 - **Setup:** vault has no `_meta/squads.yaml`
 - **Prompt:** `/mega-sdd:execute-bolts --per-squad`
-- **Expect:** halt with informative message; suggest `--all` or `generate-intent` to add squad config
+- **Expect:** halt with informative message: `--per-squad` requires ≥2 squads in `_meta/squads.yaml` (a migrated multi-squad vault — `plan` never authors one); suggest plain `execute-bolts --all`
 
 ### BH5 (v1.1+): --per-squad runs every squad from the main thread
-- **Setup:** vault with 3 declared squads, units assigned across squads (e.g., 4 BE + 3 FE + 2 integrations)
+- **Setup:** migrated vault with 3 declared squads, units assigned across squads (e.g., 4 BE + 3 FE + 2 integrations)
 - **Prompt:** `/mega-sdd:execute-bolts --per-squad`
 - **Expect:**
   - NO squad-level subagent: the controller stays in the main thread and walks each squad's units through the per-unit panel flow directly (depth-1 — `references/batch-and-fanout.md §--per-squad` + `references/squad-subagent.md`); only `bolt-implementer` / review-lens agents are dispatched, one per unit / lens
@@ -111,8 +120,8 @@
 - **Setup:** unit U-007 has `## Hard rules` with an unrecognized rule: `forbid users from x`
 - **Expect:** pre-flight halts BEFORE bolt execution with `hard_rule_unparseable` listing the offending line + the 5 expected grammar productions
 
-### HR8: Hard rule unanchored — function not in codebase-map
-- **Setup:** unit U-008 has `function doesNotExist MUST preserve signature: () => void`; codebase-map has no symbol with that name
+### HR8: Hard rule unanchored — function not in tracked source
+- **Setup:** unit U-008 has `function doesNotExist MUST preserve signature: () => void`; no tracked source file defines a symbol with that name
 - **Expect:** pre-flight halts with `hard_rule_unanchored`; rule references a symbol that can't be snapshotted
 
 ### HR9: Verify-unit special path
@@ -141,7 +150,7 @@
 ## Attempt cap — the retry budget is hook-enforced (v2.53.0+)
 
 ### AC1: the budget is persisted at dispatch, never counted by the controller
-- **Setup:** `execute-bolts U-003 --max-retries=2` (classic lane)
+- **Setup:** `execute-bolts U-003 --max-retries=2`
 - **Expect:** the router call forwards the flag — `resolve-review-tier.sh --unit … --write --max-retries=2` — and `bolts/U-003/review-tier.json` carries `retry_budget: 2`, `retry_budget_source: flag`. The controller keeps NO attempt counter of its own and never writes `attempts.json`.
 
 ### AC2: `gate: "halt"` from the merge script ends the loop before a doomed dispatch
@@ -157,18 +166,20 @@
 
 ## Pass criteria
 
-All triggers fire, pre-flight gates behave, whitelist + retry/halt protocol works. The retry budget is a mechanism (AC1-AC4): the hook counts, the controller never does. Hard Rule pre/post-flight (HR1-HR11) follows §4 (pre-flight) + §Post-flight Hard Rule validation. Violations NEVER silent — post-flight is detect-after (the bolt commit already landed): the run HALTS, the B1 gate blocks every further `execute-bolts` until the flagged commit is fixed-forward or reverted.
+All triggers fire, pre-flight gates behave, the JIT bind verdicts every unit by script and an open CONFLICT closes only its own unit (BJ1), whitelist + retry/halt protocol works. The retry budget is a mechanism (AC1-AC4): the hook counts, the controller never does. Hard Rule pre/post-flight (HR1-HR11) follows §4 (pre-flight) + §Post-flight Hard Rule validation. Violations NEVER silent — post-flight is detect-after (the bolt commit already landed): the run HALTS, the B1 gate blocks every further `execute-bolts` until the flagged commit is fixed-forward or reverted.
 
 ---
 
 ## Iter 32 — Starterkit slice injection cases (v2.7.0+)
+
+Legacy cache only: `.mega-sdd/codebase/starterkit-context.yaml` was written by the pre-9.0 deep scan and has no 9.0 producer, and `starterkit_relevance` was stamped by the pre-9.0 unit generator (`plan` does not write it). The builder still reads an existing file; absent → the slice is skipped entirely.
 
 ### EB-SK1 — T2.3 slice injection: UI-touching unit gets ui_ux + libs slices
 
 **Setup:**
 - Unit U-007 has `target_files: ["resources/views/users/index.blade.php", "app/Http/Controllers/UserController.php"]`
 - Unit frontmatter: `starterkit_relevance: [ui_ux, libs]`
-- `.mega-sdd/codebase/starterkit-context.yaml` exists (per GU-SK1 setup)
+- `.mega-sdd/codebase/starterkit-context.yaml` exists from a pre-9.0 scan (`auth.lib: sanctum`, `ui_ux.layout_extends: layouts.app`, `ui_ux.notification_lib: sweetalert2`, libs incl. sweetalert2)
 
 **Trigger:** `/mega-sdd:execute-bolts U-007`
 

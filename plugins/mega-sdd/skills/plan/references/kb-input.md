@@ -2,7 +2,7 @@
 
 > Relocated from `skills/generate-intent/references/kb-submode.md`, `skills/bind-codebase/references/hard-rules-and-packs.md` (§2.9 d–e + Anti-halu rails), `skills/bind-codebase/references/auto-memory-handoff.md` (§Extraction-scorecard preflight) and `skills/generate-intent/SKILL.md` (the KB `project_scale` rule + the `--phase` flag row) in 9.0 (P1); tuned text kept verbatim.
 
-Loaded by `plan/SKILL.md` when the source is an `extract-intelligence` knowledge base instead of a PRD. This file owns how the KB is read and where each claim lands; every other rule of `plan` (the `context.md` grammar, the unit contract, the validators, the single batched ask) applies unchanged. Step map: Step 0 → grammar detection, pins, the two preflights, auto-detection · Steps 1–3 → consumption, tier routing, ERD freedom · Step 4 → KB-derived Hard rules + Anti-patterns · Step 6 → the KB Q&A targets.
+Loaded by `plan/SKILL.md` when the source is an `extract-intelligence` knowledge base instead of a PRD. This file owns how the KB is read and where each claim lands; every other rule of `plan` (the `context.md` grammar, the unit contract, the validators, the single batched ask) applies unchanged. Step map: Step 0 → grammar detection, pins, the two preflights, auto-detection · Steps 1–3 → consumption, tier routing, ERD freedom · Step 4 → KB-derived Hard rules + Anti-patterns · Step 5 → the KB coverage rule · Step 6 → the KB Q&A targets.
 
 ## Contents
 - What the KB input is
@@ -15,6 +15,7 @@ Loaded by `plan/SKILL.md` when the source is an `extract-intelligence` knowledge
 - Tier-aware routing per claim
 - ERD freedom
 - KB-derived Hard rules + Anti-patterns
+- KB coverage rule (Step 5)
 - KB Q&A loop
 - KB auto-detection
 
@@ -175,6 +176,16 @@ Step 4 pulls these into each relevant unit's `## Hard rules` (machine-validated 
 - **KB-derived Anti-pattern suggestions** (informational, not machine-validated): every `## 5. Edge Cases & Gotchas` entry (legacy numbered tree: `## 9.`) → suggested Anti-pattern with brief description + KB anchor; every "do-not-replicate" critical finding in the KB README → suggested Anti-pattern.
 
 **Anti-halu rails:** NEVER promote `[INFERRED]`/`[OPEN]` KB items to Hard rules (Anti-patterns only). NEVER suggest a Hard rule whose anchor file isn't in the project's tracked source (probe the symbol index / the file on disk — `hard_rule_unanchored` would fire at bolt time — keep it an Anti-pattern). Suggestions are RECOMMENDATIONS — `plan` reviews + filters them per unit (Step 4) before inserting into units.
+
+## KB coverage rule (Step 5)
+
+A KB run passes `--kb=<kb-dir>` in place of `--prd` to `validate-plan-coverage.sh --cwd=<root> --kb=<kb-dir> --vault=<vault>` (`plan/references/plan-procedure.md` Step 5, row 4). It checks the KB's requirement headings against the units:
+
+- **Censused headings.** PRD-kontrak: every H2/H3 of every `<kb>/modules/*.prd.md` except `1. Purpose` and `6. Open Questions`. Legacy numbered tree (no `modules/`): every H2/H3 of `<kb>/10-domains/**/*.md` except `1. Purpose`, `10. Open Questions` and `11. Source References`. The leading section number is ignored when matching these names. Headings under an explicit Out-of-scope section are not censused.
+- **A unit covers a heading** when its `prd_source` names that module or domain file plus the heading slug (`<kb>/modules/<m>.prd.md#<slug>`; numbered tree `<kb>/10-domains/<d>.md#<slug>`), or a `:line` inside the heading's range.
+- **An OQ covers a heading only when it quotes the heading AND names the module or domain file** (`<m>.prd.md` / `<d>.md`). Every module carries the same section names, so a quote without the file name covers nothing. The quote is the heading text as written, section number included (case-insensitive). An OQ the AI already decided (`resolved_by: ai`) does not count.
+- **Out-of-scope modules** (§Consumption — PRD-kontrak grammar, item 5): a constraint row does not count. Each censused heading of such a module needs an OQ that quotes it and names the module file.
+- **Exit 1** → halt `plan_coverage_gap`. Each gap names its file. Fix it with a unit whose `prd_source` names the heading, or an OQ that quotes the heading and names the file. Never patch the census. While the coverage state is missing or FAIL, `validate-preflight.sh --predictive` refuses the `execute-bolts` hop.
 
 ## KB Q&A loop
 

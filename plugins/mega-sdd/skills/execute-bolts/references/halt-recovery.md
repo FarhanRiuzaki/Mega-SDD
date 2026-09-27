@@ -119,12 +119,12 @@ Halt YAML envelopes for each are documented in the propose-and-confirm-prompt te
 
 ## Property-Based Testing validation
 
-Per `generate-units/references/pbt-integration.md`. When a unit has a non-empty `properties:` field:
+Per `plan/references/pbt-integration.md`. When a unit has a non-empty `properties:` field:
 
 **Pre-flight (during the Hard Rule snapshot step):** for each `properties[].cites` reference, validate the citation resolves — probe that the vault section / entity / constitution clause exists. Unresolved → halt `pbt_citation_invalid` (mirrors the `oq_recommend_citation_invalid` rail).
 
 **Acceptance phase (within superpowers TDD):** if a PBT framework is detected (per `pbt-integration.md` §Framework detection):
-1. Generate-units has already emitted PBT test stubs in the unit's `target_files` (e.g. `tests/Property/<Name>Test.<ext>`).
+1. `plan` (step 4) has already emitted PBT test stubs in the unit's `target_files` (e.g. `tests/Property/<Name>Test.<ext>`).
 2. Run PBT tests as part of the acceptance phase via the detected framework:
    ```bash
    ./vendor/bin/phpunit --group=property      # PHP/Eris

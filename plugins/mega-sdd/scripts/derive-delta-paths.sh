@@ -18,30 +18,30 @@
 #   3. anchor paths         <- those claims' anchor cells, parsed EXACTLY the
 #                              way sync-intersect.sh parses the same field
 # and writes <vault>/.delta-changed-paths.txt (one path per line, sorted,
-# deduped — the same consumer contract as bind-codebase --paths=@<file>).
+# deduped — the same consumer contract as rebind-units.sh --paths=@<file>,
+# the delta lane's re-bind hop).
 #
 # Deliberately NOT .sync-changed-paths.txt: that basename is the sync lane's
-# pinned discriminator with a scan-owned lifecycle; a vault-side delta is
+# pinned discriminator with a derive-changed-paths.sh-owned lifecycle; a vault-side delta is
 # structurally invisible to the sync channel (vault paths are stripped from
 # it), so the delta lane carries its own file with its own lifecycle
-# (overwritten per from-prompt apply, consumed by the next bind hop).
+# (overwritten per from-prompt apply, consumed by the next re-bind hop).
 #
 # Exit codes (the caller keys the chain on these — nothing else):
-#   0 = written        (paths file written; may be empty when every affected
-#       claim is anchor-less — selection then rides the vault-section leg of
-#       binding-contract.md §Claim-scoped re-bind, which reads VAULT-DIFF.md)
+#   0 = written        (paths file written, NEVER empty)
 #   3 = no binding.json (greenfield/unbound vault — nothing to scope against;
 #       the caller proposes the NORMAL chain, no scoped hop)
 #   2 = FAIL-CLOSED    (ANY read/parse failure OR unprovable scope: missing
 #       vault/VAULT-DIFF.md, unreadable or malformed binding.json, a claim's
 #       vault_source in an unrecognizable shape, zero doc literals in the diff
-#       sections, or touched docs matching ZERO claims — the caller MUST
-#       propose a FULL re-bind; this script never converts uncertainty into a
-#       scoped bind)
+#       sections, touched docs matching ZERO claims, or affected claims/units
+#       that yield ZERO paths (every one anchor-less) — the caller MUST propose
+#       a FULL re-bind, `rebind-units.sh --units=all`; this script never
+#       converts uncertainty into a scoped bind)
 #
-# WHY fail-closed: bind-codebase --paths does NOT fail-closed on a no-match
-# path (an empty/wrong paths file yields an all-carried-forward re-bind that
-# "succeeds" without re-verdicting the intended claims). The guard therefore
+# WHY fail-closed: rebind-units.sh --paths does NOT fail-closed on a no-match
+# path (an empty/wrong paths file exits 0 "nothing affected" without
+# re-verdicting the intended claims — a false in-sync). The guard therefore
 # lives HERE: a derivation that cannot be proven correct widens to the full
 # re-bind, never narrows on a guess — proportional verification cuts
 # inventory, never verification.
@@ -60,9 +60,12 @@
 #   - VAULT-DIFF.md structure: skills/diff-vault/references/report-format.md
 #     (Action-on-apply lines name the target vault doc, e.g. "append to
 #     `03-data-model.md` Entities section")
-#   - binding.json schema: skills/bind-codebase/references/binding-json-schema.md
-#     (claims[].anchor "UserController.php:45 + routes/api.php:12" | null;
-#     claims[].vault_source "03-data-model.md:42" | null)
+#   - binding.json schema: per-unit bolts/U-XXX/binding.json (unit-binding/2,
+#     scripts/_lib/unit_binding.py — '+'-joined claims[].anchor); the legacy
+#     whole-vault binding.json (read-only, scripts/derive-binding-json.sh; grammar
+#     owner scripts/_lib/binding_md.py): claims[].anchor
+#     "UserController.php:45 + routes/api.php:12" | null; claims[].vault_source
+#     "03-data-model.md:42" | null
 #   - anchor parse: scripts/sync-intersect.sh claims[].anchor reader — split
 #     on `\s*\+\s*`, strip the :line suffix, file-like filter ('/', ':', or
 #     dot-extension); slash-less pieces pass through as basenames (the bind
@@ -212,6 +215,8 @@ if not os.path.isfile(bj_path):
         die("touched context.md section(s) %s matched zero units' context_source/vault_source" % (sorted(anchors_touched) or ["<bare>"]))
     paths = set()
     for _, ps in affected_units: paths |= ps
+    if not paths:
+        die("affected units %s carry no target/anchor path — an empty paths file would read as in-sync" % [u for u, _ in affected_units])
     out = os.path.join(vault, ".delta-changed-paths.txt")
     try:
         with open(out, "w", encoding="utf-8") as f:
@@ -272,6 +277,10 @@ if affected == 0:
     # empty-claims binding) — a "scoped" bind would re-verdict nothing it
     # should; the full re-bind is the only provable answer.
     die("touched docs %s matched zero binding claims" % sorted(touched_docs))
+if not paths:
+    # Fail-closed: every affected claim is anchor-less — an empty paths file
+    # would make the re-bind hop exit "nothing affected" (a false in-sync).
+    die("all %d affected claim(s) are anchor-less — no path to scope a re-bind on" % affected)
 
 out = os.path.join(vault, ".delta-changed-paths.txt")
 try:

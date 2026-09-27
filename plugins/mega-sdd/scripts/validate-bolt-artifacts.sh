@@ -642,8 +642,9 @@ def has_hard_rules(text):
     # body of the \`## Hard rules\` section (until the next \`## \` heading).
     # Case-INSENSITIVE heading + tolerate trailing text on the heading line — the
     # canonical unit template emits \`## Hard rules  (validated at bolt time ...)\`
-    # (unit-schema.md), and units may use \`## Hard Rules\`. Matching only the bare
-    # \`## Hard rules\` left the B1 gate INERT on template-conformant units.
+    # (plan/references/unit-schema.md §Required body sections), and units may use
+    # \`## Hard Rules\`. Matching only the bare \`## Hard rules\` left the B1 gate
+    # INERT on template-conformant units.
     m = re.search(r"(?ims)^##[ \t]+Hard[ \t]+rules\b[^\n]*\n(.*?)(?=^##[ \t]|\Z)", text)
     if not m:
         return False
@@ -1196,7 +1197,7 @@ for uid, info in sorted(per_unit.items()):
         # blessed legacy/app/config.py; and the reverse blessed root config.py), and
         # raw fnmatch let * eat '/' (target src/*.py blessed src/a/b/evil.py) — the
         # exact defect the sibling B1 engine's _glob_match already fixed. Targets are
-        # project-root-relative (generate-units emits them that way); the basename
+        # project-root-relative (plan emits them that way - unit contract target_files); the basename
         # fallback is OFF so a bare filename never sanctions a same-named file in a
         # different directory.
         ok = any(

@@ -1,171 +1,93 @@
 # Scenario 5 — Multi-Squad Parallel
 
-**Time**: ~45 minutes
-**Goal**: Partition work across multiple dev teams (squads); each squad runs independently in parallel.
+**Time**: ~15 minutes (a migrated vault)
+**Goal**: Know what happened to multi-squad mode in 9.0, and run a pre-9.0 multi-squad vault to completion.
 
-For projects where multiple teams co-develop on the same vault. Each squad gets its share of units; the main-thread controller loops over squads and dispatches independent units' `bolt-implementer` agents concurrently (depth-1; no squad subagent exists); cross-squad coupling forced through explicit interface contracts.
+> **Multi-squad authoring is retired in 9.0** (spec `docs/superpowers/specs/2026-09-27-v9-simplification-design.md` §7 decision #3). `plan`, the one spec producer, never writes `_meta/squads.yaml` or `interfaces/`, and 9.0 ships no template for either. The classic chain produced them, and it was removed. The unit-side squad rules are **kept for vaults that already carry those files**: a pre-9.0 vault, migrated to layout-3.
 
-## When to use multi-squad mode
+## What changed, in one table
 
-- ≥2 distinct teams (backend + frontend, or be + fe + integrations)
-- Want parallel development without merge conflicts
-- Need clear ownership boundaries
-- Have explicit cross-team contracts (REST APIs, GraphQL schemas, event payloads)
+| | Before 9.0 | 9.0 |
+|---|---|---|
+| Declaring squads (`_meta/squads.yaml`) + interface notes (`interfaces/<id>.md`) | authored with the vault | **retired**: nothing writes them; no template |
+| `squad:` / `produces_interfaces` / `consumes_interfaces` on units | assigned when units were generated | **kept** on a vault that has `squads.yaml` (≥2 squads): `plan --regenerate` assigns and validates them |
+| `execute-bolts --per-squad` / `--squad=<id>` | yes | **kept**: same main-thread loop, same interface lock gate |
+| Halts `cross_squad_dep_invalid` / `cross_squad_ambiguous` / `interface_ref_missing` / `cross_squad_interface_draft` | yes | **kept** for those vaults |
 
-For solo developers or single-team: skip this scenario. Use default squad mode (single implicit squad).
+## Starting a new multi-team project
 
-## Prerequisites
+There is no multi-squad lane for a new vault. What 9.0 offers instead:
 
-- Mega-sdd v7.4+
-- Existing project OR new project
-- Recommended: ast-grep installed
-- Clear understanding of team partition (which team owns what)
+- **One vault per scope.** When BE / FE / MW teams share one PRD, give the PRD a `scopes:` block and have each architect plan their own scope (`--scope=<id>`). → [Scenario 7 — Multi-architect](scenario-7-multi-architect.md).
+- **Modules inside one vault.** `plan` groups units into modules (`_meta/modules.yaml`, auto-derived when absent), and `execute-bolts --module=<id>` runs one module's units in topological order. It halts `module_blocked_by` when a prerequisite module is not done. Modules have no interface-lock gate; cross-module `depends_on` edges need an explicit `blocked_by`.
+- Each team then merges through your normal git workflow (PRs, rebase).
 
-## Setup — declare squads
+## Running a pre-9.0 multi-squad vault
 
-In your vault dir (after `generate-intent` runs OR pre-create for new vault):
+You have a vault built by the classic chain. It has `_meta/squads.yaml` with ≥2 squads, `interfaces/*.md` notes, and units carrying `squad:`.
 
-Create `<vault>/_meta/squads.yaml`:
+### Step 1 — Migrate it to layout-3
 
-```yaml
-mega_sdd_schema: 1
-squads:
-  - id: squad-be
-    label: Backend Team
-    owns_layers: [backend, data-model]
-    owns_components: [api/*, app/Models/*, database/*]
-    owns_flow_prefixes: [F-S-, F-B-]      # system flows + backend flows
-
-  - id: squad-fe-web
-    label: Frontend Web Team
-    owns_layers: [frontend-web]
-    owns_components: [resources/views/*, resources/js/*, public/*]
-    owns_flow_prefixes: [F-U-]             # user-facing flows
-
-  - id: squad-integrations
-    label: Integrations Team
-    owns_layers: [integrations]
-    owns_components: [app/Services/External/*, app/Mail/*, app/Jobs/*]
-    owns_feature_tags: [stripe, twilio, swift-messaging, ldap]
-```
-
-Squad partition rules:
-1. `owns_components` (most specific)
-2. `owns_flow_prefixes` (flow-level ownership)
-3. `owns_layers` (broad)
-4. `owns_feature_tags` (cross-cutting)
-
-First match wins; ambiguity halts with `cross_squad_ambiguous` blocker.
-
-## Step 1 — Run mega-sdd auto with multi-squad mode
+9.0 reads layout-2 vaults but builds only on layout-3. Run `/mega-sdd` with no argument: the status view flags the vault and **proposes** the migration. It never runs it silently.
 
 ```
-/mega-sdd ./prd-clinic.md
+/mega-sdd:migrate-paths --vault-layout=3            # dry-run: shows what moves
+/mega-sdd:migrate-paths --vault-layout=3 --apply    # executes (refuses a dirty tree)
 ```
 
-When mega-sdd detects `_meta/squads.yaml`, it:
-- Assigns each unit a `squad: <id>` per partition rules
-- Validates cross-squad dependencies (must go through interface notes)
-- Defaults to `--per-squad` execution for parallelism
+The migration:
 
-## Step 2 — Watch squad partition + interface emission
+- folds `vault.md` / `model.md` / `flows.md` / `constraints.md` into `context.md`;
+- archives the four docs, plus `binding.md` and the other layout-2 artefacts, verbatim under `<vault>/_meta/archive/layout2/`;
+- splits `binding.md` per unit into `bolts/U-XXX/binding-migrated.json`, keeping every human CONFLICT resolution;
+- rewrites each unit's `vault_source` to `context.md`.
 
-After generate-units:
+It does **not** touch `_meta/squads.yaml`, `interfaces/`, or the units' squad fields.
 
-```
-▶ Phase 3 of 4: invoking generate-units
-✓ Phase 3 of 4: generate-units → 18 units across 3 squads
-
-Squad partition:
-  squad-be:           7 units (backend logic, models, migrations, API)
-  squad-fe-web:       6 units (Blade views, forms, Tailwind, JS)
-  squad-integrations: 3 units (email, SWIFT messaging adapter, LDAP)
-  squad: default —    2 units (warning; they still execute)
-
-Interface index emitted (`interfaces/_index.md`); the three notes below are authored by the architects:
-  - api-patient-booking.md         (consumed by squad-fe; produced by squad-be)
-  - api-doctor-schedule.md         (consumed by squad-fe; produced by squad-be)
-  - email-reminder-payload.md      (consumed by squad-integrations; produced by squad-be)
-
-⚠️ 2 unrouted units assigned squad: default — refine squads.yaml or accept
-```
-
-Two unassigned units flag — review squads.yaml; either add new squad or extend existing partition.
-
-## Step 3 — Inspect generated unit with squad assignment
+It ends by printing the mandatory next step: a **full JIT re-bind**. Either run it now:
 
 ```bash
-cat .mega-sdd/vaults/<slug>/units/U-001.md
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/rebind-units.sh" --cwd=. --vault=<vault> --units=all
 ```
 
-```markdown
----
-id: U-001
-title: Build POST /api/appointments endpoint
-module: M-booking
-squad: squad-be                            # ← assigned by partition rules
-task_type: create
-target_files:
-  - path: app/Http/Controllers/Api/AppointmentController.php
-    operation: create
-  - path: routes/api.php
-    operation: modify
-  - path: tests/Feature/AppointmentApiTest.php
-    operation: create
-produces_interfaces:                        # ← cross-squad contract
-  - api-patient-booking                    # consumed by squad-fe
----
-```
+or let `execute-bolts` bind each unit at dispatch (Step 2). Until a unit is re-bound, a CONFLICT it cites from the old `binding.md` still blocks it, unless its `binding-migrated.json` carries a recorded human resolution for that CONFLICT.
 
-And a frontend unit:
-
-```markdown
----
-id: U-008
-title: Booking form Blade view
-module: M-booking
-squad: squad-fe-web
-task_type: create
-target_files:
-  - path: resources/views/booking.blade.php
-consumes_interfaces:                        # ← waits for backend interface
-  - api-patient-booking
----
-```
-
-Cross-squad coupling REQUIRES interface notes — direct `depends_on` between squads is rejected by mega-sdd (would halt with `cross_squad_dep_invalid`).
-
-## Step 4 — Execute with --per-squad
-
-When `auto` invokes `execute-bolts`, multi-squad mode auto-fires:
+### Step 2 — Execute per squad
 
 ```
-▶ Phase 4 of 4: invoking execute-bolts --per-squad --parallel
-  Fan-out over 3 squads (main-thread loop; N implementer agents in flight):
-    • squad-be
-    • squad-fe-web
-    • squad-integrations
-  
-  The controller iterates squads and filters units by squad: field; independent units dispatch concurrently.
-  
-  Pre-flight check: all consumed interfaces have status: ?
+/mega-sdd
+```
+
+The state engine sees `squad_count ≥ 2` and units still to run, and proposes:
+
+```
+Proposed pipeline (--deep):
+  1. execute-bolts --per-squad
+```
+
+Invoked from one team's context (a dev's laptop, one role), the chain instead asks "Run for which squad?" and proposes `execute-bolts --squad=<answer>`.
+
+`--per-squad` is a **main-thread loop**. The controller:
+
+- iterates the squads and selects each squad's units by their `squad:` field;
+- JIT-binds each wave (pre-flight 3.9);
+- dispatches independent units' `bolt-implementer` agents concurrently, across squads, up to `parallel_max` (default 4).
+
+There is no squad subagent: subagents cannot dispatch subagents, and a squad controller would lose the per-unit review panel. Units that intersect on `target_files` serialize.
+
+Before dispatch, every `consumes_interfaces` entry is checked:
+
+```
+  Pre-flight: consumed interfaces
     api-patient-booking: status: draft → squad-fe-web HALTS on cross_squad_interface_draft
-    api-doctor-schedule: status: draft → squad-fe-web HALTS
-    email-reminder-payload: status: draft → squad-integrations HALTS
 ```
 
-Interface lock gate: consumer squads wait for producer squad to LOCK their interfaces. Otherwise consumer codes against draft contract → high churn risk.
+### Step 3 — The producer locks the interface
 
-## Step 5 — Producer squad locks interfaces
-
-In a separate session (or as squad-be lead):
-
-```bash
-# Edit each interface note that squad-be produces; mark as locked
-```
+The producer squad reviews its note and sets `status: locked`:
 
 ```yaml
-# .mega-sdd/vaults/<slug>/interfaces/api-patient-booking.md frontmatter:
+# <vault>/interfaces/api-patient-booking.md frontmatter:
 ---
 id: api-patient-booking
 producer: squad-be
@@ -179,83 +101,26 @@ contract:
   response: { appointment_id, status, confirmation_token }
   errors: 401, 422, 503
 ---
-
-(rest of interface note content describing semantics)
 ```
 
-After locking all 3 interfaces, resume the chain:
+Then `/mega-sdd --resume`. The consumer squad's units proceed.
 
-```
-/mega-sdd --resume
-```
+### Multi-machine
 
-Frontend + integrations squads proceed:
-
-```
-▶ Phase 4 of 4: invoking execute-bolts --per-squad --parallel (resumed)
-  squad-be: continuing... 7 bolts processed
-  squad-fe-web: 6 bolts queued; consumer interfaces NOW locked → execute
-  squad-integrations: 3 bolts queued; execute
-  
-  Independent units across all 3 squads dispatch concurrently (main-thread loop, depth-1)...
-  
-✓ squad-be: 7/7 bolts complete (wave-1: 5 parallel, wave-2: 2 sequential)
-✓ squad-fe-web: 6/6 bolts complete (wave-1: 4 parallel, wave-2: 2 sequential)
-✓ squad-integrations: 3/3 bolts complete (wave-1: 3 parallel)
-
-✓ Phase 4 of 4: execute-bolts → status: completed, items: 18/18 bolts, blocked: 0 (2 units ran as squad: default)
-```
-
-## Step 6 — Verify per squad
+Each team can run only its own slice, on its own machine, and merge through normal git:
 
 ```bash
-# Backend commits (only squad-be units)
-git log --oneline | grep -E "U-(00[1-7])" | head
-
-# Frontend commits
-git log --oneline | grep -E "U-(00[8-9]|01[0-3])" | head
-
-# Integrations commits
-git log --oneline | grep -E "U-(01[4-6])" | head
-
-# Module status — say "list modules" in Claude Code (typed skill commands were removed at 6.0.0)
+# Backend dev's machine — in Claude Code: "execute bolts --squad=squad-be"
+# Frontend dev's machine — in Claude Code: "execute bolts --squad=squad-fe-web"
 ```
 
-```
-M-booking          7 units    7/7 done    completed
-M-auth             3 units    3/3 done    completed
-M-reminders        3 units    3/3 done    completed
-M-admin-schedule   3 units    3/3 done    completed
-M-utility          2 units    2/2 done    completed (squad: default)
-```
+Every lane ends with the same result contract: the acceptance-criterion → test table, `delivery-check.sh` `VERDICT: PASS` on the final commit, and the assumptions and decisions made.
 
-Two units in M-utility ran under `squad: default` (a warning, not a halt) — refine squads.yaml if they belong to a team.
-
-## Real-world workflow
-
-In practice, each squad runs in their own Claude Code session on their own laptop:
-
-```bash
-# Backend dev's machine:
-cd ~/projects/clinic-app
-# in Claude Code: "execute bolts --squad=squad-be"
-
-# Frontend dev's machine (different person, different machine):
-cd ~/projects/clinic-app
-# in Claude Code: "execute bolts --squad=squad-fe-web"
-
-# They merge via standard git workflow (PRs, rebase, etc.)
-```
-
-The pipeline supports BOTH:
-- **Single-machine** `--per-squad` (main-thread loop over squads; independent units' implementer agents run concurrently — faster for solo dev)
-- **Multi-machine** `--squad=<id>` (each dev runs their squad's slice; standard merge workflow)
-
-## Common pitfalls
+## Common pitfalls (migrated multi-squad vaults)
 
 ### cross_squad_dep_invalid halt
 
-A unit's `depends_on` points to a unit in another squad WITHOUT going through interface note:
+A unit's `depends_on` points to a unit in another squad without going through an interface note. `plan --regenerate` raises it while it re-writes units:
 
 ```yaml
 blocker:
@@ -265,53 +130,31 @@ blocker:
     unit_squad: squad-fe-web
     dependency_id: U-BE-003
     dependency_squad: squad-be
-  next_action: "Cross-squad direct depends_on not allowed. Producer squad
-                declares produces_interfaces; consumer declares consumes_interfaces.
-                See interfaces/_index.md"
 ```
 
-Fix: remove the cross-squad `depends_on`. Either:
-- Producer declares interface (`produces_interfaces`)
-- Consumer declares interface (`consumes_interfaces`)
-- Edit both units' frontmatter accordingly
+Fix: remove the cross-squad `depends_on`. The producer unit declares `produces_interfaces`, the consumer declares `consumes_interfaces`, and both name an existing `interfaces/<id>.md`.
+
+### interface_ref_missing halt
+
+A unit names an interface ID with no `<vault>/interfaces/<id>.md` file. Fix the ID, or write the note by hand in the same frontmatter shape as the vault's existing notes (`id`, `producer`, `consumers`, `kind`, `status`, `contract`). There is no template.
 
 ### cross_squad_ambiguous halt
 
-Two squads claim same artifact at same precedence level:
-
-```yaml
-blocker:
-  type: cross_squad_ambiguous
-  details:
-    artifact: F-U-007
-    artifact_kind: flow
-    claimed_by_squads: [squad-fe-web, squad-mobile]
-    matched_via: owns_layers
-```
-
-Fix: refine `_meta/squads.yaml`. One squad's match should be more specific (e.g., move `owns_components: [resources/views/booking.blade.php]` to whichever team should own it).
+Two squads in `_meta/squads.yaml` claim the same artifact at the same precedence level. The precedence order is `owns_components` > `owns_flow_prefixes` > `owns_layers` > `owns_feature_tags`. Fix: make one squad's match more specific.
 
 ### cross_squad_interface_draft halt
 
-Consumer squad's units wait; producer hasn't locked the interface yet (under `--deep`, the default, the chain first retries with backoff 30/60/120 s ×3 before stopping).
-
-Fix: producer squad reviews + locks (`status: draft` → `status: locked`); optional: your own `locked_at`/`locked_by` notes. The consumer squad resumes via `--resume`.
+The consumer squad's units wait because the producer hasn't locked the interface. Under `--deep` (the default) the chain first retries with backoff (30/60/120 s × 3) before stopping. Fix: the producer sets `status: locked`, then `/mega-sdd --resume`.
 
 ### Unrouted units (`squad: default`)
 
-Units that didn't match any partition rule get `squad: default` (a warning, not a halt) and still execute. To route them:
-- Refine squads.yaml to claim them (add new owns_* rule)
-- Assign them explicitly: edit unit frontmatter `squad: <existing-squad-id>`
-- Or run them with `execute-bolts --all` after the squad fan-out
+A unit that matches no ownership rule gets `squad: default`. That is a warning, not a halt, and the unit still executes. To route it, refine `squads.yaml` or set `squad:` in the unit's frontmatter.
 
 ## What you learned
 
-- Multi-squad mode partitions atomic units across teams via `_meta/squads.yaml`
-- Cross-squad direct deps FORBIDDEN — must route through interface notes
-- Interface lock gate prevents premature consumer coupling to draft producer contracts
-- `--per-squad --parallel` loops squads on the main thread and dispatches independent units' implementer agents concurrently (no squad subagent)
-- `--squad=<id>` lets each dev team run their slice independently on their own machine
-- Same vault + atomic units + parallel execution = lower merge conflict risk
+- Multi-squad **authoring** is retired in 9.0: nothing writes `squads.yaml` or `interfaces/` for a new vault.
+- A pre-9.0 multi-squad vault still runs once migrated: `migrate-paths --vault-layout=3`, the mandatory re-bind, then `execute-bolts --per-squad` or `--squad=<id>` with the interface lock gate intact.
+- For a new multi-team project, use one vault per PRD scope (Scenario 7) or modules with `execute-bolts --module=<id>`.
 
 ## Next scenario
 

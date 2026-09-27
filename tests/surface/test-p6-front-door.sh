@@ -87,7 +87,7 @@ skills/orchestrate-flow/references/diagnostics-procedures.md:analyze-parallelism
 skills/orchestrate-flow/references/diagnostics-procedures.md:query-graph.sh
 skills/orchestrate-flow/references/diagnostics-procedures.md:--mark-dod
 skills/orchestrate-flow/references/diagnostics-procedures.md:changed ∪ dependents
-skills/bind-codebase/references/handoff-validation.md:validate-handoff-binding-units
+skills/execute-bolts/references/jit-bind-and-quarantine.md:validate-handoff-binding-units
 skills/execute-bolts/references/migrate-rules.md:migrate-v1-rules.sh
 skills/analyze/SKILL.md:run-analyze.sh
 "
@@ -104,8 +104,14 @@ EOF
 # C4: each new reference is routed from its host SKILL.md (one-level-deep rule)
 has "$P/skills/orchestrate-flow/SKILL.md" "references/diagnostics-procedures.md" \
   && ok "orchestrate-flow routes diagnostics-procedures.md" || fail "diagnostics-procedures.md unrouted"
-has "$P/skills/bind-codebase/SKILL.md" "references/handoff-validation.md" \
-  && ok "bind-codebase routes handoff-validation.md" || fail "handoff-validation.md unrouted"
+# 9.0 P1: bind-codebase (and its references/handoff-validation.md) was removed
+# by design (spec 2026-09-27 §3 — the whole-vault bind is replaced by the JIT
+# per-unit bind inside execute-bolts). The surviving dispatch of the
+# handoff-integrity validator is execute-bolts pre-flight 3.9 (gate step 3 of
+# references/jit-bind-and-quarantine.md), so the marker + route are repointed there.
+has "$P/skills/execute-bolts/SKILL.md" "references/jit-bind-and-quarantine.md" \
+  && ok "execute-bolts routes jit-bind-and-quarantine.md (handoff validator dispatch)" \
+  || fail "jit-bind-and-quarantine.md unrouted (handoff validator dispatch lost its route)"
 # (replay.md route removed v7 Fase 2 — the replay lane is deleted.)
 has "$P/skills/execute-bolts/SKILL.md" "references/migrate-rules.md" \
   && ok "execute-bolts routes migrate-rules.md" || fail "migrate-rules.md unrouted"

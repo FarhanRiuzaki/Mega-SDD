@@ -1,6 +1,6 @@
 # Laravel — RBAC Libraries Detection Patterns
 
-> Catalog consumed by `authz-extractor` subagent in `scan-codebase` v2.6.0+ deep-scan.
+> Detection catalog for the legacy `starterkit-context.yaml §authz` block (producer removed in 9.0).
 
 **Output target:** `starterkit-context.yaml §authz` block
 
@@ -114,4 +114,4 @@ authz:
 
 ## Anti-halu
 
-If `lib: not_detected`, DO NOT populate `role_model` / `permission_model` with guesses. Empty strings are correct. Downstream generate-units will skip RBAC-related Anchors/Rules for this project.
+If `lib: not_detected`, DO NOT populate `role_model` / `permission_model` with guesses. Empty strings are correct.

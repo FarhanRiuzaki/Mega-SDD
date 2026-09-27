@@ -13,9 +13,9 @@ handoff:
     - /path/to/.mega-sdd/knowledge-base/
     - /path/to/.mega-sdd/knowledge-base/README.md
   next_action:
-    suggested_skill: mega-sdd:generate-intent
+    suggested_skill: mega-sdd:plan
     suggested_args: ["--kb=.mega-sdd/knowledge-base/", "--auto"]
-    rationale: "Knowledge base extracted; generate vault using KB as Mode B brief."
+    rationale: "Knowledge base extracted; plan the layout-3 vault + units from the KB."
   blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers)
   metrics:
     items_processed: <N>    # module PRDs written

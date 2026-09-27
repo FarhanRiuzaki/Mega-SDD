@@ -37,12 +37,13 @@ Every writer skill resolves output paths via this protocol:
 ├── .mega-sdd/                                    # ALL mega-sdd outputs (default; configurable)
 │   ├── config.yaml                                # Project-level config (output_root, opt-outs)
 │   ├── vaults/<slug>/                             # Vault content + per-vault state
-│   │   ├── vault.md, model.md, flows.md,          # 4-file layout-2 vault (classic lane — the 8.x DEFAULT; the lite lane writes context.md, §Layout-3; legacy vaults:
-│   │   │   constraints.md                         #   00-index.md ... 06-constraints.md — see §Vault layout)
-│   │   ├── vault.json                             # Manifest (carries vault_layout: 2 on layout-2)
-│   │   ├── claims-ledger.json                     # Derived claim index (derive-claims-ledger.sh — bind --express input)
-│   │   ├── binding.md                             # Binding manifest (after bind-codebase)
-│   │   ├── bound/                                 # Bound-vault (after binding clean)
+│   │   ├── context.md, constitution.md            # Layout-3 vault — the plan-born shape (§Layout-3)
+│   │   ├── vault.md, model.md, flows.md,          # layout-2 (pre-9.0 classic-born; read-only — migrate-paths --vault-layout=3 folds it;
+│   │   │   constraints.md                         #   legacy vaults: 00-index.md ... 06-constraints.md — see §Vault layout)
+│   │   ├── vault.json                             # Manifest (carries vault_layout: 3 | 2)
+│   │   ├── claims-ledger.json                     # Derived claim index (layout-2 only; no 9.0 consumer — migrate-paths archives it to _meta/archive/layout2/)
+│   │   ├── binding.md                             # Binding manifest (layout-2 legacy, read-only — migrate-paths --vault-layout=3 archives it; 9.0 binds per unit, see bolts/U-*/binding.json)
+│   │   ├── bound/                                 # Bound-vault (layout-2 legacy, read-only; build-locked-index.sh and migrate-paths read it)
 │   │   ├── units/U-*.md, _index.md                # Atomic units
 │   │   ├── bolts/U-*/bolt-report.md               # Bolt outcomes
 │   │   ├── bolts/U-*/preflight.json, postflight.json  # Hard Rule snapshots
@@ -76,7 +77,7 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── 00-overview/, 10-domains/, etc.
 │   │   └── .scan-meta.json
 │   ├── codebase/                                  # Codebase analysis outputs
-│   │   ├── codebase-map.md                        # scan-codebase output
+│   │   ├── codebase-map.md                        # legacy pre-9.0 scan output — no 9.0 writer; still read when present (emit-*, detect-drift, build-dispatch-prompt); symbol-index.json below replaces it
 │   │   └── symbol-index.json                      # build-symbol-index.sh output (reuse substrate; recomputable, advisory)
 │   └── exports/                                   # Tool-agnostic exports — reserved, no writer today
 │       └── (additional exports)
@@ -96,19 +97,20 @@ Live state files at the `.mega-sdd/` root (writers in parentheses):
 - `graph.json` — `build-graph.sh`; one of the two triggers (with `vaults/`) of the Stop-hook publisher leg
 - `factory-ledger.json` — Factory Line ledger
 - `CONSISTENCY-REPORT.md` — analyze output
-- `codebase/reuse-index.yaml` + `codebase/symbol-index.json` — reuse substrate
-- `codebase/starterkit-context.yaml` — deep-scan cache
+- `codebase/symbol-index.json` — reuse substrate (GROUND, `build-symbol-index.sh`)
+- `codebase/reuse-index.yaml` — legacy (no 9.0 writer); read when present by build-dispatch-prompt / build-graph / validate-reuse-duplication
+- `codebase/starterkit-context.yaml` — legacy deep-scan cache (no 9.0 writer); read when present by build-dispatch-prompt / validate-starterkit-conformance / ground.sh Guard 7
 - `codebase/framework-conventions/` — resolved framework packs
 - `.cache/pack-resolver/` — derived cache (see §Derived caches)
 - `.stop-scan-stamp` — Stop-hook turn-gate stamp (see §Derived caches)
-- `_diagnostics/kb-skipped-artifacts.md` — generate-intent `--kb` log of the `[INFERRED][ARTIFACT]` KB entries it skipped (diagnostic record for the human; no script reads it)
+- `_diagnostics/kb-skipped-artifacts.md` — `plan --kb` log of the `[INFERRED][ARTIFACT]` KB entries it skipped (diagnostic record for the human; no script reads it)
 - `vaults/<v>/.mega-sdd/vault-diffs/<ISO8601>.patch` — diff-vault revision patch, one per applied revision (forensic record; no script reads it)
 
 Plus ~35 `.*-state.json` validator/gate state files (one per validator; written by their deterministic writers, re-derived at gates).
 
 ## Vault layout (layout-2 ↔ legacy 7-file)
 
-Layout-2 (classic-lane default through 8.x; marker `vault_layout: 2` in the vault.md frontmatter + vault.json) is the 4-file vault. Every reader is DUAL-LAYOUT for the 8.x cycle (§Layout-3 dual-read window; probe the layout-2 file first, fall back to the legacy name). Migration: `migrate-paths.sh --vault-layout` (dry-run default; `--apply` executes) → then a FULL re-bind is MANDATORY (line anchors invalidated; binding.json/.citation-map.json are regenerated, never patched).
+Layout-2 (pre-9.0 classic-born; read-only in 9.0; marker `vault_layout: 2` in the vault.md frontmatter + vault.json) is the 4-file vault. Every reader is DUAL-LAYOUT (§Layout-3 dual-read window; probe the layout-2 file first, fall back to the legacy name). Migration: `migrate-paths.sh --vault-layout` (7-file → layout-2; dry-run default, `--apply` executes), then `--vault-layout=3` (layout-2 → `context.md`; `migrate-vault-layout3.sh` refuses a 7-file vault) → the MANDATORY full re-bind is the JIT one, `rebind-units.sh --units=all` (line anchors invalidated; binding.json/.citation-map.json are regenerated, never patched).
 
 | Layout-2 | Legacy (7-file) | Content |
 |---|---|---|
@@ -125,7 +127,7 @@ The `## Overview` / `## Architecture` / `## Decisions` anchors are a HARD-HEADER
 
 ### Layout-3 (`context.md` — the plan-born shape)
 
-ONE file `context.md` (marker `vault_layout: 3` in its frontmatter + vault.json) carries what layout-2 spread over four: `## Flows` (`### F-*` + DoD), `## Data model` (DBML), `## Constraints` (NFR table), `## Open Questions` (the ONE OQ home) — required — plus optional `## Overview` / `## Architecture` / `## Decisions` (`### D-NNN`). Every reader goes through ONE resolver, `_lib/vault_md.resolve_doc` (layout-3 → layout-2 → legacy) + `v3_section` for section-parsing consumers; no consumer forks its own mapping. **Binding is per unit** on this layout: `bolts/U-XXX/binding.json` written by the JIT bind at dispatch (sole writer `write-unit-binding.sh`) — there is no whole-vault `binding.md` / `binding.json`. Migration: `/mega-sdd:migrate-paths --vault-layout=3` (dry-run default) folds a layout-2 vault into `context.md`, archives the four docs + `binding.md`/`binding.json`/`claims-ledger.json` verbatim under `<vault>/_meta/archive/layout2/`, splits the binding per unit into `bolts/U-XXX/binding-migrated.json` (prior verdicts + human resolutions), rewrites unit doc refs NAME-only, and ends with the mandatory **full JIT re-bind** (`scripts/rebind-units.sh --units=all`). **Dual-read window:** layout-3 / layout-2 / legacy 7-file all resolve for the 8.x cycle; the legacy 7-file reader is retired at the next major after that (office floor is ≥7.6).
+ONE file `context.md` (marker `vault_layout: 3` in its frontmatter + vault.json) carries what layout-2 spread over four: `## Flows` (`### F-*` + DoD), `## Data model` (DBML), `## Constraints` (NFR table), `## Open Questions` (the ONE OQ home) — required — plus optional `## Overview` / `## Architecture` / `## Decisions` (`### D-NNN`). Every reader goes through ONE resolver, `_lib/vault_md.resolve_doc` (layout-3 → layout-2 → legacy) + `v3_section` for section-parsing consumers; no consumer forks its own mapping. **Binding is per unit** on this layout: `bolts/U-XXX/binding.json` written by the JIT bind at dispatch (sole writer `write-unit-binding.sh`) — there is no whole-vault `binding.md` / `binding.json`. Migration: `/mega-sdd:migrate-paths --vault-layout=3` (dry-run default) folds a layout-2 vault into `context.md`, archives the four docs + `binding.md`/`binding.json`/`claims-ledger.json` verbatim under `<vault>/_meta/archive/layout2/`, splits the binding per unit into `bolts/U-XXX/binding-migrated.json` (prior verdicts + human resolutions), rewrites unit doc refs NAME-only, and ends with the mandatory **full JIT re-bind** (`scripts/rebind-units.sh --units=all`). **Dual-read window:** layout-3 / layout-2 / legacy 7-file all still resolve in 9.0 (the resolver order is unchanged); retiring the legacy 7-file reader is a later-major decision (office floor is ≥7.6).
 
 ## User-scope
 
@@ -140,13 +142,13 @@ ONE file `context.md` (marker `vault_layout: 3` in its frontmatter + vault.json)
 | Skill | Artifact | Default canonical path | Legacy path |
 |---|---|---|---|
 | `extract-intelligence` | knowledge-base/ (census.json + modules/*.prd.md + README.md) | `.mega-sdd/knowledge-base/` | `docs/knowledge-base/` or `<out>/knowledge-base/` |
-| `scan-codebase` | codebase-map.md | `.mega-sdd/codebase/codebase-map.md` | `<repo-root>/codebase-map.md` |
-| `scan-codebase` | starterkit-context | `.mega-sdd/codebase/starterkit-context.yaml` | — (no legacy location) |
+| — (retired scan-codebase; no 9.0 writer, pre-9.0 maps read-only) | codebase-map.md (superseded by the GROUND `symbol-index` row) | `.mega-sdd/codebase/codebase-map.md` | `<repo-root>/codebase-map.md` |
+| — (legacy deep-scan cache; no 9.0 writer) | starterkit-context (read when present by build-dispatch-prompt.sh / validate-starterkit-conformance.sh / ground.sh) | `.mega-sdd/codebase/starterkit-context.yaml` | — (no legacy location) |
 | `build-symbol-index.sh` (script) | symbol-index | `.mega-sdd/codebase/symbol-index.json` | — (new artifact, no legacy location) |
-| `generate-intent` | vault/ | `.mega-sdd/vaults/<slug>/` | `docs/mega-sdd/vaults/<slug>/` |
-| `bind-codebase` | binding.md + bound/ | `<vault>/binding.md` + `<vault>/bound/` | `<vault>/binding.md` + `<vault>-bound/` |
-| `derive-claims-ledger.sh` (script) | claims-ledger | `<vault>/claims-ledger.json` | — (new artifact, no legacy location) |
-| `generate-units` | units/ | `<vault>/units/` | `<vault>-bound/units/` (or `<vault>/units/`) |
+| `plan` | vault/ (layout-3: context.md + constitution.md + vault.json) | `.mega-sdd/vaults/<slug>/` | `docs/mega-sdd/vaults/<slug>/` (read-side only; plan always writes the canonical path) |
+| `execute-bolts` (JIT bind, `write-unit-binding.sh`) | binding.json | `<vault>/bolts/U-*/binding.json` | layout-2 `<vault>/binding.md` + `<vault>/bound/` / `<vault>-bound/` (read-only; migrate-paths archives) |
+| `derive-claims-ledger.sh` (script) | claims-ledger (layout-2 only) | `<vault>/claims-ledger.json` | — (new artifact, no legacy location) |
+| `plan` | units/ | `<vault>/units/` | `<vault>-bound/units/` (or `<vault>/units/`) |
 | `execute-bolts` | bolts/ | `<vault>/bolts/U-*/` | `<vault>/bolts/U-*/` |
 | `execute-bolts` | lens-inputs/ | `<vault>/lens-inputs/U-*/` | n/a |
 | `execute-bolts` | checkpoints | `<vault>/.internal/checkpoints/` | `<vault>/.mega-sdd/checkpoints/` |
@@ -270,7 +272,6 @@ For project repo `.gitignore`. Two groups with different standing — the first 
 # .mega-sdd/vaults/*/.internal/          # checkpoints (stale symbol-graph.json caches from <5.29.0 are inert — safe to delete)
 # .mega-sdd/vaults/*/.memory/            # per-vault ephemeral memory
 # .mega-sdd/vaults/*/lens-inputs/        # review-lens inputs (derived per bolt; regenerable)
-# .mega-sdd/vaults/*/claims-ledger.json  # derived claim index (regenerable; re-derived on every express bind)
 ```
 
 Why the first group is safe to leave out of git — each entry is either rebuilt from ground truth before anything reads it, or is a per-machine marker whose absence only costs one re-scan:
@@ -278,7 +279,7 @@ Why the first group is safe to leave out of git — each entry is either rebuilt
 | Entry | Why absence is safe |
 |---|---|
 | `.validation-blockers.json`, `.ui-quality-blockers.json`, `.*-state.json` | The PreToolUse gate re-runs every validator and OVERWRITES these before the aggregator reads them — an absent, stale or forged file cannot open or close a gate. Pinned: `plugins/mega-sdd/tests/moat/test-moat-corrupt-fail-closed.sh` (absent + clean tree allows; absent + real CONFLICT re-derives and blocks). `.publish-state.json` rides the same glob: absent = the publisher resends, and ingest is idempotent. |
-| `.locked-files-index.json` | Rebuilt lazily when absent or older than the newest `binding.md`. Tracking it actively HURTS: a checkout stamps a fresh mtime on a possibly stale index, so the staleness check never fires. |
+| `.locked-files-index.json` | Rebuilt lazily when absent or older than the newest `binding.md` (layout-2; a layout-3 vault has none, so the index is not rebuilt there). Tracking it actively HURTS: a checkout stamps a fresh mtime on a possibly stale index, so the staleness check never fires. |
 | `.analyze-freshness.json` | analyze output, re-written on the next run. |
 | `.stop-scan-stamp`, `.ptu-scan-stamp`, `.cache/` | per-machine turn-gate stamps and derived caches (§Derived caches). |
 | `codebase/.dirty-paths.jsonl` | per-developer edit journal. |
@@ -300,11 +301,11 @@ git rm -r --cached --ignore-unmatch .mega-sdd/.cache
 
 - `vaults/*/bolts/` — `bolt-report.md` (a bolt commit without one is an orphan → `bolt_orphans`), `acceptance.json` (B4, keyed to the `SDD-Acceptance: v5` commit trailer → `acceptance_evidence_missing`), `_batch-suite.json` (B2), `attempts.json` (dispatch history is not derivable from git), plus the human attestations carried in `postflight.json`. A teammate who clones a repo that ignores `bolts/` inherits the bolt commits without their evidence, and the execute-bolts gate closes on the first run.
 - `factory-ledger.json` — chain history; the ledger gate reads it in both directions.
-- vault documents, `units/`, `binding.md`, `constitution.md`, `config.yaml` — the source of truth.
+- vault documents, `units/`, `binding.md` (layout-2), `constitution.md`, `config.yaml` — the source of truth.
 
 Mega-sdd does NOT modify your `.gitignore` automatically. User decides what to track per team norms.
 
-**Multi-dev note:** `vault.json`, `binding.md`, and `claims-ledger.json` are whole-file regenerated state — git line-merge of any of them after two devs ran the pipeline concurrently produces a corrupt file (`scripts/ground.sh` currently SKIPS an unparseable vault.json without a halt — a separate halt class is a future slice; nothing merges or repairs it). Team options: (a) one-writer-at-a-time discipline (feature branch per vault), or (b) gitignore `vault.json` + regenerate from markdown on checkout (`vault.json` is derived; the markdown is the truth). The per-dev noise file (`.dirty-paths.jsonl`) should always be gitignored.
+**Multi-dev note:** `vault.json` (and, layout-2 only, `binding.md` + `claims-ledger.json`) is whole-file regenerated state — git line-merge of any of them after two devs ran the pipeline concurrently produces a corrupt file (`scripts/ground.sh` currently SKIPS an unparseable vault.json without a halt — a separate halt class is a future slice; nothing merges or repairs it). Team options: (a) one-writer-at-a-time discipline (feature branch per vault), or (b) gitignore `vault.json` + regenerate from markdown on checkout (`vault.json` is derived; the markdown is the truth). The per-dev noise file (`.dirty-paths.jsonl`) should always be gitignored.
 
 ## References
 

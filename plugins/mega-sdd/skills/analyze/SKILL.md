@@ -46,7 +46,7 @@ Read `<cwd>/.mega-sdd/CONSISTENCY-REPORT.md` and present it in chat. (No token/c
 **If `overall == PASS`:**
 ```
 All boundaries clean. Vault internal consistency verified.
-Next: <suggest based on CWD state — e.g., "generate-units" if bound-vault exists but no units>
+Next: <suggest based on CWD state — e.g., "execute-bolts --all" if units exist without bolts; "plan --regenerate" if a layout-3 vault has no units; "plan <prd>" if no vault>
 ```
 
 **If `overall == WARN`:**
@@ -62,11 +62,11 @@ Consistency check FAILED:
 <list FAIL boundaries with detail>
 
 Resolution:
-- binding_units_handoff FAIL → re-run generate-units with binding OQ-IDs
+- binding_units_handoff FAIL → layout-3: unresolved CONFLICT in `bolts/U-*/binding.json` → `resolve-oq --binding`, then `rebind-units.sh` + `plan --reconcile`; layout-2 `binding.md` drop → `/mega-sdd:migrate-paths --vault-layout=3`
 - unit_spec FAIL → fix unit frontmatter per validate-unit-spec.sh findings
-- plan_coverage FAIL → re-run generate-units (classic) / plan --regenerate (lite) — PRD heading without a unit
+- plan_coverage FAIL → PRD heading with no unit: `plan --regenerate`, or add a unit / raise an OQ quoting the heading / move it under an explicit Out-of-scope heading
 - vault_oqs FAIL → fix OQ structure in vault docs
-- FAIL traceable to a low-precision (regex-tier) scan or another missing optional native dep upstream → run `/mega-sdd:install-deps` then re-run the upstream skill (scan-codebase / generate-units / etc.)
+- FAIL traceable to a missing optional native dep (e.g. ast-grep → no symbol index / v2 rules) → run `/mega-sdd:install-deps`, re-run GROUND (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/ground.sh" --cwd="$(pwd)"`, rebuilds the symbol index), then `rebind-units.sh` + `plan --reconcile` (re-types units from fresh evidence; `plan --regenerate` only if units must be re-derived)
 <etc.>
 ```
 

@@ -24,7 +24,9 @@ HC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumpt
 HCON="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md"
 HH="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/halts-and-handoff.md"
 HRS="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/hard-rule-scan.md"
-AMH="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handoff.md"
+# 9.0 P1: bind-codebase (and its auto-memory-handoff.md) was deleted; the
+# extraction-scorecard preflight survives in plan's KB-input contract.
+AMH="${ROOT}/plugins/mega-sdd/skills/plan/references/kb-input.md"
 for f in "$PRE" "$PF" "$HC" "$HCON" "$HH" "$HRS" "$AMH"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
@@ -242,7 +244,7 @@ grep -qF 'Per-bolt status is TWO lines' "$HH" && ok "M-05b: 2-line streaming pin
 if grep -qF 'Pre-flight: Hard Rules' "$HH"; then fail "M-05b: old 7-line block survives"; else ok "M-05b: old └─ block gone (detail → _summary.md)"; fi
 grep -qF 'Never print a verified' "$HH" && ok "M-05b: anchors-honesty rail survives" || fail "M-05b: honesty rail lost"
 grep -qF 'with `--quiet`, branching on the exit code' "$HRS" && ok "M-05c: parent-thread re-scan quieted" || fail "M-05c: re-scan still unquieted"
-grep -qF -- '--quiet' "$AMH" && ok "M-05c: scorecard preflight quieted" || fail "M-05c: scorecard preflight still unquieted"
+grep -qF -- 'validate-extract-census.sh" --kb-dir="<kb-dir>" --quiet' "$AMH" && ok "M-05c: scorecard preflight quieted" || fail "M-05c: scorecard preflight still unquieted"
 
 if [ "$FAILED" -eq 0 ]; then note "ALL B2 OK"; else note "B2 had failures"; fi
 exit $FAILED

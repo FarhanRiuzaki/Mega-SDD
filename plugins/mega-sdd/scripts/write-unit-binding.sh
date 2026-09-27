@@ -21,7 +21,8 @@
 #   fs_must_not_exist  path absent → CONFIRMED/NEW · else CONFLICT (already exists)
 #   symbol             symbol-index lookup: in the expected file → CONFIRMED/IMPLEMENTED (anchor file:line);
 #                      only elsewhere → CONFLICT (collision; anchors listed); nowhere → OQ; index absent → OQ (reason)
-#   text               OQ until `--verdicts` supplies the model ladder's verdict (express-bind.md §E3);
+#   text               OQ until `--verdicts` supplies the model ladder's verdict
+#                      (skills/execute-bolts/references/jit-bind-and-quarantine.md §E3);
 #                      a supplied CONFIRMED MUST carry an anchor, else the writer REFUSES (exit 3)
 # State anchor (spec docs/superpowers/specs/2026-09-25-state-anchor-design.md §3, §9) — schema
 # `unit-binding/2`: an HONEST stamp `based_on_sha` (the oldest evidence SHA, or null with a

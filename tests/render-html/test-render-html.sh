@@ -104,7 +104,9 @@ grep -q "jangan menebak" "$EMIT" && ok "H3 ambiguous target → ask, never guess
 grep -q "emit html" "$ROOT/plugins/mega-sdd/skills/using-mega-sdd/SKILL.md" && ok "H4 router side-lane names the html lane" || bad "H4 router pointer missing"
 
 echo "── I: pipeline hand-off render is OPT-IN (render_html: on; the render was 78–88% of committed .mega-sdd/ lines) ──"
-for s in extract-intelligence generate-intent generate-units execute-bolts plan; do
+# 9.0 P1: generate-intent + generate-units (classic spine) were deleted; their vault/units hand-off
+# render now lives in `plan` (checked below), so those two iterations are retired, not repointed.
+for s in extract-intelligence execute-bolts plan; do
   SK="$ROOT/plugins/mega-sdd/skills/$s/SKILL.md"
   if grep -q "render-html.sh" "$SK" && grep -q "render_html: on" "$SK" && ! grep -q "Auto-render HTML" "$SK"; then
     ok "I1 $s hand-off renders only on opt-in (render_html: on)"

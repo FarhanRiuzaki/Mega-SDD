@@ -5,7 +5,8 @@
 # Proves the ladder: ast-grep → regex, with tree-sitter not merely un-invoked but
 # STRUCTURALLY ABSENT from the resolver (the clang-OOM class cannot exist); forced
 # engines halt dep_missing instead of falling through; --engine=tree-sitter is a
-# USAGE ERROR (rc 2), never a silent alias; and the doc/consumer wiring is pinned.
+# USAGE ERROR (rc 2), never a silent alias; and the surviving asset/deriver wiring
+# is pinned (the scan-codebase consumer pins retired with that skill in 9.0 P1).
 # All engine arms run through PATH shims — no real ast-grep needed.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/../../../.." && pwd)"
@@ -175,25 +176,18 @@ else
 fi
 
 echo "== doc + consumer wiring pins =="
-grep -q "probe-scan-engine.sh" "$PLUG/skills/scan-codebase/SKILL.md" \
-  && ok "SKILL Step 0 routes through the probe script" || fail "SKILL Step 0 not wired"
-SP="$PLUG/skills/scan-codebase/references/scan-procedure.md"
-grep -qF 'If `engine: ast-grep`' "$SP" && grep -qF '0-BASED' "$SP" \
-  && grep -qF "(file, range.start.line, ruleId)" "$SP" \
-  && ok "scan-procedure tier-2 lane: 0-based + dedupe contract stated" || fail "tier-2 lane contract missing"
-grep -qF "FNR==1 && NR!=1" "$SP" \
-  && ok "the ---separator concatenation seam is written down" || fail "concat seam missing"
-grep -qF "ONE total" "$SP" && ok "spawn table carries the ast-grep row" || fail "spawn row missing"
+# 9.0 P1 (spec 2026-09-27-v9-simplification-design.md §3): the scan-codebase
+# skill was REMOVED with the classic spine. Its consumer pins retired with it —
+# SKILL Step 0 -> probe wiring, the scan-procedure tier-2 lane contract (0-based
+# + dedupe), the ---separator concat seam, the spawn-table row, the scan-emitted
+# dep_missing blocker (halts-flags-handoff.md) and the map-schema engine enum
+# (codebase-map-schema.md). The probe script, the rule packs and the deriver
+# stay (P1b prune audit, §7 #8); their behaviour is still pinned above/below.
 if [ -e "$PLUG/skills/scan-codebase/references/tree-sitter-integration.md" ]; then
   fail "tree-sitter-integration.md is back (removed v7.4.0 with its lane)"
 else
   ok "tree-sitter-integration.md stays removed (v7.4.0)"
 fi
-grep -qE '^type: dep_missing$' "$PLUG/skills/scan-codebase/references/halts-flags-handoff.md" \
-  && ok "dep_missing YAML shape lives in halts-flags-handoff.md (v7.4.0 home; fork test pins the pointer)" || fail "dep_missing shape missing from its v7.4.0 home"
-grep -qF "engine: ast-grep | regex" "$PLUG/skills/scan-codebase/references/codebase-map-schema.md" \
-  && grep -qF "astgrep_version" "$PLUG/skills/scan-codebase/references/codebase-map-schema.md" \
-  && ok "map schema enum (2-rung) + astgrep_version" || fail "schema not updated"
 grep -qF '"astgrep_version"' "$PLUG/scripts/derive-codebase-map.sh" \
   && ok "deriver FM_ORDER accepts astgrep_version" || fail "deriver FM_ORDER missing key"
 if [ -e "$PLUG/skills/generate-units/references/pagerank-targeting.md" ]; then

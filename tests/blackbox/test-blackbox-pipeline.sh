@@ -68,11 +68,15 @@ bash "$SCR/derive-vault-json.sh" --vault "$VAULT" --patch "$WORK/patch.json" </d
 cmp -s "$VAULT/vault.json" "$WORK/v1.json" && ok "re-derive byte-identical (generated_at preserved)" || bad "re-derive not idempotent"
 
 # ── S4 consumer guide (v7: script demoted to the documented cp one-liner) ────
+# 9.0 P1: generate-intent was retired; the shipped template + the cp one-liner
+# now live in plan (plan/SKILL.md Step 3). The guard below pins that the
+# documented one-liner still copies from this exact template path.
 stage "S4 consumer guide cp"
-SHIPPED="$PLG/skills/generate-intent/references/templates/ai-consumer-guide.md"
+SHIPPED="$PLG/skills/plan/references/templates/ai-consumer-guide.md"
 mkdir -p "$VAULT/_meta" && cp "$SHIPPED" "$VAULT/_meta/ai-consumer-guide.md"
 if [ -f "$VAULT/_meta/ai-consumer-guide.md" ] \
-   && [ "$(cksum < "$VAULT/_meta/ai-consumer-guide.md")" = "$(cksum < "$SHIPPED")" ]; then
+   && [ "$(cksum < "$VAULT/_meta/ai-consumer-guide.md")" = "$(cksum < "$SHIPPED")" ] \
+   && grep -qF 'cp "<plugin-root>/skills/plan/references/templates/ai-consumer-guide.md" <vault>/_meta/ai-consumer-guide.md' "$PLG/skills/plan/SKILL.md"; then
   ok "guide installed via cp, cksum-identical to shipped template"
 else bad "consumer guide cp failed"; fi
 

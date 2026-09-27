@@ -5,7 +5,7 @@
 > the model reading `validate-*.sh` / `_lib/*.py` to learn the grammar. Every regex below is copied VERBATIM
 > from the named file and pinned by `tests/v8-plan/test-plan-precode-diet.sh` (a regex that no longer appears
 > in its file fails the suite — this sheet cannot drift silently). Semantics live in
-> `../../generate-units/references/unit-schema.md`; this sheet is only the machine-read SHAPE.
+> `plan/references/unit-schema.md`; this sheet is only the machine-read SHAPE.
 
 ## Frontmatter fields (unit file `units/U-XXX.md`, between the first two `---` lines)
 
@@ -15,7 +15,7 @@
 | `context_source:` | `scripts/validate-unit-spec.sh` | `^(?:vault_source\|context_source):\s*(.+?)\s*$` | `context.md#<anchor>` (`#F-U-001`, `#Data-model`, `#Constraints`); never `vault_source` in layout 3 |
 | `target_files:` | `scripts/validate-unit-spec.sh`, `scripts/validate-flow-coverage.sh` | `^target_files[ \t]*:[ \t]*(.*)$` | block list of `- path: <repo-relative>` + `operation: create\|modify` (inline `[a, b]` tolerated) |
 | `acceptance_test:` | `scripts/validate-unit-spec.sh`, `scripts/run-acceptance-tests.sh` | `^acceptance_test\s*:\s*(.*?)(?=^\S\|\Z)` | ≥ 1 entry; `type: test` MUST carry `command:` + `expects:` (substring); `type: render` for detail views; `type: manual` = `desc:` only |
-| `depends_on:` | `scripts/derive-ready-units.sh`, `scripts/validate-unit-spec.sh` (L2) | `^depends_on:[ \t]*(\[[^\]]*\])?[ \t]*\n((?:[ \t]+-[^\n]*\n?)*)` | block list of `- U-XXX` or inline `[U-001, U-002]`; cycles halt in generate-units; depth ≤ 4 hops advisory |
+| `depends_on:` | `scripts/derive-ready-units.sh`, `scripts/validate-unit-spec.sh` (L2) | `^depends_on:[ \t]*(\[[^\]]*\])?[ \t]*\n((?:[ \t]+-[^\n]*\n?)*)` | block list of `- U-XXX` or inline `[U-001, U-002]`; cycles halt `cycle_detected` in plan Step 4; depth ≤ 4 hops advisory |
 
 ## `## Hard rules` productions (v1 — the ONLY lines B1 can verify; anything else is a prose directive the panel reads)
 

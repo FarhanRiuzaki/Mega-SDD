@@ -32,8 +32,8 @@ set -- "$VAULT"/0[0-6]-*.md
 [ -f "$1" ] || set -- "$VAULT"/vault.md
 [ -f "$1" ] || set -- "$VAULT"/context.md
 [ -f "$1" ] || { echo "FAIL: no vault docs (layout-3 context.md, layout-2 vault.md or legacy 0[0-6]-*.md) in $VAULT" >&2; exit 3; }
-[ -f "$VAULT/binding.md" ] || { echo "FAIL: $VAULT/binding.md missing — re-run bind Step 4" >&2; exit 3; }
-[ -f "$VAULT/binding.json" ] || { echo "FAIL: $VAULT/binding.json missing — re-run bind Step 4.5 (derive-binding-json.sh)" >&2; exit 3; }
+[ -f "$VAULT/binding.md" ] || { echo "FAIL: $VAULT/binding.md missing — whole-vault bind retired in 9.0, bound/ not derivable; /mega-sdd:migrate-paths --vault-layout=3 → per-unit JIT bind" >&2; exit 3; }
+[ -f "$VAULT/binding.json" ] || { echo "FAIL: $VAULT/binding.json missing — derive it from binding.md: derive-binding-json.sh --vault $VAULT" >&2; exit 3; }
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
 export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 
@@ -42,7 +42,7 @@ export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 POUT="$(bash "${SCRIPT_DIR}/validate-binding-json.sh" --vault "$VAULT" </dev/null 2>&1)"; PRC=$?
 if [ "$PRC" -ne 0 ]; then
   printf '%s\n' "$POUT"
-  echo "FAIL: binding.md<->binding.json parity must hold before deriving bound/ — fix the bind write (Steps 4/4.5) and re-run"
+  echo "FAIL: binding.md<->binding.json parity must hold before deriving bound/ — re-derive via derive-binding-json.sh --vault $VAULT and re-run"
   exit "$PRC"
 fi
 
@@ -89,8 +89,7 @@ if strict:
               "untouched (a previously-clean bound/ stays)")
         sys.exit(2)
 
-# (3) Copy set per binding-contract.md §bound-vault structure: the vault's
-# markdown docs (sorted) — legacy 0[0-6]-*.md OR the layout-2 fixed names
+# (3) Copy set: the vault's markdown docs (sorted) — legacy 0[0-6]-*.md OR the layout-2 fixed names
 # (v7 Fase 3 dual read). vault.json is NOT copied.
 docs = sorted(f for f in os.listdir(vault)
               if (re.match(r"^0[0-6]-.+\.md$", f)
@@ -154,7 +153,7 @@ try:
 
     # (5) Atomic swap: bound/ EXISTENCE is a routing/preflight signal — a
     # partial tree must never persist; a crash mid-swap leaves bound/ ABSENT
-    # (fail-safe: absence routes back to bind-codebase, opens nothing).
+    # (fail-safe: bound/ stays absent, opens nothing).
     bound = os.path.join(vault, "bound")
     if os.path.isdir(bound):
         shutil.rmtree(bound)

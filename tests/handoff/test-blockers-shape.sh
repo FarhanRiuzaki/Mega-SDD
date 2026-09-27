@@ -6,6 +6,8 @@
 # deny message invited deleting the state file (which resets the retry counter).
 # Pins: mapping → FAIL with the "wrap it" hint; documented list shape → PASS;
 # contract + teacher define the entry shape; hook never suggests the rm.
+# (Fixture producer names generate-intent / bind-codebase are opaque data — the validator does not
+# restrict emitted_by or --skill-name — so they stay as the historical live-finding shapes.)
 # Run: bash tests/handoff/test-blockers-shape.sh </dev/null
 set -u
 rc=0; pass() { echo "PASS: $1"; }; fail() { echo "FAIL: $1"; rc=1; }
@@ -45,7 +47,9 @@ bash "$V" --cwd="$T" --response-file="$T/resp.md" --skill-name=mega-sdd:generate
 [ $RC -eq 0 ] && python3 -c "import json;d=json.load(open('$T/.mega-sdd/.handoff-validation-state.json'));assert d['status']=='PASS',d" && pass "b: documented list-of-envelope-bodies shape → PASS (exit 0)" || fail "b: list shape rejected (rc=$RC)"
 grep -q 'each entry is the body of ONE `blocker:` envelope' "$P/skills/orchestrate-flow/references/handoff-contract.md" && ! grep -q 'per halt-protocol `§blocker envelope`' "$P/skills/orchestrate-flow/references/handoff-contract.md" \
   && pass "c: handoff-contract §blockers defines the entry shape and no longer points at a non-existent section" || fail "c: contract still dangling"
-grep -q 'a LIST of envelope bodies' "$P/skills/generate-intent/references/auto-and-handoff.md" && pass "d: generate-intent teacher shows the populated shape on halt" || fail "d: teacher still says only 'populated on halt'"
+# d (generate-intent teacher shows the populated shape on halt) RETIRED in 9.0 P1: the classic
+# generate-intent skill was deleted and its successor `plan` emits no handoff YAML (plan SKILL.md
+# "No handoff YAML in this lane"). Every SURVIVING handoff teacher's shape pointer stays pinned by h.
 ! grep -q 'delete the stale state file manually' "$P/hooks/pre-tool-use" && grep -q 'Do NOT delete or edit' "$P/hooks/pre-tool-use" && pass "e: hook deny message no longer invites a state-file reset" || fail "e: hook still suggests rm of the state file"
 # ── v8 P2 live finding (xs-classic arm 2026-09-11, same seam) ────────────────
 rm -f "$T/.mega-sdd/.handoff-validation-state.json"

@@ -16,7 +16,8 @@
 #   #13 hard_rule_unparseable: re-emit C1; DROP C2 escalate after 2 attempts
 #       (this validator detects first attempt; retry tracking via state file)
 #
-# Detection-only at hook layer; auto-fix is generate-units's responsibility.
+# Detection-only at hook layer; auto-fix is plan's responsibility (plan Step 5
+# treats these halts as findings and re-writes the unit).
 #
 # S5 GU-HOOK-1: the state file reflects ALL units PROJECT-WIDE on every run —
 # it was a single slot overwritten per unit write, so only the LAST-written
@@ -142,11 +143,13 @@ def _section_body(heading_pat, text):
     return m.group(1) if m else None
 
 
-# vault_source grammar (unit-schema.md §Required frontmatter, v8 P0): the doc set
-# is the one make-bound.sh SRC_RE / derive-delta-paths.sh VAULT_DOC_RE accept,
-# plus constitution.md (units cite clauses there). Shapes are named so the
-# advisory says WHAT drifted, not just "non-canonical".
-VS_DOC_RE = r"(?:vault|model|flows|constraints|constitution|\d{2}-[A-Za-z0-9._-]+)\.md"
+# vault_source grammar (skills/plan/references/unit-schema.md §Required
+# frontmatter, v8 P0): the doc set is the one derive-delta-paths.sh VAULT_DOC_RE
+# accepts (make-bound.sh SRC_RE is its layout-2 subset), including the layout-3
+# context.md that `plan` cites in context_source, plus constitution.md (units
+# cite clauses there). Shapes are named so the advisory says WHAT drifted, not
+# just "non-canonical".
+VS_DOC_RE = r"(?:vault|model|flows|constraints|constitution|context|\d{2}-[A-Za-z0-9._-]+)\.md"
 vs_adv = []   # filled per unit by validate_unit(); emitted top-level, never an issue
 
 # xs body diet (v8 P1, spec 2026-09-10 App. F1e) — ADVISORY, never an issue.
@@ -307,8 +310,8 @@ def validate_unit(file_path):
     # ─── prd_source (v8 P1, spec App. F1a) — RESOLVED when present, never required ─
     # `<prd-file>#<heading-slug>` or `<prd-file>:<line>`, scalar or YAML list. A
     # citation to a heading/line that does not exist is a fabricated requirement
-    # → issue prd_source_unresolvable (status FAIL for generate-units Step 12 /
-    # analyze; NOT a hook gate). Absent field = legacy unit, silent.
+    # → issue prd_source_unresolvable (status FAIL for plan Step 5 / analyze;
+    # NOT a hook gate). Absent field = legacy unit, silent.
     for ref in parse_prd_source_refs(fm):
         ok, why = resolve_prd_source(ref)
         if not ok:
@@ -379,7 +382,7 @@ def validate_unit(file_path):
         issues.append({
             "halt_type": "unit_underspecified",
             "detail": (f"unit {unit_id} has no non-empty `acceptance_test:` entry — every unit "
-                       f"MUST carry one (unit-schema §acceptance_test, no exceptions)"),
+                       f"MUST carry one (unit-schema.md §Anti-hallucination rails, no exceptions)"),
             "unit_id": unit_id,
             "task_type": task_type,
             "missing_fields": ["acceptance_test"],
@@ -494,7 +497,8 @@ def validate_unit(file_path):
     # ─── Per-task_type section contracts (S5 GU-TTCONTRACT-1: content, not just
     # heading presence — an empty `## Anchors`/`## Migration notes` carried no
     # payload for the bolt; a create unit WITH Migration notes signals a
-    # mis-assigned task_type per 12.5.d) ───────────────────────────────────────
+    # mis-assigned task_type per the unit contract (unit-schema.md §Migration
+    # notes: mandatory for extend, omitted otherwise)) ─────────────────────────
     if task_type in ("verify", "extend"):
         anch = _section_body(r"Anchors?", body_after_fm)
         if anch is None:
@@ -507,7 +511,7 @@ def validate_unit(file_path):
         elif not anch.strip():
             issues.append({
                 "halt_type": "unit_underspecified",
-                "detail": f"unit {unit_id} `## Anchors` section is EMPTY — {task_type} requires >=1 anchor entry (12.5.a)",
+                "detail": f"unit {unit_id} `## Anchors` section is EMPTY — {task_type} requires >=1 anchor entry (unit-schema.md §Anchors)",
                 "unit_id": unit_id, "task_type": task_type,
                 "empty_sections": ["Anchors"],
             })
@@ -524,7 +528,7 @@ def validate_unit(file_path):
         elif not mig.strip():
             issues.append({
                 "halt_type": "unit_underspecified",
-                "detail": f"unit {unit_id} `## Migration notes` section is EMPTY — extend requires the ADD/KEEP/REMOVE field plan (12.5.d)",
+                "detail": f"unit {unit_id} `## Migration notes` section is EMPTY — extend requires the ADD/KEEP/REMOVE field plan (unit-schema.md §Migration notes)",
                 "unit_id": unit_id, "task_type": task_type,
                 "empty_sections": ["Migration notes"],
             })
@@ -533,14 +537,14 @@ def validate_unit(file_path):
             if missing_sub:
                 issues.append({
                     "halt_type": "unit_underspecified",
-                    "detail": f"unit {unit_id} `## Migration notes` missing sub-list(s) {missing_sub} — all three of ADD/KEEP/REMOVE must be present (12.5.d)",
+                    "detail": f"unit {unit_id} `## Migration notes` missing sub-list(s) {missing_sub} — all three of ADD/KEEP/REMOVE must be present (unit-schema.md §Migration notes)",
                     "unit_id": unit_id, "task_type": task_type,
                     "missing_sublists": missing_sub,
                 })
     elif task_type in ("create", "verify") and mig is not None:
         issues.append({
             "halt_type": "unit_underspecified",
-            "detail": f"unit {unit_id} task_type={task_type} MUST NOT have a `## Migration notes` section (12.5.d — Migration notes are extend-only; its presence signals a mis-assigned task_type)",
+            "detail": f"unit {unit_id} task_type={task_type} MUST NOT have a `## Migration notes` section (unit-schema.md §Migration notes / §Per-task_type contracts — Migration notes are extend-only; its presence signals a mis-assigned task_type)",
             "unit_id": unit_id, "task_type": task_type,
             "forbidden_sections": ["Migration notes"],
         })
@@ -1142,7 +1146,7 @@ def _dag_shape_advisory(unit_paths):
         tfs[uid] = len(_tf_paths(fm))
     if not deps:
         return None
-    # longest path (in hops = nodes) — DAG only; a cycle is generate-units' halt, not ours
+    # longest path (in hops = nodes) — DAG only; a cycle is plan's cycle_detected halt (Step 4), not ours
     memo, onstack = {}, set()
     def longest(u):
         if u in memo:
@@ -1210,9 +1214,10 @@ state = {
     "issues_count": len(merged),
     "hard_rules_machine_checkable": hr_counts[0],
     "hard_rules_directive_prose": hr_counts[1],
-    # F-01(a) advisory (never gating): a prose-heavy rule set is a generate-units
-    # smell — those rules are reviewed by the panel, not verified by B1. Field
-    # run: 256/278 (92%) directives, 0 machine-verifiable outcomes from them.
+    # F-01(a) advisory (never gating): a prose-heavy rule set is a plan
+    # (unit-authoring) smell — those rules are reviewed by the panel, not
+    # verified by B1. Field run: 256/278 (92%) directives, 0 machine-verifiable
+    # outcomes from them.
     "hard_rules_directive_advisory": (
         "%d of %d Hard rules (%d%%) are prose directives — B1 verifies none of them; "
         "express rules as v1 productions (DO NOT modify <path>, DO NOT add new <manifest> "
@@ -1235,7 +1240,7 @@ state = {
     "next_action": (
         ("Unit spec passes integrity checks."
          if status == "PASS"
-         else f"{len(merged)} unit-spec issue(s) detected. Detection-only at hook layer; re-emit unit via generate-units --regenerate or amend manually.")
+         else f"{len(merged)} unit-spec issue(s) detected. Detection-only at hook layer; amend the unit per the unit contract, or re-plan via plan <prd> --regenerate.")
         + (f" Advisory: {len(vs_adv)} unit(s) carry a non-canonical vault_source (canonical `<doc>.md#<anchor>`; see vault_source_advisory) — never a halt."
            if vs_adv else "")
         + (f" Advisory: {len(xs_adv)} xs-class unit(s) exceed the xs body diet (Goal 1 line · Context <= 2 sentences · Anti-patterns/Out of scope sourced; see xs_body_advisory) — trim the body, never a halt."

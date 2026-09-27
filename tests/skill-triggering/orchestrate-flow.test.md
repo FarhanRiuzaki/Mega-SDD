@@ -1,5 +1,7 @@
 # orchestrate-flow Routing Test
 
+orchestrate-flow runs the **guarded** lane — ONE pipeline, `plan` → `execute-bolts --all --lite` (JIT bind per unit, `delivery-check.sh`) — plus the maintenance lanes (sync, delta, OQ, drift). The front door's `route-lane.sh` runs first: `direct` / `assisted` work never reaches this skill. The default chain is the state engine's `derived.proposed_next` (`scripts/derive-state.sh`); `references/routing-rules.md` is the matrix it encodes. 9.0 removed the classic chain, so no row proposes `generate-intent` / `scan-codebase` / `bind-codebase` / `generate-units`.
+
 ## Trigger cases
 
 ### OF1: Explicit
@@ -8,38 +10,38 @@
 
 ### OF2: Natural
 - **Prompt:** `what's next?`
-- **Setup:** any SDD signal in CWD
-- **Expect:** Skill invoked
+- **Setup:** a mega-sdd chain already ran in this session
+- **Expect:** Skill invoked. (With only a CWD signal and no chain this session it is tier S — inline answer, at most a one-line `/mega-sdd --resume` offer; using-mega-sdd.test.md T3)
 
 ## Routing scenarios
 
 ### R1: Empty CWD, free-text prompt
-- **State:** no PRD, no vault, no git
-- **Expect:** Propose `generate-intent --from-prompt`
+- **State:** no PRD, no vault, no KB (position `empty`)
+- **Expect:** `proposed_next: []` — ask for a PRD/brief. A brief goes to `route-lane.sh --text` (direct/assisted); under `--guarded` the front door writes a seed PRD and proposes `plan <seed-PRD> --vault=<dir> --lite --mode=<existing|new>` → `execute-bolts --all --lite`
 
 ### R2: PRD present, no vault
-- **State:** `prd.md` in CWD
-- **Expect:** Propose `generate-intent ./prd.md`
+- **State:** `prd.md` in CWD (position `prd_no_vault`)
+- **Expect:** Propose `plan ./prd.md --lite --mode=<existing|new>` → `execute-bolts --all --lite` (`existing` when the repo carries code, `new` for a bare scaffold — never asked)
 
-### R3: Vault greenfield, no units
-- **State:** vault.json mode=greenfield, no units/
-- **Expect:** Propose `generate-units` (skip scan/bind)
+### R3: Plan-born vault, no units
+- **State:** layout-3 vault (`context.md` + `vault.json`), no `units/` (position `lite_context_no_units`)
+- **Expect:** Propose `plan <prd> --lite --regenerate` → `execute-bolts --all --lite` (units are written with the vault — never a units-only phase)
 
-### R4: Vault brownfield, no codebase-map
-- **State:** vault.json mode=existing, .git present, no codebase-map.md
-- **Expect:** Propose chain `scan-codebase → bind-codebase → generate-units` (3-cap reached, no execute-bolts in same chain)
+### R4: Layout-2 vault (classic-born)
+- **State:** a pre-9.0 layout-2 vault (`vault.md`, no `context.md`) that needs building or syncing (position `layout2_needs_migration`)
+- **Expect:** `proposed_next: []` + a note PROPOSING `/mega-sdd:migrate-paths --vault-layout=3` (then the mandatory full JIT re-bind, `rebind-units.sh --units=all`); never run silently. emit-* and the status view still read the layout-2 vault as it is
 
-### R5: Bound-vault clean, no units
-- **State:** bound-vault exists, binding.md conflict=0
-- **Expect:** Propose `generate-units`
+### R5: Leftover pre-9.0 artefacts are not routing keys
+- **State:** a `.mega-sdd/codebase/codebase-map.md` and/or `<vault>/bound/` from a pre-9.0 run
+- **Expect:** reported in the digest (`codebase_map`, `bound_vault`) as read-only context; never a scan, bind or units proposal, and a stale map stamp never fires the sync lane (only the symbol-index stamp does)
 
 ### R6: Units exist, no bolts
 - **State:** units/U-001.md etc., no bolts/
 - **Expect:** Propose `execute-bolts --all --parallel` (chain dispatch is wave-parallel per `docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2a)
 
-### R7: P0 OQs present
-- **State:** any state, vault has unresolved P0 OQs
-- **Expect:** Propose `resolve-oq` first (overrides other proposals)
+### R7: Blocking OQs present
+- **State:** any state, the vault has unresolved P1 business OQs, status != deferred (the grammar has no P0 — P1 is the blocking tier)
+- **Expect:** Propose `resolve-oq` first (overrides other proposals; chain + `--auto` = the batched walk). Deferred P1 OQs do NOT gate
 
 ### R8: PRD newer than vault
 - **State:** `prd.md` mtime > vault.json mtime
@@ -50,7 +52,7 @@
 - **Expect:** the `prd_revision` row wins — propose `diff-vault ./prd.md` (file lane), NOT `diff-vault --from-prompt`; the delta row fires only when no PRD revision is present (routing-rules §Decision matrix: prd_revision OUTRANKS the delta row)
 
 ### R8c: Delta lane is overlay-only (guard)
-- **State:** vault + binding present, no flags, no chat brief handed over — derived state alone
+- **State:** vault + per-unit bindings present, no flags, no chat brief handed over — derived state alone
 - **Expect:** the engine NEVER proposes `diff-vault --from-prompt` from derived state (routing-rules: "NEVER fired from derived state alone"); the normal rows apply
 
 ### R9: Mode mismatch
@@ -58,7 +60,7 @@
 - **Expect:** Halt with mode-migration prompt
 
 ### R-FACTORY-1: Backward re-run on unresolved
-- **State:** vault + binding + units + bolts present; `factory-ledger.json` has a downstream checkpoint whose `unresolved[].blocks` names an earlier phase
+- **State:** vault + per-unit bindings + units + bolts present; `factory-ledger.json` has a downstream checkpoint whose `unresolved[].blocks` names an earlier phase
 - **Expect:** Router proposes a BACKWARD re-run of the OWNING upstream phase, not a forward step
 
 ### R-FACTORY-2: Convergence stops the loop
@@ -69,29 +71,37 @@
 - **State:** a phase at attempt 3 still `unresolved`
 - **Expect:** HALT `phase_stuck` + concrete human question; no 4th auto re-run
 
-### R-FACTORY-4: bind_conflict KEEP_VAULT/DEFER resolution forward-exits convergence (no re-bind loop)
-- **State:** `--deep`/`--converge`; bind halted `bind_conflict`; resolve-oq --binding resolved every conflict via ONLY KEEP_VAULT/DEFER (vault + code unchanged) and emitted `status: completed`, `next_action.suggested_skill: mega-sdd:generate-units`
-- **Expect:** the convergence loop FOLLOWS the resolver's forward `next_action` — it EXITS the loop for this halt and rejoins the chain at `generate-units`; it does NOT "re-run the halted skill" (a re-bind would re-derive the unchanged vault-vs-code contradiction and re-raise the identical CONFLICT, burning every cycle). Retry + check-clear stays bound to the BACK-edge case only (KEEP_CODE/SPLIT → re-run bind-codebase). Per `references/convergence-loops.md` + `resolve-oq/references/binding-mode.md` Step 5.
+### R-FACTORY-4: binding_conflict KEEP_VAULT/DEFER resolution continues the unit (no re-bind loop)
+- **State:** `--deep`/`--converge`; `execute-bolts` pre-flight 3.9 halted U-008 on `binding_conflict`; the auto-invoked `resolve-oq --binding` resolved every conflict via ONLY KEEP_VAULT/DEFER, written through `write-unit-binding.sh --resolve`
+- **Expect:** the resolution in `bolts/U-008/binding.json` already opens the gate, so the loop continues that unit's dispatch with NO re-bind (a re-bind would only spend the unit's one 3.9b at this HEAD → `rebind_exhausted`). KEEP_CODE/SPLIT edits the unit's `## Claims` → `rebind-units.sh --units=U-008` (3.9b) → re-dispatch. Per `references/convergence-loops.md` + `resolve-oq/references/binding-mode.md` Step 5
 
-### R-SYNC-1: Mode D maintenance/sync chain threads the corrected per-hop handoffs
-- **State:** map + binding + units + bolts present; change signal present (`.mega-sdd/codebase/.dirty-paths.jsonl` non-empty OR git HEAD ≠ the map's `last_scanned_commit`). Invoked `/mega-sdd:sync` (or `orchestrate-flow --sync`).
-- **Expect:** Router proposes the Mode D chain per `references/routing-rules.md` (per-hop handoff semantics per spec §3.8), and each producer's handoff threads the sync-aware `next_action` end-to-end:
-  - `scan-codebase --changed-only` writes `<vault>/.sync-changed-paths.txt` and hands off `mega-sdd:detect-drift` with `suggested_args` containing `--scope=@<vault>/.sync-changed-paths.txt` (NOT a bare `--auto`).
-  - `detect-drift` (sync lane) hands off `mega-sdd:bind-codebase` with `suggested_args` containing `--paths=@<vault>/.sync-changed-paths.txt` — it MUST NOT route to `mega-sdd:resolve-oq` (resolve-oq has no drift-consumption mode).
-  - `bind-codebase --paths=@<vault>/.sync-changed-paths.txt` hands off `mega-sdd:generate-units` with `suggested_args` `["--reconcile", "--auto"]` (NOT a bare `["--auto"]`).
-  - The `[resolve-oq]` slot in the §3.3 chain fires ONLY when the drift walkthrough CREATED an `OQ-DC-N` stub (resolve-oq's ordinary intent mode), never as a drift-finding consumer.
-- **Failing-first:** against the pre-B4/B5/B6 handoffs this FAILS — scan emitted a bare `--auto`, detect-drift routed sync → `resolve-oq`, and bind emitted a bare `["--auto"]`; only the corrected per-hop handoffs (`detect-drift/references/auto-and-chain.md`, `scan-codebase/references/halts-flags-handoff.md`, `bind-codebase/references/auto-memory-handoff.md`) satisfy it.
+### R-SYNC-1: Mode D maintenance/sync chain (per-unit, script hops)
+- **State:** layout-3 vault with units, bolts and per-unit `bolts/U-*/binding.json`; the symbol index exists; a change signal is present (`.mega-sdd/codebase/.dirty-paths.jsonl` non-empty OR git HEAD ≠ the index `head_commit`). Invoked `/mega-sdd:sync` (or `orchestrate-flow --sync`).
+- **Expect:** Router proposes the Mode D chain per `references/routing-rules.md` §Mode D, each hop threading the next:
+  - `scripts/derive-changed-paths.sh --vault <vault>` writes `<vault>/.sync-changed-paths.txt` (journal rotated only after that write)
+  - `scripts/sync-intersect.sh` short-circuit: exit 0 → one-line SYNC-REPORT.md, chain ENDS; exit 4 → proceed; any other exit → fail-closed, full chain
+  - `detect-drift --scope=@<vault>/.sync-changed-paths.txt` hands off `mega-sdd:plan` `["--reconcile", "--auto"]` naming the re-bind hop — it MUST NOT route to `mega-sdd:resolve-oq` (resolve-oq has no drift-consumption mode)
+  - `scripts/rebind-units.sh --cwd=<root> --vault=<vault> --paths=@<vault>/.sync-changed-paths.txt` re-verdicts only the units the changed set touches (a CONFLICT closes their gate)
+  - `plan --reconcile` → `execute-bolts --all --lite` (stale units only; `superseded` skipped)
+  - The `[resolve-oq]` slot fires ONLY when the drift scan CREATED an `OQ-DC-N` stub (resolve-oq's ordinary intent mode), never as a drift-finding consumer
+- **No baseline:** no symbol index (or `derive-changed-paths.sh` exit 3) → detect-drift skipped, `rebind-units.sh --units=all` → `plan --reconcile` → `execute-bolts --all --lite` — never a guessed scope
 
 ## Pre-flight
 
 ### PF1: Chain includes execute-bolts, no superpowers installed (v7.4.0)
 - **Expect:** Chain proposed — NO dependency halt (first-class agents ship in the plugin; the vendored probe was removed)
 
+### PF2: A stale chain names a removed skill
+- **State:** a paused 8.x chain resumed with a hop naming `bind-codebase` (or `generate-intent` / `generate-units` / `scan-codebase`)
+- **Expect:** `validate-preflight.sh --predictive` FATAL `skill_removed_in_9` for that hop, with its one-line replacement; chain STOPS before dispatch — the removal never depends on lane, config or vault layout
+
 ## Pass criteria
 
-All routing rules per routing-rules.md fire deterministically (incl. R-FACTORY-4 — a KEEP_VAULT/DEFER conflict resolution forward-exits convergence to generate-units, never a re-bind loop; and R-SYNC-1 — the Mode D chain threads the corrected per-hop handoffs: scan → `detect-drift --scope=@<vault>/.sync-changed-paths.txt`, detect-drift sync → `bind-codebase --paths=@<vault>/.sync-changed-paths.txt` and NEVER resolve-oq, bind `--paths` → `generate-units --reconcile`; the `[resolve-oq]` slot covers drift-CREATED `OQ-DC-N` stubs only, per spec §3.8). Pre-flight gates correctly.
+All routing rules per routing-rules.md fire deterministically from the state engine: one pipeline (`plan` → `execute-bolts --all --lite`), `plan --regenerate` for a plan-born vault without units, migrate-paths PROPOSED for a layout-2 vault, pre-9.0 artefacts never a routing key (R1–R9). R-FACTORY-4 — a KEEP_VAULT/DEFER-only resolution continues the unit with no re-bind; KEEP_CODE/SPLIT re-binds that one unit (3.9b). R-SYNC-1 — the Mode D chain runs `derive-changed-paths` → `sync-intersect` → scoped `detect-drift` (→ `plan --reconcile`, NEVER resolve-oq) → `rebind-units.sh --paths` → `plan --reconcile` → bolts; the `[resolve-oq]` slot covers drift-CREATED `OQ-DC-N` stubs only. Pre-flight gates correctly; a removed skill in a chain is FATAL.
 
-## Multi-squad routing (v1.1+)
+## Multi-squad routing (migrated pre-9.0 vaults only)
+
+`plan` never authors `_meta/squads.yaml`; these cases apply to a migrated vault that still carries one.
 
 ### MS1: CWD inspection reports squad count
 - **Setup:** vault has `_meta/squads.yaml` with 3 squads
@@ -113,161 +123,94 @@ All routing rules per routing-rules.md fire deterministically (incl. R-FACTORY-4
 - **Prompt:** `/mega-sdd:orchestrate-flow`
 - **Expect:** state snapshot `squad_count: 0`; proposes `execute-bolts --all --parallel`
 
-## Deep-chain mode (v1.3+, Iter 4)
+## Deep-chain mode
 
-### DC1: `--deep` lifts the 3-skill cap
+### DC1: `--deep` chains to pipeline end
 - **Setup:** legacy codebase + no PRD + no vault; user mentions rebuild intent
 - **Prompt:** `/mega-sdd:orchestrate-flow --deep`
-- **Expect:** chain proposes ALL 6 phases (extract-intelligence → generate-intent --kb → scan-codebase → bind-codebase → generate-units → execute-bolts) in single upfront confirmation
+- **Expect:** chain proposes all 3 phases (`extract-intelligence` → `plan --kb=<kb> --lite --mode=<existing|new>` → `execute-bolts --all --lite`) in a single upfront confirmation
 
-### DC2: Default mode (no `--deep`) still cap-3
+### DC2: Default mode (no `--deep`) keeps the cap-3 rule
 - **Setup:** same as DC1
 - **Prompt:** `/mega-sdd:orchestrate-flow` (no --deep)
-- **Expect:** chain proposes 3 phases (extract → generate-intent → scan-codebase); user re-invokes after for next chain
+- **Expect:** the same 3 phases — the one pipeline fits inside the cap; the cap would only truncate a chain longer than 3 sub-skills
 
 ### DC3: Auto-continue via handoff YAML
 - **Setup:** `--deep` mode chain proposed and approved; first skill (extract-intelligence) completes with `status: completed` handoff
-- **Expect:** orchestrator parses handoff YAML; auto-invokes `next_action.suggested_skill` with `next_action.suggested_args`; user does NOT need to type next command
+- **Expect:** orchestrator parses handoff YAML; auto-invokes `next_action.suggested_skill` (`mega-sdd:plan`) with `next_action.suggested_args` (`--kb=<kb>`, `--auto`); user does NOT need to type next command
+
+### DC3b: plan emits no handoff (lite-lane exemption)
+- **Setup:** `--deep` chain; `plan` returns `completed`
+- **Expect:** no handoff YAML is parsed or invented for the `plan` hop; the orchestrator re-runs `derive-state.sh`, then `validate-preflight.sh --predictive --chain=execute-bolts` (units present + `lite_plan_coverage_pass`), then dispatches `execute-bolts --all --lite`
 
 ### DC4: Progress indication
-- **Setup:** `--deep` chain running, currently on phase 3 of 5
-- **Expect:** chat shows `▶ Phase 3 of 5: invoking bind-codebase (--auto)` before invocation and `✓ Phase 3 of 5: bind-codebase → status: completed, items: 87, blocked: 0` after
+- **Setup:** `--deep` chain running, currently on phase 2 of 3
+- **Expect:** chat shows `▶ Phase 2 of 3: invoking plan (--kb=… --lite --auto)` before invocation and `✓ Phase 2 of 3: plan → status: completed, items: <units>, blocked: 0` after
 
-### DC5: Pause on `status: paused`
-- **Setup:** `--deep` chain; generate-intent emits `status: paused` because P1 business OQs were produced
-- **Expect:** chain STOPS after generate-intent; chat shows paused-item summary; orchestrator does NOT auto-invoke next phase; awaits user `--resume` after OQs triaged
+### DC5: A `plan` blocker stops the chain
+- **Setup:** `--deep` chain; `plan` halts `plan_coverage_gap` and prints its `blocker:` envelope
+- **Expect:** chain STOPS after plan; the blocker is surfaced verbatim; the orchestrator does NOT auto-invoke execute-bolts (and never invents a handoff for the halted hop); the user closes the gap, then `--resume`
 
 ### DC6: Halt on `status: halted`
-- **Setup:** `--deep` chain; bind-codebase emits `status: halted` with `bind_conflict` blocker
-- **Expect:** chain STOPS; blocker YAML surfaced verbatim; user resolves via resolve-oq
+- **Setup:** `--deep --no-converge` chain; `execute-bolts` halts `binding_conflict` for a unit (pre-flight 3.9)
+- **Expect:** that unit STOPS (dependents skipped with the reason); blocker YAML surfaced verbatim; user resolves via `resolve-oq --binding`
 
 ### DC7: AI technical decisions never pause the chain and never route to resolve-oq
-- **Setup:** `--deep` chain; the vault carries tech OQs the AI decided (recommend-mode, all fields valid — per bind-codebase.test.md TQ5), one of them P1; zero CONFLICTs and no open business OQs
-- **Expect:** bind-codebase emits `status: completed` (NOT `paused`); orchestrator auto-invokes `generate-units`; the decisions are listed in binding.md "## AI Technical Decisions" (information, never an ask); because a decided OQ is `status: resolved`, the `oq_gate` (`pending_p0_p1`) does NOT fire for the P1 tech OQ and `resolve-oq` is never inserted into the chain — only an open P1 *business* OQ can do that; an open P1 `[tech / scan]` OQ is bind's to resolve and is NOT counted in `pending_p0_p1` either
+- **Setup:** `--deep` chain; `plan` decided the vault's tech OQs (`(AI decision, <date>)`, `resolved_by: ai`), one of them P1; zero CONFLICTs and no open business OQs
+- **Expect:** the chain continues to `execute-bolts`; the decisions are listed in `context.md ## AI Technical Decisions` (information, never an ask); because a decided OQ is `status: resolved`, the `oq_gate` (`pending_p0_p1`) does NOT fire for the P1 tech OQ and `resolve-oq` is never inserted into the chain — only an open P1 *business* OQ can do that; an open `[tech / scan]` OQ is not counted in `pending_p0_p1` either
 
-## Resume mechanics (v1.3+, Iter 4)
+## Resume mechanics
 
-### RES1: --resume re-enters paused chain
-- **Setup:** previous `--deep` run paused after generate-intent (P1 business OQs); user resolved OQs via `/mega-sdd:resolve-oq`
+### RES1: --resume re-enters a paused chain
+- **Setup:** previous `--deep` run stopped with open P1 business OQs; user resolved them via `/mega-sdd:resolve-oq`
 - **Prompt:** `/mega-sdd:orchestrate-flow --deep --resume`
 - **Expect:**
   - NO upfront confirmation (chain was approved earlier)
-  - CWD inspection rebuilds state: vault.json exists, codebase-map absent
-  - Chain resumes from `scan-codebase` (cursor advances past `generate-intent` because artifact exists)
+  - CWD inspection rebuilds state: `context.md` + `units/_index.md` exist
+  - the cursor skips `plan` (its artifacts exist) and resumes at `execute-bolts --all --lite`
   - Runs forward to pipeline-end
 
 ### RES2: --resume halts again if blocker unresolved
-- **Setup:** previous run halted on bind_conflict; user did NOT resolve
+- **Setup:** previous run halted on `binding_conflict` for U-004; user did NOT resolve
 - **Prompt:** `/mega-sdd:orchestrate-flow --deep --resume`
-- **Expect:** chain re-runs bind-codebase; same halt fires; user gets identical blocker (correct safety behavior)
+- **Expect:** chain re-enters execute-bolts; the gate closes U-004 again with the same CONFLICT; user gets the identical blocker (correct safety behavior)
 
-### RES4: --resume after a KEEP_VAULT/DEFER resolution routes to generate-units (not a bind loop)
-- **Setup:** previous run halted on bind_conflict; user resolved every conflict via `/mega-sdd:resolve-oq --binding` using ONLY KEEP_VAULT/DEFER (so `bound/` is intentionally absent but `binding.md` is fully resolution-marked — `validate-handoff-binding-units.sh` green)
+### RES4: --resume after a KEEP_VAULT/DEFER resolution dispatches the unit (no re-bind loop)
+- **Setup:** previous run halted on `binding_conflict` for U-004; user resolved every conflict via `/mega-sdd:resolve-oq --binding` using ONLY KEEP_VAULT/DEFER (`write-unit-binding.sh --resolve`)
 - **Prompt:** `/mega-sdd:orchestrate-flow --deep --resume`
-- **Expect:** CWD inspection sees a resolution-marked binding.md with no ACTIVE conflict and routes to `generate-units` (per `references/routing-rules.md` — the resolved-binding row ABOVE the bare "no bound-vault → bind-codebase" row); it does NOT route back to bind-codebase (which would re-raise the identical CONFLICT and infinite-loop). Contrast RES2 (UNRESOLVED → correctly re-runs bind and re-halts).
+- **Expect:** `validate-handoff-binding-units.sh --units=U-004` passes on the resolved claims and U-004 is dispatched without a re-bind (a later re-bind keeps the resolution while the claim and its code paths are unchanged). Contrast RES2 (UNRESOLVED → the gate closes again)
 
-### RES5: --resume after a MIXED (or KEEP_CODE/SPLIT) resolution routes to bind-codebase (re-bind)
-- **Setup:** previous run halted on bind_conflict; user resolved via `/mega-sdd:resolve-oq --binding` with at least one KEEP_CODE or SPLIT (the vault WAS edited); `bound/` absent, every conflict resolution-marked, no ACTIVE conflict block
+### RES5: --resume after a KEEP_CODE/SPLIT resolution re-binds that unit
+- **Setup:** previous run halted on `binding_conflict` for U-004; user resolved via `/mega-sdd:resolve-oq --binding` with at least one KEEP_CODE or SPLIT (the unit's `## Claims` WAS edited)
 - **Prompt:** `/mega-sdd:orchestrate-flow --deep --resume`
-- **Expect:** routes to `bind-codebase` (re-bind — the edited claims now match code and bind cleanly), NOT generate-units. The resolved-binding→generate-units row (RES4) applies ONLY when EVERY resolution action is KEEP_VAULT/DEFER (zero KEEP_CODE/SPLIT); a MIXED resolution falls through to the bind row. This keeps `--resume` (surface 3) action-mix-consistent with the resolve-oq handoff (BM4) and the convergence branch (R-FACTORY-4) — routing is NOT keyed on "validator green" (RED by design for KEEP_VAULT-only) nor bare `binding.md` existence.
+- **Expect:** U-004 is re-bound before dispatch (`rebind-units.sh --units=U-004`, then `plan --reconcile` per resolve-oq's hand-off); skipped, the BOLTS gate backstops it — the edited unit trips `unit_changed_since_bind` and 3.9b re-binds it. Routing keys on the resolution action mix, never on a whole-vault re-bind
 
 ### RES3: --from override skips earlier completed phases
-- **Setup:** all 6 phases completed; user wants to re-run only `generate-units` + `execute-bolts`
-- **Prompt:** `/mega-sdd:orchestrate-flow --deep --from=generate-units`
-- **Expect:** chain skips first 4 phases regardless of artifact presence; runs generate-units forward
+- **Setup:** all phases completed; user wants to re-run only `execute-bolts`
+- **Prompt:** `/mega-sdd:orchestrate-flow --deep --from=execute-bolts`
+- **Expect:** chain skips `plan` regardless of artifact presence; runs execute-bolts forward
 
-## Pass criteria (Iter 4)
+## Pass criteria (deep chain + resume)
 
-All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain decision matrix + `references/handoff-contract.md` §Orchestrator consumption logic. All resume mechanics (RES1-RES5) follow §Resume mechanics — incl. RES4 (KEEP_VAULT/DEFER-only, bound/ absent → generate-units, not a bind re-halt loop) and RES5 (MIXED/KEEP_CODE/SPLIT → bind-codebase re-bind), keeping the stateless resume routing action-mix-consistent with the resolve-oq handoff + convergence surfaces. Halt-protocol behavior unchanged in `--deep` mode vs cap-3 mode. No persisted state file.
-
----
-
-## Iter 32 — End-to-end starterkit_context propagation case (v2.5.1+)
-
-### OF-SK1 — Full --auto pipeline propagates starterkit_context through all 5 phases
-
-**Setup:**
-- Laravel starterkit at `<project_root>` (Sanctum + Spatie/permission + Alpine + Tailwind + SweetAlert2)
-- PRD at `<project_root>/prd.md` describing "User management feature"
-- No prior vault, no prior codebase-map.md, no prior starterkit-context.yaml
-
-**Trigger:** `/mega-sdd`
-
-**Expected pipeline:**
-1. orchestrate-flow detects: PRD + starterkit + no vault → starterkit-first chain
-2. Phase 1: `mega-sdd:scan-codebase` invoked
-   - Deep-scan stage runs (4 subagents)
-   - `.mega-sdd/codebase/starterkit-context.yaml` written
-   - Handoff: `starterkit_context: { reused: false, framework: laravel, auth_lib: sanctum, ... }`
-3. orchestrate-flow propagates handoff `starterkit_context:` into `metadata.starterkit_context`
-4. Phase 2: `mega-sdd:generate-intent --scan=<codebase-map>` invoked
-   - Receives `metadata.starterkit_context` in dispatch context
-   - Vault generated under `.mega-sdd/vaults/<auto-generated-id>/`
-   - Handoff: `starterkit_context:` passthrough (unchanged from scan-codebase)
-5. Phase 3: `mega-sdd:bind-codebase` invoked
-   - Handoff: `starterkit_context:` passthrough
-6. Phase 4: `mega-sdd:generate-units` invoked
-   - Step 7.7 fires for all generated units
-   - Units that touch UI/auth/RBAC/libs gain starterkit anchors + Hard Rules
-   - Handoff: `starterkit_context:` + 2 new metrics (`units_with_starterkit_anchors: <N>`, `units_with_starterkit_rules: <N>`)
-7. Phase 5: `mega-sdd:execute-bolts --all --parallel --auto` invoked (wave layering from the chain's analyze-parallelism JSON)
-   - Per-unit T2.3 slice injection for units with non-empty starterkit_relevance
-   - Bolts produce code matching starterkit patterns (extends layouts.app, uses SweetAlert2, Spatie middleware)
-   - Handoff: `starterkit_context:` + 2 new metrics (`bolts_used_starterkit_slice: <N>`, `slice_avg_size_kb: <X.X>`)
-
-**Verification at each handoff boundary:**
-- starterkit_context.framework field is `laravel` in ALL 5 handoffs
-- starterkit_context.auth_lib field is `sanctum` in ALL 5 handoffs
-- Final execute-bolts handoff metrics show non-zero bolts_used_starterkit_slice
-- Final bolt-report.md files (per unit) cite `starterkit-context.yaml` in their context section
+All deep-chain rules (DC1-DC7) follow `references/routing-rules.md` §Deep-chain decision matrix + `references/handoff-consumption.md` (incl. §Lite lane exemption for `plan`). All resume mechanics (RES1-RES5) follow §Resume mechanics — a KEEP_VAULT/DEFER-only resolution dispatches the unit with no re-bind (RES4); KEEP_CODE/SPLIT re-binds that unit (RES5), keeping the stateless resume routing action-mix-consistent with the resolve-oq hand-off + convergence surfaces. Halt-protocol behavior unchanged in `--deep` mode vs cap-3 mode. No persisted state file.
 
 ---
 
-## Iter 33 — Intelligence features (v3.0.0+)
-
-### OF-MR1 — Memory-driven routing recommends past-successful chain
-
-**Setup:**
-- `.mega-sdd/memory/routing-outcomes.md` exists with ≥3 rows matching current project fingerprint, all converged=yes, all chain-used="starterkit-first"
-- Default routing-rules.md would propose "direct" chain
-
-**Trigger:** `/mega-sdd`
-
-**Expected:**
-- Step 2.7 reads routing-outcomes.md
-- Fingerprint matches ≥3 prior converged runs with consistent chain
-- Recommendation displayed: "Routing recommendation from past 3 runs (all converged in avg 10 min): starterkit-first"
-- Step 3 builds starterkit-first chain (overriding routing-rules.md default)
-- Chain executes; Step 7.5 appends new outcome row
-
-### OF-MR2 — No prior runs: fall through to default routing
-
-**Setup:**
-- `.mega-sdd/memory/routing-outcomes.md` does not exist (fresh project)
-
-**Trigger:** `/mega-sdd`
-
-**Expected:**
-- Step 2.7 reads routing-outcomes.md → file absent → skips routing recommendation
-- Step 3 builds chain per routing-rules.md default
-- No "routing recommendation" message displayed
-- Chain executes; Step 7.5 creates routing-outcomes.md + appends first row
+## Predictive checks + handoff validation
 
 ### OF-PH1 — Predictive check (non-fatal): AST-engine warning
 
 **Setup:**
 - ast-grep binary NOT installed
 - Project has Laravel composer.json (framework detected)
-- Chain proposes scan-codebase
+- Chain proposes `plan` → `execute-bolts`
 
-**Trigger:** `/mega-sdd`
+**Trigger:** `/mega-sdd ./prd.md --guarded`
 
 **Expected:**
-- Step 3.5 runs predictive checks for scan-codebase
-- `ast_engine_present` check fails (non-fatal; fires only when ast-grep is absent — v7.4.0)
-- Warning displayed to user BEFORE chain starts: "⚠️ ast-grep not installed; scan-codebase will fall back to regex engine. Install: brew install ast-grep..."
-- Chain proceeds normally (scan-codebase uses regex)
-- handoff metrics.predictive_warnings_count = 1; metrics.predictive_halts_count = 0
+- Step 5 runs `validate-preflight.sh --predictive --chain=plan,execute-bolts`
+- `ast_engine_present` warns (non-fatal), once per hop: GROUND builds no symbol index, so plan types brownfield units greenfield (+WARN) and the JIT bind leaves symbol claims OQ; install hint names `/mega-sdd:install-deps`
+- Warning displayed to user BEFORE chain starts; chain proceeds normally
 
 ### OF-PH2 — Predictive check (fatal): execute-bolts requires units
 
@@ -275,73 +218,71 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 - vault exists but units/ directory empty (no U-*.md files)
 - Chain proposes execute-bolts (user passed `--from=execute-bolts`)
 
-**Trigger:** `/mega-sdd:execute-bolts --auto`
+**Trigger:** `/mega-sdd:orchestrate-flow --from=execute-bolts --auto`
 
 **Expected:**
-- Step 3.5 runs `units_directory_present` predictive check for execute-bolts
+- Step 5 runs the `units_directory_present` predictive check for execute-bolts
 - Check fails (fatal=yes)
 - Halt `predictive_check_failed` emitted; chain STOPS before execute-bolts dispatched
-- halt envelope: details.failing_check_id="units_directory_present"; next_action.hint="Run generate-units first"
-- Chain output: predictive halt YAML; no execute-bolts invocation
+- halt envelope: details.failing_check_id="units_directory_present"; hint "Run plan <prd> first (plan writes units/U-*.md)"
+- A direct `/mega-sdd:execute-bolts` dispatch is blocked by the dispatch-time twin `bolts_units_missing`
 
 ### OF-VG1 — Schema validation gate passes for compliant handoff
 
 **Setup:**
-- bind-codebase emits handoff with all REQUIRED + CONDITIONAL (vault has scope_metadata + scope: block present) fields
+- `detect-drift` (sync lane) emits a handoff with all REQUIRED + CONDITIONAL fields (the vault has `scope_metadata` and the `scope:` block is present)
 
-**Trigger:** chain that includes bind-codebase
+**Trigger:** `/mega-sdd:sync` on that vault
 
 **Expected:**
-- Step 6.b parses bind-codebase handoff YAML successfully
-- All REQUIRED fields present; condition met for scope: + scope present
-- No halt; Step 6.c propagates metadata to next skill (generate-units)
+- Step 7.b parses the detect-drift handoff YAML successfully
+- All REQUIRED fields present; condition met for `scope:` + scope present
+- No halt; Step 7.c propagates metadata to the next hop (`rebind-units.sh` → `plan --reconcile`)
 
 ### OF-VG2 — Schema validation gate halts on missing CONDITIONAL field
 
 **Setup:**
-- bind-codebase emits handoff WITHOUT scope: block, but vault.json has scope_metadata
-- (Simulated: inject test fixture that bypasses Phase A1 sweep for this test)
+- `detect-drift` emits a handoff WITHOUT the `scope:` block, but vault.json has `scope_metadata`
+- (Simulated: inject a test fixture)
 
-**Trigger:** chain includes bind-codebase
+**Trigger:** `/mega-sdd:sync` on that vault
 
 **Expected:**
-- Step 6.b validates handoff against schema
+- Step 7.b validates the handoff against the schema
 - Condition "vault has scope_metadata" evaluates TRUE
-- scope: field missing (CONDITIONAL+condition_met)
-- Halt `invalid_handoff` emitted; STOPS chain before generate-units dispatched
-- halt envelope: details.failing_skill="bind-codebase"; missing_field="scope"; field_severity="CONDITIONAL"; condition_evaluated="vault has scope_metadata = TRUE"
-- next_action.hint includes "Edit bind-codebase SKILL.md handoff template"
+- `scope:` field missing (CONDITIONAL + condition_met)
+- Halt `invalid_handoff` emitted; STOPS the chain before the next hop
+- halt envelope: details.failing_skill="detect-drift"; missing_field="scope"; field_severity="CONDITIONAL"; condition_evaluated="vault has scope_metadata = TRUE"
 
 ### OF-TC1 — Type check passes for compliant field types
 
 **Setup:**
-- bind-codebase emits handoff with scope.id as string "BE" (matches TYPE: enum)
+- `detect-drift` emits a handoff with scope.id as string "BE" (matches TYPE: enum)
 
-**Trigger:** chain includes bind-codebase
+**Trigger:** chain includes detect-drift
 
 **Expected:**
-- Step 6.b.i type-checks scope.id field
-- Value "BE" matches TYPE: enum from scope_metadata.allowed_scopes
+- Step 7.b type-checks the scope.id field
+- Value "BE" matches the expected string type
 - No halt; propagation continues
 
 ### OF-TC2 — Type check halts on type mismatch
 
 **Setup:**
-- bind-codebase emits handoff with scope.id as object `{id: "BE"}` instead of string "BE"
-- (Simulated: inject test fixture)
+- `detect-drift` emits a handoff with scope.id as object `{id: "BE"}` instead of string "BE"
+- (Simulated: inject a test fixture)
 
-**Trigger:** chain includes bind-codebase
+**Trigger:** chain includes detect-drift
 
 **Expected:**
-- Step 6.b.i type-checks scope.id field
+- Step 7.b type-checks the scope.id field
 - Expected: string; Actual: object → MISMATCH
 - Halt `handoff_type_mismatch` emitted; STOPS chain
-- halt envelope: details.failing_skill="bind-codebase"; field_name="scope.id"; expected_type="string (enum)"; actual_type="object"; actual_value="{id: 'BE'}"
-- next_action.hint includes "Field scope.id should be a string (enum value), not an object"
+- halt envelope: details.failing_skill="detect-drift"; field_name="scope.id"; expected_type="string (enum)"; actual_type="object"; actual_value="{id: 'BE'}"
 
 ---
 
-## Iter 34 — Model tier resolution (v3.1.0+)
+## Model tier resolution
 
 ### OF-MT1 — Catalog defaults applied (no overrides)
 
@@ -349,46 +290,44 @@ All deep-chain rules (DC1-DC6) follow `references/routing-rules.md` §Deep-chain
 - No CLI `--model-tier` flag
 - No `<project>/.mega-sdd/config.yaml` `model_tiers:` section
 
-**Trigger:** `/mega-sdd ./prd.md`
+**Trigger:** `/mega-sdd ./legacy-php/ --out=./rebuild/` (legacy rebuild — the chain dispatches extract-intelligence's agents)
 
 **Expected:**
-- Step 2.8 reads both override sources (cli_overrides, project_overrides) — all empty (the user-scope `preferences.md` source died with the memory lane in v7.3.0)
+- The model-tier resolution step reads both override sources (cli_overrides, project_overrides) — all empty (the user-scope `preferences.md` source died with the memory lane in v7.3.0)
 - For each role mentioned in chain → use catalog default per `references/model-tiers.md §Catalog`
 - handoff metadata.model_tiers emitted with catalog defaults
 - metadata.model_tier_sources = {role: "catalog"} for every entry
 - No `model_tier_unknown` halt fired
-- Subagent dispatches (e.g., scan-codebase deep-scan) use catalog defaults (sonnet for auth/rbac/ui-ux/libs-extractors)
+- Subagent dispatches use catalog defaults (sonnet for `extract-intelligence-module` and `extract-intelligence-verify`)
 
 ### OF-MT2 — CLI flag overrides project config
 
 **Setup:**
-- CLI flag: `--model-tier=libs-extractor:haiku` (a non-panel role — panel `*-reviewer` lenses are frontmatter-pinned and NOT overridable via `model_tiers:`, per review-panel.md/model-tiers.md §Override syntax)
-- `<project>/.mega-sdd/config.yaml` has `model_tiers: { libs-extractor: opus }`
+- CLI flag: `--model-tier=extract-intelligence-module:opus` (a non-panel role — panel `*-reviewer` lenses are frontmatter-pinned and NOT overridable via `model_tiers:`, per review-panel.md/model-tiers.md §Override syntax)
+- `<project>/.mega-sdd/config.yaml` has `model_tiers: { extract-intelligence-module: haiku }`
 
-**Trigger:** `/mega-sdd --model-tier=libs-extractor:haiku ./prd.md`
+**Trigger:** `/mega-sdd --model-tier=extract-intelligence-module:opus ./legacy-php/ --out=./rebuild/`
 
 **Expected:**
-- Step 2.8 override chain resolves libs-extractor to `haiku` (CLI wins; project=opus ignored; user=sonnet ignored)
-- metadata.model_tier_sources.libs-extractor = "cli"
-- Log output mentions: "Model tier overrides applied: libs-extractor=haiku (cli-flag)"
+- The override chain resolves `extract-intelligence-module` to `opus` (CLI wins; project=haiku ignored)
+- metadata.model_tier_sources.extract-intelligence-module = "cli"
+- Log output mentions: "Model tier overrides applied: extract-intelligence-module=opus (cli-flag)"
 - All other roles use catalog defaults
-- Subagent dispatch uses haiku for libs-extractor (NOT catalog sonnet default)
+- The per-module extractor dispatch uses opus (NOT the catalog sonnet default)
 
 ### OF-MT3 — Unknown role in override triggers soft halt + chain continues
 
 **Setup:**
-- `<project>/.mega-sdd/config.yaml` has `model_tiers: { future-unreleased-role: opus, libs-extractor: haiku }`
-- `future-unreleased-role` is NOT in `references/model-tiers.md §Catalog`
-- `libs-extractor` IS in catalog (row 4)
+- `<project>/.mega-sdd/config.yaml` has `model_tiers: { libs-extractor: opus, extract-intelligence-module: haiku }`
+- `libs-extractor` is NOT in `references/model-tiers.md §Catalog` (rows 1–5 retired with the scan-codebase deep scan in 9.0)
+- `extract-intelligence-module` IS in catalog (row 6)
 
-**Trigger:** `/mega-sdd ./prd.md`
+**Trigger:** `/mega-sdd ./legacy-php/ --out=./rebuild/`
 
 **Expected:**
-- Step 2.8 processes project_overrides
-- `future-unreleased-role` unknown → emit soft halt `model_tier_unknown` (warn-only)
-- halt envelope: details.unknown_role="future-unreleased-role"; override_source="project-config"
-- Log message: "Role 'future-unreleased-role' not found in catalog; override ignored"
-- `libs-extractor` (valid catalog entry, row 4) override applied — haiku (was sonnet default)
+- `libs-extractor` unknown → emit soft halt `model_tier_unknown` (warn-only)
+- halt envelope: details.unknown_role="libs-extractor"; override_source="project-config"
+- Log message: "Role 'libs-extractor' not found in catalog; override ignored"
+- `extract-intelligence-module` (valid catalog entry, row 6) override applied — haiku (was sonnet default)
 - Chain PROCEEDS (soft halt; not chain-stopping)
-- metadata.model_tiers does NOT include future-unreleased-role; DOES include libs-extractor with haiku
-- Forward-compat: future iter adding `future-unreleased-role` to catalog would auto-pick up the project's existing override on next run
+- metadata.model_tiers does NOT include libs-extractor; DOES include extract-intelligence-module with haiku

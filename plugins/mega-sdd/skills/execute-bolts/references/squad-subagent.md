@@ -42,7 +42,9 @@ units — depth-1 AND parallel, no tradeoff. This is the same mechanism as
    including units from different squads — concurrently** (multiple `bolt-implementer`
    Agent calls in one message), bounded by an in-flight cap (`parallel_max`, default **4** concurrent
    implementers — the same bound `--all --parallel` uses, `batch-and-fanout.md §--all`;
-   a wider set dispatches in cap-sized slices). **Independent =
+   a wider set is fed by per-unit pipelining under the unit-level readiness rule of
+   `batch-and-fanout.md §--all` — `derive-ready-units.sh` top-up after every implementer
+   return, never cap-sized slices with a barrier). **Independent =
    no `depends_on` edge AND pairwise-disjoint `target_files`** — cross-squad units
    have no dependency edges by design (step 3), so the whitelist-overlap check is the
    only rail against two squads clobbering a shared file; intersecting units serialize.

@@ -4,6 +4,10 @@
 # summary; exit 0 when fatal==0, exit 3 when fatal>0; unknown skills skipped
 # silently; cold-halt checks ride execute-bolts membership; fail-open per
 # check. Catalog: skills/orchestrate-flow/references/predictive-checks.md.
+# 9.0 P1 (spec 2026-09-27-v9-simplification-design.md §2/§3): the classic skills
+# (generate-intent, scan-codebase, bind-codebase, generate-units) are removed and
+# plan -> execute-bolts is the one pipeline. Their catalog probes were repointed to
+# the surviving skills; a stale chain naming one of them FATALs skill_removed_in_9.
 # Run: bash tests/scripts/test-predictive-preflight.sh </dev/null
 set -u
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -32,11 +36,14 @@ for ln in sys.stdin:
 print("ok")' 2>/dev/null
 }
 
-# ── 1. fabricated chain on an empty mktemp cwd: runs, no crash, valid JSON ──
+# ── 1. warn-only chain on an empty mktemp cwd: runs, no crash, valid JSON ──
+# 9.0 P1 repoint: scan-codebase (the old warn-only chain) was removed; plan is the
+# surviving catalog skill whose checks are all fatal:no (ast_engine_present).
 EMPTY="$TMP/empty"; mkdir -p "$EMPTY"
-out=$(bash "$S" $SFLAGS --cwd="$EMPTY" --chain=scan-codebase </dev/null); src=$?
-[ "$src" -eq 0 ] && pass "warn-only chain (scan-codebase, empty cwd) exits 0" \
-  || fail "scan-codebase chain exit $src (expected 0): $out"
+out=$(bash "$S" $SFLAGS --cwd="$EMPTY" --chain=plan </dev/null); src=$?
+[ "$src" -eq 0 ] && printf '%s\n' "$out" | grep -q '"skill": "plan", "check": "ast_engine_present"' \
+  && pass "warn-only chain (plan, empty cwd) exits 0 and runs its catalog check" \
+  || fail "plan chain exit $src (expected 0, ast_engine_present line): $out"
 [ "$(json_ok "$out")" = "ok" ] && pass "every check line is valid JSON with skill/check/status/hint" \
   || fail "invalid JSON in output: $out"
 printf '%s\n' "$out" | grep -Eq '^PREFLIGHT: [0-9]+ ok, [0-9]+ warn, [0-9]+ fatal$' \
@@ -50,23 +57,41 @@ out=$(bash "$S" $SFLAGS --cwd="$EMPTY" --chain=no-such-skill,also-fabricated </d
   || fail "unknown-skill handling wrong (rc=$src): $out"
 
 # ── 2b. chain-aware inputs (v8 P0 live finding 2026-09-10): a WHOLE greenfield chain
-# on an empty cwd must NOT report fatal for inputs an earlier hop produces
-# (vault.json by generate-intent, units/ by generate-units) — the xs baseline arm
-# hit exactly this false fatal. The single-hop fatal below (3.) is unchanged.
-out="$(bash "$S" $SFLAGS --cwd="$EMPTY" --chain=generate-intent,bind-codebase,generate-units,execute-bolts </dev/null 2>/dev/null)"; src=$?
-[ "$src" -eq 0 ] && printf '%s\n' "$out" | grep -q '"check": "binding_input_complete", "status": "ok", "hint": "chain-aware: vault produced by an earlier hop of this chain (generate-intent)' \
-  && printf '%s\n' "$out" | grep -q '"check": "units_directory_present", "status": "ok", "hint": "chain-aware: units produced by an earlier hop of this chain (generate-units)' \
+# on an empty cwd must NOT report fatal for inputs an earlier hop produces — the xs
+# baseline arm hit exactly this false fatal. 9.0 P1 repoint: the one pipeline is
+# plan -> execute-bolts, and plan produces BOTH units/ and .plan-coverage-state.json.
+# (The classic vault->bind leg — bind-codebase's binding_input_complete satisfied by
+# generate-intent — is retired with those skills.) The single-hop fatal is 3. below.
+out="$(bash "$S" $SFLAGS --cwd="$EMPTY" --chain=plan,execute-bolts </dev/null 2>/dev/null)"; src=$?
+[ "$src" -eq 0 ] && printf '%s\n' "$out" | grep -q '"check": "units_directory_present", "status": "ok", "hint": "chain-aware: units produced by an earlier hop of this chain (plan)' \
+  && printf '%s\n' "$out" | grep -q '"check": "lite_plan_coverage_pass", "status": "ok", "hint": "chain-aware: plan_coverage produced by an earlier hop of this chain (plan)' \
   && printf '%s\n' "$out" | grep -Eq '^PREFLIGHT: [0-9]+ ok, 0 warn, 0 fatal$' \
   && pass "whole greenfield chain on empty cwd: inputs produced by earlier hops are chain-aware ok, exit 0" \
-  || fail "chain-aware skip missing (rc=$src): $(printf '%s\n' "$out" | grep -e binding_input -e units_directory -e PREFLIGHT)"
+  || fail "chain-aware skip missing (rc=$src): $(printf '%s\n' "$out" | grep -e units_directory -e lite_plan_coverage -e PREFLIGHT)"
 
-# ── 3. fatal path: bind-codebase on empty cwd -> binding_input_complete fatal, exit 3 ──
-out=$(bash "$S" $SFLAGS --cwd="$EMPTY" --chain=bind-codebase </dev/null); src=$?
-[ "$src" -eq 3 ] && pass "fatal mismatch -> exit 3" || fail "bind-codebase on empty cwd exited $src (expected 3)"
-printf '%s\n' "$out" | grep -q '"check": "binding_input_complete"' \
-  && printf '%s\n' "$out" | grep -q '"status": "fatal"' \
-  && pass "binding_input_complete emitted as fatal with catalog hint" \
+# ── 3. fatal path: execute-bolts ALONE on empty cwd -> units_directory_present fatal, exit 3 ──
+# The counterpart of 2b: no earlier hop produces units, so the input stays fatal.
+# 9.0 P1 repoint: the old single-hop probe was bind-codebase's binding_input_complete.
+out=$(bash "$S" $SFLAGS --cwd="$EMPTY" --chain=execute-bolts </dev/null); src=$?
+[ "$src" -eq 3 ] && pass "fatal mismatch -> exit 3" || fail "execute-bolts on empty cwd exited $src (expected 3)"
+printf '%s\n' "$out" | grep '"check": "units_directory_present"' \
+  | grep -qF '"status": "fatal", "hint": "execute-bolts requires generated units. Run `plan <prd>` first' \
+  && pass "units_directory_present emitted as fatal with catalog hint" \
   || fail "fatal check line missing: $out"
+
+# ── 3b. stale chain naming a skill removed in 9.0 (e.g. a paused 8.x --resume) ──
+# One skill_removed_in_9 fatal line per removed skill, hint names the plan
+# replacement, exit 3; none of the removed skill's old catalog probes run.
+for rs in generate-intent bind-codebase generate-units scan-codebase; do
+  out=$(bash "$S" $SFLAGS --cwd="$EMPTY" --chain="$rs" </dev/null); src=$?
+  line=$(printf '%s\n' "$out" | grep '"skill": ')
+  [ "$src" -eq 3 ] && [ "$(printf '%s\n' "$line" | grep -c .)" -eq 1 ] \
+    && printf '%s' "$line" | grep -q "\"skill\": \"$rs\", \"check\": \"skill_removed_in_9\", \"status\": \"fatal\", \"hint\": \"$rs was removed in 9.0" \
+    && printf '%s' "$line" | grep -q 'use plan' \
+    && printf '%s\n' "$out" | grep -q '^PREFLIGHT: 0 ok, 0 warn, 1 fatal$' \
+    && pass "removed skill $rs -> one skill_removed_in_9 fatal naming plan, exit 3" \
+    || fail "removed skill $rs not refused as skill_removed_in_9 (rc=$src): $out"
+done
 
 # ── 4. vault fixture: clean execute-bolts chain passes all cold-halt checks ──
 V="$TMP/proj/.mega-sdd/vaults/main"
@@ -93,10 +118,19 @@ acceptance_test: tests/b.test.js
 ---
 # U-002
 EOF
+# 9.0 P1: lite is the one pipeline, so the plan-coverage rail (lite_plan_coverage_pass)
+# runs on EVERY execute-bolts hop with no `lane: lite` key. Without plan Step 5's
+# census the otherwise-clean fixture is fatal; with a PASS census it is clean.
 out=$(bash "$S" $SFLAGS --cwd="$TMP/proj" --chain=execute-bolts </dev/null); src=$?
-[ "$src" -eq 0 ] && pass "well-formed units -> execute-bolts chain exits 0" \
+[ "$src" -eq 3 ] && printf '%s\n' "$out" | grep -q '"check": "lite_plan_coverage_pass", "status": "fatal"' \
+  && printf '%s\n' "$out" | grep -q '^PREFLIGHT: [0-9]* ok, 0 warn, 1 fatal$' \
+  && pass "no .plan-coverage-state.json (no lane key) -> only lite_plan_coverage_pass fatal, exit 3" \
+  || fail "plan-coverage rail not on by default (rc=$src): $out"
+printf '{"status": "PASS", "gaps": []}\n' > "$TMP/proj/.mega-sdd/.plan-coverage-state.json"
+out=$(bash "$S" $SFLAGS --cwd="$TMP/proj" --chain=execute-bolts </dev/null); src=$?
+[ "$src" -eq 0 ] && pass "well-formed units + PASS coverage census -> execute-bolts chain exits 0" \
   || fail "clean fixture exited $src: $out"
-for c in units_directory_present units_depends_on_dag_acyclic units_have_acceptance_tests verify_units_have_no_target_files partial_state_loads_cleanly; do
+for c in units_directory_present units_depends_on_dag_acyclic units_have_acceptance_tests verify_units_have_no_target_files partial_state_loads_cleanly lite_plan_coverage_pass; do
   printf '%s\n' "$out" | grep -q "\"check\": \"$c\"" \
     && pass "cold-halt/membership check $c ran under execute-bolts" \
     || fail "check $c missing from execute-bolts chain"
@@ -163,7 +197,7 @@ printf '%s\n' "$out" | grep -q '"check": "vault_present_for_drift", "status": "o
 # ── 8b. layout-3 (plan-born) vault: binding_present_for_drift reads bolts/U-*/binding.json ──
 # A lite vault keeps ONE context.md and per-unit verdicts — there is never a whole-vault
 # binding.md, so the binding.md-only check FATALed every lite hop of detect-drift.
-# Separate project so the classic fixture above stays untouched.
+# Separate project so the layout-2 fixture above stays untouched.
 L3="$TMP/l3proj/.mega-sdd/vaults/leave"
 mkdir -p "$L3"
 printf '{"vault_version": "1.0", "open_questions": []}\n' > "$L3/vault.json"
@@ -182,7 +216,10 @@ out=$(bash "$S" $SFLAGS --cwd="$TMP/l3proj" --chain=detect-drift </dev/null); sr
   || fail "layout-3 per-unit binding.json not honored (rc=$src): $out"
 
 # ── 9. wide chain: summary counts equal per-line status counts; JSON stays valid ──
-CHAIN=generate-intent,detect-drift,resolve-oq,emit-fsd,emit-agents-md,execute-bolts,diff-vault,extract-intelligence,memory,scan-codebase
+# generate-intent / scan-codebase are removed in 9.0 (3b.) and stay in the chain on
+# purpose: their skill_removed_in_9 lines must count like any other; plan added as the
+# surviving producer.
+CHAIN=plan,generate-intent,detect-drift,resolve-oq,emit-fsd,emit-agents-md,execute-bolts,diff-vault,extract-intelligence,memory,scan-codebase
 out=$(bash "$S" $SFLAGS --cwd="$TMP/proj" --chain="$CHAIN" </dev/null); src=$?
 [ "$(json_ok "$out")" = "ok" ] && pass "wide chain: every line valid JSON" || fail "wide chain invalid JSON"
 n_ok=$(printf '%s\n' "$out" | grep -c '"status": "ok"')

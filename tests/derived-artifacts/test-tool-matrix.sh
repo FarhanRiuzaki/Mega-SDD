@@ -11,7 +11,7 @@
 #
 #   RAW  (python3 stdlib only — runs in every environment, no pyyaml needed):
 #     g — within the tools: block, count('  - id:') == count('    purpose:')
-#         == count('    fallback_behavior:') == count('    matrix:') == 9,
+#         == count('    fallback_behavior:') == count('    matrix:') == 8,
 #         AND no tool-entry-shaped key (used_by/purpose/fallback_behavior/
 #         matrix/notes) appears at 4-space indent outside an active
 #         '  - id:' entry (the exact orphaned-mapping-key failure mode)
@@ -25,12 +25,19 @@
 #     a  — every parsed tools[] entry has id/used_by/purpose/
 #          fallback_behavior/matrix (dict-shaped: catches missing keys,
 #          NOT the duplicate-key merge — that is raw check g/a's job)
-#     b  — tool count == 9 AND id set == union(defaults.* groups)
+#     b  — tool count == 8 AND id set == union(defaults.* groups)
 #     c  — every matrix row has os/pkg_mgr/install_cmd/verify_cmd/size_mb
 #     f  — every defaults group ⊆ tool ids
 #
-# TDD is inverted here: the subject file is believed-good (just landed in
-# commit 8f93566 — 9 tools, all with used_by). Baseline run below must
+# EXPECTED_TOOLS = 8 (re-baselined from 9 at 9.0 P1): the 'ripgrep' entry was
+# removed from tool-matrix.yaml because its ONLY consumer (used_by:
+# [scan-codebase]) was deleted with the classic skills; ripgrep is now an
+# optional general tool with no mega-sdd script (references/tooling-install.md),
+# and defaults.recommended_minimum / defaults.full_stack dropped it in the same
+# change, so the union(defaults)==id-set cross-check (b) still binds.
+#
+# TDD is inverted here: the subject file is believed-good (originally landed
+# in commit 8f93566 — then 9 tools, all with used_by). Baseline run below must
 # PASS. Mutation probes then mutate TEMP COPIES ONLY (never the real file)
 # to prove each detector actually fires, including a literal replay of the
 # historical pandoc corruption (drop a '- id:' line).
@@ -154,11 +161,11 @@ def main():
         g_pass = False
         g_msgs.append("orphaned key(s) at 4-space indent outside any active '- id:' entry: " +
                        ", ".join(f"line {ln} '{k}:'" for ln, k in orphans))
-    if not (n_id == c_purpose == c_fallback == c_matrix == 9):
+    if not (n_id == c_purpose == c_fallback == c_matrix == 8):
         g_pass = False
         g_msgs.append(f"line-count mismatch: id={n_id} purpose={c_purpose} "
-                       f"fallback_behavior={c_fallback} matrix={c_matrix} (all must ==9)")
-    msg = ("g: id/purpose/fallback_behavior/matrix line counts all ==9, no orphaned keys"
+                       f"fallback_behavior={c_fallback} matrix={c_matrix} (all must ==8)")
+    msg = ("g: id/purpose/fallback_behavior/matrix line counts all ==8, no orphaned keys"
            if g_pass else "; ".join(g_msgs))
     print(f"RESULT|G|{'PASS' if g_pass else 'FAIL'}|{msg}")
 
@@ -253,17 +260,17 @@ def main():
            if a_pass else "; ".join(a_msgs))
     print(f"RESULT|A_YAML|{'PASS' if a_pass else 'FAIL'}|{msg}")
 
-    # ── b: tool count == 9 AND id set == union(defaults.* groups) ──
+    # ── b: tool count == 8 AND id set == union(defaults.* groups) ──
     ids = [t.get('id') for t in tools if isinstance(t, dict)]
     id_set = set(ids)
     group_names = ['required_tools', 'recommended_minimum', 'fsd_extension', 'code_gates', 'full_stack']
     union = set()
     for g in group_names:
         union |= set(defaults.get(g) or [])
-    count_ok = len(ids) == 9 and len(id_set) == 9
+    count_ok = len(ids) == 8 and len(id_set) == 8
     union_ok = union == id_set
     b_pass = count_ok and union_ok
-    msg = (f"b: tool count={len(ids)} unique={len(id_set)} (want 9); "
+    msg = (f"b: tool count={len(ids)} unique={len(id_set)} (want 8); "
            f"union(defaults groups)==tool-id-set: {union_ok} "
            f"(union={sorted(union)} ids={sorted(id_set)})")
     print(f"RESULT|B|{'PASS' if b_pass else 'FAIL'}|{msg}")
@@ -377,7 +384,7 @@ expect_fail "$OUT" "G" "probe(g): dropped '- id: pandoc' line (historical corrup
 expect_fail "$OUT" "A_RAW" "probe(g): same mutation, per-entry duplicate-key cross-check"
 if [ -n "$PYBIN" ]; then
   YOUT="$(run_yaml "$WORK/probe-orphan.yaml")"
-  expect_fail "$YOUT" "B" "probe(g): same mutation, yaml-parsed tool count drops to 8 (cross-validated)"
+  expect_fail "$YOUT" "B" "probe(g): same mutation, yaml-parsed tool count drops to 7 (cross-validated)"
 fi
 
 # Probe 1b (g) — drop the FIRST entry's '- id:' line: its keys then appear
@@ -410,15 +417,17 @@ OUT="$(run_raw "$WORK/probe-curlbash.yaml")"
 expect_fail "$OUT" "E" "probe(e): install_cmd rewritten to 'curl ... | bash'"
 
 # Probe 3 (d) — sudo install_cmd with requires_sudo: true stripped from
-# that same row.
+# that same row. Fixture = the python3 apt row (python3 is the one required
+# tool, so the row is stable across lane changes; it was the ripgrep apt row
+# until ripgrep left the matrix at 9.0 P1).
 cp "$TM" "$WORK/probe-sudo.yaml"
 python3 - "$WORK/probe-sudo.yaml" <<'PY'
 import sys
 p = sys.argv[1]
 t = open(p, encoding='utf-8').read()
-old = ('        install_cmd: "sudo apt install -y ripgrep"\n'
+old = ('        install_cmd: "sudo apt install -y python3"\n'
        '        requires_sudo: true\n')
-new = '        install_cmd: "sudo apt install -y ripgrep"\n'
+new = '        install_cmd: "sudo apt install -y python3"\n'
 assert old in t, "fixture line not found — tool-matrix.yaml shape changed"
 open(p, 'w', encoding='utf-8').write(t.replace(old, new, 1))
 PY
@@ -432,21 +441,22 @@ python3 - "$WORK/probe-usedby.yaml" <<'PY'
 import sys
 p = sys.argv[1]
 lines = open(p, encoding='utf-8').read().splitlines(keepends=True)
-# remove only the FIRST 'used_by:' occurrence matching the ast-grep entry's value —
-# the same value can repeat verbatim on other entries, so an
+# remove only the FIRST 'used_by:' occurrence matching the python3 entry's
+# value (was ripgrep's 'used_by: [scan-codebase]' until 9.0 P1 removed that
+# entry) — the same value can repeat verbatim on other entries, so an
 # unqualified strip would drop more than one line.
 removed = False
 result = []
 for l in lines:
-    if not removed and l.strip() == 'used_by: [scan-codebase]':
+    if not removed and l.strip() == 'used_by: [hooks]':
         removed = True
         continue
     result.append(l)
-assert removed, "fixture line 'used_by: [scan-codebase]' not found"
+assert removed, "fixture line 'used_by: [hooks]' not found"
 open(p, 'w', encoding='utf-8').writelines(result)
 PY
 OUT="$(run_raw "$WORK/probe-usedby.yaml")"
-expect_fail "$OUT" "A_RAW" "probe(a): dropped a 'used_by:' line (id/purpose/fallback/matrix counts stay ==9, only a(raw) catches it)"
+expect_fail "$OUT" "A_RAW" "probe(a): dropped a 'used_by:' line (id/purpose/fallback/matrix counts stay ==8, only a(raw) catches it)"
 if [ -n "$PYBIN" ]; then
   YOUT="$(run_yaml "$WORK/probe-usedby.yaml")"
   expect_fail "$YOUT" "A_YAML" "probe(a): same mutation, yaml-based required-key check"
@@ -459,15 +469,16 @@ if [ -n "$PYBIN" ]; then
 import sys
 p = sys.argv[1]
 lines = open(p, encoding='utf-8').read().splitlines(keepends=True)
-# remove only the FIRST 'size_mb:' occurrence (an arbitrary matrix row)
+# remove only the FIRST 'size_mb:' occurrence (an arbitrary matrix row —
+# the python3 brew row; 'size_mb: 5' was ripgrep's cargo row, gone at 9.0 P1)
 removed = False
 result = []
 for l in lines:
-    if not removed and l.strip() == 'size_mb: 5':
+    if not removed and l.strip() == 'size_mb: 70':
         removed = True
         continue
     result.append(l)
-assert removed, "fixture line 'size_mb: 5' not found"
+assert removed, "fixture line 'size_mb: 70' not found"
 open(p, 'w', encoding='utf-8').writelines(result)
 PY
   YOUT="$(run_yaml "$WORK/probe-sizemb.yaml")"

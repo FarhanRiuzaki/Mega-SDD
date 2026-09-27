@@ -2,18 +2,30 @@
 # test-w2-contract-pins.sh — W-batch W2 (spec 2026-07-19-w-batch-script-derive.md):
 # binding.json is script-derived from binding.md — doc/skill contract pins.
 #
-#   P1  bind SKILL Step 4.5 runs derive-binding-json.sh and NO LONGER instructs
-#       the model to re-emit 'from the SAME claim data'
-#   P2  binding-md-template carries the three new grammar obligations —
-#       binding_metadata `head:`, the `[reason:` Anchor-cell token (closed
-#       enum), the `- **Claim**:` conflict-block line — while 'ALWAYS 6
-#       columns' survives (no 7th column)
+# 9.0 P1 (spec 2026-09-27-v9-simplification-design.md): bind-codebase is gone.
+# binding.md survives only as the layout-2 artifact (read support + the
+# resolve-oq --binding layout-2 leg). §7 decision #10: the layout-2 binding
+# grammar is owned by the code (scripts/_lib/binding_md.py); the bind templates
+# (binding-md-template.md, binding-json-schema.md) were not relocated.
+#
+#   P1  RETIRED 9.0 — pinned bind-codebase SKILL.md Step 4.5 (the whole-vault
+#       bind that wrote binding.md). The skill is deleted; no mega-sdd phase
+#       authors binding.md any more (derive-binding-json.sh dropped its
+#       "fix the Step-4 write" posture in the same change).
+#   P2  the three grammar obligations — binding_metadata `head:`, the
+#       `[reason:` Anchor-cell token (closed enum), the `- **Claim**:`
+#       conflict-block line — plus 6-columns-always (the token lives INSIDE the
+#       Anchor cell). Repointed 9.0 from binding-md-template.md to the grammar
+#       owner _lib/binding_md.py, pinned on its PARSE BEHAVIOUR (not comments)
 #   P3  binding-mode re-derives via derive-binding-json.sh; the hand-patch-json
 #       instruction ("set the claim's `resolution:`") is gone; no post-derive
 #       parity re-run is prescribed
-#   P4  binding-json-schema: generated_by = derive-binding-json@1.0.0, schema
-#       stays "1.0", the resolution-enum line + 'bind-time authoring
-#       obligation' pins survive
+#   P4  binding.json schema: generated_by = derive-binding-json@1.0.0, schema
+#       stays "1.0", the resolution enum is KEEP_VAULT|KEEP_CODE|DEFER|SPLIT|null.
+#       Repointed 9.0 from binding-json-schema.md to the derived output (P6's
+#       pair) + binding_md.RESOLUTION_ACTIONS. The 'bind-time authoring
+#       obligation' pin is RETIRED (it described the deleted bind skill's
+#       Anchor-authoring duty).
 #   P5  _lib/binding_md.py exists; BOTH the validator and the generator import
 #       it (one grammar, never forked)
 #   P6  empirical: derive on the plugin round-trip fixture → parity validator
@@ -27,15 +39,13 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 P="${ROOT}/plugins/mega-sdd"
-SKILL="${P}/skills/bind-codebase/SKILL.md"
-BMT="${P}/skills/bind-codebase/references/binding-md-template.md"
-BJS="${P}/skills/bind-codebase/references/binding-json-schema.md"
 BM="${P}/skills/resolve-oq/references/binding-mode.md"
-LIB="${P}/scripts/_lib/binding_md.py"
+LIBDIR="${P}/scripts/_lib"
+LIB="${LIBDIR}/binding_md.py"
 DERIVE="${P}/scripts/derive-binding-json.sh"
 VALIDATE="${P}/scripts/validate-binding-json.sh"
 FX="${P}/tests/graph/fixtures/derive-full"
-for f in "$SKILL" "$BMT" "$BJS" "$BM" "$DERIVE" "$VALIDATE"; do
+for f in "$BM" "$DERIVE" "$VALIDATE"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -45,31 +55,61 @@ fail() { printf '  \342\234\227 FAIL: %s\n' "$*"; FAILED=1; }
 WORK="$(mktemp -d 2>/dev/null || mktemp -d -t w2pins)"
 trap 'rm -rf "$WORK"' EXIT
 
+# py_lib <label-ok> <label-fail> — runs the stdin python with binding_md importable
+py_lib() {
+  if python3 - "$LIBDIR" >/dev/null 2>&1; then ok "$1"; else fail "$2"; fi
+}
+
 echo "== W2 contract pins: binding.json is derived, never re-typed =="
 
-# ── P1: SKILL Step 4.5 ──
-grep -qF 'derive-binding-json.sh' "$SKILL" && ok "P1: Step 4.5 runs derive-binding-json.sh" || fail "P1: derive script not named in SKILL.md"
-if grep -qF 'from the SAME claim data' "$SKILL"; then fail "P1: model re-emission instruction ('from the SAME claim data') survives"; else ok "P1: re-emission instruction gone (json is derived, not re-typed)"; fi
-grep -qF 'fix the Step-4' "$SKILL" && ok "P1: exit 2 = authoring bug posture (fix the Step-4 write and re-run)" || fail "P1: exit-2 remediation posture missing"
+# ── P1: RETIRED 9.0 (bind-codebase SKILL.md deleted — see header) ──
 
-# ── P2: template grammar ──
-grep -qF 'ALWAYS 6 columns' "$BMT" && ok "P2: 'ALWAYS 6 columns' survives (token lives INSIDE the Anchor cell)" || fail "P2: 6-column pin lost"
-grep -qF '[reason:' "$BMT" && ok "P2: [reason: <enum>] Anchor-cell token grammar present" || fail "P2: reason-token grammar missing"
-grep -qF 'truncated_section' "$BMT" && grep -qF 'kb_confirmed' "$BMT" && ok "P2: closed state_reason enum spelled out" || fail "P2: closed enum incomplete"
-grep -qF -- '- **Claim**:' "$BMT" && ok "P2: '- **Claim**:' conflict-block line present" || fail "P2: Claim-line grammar missing"
-grep -qE '^\s+head: ' "$BMT" && ok "P2: binding_metadata head: field present" || fail "P2: head: frontmatter field missing"
+# ── P2: layout-2 grammar, owned by _lib/binding_md.py (§7 decision #10) ──
+py_lib "P2: ALWAYS 6 columns — [reason:] token rides INSIDE the Anchor cell; a 5-cell row is malformed" \
+       "P2: 6-column State Map grammar lost (token not in Anchor cell, or short row accepted)" <<'PY'
+import sys; sys.path.insert(0, sys.argv[1]); import binding_md as b
+md = ("## Implementation State Map (1)\n"
+      "| Claim ID | Verdict | State | Anchor | Confidence | Field diff |\n"
+      "|---|---|---|---|---|---|\n"
+      "| C-044 | CONFIRMED | UNKNOWN | map capped [reason: truncated_section] | low | n/a |\n")
+errs = []; rows = b.parse_state_map(md, errs, full=True)
+r = rows.get("C-044", {})
+assert not errs and r.get("anchor_cell", "").endswith("[reason: truncated_section]") and r.get("field_diff") == "n/a"
+short = "## Implementation State Map (1)\n|---|---|---|---|---|---|\n| C-002 | CONFIRMED | NEW | — | n/a |\n"
+errs = []; rows = b.parse_state_map(short, errs, full=True)
+assert "C-002" not in rows and any("need 6" in e for e in errs)
+PY
+py_lib "P2: [reason: <enum>] Anchor-cell token grammar present" \
+       "P2: reason-token grammar missing" <<'PY'
+import sys; sys.path.insert(0, sys.argv[1]); import binding_md as b
+m = b.REASON_TOKEN_RE.search("app/X.php:9 [reason: kb_confirmed]")
+assert m and m.group(1) == "kb_confirmed"
+assert b.REASON_TOKEN_RE.search("app/X.php:9") is None
+PY
+py_lib "P2: closed state_reason enum spelled out" \
+       "P2: closed enum incomplete" <<'PY'
+import sys; sys.path.insert(0, sys.argv[1]); import binding_md as b
+assert isinstance(b.STATE_REASON_ENUM, tuple)
+assert "truncated_section" in b.STATE_REASON_ENUM and "kb_confirmed" in b.STATE_REASON_ENUM
+PY
+py_lib "P2: '- **Claim**:' conflict-block line present" \
+       "P2: Claim-line grammar missing" <<'PY'
+import sys; sys.path.insert(0, sys.argv[1]); import binding_md as b
+m = b.CLAIM_LINE_RE.search("### CONFLICT-1 — x\n- **Claim**: C-051\n- **Verdict**: CONFLICT (BLOCKING)\n")
+assert m and m.group(1) == "C-051"
+PY
+py_lib "P2: binding_metadata head: field present" \
+       "P2: head: frontmatter field missing" <<'PY'
+import sys; sys.path.insert(0, sys.argv[1]); import binding_md as b
+md = "---\nvault: v1\nbinding_metadata:\n  codebase_map_provenance: snapshot-verified\n  head: abc123def456\n---\n# Binding Manifest\n"
+assert b.parse_frontmatter_metadata(md)["head"] == "abc123def456"
+PY
 
 # ── P3: binding-mode write-back ──
 grep -qF 'derive-binding-json.sh' "$BM" && ok "P3: binding-mode re-derives binding.json via the script" || fail "P3: re-derive instruction missing"
 if grep -qF "set the claim's" "$BM"; then fail "P3: hand-patch-json instruction survives"; else ok "P3: hand-patch-json instruction gone"; fi
 grep -qF -- '- **Claim**: C-NNN' "$BM" && ok "P3: write-back ensures the Claim line (legacy self-heal)" || fail "P3: Claim-line self-heal missing"
 grep -qF 'Do NOT re-run `validate-binding-json.sh`' "$BM" && ok "P3: no tautological post-derive parity re-run" || fail "P3: parity-re-run posture missing"
-
-# ── P4: schema pins ──
-grep -qF 'derive-binding-json@1.0.0' "$BJS" && ok "P4: generated_by = derive-binding-json@1.0.0" || fail "P4: generated_by provenance stale"
-grep -qF '"schema_version": "1.0"' "$BJS" && ok "P4: schema_version stays 1.0 (key set unchanged)" || fail "P4: schema_version drifted"
-grep -qF '"resolution": "KEEP_VAULT | KEEP_CODE | DEFER | SPLIT | null"' "$BJS" && ok "P4: resolution-enum line intact (4D pin)" || fail "P4: resolution enum line lost"
-grep -qF 'bind-time authoring obligation' "$BJS" && ok "P4: honest anchor-enforcement story intact (4D pin)" || fail "P4: authoring-obligation phrasing lost"
 
 # ── P5: shared lib, both scripts ──
 [ -f "$LIB" ] && ok "P5: scripts/_lib/binding_md.py exists" || fail "P5: binding_md.py missing"
@@ -90,6 +130,30 @@ bash "$DERIVE" --vault "$V" </dev/null >/dev/null 2>&1; RC=$?
 [ "$RC" -eq 0 ] || fail "P6: derive failed on the round-trip fixture (rc=$RC)"
 bash "$VALIDATE" --vault "$V" </dev/null >/dev/null 2>&1; RC=$?
 [ "$RC" -eq 0 ] && ok "P6: validate-binding-json.sh green on a freshly derived pair" || fail "P6: parity validator rejects the derived pair (rc=$RC)"
+
+# ── P4: schema pins — on the derived output of P6 (the schema doc was not relocated) ──
+jq_py() {  # <python-expr over d> — evaluates against P6's derived binding.json
+  python3 - "$V/binding.json" "$1" <<'PY' >/dev/null 2>&1
+import json, sys
+d = json.load(open(sys.argv[1], encoding="utf-8"))
+sys.exit(0 if eval(sys.argv[2]) else 1)
+PY
+}
+jq_py 'd.get("generated_by") == "derive-binding-json@1.0.0"' \
+  && ok "P4: generated_by = derive-binding-json@1.0.0" || fail "P4: generated_by provenance stale"
+jq_py 'd.get("schema_version") == "1.0"' \
+  && ok "P4: schema_version stays 1.0 (key set unchanged)" || fail "P4: schema_version drifted"
+python3 - "$LIBDIR" "$V/binding.json" >/dev/null 2>&1 <<'PY' \
+  && ok "P4: resolution enum = KEEP_VAULT | KEEP_CODE | DEFER | SPLIT | null (4D pin)" \
+  || fail "P4: resolution enum drifted"
+import json, sys; sys.path.insert(0, sys.argv[1]); import binding_md as b
+enum = ("KEEP_VAULT", "KEEP_CODE", "DEFER", "SPLIT")
+assert tuple(b.RESOLUTION_ACTIONS) == enum
+claims = json.load(open(sys.argv[2], encoding="utf-8"))["claims"]
+assert claims and all("resolution" in c and c["resolution"] in enum + (None,) for c in claims)
+assert {c["id"]: c["resolution"] for c in claims}.get("C-051") == "KEEP_VAULT"
+PY
+# ('bind-time authoring obligation' RETIRED 9.0 — bind-codebase deleted.)
 
 # ── P7: 4D contract-truth suite survives W2 ──
 if bash "${ROOT}/tests/god-review-s4/test-4d-contract-truth.sh" </dev/null >/dev/null 2>&1; then

@@ -139,8 +139,8 @@ units_paths = sorted(
 )
 
 # OQ-ID regex (S4 BC-HANDOFF-1): lettered vault forms (OQ-AR-1, OQ-DM-P2-1) AND
-# bind's own numeric fresh-OQ form (OQ-001 / OQ-12 per binding-md-template.md
-# §Open Questions) — the numeric form used to pass the gate silently.
+# the legacy binding.md fresh-OQ form (OQ-001 / OQ-12; grammar:
+# scripts/_lib/binding_md.py) — the numeric form used to pass the gate silently.
 OQ_RE = re.compile(r"\bOQ-(?:[A-Z]+(?:-[A-Z0-9]+)*-)?\d+\b")
 # CONFLICT-ID regex (slice 2 v3.58.0+): only canonical `CONFLICT-NNN` form.
 # C-NNN short-form is ambiguous (version refs, code IDs, etc.) — false-positive risk too high.
@@ -154,7 +154,8 @@ CONFLICT_RE = re.compile(r"\bCONFLICT-(?:[A-Z][A-Z0-9-]*-)?\d+\b")
 #    Recommendations, kept so an older binding.md classes the same): NO propagation obligation — a resolved OQ
 #    influenced the bind, not necessarily any single unit. Advisory extras.
 #  - PENDING section (## Open Questions): fresh/deferred OQs with NO resolution
-#    yet — per the generate-units contract (SKILL.md Step 12.5.g) an OQ is cited
+#    yet — per the unit contract (plan/references/unit-procedure.md Step 12.5.g,
+#    halt unit_oq_trace_missing) an OQ is cited
 #    only when its RESOLUTION is implemented in a unit, so an unresolved OQ has
 #    nothing to cite and MUST NOT hard-block execute-bolts (requiring a citation
 #    deterministically false-blocked every bind that surfaced one fresh OQ).
@@ -258,21 +259,8 @@ for up in units_paths:
 
 # --- Pass 3: compute drops (OQs + CONFLICTs in binding but no unit cites them) ---
 drops = []
-# S4 BC-BINDING-DELETE (fail-closed backstop): units citing CONFLICT-IDs while
-# ZERO binding docs exist means the binding surface was deleted out from under
-# the units — the old behavior demoted the orphan citations to warnings and
-# re-validated to PASS, erasing active CONFLICTs without resolution.
-if units_paths and unit_conflict_citations and not binding_paths:
-    drops.append({
-        "type": "binding_missing",
-        "conflict_ids_cited": sorted(unit_conflict_citations.keys()),
-        "expected": (
-            "units cite CONFLICT-IDs but no binding doc exists under .mega-sdd/vaults/ — "
-            "deleting/moving binding.md erases active CONFLICTs without resolution "
-            "(invariant #2) and breaks unit citation resolution (invariant #3). "
-            "Restore the binding doc or re-run bind-codebase."
-        ),
-    })
+# (The S4 BC-BINDING-DELETE backstop — binding_missing — runs right after Pass 3b,
+# where the structural resolution markers it reuses are defined.)
 for oq_id in sorted(binding_oqs.keys()):
     cites = unit_oq_citations.get(oq_id, [])
     if not cites:
@@ -284,14 +272,15 @@ for oq_id in sorted(binding_oqs.keys()):
             "found_in_units": [],
         })
 # Slice 2: CONFLICT-ID drops — DEFER-resolution-aware (round-2 Batch A1).
-# A DEFER-resolved conflict downgrades to an OQ (resolve-oq/references/binding-mode.md:45)
-# and has NO citing unit by design (task-typing.md:31 "DEFER became an OQ"); the
-# documented DEFER-only path proceeds to generate-units with NO re-bind
-# (binding-mode.md:58). So an uncited DEFER'd CONFLICT-N is advisory, NOT a blocking
+# A DEFER-resolved conflict downgrades to an OQ (resolve-oq/references/binding-mode.md,
+# per-action table row "D — DEFER") and has NO citing unit by design (plan/references/task-typing.md, row "Mix of
+# CONFIRMED + unresolved CONFLICT": "DEFER became an OQ"); the DEFER-only path
+# proceeds to execute-bolts with NO re-bind. So an uncited DEFER'd CONFLICT-N is advisory, NOT a blocking
 # drop. Collect the uncited candidates here; the DEFER verdict is read per-ID in the
 # Pass 3b walk below (from the resolved heading OR the `- **Resolution**:` line), and
 # the candidates are classified after that walk. KEEP_VAULT keeps its un-droppable
-# citation obligation (task-typing.md:30); any other/unknown resolution is fail-closed.
+# citation obligation (plan/references/task-typing.md, row "Claim carries a
+# resolved-KEEP_VAULT CONFLICT"); any other/unknown resolution is fail-closed.
 conflict_drop_candidates = [
     cid for cid in sorted(binding_conflicts.keys())
     if not unit_conflict_citations.get(cid, [])
@@ -300,8 +289,9 @@ conflict_drop_candidates = [
 # --- Pass 3b: unresolved-CONFLICT block (the moat's literal invariant #2) ---
 # Invariant #2 promises "unresolved CONFLICTs block downstream unit/bolt generation."
 # The propagation passes above only check that CONFLICT-IDs are *cited*, not that they
-# are *resolved* — so an unresolved-but-cited CONFLICT would slip the gate. Per
-# binding-contract.md, each ACTIVE conflict is a `### CONFLICT-<id>` detail heading
+# are *resolved* — so an unresolved-but-cited CONFLICT would slip the gate. Per the
+# legacy binding.md grammar (scripts/_lib/binding_md.py CONFLICT_HEADING_RE), each
+# ACTIVE conflict is a `### CONFLICT-<id>` detail heading
 # carrying `Verdict: CONFLICT (BLOCKING)`; a resolved one is "marked ✅ / RESOLVED" and
 # is exempt. We scan the structured detail headings (not every CONFLICT-ID mention) and
 # fail-closed: a heading with no resolution marker is treated as ACTIVE → blocking.
@@ -338,7 +328,8 @@ RESOLUTION_LINE_RE = re.compile(
 )
 # Resolution ACTION extraction (round-2 Batch A1): the write-back grammar records the
 # action as `RESOLVED (<ACTION>)` in BOTH the heading and the `- **Resolution**:` line
-# (resolve-oq/references/binding-mode.md:29-31). Read it from the whole block so a DEFER
+# (resolve-oq/references/binding-mode.md, paragraph "Layout-2 leg — Resolution write-back
+# grammar"). Read it from the whole block so a DEFER
 # recorded only on the line (heading carries a bare ✅) is still recognized — mirroring
 # the two surfaces RESOLUTION marker detection already reads. A bare menu like
 # `Suggested action: KEEP_VAULT | DEFER | …` does NOT match (no `RESOLVED (` prefix).
@@ -407,17 +398,100 @@ for bp in binding_paths:
                     "expected": (
                         "resolve the CONFLICT via resolve-oq --binding (writes the "
                         "✅/RESOLVED marker into the heading or a `- **Resolution**:` line — "
-                        "prose mentions of the word elsewhere in the block do NOT count), "
-                        "or re-run bind-codebase until conflicts=0, before "
-                        "generating units or running bolts"
+                        "prose mentions of the word elsewhere in the block do NOT count) "
+                        "before running bolts"
                     ),
                 })
             i = j
         else:
             i += 1
 
+# S4 BC-BINDING-DELETE (fail-closed backstop): units citing CONFLICT-IDs while
+# ZERO binding docs exist means the binding surface was deleted out from under
+# the units — the old behavior demoted the orphan citations to warnings and
+# re-validated to PASS, erasing active CONFLICTs without resolution.
+# Migrated vault (9.0, design §7 #9 — "still blocks until the mandatory JIT re-bind
+# re-verdicts it"): `migrate-paths --vault-layout=3` archives binding.md, keeps
+# CONFLICT-N in binding_refs and copies each cited block into the unit's
+# bolts/U-XXX/binding-migrated.json. A cited CONFLICT-ID is covered ONLY when EVERY
+# citing unit's binding-migrated.json carries it (a plain deletion leaves no such
+# record) AND the unit is either `resolved` (the block records the pre-migration human
+# resolution — Pass 3b's structural markers) or `rebound` (bolts/U-XXX/binding.json is
+# this unit's `unit-binding/2` stamp from the sole, hook-guarded writer: its own
+# verdicts now gate it — an open CONFLICT blocks its dispatch via the --units= leg
+# below, and the BOLTS binding-freshness gate re-binds a stamp that no longer
+# describes HEAD). Anything else still blocks (invariant #2). No tool writes a
+# resolution into binding-migrated.json after the migration, so the re-bind is the
+# legitimate way out; a rebound conflict no human resolved stays visible as the
+# advisory extra conflict_migrated_rebound (never erased silently).
+def _unit_bolt_dir(up):
+    if os.path.basename(up) == "unit.md":            # <vault>/units/U-XXX/unit.md
+        return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(up))),
+                            "bolts", os.path.basename(os.path.dirname(up)))
+    return os.path.join(os.path.dirname(os.path.dirname(up)),   # <vault>/units/U-XXX.md
+                        "bolts", os.path.basename(up)[:-3])
+
+def _read_json_obj(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            _d = json.load(f)
+    except Exception:
+        return None                                  # absent / unreadable
+    return _d if isinstance(_d, dict) else None
+
+def _migrated_coverage(up, cid):
+    """'resolved' | 'rebound' | None (not covered → blocks)."""
+    _bdir = _unit_bolt_dir(up)
+    _mdoc = _read_json_obj(os.path.join(_bdir, "binding-migrated.json")) or {}
+    _hit = [e for e in (_mdoc.get("conflicts") or []) if isinstance(e, dict) and e.get("id") == cid]
+    if not _hit:
+        return None
+    _blk = _hit[0].get("block")
+    if isinstance(_blk, str) and _blk.strip() and (
+            HEAD_RESOLVED_RE.search(_blk.strip().splitlines()[0]) or RESOLUTION_LINE_RE.search(_blk)):
+        return "resolved"
+    _bj = _read_json_obj(os.path.join(_bdir, "binding.json")) or {}
+    if _bj.get("schema") == "unit-binding/2" and _bj.get("unit") == os.path.basename(_bdir):
+        return "rebound"
+    return None
+
+migrated_extras = []   # advisory rows, merged into `extras` at Pass 4
+if units_paths and unit_conflict_citations and not binding_paths:
+    _uncovered = []
+    for cid, ups in sorted(unit_conflict_citations.items()):
+        _cov = [(up, _migrated_coverage(up, cid)) for up in ups]
+        if not all(c for _, c in _cov):
+            _uncovered.append(cid)
+        elif any(c == "rebound" for _, c in _cov):
+            migrated_extras.append({
+                "type": "conflict_migrated_rebound", "conflict_id": cid,
+                "unit_ids": sorted(os.path.basename(_unit_bolt_dir(up)) for up, c in _cov if c == "rebound"),
+                "warning": (
+                    "migrated CONFLICT carried no human resolution; the unit's JIT re-bind "
+                    "(bolts/U-XXX/binding.json) now gates its dispatch. Advisory: review the "
+                    "block in bolts/U-XXX/binding-migrated.json — a contradiction the unit's "
+                    "own claims do not cover is not re-raised by the re-bind."
+                ),
+            })
+    if _uncovered:
+        drops.append({
+            "type": "binding_missing",
+            "conflict_ids_cited": _uncovered,
+            "expected": (
+                "units cite CONFLICT-IDs but no binding doc exists under .mega-sdd/vaults/ — "
+                "deleting/moving binding.md erases active CONFLICTs without resolution "
+                "(invariant #2) and breaks unit citation resolution (invariant #3). "
+                "Restore the binding doc — or, on a vault migrated by /mega-sdd:migrate-paths "
+                "--vault-layout=3 (each listed ID recorded in the citing unit's "
+                "bolts/U-XXX/binding-migrated.json), run the mandatory full JIT re-bind "
+                "(scripts/rebind-units.sh --units=all): the re-bound unit's own verdicts in "
+                "bolts/U-XXX/binding.json then gate it (resolve an open CONFLICT there via "
+                "resolve-oq --binding)."
+            ),
+        })
+
 # --- Pass 4: extras (cited by units but not in binding) ---
-extras = []
+extras = list(migrated_extras)
 for oq_id, cites in sorted(unit_oq_citations.items()):
     if oq_id not in binding_oqs and oq_id not in vault_oq_ids:
         extras.append({
@@ -473,9 +547,9 @@ for cid in conflict_drop_candidates:
             "source_binding": os.path.relpath(binding_conflicts[cid], cwd),
             "warning": (
                 "CONFLICT resolved via DEFER (downgraded to an OQ) and not cited by any "
-                "unit — advisory only. The DEFER-only path proceeds to generate-units with "
-                "no re-bind (resolve-oq/references/binding-mode.md:58); the deferred OQ "
-                "carries traceability via the standard OQ machinery."
+                "unit — advisory only. The DEFER-only path proceeds to execute-bolts with "
+                "no re-bind; the deferred OQ carries traceability via the standard OQ "
+                "machinery."
             ),
         })
     else:
@@ -632,9 +706,10 @@ if _inside_git is not None and _inside_git.strip() == "true":
                     "berikut berubah sejak binding_metadata.head (" + _bhead[:12] + ") "
                     "oleh commit DI LUAR pipeline unit (commit non-unit; commit bolt "
                     "ber-atribusi unit sudah dijaga gate B1/B3 dan tidak dihitung): "
-                    + ", ".join(_hits) + ". Jalankan /mega-sdd:sync (incremental) atau "
-                    "re-bind via bind-codebase sebelum generate-units/"
-                    "execute-bolts — verdict lama tidak lagi menggambarkan kode saat ini."
+                    + ", ".join(_hits) + ". Jalankan /mega-sdd:migrate-paths "
+                    "--vault-layout=3 lalu re-bind per unit (/mega-sdd:sync atau "
+                    "scripts/rebind-units.sh --units=all) sebelum execute-bolts — "
+                    "verdict lama tidak lagi menggambarkan kode saat ini."
                 ),
             })
         else:
@@ -660,8 +735,11 @@ def _next_action(drops):
     parts = []
     if types & {"conflict_unresolved", "binding_missing"}:
         parts.append(
-            "conflict/binding drops: resolve via resolve-oq --binding <binding.md> "
-            "(human-in-the-loop) or re-run bind-codebase until conflicts=0"
+            "conflict/binding drops: resolve via resolve-oq --binding <bolts/U-XXX/binding.json> "
+            "(human-in-the-loop), then re-bind the unit (3.9b rebind-units.sh --units=<U>) "
+            "until conflicts=0; layout-2 binding.md: /mega-sdd:migrate-paths --vault-layout=3 "
+            "first (a migrated CONFLICT-ID clears once its units are re-bound: the mandatory "
+            "full JIT re-bind, rebind-units.sh --units=all)"
         )
     if types & {"oq_id_dropped", "conflict_id_dropped"}:
         parts.append(
@@ -670,10 +748,10 @@ def _next_action(drops):
         )
     if types & {"binding_stale_recertify"}:
         parts.append(
-            "binding basi (stale): jalankan /mega-sdd:sync atau bind-codebase "
-            "ulang — file yang di-anchor binding berubah sejak binding_metadata.head "
-            "oleh commit di luar pipeline unit (daftar file ada di field `expected` "
-            "pada drop-nya)"
+            "binding basi (stale): file yang di-anchor binding berubah sejak "
+            "binding_metadata.head oleh commit di luar pipeline unit — jalankan "
+            "/mega-sdd:migrate-paths --vault-layout=3 lalu /mega-sdd:sync (re-bind per unit) "
+            "(daftar file ada di field `expected` pada drop-nya)"
         )
     parts.append("then re-run validator (the execute-bolts gate re-derives it too)")
     return "; ".join(parts) + "."

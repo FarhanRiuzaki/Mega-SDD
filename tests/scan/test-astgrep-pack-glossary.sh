@@ -31,7 +31,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-PACKS="$REPO_ROOT/plugins/mega-sdd/skills/scan-codebase/queries/astgrep"
+PACKS="$REPO_ROOT/plugins/mega-sdd/assets/astgrep-queries/astgrep"
 PROBE="$REPO_ROOT/plugins/mega-sdd/scripts/probe-scan-engine.sh"
 
 fails=0

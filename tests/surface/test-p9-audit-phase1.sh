@@ -48,18 +48,24 @@ if ! grep -q 'classification conflict' "$HT" \
   pass "A2: 5 admitted conflicts resolved into the C1 self-resolve list"
 else fail "A2: halt-taxonomy conflicts not resolved"; fi
 
-# ── A3 — staging drop advisory in the emitted template ──
-T4="$P/skills/generate-intent/references/templates/flows.md"
-if grep -qF 'advisory `vault_flow_staging_drop`' "$T4" && ! grep -qF 'staging_drop` halt' "$T4"; then
-  pass "A3: 04-flows template teaches advisory, not a halt"
-else fail "A3: template still stamps a staging-drop halt"; fi
+# ── A3 — staging drop advisory ──
+# 9.0 P1: the layout-2 04-flows authoring template died with generate-intent
+# (templates not relocated, spec §7 #10). The advisory contract now lives at its
+# owner, references/vault-core.md §stages-propagation; the surviving layout-3
+# flows template (plan/references/templates/context.md) must not re-teach a halt.
+VC="$P/references/vault-core.md"
+T4="$P/skills/plan/references/templates/context.md"
+if grep -qF '`vault_flow_staging_drop` finding, surfaced as **advisory**' "$VC" \
+   && ! grep -qF 'staging_drop` halt' "$VC" && ! grep -qF 'staging_drop` halt' "$T4"; then
+  pass "A3: vault-core owner teaches advisory staging drop; no surviving template stamps a halt"
+else fail "A3: staging-drop advisory lost from vault-core, or a surviving template stamps a halt"; fi
 
 # ── A4 — express lane-default fork closed ──
-if grep -qF 'Lane default:' "$P/skills/bind-codebase/SKILL.md" \
-   && grep -qF 'the lane the express spine dispatches by default' "$P/skills/bind-codebase/references/express-bind.md" \
-   && ! grep -qF '(default — auto-resolves' "$P/skills/resolve-oq/references/interactive-walk.md"; then
-  pass "A4: lane default stated once; ref + walk demoted to routing facts"
-else fail "A4: express lane-default fork survives"; fi
+# 9.0 P1: the bind-codebase legs (SKILL "Lane default:" + express-bind.md) retired
+# with the skill; the surviving walk must still not re-claim a lane default.
+if ! grep -qF '(default — auto-resolves' "$P/skills/resolve-oq/references/interactive-walk.md"; then
+  pass "A4: resolve-oq walk stays demoted to routing facts (no lane-default claim)"
+else fail "A4: express lane-default fork survives in the resolve-oq walk"; fi
 
 # ── A5 — detect-drift fork reality ──
 RF="$P/skills/detect-drift/references/report-format.md"
@@ -91,22 +97,13 @@ if grep -qF 'follows its taxonomy class' "$OF/convergence-loops.md" \
   pass "A2b: convergence-loops defers to the 4-class taxonomy; mode_migrate override carve-out present (round fold)"
 else fail "A2b: convergence-loops class deference or mode_migrate carve-out missing"; fi
 
-# ── A6 — scan trio ──
-grep -qF '(file, range.start.line, ruleId)' "$P/skills/scan-codebase/references/scan-procedure.md" \
-  && pass "A6: dedupe key aligned to the owner (3-tuple)" \
-  || fail "A6: dedupe key still the definition-dropping 2-tuple"
-grep -qF 'five subagent prompt templates' "$P/skills/scan-codebase/references/deep-scan-gate.md" \
-  && pass "A6b: template count says five" || fail "A6b: 'four' survives"
-if ! grep -qF '(v2.0 schema)' "$P/skills/scan-codebase/references/deep-scan-gate.md" \
-   && ! grep -qF 'migrate to v2.0' "$P/skills/scan-codebase/references/deep-scan-gate.md" \
-   && ! grep -qF 'cache_signatures v2.0 schema' "$P/skills/scan-codebase/references/deep-scan-dispatch.md" \
-   && ! grep -qF 'new v2.0 `cache_signatures:`' "$P/skills/scan-codebase/references/deep-scan-dispatch.md"; then
-  pass "A6c: cache_signatures labels unified at v2.1 (historical notes may remain)"
-else fail "A6c: a stale v2.0 cache_signatures label survives"; fi
+# ── A6 — scan trio: RETIRED in 9.0 P1 (scan-codebase + its deep-scan
+# references deleted by design, spec §3; no successor carries the scan procedure).
 
 # ── A7 — residual expects-poison class purged (extends the 6.1.1 p8 pins) ──
-DR="$P/skills/generate-units/references/decomposition-rails.md"
-PB="$P/skills/generate-units/references/pbt-integration.md"
+# 9.0 P1: relocated with generate-units' surviving contracts into plan/references/.
+DR="$P/skills/plan/references/decomposition-rails.md"
+PB="$P/skills/plan/references/pbt-integration.md"
 if grep -qF 'expects: ""' "$DR" && ! grep -qF 'description: "<gap 1' "$DR"; then
   pass "A7: decomposition-rails provenance example carries the substring contract"
 else fail "A7: decomposition-rails example still description-shaped"; fi
@@ -115,7 +112,8 @@ if grep -qF 'expects: ""' "$PB" && ! grep -q 'expected_exit_code' "$PB"; then
 else fail "A7b: pbt-integration still teaches a nonexistent field"; fi
 
 # ── A8 — templates/unit.md aligned with unit-schema required frontmatter ──
-TU="$P/skills/generate-units/references/templates/unit.md"
+# 9.0 P1: relocated to plan/references/templates/ (expects line verified byte-identical to the pre-move file).
+TU="$P/skills/plan/references/templates/unit.md"
 a8=0
 for key in task_type grounding_confidence module; do
   grep -qE "^${key}:" "$TU" || { fail "A8: templates/unit.md missing required key ${key}:"; a8=1; }
@@ -158,7 +156,9 @@ else fail "A11c: design-reviewer still expects the forbidden traits/anti-pattern
 
 # ── C — gateway-tag completion (v7.3.1 restore, docs/gateway-contract.md):
 # EVERY announce-bearing skill + every dispatch template carries the tag.
-for s in emit-prd emit-sit emit-fsd emit-agents-md emit-uat bind-codebase execute-bolts extract-intelligence generate-units install-deps orchestrate-flow scan-codebase; do
+# 9.0 P1: bind-codebase + scan-codebase retired with their skills; generate-units'
+# unit-authoring announce moved to its successor, plan.
+for s in emit-prd emit-sit emit-fsd emit-agents-md emit-uat execute-bolts extract-intelligence plan install-deps orchestrate-flow; do
   grep -qF "mega-sdd-trace:$s" "$P/skills/$s/SKILL.md" \
     && pass "C: $s carries its gateway tag" \
     || fail "C: $s gateway tag missing"
@@ -171,8 +171,7 @@ done | wc -l | tr -d ' ')
   || fail "C1b: $n_untagged announce template(s) untagged"
 grep -qF 'mega-sdd-trace:extract-intelligence' "$P/skills/extract-intelligence/references/prd-kontrak-template.md" \
   && pass "C2: module dispatch core carries the tag" || fail "C2: module dispatch tag missing"
-grep -qF 'mega-sdd-trace:scan-codebase' "$P/skills/scan-codebase/references/deep-scan-prompts.md" \
-  && pass "C3: deep-scan dispatch contract mandates the tag" || fail "C3: deep-scan tag rule missing"
+# C3 (deep-scan dispatch tag) RETIRED in 9.0 P1 — deep-scan dispatch deleted with scan-codebase.
 grep -qF 'mega-sdd-trace:execute-bolts' "$P/skills/execute-bolts/references/review-panel.md" \
   && pass "C4: lens/verifier dispatch rule mandates the tag" || fail "C4: review-panel tag rule missing"
 

@@ -22,8 +22,11 @@ writes. Assisted adds the batched ask — the part of the pipeline that did its 
 
 ## Both lanes: the procedure
 
-1. **Announce the lane in one line**, with the fired signals and the way up:
-   `lane: direct (signals: none) · naik ke pipeline: /mega-sdd <input> --guarded`.
+1. **Announce the lane in one line**, with the fired signals, the way up, and the gateway trace tag
+   (`docs/gateway-contract.md`: the lanes write no `.mega-sdd/`, so this tag is the only way the gateway
+   sees the session; verbatim, never a variant):
+   `lane: direct (signals: none) · naik ke pipeline: /mega-sdd <input> --guarded` `` `mega-sdd-trace:direct` ``
+   (on the assisted lane: `` `mega-sdd-trace:assisted` ``).
    No confirmation prompt. The request itself is the go-ahead, as it is for plain Claude Code.
 2. **Read the whole PRD/brief.** List every requirement and acceptance criterion / DoD item in
    your working notes, not in a file. That list is the contract you report against at step 6.
@@ -67,6 +70,8 @@ procedure and adds two steps, in this order:
     record it as an assumption. Never invent a business rule.
 - **After delivery-check passes: ONE blind review.** Dispatch ONE `Agent`
   (`general-purpose`), read-only by instruction. The prompt carries:
+  - the line `mega-sdd-trace:assisted-review`, on its own line (the gateway contract: every subagent
+    dispatch prompt carries one trace line);
   - the PRD path and the commit range `<base>..HEAD`;
   - the review scope: unmet acceptance criteria; authorization enforced only in the UI;
     unvalidated input; secrets in code; data-integrity races (double-booking, lost updates).

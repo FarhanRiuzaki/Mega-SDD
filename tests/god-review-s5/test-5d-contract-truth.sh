@@ -14,8 +14,8 @@
 #                      stage 6 the B3 observer SHIPPED, so every surface names
 #                      `--whitelist-scan` AND encodes detect-after (blocks the
 #                      NEXT execute-bolts, never the offending commit).
-#   GU-HANDOFF-DRIFT-1 handoff blocks carry emitted_at + unit_oq_trace_missing
-#                      and no legacy -bound example.
+#   GU-HANDOFF-DRIFT-1 the unit walk's advertised halt list carries
+#                      unit_oq_trace_missing and no legacy -bound example.
 #   GU-MODFLAG-1       recovery routes use real surfaces (no --derive-modules /
 #                      --refresh-modules phantom flags).
 #   GU-GRAPH-CONFLICT-1 build-graph types CONFLICT refs as conflict nodes +
@@ -23,28 +23,44 @@
 #   + ATOMID, GCONF, SQUADREF, HALT-TAXO, PROBE-ANCHOR, RECONCILE-MATCH,
 #     FORCECREATE-DEDUP pins.
 #
+# 9.0 P1 (classic skills removed — docs/superpowers/specs/2026-09-27-v9-simplification-design.md):
+# the generate-units contracts these pins guard were relocated, so the pins follow them —
+#   generate-units/SKILL.md + auto-and-memory.md  -> plan/references/unit-procedure.md
+#   generate-units/references/{task-typing,unit-schema,decomposition-rails,validation-passes,
+#     pbt-integration,adversarial-test-prompt}.md -> plan/references/<same>.md
+#   generate-units/references/halt-protocol.md    -> references/halt-families/units.md
+#   generate-units/references/modules-schema.md   -> references/modules-schema.md
+# RETIRED (the pinned surface was deleted by design, no successor):
+#   - the bind-codebase hard-rules-and-packs.md KEEP_VAULT carrier pointer (whole-vault
+#     bind removed; its CONFLICT-derived Hard-rule step has no JIT-bind successor);
+#   - the generate-units --auto handoff YAML (emitted_at + <vault>/units/ artifacts) —
+#     plan emits no handoff ("No handoff YAML in this lane", plan/SKILL.md);
+#   - the cross-skill `generate-intent/references/squad-partition.md` ref form (multi-squad
+#     authoring retired, P1 decision 3) — repointed to "routing rules live in
+#     decomposition-rails §Squad assignment, no ref to the deleted file";
+#   - defensive-generation.md (deleted, not relocated) — GCONF / HALT-TAXO repointed to the
+#     surviving grounding_confidence definition (unit-schema) and the 12.6 dedup owner.
+#
 # Run: bash tests/god-review-s5/test-5d-contract-truth.sh
 set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-GU="${ROOT}/plugins/mega-sdd/skills/generate-units"
-TT="$GU/references/task-typing.md"
-US="$GU/references/unit-schema.md"
-DR="$GU/references/decomposition-rails.md"
-DG="$GU/references/defensive-generation.md"
-HP="$GU/references/halt-protocol.md"
-VP="$GU/references/validation-passes.md"
-PBT="$GU/references/pbt-integration.md"
-SKD="$GU/references/starterkit-derivation.md"
-SK="$GU/SKILL.md"
-HC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md"
-AAM="$GU/references/auto-and-memory.md"
-MS="$GU/references/modules-schema.md"
+PLAN="${ROOT}/plugins/mega-sdd/skills/plan"
+TT="$PLAN/references/task-typing.md"
+US="$PLAN/references/unit-schema.md"
+DR="$PLAN/references/decomposition-rails.md"
+VP="$PLAN/references/validation-passes.md"
+PBT="$PLAN/references/pbt-integration.md"
+ATP="$PLAN/references/adversarial-test-prompt.md"
+UP="$PLAN/references/unit-procedure.md"      # successor of generate-units/SKILL.md + auto-and-memory.md
+PSK="$PLAN/SKILL.md"
+UH="${ROOT}/plugins/mega-sdd/references/halt-families/units.md"   # successor of generate-units halt-protocol.md
+MS="${ROOT}/plugins/mega-sdd/references/modules-schema.md"
 BAF="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/batch-and-fanout.md"
 BG="${ROOT}/plugins/mega-sdd/scripts/build-graph.sh"
-HRP="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/hard-rules-and-packs.md"
-for f in "$TT" "$US" "$DR" "$DG" "$HP" "$VP" "$PBT" "$SKD" "$SK" "$HC" "$AAM" "$MS" "$BAF" "$BG" "$HRP"; do
+EBS="${ROOT}/plugins/mega-sdd/skills/execute-bolts/SKILL.md"
+for f in "$TT" "$US" "$DR" "$VP" "$PBT" "$ATP" "$UP" "$PSK" "$UH" "$MS" "$BAF" "$BG" "$EBS"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -62,17 +78,19 @@ grep -qF 'resolved-KEEP_VAULT CONFLICT' "$TT" && grep -qF 'toward the VAULT clai
   && ok "KEEPVAULT: task-typing routes resolved-KEEP_VAULT to extend-toward-vault" || fail "KEEPVAULT: route missing in task-typing"
 grep -qF 'NEVER `verify`' "$TT" && ok "KEEPVAULT: no-code verify discharge explicitly forbidden" || fail "KEEPVAULT: verify discharge not forbidden"
 grep -qF 'Mix of CONFIRMED + **unresolved** CONFLICT' "$TT" && ok "KEEPVAULT: halt scoped to UNRESOLVED conflicts" || fail "KEEPVAULT: halt still fires on resolved conflicts"
-grep -qF 'unresolved CONFLICT → HALT' "$SK" && ok "KEEPVAULT: SKILL.md halt line scoped" || fail "KEEPVAULT: SKILL halt line stale"
-grep -qF 'extend`-toward-vault' "$HRP" || grep -qF 'extend`-toward-vault' "$HRP" || grep -q 'extend.*toward.*vault' "$HRP" \
-  && ok "KEEPVAULT: bind-side hard-rules ref names the carrier" || fail "KEEPVAULT: bind-side pointer missing"
+# 9.0: the unit walk's halt index (ex generate-units SKILL.md) scopes the gate to UNRESOLVED
+# conflicts and closes it at dispatch (no binding exists at plan time).
+grep -qF '**Unresolved CONFLICT → the gate closes at dispatch**' "$UP" \
+  && ok "KEEPVAULT: unit-procedure halt line scoped to unresolved" || fail "KEEPVAULT: unit-procedure halt line stale"
+# (retired 9.0: the bind-codebase hard-rules-and-packs.md carrier pointer — bind-codebase deleted.)
 
 # ── GU-SPLIT-DEPS-4 ──
 grep -qF 'f. **SPLIT chain edge (Step 2.5 mandate)**' "$DR" && ok "SPLIT-DEPS: evidence class (f) exists for the mandated chain edge" || fail "SPLIT-DEPS: class (f) missing"
 
 # ── GU-RISK-FIELD-1 ──
 grep -qF 'risk: low | medium | high | critical' "$US" && ok "RISK: field defined in unit-schema (optional, enum)" || fail "RISK: field undefined"
-grep -qF 'WRITTEN by Step 2.5' "$SK" && ok "RISK: SKILL names the producer" || fail "RISK: producer unnamed in SKILL"
-grep -qF 'Who writes `risk:`' "$GU/references/adversarial-test-prompt.md" && ok "RISK: adversarial-test-prompt documents the producer" || fail "RISK: consumer doc lacks producer note"
+grep -qF 'WRITTEN by Step 2.5' "$UP" && ok "RISK: unit-procedure names the producer" || fail "RISK: producer unnamed in unit-procedure"
+grep -qF 'Who writes `risk:`' "$ATP" && ok "RISK: adversarial-test-prompt documents the producer" || fail "RISK: consumer doc lacks producer note"
 
 # ── GU-PBT-REJECT-5 ──
 grep -qF '### h. PBT properties citation check' "$VP" && ok "PBT: 12.5.h exists in validation-passes" || fail "PBT: 12.5.h missing"
@@ -84,9 +102,8 @@ grep -qF 'render-pass check 12.5.h (model-executed rule' "$PBT" && ok "PBT: pbt-
 # NEXT execute-bolts, it does NOT prevent the offending commit. Each surface must
 # name the observer AND carry that detect-after phrasing (guards against a regression
 # back to the stage-5 over-claim of prevent-the-write / block-the-commit).
-EBS="${ROOT}/plugins/mega-sdd/skills/execute-bolts/SKILL.md"
 WL_DETECT_AFTER='block the next `execute-bolts` with `whitelist_violation`'
-for pair in "generate-units SKILL:$SK" "unit-schema:$US" "execute-bolts SKILL:$EBS"; do
+for pair in "plan unit-procedure:$UP" "unit-schema:$US" "execute-bolts SKILL:$EBS"; do
   wl_name="${pair%%:*}"; wl_f="${pair#*:}"
   if grep -qF -- '--whitelist-scan' "$wl_f" && grep -qF -- "$WL_DETECT_AFTER" "$wl_f"; then
     ok "WHITELIST: $wl_name names the B3 observer with detect-after honesty"
@@ -98,21 +115,22 @@ for pair in "generate-units SKILL:$SK" "unit-schema:$US" "execute-bolts SKILL:$E
   fi
 done
 
-# ── GU-HANDOFF-DRIFT-1 ── (M-02 ownership flip: the OPERATIVE generate-units handoff
-# template is auto-and-memory.md; handoff-contract's per-skill section is now a routing
-# index with no YAML blocks. Pin the operative template — same assertions.)
-python3 - "$AAM" <<'PY' && ok "HANDOFF: operative generate-units template has emitted_at + unit_oq_trace_missing + canonical paths" || fail "HANDOFF: operative generate-units template stale"
-import re, sys
-doc = open(sys.argv[1]).read()
-m = re.search(r"## Handoff emission \(--auto\).*?```yaml\n(.*?)```.*?Status `halted` on ([^\n]+)", doc, re.S)
-assert m, "generate-units handoff template not found"
-block, halted = m.group(1), m.group(2)
-ok = ("emitted_at:" in block and "<vault>/units/" in block
-      and "unit_oq_trace_missing" in halted and "cross_module_dep_invalid" in halted)
+# ── GU-HANDOFF-DRIFT-1 ── 9.0: generate-units (and its auto-and-memory.md --auto handoff
+# YAML) is gone; `plan` emits NO handoff — the front door re-derives state from disk. The
+# emitted_at / <vault>/units/ artifact-path assertions on that YAML are RETIRED. The drift
+# this pin caught (the phase's advertised halt list omitting unit_oq_trace_missing /
+# cross_module_dep_invalid) survives on plan/SKILL.md's halt list — pinned on the SAME line.
+grep -qF 'No handoff YAML in this lane' "$PSK" \
+  && ok "HANDOFF: plan states it emits no handoff YAML (state re-derived from disk)" || fail "HANDOFF: plan handoff contract unstated"
+python3 - "$PSK" <<'PY' && ok "HANDOFF: plan halt list carries unit_oq_trace_missing + cross_module_dep_invalid" || fail "HANDOFF: plan halt list stale"
+import sys
+lines = [l for l in open(sys.argv[1]) if "`emitted_by: plan`" in l and "Every halt emits" in l]
+ok = bool(lines) and all("`unit_oq_trace_missing`" in l and "`cross_module_dep_invalid`" in l for l in lines)
 sys.exit(0 if ok else 1)
 PY
-grep -qF 'unit_oq_trace_missing' "$AAM" && ok "HANDOFF: operative emission lists unit_oq_trace_missing" || fail "HANDOFF: auto-and-memory halted list stale"
-if grep -qF '<vault>-bound/units (or' "$AAM"; then fail "HANDOFF: legacy -bound artifact example survives"; else ok "HANDOFF: artifact examples use the canonical nested path"; fi
+grep -qF 'Implementation-relevant OQ-ID absent from `binding_refs` → `unit_oq_trace_missing`' "$UP" \
+  && ok "HANDOFF: unit-procedure halt index lists unit_oq_trace_missing" || fail "HANDOFF: unit-procedure halt index stale"
+if grep -rqF '<vault>-bound/units (or' "$PLAN"; then fail "HANDOFF: legacy -bound artifact example survives"; else ok "HANDOFF: artifact examples use the canonical nested path"; fi
 
 # ── GU-MODFLAG-1 ──
 if grep -rqF -- '--derive-modules' "${ROOT}/plugins/mega-sdd"; then fail "MODFLAG: phantom --derive-modules survives"; else ok "MODFLAG: --derive-modules eradicated"; fi
@@ -164,16 +182,44 @@ fi
 
 # ── smaller pins ──
 if grep -qF 'SPLIT into U-001, U-001.1, U-001.2' "$US"; then fail "ATOMID: dotted split-ID grammar survives"; else ok "ATOMID: dotted split IDs removed (sequential U-00N)"; fi
-grep -qF 'for `verify`+HIGH it is PRESCRIPTIVE' "$DG" && ok "GCONF: grounding_confidence semantics reconciled with the A1 gate" || fail "GCONF: contradiction survives"
-grep -qF 'generate-intent/references/squad-partition.md' "$DR" && grep -qF 'generate-intent/references/squad-partition.md' "$US" \
-  && ok "SQUADREF: cross-skill ref form on both surfaces" || fail "SQUADREF: bare squad-partition.md ref survives"
-if grep -qF 'HALT `target_files_collision`' "$DG"; then fail "HALT-TAXO: emitterless target_files_collision survives"; else ok "HALT-TAXO: stale alias renamed to dedup_ambiguous"; fi
-grep -qF '## `verify` without anchor (binding gap)' "$HP" && ok "PROBE-ANCHOR: verify-without-anchor halt has YAML + entry" || fail "PROBE-ANCHOR: halt YAML missing"
-if grep -qF 'downgrade-to-create only if no anchor exists' "$SK"; then fail "PROBE-ANCHOR: contradictory downgrade parenthetical survives"; else ok "PROBE-ANCHOR: SKILL parenthetical reconciled with the probe rule"; fi
-grep -qF 'Second trigger (reconcile lane)' "$HP" && ok "RECONCILE: dedup_ambiguous second trigger documented" || fail "RECONCILE: reconcile trigger missing"
-grep -qF 'matched by `binding_refs` → claim as the PRIMARY key' "$TT" && ok "RECONCILE: binding_refs is the primary match key" || fail "RECONCILE: match key stale"
+# GCONF — 9.0: defensive-generation.md (the file that carried the "descriptive, not
+# prescriptive" contradiction AND its fix) was deleted, not relocated. The surviving owner of
+# grounding_confidence semantics is the unit-schema definition: it must name the A1 gate as the
+# enforcer for verify+HIGH, and no surviving plan doc may re-claim the field never gates.
+grep -qF 'Enforced: validate-unit-spec.sh halt verify_grounding_untrusted (HIGH verify units only).' "$US" \
+  && ok "GCONF: grounding_confidence definition names the A1 gate for verify+HIGH" || fail "GCONF: unit-schema lost the A1 enforcement note"
+if grep -rqiE 'grounding_confidence.{0,40}not prescriptive' "$PLAN"; then fail "GCONF: contradiction survives (grounding_confidence claimed non-gating)"; else ok "GCONF: no 'not prescriptive' contradiction on the plan surfaces"; fi
+# SQUADREF — 9.0: squad authoring retired (P1 decision 3); generate-intent/references/
+# squad-partition.md is deleted, so the routing rules' home is decomposition-rails §Squad
+# assignment. Both surfaces must point at a RESOLVABLE home — never the deleted file.
+grep -qF '## Squad assignment (Step 5)' "$DR" && grep -qF 'decomposition-rails.md §Squad assignment' "$US" \
+  && grep -qF 'decomposition-rails.md §Squad assignment' "$UP" \
+  && ok "SQUADREF: squad routing refs resolve to decomposition-rails §Squad assignment" || fail "SQUADREF: squad routing ref unresolvable"
+if grep -qF 'squad-partition.md' "$DR" "$US" "$UP"; then fail "SQUADREF: ref to the deleted squad-partition.md survives"; else ok "SQUADREF: no ref to the deleted squad-partition.md"; fi
+# HALT-TAXO — 9.0: the 12.6 dedup owner is unit-procedure; the negative covers every
+# surviving unit-halt surface (plan/, the units halt family, the registry).
+grep -qF 'A `create` unit whose `target_files` ALL already exist → halt `dedup_ambiguous`' "$UP" \
+  && ok "HALT-TAXO: 12.6 collision halts under the canonical dedup_ambiguous" || fail "HALT-TAXO: 12.6 canonical halt name missing"
+if grep -rqF 'HALT `target_files_collision`' "$PLAN" "$UH" "${ROOT}/plugins/mega-sdd/references/halt-protocol.md"; then fail "HALT-TAXO: emitterless target_files_collision survives"; else ok "HALT-TAXO: stale alias renamed to dedup_ambiguous"; fi
+# PROBE-ANCHOR — the verify-without-anchor blocker moved to references/halt-families/units.md
+# (entry + YAML); plan-time anchors come from the symbol index, so the gap is an "anchor gap".
+python3 - "$UH" <<'PY2' && ok "PROBE-ANCHOR: verify-without-anchor halt has YAML + entry" || fail "PROBE-ANCHOR: halt YAML missing"
+import re, sys
+doc = open(sys.argv[1]).read()
+m = re.search(r"\*\*Blocker shape — `verify` without anchor \(anchor gap\)\*\*[^\n]*\n+```yaml\n(.*?)```", doc, re.S)
+ok = bool(m) and "type: unit_underspecified" in m.group(1) and "task_type=verify assigned but no anchor exists" in m.group(1)
+sys.exit(0 if ok else 1)
+PY2
+if grep -rqF 'downgrade-to-create only if no anchor exists' "$PLAN"; then fail "PROBE-ANCHOR: contradictory downgrade parenthetical survives"; else ok "PROBE-ANCHOR: unit-walk parenthetical reconciled with the probe rule"; fi
+grep -qF 'Second trigger (reconcile lane)' "$UH" && ok "RECONCILE: dedup_ambiguous second trigger documented" || fail "RECONCILE: reconcile trigger missing"
+# RECONCILE match key — 9.0: the whole-vault binding.md is gone; each unit's claims are minted
+# from the unit itself into its OWN bolts/U-XXX/binding.json, so the reconcile key is the unit's
+# own evidence file (SPLIT siblings sharing one context_source can never cross-match — the
+# property the old "binding_refs → claim PRIMARY key" pin guarded).
+grep -qF 'Per existing unit (its evidence is its OWN `bolts/U-XXX/binding.json`' "$TT" \
+  && ok "RECONCILE: per-unit binding.json is the reconcile match key" || fail "RECONCILE: match key stale"
 grep -qF 'Exception (7.6 reconciliation)' "$VP" && ok "FORCECREATE: 12.6 honors the user's 7.6 force-create decision" || fail "FORCECREATE: double-vote survives"
-if grep -qF -- '--force-overwrite (NOT YET IMPLEMENTED' "$HP"; then fail "FORCECREATE: phantom flag survives in halt-protocol"; else ok "FORCECREATE: phantom flag removed"; fi
+if grep -qF -- '--force-overwrite (NOT YET IMPLEMENTED' "$UH" "${ROOT}/plugins/mega-sdd/references/halt-protocol.md"; then fail "FORCECREATE: phantom flag survives in halt-protocol"; else ok "FORCECREATE: phantom flag removed"; fi
 
 if [ "$FAILED" -eq 0 ]; then note "ALL 5D OK"; else note "5D had failures"; fi
 exit $FAILED

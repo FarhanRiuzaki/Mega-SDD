@@ -124,7 +124,7 @@ Every absent or unresolvable input is recorded here rather than invented (invari
 
 - provenance.vault_sha256: vault.json absent or unreadable at @PROJ@/.mega-sdd/vaults/v1/vault.json — value OMITTED, never placeholder-filled
 - t1.acceptance_test_note: _authored_by=adversarial-reviewed has strong provenance — NOTE omitted per bolt-dispatch-prompt.md:96-97
-- t1.reuse_index_line: reuse-index.yaml absent at ./.mega-sdd/codebase/reuse-index.yaml — the Iron Rule 4 pointer line is NOT emitted for a file that does not exist (run scan-codebase to produce the index)
+- t1.reuse_index_line: reuse-index.yaml absent at ./.mega-sdd/codebase/reuse-index.yaml — the Iron Rule 4 pointer line is NOT emitted for a file that does not exist (no 9.0 producer - reuse lookup rides symbol-index.json from GROUND)
 - t1.anti_context.do_not_modify.data_mutation_policy: no <kb>/99-rebuild-architecture/data-mutation-policy.md under @PROJ@ (searched .mega-sdd/, docs/, old-reference/ knowledge-base roots) — this source contributes nothing; the unit `## Hard rules` half is NOT relabelled to stand in for it
 - depends_on_summaries: unit has no depends_on entries
 - framework_pack_rules: no pack rule path_glob matched this unit's target_files (chain: _universal.md) — the 'keep top 1' floor is vacuous on an empty set, no rule invented
@@ -135,7 +135,7 @@ Every absent or unresolvable input is recorded here rather than invented (invari
 - starterkit_slice: no starterkit-context.yaml at @PROJ@/.mega-sdd/codebase/starterkit-context.yaml — the Map §6 fallback applies instead
 - map_patterns: no codebase-map.md §6 Pattern signatures
 - design_slice: unit is not ui_bearing (no target_files path matched the pack view_glob or any universal frontend shape)
-- confidence_labels: unit has no binding_refs (greenfield / standalone generate-units)
+- confidence_labels: unit has no binding_refs (greenfield / plan-written unit with no OQ/CONFLICT refs)
 - t3.kb_pointer: no knowledge-base root under .mega-sdd/, docs/ or old-reference/ — the TIER 3 KB pointer is omitted rather than naming a dead path
 - design_slice_path: unit is not ui_bearing, so no design lens is dispatched for it — no lens-input file is written and the `design_slice_path` key is ABSENT (a rubric with no reader is a cost, not a contribution)
 - (structural, every project — historical_memory, kb_anti_patterns; reasons on stdout sections_omitted)

@@ -35,27 +35,42 @@ grep -q 'REUSE FIRST' "$P/skills/detect-drift/SKILL.md" \
   || fail "E4: drift REUSE FIRST missing"
 
 # E5 — OQ classifier memoization
-grep -q 'Memoization (re-runs' "$P/skills/generate-intent/SKILL.md" \
+# Repointed 9.0 (P1): generate-intent was deleted; the OQ classifier (and its
+# memoization rule) relocated to plan's Step-3 content rules
+# (plan/references/context-authoring.md §Memoization, loaded from plan/SKILL.md).
+CA="$P/skills/plan/references/context-authoring.md"
+grep -qF '**Memoization (re-runs over an existing vault' "$CA" \
+  && grep -qF 'REUSE it verbatim' "$CA" \
+  && grep -q 'references/context-authoring.md' "$P/skills/plan/SKILL.md" \
   && pass "E5: OQ classifier memoization" \
   || fail "E5: memoization rule missing"
 
 # E6 — phantom filenames eradicated
-! grep -rq '04-functional-spec.md' "$P/skills/" \
-  && ! grep -q '01-entities.md' "$P/skills/bind-codebase/references/binding-contract.md" \
+# Repointed 9.0 (P1): bind-codebase/references/binding-contract.md was deleted;
+# its surviving text relocated to execute-bolts/references/jit-bind-and-quarantine.md
+# and the other classic contracts to plugin references/ (vault-core.md,
+# modules-schema.md). Scan both trees; the -f guard keeps the relocated
+# binding contract from passing vacuously on a missing file.
+JB="$P/skills/execute-bolts/references/jit-bind-and-quarantine.md"
+[ -f "$JB" ] \
+  && ! grep -rq '04-functional-spec.md' "$P/skills/" "$P/references/" \
+  && ! grep -rq '01-entities.md' "$P/skills/" "$P/references/" \
   && pass "E6: phantom vault filenames eradicated" \
-  || fail "E6: phantom filenames still present"
+  || fail "E6: phantom filenames still present (or relocated binding contract missing)"
 
 # E7 — KB 4-path priority consistent (paths.md read-side carries all 4)
 grep -q 'docs/mega-sdd/knowledge-base/` → `old-reference/knowledge-base/' "$P/references/paths.md" \
   && pass "E7: paths.md KB read-side has all 4 paths" \
   || fail "E7: paths.md KB path order still drifted"
 
-# E8 — handoff-contract precedence rule + scan routing row matches skill side
+# E8 — handoff-contract precedence rule
+# 9.0 (P1): the `scan-codebase` routing-row + "starterkit-first — draft the vault
+# scan-aware" sub-checks are RETIRED — they pinned the deleted scan-codebase
+# skill's hand-off to the deleted generate-intent. (The surviving
+# extract-intelligence → plan --kb row is pinned by tests/v9/test-kb-to-plan.sh.)
 grep -q 'Precedence (anti-drift rule)' "$P/skills/orchestrate-flow/references/handoff-contract.md" \
-  && grep -qE '^\| `scan-codebase` \|' "$P/skills/orchestrate-flow/references/handoff-contract.md" \
-  && grep -q 'starterkit-first — draft the vault scan-aware' "$P/skills/orchestrate-flow/references/handoff-contract.md" \
-  && pass "E8: handoff precedence rule + scan block matches skill side" \
-  || fail "E8: handoff-contract drift not fixed"
+  && pass "E8: handoff precedence rule present" \
+  || fail "E8: handoff-contract precedence rule missing"
 
 # E9 — safe write-back class cites its owner
 grep -q 'definition OWNED by detect-drift Step 5' "$P/commands/sync.md" \

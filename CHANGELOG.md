@@ -7,7 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
-## [Unreleased] — lane router: tugas yang jelas dikerjakan seperti Claude Code biasa, pipeline hanya untuk yang butuh (belum dirilis)
+## [9.0.0] - 2026-09-27 — satu pipeline: empat skill classic dihapus, `plan → execute-bolts` jadi satu-satunya jalur spec
+
+Sumber: `docs/superpowers/specs/2026-09-27-v9-simplification-design.md`, fase P1. Dasarnya tiga blok benchmark terukur (n=3 run bersih per arm, vanilla Claude Code sebagai kontrol). Di blok mana pun pipeline nggak menghasilkan kode yang lebih baik, dan lite ngalahin classic di semua dimensi biaya dengan kualitas yang overlap. Tiga blok itu jadi usage review yang disyaratkan kontrak plugin sebelum skill boleh dicabut di 9.0.
+
+Moat nggak berubah: CONFLICT tetap nge-block di dispatch (JIT bind per unit, pre-flight 3.9), begitu juga citation discipline, halt taxonomy, dan no-fabrication. Rilis ini nggak ngeklaim guarded menghasilkan kualitas lebih baik (spec §6).
+
+Rilis ini juga membawa dua bagian di bawah (bagian 2: lane router, bagian 3: pembanding vanilla). Kalimat di blok lane router bahwa `lane: standard` mengembalikan chain classic dan `--classic` tetap switch spine sudah nggak berlaku (lihat §Changed — front door dan migrasi).
+
+### Removed
+- **Skill `generate-intent`, `bind-codebase`, `generate-units`, `scan-codebase`** (20 → 16 skill). Penggantinya:
+  - `generate-intent` → `plan` (PRD, atau KB lewat `plan --kb`). Brief masuk lane direct/assisted. Di `--guarded`, front door nulis brief jadi seed PRD dulu.
+  - `generate-units` → `plan`. Unit memang ditulis di fase yang sama sejak 8.0 (`--regenerate`, `--reconcile`).
+  - `bind-codebase` → JIT bind per unit di `execute-bolts` (`write-unit-binding.sh`). Audit penuh: `scripts/rebind-units.sh --units=all`.
+  - `scan-codebase` → GROUND (`scripts/ground.sh` + symbol index). Producer `codebase-map.md` udah nggak ada; map yang sudah ada tetap kebaca.
+- **Chain classic dan spine classic** (`generate-intent → scan-codebase → bind-codebase → generate-units`). Pipeline tinggal satu, yaitu lite: `plan` → `execute-bolts` → `delivery-check.sh`.
+- **`scripts/compute-lock-digests.sh`**: caller-nya cuma skill yang dihapus.
+  - Script lain yang kehilangan executor tetap ada di P1 untuk baca layout-2: `make-bound.sh`, `derive-claims-ledger.sh`, `derive-codebase-map.sh`, `validate-codebase-map.sh`, `derive-binding-json.sh`. Pruning-nya di P1b (spec §7 #8).
+- `references/halt-families/scan.md`.
+- **`ripgrep` dari tool-matrix `install-deps`** (dan dari `references/tooling-install.md`). Konsumennya cuma scan-codebase. `ast-grep` tetap dipakai (symbol index GROUND, Hard rule v2).
+- Yang nggak ikut direlokasi karena producer-nya udah nggak ada:
+  - starterkit Step 7.7 / 7.7.f dan render check 12.5 f (spec §7 #1). Reader cache lama tetap ada;
+  - authoring multi-squad: `plan` nggak pernah nulis `squads.yaml` / `interfaces/` (spec §7 #3). Aturan squad di sisi unit tetap berlaku untuk vault yang sudah punya file itu.
+
+### Moved — kontrak yang selamat
+- Ke `skills/plan/references/`: `unit-schema`, `unit-procedure`, `decomposition-rails`, `validation-passes`, `task-typing`, `adversarial-test-prompt`, `pbt-integration`, `kb-input`, `context-authoring`, `scope-flow`, `brief-input`, plus `templates/unit.md` dan `templates/ai-consumer-guide.md`.
+- Ke `references/`: `vault-core.md`, `modules-schema.md`. Query ast-grep pindah ke `assets/astgrep-queries/`.
+- Ke `execute-bolts/references/jit-bind-and-quarantine.md` §E3 dan `references/halt-families/units.md`.
+- Setiap reference yang tersisa ditulis ulang ke `plan` / `plan --kb` / `plan --reconcile` / `--regenerate`, JIT bind di execute-bolts, GROUND, dan `rebind-units.sh`.
+
+### Changed — gate, preflight, state
+- **`validate-preflight.sh`:**
+  - check id yang dihapus: `intent_folded_into_plan`, `bind_folded_into_bolts`, `units_folded_into_plan`, `plan_off_lane`, `binding_input_*` (`binding_input_complete`, `binding_input_vault_missing`, `binding_input_map_missing`), dan `units_input_vault_missing`. Alias FATAL 8.x itu ada supaya lane lite nggak jatuh ke fase classic, dan fase-fase itu sekarang udah nggak ada;
+  - check id baru `skill_removed_in_9` (FATAL): chain 8.x basi (mis. `--resume` yang di-pause) atau dispatch `--skill=` langsung yang nyebut skill yang dihapus. Pesannya satu baris yang nyebut penggantinya, jadi nggak ada yang lolos jadi PASS diam-diam;
+  - check id baru `plan_layout2_vault` (FATAL): `plan` cuma nulis layout-3, jadi target vault layout-2 ditolak. Jalan keluarnya: `/mega-sdd:migrate-paths --vault-layout=3` dulu, atau `--vault=<dir-baru>`;
+  - **rail coverage plan (`lite_plan_coverage_pass`) sekarang selalu nyala sebelum `execute-bolts`**; dulu cuma di lane lite. Satu-satunya pengecualian: vault termigrasi (`_meta/archive/layout2/` ada), karena unit lahiran classic nggak punya `prd_source` (spec §7 #12);
+  - hook predictive-preflight sekarang cuma jaga `plan` + `execute-bolts`.
+- **Posisi baru `layout2_needs_migration`** (`derive-state`, `_lib/state_probes.py`):
+  - vault layout-2 yang perlu dibangun atau di-sync → `proposed_next` kosong, plus satu note yang ngusulin `/mega-sdd:migrate-paths --vault-layout=3` (dry-run, lalu `--apply`), diikuti full JIT re-bind wajib. Nggak pernah dijalanin diam-diam (spec §4);
+  - posisi classic yang dihapus: `vault_greenfield_no_units`, `vault_no_map`, `vault_map_unbound`, `binding_resolved_no_rebind`, `bound_no_units`.
+- **`derive-delta-paths.sh` sekarang exit 2 kalau scope-nya kosong**, yaitu kalau semua klaim/unit yang kena nggak punya anchor atau target path.
+  - Dulu exit 0 dengan file paths kosong. Hop re-bind (`rebind-units.sh --paths`) lalu exit "nothing affected", dan itu in-sync palsu.
+  - Sekarang caller wajib ngusulin full re-bind (`rebind-units.sh --units=all`).
+- **Gate CONFLICT untuk vault termigrasi (versi ketat)**, di `validate-handoff-binding-units.sh` (spec §7 #9):
+  - vault hasil `migrate-paths --vault-layout=3` nggak punya `binding.md` lagi, karena sudah diarsip ke `_meta/archive/layout2/`;
+  - CONFLICT-ID yang dikutip unit dianggap tertutup HANYA kalau `bolts/U-XXX/binding-migrated.json` di SETIAP unit pengutipnya membawa blok ID itu dengan resolusi manusia yang tercatat: ✅/RESOLVED di heading, atau baris `- **Resolution**:` / `- **Status**:` yang nilainya diawali ✅/RESOLVED;
+  - file nggak ada, blok kosong, atau blok yang belum resolved → tetap `binding_missing` (invariant #2);
+  - di 8.8.1 setiap kutipan CONFLICT di vault termigrasi nge-block, dan jalan keluarnya cuma bind-codebase, yang sekarang udah dihapus.
+
+### Changed — halt
+- **Dihapus dari enum `blocker.type` (11 token):** `deep_scan_subagent_failed`, `deep_scan_subagent_all_failed`, `scan_repo_too_large`, `scan_primary_app_ambiguous`, `scan_spawn_budget_exceeded`, `codebase_map_derive_failed`, `codebase_map_invalid`, `prd_no_scopes_block_user_rejected_retrofit`, `prd_retrofit_low_confidence`, `bind_inputs_missing`, `bind_conflict_constitution_violation`. Semuanya cuma dipancarkan skill yang dihapus.
+- **Dihapus dari enum subtype `quality_gate_failed`:** `starterkit_metrics_inconsistent`. Producer-nya handoff units classic, yang ikut pensiun.
+- **`bind_conflict` jadi alias legacy dari `binding_conflict`** (nama lama di `binding.md` layout-2). 9.0 cuma memancarkan `binding_conflict` (execute-bolts pre-flight 3.9), dengan schema per unit dari `bolts/U-XXX/binding.json`.
+- `framework_pack_missing` / `framework_pack_cycle` / `framework_pack_unparseable` dan `deep_scan_cache_corrupt`: emitter always-stop-nya (bind-codebase / scan-codebase) udah nggak ada. Yang tersisa jalur self-resolve GROUND yang memang sudah ada (`ground.sh` Guard 5 / Guard 7), dan registry + `halt-taxonomy.md` sekarang mencatatnya sebagai C1.
+- `source_skill` di envelope nggak lagi nerima empat skill yang dihapus.
+
+### Changed — front door dan migrasi
+- `lane: standard` di config nggak lagi milih chain: front door nyebut itu dalam satu baris lalu jalan lite.
+- `--classic` / `spine: classic` dihapus: disebut dalam satu baris lalu diabaikan. `--express` tetap diterima sebagai no-op (express satu-satunya spine) dan berarti `--guarded`.
+- Vault layout-2 (hasil classic) tetap KEBACA: `_lib/vault_md.py` masih resolve layout-3 → layout-2 → legacy, dan emit-* tetap jalan. Untuk build/sync, lihat posisi `layout2_needs_migration` di atas.
+- **Legacy rebuild:** `extract-intelligence` → `plan --kb=<kb-dir>`, yang baca `README.md` + `modules/*.prd.md` satu modul per slice.
+  - Pin vault lahiran KB: `prd_path` = `<kb>/README.md`, `prd_sha256` = sha256 dari `<kb>/census.json` (spec §7 #6).
+  - Dipin oleh `tests/v9/test-kb-to-plan.sh` (exit criterion P1).
+- `plan --reconcile` cuma flip task_type/status dan nandai unit `superseded`. Requirement baru lewat `diff-vault` → `plan --regenerate`. `commands/sync.md` dikoreksi (spec §7 #5).
+- Nggak ada command yang dihapus (tetap 6 file).
+
+### Observability — kontrak gateway dipertahankan (wajib, permintaan owner)
+- `mega-sdd-trace:turn`, `mega-sdd-trace:<skill>` di announce, baris trace di setiap prompt dispatch, dan `mega-sdd-note:` **nggak berubah**. Hook `user-prompt-submit` / `session-note` / `session-start` byte-identik dengan 8.8.1.
+- **Regresi yang ditemukan dan ditutup: lane direct/assisted nggak kelihatan di gateway.** Lane ini nggak nulis `.mega-sdd/`, jadi `:turn` hening, dan nggak manggil skill, jadi nggak ada announce. Sekarang:
+  - baris announce lane diakhiri `` `mega-sdd-trace:direct` `` / `` `mega-sdd-trace:assisted` ``;
+  - subagent review buta lane assisted bawa baris `mega-sdd-trace:assisted-review`.
+- `docs/gateway-contract.md` diperbarui secara additive: tag lane baru, dan daftar skill yang ber-announce jadi 10 (empat skill yang dihapus berhenti mengeluarkan tag).
+- Dipin oleh `tests/v9/test-gateway-trace.sh`.
+
+### Skill version moves
+- Dihapus: `generate-intent` 2.25.2 · `bind-codebase` 2.20.1 · `generate-units` 2.29.1 · `scan-codebase` 2.31.1
+- `plan` 1.2.1 → 2.0.0 · `execute-bolts` 2.55.0 → 3.0.0 · `orchestrate-flow` 2.29.3 → 3.0.0 · `using-mega-sdd` 4.3.0 → 4.4.0 · `resolve-oq` 2.16.0 → 2.17.0 · `diff-vault` 2.5.1 → 2.6.0 · `detect-drift` 3.2.0 → 3.3.0 · `extract-intelligence` 2.6.1 → 2.7.0
+
+### Notes
+- **P1b (belum):** audit caller per script/reference dengan aturan "dieksekusi oleh skill yang selamat" (sekadar disebut di dok nggak dihitung). Kandidatnya: lima script layout-2 di atas, `lib-patterns/`, bagian producer di `starterkit-context-schema`, dan `shared-snapshot-schema` (spec §7 #11). Walk `binding.md` classic di resolve-oq juga tetap sampai P1b (spec §7 #10).
+
+## 9.0.0 (bagian 2) — lane router: tugas yang jelas dikerjakan seperti Claude Code biasa, pipeline hanya untuk yang butuh
 
 Sumber: `research/2026-09-27-vanilla-vs-megasdd-results.md`. Pada PRD greenfield, pipeline (lite/classic) 2,3–12× lebih lama dan 9–22× lebih mahal daripada vanilla Claude Code, sementara kualitasnya setara atau lebih rendah. Perubahan ini memindahkan default, bukan menghapus moat. Pipeline (binding CONFLICT, OQ, panel) tetap utuh di lane `guarded`.
 
@@ -75,7 +155,7 @@ Laporan: `research/2026-09-27-lane-router-results.md`. Router memilih `direct` u
 Yang terukur adalah hilangnya overhead pipeline di jalur default greenfield. Lane `guarded` dan moat-nya **belum diukur** (lihat runbook brownfield). Biaya blok: $47,45.
 
 
-## [Unreleased] — pembanding vanilla Claude Code + complexity budget + hasil terukur pertama vs vanilla (belum dirilis)
+## 9.0.0 (bagian 3) — pembanding vanilla Claude Code + complexity budget + hasil terukur pertama vs vanilla
 
 Sumber: audit 2026-09-26. Semua benchmark di repo ini membandingkan mega-sdd dengan mega-sdd versi lain; arm Claude Code tanpa plugin belum pernah ada. Rilis ini cuma nambah alat ukur dan aturan. Perilaku pipeline, gate, lens, dan default lane nggak diubah.
 

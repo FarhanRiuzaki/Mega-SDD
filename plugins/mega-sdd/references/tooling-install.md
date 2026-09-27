@@ -47,8 +47,7 @@ Bundling these binaries in the plugin is impractical (50MB+ multi-platform bloat
 | Tool | Used by | Fallback if absent | Install |
 |---|---|---|---|
 | `python3` | **REQUIRED** — the hooks' stdin parsers + the deterministic gate validators | none — without a usable interpreter the PreToolUse gates fail CLOSED | per-OS install per `install-deps/references/tool-matrix.yaml` (`/mega-sdd:install-deps`) |
-| `ast-grep` (alias `sg`) | scan-codebase (TIER-1 AST extraction — zero-compilation, one spawn), execute-bolts, generate-units, detect-drift (Hard Rule v2 grammar) | scan falls to regex tier; v1-authored rules run natively; units carrying v2 rules need it installed | macOS: `brew install ast-grep` · Linux/win: `cargo install ast-grep` · Node: `npm install -g @ast-grep/cli` |
-| `ripgrep` (`rg`) | scan-codebase (fast regex tier) | GNU grep (slower) | macOS: `brew install ripgrep` · Linux/win: `cargo install ripgrep` · apt: `apt install ripgrep` |
+| `ast-grep` (alias `sg`) | GROUND symbol index (`build-symbol-index.sh`, one bounded pass; `rebind-units.sh` refreshes it for the JIT bind), plan (authors v2 fenced Hard rules; ast-grep runs them at bolt pre-flight), execute-bolts, detect-drift (Hard Rule v2 grammar) | no symbol index: plan's brownfield lookups miss, JIT-bind symbol claims stay OQ; v1-authored rules run natively; units carrying v2 rules need it installed | macOS: `brew install ast-grep` · Linux/win: `cargo install ast-grep` · Node: `npm install -g @ast-grep/cli` |
 | `jd` | diff-vault (canonical JSON/YAML diff) | Manual diff via Read+compare | macOS: `brew install jd` · Linux/win: `go install github.com/josephburnett/jd/v2/jd@latest` |
 | `pandoc` | emit-fsd/prd/sit/uat (md2pdf HTML render for the PDF lanes) | Markdown-only output (no PDF) | macOS: `brew install pandoc` · apt: `apt install pandoc` · win: `winget install JohnMacFarlane.Pandoc` |
 | `mmdc` (`@mermaid-js/mermaid-cli`) | emit-fsd/prd/sit/uat (pre-render mermaid to SVG for the PDF lane) | mermaid stays a code block (quality drop) | `npm install -g @mermaid-js/mermaid-cli` (all platforms) |
@@ -64,14 +63,14 @@ Bundling these binaries in the plugin is impractical (50MB+ multi-platform bloat
 If you have **Homebrew** (macOS / Linux):
 
 ```bash
-brew install ast-grep ripgrep jd
+brew install ast-grep jd
 npm install -g markdownlint-cli2     # optional; vault prose lint
 ```
 
 If you have **cargo** (cross-platform Rust):
 
 ```bash
-cargo install ast-grep ripgrep
+cargo install ast-grep
 go install github.com/josephburnett/jd/v2/jd@latest
 npm install -g markdownlint-cli2
 ```
@@ -80,22 +79,22 @@ If you have **npm** only:
 
 ```bash
 npm install -g @ast-grep/cli markdownlint-cli2
-# ripgrep + jd: install via system package manager (apt/brew/scoop/etc)
+# jd: install via system package manager (apt/brew/scoop/etc)
 ```
 
 If you are on **Windows** (git-bash / MSYS2):
 
-`ast-grep`, `jd`, `ripgrep`, and `pandoc` all have both winget and Scoop packages. Note `jd` lives in the Scoop **`extras`** bucket (not Main), so add that bucket first.
+`ast-grep`, `jd`, and `pandoc` all have both winget and Scoop packages. Note `jd` lives in the Scoop **`extras`** bucket (not Main), so add that bucket first.
 
 ```powershell
 # Scoop (jd is in the 'extras' bucket, not Main):
-scoop install ast-grep ripgrep pandoc
+scoop install ast-grep pandoc
 scoop bucket add extras && scoop install jd
 npm install -g @mermaid-js/mermaid-cli    # mermaid render for the PDF lane
 npm install -g markdownlint-cli2          # optional; vault prose lint
 
-# winget (covers all five native tools):
-winget install BurntSushi.ripgrep.MSVC JohnMacFarlane.Pandoc
+# winget (covers all three native tools):
+winget install JohnMacFarlane.Pandoc
 winget install ast-grep.ast-grep josephburnett.jd
 
 # or the cross-platform runtime fallbacks:
@@ -110,7 +109,6 @@ go install github.com/josephburnett/jd/v2/jd@latest   # if Go present
 
 ```bash
 command -v ast-grep && echo "✓ ast-grep ready"
-command -v rg && echo "✓ ripgrep ready"
 command -v jd && echo "✓ jd ready"
 command -v pandoc && echo "✓ pandoc ready"
 command -v mmdc && echo "✓ mmdc ready"
@@ -124,12 +122,12 @@ command -v gitleaks && echo "✓ gitleaks ready"
 REQUIRED: `python3` — the one hard dependency; without a usable interpreter the PreToolUse gates fail CLOSED.
 
 Mega-sdd works WITHOUT any of the optional tools. You get:
-- scan-codebase: regex engine (precision_tier: regex; documented in codebase-map.md frontmatter)
+- GROUND: no symbol index without ast-grep (`build-symbol-index.sh` exit 3) — brownfield plan runs without symbol lookups; JIT-bind symbol claims stay OQ
 - execute-bolts: Hard Rule v1 grammar (5 closed types)
 - diff-vault: skill-internal compare
 - orchestrate-flow vault prose lint: internal heuristic checks
 
-For first-time exploration or one-off projects, minimal setup is fine. For sustained brownfield work or multi-project use, recommend installing at least **`ast-grep` + `ripgrep`** — ast-grep IS the AST tier (zero-compilation, one spawn; there is no tree-sitter lane).
+For first-time exploration or one-off projects, minimal setup is fine. For sustained brownfield work or multi-project use, recommend installing at least **`ast-grep`** — ast-grep IS the AST tier (zero-compilation, one spawn; there is no tree-sitter lane).
 
 ## License notes
 
@@ -158,7 +156,7 @@ If you have `ast-grep` AND `sg` aliases conflicting (sg is the short form), mega
 ### Updating tools
 
 ```bash
-brew upgrade ast-grep ripgrep jd pandoc semgrep gitleaks
+brew upgrade ast-grep jd pandoc semgrep gitleaks
 npm update -g @mermaid-js/mermaid-cli markdownlint-cli2
 ```
 

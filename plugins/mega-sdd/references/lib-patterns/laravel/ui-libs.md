@@ -1,6 +1,6 @@
 # Laravel — UI/UX Libraries Detection Patterns
 
-> Catalog consumed by `ui-ux-extractor` subagent in `scan-codebase` v2.6.0+ deep-scan.
+> Detection catalog for the legacy `starterkit-context.yaml §ui_ux` block (producer removed in 9.0).
 
 **Output target:** `starterkit-context.yaml §ui_ux` block
 

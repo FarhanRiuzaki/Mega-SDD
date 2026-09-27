@@ -2,10 +2,13 @@
 # ground.sh — the v6 GROUND step: zero model tokens, seconds.
 #   1. derive-state.sh   — probes (manifest sniff incl. the P2 pack matcher,
 #                          spine, symbol-index freshness) -> .mega-sdd/state.json
-#   2. build-symbol-index.sh — the retrieval substrate for bind --express
+#   2. build-symbol-index.sh — the retrieval substrate for the JIT per-unit bind
+#      (write-unit-binding.sh / rebind-units.sh) and plan's query-symbol-index.sh
+#      reuse lookup
 # GROUND deliberately does NOT: write starterkit-context.yaml (cache-keyed
 # deep-scan artifact — a script stub would read as a false warm cache), or
-# produce a codebase-map (scan-codebase stays the on-demand map seam).
+# produce a codebase-map (no codebase-map producer since 9.0; an existing map
+# stays readable).
 # Exit 0 = grounded (index may still be honestly absent — see INDEX=);
 # 2 = usage; derive-state failures pass through (read-only surface, never blocks).
 set -u
@@ -341,14 +344,16 @@ if missing_bins:
         f"required binaries missing on PATH (advisory): {missing_bins}",
         missing_binaries=missing_bins,
         suggested_action="run /mega-sdd:install-deps (non-interactive only; manual install if needed)",
-        will_degrade_to="regex tier (scan-codebase) / v1 grammar (execute-bolts)",
+        will_degrade_to="no symbol index (build-symbol-index.sh exit 3 -> JIT symbol claims stay OQ) / v1 grammar (execute-bolts)",
     )
     notices.append(f"[self-resolved] dep_missing: {missing_bins} not on PATH; will degrade gracefully")
 
 # ─── Guard 7: deep_scan_cache_corrupt (B.9) ────────────────────────────────
 # Check <cwd>/.mega-sdd/codebase/starterkit-context.yaml — if exists, validate
 # it as parseable YAML (or at least structured key:value pairs). If corrupt,
-# rename and let scan-codebase re-build on next invocation.
+# rename it aside so readers (build-dispatch-prompt starterkit slice,
+# validate-starterkit-conformance, validate-unit-spec) see it absent; nothing
+# regenerates it in 9.0.
 import re as _re5
 starterkit_path = os.path.join(cwd, ".mega-sdd", "codebase", "starterkit-context.yaml")
 if os.path.isfile(starterkit_path):
@@ -367,12 +372,12 @@ if os.path.isfile(starterkit_path):
             rel_corrupt = os.path.relpath(corrupt_path, cwd)
             emit_event(
                 "deep_scan_cache_corrupt",
-                f"starterkit-context.yaml unparseable; renamed → {os.path.basename(corrupt_path)}; the next ON-DEMAND scan-codebase run rebuilds it (scan is not in the default express chain)",
+                f"starterkit-context.yaml unparseable; renamed → {os.path.basename(corrupt_path)}; the starterkit slice is skipped until a valid file is restored (e.g. git checkout) — no 9.0 phase regenerates it",
                 original_path=rel_orig,
                 corrupt_path=rel_corrupt,
                 reason=str(e),
             )
-            notices.append(f"[self-resolved] deep_scan_cache_corrupt: starterkit-context.yaml renamed; an on-demand scan-codebase run rebuilds it")
+            notices.append(f"[self-resolved] deep_scan_cache_corrupt: starterkit-context.yaml renamed aside; starterkit slice skipped (no 9.0 producer)")
     except Exception:
         pass
 
@@ -594,10 +599,11 @@ fi
 # Sync-pending guard (round F1 — REPRODUCED false 'in sync'): rebuilding the
 # index HERE re-stamps head_commit to HEAD BEFORE derive-changed-paths.sh
 # consumes the old stamp as its diff baseline — the changed set would derive
-# empty and the sync would reconcile nothing. Defer; bind --express E0
-# rebuilds AFTER the re-verdict, advancing the stamp at the correct point.
+# empty and the sync would reconcile nothing. Defer; rebind-units.sh's
+# index-first step rebuilds it after derive-changed-paths.sh has consumed the
+# stale stamp, advancing the stamp at the correct point.
 if [ "$POSITION" = "maintenance_sync" ]; then
-  echo "GROUND: state rc=$STATE_RC · index: rebuild DEFERRED (sync pending — the stale stamp IS the changed-set baseline; bind --express E0 rebuilds after the re-verdict)"
+  echo "GROUND: state rc=$STATE_RC · index: rebuild DEFERRED (sync pending — the stale stamp IS the changed-set baseline; rebind-units.sh rebuilds it before the re-bind)"
   exit 0
 fi
 
@@ -605,8 +611,8 @@ bash "$SCRIPT_DIR/build-symbol-index.sh" --cwd="$CWD"
 IDX_RC=$?
 case "$IDX_RC" in
   0) INDEX="built" ;;
-  3) INDEX="absent (ast-grep not installed — the chain renders CLASSIC; /mega-sdd:install-deps adds ast-grep)" ;;
-  *) INDEX="absent (build failed rc=$IDX_RC — the chain renders CLASSIC)" ;;
+  3) INDEX="absent (ast-grep not installed — JIT symbol claims stay OQ, fs claims still verdict; /mega-sdd:install-deps adds ast-grep)" ;;
+  *) INDEX="absent (build failed rc=$IDX_RC — JIT symbol claims stay OQ; re-run GROUND)" ;;
 esac
 echo "GROUND: state rc=$STATE_RC · index: $INDEX"
 exit 0

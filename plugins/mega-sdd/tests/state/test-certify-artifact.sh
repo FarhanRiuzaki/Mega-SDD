@@ -115,7 +115,9 @@ SAMPLE="$ROOT/tests/fixtures/sample-project"
 note "== 1. prd rung (shape sniffer — classifies, gates nothing) =="
 run_ca prd "$WORK/real-prd.md"
 expect "real-PRD-shaped md" CERTIFIED 0
-expect_keterangan "real-PRD" "generate-intent"
+# 9.0 P1: generate-intent is retired — `plan` is the only spec producer, so the
+# CERTIFIED next-step now names `plan <path>` (same pin: the hand-off verb).
+expect_keterangan "real-PRD" "plan <path>"
 run_ca prd "$WORK/arbitrary.md"
 expect "arbitrary md (honest verdict)" CERTIFIED_DEGRADED 0
 expect_keterangan "arbitrary md" "TIDAK berbentuk PRD"
@@ -131,7 +133,9 @@ expect "external map w/ sections, no FM" CERTIFIED_DEGRADED 0
 expect_keterangan "external map" "unverified-external"
 run_ca map "$WORK/map-degenerate.md"
 expect "degenerate map" REJECTED 4
-expect_keterangan "degenerate map" "scan-codebase"
+# 9.0 P1: scan-codebase is retired — the DEMOTE offer now routes grounding to
+# the GROUND script (symbol index straight from the repo), not a map re-scan.
+expect_keterangan "degenerate map" "scripts/ground.sh"
 printf '%s\n' "$OUT" | grep -qF 'DEMOTE' && ok "degenerate map: keterangan carries the DEMOTE offer" \
   || fail "degenerate map: DEMOTE offer missing"
 

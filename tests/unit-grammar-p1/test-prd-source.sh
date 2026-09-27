@@ -88,14 +88,19 @@ EOF
 # d: registry parity + authoring surfaces
 grep -q 'prd_source_unresolvable' "$P/references/halt-protocol.md" && grep -q '^### prd_source_unresolvable' "$P/references/halt-families/units.md" \
   && pass "d1: prd_source_unresolvable registered in the enum/index + units family" || fail "d1: registry missing the halt"
-grep -qE '^prd_source: ' "$P/skills/generate-units/references/unit-schema.md" && grep -qE '^context_source: ' "$P/skills/generate-units/references/unit-schema.md" \
+# 9.0 P1: generate-units was deleted; its unit schema/template/Step-10 writer contract
+# relocated verbatim to the plan skill (plan/references/{unit-schema,unit-procedure}.md,
+# plan/references/templates/unit.md). The plan SKILL.md itself must still name prd_source.
+PL="$P/skills/plan"
+grep -qE '^prd_source: ' "$PL/references/unit-schema.md" && grep -qE '^context_source: ' "$PL/references/unit-schema.md" \
   && pass "d2: unit-schema documents prd_source + context_source" || fail "d2: schema missing fields"
-grep -qE '^## Claims' "$P/skills/generate-units/references/unit-schema.md" && grep -qE '^## Claims' "$P/skills/generate-units/references/templates/unit.md" \
+grep -qE '^## Claims' "$PL/references/unit-schema.md" && grep -qE '^## Claims' "$PL/references/templates/unit.md" \
   && pass "d3: ## Claims section taught by schema + template" || fail "d3: Claims section missing"
-grep -q 'prd_source:' "$P/skills/generate-units/references/templates/unit.md" && grep -q 'prd_source' "$P/skills/generate-units/SKILL.md" \
-  && pass "d4: template + SKILL Step 10 carry prd_source" || fail "d4: writer surfaces missing prd_source"
-grep -q 'acceptance_test\[\].ears' "$P/skills/generate-units/SKILL.md" && grep -q 'writer diet' "$P/skills/generate-units/references/unit-schema.md" \
-  && pass "d5: zero-reader writer diet stated at SKILL + schema" || fail "d5: writer diet missing"
+grep -q 'prd_source:' "$PL/references/templates/unit.md" && grep -qE '^\*\*10\. Write each unit file\*\*.*prd_source:' "$PL/references/unit-procedure.md" \
+  && grep -q 'prd_source' "$PL/SKILL.md" \
+  && pass "d4: template + unit-procedure Step 10 + plan SKILL carry prd_source" || fail "d4: writer surfaces missing prd_source"
+grep -qE '^\*\*10\. Write each unit file\*\*.*acceptance_test\[\]\.ears' "$PL/references/unit-procedure.md" && grep -q 'writer diet' "$PL/references/unit-schema.md" \
+  && pass "d5: zero-reader writer diet stated at unit-procedure Step 10 + schema" || fail "d5: writer diet missing"
 
 echo
 [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"

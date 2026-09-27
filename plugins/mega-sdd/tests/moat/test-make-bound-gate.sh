@@ -1,37 +1,21 @@
 #!/usr/bin/env bash
-# test-make-bound-gate.sh — pins the W1 gate posture: <vault>/bound/ is
-# produced ONLY by scripts/make-bound.sh (bind Step 5), which independently
-# REFUSES while any CONFLICT verdict is in binding.json — converting the
-# Step-5 prose gate into script enforcement (gates>rules doctrine). Prose pins
-# guard the SKILL/contract wording against culls; the empirical section proves
-# the refusal on a live mini-fixture; the pre-existing sync-conflict pin suite
-# must survive W1 unmodified.
+# test-make-bound-gate.sh — pins the W1 script gate: scripts/make-bound.sh
+# independently REFUSES (exit 2, filesystem untouched) while any CONFLICT
+# verdict is in binding.json (gates>rules doctrine). The empirical section
+# proves the refusal on a live mini-fixture.
+#
+# 9.0 P1: the classic whole-vault bind (skills/bind-codebase, its Step 5 and
+# references/binding-contract.md) was deleted, so the prose pins on that
+# SKILL/contract wording and the nested W1 regression run of
+# test-sync-conflict-revalidate.sh (which the suite runs on its own) were
+# retired. make-bound.sh itself stays in P1 as layout-2 read support (design
+# 2026-09-27-v9-simplification-design.md §7 #8, pruning deferred to P1b), and
+# a migrated vault with an unresolved CONFLICT must still be refused (§7 #9),
+# so the empirical gate below is kept unchanged.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN="$HERE/../.."
 rc=0
-
-pin() {  # pin <file> <required-pattern> <label>
-  if grep -qiE "$2" "$PLUGIN/$1" 2>/dev/null; then
-    echo "PASS ($3)"
-  else
-    echo "FAIL ($3 — pattern missing in $1)"; rc=1
-  fi
-}
-
-# ── prose pins ──
-pin "skills/bind-codebase/SKILL.md" \
-    "make-bound\.sh" \
-    "SKILL Step 5 runs make-bound.sh"
-pin "skills/bind-codebase/SKILL.md" \
-    "NEVER hand-write" \
-    "SKILL forbids hand-writing bound/"
-pin "skills/bind-codebase/references/binding-contract.md" \
-    "no \`bound/\` while any conflict" \
-    "contract: pinned conflict-gate phrase survives W1"
-pin "skills/bind-codebase/references/binding-contract.md" \
-    "make-bound\.sh" \
-    "contract documents make-bound.sh as the bound/ producer"
 
 # ── empirical: CONFLICT verdict → exit 2; pre-existing bound/ untouched ──
 WORK="$(mktemp -d 2>/dev/null || mktemp -d -t mbgate)"
@@ -76,13 +60,6 @@ if [ "$SUM_BEFORE" = "$SUM_AFTER" ] && [ "$N_TMP" = "0" ]; then
   echo "PASS (empirical: refusal leaves the pre-existing clean bound/ untouched, no temp litter)"
 else
   echo "FAIL (empirical: refusal modified bound/ or littered temp dirs)"; rc=1
-fi
-
-# ── the pre-existing conflict-pin suite must stay green under W1 ──
-if bash "$HERE/test-sync-conflict-revalidate.sh" </dev/null >/dev/null 2>&1; then
-  echo "PASS (test-sync-conflict-revalidate.sh still exits 0)"
-else
-  echo "FAIL (test-sync-conflict-revalidate.sh broken by W1)"; rc=1
 fi
 
 [ $rc -eq 0 ] && echo "ALL PASS"

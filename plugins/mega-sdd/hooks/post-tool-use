@@ -319,8 +319,9 @@ case "${TOOL_NAME:-}" in
   #  · Skill → validate-starterkit-metrics: its state file had ZERO readers
   #    anywhere (run-analyze excluded it explicitly; no PreToolUse read; no test)
   #    — the starterkit_metrics_inconsistent halt is produced by in-skill prose
-  #    recomputation (orchestrate-flow handoff-consumption.md / generate-units
-  #    auto-and-memory.md), which stands unchanged. Validator deleted with it.
+  #    recomputation (orchestrate-flow handoff-consumption.md); its only
+  #    producer, the classic units handoff, is retired in 9.0 (plan emits no
+  #    handoff). Validator deleted with it.
   #  · Bash → the build-dispatch-prompt.sh parity leg: advisory-only state
   #    (.dispatch-prompt-state.json — nothing in PreToolUse reads it), now
   #    written fresh by run-analyze FULL (№C twin change), so the per-Bash-call
@@ -334,8 +335,8 @@ case "${TOOL_NAME:-}" in
 
     # ── Living-vault dirty-paths journal (advisory; spec 2026-06-10-living-vault) ──
     # Source-file writes in a GROUNDED repo are journaled so /mega-sdd:sync +
-    # the changed-set producers (scan --changed-only, derive-changed-paths.sh)
-    # know what moved without git archaeology — covers in-session AI edits even
+    # the changed-set producer (derive-changed-paths.sh, its only consumer)
+    # knows what moved without git archaeology — covers in-session AI edits even
     # before they are committed. P2 rekey: the gate is `.mega-sdd/codebase/`
     # presence (map OR symbol-index) — the old map-only gate silenced the
     # journal forever on express-born projects that never grow a map.

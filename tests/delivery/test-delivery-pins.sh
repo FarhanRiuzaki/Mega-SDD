@@ -10,26 +10,32 @@ rc=0
 fail() { echo "FAIL: $1"; rc=1; }
 pass() { echo "PASS: $1"; }
 
-# D1 — KB orphans wired into generate-intent --kb
+# D1 — KB orphans wired into plan --kb (9.0 P1: generate-intent's kb-submode.md
+# relocated verbatim to plan/references/kb-input.md)
+KBI="$P/skills/plan/references/kb-input.md"
 for k in "suggested-system-flow.md" "module-dependency-graph.md" "50-integrations/"; do
-  grep -q -- "$k" "$P/skills/generate-intent/references/kb-submode.md" \
-    && pass "D1: kb-submode consumes $k" \
-    || fail "D1: kb-submode missing consumption row for $k"
+  grep -q -- "$k" "$KBI" \
+    && pass "D1: plan kb-input consumes $k" \
+    || fail "D1: plan kb-input missing consumption row for $k"
 done
-grep -q "Never silently dropped" "$P/skills/generate-intent/references/kb-submode.md" \
+grep -q "Never silently dropped" "$KBI" \
   && pass "D1: integrations never-silently-dropped rail" \
   || fail "D1: never-silently-dropped rail missing"
 
-# D2 — module graph seeds generate-units module derivation
-grep -q "kb_module_graph" "$P/skills/generate-units/references/decomposition-rails.md" \
-  && pass "D2: generate-units reads kb_module_graph seed" \
+# D2 — module graph seeds plan's unit module derivation (9.0 P1: generate-units'
+# decomposition-rails.md relocated to plan/references/)
+grep -q "kb_module_graph" "$P/skills/plan/references/decomposition-rails.md" \
+  && pass "D2: plan decomposition reads kb_module_graph seed" \
   || fail "D2: kb_module_graph seed missing from decomposition-rails"
 
-# D3 — codebase-map §6 delivered to bolts when starterkit-context absent
-grep -q "Codebase patterns:" "$P/skills/execute-bolts/references/context-enrichment.md" \
-  && grep -q "never write-only" "$P/skills/scan-codebase/references/codebase-map-schema.md" \
-  && pass "D3: map §6 fallback wired + schema consumer note" \
-  || fail "D3: map §6 fallback / consumer note missing"
+# D3 — codebase-map §6 delivered to bolts when starterkit-context absent (the
+# consumer leg; pre-9.0 maps on disk are still read). The former producer-side
+# half (codebase-map-schema.md "never write-only" note) is retired: that schema
+# lived in the scan-codebase skill, deleted in 9.0 P1 — no 9.0 producer writes §6.
+grep -q "^## Map §6 fallback (starterkit-context absent)" "$P/skills/execute-bolts/references/context-enrichment.md" \
+  && grep -q "Codebase patterns:" "$P/skills/execute-bolts/references/context-enrichment.md" \
+  && pass "D3: map §6 fallback wired into bolt dispatch" \
+  || fail "D3: map §6 fallback / Codebase patterns line missing"
 
 # D4 — missing_sources surfaced at chain end
 grep -q "missing_sources" "$P/skills/orchestrate-flow/references/chain-execution.md" \

@@ -1,6 +1,26 @@
 # Scope Picker — Skill Triggering Tests
 
-Manual test fixtures for `generate-intent` Step 0.9 scope detection (Iter 28). Step through each case; document actual vs expected output.
+Manual test fixtures for `plan --scope` — plan Step 0.9 scope detection (`skills/plan/references/scope-flow.md`; the picker moved here from generate-intent, removed in 9.0). Step through each case; document actual vs expected output.
+
+## Test 0: Front door with `--scope` → guarded lane
+
+**Setup**:
+- cwd: `~/test-projects/order-be/` (a starterkit is present)
+- PRD: `tests/scenarios/sample-prd-multi-scope.md`
+
+**Invocation**:
+```bash
+cd ~/test-projects/order-be/
+/mega-sdd ./tests/scenarios/sample-prd-multi-scope.md --scope=BE
+```
+
+**Expected**:
+- `--scope` is a pipeline-only flag → it implies `--guarded` (route-lane.sh records the override)
+- The picker is bypassed; the proposed chain is `plan <prd> --lite --mode=<existing|new> --scope=BE` → `execute-bolts --all --lite`, ONE confirmation
+
+**Pass criteria**: Guarded lane forced; no picker; `--scope=BE` reaches the `plan` hop.
+
+---
 
 ## Test 1: Canonical multi-scope PRD → interactive picker
 
@@ -12,12 +32,12 @@ Manual test fixtures for `generate-intent` Step 0.9 scope detection (Iter 28). S
 **Invocation**:
 ```bash
 cd ~/test-projects/order-be/
-/mega-sdd:generate-intent ./tests/scenarios/sample-prd-multi-scope.md
+/mega-sdd:plan ./tests/scenarios/sample-prd-multi-scope.md
 ```
 
 **Expected**:
-- generate-intent detects `scopes: { BE, MW, FE }` from frontmatter
-- AskUserQuestion fires with 5 options (3 scopes + "All scopes" + Cancel)
+- plan detects `scopes: { BE, MW, FE }` from frontmatter
+- AskUserQuestion fires with 5 options (3 scopes + "All scopes" + Cancel), led by the line "Memilih satu scope memfilter PRD ke bagian scope itu; …"
 - Smart default: BE (cwd basename `order-be` matches BE)
 - Option 1 labeled "BE — Backend API (recommended)"
 
@@ -31,14 +51,14 @@ cd ~/test-projects/order-be/
 
 **Invocation**:
 ```bash
-/mega-sdd:generate-intent --scope=MW ./tests/scenarios/sample-prd-multi-scope.md
+/mega-sdd:plan --scope=MW ./tests/scenarios/sample-prd-multi-scope.md
 ```
 
 **Expected**:
-- generate-intent reads scopes; validates `MW` is declared
+- plan reads scopes; validates `MW` is declared
 - NO AskUserQuestion (silent)
-- Vault tagged scope=MW
-- 00-index.md sibling scopes: BE, FE
+- `vault.json` tagged `scope: MW` + `scope_metadata` (via the Step-3 `derive-vault-json.sh --patch`, never hand-written); `context.md` frontmatter carries `scope` / `scope_name`
+- `context.md ## Overview` carries the H3 `### Sibling scopes (managed externally — NOT in this vault)` listing BE + FE
 - Consumed contracts: be-mw-appointment-events
 - Published contracts: (none — MW is mid-stream in this fixture)
 
@@ -52,20 +72,19 @@ cd ~/test-projects/order-be/
 
 **Invocation**:
 ```bash
-/mega-sdd:generate-intent --scope=XYZ ./tests/scenarios/sample-prd-multi-scope.md
+/mega-sdd:plan --scope=XYZ ./tests/scenarios/sample-prd-multi-scope.md
 ```
 
 **Expected**:
-- generate-intent reads scopes; validates `XYZ` not in declared list
-- Halts `scope_not_declared_in_prd`
+- The PreToolUse scope-flag gate (`validate-scope-flag.sh`, on the `plan` / front-door dispatch) blocks with `scope_not_declared_in_prd`; plan's own Step 0.9 check is the in-skill twin
 - Halt YAML shows: declared_scopes: [BE, MW, FE], requested_scope: XYZ
-- Options: re-pick from valid list OR cancel
+- Options: `re-pick-from-declared` / `cancel`, each with keterangan
 
 **Pass criteria**: Halt fires; YAML structure correct; no vault written.
 
 ---
 
-## Test 4: Legacy PRD (no frontmatter) → retrofit bridge
+## Test 4: PRD without a `scopes:` block → single-scope, no ask
 
 **Setup**:
 - PRD: `tests/scenarios/sample-prd-legacy-no-frontmatter.md`
@@ -73,22 +92,17 @@ cd ~/test-projects/order-be/
 
 **Invocation**:
 ```bash
-/mega-sdd:generate-intent ./tests/scenarios/sample-prd-legacy-no-frontmatter.md
+/mega-sdd:plan ./tests/scenarios/sample-prd-legacy-no-frontmatter.md
 ```
 
 **Expected**:
-- generate-intent reads PRD; no `scopes:` block detected
-- AskUserQuestion fires with options:
-  - [1] Yes, propose retrofit (recommended)
-  - [2] Treat as single-scope PRD
-  - [3] Cancel
-- On user choosing [1]:
-  - Subagent dispatched per `legacy-retrofit-prompt.md`
-  - Detects: BE (Backend Lead: Alice Doe), FE (UX Lead: Bob Smith), MW (Integration Lead: Carol Lee)
-  - Confidence: HIGH for BE+FE, MEDIUM for MW
-  - Diff rendered to user
+- plan reads PRD; no `scopes:` block detected → treated as single-scope
+- NO AskUserQuestion, NO retrofit subagent — interactive and `--auto` alike (the 8.x retrofit bridge left with generate-intent)
+- The vault.json patch records `scope_inferred: single`; no scope tagging
+- ONE delivery-report line offers the manual retrofit: add a `scopes:` block by hand, then `plan --regenerate --scope=<id>`
+- Original PRD untouched
 
-**Pass criteria**: Retrofit AskUserQuestion fires; subagent dispatched on accept; original PRD untouched.
+**Pass criteria**: No prompt; one report line; PRD byte-identical.
 
 ---
 
@@ -100,20 +114,20 @@ cd ~/test-projects/order-be/
 
 **Invocation**:
 ```bash
-/mega-sdd:generate-intent ./tests/scenarios/sample-prd-single-scope.md
+/mega-sdd:plan ./tests/scenarios/sample-prd-single-scope.md
 ```
 
 **Expected**:
-- generate-intent reads scopes; only 1 scope declared (BE)
+- plan reads scopes; only 1 scope declared (BE)
 - NO AskUserQuestion (silent — single scope is unambiguous)
 - Vault tagged scope=BE
-- 00-index.md sibling scopes: [] (empty)
+- No sibling-scope note in `context.md ## Overview` (there are none)
 
 **Pass criteria**: Silent execution; vault tagged scope=BE; no AskUserQuestion fired.
 
 ---
 
-## Test 6: Memory hit on second invocation
+## Test 6: Prior-vault hit on re-invocation
 
 **Setup**:
 - cwd: `~/test-projects/order-be/`
@@ -122,22 +136,24 @@ cd ~/test-projects/order-be/
 
 **Invocation**:
 ```bash
-# Same PRD, same cwd, second time
-/mega-sdd:generate-intent ./tests/scenarios/sample-prd-multi-scope.md
+# Same PRD, same cwd, second time — the vault exists, so plan needs --regenerate
+/mega-sdd:plan --regenerate ./tests/scenarios/sample-prd-multi-scope.md
 ```
 
 **Expected**:
-- generate-intent reads scopes; multi-scope detected
+- plan reads scopes; multi-scope detected
 - Existing-vault lookup: a vault in this project carries the same `prd_sha256` + `scope: BE` → suggest BE
 - AskUserQuestion fires with shortened prompt:
   ```
-  ▶ PRD ./...md recognized (last scope: BE)
+  ▶ PRD ./...md recognized (sha256: <hash>...)
+    Existing vault scope: BE (vault.json)
   ❓ Same scope this run?
      [Enter] BE (recommended — confirm-once)
      [2/3/4] Different scope
      [5] Cancel
   ```
-- On Enter: BE accepted without re-picking (AskUserQuestion has no timer — nothing defaults silently)
+- On Enter: BE accepted without re-picking (AskUserQuestion has no timer — nothing defaults silently); under `--auto` the prior-vault scope is taken silently
+- Without `--regenerate`, plan refuses in one line (existing `context.md`) before any scope prompt
 
 **Pass criteria**: Confirm-once UX fires; Enter accepts BE; no timeout exists or is claimed.
 
@@ -149,45 +165,42 @@ cd ~/test-projects/order-be/
 
 **Invocation**:
 ```bash
-/mega-sdd:generate-intent --scope=all ./tests/scenarios/sample-prd-multi-scope.md
+/mega-sdd:plan --scope=all ./tests/scenarios/sample-prd-multi-scope.md
 ```
 
 **Expected**:
-- generate-intent skips picker entirely
+- plan skips picker entirely
 - Warning emitted: "Combined vault may produce noisy units for non-applicable scopes."
-- Vault written WITHOUT scope field (legacy behavior)
+- The patch omits the `scope` field (back-compat) — vault written WITHOUT scope tagging
 - All PRD content included (universal + BE + MW + FE)
 
 **Pass criteria**: Warning shown; vault has no scope field; full content included.
 
 ---
 
-## Test 8: --scope=BE + --kb=<path> + --scan=<map> (full composition)
+## Test 8: --scope=BE on a brownfield repo (composition)
 
 **Setup**:
-- cwd: `~/test-projects/order-be/`
+- cwd: `~/test-projects/order-be/` — an existing Laravel app (GROUND has built the symbol index; `derived.framework_pack` = the Laravel pack)
 - PRD: `tests/scenarios/sample-prd-multi-scope.md`
-- KB: synthetic `.mega-sdd/knowledge-base/` from prior extract-intelligence run
-- codebase-map: synthetic `.mega-sdd/codebase/codebase-map.md` with framework: laravel-base-26
 
 **Invocation**:
 ```bash
-/mega-sdd:generate-intent --kb=.mega-sdd/knowledge-base/ --scan=.mega-sdd/codebase/codebase-map.md --scope=BE ./tests/scenarios/sample-prd-multi-scope.md
+/mega-sdd:plan --scope=BE --mode=existing ./tests/scenarios/sample-prd-multi-scope.md
 ```
 
 **Expected**:
-- Scope filter applied first (BE-only PRD content)
-- KB consulted with tier-aware routing (Iter 22): [LOCKED] preserved, [INTENT] free
-- Framework pack loaded (Iter 23): laravel-base-26 Hard Rules emitted
-- Starterkit-first vault (Iter 27): dual-citation in 02-architecture
-- Vault has scope=BE + scope_metadata + pack_path + KB tier annotations
+- Scope filter applied first (universal sections + §Backend only)
+- Brownfield task typing from the symbol index (`query-symbol-index.sh`): a hit → `verify`/`extend` + `## Anchors` + `## Claims`; a miss → `create` + a `must-not-exist` claim — never a CONFIRMED/CONFLICT verdict (the JIT bind writes those at dispatch)
+- The framework pack's rules reach each bolt as the advisory T2 slice at dispatch, not as new machine-checked unit rules
+- `vault.json` has scope=BE + scope_metadata; there is no `--scan=<map>` input any more (scan-codebase was removed in 9.0; GROUND replaces it)
 
-**Pass criteria**: All four iters compose correctly; vault has all expected metadata fields.
+**Pass criteria**: Scope filter + brownfield typing compose; vault carries the scope metadata; units carry contracts, not verdicts.
 
 ---
 
 ## Notes
 
-- All tests can run manually by stepping through generate-intent skill procedure
+- All tests can run manually by stepping through plan Step 0.9 (`skills/plan/references/scope-flow.md`)
 - Skill should announce which test case is active for traceability
 - Failed test → file issue with verbatim AskUserQuestion output / halt YAML / vault.json

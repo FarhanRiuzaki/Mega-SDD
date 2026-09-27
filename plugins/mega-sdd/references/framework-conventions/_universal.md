@@ -11,7 +11,7 @@ extends: null
 
 # Universal Good-Practice Convention Pack
 
-Always applies — the resolver's fallback chain tail on every lane (`resolve-framework-pack.sh`: `<pack>.md _universal.md`, most-specific wins) and, on the classic lane, loaded by `bind-codebase` step 2.8 either ALONE (when no framework detected) or MERGED WITH a framework-specific pack (framework rules take precedence on conflict).
+Always applies — the resolver's fallback chain tail (`resolve-framework-pack.sh`: `<pack>.md _universal.md`, most-specific wins).
 
 These are universal good practices that hold across most backend frameworks and database systems. Use as baseline when no framework-specific guidance exists.
 

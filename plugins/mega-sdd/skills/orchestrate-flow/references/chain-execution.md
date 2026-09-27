@@ -1,6 +1,6 @@
 # Chain Execution — Preflight, Routing Preflight, Diagnostics, Drift Gate
 
-Detailed procedure for the resolution + execution phases that the SKILL.md router summarizes. Covers: starterkit/mode classification, model-tier resolution, iter-classifier hooks, Plan/Act gating, chain-optimization skip, the predictive preflight loop, auto-integrated diagnostics, and the hybrid drift gate.
+Detailed procedure for the resolution + execution phases that the SKILL.md router summarizes. Covers: starterkit/mode classification, model-tier resolution, iter-classifier hooks, Plan/Act gating, the predictive preflight loop, auto-integrated diagnostics, and the hybrid drift gate.
 
 ## Contents
 
@@ -8,7 +8,6 @@ Detailed procedure for the resolution + execution phases that the SKILL.md route
 - [Model-tier override resolution](#model-tier-override-resolution)
 - [Iter classifier hooks (EP1 / EP2)](#iter-classifier-hooks-ep1--ep2)
 - [Plan/Act gating](#planact-gating)
-- [Chain optimization via binding provenance](#chain-optimization-via-binding-provenance)
 - [Predictive preflight loop](#predictive-preflight-loop)
 - [First-run pre-flight (execute-bolts)](#first-run-pre-flight-execute-bolts)
 - [Auto-integrated diagnostics](#auto-integrated-diagnostics)
@@ -21,11 +20,11 @@ Per user directive "starterkit itu wajib ada. jika tidak ada baru greenfield": a
 
 Three modes determined by inspection:
 
-| Mode | Trigger | Express spine (DEFAULT) | Classic (`--classic` / `spine: classic`) |
-|---|---|---|---|
-| **A — Starterkit-first** (DEFAULT) | `starterkit: detected` + `pack_match: yes` (`derived.framework_pack` from the GROUND matcher) | generate-intent (pack + index aware via state.json/symbol-index) → bind `--express` → units → bolts | scan-codebase FIRST (loads pack into context) → generate-intent (pack-aware vault) → bind → units → bolts |
-| **B — Framework-detected** (universal fallback) | `starterkit: detected` + `pack_match: no` | same as A with `_universal` conventions | scan-codebase FIRST (`_universal.md`) → generate-intent → bind → units → bolts |
-| **C — Greenfield (EXPLICIT)** | `--greenfield` flag OR (cwd empty/.git-only AND user confirms via halt) | generate-intent (stack-agnostic) → user scaffolds later → bind when code exists | same (Mode C was always scan-free) |
+| Mode | Trigger | Chain |
+|---|---|---|
+| **A — Starterkit-first** (DEFAULT) | `starterkit: detected` + `pack_match: yes` (`derived.framework_pack` from the GROUND matcher) | GROUND (`ground.sh`: state + symbol index + pack) → `plan <prd>` (pack + index aware) → `execute-bolts --all --lite` (JIT bind per unit) |
+| **B — Framework-detected** (universal fallback) | `starterkit: detected` + `pack_match: no` | same as A with `_universal` conventions |
+| **C — Greenfield (EXPLICIT)** | `--greenfield` flag OR (cwd empty/.git-only AND user confirms via halt) | `plan <prd>` (stack-agnostic; `implementation_mode: new` → every unit `create`) → user scaffolds → `execute-bolts` (JIT bind per unit at dispatch) |
 
 **Default behavior** when starterkit absent AND `--greenfield` NOT set → halt with `no_starterkit_detected`:
 
@@ -35,18 +34,18 @@ halt:
   reason: "Mega-sdd default workflow requires a framework starterkit (composer.json / package.json / Gemfile / etc.) for delivery-grade output. Vault generation produces stack-agnostic designs without it."
   options:
     a: "Scaffold a starterkit first (recommended). For Laravel: clone base-laravel-26. For Django: django-admin startproject. For Rails: rails new. Then re-run."
-    b: "Proceed as greenfield with --greenfield flag (vault stays stack-agnostic; you scaffold, then bind when code exists — express needs no scan)"
+    b: "Proceed as greenfield with --greenfield flag (plan writes stack-agnostic units, all create; you scaffold, then execute-bolts JIT-binds each unit at dispatch)"
     c: "Cancel"
 ```
 
-**Legacy rebuild scenario** (extract-intelligence + scan-on-target):
+**Legacy rebuild scenario** (extract-intelligence + GROUND on target):
 ```
 extract-intelligence <legacy> → KB
   ↓
-scan-codebase (TARGET — new framework scaffold) → codebase-map.md
+GROUND on the TARGET scaffold (scripts/ground.sh → state.json + symbol index + framework pack)
   ↓
-generate-intent --kb=<kb> --scan=<codebase-map> → vault aware of BOTH legacy domain AND target scaffold conventions
-  ↓ bind → units → bolts
+plan --kb=<kb-dir> → layout-3 vault + units from the KB README.md + modules/*.prd.md; target conventions from GROUND
+  ↓ execute-bolts --all --lite (JIT bind per unit)
 ```
 
 ## Model-tier override resolution
@@ -62,11 +61,11 @@ e. **Emit final `model_tiers:` dict in handoff metadata** for all downstream ski
    ```yaml
    metadata:
      model_tiers:
-       auth-extractor: sonnet
-       authz-extractor: sonnet
+       extract-intelligence-module: sonnet
+       extract-intelligence-verify: sonnet
        code-quality-reviewer: sonnet  # override applied — was opus in catalog
      model_tier_sources:  # provenance trail (OPTIONAL)
-       auth-extractor: catalog
+       extract-intelligence-module: catalog
        code-quality-reviewer: project-config
    ```
 f. **Forward-compat tolerance**: if any role in override sources doesn't exist in catalog → emit SOFT halt `model_tier_unknown` (warn-only); log warning; ignore that override; chain proceeds with catalog default.
@@ -101,16 +100,6 @@ iter_type defaults to **PATCH** (no classifier exists), which routes to the PATC
 
 Stale-plan check: if `.plan-pending` exists from a prior session AND > 24h old → warn user "stale plan; rerun `/mega-sdd --plan` or delete `.plan-pending`".
 
-## Chain optimization via binding provenance
-
-**Express-lane short-circuit (evaluated FIRST):** if the prior `binding.md` frontmatter carries `binding_metadata.retrieval` (an express bind), this whole optimization is INAPPLICABLE — express stamps `no-snapshot` unconditionally because it reads no map, and the express-spine chains contain no `scan-codebase` hop to remove or retain in the first place. Applying the `no-snapshot` branch below to an express binding would re-add the demoted scan phase to every express chain — the exact resurrect-vector P2 closes. Skip to the preflight loop.
-
-Otherwise (classic lane): after the chain is built, if it includes `scan-codebase` AND `<vault-path>/binding.md` already exists from a recent bind-codebase run, read the binding header for `binding_metadata.codebase_map_provenance` (written by bind-codebase per its SKILL.md):
-
-- IF `snapshot-verified` AND `<project>/.mega-sdd/codebase/codebase-map.md` mtime is newer than every tracked source file mtime → REMOVE scan-codebase from the chain; log: `"⊘ scan-codebase skipped: binding.md attests snapshot-verified + source files unchanged"`.
-- IF `snapshot-stale` → keep scan-codebase; prepend log: `"⚠ scan-codebase retained: binding.md flagged snapshot-stale; codebase changed since last binding"`.
-- IF `no-snapshot` OR `unverified-external` (externally-authored map without writer-provenance — can never attest freshness) OR binding.md absent OR field unparseable → keep scan-codebase (baseline behavior; no optimization).
-
 ## Predictive preflight loop
 
 Consults the predictive-checks catalog (the `predictive-checks` reference indexed in SKILL.md §Specialist references). Runs BEFORE invoking any skill in the proposed chain.
@@ -121,7 +110,7 @@ a. For each skill in the proposed chain (in order):
    - On match → pass; continue.
    - On mismatch: `fatal: no` → accumulate warning (surface to user before chain start); `fatal: yes` → emit halt `predictive_check_failed` with check_id + skill in details; STOP chain (do NOT invoke any skill).
 b. After all skills checked:
-   - If ≥1 warning accumulated → display warnings via a single message before chain start (e.g., "⚠️ no AST engine installed; chain will use regex engine").
+   - If ≥1 warning accumulated → display warnings via a single message before chain start (e.g., "⚠️ ast-grep not installed — no symbol index; brownfield units typed create, symbol claims stay OQ at JIT bind").
    - If chain halted with `predictive_check_failed` → output halt YAML envelope + exit (no first-run pre-flight, no execution).
 c. Wall-clock budget: ≤2 sec total (lightweight bash checks only); if exceeded → log warning + proceed (graceful degradation).
 d. **First-run pre-flight special case:** the execute-bolts-specific first-run pre-flight (below) runs AFTER this generic loop. It covers execute-bolts behaviors the generic catalog doesn't capture.
@@ -131,12 +120,12 @@ d. **First-run pre-flight special case:** the execute-bolts-specific first-run p
 type: predictive_check_failed
 source_skill: orchestrate-flow
 details:
-  failing_check_id: ast_engine_present
-  failing_skill: scan-codebase
-  command_run: "command -v ast-grep"
+  failing_check_id: prd_or_kb_input_present
+  failing_skill: plan
+  command_run: "test -f docs/prd.md"
   expected: "exit 0"
-  actual: "exit 1 (binary not found)"
-next_action: "Install ast-grep (brew install ast-grep / cargo install ast-grep — or run /mega-sdd:install-deps) then re-run. Alternatively, run scan-codebase with --engine=regex to accept the regex tier."
+  actual: "exit 1"
+next_action: "Pass the PRD path or --kb=<kb-dir> (run extract-intelligence first), then re-run."
 ```
 
 ## First-run pre-flight (execute-bolts)
@@ -148,8 +137,9 @@ tool surfaces at dispatch time (superpowers-bridge.md §Dispatch order).
 ## Auto-integrated diagnostics
 
 > **`--lean` profile:** the ADVISORY rows below (`lint-units`, `analyze-parallelism`,
-> `list-modules`, `emit-agents-md`) are SKIPPED on express-spine chains (the P3 default) AND when the profile is lean; classic-spine chains keep them (`--lean` flag or
-> `profile: lean` in config.yaml) — each is re-runnable on demand. `detect-drift` (the hybrid
+> `list-modules`, `emit-agents-md`) are SKIPPED by default (the P3 lean default) and under the
+> lean profile (`--lean` flag or `profile: lean` in config.yaml); `--full` restores them for a run —
+> each is re-runnable on demand. `detect-drift` (the hybrid
 > gate) and every emit row (already opt-in via `--with-fsd`) are NOT profile-conditioned.
 
 
@@ -157,13 +147,13 @@ Inside a `--deep` chain (OR `--auto` mode), the orchestrator AUTOMATICALLY runs 
 
 | Phase | Auto-runs | Output integration |
 |---|---|---|
-| After `generate-units` completes | `lint-units --changed-only` (per `references/diagnostics-procedures.md §lint-units` Step 1b — just-regenerated units differ from the analyze ledger's `unit_baseline`, so the first chain run ≈ full sweep and iteration runs scope to the delta ∪ dependents; no ledger → honest full sweep) | One-line chat summary: "lint: N of M units (changed ∪ dependents) — N HIGH / M MEDIUM / K LOW grounding; X/Y anchors verified" + halt-on-LOW-strict if `--strict-quality` flag set |
+| After `plan` completes (only with `--full`) | `lint-units --changed-only` (per `references/diagnostics-procedures.md §lint-units` Step 1b — just-regenerated units differ from the analyze ledger's `unit_baseline`, so the first chain run ≈ full sweep and iteration runs scope to the delta ∪ dependents; no ledger → honest full sweep) | One-line chat summary: "lint: N of M units (changed ∪ dependents) — N HIGH / M MEDIUM / K LOW grounding; X/Y anchors verified" + halt-on-LOW-strict if `--strict-quality` flag set |
 | Before `execute-bolts` invocation | `analyze-parallelism` — run the script form `bash <plugin-root>/scripts/analyze-parallelism.sh <vault> --cwd=<root> --format=json` (per `references/diagnostics-procedures.md §analyze-parallelism`) | Wave plan computed; the JSON's `waves` array (the `depends_on` topological layering) sits IN CONTEXT when the chain dispatches `execute-bolts --all --parallel` (the routing/handoff rows carry the flag — `docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2a), and execute-bolts consumes it as the layering input per `execute-bolts/references/batch-and-fanout.md §--all` (the `target_files` overlap rail is applied there, per wave, never by this plan) |
 | After `execute-bolts` completes | `list-modules` (per `references/diagnostics-procedures.md §list-modules` table format) | Per-module status table in chain end summary |
 | After all phases complete | `emit-agents-md` (per the `emit-agents-md` skill, respecting `config.yaml defaults.emit_agents_md: true\|false`) | `AGENTS.md` (or `.mega-sdd.md` sibling) written at repo root |
 | After all phases complete | `emit-fsd` (per the `emit-fsd` skill, **OPT-IN** — requires `--with-fsd` flag on `auto`/`orchestrate-flow`. Legacy `--no-fsd` still works as no-op for back-compat. Reason: pandoc + Chrome md2pdf render + low user feedback signal per perf audit.) | `<vault>/fsd/FSD.pdf` (+ FSD.md, .citation-map.json) written ONLY when `--with-fsd` passed; chain summary: "FSD emitted: N sections, M citations, mode: <pre-dev\|post-dev>" |
 | **After EACH phase completes (chain boundary)** | **Doc-control stamp refresh** (script-lane, ~0 tokens): for each ALREADY-EMITTED doc — `<vault>/fsd/FSD.md`, `<vault>/prd/PRD.md`, `<vault>/sit/SIT.md`, `<vault>/uat/UAT.md` — that exists, `Run: bash <plugin-root>/scripts/refresh-doc-stamps.sh --vault=<vault> --doc=<fsd\|prd\|sit\|uat> --position="<phase just completed> selesai; next: <next phase or chain end>"`. **`--position` ONLY** — maturity rungs are set at emit time (SIT via the `build-sit-evidence.sh` verdict; FSD via mode) or by humans (PRD `reviewed`/`final`); the chain never bumps maturity. Non-zero exit → log one line, never halt (the stamp is metadata, not a gate). Skip silently when no emitted doc exists. | Doc-control blocks stay current between full emissions (per `plugins/mega-sdd/references/emission-engine.md §Script contracts` + the `scripts/refresh-doc-stamps.sh` header contract) |
-| After `extract-intelligence` completes AND no vault exists yet | Chain-summary MENTION (one line, never auto-run): "KB siap — untuk draft PRD yang bisa dibaca tim dari KB ini (marker `[VERIFIED]/[INFERRED]/[OPEN]` dibawa verbatim), jalankan `/mega-sdd:emit prd` (reverse mode). Pipeline lanjut via `generate-intent --kb` — PRD adalah OUTPUT, bukan input pipeline." | One line in the chain end summary |
+| After `extract-intelligence` completes AND no vault exists yet | Chain-summary MENTION (one line, never auto-run): "KB siap — untuk draft PRD yang bisa dibaca tim dari KB ini (marker `[VERIFIED]/[INFERRED]/[OPEN]` dibawa verbatim), jalankan `/mega-sdd:emit prd` (reverse mode). Pipeline lanjut via `plan --kb=<kb-dir>` (README.md + modules/*.prd.md → vault layout-3 + units) — PRD adalah OUTPUT, bukan input pipeline." | One line in the chain end summary |
 | After `execute-bolts` completes AND ≥1 `bolts/U-*/acceptance.json` exists | Chain-summary PROPOSAL (one line, never auto-run): "Bukti eksekusi tersedia — `/mega-sdd:emit sit` menghasilkan dokumen SIT dengan tabel bukti §4 script-derived (maturity dari coverage evidence)." | One line in the chain end summary |
 | At chain end AND `<vault>/sit/SIT.md` exists | Chain-summary MENTION (one line, never auto-run): "Tim UAT butuh test script? `/mega-sdd:emit uat` menghasilkan skenario bisnis 1:1 dari flow + berita acara." | One line in the chain end summary |
 
@@ -218,9 +208,9 @@ In `--deep` mode, append to the final summary:
   - Parallelism speedup from auto analyze-parallelism (X.Yx vs sequential)
   - Per-module status from auto list-modules (X/Y modules completed)
   - AGENTS.md emission confirmation (file path + section count)
-  - Acceptance-test concerns from execute-bolts handoff: IF `metrics.acceptance_test_concerns: []` is non-empty (bolt subagent flagged implementation passes acceptance test but feels under-validated), surface as: `"⚠ N/M bolts flagged acceptance_test_concern — review for under-validation: <unit_id list>. Consider re-running affected units with adversarial-reviewed acceptance tests (re-run generate-units --regenerate --adversarial-subagent for the affected units)."`
-  - Deferred open questions (P3/A6): IF the vault carries `open_questions[] status == deferred` (incl. express auto-defers), surface as: `"⏸ N OQ deferred (auto-deferred P2/P3 di jalur express + defer manual) — <tag list>. Jawab kapan saja: resolve-oq."` — the defer is recorded state; this line is its mandated resurface (also in execute-bolts `_summary.md §Deferred open questions` and the non-deep Emit-final-summary step).
-  - FSD pending sections: IF the chain ran emit-fsd, read `<vault>/fsd/.citation-map.json` `missing_sources[]` — non-empty → surface: `"ℹ FSD emitted with N pending section(s) (sources not yet produced: <list>) — full coverage after the missing artifacts exist (scan/bind/bolts), then re-run /mega-sdd:emit fsd."`
+  - Acceptance-test concerns from execute-bolts handoff: IF `metrics.acceptance_test_concerns: []` is non-empty (bolt subagent flagged implementation passes acceptance test but feels under-validated), surface as: `"⚠ N/M bolts flagged acceptance_test_concern — review for under-validation: <unit_id list>. Harden the affected units' acceptance_test (re-run plan's Step 9.5 adversarial review on those units only — plan/references/adversarial-test-prompt.md §Opt-in subagent mode — and merge the gaps in place; never plan --regenerate, it rewrites every unit), then execute-bolts <unit_id> --force."` — mirrors `execute-bolts/references/halts-and-handoff.md §Post-flight acceptance-test concern harvest`.
+  - Deferred open questions (P3/A6): IF the vault carries `open_questions[] status == deferred` (incl. the batched walk's auto-defers), surface as: `"⏸ N OQ deferred (auto-deferred P2/P3 + defer manual) — <tag list>. Jawab kapan saja: resolve-oq."` — the defer is recorded state; this line is its mandated resurface (also in execute-bolts `_summary.md §Deferred open questions` and the non-deep Emit-final-summary step).
+  - FSD pending sections: IF the chain ran emit-fsd, read `<vault>/fsd/.citation-map.json` `missing_sources[]` — non-empty → surface: `"ℹ FSD emitted with N pending section(s) (sources not yet produced: <list>) — full coverage after the missing artifacts exist (bolts → per-unit binding.json; codebase-map.md / binding.md only on readable layout-2 vaults), then re-run /mega-sdd:emit fsd."`
 - **Predictive preflight metrics:**
   ```yaml
   metrics:
@@ -228,7 +218,7 @@ In `--deep` mode, append to the final summary:
     predictive_halts_count: <int>        # count of fatal predictive halts (always ≤1 since fatal halts STOP)
   ```
 - **Phase context** (appended when vault.json has a `phase` field):
-  - IF `vault.phase < vault.phase_total` (legacy numbered-tree KB only — PRD-kontrak KBs are single-phase, module = phasing unit): "Phase <N> of <M> complete. To start Phase <N+1>: see `.mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>` OR run `generate-intent --kb=<KB> --phase=<N+1>`."
+  - IF `vault.phase < vault.phase_total` (legacy numbered-tree KB only — PRD-kontrak KBs are single-phase, module = phasing unit): "Phase <N> of <M> complete. To start Phase <N+1> (MANUAL checkpoint — not auto-routed): `plan --kb=<KB dir> --phase=<N+1>`. Plan: `.mega-sdd/knowledge-base/99-rebuild-architecture/suggested-phasing.md §Phase <N+1>`." (`--phase=N` is the numbered-tree KB flag — `plan/references/kb-input.md §Consumption — legacy numbered-tree grammar`.)
   - IF `vault.phase == vault.phase_total`: "Phase <N> of <M> complete. All phases finished."
   - IF `phase` field absent (single-phase project OR pre-phasing vault): omit the phase context section.
 

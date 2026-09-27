@@ -101,7 +101,7 @@ Provenance values:
 
 > At `--unit-tier=xs` the NOTE is compressed to three lines — facts + instruction; the full rationale stays in stdout `sections_omitted` (context-enrichment.md §XS emission).
 
-execute-bolts injects this NOTE into the dispatch prompt when the unit's `acceptance_test._authored_by` field is `same-pass` OR `adversarial-review-failed` (weak blind-spot coverage signals per `generate-units/references/adversarial-test-prompt.md` §provenance values).
+execute-bolts injects this NOTE into the dispatch prompt when the unit's `acceptance_test._authored_by` field is `same-pass` OR `adversarial-review-failed` (weak blind-spot coverage signals per `plan/references/adversarial-test-prompt.md` §`_authored_by:` provenance values).
 
 ```
 > NOTE: This unit's `acceptance_test` has weak blind-spot coverage
@@ -275,7 +275,7 @@ Anti-kuno tells (a match in your output = defect): <modern-baseline.md §Anti-ku
 
 ## Confidence labels per claim
 
-<for each claim this unit implements (from binding.md):>
+<for each claim this unit implements (from a pre-9.0 layout-2 binding.md; layout-3: section omitted — per-unit binding.json confidence not wired):>
 - [<HIGH | MEDIUM | LOW | OQ>] <claim text>
   └─ Source: <binding citation OR KB inference OR heuristic default>
 

@@ -22,29 +22,29 @@ Manual-run fixture for `diff-vault` skill.
 - **Expect:** Flow proposes diff-vault as first step (overrides other proposals)
 
 ### DV5: Delta lane — ticket-scale chat brief against an owned vault
-- **Setup:** existing BOUND vault whose `03-data-model.md` owns entity `nasabah`; no new PRD file
+- **Setup:** existing layout-3 vault whose `vault.json` index names entity `nasabah` (`context.md ## Data model`), units carry per-unit `bolts/U-*/binding.json`; no new PRD file
 - **Prompt:** `/mega-sdd "tambah kolom npwp di form nasabah"`
-- **Expect:** front door proposes the DELTA chain — `diff-vault --from-prompt` → claim-scoped re-bind (`--paths=@<vault>/.delta-changed-paths.txt`) → `generate-units --reconcile` → stale/new bolts; NOT a new vault via generate-intent Mode B
+- **Expect:** `route-lane.sh` → guarded (`vault_present`); the mechanical ownership check matches exactly one vault → front door proposes the DELTA chain — `diff-vault --from-prompt` → `scripts/rebind-units.sh --paths=@<vault>/.delta-changed-paths.txt` (claim-scoped re-bind) → `plan --reconcile` → `execute-bolts --all --lite` (stale units); NOT a new vault via `plan`. A delta that needs a NEW unit goes `plan --regenerate` (reconcile never adds one)
 
 ### DV6: Delta lane — over-cap brief halts, nothing applied
 - **Setup:** as DV5 but the brief describes 4 new entities + 2 new flows
 - **Prompt:** `/mega-sdd "bikin modul deposito: produk, bunga, rollover, penalti, form pembukaan, flow pencairan"`
-- **Expect:** diff-vault Step 3 halts `delta_too_large` (ALWAYS STOP, even --auto); vault untouched; options full_lane / split_ticket / cancel each with keterangan; full_lane routes to `generate-intent --from-prompt`
+- **Expect:** diff-vault Step 3 halts `delta_too_large` (ALWAYS STOP, even --auto); vault untouched; options full_lane / split_ticket / cancel each with keterangan; full_lane → the front door writes the brief to a file and re-enters `route-lane.sh` (under `--guarded`: `plan <brief-file> --lite` into a NEW vault dir — never `plan --regenerate` on this vault), or the direct/assisted lane
 
 ### DV7: Delta lane — unbound vault falls through (exit 3)
-- **Setup:** vault exists but NO `binding.json` (never bound)
+- **Setup:** vault exists but no unit was ever bound (no `bolts/U-*/binding.json`, no layout-2 `binding.json`)
 - **Prompt:** `/mega-sdd "tambah kolom npwp di form nasabah"` → user picks the delta option
-- **Expect:** diff-vault applies the patch; `derive-delta-paths.sh` exits 3; NO scoped bind hop — the router proposes the normal chain rows (no fabricated `--paths`)
+- **Expect:** diff-vault applies the patch; `derive-delta-paths.sh` exits 3; NO scoped re-bind hop — the JIT bind at dispatch covers it and the router proposes the normal chain rows (no fabricated `--paths`)
 
-### DV8: Greenfield brief unchanged (guard)
+### DV8: Greenfield brief (guard)
 - **Setup:** NO vault in CWD
 - **Prompt:** `/mega-sdd "build a clinic appointment system"`
-- **Expect:** Mode B unchanged — `generate-intent --from-prompt` chain; the delta lane NEVER fires without an existing owned vault
+- **Expect:** `route-lane.sh --text` → direct/assisted (under `--guarded`: seed PRD → `plan` into a new vault); the delta lane NEVER fires without an existing owned vault
 
 ## Behavior checks
 
 ### B1: Structured diff produced
-- Output: `DIFF.md` (or similar) at vault parent dir
+- Output: `<vault>/VAULT-DIFF.md` (overwritten per run; conflicts in a PRIORITY-1 section at the top)
 - Lists added / changed / removed sections
 - Each entry cites old vault line + new PRD section
 

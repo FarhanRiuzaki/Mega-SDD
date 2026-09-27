@@ -121,7 +121,12 @@ N9=$(grep -c '^- `[a-z0-9_]*` \*(subtype of `quality_gate_failed`)\*' "$HP")
 # 9 -> 7 (doc-audit 2026-08-23): replan_budget_exceeded + revalidate_budget_exceeded
 # deleted — zero emitters anywhere (never shipped); the count pins the LIVE set.
 # 7 -> 8 (8.4.0): claim_verify_failed registered — live emitter in extract-intelligence Step 5.
-[ "$N9" -eq 8 ] && ok "d2c all 8 subtype rows marked" || fail "d2c subtype row markers wrong: $N9"
+# 8 -> 7 (9.0 P1, spec 2026-09-27-v9-simplification-design.md §3 + §7 #1): starterkit_metrics_inconsistent
+# retired — its only producer was orchestrate-flow's generate-units handoff arm
+# (`metrics.units_with_starterkit_rules`), deleted with generate-units; plan dropped the starterkit
+# step, and the flow.md family section went with it. The count still pins the exact LIVE set.
+[ "$N9" -eq 7 ] && ok "d2c all 7 subtype rows marked" || fail "d2c subtype row markers wrong: $N9"
+grep -q 'starterkit_metrics_inconsistent' "$HP" && fail "d2d retired subtype starterkit_metrics_inconsistent back in registry" || ok "d2d retired subtype stays out of registry"
 
 echo "── d3: stop-class floor across family files (semantic-flip tripwire) ──"
 NSTOP=$(cat "$FD"/*.md | grep -o 'ALWAYS STOP' | wc -l | tr -d ' ')

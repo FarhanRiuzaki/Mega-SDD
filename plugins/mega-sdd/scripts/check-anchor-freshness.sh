@@ -189,7 +189,9 @@ for unit_id, lines in blocking:
 print("Keterangan: anchor di unit menunjuk file/baris yang sudah tidak ada di "
       "codebase (file terhapus/berpindah, atau baris bergeser melewati akhir "
       "file) — bolt-implementer akan membaca evidence yang salah. Perbaiki: "
-      "jalankan /mega-sdd:sync (atau bind-codebase ulang) supaya "
+      "jalankan /mega-sdd:sync (atau re-bind JIT: scripts/rebind-units.sh "
+      "--cwd=<root> --vault=<vault> --units=<U-XXX> — write-unit-binding.sh "
+      "memperbaiki rentang baris yang bergeser) supaya "
       "anchors di-refresh dari kondisi kode terkini, ATAU edit baris ## Anchors "
       "unit yang tercantum ke path:line yang benar, lalu jalankan ulang "
       "execute-bolts.", file=sys.stderr)

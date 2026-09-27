@@ -19,6 +19,12 @@
 # temp (planted AWS key → [REDACTED-SECRET] in the map + findings on stdout)
 # and the validator refresh (exit 0 == validator PASS).
 #
+# 9.0 P1: the scan-codebase skill (its SKILL.md, scan-procedure.md and
+# codebase-map-schema.md — the only callers/documenters of this deriver) was
+# REMOVED with no relocation (v9 design §3, §7 #8). The script itself survives
+# until the P1b pruning audit, so every BEHAVIOURAL pin below stays; the old
+# §7 "prose pins" (which grepped those deleted docs) were retired.
+#
 # Run: bash tests/token-efficiency/test-derive-codebase-map.sh
 set -uo pipefail
 
@@ -149,17 +155,10 @@ LEFT=$(find "$P" -name 'codebase-map.md.tmp.*' | wc -l | tr -d ' ')
 bash "$DERIVER" --bogus >/dev/null 2>&1; RC=$?
 [ "$RC" = "2" ] && ok "unknown arg → exit 2" || fail "unknown arg rc=$RC"
 
-note "== 7. prose pins: the write path routes through the deriver =="
-SP="$PLUGIN/skills/scan-codebase/references/scan-procedure.md"
-SK="$PLUGIN/skills/scan-codebase/SKILL.md"
-SC="$PLUGIN/skills/scan-codebase/references/codebase-map-schema.md"
-grep -qF 'via the deriver — never type the map' "$SP" && ok "Step 10 routes through the deriver" || fail "Step 10 prose stale"
-grep -qF 'CHAINED BY THE DERIVER' "$SP" && ok "Step 10a secret-scan reframed as deriver-chained" || fail "10a prose stale"
-grep -qF 'STRUCTURAL since the deriver' "$SP" && ok "anti-halu rail marked structural" || fail "anti-halu rail prose stale"
-grep -qF 'exit 3 `fallback_full`' "$SP" && ok "fallback_full exit documented in the procedure" || fail "fallback exit missing"
-grep -qF 'derive-codebase-map.sh' "$SK" && grep -qF -- '--mode=merge' "$SK" && ok "SKILL.md Step 10 carries the runnable deriver form (both modes)" || fail "SKILL.md stale"
-grep -qF 'ASSEMBLED by `scripts/derive-codebase-map.sh`' "$SC" && ok "schema doc notes the deriver (consumers unchanged)" || fail "schema note missing"
-if grep -qF 'Resolve $PLUGIN_ROOT to the LATEST cached version' "$SP" && grep -qF 'secret-scan.sh" --redact <assembled-artifact-tmp-file>' "$SP"; then fail "old manual scrub block survives in Step 10a"; else ok "old manual temp/scrub/rename block gone"; fi
+# (§7 "prose pins" retired in 9.0 P1: every one grepped the deleted
+#  skills/scan-codebase/{SKILL.md,references/scan-procedure.md,
+#  references/codebase-map-schema.md}; the fallback_full exit they documented
+#  stays pinned BEHAVIOURALLY in §4 above.)
 
 note "== 8. review-round pins (F1-F18): variant headers, citations, pairing, padding, joins =="
 # F1 — variant column order: untouched merge carries verbatim (NO drops); touched merge = exit 3

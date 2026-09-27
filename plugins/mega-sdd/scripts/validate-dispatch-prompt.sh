@@ -243,8 +243,8 @@ if not prompt_paths:
 
 # ── In-scope detection: a UI prompt is one whose verbatim unit body declares ──
 # `starterkit_relevance: [... ui_ux ...]`. This is mega-sdd FORMAT vocabulary (the
-# slice taxonomy generate-units writes — references/starterkit-context-schema.md +
-# generate-units Step 7.7.e), NOT a stack signature. INDEPENDENT of the verdict
+# slice taxonomy the pre-9.0 unit generator stamped from starterkit-context.yaml —
+# references/starterkit-context-schema.md; plan does not write it), NOT a stack signature. INDEPENDENT of the verdict
 # markers below (so a token/exemplar-less prompt still counts as ui_ux and FAILs).
 UI_RELEVANCE_RE = re.compile(
     r"starterkit_relevance\s*:\s*\[[^\]]*\bui_ux\b[^\]]*\]"

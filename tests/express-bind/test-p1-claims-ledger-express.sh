@@ -14,13 +14,27 @@
 #   3. Seed-not-boundary reachability — a colliding symbol OUTSIDE the claim's
 #      expected dir MUST be reachable via the unfiltered index query (the
 #      collision sweep's substrate is global by construction), + prose pins that
-#      express-bind.md mandates the sweep, the fail-closed ladder, and
+#      the text-claim ladder E3 mandates the sweep, the fail-closed ladder, and
 #      never-CONFIRMED-by-absence.
-#   4. Flag parity — --express registered across every surface the translation
-#      law requires (front-door hint + body, orchestrate-flow §Flags, bind SKILL,
-#      bind command alias, express-bind.md routed from SKILL.md).
-#   5. Fallback honesty + registrations — loud standard-lane fallback rules
-#      pinned; claims-ledger.json registered in paths.md + both hook prune lists.
+#   4. Flag surface — --express stays in the front-door hint with a body bullet
+#      (translation law); ladder E3 is routed from execute-bolts SKILL.md.
+#   5. Registrations — claims-ledger.json registered in paths.md + the Stop-hook
+#      prune list.
+#
+# 9.0 P1 (spec 2026-09-27 §2/§7): bind-codebase and its express-bind.md /
+# binding-contract.md / auto-memory-handoff.md are deleted. The per-claim
+# retrieval ladder, its rails and the read-evidence field-diff rule survive
+# VERBATIM as ladder E3 of the JIT per-unit bind
+# (skills/execute-bolts/references/jit-bind-and-quarantine.md §E3), so the
+# section-3 prose pins follow them there. RETIRED with the whole-vault express
+# bind: the E0/E1 standard-lane fallback + rc taxonomy, the E2 ledger-skeleton
+# completeness sweep + per-category note + scope_metadata propagation, the
+# --paths / prior-binding.md composition, binding.md frontmatter provenance
+# (no-snapshot / retrieval key / snapshot-verified override), the
+# binding_input_complete predictive carve-out, and the --express spine switch
+# (orchestrate-flow §Flags, bind-hop append, bind SKILL). Sections 1–2 stay:
+# derive-claims-ledger.sh / derive-binding-json.sh / make-bound.sh are kept in
+# P1 for layout-2 read support (spec 2026-09-27 §7 #8).
 #
 # CI-safe: bash + python3 only; no ast-grep dependency (index fixtures are
 # hand-written; query-symbol-index.sh is a pure reader).
@@ -352,47 +366,38 @@ OUTSIDE_HIT=$(bash "$P/scripts/query-symbol-index.sh" --index="$IDX" --name=Prod
   && pass "seed-not-boundary: the UNFILTERED name query surfaces the out-of-dir collision (2 rows global, 1 scoped)" \
   || fail "seed-not-boundary reachability: all=$ROWS_ALL dir=$ROWS_DIR outside=$OUTSIDE_HIT"
 
-EB="$P/skills/bind-codebase/references/express-bind.md"
+# 9.0 P1: express-bind.md §E3 relocated VERBATIM to the JIT bind's ladder E3.
+EB="$P/skills/execute-bolts/references/jit-bind-and-quarantine.md"
 grep -qF 'Collision sweep (moat-critical' "$EB" \
   && grep -qF 'repo-WIDE' "$EB" \
-  && pass "express-bind.md mandates the repo-wide collision sweep" \
+  && pass "ladder E3 mandates the repo-wide collision sweep" \
   || fail "collision sweep mandate missing"
-grep -qF 'two
-   legs, BOTH mandatory' "$EB" && grep -qF 'the index sees only tracked files' "$EB" \
+# (the pre-9.0 pin was a two-line grep -F pattern — an OR of 'two' and the
+# indented second line; pinned here as single-line fragments, which is stricter)
+grep -qF 'legs, BOTH mandatory' "$EB" \
+  && grep -qF 'one bounded repo-wide `Grep` for the' "$EB" \
+  && grep -qF 'the index sees only tracked files' "$EB" \
   && pass "collision sweep carries the mandatory Grep leg (index-coverage residual closed)" \
   || fail "Grep leg / index-coverage disclosure missing"
-grep -qF 'completeness sweep' "$EB" && grep -qF 'SKELETON, never the claim
-   boundary' "$EB" \
-  && pass "E2 mandates the completeness sweep (ledger = skeleton)" \
-  || fail "completeness sweep mandate missing"
-grep -qF 'this-category-is-empty note' "$EB" \
-  && pass "per-category coverage obligation pinned" \
-  || fail "category coverage obligation missing"
-grep -qF 'sanctioned read' "$EB" && grep -qF 'LEDGER ids' "$EB" \
-  && pass "--paths composition: prior binding sanctioned + id-space mapping rules" \
-  || fail "--paths composition rules missing"
-grep -qF 'constrain claim validation to the scope' "$EB" \
-  && pass "scope_metadata propagation preserved in express" \
-  || fail "scope paragraph missing"
+# (RETIRED 9.0 P1: E2 completeness sweep / ledger-as-skeleton, the per-category
+# this-category-is-empty note, the --paths prior-binding.md composition, and the
+# scope_metadata → binding.md header propagation — all whole-vault express-bind
+# steps; the JIT bind derives claims per unit via derive-unit-claims.sh.)
 grep -qF 'Never mint `regex_tier` in this lane' "$EB" \
   && pass "regex_tier honestly excluded (no tier signal without the map)" \
   || fail "regex_tier instruction still underivable"
-grep -qF 'an unknown rc is never treated as pass' "$EB" \
-  && pass "unknown-rc catch-all on the E1 fallback" \
-  || fail "rc taxonomy still open"
+# (RETIRED 9.0 P1: the E1 unknown-rc catch-all — it guarded the fallback to the
+# standard bind lane, which no longer exists.)
 
-# sibling contracts carry the express carve-outs
-PC="$P/skills/orchestrate-flow/references/predictive-checks.md"
-grep -qF 'express_carve_out' "$PC" && grep -qF 'run ONLY the vault.json arm' "$PC" \
-  && pass "predictive-checks binding_input_complete carries the express carve-out" \
-  || fail "predictive-check would falsely halt a mapless express chain"
-AMH="$P/skills/bind-codebase/references/auto-memory-handoff.md"
-grep -qF -- '--express` override' "$AMH" && grep -qF 'never `"snapshot-verified"` on an express bind' "$AMH" \
-  && pass "auto-memory-handoff snapshot check carries the express override" \
-  || fail "provenance precedence still points the wrong way"
-BCON="$P/skills/bind-codebase/references/binding-contract.md"
-grep -qF -- '`--express` provenance variant' "$BCON" \
-  && pass "binding-contract field-diff precondition amended for express" \
+# (RETIRED 9.0 P1: predictive-checks binding_input_complete express carve-out —
+# the check died with the bind hop; auto-memory-handoff.md's snapshot-verified
+# override — whole-vault binding.md provenance, deleted with bind-codebase.)
+# binding-contract.md's express field-diff variant is now the ONLY field-diff
+# rule of ladder E3: read evidence, never the map's ast precision tier.
+grep -qF "A field diff is allowed ONLY when the entity's source file was" "$EB" \
+  && grep -qF 'never inferred from index signatures' "$EB" \
+  && ! grep -qF 'precision_tier' "$EB" \
+  && pass "ladder E3 field-diff precondition is read-evidence (no ast-tier contradiction)" \
   || fail "field-diff ast-tier contradiction unamended"
 grep -qF 'CONFIRMED-by-absence' "$EB" \
   && pass "never-CONFIRMED-by-absence rail present" \
@@ -408,42 +413,34 @@ grep -qF 'NOT optional and NOT scoped' "$EB" \
   && pass "collision sweep pinned unconditional" \
   || fail "collision sweep conditionality leak"
 
-# ══ 4. Flag parity across every surface ══════════════════════════════════════
+# ══ 4. Flag surface ═══════════════════════════════════════════════════════════
 FD="$P/commands/mega-sdd.md"
-OF="$P/skills/orchestrate-flow/SKILL.md"
-BS="$P/skills/bind-codebase/SKILL.md"
+XB="$P/skills/execute-bolts/SKILL.md"
 # (6.0.0 cull: the bind-codebase command alias is gone — the typed --express
 # surface is the front door, asserted below.)
 grep -q -- '--express' <(grep 'argument-hint:' "$FD") \
   && pass "--express in the front-door argument-hint" \
   || fail "--express missing from front-door hint"
-grep -qF -- '`--express` / `--classic` — forwarded VERBATIM' "$FD" \
-  && pass "front door forwards --express/--classic verbatim (translation law satisfied)" \
+# 9.0 P1: the flag is still in the hint, so the translation law still demands a
+# body bullet — now "accepted, selects no spine, no bind hop, no fallback".
+grep -qF -- '`--express` — accepted; it selects no spine' "$FD" \
+  && grep -qF 'there is no bind hop and no standard-lane fallback' "$FD" \
+  && pass "front-door --express bullet present (translation law satisfied)" \
   || fail "front-door --express bullet missing"
-grep -qF -- '`--express` / `--classic`: the spine switch' "$OF" \
-  && pass "orchestrate-flow §Flags owns the spine switch" \
-  || fail "orchestrate-flow §Flags missing --express"
-grep -qF 'appends `--express` to every `bind-codebase` hop' "$OF" \
-  && pass "orchestrator appends --express to bind hops (P2 default)" \
-  || fail "bind-hop append rule missing"
-grep -qF -- '`--express` (claim-scoped retrieval lane' "$BS" \
-  && pass "bind SKILL declares --express" \
-  || fail "bind SKILL missing --express"
-grep -qF 'references/express-bind.md' "$BS" \
-  && pass "SKILL.md routes to express-bind.md (one level deep)" \
-  || fail "express-bind.md not routed from SKILL.md"
-# (bind command alias removed in the 6.0.0 cull — no typed-alias hint to pin.)
+# (RETIRED 9.0 P1: orchestrate-flow §Flags spine switch, the bind-hop --express
+# append rule, and the bind SKILL --express declaration — the spine switch and
+# bind-codebase are gone.)
+grep -qF 'references/jit-bind-and-quarantine.md' "$XB" \
+  && grep -qF 'ladder E3' "$XB" \
+  && pass "execute-bolts SKILL.md routes to ladder E3 (one level deep)" \
+  || fail "ladder E3 reference not routed from execute-bolts SKILL.md"
 
-# ══ 5. Fallback honesty + registrations ══════════════════════════════════════
-grep -qF 'fall back to the' "$EB" && grep -qF 'standard-fallback' "$EB" \
-  && pass "loud standard-lane fallback + audit token pinned" \
-  || fail "fallback honesty rules missing"
-grep -qF 'NO `binding_metadata.retrieval` key' "$EB" \
-  && pass "fallback run must not carry the express retrieval key" \
-  || fail "fallback retrieval-key rule missing"
-grep -qF 'no-snapshot' "$EB" \
-  && pass "express provenance = no-snapshot (closed enum untouched)" \
-  || fail "express provenance rule missing"
+# ══ 5. Registrations ══════════════════════════════════════════════════════════
+# (RETIRED 9.0 P1: the loud standard-lane fallback + standard-fallback audit
+# token, the fallback no-retrieval-key rule, and express binding.md provenance
+# = no-snapshot — the standard bind lane and the whole-vault express binding.md
+# writer are deleted. Section 2 still proves the layout-2 READ side parses the
+# no-snapshot + retrieval-key frontmatter.)
 
 PM="$P/references/paths.md"
 grep -qF 'claims-ledger.json' "$PM" \

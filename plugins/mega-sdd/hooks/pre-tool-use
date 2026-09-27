@@ -631,12 +631,12 @@ PYCE
         ;;
     esac
     # Branch 1c: scope flag validation for orchestrate-flow (the /mega-sdd front
-    # door) / generate-intent; the mega-sdd:auto case arm is inert since the
+    # door) / plan; the mega-sdd:auto case arm is inert since the
     # 6.0.0 alias cull (no auto skill exists) — kept as a harmless dead match.
     # Reads transcript_path to find user's most recent message +
     # extract --scope=X flag (args not in tool_input). Validates against PRD scopes.
     case "${SKILL_NAME:-}" in
-      mega-sdd:auto|mega-sdd:generate-intent|mega-sdd:orchestrate-flow)
+      mega-sdd:auto|mega-sdd:plan|mega-sdd:orchestrate-flow)
         if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "$TRANSCRIPT_PATH" ]; then
           # Extract most recent USER message text from transcript
           USER_MSG=$(TRANSCRIPT_PATH="$TRANSCRIPT_PATH" python3 -c '
@@ -748,19 +748,17 @@ print(
     # Branch 0: predictive preflight — fatal INPUT-precondition check for the skill
     # about to run, BEFORE it burns minutes and halts mid-way. Conservative: only
     # GENUINELY-FATAL preconditions block (a skill that cannot do anything useful
-    # without the missing input). scan-codebase ast-grep is WARN-only (never
-    # FATAL). State recomputed each invocation → self-clears (no deadlock).
+    # without the missing input). State recomputed each invocation → self-clears
+    # (no deadlock).
     case "${SKILL_NAME:-}" in
-      mega-sdd:bind-codebase|mega-sdd:generate-units|mega-sdd:execute-bolts|mega-sdd:scan-codebase|mega-sdd:generate-intent|mega-sdd:plan)
-        # v8 P3 (8.0.0): generate-intent + plan join the list — the alias FATALs
-        # (intent/units/bind folded on the lite lane / a layout-3 vault, one-line
-        # KENAPA) and plan_off_lane are gates, not prose; the classic lane on a
-        # layout-2 vault is byte-identical (the validator PASSes there).
+      mega-sdd:execute-bolts|mega-sdd:plan)
+        # 9.0: plan + execute-bolts only — genuine input preconditions; lite is
+        # the one pipeline (no alias FATALs, no plan_off_lane).
         PREFLIGHT="${SCRIPT_DIR_RPR}/../scripts/validate-preflight.sh"
         if [ -x "$PREFLIGHT" ]; then
           # P2: the dispatch args ride along (b64; decoded inside the script's
-          # python) so the bind map-check can honor the --express lane without
-          # an extra spawn here.
+          # python) so arg-keyed preflight checks (e.g. --vault=) read them
+          # without an extra spawn here.
           bash "$PREFLIGHT" --cwd="$PROJECT_ROOT" --skill="$SKILL_NAME" --args-b64="${SKILL_ARGS_B64:-}" --quiet >/dev/null 2>&1 || true
           PF_STATE="${PROJECT_ROOT}/.mega-sdd/.preflight-state.json"
           if [ -f "$PF_STATE" ]; then
@@ -1019,7 +1017,7 @@ if os.path.exists(moat_path):
         d = json.load(open(moat_path))
     except Exception as e:
         d = None
-        fails.append(("binding->units", "binding->units moat state .validation-blockers.json is UNPARSEABLE (%s) — failing CLOSED. Re-run the handoff validator (bash scripts/validate-handoff-binding-units.sh --cwd=<root>) or bind-codebase to rewrite it, or delete it if no binding ran. State: %s/.validation-blockers.json" % (type(e).__name__, md)))
+        fails.append(("binding->units", "binding->units moat state .validation-blockers.json is UNPARSEABLE (%s) — failing CLOSED. Re-run the handoff validator (bash scripts/validate-handoff-binding-units.sh --cwd=<root>) to rewrite it, or delete it if no binding ran. State: %s/.validation-blockers.json" % (type(e).__name__, md)))
     if d and d.get("status") == "FAIL":
         drops = d.get("drops", [])
         n = len(drops)
@@ -1028,11 +1026,11 @@ if os.path.exists(moat_path):
         # can NEVER be cleared by adding OQ-IDs to frontmatter.
         rem = []
         if any(t in ("conflict_unresolved", "binding_missing") for t in types):
-            rem.append("conflict/binding drops: resolve via resolve-oq --binding <binding.md> (human-in-the-loop), or re-run bind-codebase until conflicts=0")
+            rem.append("conflict/binding drops: resolve via resolve-oq --binding <bolts/U-XXX/binding.json> (human-in-the-loop), then re-bind the unit (3.9b rebind-units.sh --units=<U>) until conflicts=0; layout-2 binding.md: /mega-sdd:migrate-paths --vault-layout=3 first")
         if any(t in ("oq_id_dropped", "conflict_id_dropped") for t in types):
             rem.append("propagation drops: add the missing OQ-/CONFLICT-IDs to the relevant unit frontmatter binding_refs")
         if any(t == "binding_stale_recertify" for t in types):
-            rem.append("binding basi (stale): file yang di-anchor binding berubah sejak binding_metadata.head oleh commit di luar pipeline unit — jalankan /mega-sdd:sync atau bind-codebase ulang (daftar file ada di field expected pada drop-nya)")
+            rem.append("binding basi (stale): file yang di-anchor binding berubah sejak binding_metadata.head oleh commit di luar pipeline unit — jalankan /mega-sdd:migrate-paths --vault-layout=3 lalu /mega-sdd:sync (re-bind per unit) (daftar file ada di field expected pada drop-nya)")
         fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) (binding->units; types: %s). Run bash scripts/validate-handoff-binding-units.sh --cwd=<root> for the drop list. %s. State: %s/.validation-blockers.json" % (n, ", ".join(types), "; ".join(rem) or "see the expected field on each drop", md)))
 
 # bolt-orphans (status==FAIL) — bolt COMMITS with no bolt-report.md (interactive-run
@@ -1265,7 +1263,7 @@ def _bf_leg():
             if head and not head.startswith(h):
                 if _fr._ancestry(g, head, h) == "unreachable":
                     return deny(au, vname, "stamp_unreachable", {"paths": [h[:12]]},
-                                "re-run bind-codebase for vault %s (or /mega-sdd:sync) — never 3.9b" % vrel)
+                                "migrate the vault: /mega-sdd:migrate-paths --vault-layout=3 --vault=%s (then the mandatory full JIT re-bind), or /mega-sdd:sync after migration — never 3.9b on a layout-2 unit" % vrel)
     return None
 
 if IN_RUN:

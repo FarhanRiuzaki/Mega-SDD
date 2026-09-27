@@ -2,8 +2,8 @@
 
 > Canonical schema for `.mega-sdd/codebase/reuse-index.yaml` — the starterkit's callable API surface, so bolts reuse existing code instead of reinventing it. Sibling to `starterkit-context.yaml`; separately cacheable.
 
-**Produced by:** `scan-codebase` deep-scan `reuse-extractor` (5th slice)
-**Consumed by:** `generate-units` (per-unit `reuse_candidates`), `execute-bolts` (bolt reuse-first lookup), `validate-reuse-duplication.sh` (advisory)
+**Produced by:** none in 9.0. Pre-9.0 files stay readable. The 9.0 reuse surface is GROUND's `symbol-index.json` (`build-symbol-index.sh`), which `validate-reuse-duplication.sh` already reads first.
+**Consumed by (when present):** `execute-bolts` (bolt reuse-first lookup via `build-dispatch-prompt.sh`), `build-graph.sh`, `validate-reuse-duplication.sh` (advisory)
 
 ## Anti-halu rails
 1. Every entry MUST carry `_source: <file:line>`; an entry with no verifiable source is dropped, not emitted.

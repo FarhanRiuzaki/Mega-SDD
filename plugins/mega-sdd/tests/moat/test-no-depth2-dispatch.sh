@@ -17,10 +17,14 @@ PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
 EB="${PLUGIN_ROOT}/skills/execute-bolts"
 OF="${PLUGIN_ROOT}/skills/orchestrate-flow"
-GI="${PLUGIN_ROOT}/skills/generate-intent"
 
 # Files in scope: the fan-out / dispatch prose (anywhere the squad/parallel topology
 # is described — including upstream skills that point users at --per-squad).
+# 9.0 P1: generate-intent (and its references/setup-flow.md squad-partition upsell)
+# was deleted with the classic spine — multi-squad authoring is retired (v9 design
+# §4 row 3), so that entry is gone. The surviving upstream --per-squad pointers are
+# orchestrate-flow's routing-rules.md + diagnostics-procedures.md (parallelism
+# suggestion), both scoped below.
 FILES=(
   "${EB}/SKILL.md"
   "${EB}/references/squad-subagent.md"
@@ -28,7 +32,7 @@ FILES=(
   "${EB}/references/superpowers-bridge.md"
   "${EB}/references/hard-rule-scan.md"
   "${OF}/references/routing-rules.md"
-  "${GI}/references/setup-flow.md"
+  "${OF}/references/diagnostics-procedures.md"
 )
 
 fail=0

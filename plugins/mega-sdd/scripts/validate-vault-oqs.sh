@@ -24,9 +24,10 @@
 #
 # TECH-AGNOSTIC: the Task G rails are a PRE-stack capture-stage check (vault has
 # no stack bound yet) operating on mega-sdd VAULT-FORMAT conventions (workflow
-# ceremony nouns + the design_system_flags block generate-intent emits for EVERY
-# vault). NO framework pack is needed by design — a new stack does not change
-# these vault conventions. Documented in generate-intent/references/vault-core.md.
+# ceremony nouns + the design_system_flags block plan emits for EVERY vault
+# (derive-vault-json.sh --patch, plan Step 3)). NO framework pack is needed by
+# design — a new stack does not change these vault conventions. Documented in
+# references/vault-core.md §schema › Operator-workflow-UX capture + Design-Source OQ.
 #
 # Per attestation risk-flag #2: KB cross-check gracefully SKIPS when KB absent
 # (not all projects have KB). NEVER halt on missing KB.
@@ -46,7 +47,7 @@ for arg in "$@"; do
     --cwd=*) CWD="${arg#*=}" ;;
     --file-path=*) FILE_PATH="${arg#*=}" ;;
     --quiet) QUIET=1 ;;
-    # authoring-time gate (generate-intent Step 3.8 / plan Step 5): an undecided
+    # authoring-time gate (plan Step 5): an undecided
     # tech OQ is a hard FAIL. Without it (analyze on an older vault) the same
     # finding is a soft advisory — a pre-existing vault never retro-fails.
     --strict-tech) STRICT_TECH=1 ;;
@@ -215,8 +216,9 @@ BUSINESS_QUESTION_RE = re.compile(
 DESIGN_SOURCE_TAG_RE = re.compile(r"^OQ-DESIGN-SOURCE\b", re.IGNORECASE)
 strict_tech = os.environ.get("STRICT_TECH", "0") == "1"
 # layout-3 (`context.md`) has no bind phase after authoring, so an open `scan`
-# OQ there has no resolver left — it is undecided too (layout-2 resolves `scan`
-# at bind-codebase Step 2.6).
+# OQ there has no resolver left — it is undecided too (layout-2 (classic-built)
+# resolved `scan` at its whole-vault bind, retired in 9.0; it migrates to
+# layout-3 before building).
 is_layout3 = os.path.isfile(os.path.join(os.path.dirname(file_path), "context.md"))
 
 # Walk the body. Build per-OQ blocks: text from OQ mention up to (but excluding)
@@ -452,18 +454,19 @@ for oqe in vj_oqs:
 # TECH-AGNOSTIC: this is a PRE-stack capture-stage check (the vault has no stack
 # bound yet), so there is NO framework pack here by design. The vocabulary below
 # is mega-sdd VAULT-FORMAT convention (the workflow ceremony nouns + the
-# `design_system_flags` block that generate-intent emits for EVERY vault
-# regardless of target stack) — exactly like the F-U-/F-S- flow taxonomy that
+# `design_system_flags` block that plan emits (derive-vault-json.sh --patch) for
+# EVERY vault regardless of target stack) — exactly like the F-U-/F-S- flow taxonomy that
 # flow-coverage hardcodes. A NEW STACK does not change these vault conventions, so
-# no pack section is needed. Documented in generate-intent/references/vault-core.md.
+# no pack section is needed. Documented in references/vault-core.md §schema ›
+# Operator-workflow-UX capture + Design-Source OQ.
 #
 # ANTI-HALLUCINATION: both rails demand an Open Question (operator surface req OR a
 # Design-Source OQ), NEVER a defaulted WCAG/Material/token value. The rails only
 # assert that the maker-checker miss was CAPTURED, not that a value was invented.
 # ═══════════════════════════════════════════════════════════════════════════
 
-# Closed VAULT-FORMAT flow taxonomy (generate-intent/references/vault-core.md
-# §Flow ID prefixes): F-U- user-facing; F-S- system; F-C- cross-cutting; F-X-
+# Closed VAULT-FORMAT flow taxonomy (references/vault-core.md §id-stability):
+# F-U- user-facing; F-S- system; F-C- cross-cutting; F-X-
 # custom. A multi-stage approval (maker-checker) surface is user-facing, so we
 # scope to F-U-/prefix-less flows and EXCLUDE the internal classes.
 SYSTEM_FLOW_RE = re.compile(r"\bF-[SCX]-?\d+\b", re.IGNORECASE)
@@ -583,8 +586,8 @@ def vault_workflow_verdict(flows_text):
 # Operator-facing surface vocabulary (stack-neutral VAULT-FORMAT tells). Presence
 # of ANY in the vault's prose docs (02-architecture, 01-overview, 04-flows) OR
 # vault.json counts the operator surface as MODELED. These are the four surfaces
-# generate-intent must capture: worklist/inbox, decision affordance, human state
-# labels, audit timeline.
+# plan must capture in context.md (plan Step 3): worklist/inbox, decision
+# affordance, human state labels, audit timeline.
 OPERATOR_SURFACE_RE = re.compile(
     r"\b(work[\s-]?list|inbox|task[\s-]?list|pending[\s-]?(?:queue|items|approvals?)|"
     r"availableactions|decision[\s-]?(?:affordance|card|panel)|approve\s*/\s*reject|"
@@ -787,7 +790,9 @@ if active_vault_dir:
                     ),
                     "vault": vault_name,
                     "remedy": (
-                        "In generate-intent, model the operator surface as FIRST-CLASS "
+                        "In plan (Step 3 → context.md ## Flows/## Constraints), or by "
+                        "editing context.md of an existing vault then re-running "
+                        "derive-vault-json.sh, model the operator surface as FIRST-CLASS "
                         "requirements GROUNDED in the flows (never invented), OR emit a "
                         "high-priority Design-Source Open Question if the surface design "
                         "is genuinely undecided."
@@ -801,7 +806,8 @@ if active_vault_dir:
         # ── H2: no-defaulted-standards positive detection (advisory) ──────────
         # The moat forbids a DEFAULTED design standard: a WCAG level / Material design
         # system / specific palette-token value may appear ONLY if a source supplies it
-        # (SKILL.md §No defaulted standards). Rail 2 checks only the INVERSE (a
+        # (plan's no-defaulted-standards rail; skills/plan/references/context-authoring.md
+        # Rule 2). Rail 2 checks only the INVERSE (a
         # Design-Source OQ present) — it never catches a branded standard VALUE shipped
         # with no citation. A defaulted-standard token whose own line carries no source
         # anchor, in a vault with no Design-Source OQ, is likely fabricated → advisory.
@@ -844,7 +850,7 @@ if active_vault_dir:
                 "severity": "advisory",
                 "remedy": (
                     "Cite the source that supplied the value (PRD §, Figma frame, "
-                    "codebase-map, KB), or capture the gap as a Design-Source OQ — never "
+                    "`(source: <file:line>)`, KB), or capture the gap as a Design-Source OQ — never "
                     "default a WCAG/Material/token value."
                 ),
             })
@@ -873,9 +879,9 @@ state = {
         if status == "PASS"
         else (
             f"{len(issues)} vault-OQ issue(s) detected (OQ-citation integrity and/or "
-            "operator_surface_missing / design_source_oq_missing). Re-run "
-            "generate-intent to model the operator surface grounded in the "
-            "flows, emit a Design-Source OQ where UI exists but design source is "
+            "operator_surface_missing / design_source_oq_missing). Re-run plan "
+            "(--regenerate) or edit the vault's context.md to model the operator "
+            "surface grounded in the flows, emit a Design-Source OQ where UI exists but design source is "
             "missing (never default WCAG/Material values), or fix OQ citations via "
             "resolve-oq."
         )

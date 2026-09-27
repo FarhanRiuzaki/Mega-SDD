@@ -1,9 +1,7 @@
 # JIT bind per wave + quarantine — the pre-flight 3.9 / 3.10 procedures
 
-Loaded by `execute-bolts` SKILL.md pre-flight 3.9 / 3.10 ONLY when one of them
-triggers (3.9: the run is lite — front-door `--lite` or `derived.lane: lite` — OR a unit in the wave carries `## Claims` /
-`existing_interfaces`; 3.10: a DEFER-class halt fires on a unit). A default classic
-greenfield wave never reads this file. Spec: `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md`
+Loaded by `execute-bolts` SKILL.md pre-flight 3.9 (every run — execute-bolts runs the
+lite lane only) and 3.10 (a DEFER-class halt fires on a unit). Spec: `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md`
 Appendix F2–F4 (JIT bind) and F6c (quarantine); audit
 `research/2026-09-10-p0-interaction-audit.md` §C (which halts wait for a human).
 
@@ -78,9 +76,6 @@ script; the model's only judgment is the ladder E3 verdict on `text` claims.
 
 `sync --full-bind` runs the same three calls over EVERY unit of the vault
 (the adoption / BA-QA audit sweep — "apakah kode sinkron dengan spec").
-
-**3.9 runs on every layout-3 vault** too (not only under `--lite` / `lane: lite`): a
-plan-born vault's units are gated per unit at dispatch.
 
 ## E3 Text-claim ladder (fail-closed)
 
@@ -213,7 +208,7 @@ the reason in the deny, then:
 | `uncommitted_in_scope` | **Never `git stash`, never commit, restore or reset edits you did not make** (the wave commit rail denies stash anyway). (i) a listed path is in the `target_files` of another unit whose implementer is running → HOLD this unit (no re-bind, no attempt spent); re-check when that implementer returns, then 3.9b. (ii) otherwise → quarantine (§3.10) with `--halt=binding_stale`, the question listing the paths: a human commits or discards them, then RETRY |
 | `rebind_exhausted` | quarantine with `--halt=binding_stale` — one 3.9b at this HEAD already failed; never a second one |
 | `dispatch_prompt_stale`, `dispatch_prompt_missing`, `unit_identity_conflict`, `unit_identity_foreign`, `unit_ambiguous` | rebuild the prompt with `build-dispatch-prompt.sh` and dispatch with its pointer; never a re-bind |
-| classic `stamp_unreachable` | re-run `bind-codebase` for that vault (or `/mega-sdd:sync`); never 3.9b |
+| classic `stamp_unreachable` (a layout-2 `binding.md`) | migrate the vault (`/mega-sdd:migrate-paths --vault-layout=3`, then `rebind-units.sh --units=all`); never 3.9b |
 | `not_evaluated` | a human halt (one screen, keterangan): fix git access (`git config --global --add safe.directory <root>`, a wedged `index.lock`, fsmonitor), then re-dispatch |
 
 A deny spends no attempt. The one-re-bind bound is a mechanism: a 3.9b writes

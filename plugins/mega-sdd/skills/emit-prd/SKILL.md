@@ -35,7 +35,7 @@ description: Generate a PRD from mega-sdd state — forward (vault to PRD prose)
 └── .citation-map.json          # script-written by build-citation-map.sh --doc=prd
 ```
 
-**`<out-root>`** = the vault path in forward mode (`<vault>/prd/` — sibling of `fsd/`/`sit/`); `<project>/.mega-sdd` in reverse mode (no vault exists yet → `<project>/.mega-sdd/prd/PRD.md`; the shared scripts take `--vault=<project>/.mega-sdd`, under which KB citations like `knowledge-base/…` resolve naturally). When generate-intent later creates a vault, the next forward emission moves the PRD home to `<vault>/prd/` (the old draft stays as an inert file).
+**`<out-root>`** = the vault path in forward mode (`<vault>/prd/` — sibling of `fsd/`/`sit/`); `<project>/.mega-sdd` in reverse mode (no vault exists yet → `<project>/.mega-sdd/prd/PRD.md`; the shared scripts take `--vault=<project>/.mega-sdd`, under which KB citations like `knowledge-base/…` resolve naturally). When `plan --kb=<kb>` later creates a vault, the next forward emission moves the PRD home to `<vault>/prd/` (the old draft stays as an inert file).
 
 ## Pre-flight checks
 
@@ -86,7 +86,7 @@ Run `bash <plugin-root>/scripts/refresh-doc-stamps.sh --vault=<out-root> --doc=p
 PRD generated (<forward|reverse>, maturity: draft-from-legacy):
   Sections: 6 · Citations: <N> · Markers carried: <V> [VERIFIED] / <I> [INFERRED] / <O> [OPEN]
   Open items (§6): <K> — resolve via resolve-oq (PRD is an output, not a decision surface)
-  Next: review → human sets maturity 'reviewed' · reverse mode: lanjut generate-intent --kb=<kb>
+  Next: review → human sets maturity 'reviewed' · reverse mode: lanjut plan --kb=<kb>
 ```
 
 ## Halt protocol
@@ -107,9 +107,9 @@ handoff:
     - <abs path to PRD.pdf>            # when rendered
     - <abs path to .citation-map.json>
   next_action:
-    suggested_skill: <null | "generate-intent">
+    suggested_skill: <null | "plan">
     suggested_args: ["--kb=<kb-root>"]   # reverse mode only
-    rationale: "PRD draft emitted; reverse lane continues via generate-intent --kb (the PRD is an output, not the pipeline input)."
+    rationale: "PRD draft emitted; reverse lane continues via plan --kb (the PRD is an output, not the pipeline input)."
   blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers)
   metrics:
     mode: <"forward" | "reverse">

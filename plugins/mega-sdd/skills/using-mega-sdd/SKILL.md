@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 4.3.0
+version: 4.4.0
 description: Session-start router for spec-driven development — weighs every task S/M/L and routes only M/L through a mega-sdd skill; S answers inline. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, revamp, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang.
 ---
 
@@ -32,7 +32,7 @@ A `.mega-sdd/` dir in the CWD is a STATUS signal only (the session-start state b
 
 **Gateway marker:** announce lines end with `` `mega-sdd-trace:<skill>` ``; every subagent dispatch prompt carries one `mega-sdd-trace:<skill>` line. Verbatim, no variants (docs/gateway-contract.md).
 
-**Hard gate:** `bind-codebase` BLOCKS unit generation while `binding.md` has unresolved CONFLICT entries (classic lane; on the lite lane the same CONFLICT closes the unit's gate at `execute-bolts` dispatch — `binding_conflict`).
+**Hard gate:** an unresolved CONFLICT in `bolts/U-XXX/binding.json` (JIT bind, pre-flight 3.9) closes the unit at `execute-bolts` dispatch (`binding_conflict`) until `resolve-oq --binding` settles it.
 
 ## Output language
 
@@ -48,29 +48,31 @@ Narrate (chat, halts, recommendations) in **natural Indonesian-English mix — t
 
 ## The pipeline
 
+The front door's `route-lane.sh` picks the lane: **direct** / **assisted** build without a vault (`plugins/mega-sdd/references/direct-lane.md`); **guarded** (existing vault or `--guarded`) runs the one spec pipeline:
+
 ```
-generate-intent → (bind-codebase --express if brownfield — claim-scoped, zero map load; scan-codebase is ON-DEMAND / classic-spine only) → generate-units → execute-bolts
+plan <prd> (legacy: plan --kb=<kb-dir>) → execute-bolts --all (JIT bind per unit) → delivery-check.sh VERDICT: PASS
 ```
 
-Lite lane (`--lite` / `lane: lite`; guarded-PRD default): `plan` (PRD → `context.md` + units, ONE batched ask at the end) → `execute-bolts --all --lite` (JIT bind per wave, unit-level readiness). Default lane unchanged.
+`plan` writes `context.md` + units in one phase, with ONE batched ask at the end. Every lane delivers the same result: an acceptance-criterion → test table; `delivery-check.sh` `VERDICT: PASS` on the final commit; the list of assumptions and decisions made.
 
 Legacy-rebuild upstream lane (code is the only spec):
 
 ```
-extract-intelligence → generate-intent --kb=<kb> → (canonical pipeline)
+extract-intelligence → plan --kb=<kb-dir> → execute-bolts --all → delivery-check
 ```
 
 Side lanes (as needed): `resolve-oq` (OQ walk), `detect-drift` (code vs vault), `diff-vault` (new PRD revision), `orchestrate-flow` (auto-route by CWD state).
 
 Diagnostic & output lanes compress to the front-door rule — any M/L lane phrase routes to `/mega-sdd`; the side-lane skills (`analyze` "check consistency", `graph` "impact / blast radius", `emit-fsd`/`emit-prd`/`emit-sit`/`emit-uat` (`UAT`, `test script`, `skrip uji`, `berita acara UAT`) via `/mega-sdd:emit`, `emit-agents-md`, `install-deps`) each carry their own trigger census in their always-loaded description and may be invoked directly. "render html" / "html-kan" / "share dokumen ke tim tanpa Claude" → `/mega-sdd:emit html <file|dir>` (the render-html script lane — tier S-sized, but the emit command owns the procedure).
 
-Maintenance lane (never-ending development): when the code moved outside the pipeline (manual edit, AI-prompted edit, hotfix, git pull), `/mega-sdd:sync` (→ `orchestrate-flow --sync`) reconciles: incremental re-scan → drift triage → re-bind → unit reconcile. Sync is OFFERED at the next M/L entry — the front door surfaces the change signal there; it is never a mandatory follow-up to an inline tier-S fix, and the session-start state block is informational only (it never tells the model to run `/mega-sdd` or sync).
+Maintenance lane (never-ending development): when the code moved outside the pipeline (manual edit, AI-prompted edit, hotfix, git pull), `/mega-sdd:sync` (→ `orchestrate-flow --sync`) reconciles: changed-set derivation (`scripts/derive-changed-paths.sh`) → drift triage → `rebind-units.sh` (per-unit JIT re-bind of the units touching the changed paths) → `plan --reconcile`. Sync is OFFERED at the next M/L entry — the front door surfaces the change signal there; it is never a mandatory follow-up to an inline tier-S fix, and the session-start state block is informational only (it never tells the model to run `/mega-sdd` or sync).
 
 
 Multi-PRD lane (a project that grows PRD-by-PRD — PRD 1 ships, PRD 2 adds an epic, doc can be PRD/BRD/Figma/brief): route a NEW doc by what changed, never guess (full contract → `plugins/mega-sdd/references/multi-prd-lifecycle.md`):
 - Same source **revised** (PRD v1 → v1.1) → `diff-vault` (one vault evolves; history preserved).
-- **Ticket-scale chat delta** to an owned vault ("tambah kolom X di form Y" — no doc) → the delta lane: `diff-vault --from-prompt` (scoped patch → claim-scoped re-bind → `--reconcile` units; the `delta_too_large` cap forces an epic-in-disguise to the next row).
-- **New epic** on top of shipped work → **new vault** via `generate-intent`, then `bind-codebase` **brownfield** against the codebase that now contains PRD 1 (+ the project constitution) — the binding gate catches contradictions with shipped reality.
+- **Ticket-scale chat delta** to an owned vault ("tambah kolom X di form Y" — no doc) → the delta lane: `diff-vault --from-prompt` (scoped patch → `rebind-units.sh` (units whose target_files/Anchors hit the patch) → `plan --reconcile`; the `delta_too_large` cap forces an epic-in-disguise to the next row).
+- **New epic** on top of shipped work → **new vault** via `plan <new-prd>` (`implementation_mode: existing`, so task typing queries the symbol index; a claim that contradicts the project constitution becomes a `[P1] [business]` OQ in plan's batched ask) — `execute-bolts`' JIT bind per unit (`bolts/U-XXX/binding.json`) catches contradictions with shipped PRD-1 code at dispatch (CONFLICT gate).
 - **Code moved** → `sync`.
 When the doc's title/scope matches an existing vault's source → revision (diff-vault); a new feature area → new vault; several owning vaults plausible → **ASK** (evolve-in-place vs new-epic diverge hard). the front-door status view (`/mega-sdd` with no argument — derive-state) lists every vault + its position so PRD N knows what shipped; `.mega-sdd/constitution.md` (project-scope, inherited by every vault) keeps PRD 2..N from contradicting PRD 1's locked decisions.
 
@@ -79,10 +81,8 @@ When the doc's title/scope matches an existing vault's source → revision (diff
 | Phase | Skill | Repo access |
 |---|---|---|
 | Legacy → knowledge-base | extract-intelligence | read-only |
-| Brief → vault | generate-intent | not required (consumes KB if `--kb`) |
-| Codebase scan (on-demand map producer; classic-spine chain phase) | scan-codebase | read-only |
-| Validation gate | bind-codebase | read-only |
-| Vault → units | generate-units | read-only |
+| PRD / KB → vault + units | plan | read-only (symbol-index query on brownfield; `--kb=<kb-dir>` for legacy rebuild) |
+| Per-unit bind + CONFLICT gate | execute-bolts pre-flight 3.9 (`write-unit-binding.sh` → `bolts/U-XXX/binding.json`; `resolve-oq --binding`) | read-only |
 | Unit → code | execute-bolts | write |
 
 ## Reference

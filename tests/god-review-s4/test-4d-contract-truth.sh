@@ -6,15 +6,30 @@
 #                      rows; short rows are ERRORS (not silent skips); a claims[]
 #                      entry missing "id" is a clean FAIL (exit 2), not a traceback.
 #   BC-RESOLVE-TOKEN   resolve-oq --binding writes the structural marker grammar the
-#                      gate reads; CONFIRMED_PENDING_CODE_UPDATE is gone plugin-wide.
+#                      gate reads; CONFIRMED_PENDING_CODE_UPDATE is gone plugin-wide;
+#                      the derived binding.json carries the closed `resolution` enum.
 #   RSOQ-LIVELOCK      KEEP_VAULT/DEFER hand-off no longer prescribes the re-bind
 #                      that re-raises the same CONFLICT forever.
 #   BC-ADVISOR-RO-1    retired v7.4.0 — the phase-advisor agent was removed (Fase 5).
-#   BC-ANCHOR-ATTEST-1 binding-json-schema states the honest enforcement story.
-#   BC-RECOMMEND-CONF-1 recommend-mode confidence gate is consistent across files
-#                      and matches generate-intent's shipped heuristics.
-#   BC-HANDOFF-3       handoff-contract bind block uses <vault>/bound/ + emitted_at.
+#   BC-RECOMMEND-CONF-1 confidence grades the CATEGORY call, never the tech decision
+#                      (references/vault-core.md — the relocated OQ contract).
 #   BC-VAL-6 (docs)    example conflict IDs use the canonical CONFLICT-N form.
+#   MSG-1              a conflict_unresolved drop routes to the moat halt, never to
+#                      a frontmatter edit.
+#
+# 9.0 P1 (spec 2026-09-27-v9-simplification-design.md §2/§7): bind-codebase was
+# deleted. Pins on its own references (conflict-resolution, binding-json-schema,
+# oq-resolution, binding-contract, binding-md-template, constitution-and-oq,
+# handoff-validation, auto-memory-handoff) were REPOINTED to the surviving owner of
+# the same behaviour, or RETIRED when the behaviour itself left with the skill:
+#   RETIRED  BC-ANCHOR-ATTEST-1 (the classic whole-vault binding.json attestation doc;
+#            the lite JIT writer verifies anchors itself — jit-bind-and-quarantine.md)
+#   RETIRED  BC-HANDOFF-3 (bind-codebase's <vault>/bound/ handoff emission; no bind
+#            phase emits a handoff any more)
+#   RETIRED  VAL-6 constitution halt YAML (bind_conflict_constitution_violation was
+#            emitted only by bind-codebase Step 2.10)
+#   RETIRED  PARITY "ALWAYS 6 columns" template annotation (binding.md has no author
+#            left; the 5-cell-row ERROR stays pinned behaviourally above)
 #
 # Run: bash tests/god-review-s4/test-4d-contract-truth.sh
 set -uo pipefail
@@ -22,16 +37,13 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 VBJ="${ROOT}/plugins/mega-sdd/scripts/validate-binding-json.sh"
-HC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md"
+DBJ="${ROOT}/plugins/mega-sdd/scripts/derive-binding-json.sh"
+BMD="${ROOT}/plugins/mega-sdd/scripts/_lib/binding_md.py"
+UB="${ROOT}/plugins/mega-sdd/scripts/_lib/unit_binding.py"
 BM="${ROOT}/plugins/mega-sdd/skills/resolve-oq/references/binding-mode.md"
-CR="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/conflict-resolution.md"
-BJS="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/binding-json-schema.md"
-OQR="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/oq-resolution.md"
-BC="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/binding-contract.md"
-BMT="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/binding-md-template.md"
-COQ="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/constitution-and-oq.md"
-VH="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/handoff-validation.md"
-for f in "$VBJ" "$HC" "$BM" "$CR" "$BJS" "$OQR" "$BC" "$BMT" "$COQ" "$VH"; do
+VC="${ROOT}/plugins/mega-sdd/references/vault-core.md"
+JIT="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/jit-bind-and-quarantine.md"
+for f in "$VBJ" "$DBJ" "$BMD" "$UB" "$BM" "$VC" "$JIT"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -87,53 +99,81 @@ grep -qF '✅ RESOLVED (KEEP_VAULT — code update pending)' "$BM" && ok "RESOLV
 if grep -rqF 'CONFIRMED_PENDING_CODE_UPDATE' "${ROOT}/plugins/mega-sdd"; then fail "RESOLVE-TOKEN: undefined CONFIRMED_PENDING_CODE_UPDATE marker survives plugin-wide"; else ok "RESOLVE-TOKEN: undefined enum marker eradicated plugin-wide"; fi
 grep -qF 'do NOT suggest a re-bind' "$BM" && ok "RSOQ-LIVELOCK: KEEP_VAULT/DEFER hand-off no longer prescribes the looping re-bind" || fail "RSOQ-LIVELOCK: livelock hand-off survives"
 if grep -qF 'now should produce bound-vault cleanly' "$BM"; then fail "RSOQ-LIVELOCK: false 'cleanly' promise survives"; else ok "RSOQ-LIVELOCK: false clean-re-bind promise removed"; fi
-grep -qF 'a re-bind BEFORE the code change re-raises this CONFLICT' "$CR" && ok "RSOQ-LIVELOCK: conflict-resolution KEEP_VAULT states the re-raise truth" || fail "RSOQ-LIVELOCK: conflict-resolution stale"
-if grep -qF 'generated units include "update code to match" task as a prerequisite' "$CR"; then fail "RESOLVE-TOKEN: unimplemented unit-prerequisite promise survives"; else ok "RESOLVE-TOKEN: unimplemented promise replaced with the real carrier (binding_refs)"; fi
-grep -qF '"resolution": "KEEP_VAULT | KEEP_CODE | DEFER | SPLIT | null"' "$BJS" && ok "RESOLVE-TOKEN: binding.json schema defines the resolution field" || fail "RESOLVE-TOKEN: resolution field undefined"
+# 9.0 P1 repoint: the re-bind truth used to live in bind-codebase conflict-resolution.md
+# ("a re-bind BEFORE the code change re-raises this CONFLICT" — the classic whole-vault
+# bind). The only bind left is the per-unit JIT bind, whose writer CARRIES a human
+# resolution forward while the claim + its code paths are unchanged — binding-mode.md
+# states that truth, and the carry-forward block it names must exist in the writer.
+grep -qF 'a later re-bind keeps them (`_lib/unit_binding.py` carries a resolution forward while the claim and its code paths are unchanged)' "$BM" \
+  && grep -qF 'human-resolution carry-forward' "$UB" \
+  && ok "RSOQ-LIVELOCK: binding-mode states the JIT re-bind truth (resolution carried forward; writer implements it)" \
+  || fail "RSOQ-LIVELOCK: binding-mode re-bind truth stale or unimplemented"
+# 9.0 P1 repoint (was conflict-resolution.md-scoped): the unimplemented unit-prerequisite
+# promise must not come back anywhere; the real carrier (binding_refs) is named.
+if grep -rqF 'generated units include "update code to match" task as a prerequisite' "${ROOT}/plugins/mega-sdd"; then fail "RESOLVE-TOKEN: unimplemented unit-prerequisite promise survives"; else ok "RESOLVE-TOKEN: unimplemented unit-prerequisite promise absent plugin-wide"; fi
+grep -qF 'the obligation stays traceable via the CONFLICT-N reference the affected units carry in `binding_refs`' "$BM" \
+  && ok "RESOLVE-TOKEN: KEEP_VAULT names the real carrier (binding_refs)" || fail "RESOLVE-TOKEN: KEEP_VAULT carrier missing"
+# 9.0 P1 repoint (was bind-codebase binding-json-schema.md): the layout-2 grammar is owned
+# by the code (§7 decision 10), so pin the derived field BEHAVIOURALLY — a RESOLVED block
+# with the gate-readable KEEP_VAULT marker derives "resolution": "KEEP_VAULT", an active
+# CONFLICT derives null — and the closed enum KEEP_VAULT | KEEP_CODE | DEFER | SPLIT.
+V4="$WORK/v4"; mkdir -p "$V4"
+cat > "$V4/binding.md" <<'MD'
+# Binding Manifest
+## Implementation State Map (2)
+|---|---|---|---|---|---|
+| C-001 | CONFLICT | IMPLEMENTED | a.php:1 | high | n/a |
+| C-002 | CONFLICT | IMPLEMENTED | b.php:1 | high | n/a |
+## Conflicts (2) — BLOCKING
+### ✅ CONFLICT-1 RESOLVED (KEEP_VAULT) — Auth uses Bearer
+- **Claim**: C-001
+- **Resolution**: ✅ RESOLVED (KEEP_VAULT — code update pending) 2026-09-27 — vault is right
+### CONFLICT-2 — Session cookie
+- **Claim**: C-002
+MD
+bash "$DBJ" --vault "$V4" >/dev/null 2>&1; RC=$?
+python3 - "$V4/binding.json" "$BMD" <<'PY' && [ "$RC" -eq 0 ] \
+  && ok "RESOLVE-TOKEN: derived binding.json defines resolution = KEEP_VAULT | KEEP_CODE | DEFER | SPLIT | null" \
+  || fail "RESOLVE-TOKEN: binding.json resolution field undefined or wrong (derive rc=$RC)"
+import json, os, sys
+sys.path.insert(0, os.path.dirname(sys.argv[2]))
+import binding_md
+res = {c["id"]: c.get("resolution", "ABSENT") for c in json.load(open(sys.argv[1]))["claims"]}
+ok = (res == {"C-001": "KEEP_VAULT", "C-002": None}
+      and tuple(binding_md.RESOLUTION_ACTIONS) == ("KEEP_VAULT", "KEEP_CODE", "DEFER", "SPLIT"))
+sys.exit(0 if ok else 1)
+PY
 
 # ── BC-ADVISOR-RO-1 (retired v7.4.0) — the agent must STAY deleted ──
 if [ -e "${ROOT}/plugins/mega-sdd/agents/phase-advisor.md" ]; then fail "ADVISOR-RO: phase-advisor.md is back (removed v7.4.0)"; else ok "ADVISOR-RO: phase-advisor stays removed"; fi
 
-# ── BC-ANCHOR-ATTEST-1 ──
-grep -qF 'bind-time authoring obligation' "$BJS" && ok "ANCHOR-ATTEST: honest enforcement story (authoring obligation, A1 rail scope)" || fail "ANCHOR-ATTEST: attestation still claims unimplemented enforcement"
-if grep -qF 'anchor accuracy is enforced at bind time' "$BJS"; then fail "ANCHOR-ATTEST: old positive attestation survives"; else ok "ANCHOR-ATTEST: old attestation removed"; fi
-
 # ── BC-RECOMMEND-CONF-1 ──
 # 8.5.0 (spec 2026-09-20-oq-business-only-design.md): the S4 finding was "a high-only gate makes
 # Step 2.7 dead code" — the business-only rule removes the confidence gate altogether (confidence
-# grades the CATEGORY call, not the decision), so the step fires at every confidence.
-grep -qF 'at every `classification_confidence`' "$OQR" && ok "RECOMMEND-CONF: Step 2.7 fires at every confidence (no high-only dead code)" || fail "RECOMMEND-CONF: recommend gate still high-only dead code"
-if grep -qF 'flow through as blocking' "$OQR"; then fail "RECOMMEND-CONF: contradictory 'flow through as blocking' survives"; else ok "RECOMMEND-CONF: no resolution_mode mutation on confidence grounds"; fi
-grep -qF 'grades the CATEGORY call, not the decision: both modes run at `high`, `medium` AND `low`' "$BC" && ok "RECOMMEND-CONF: binding-contract — confidence never gates a tech decision" || fail "RECOMMEND-CONF: binding-contract gate stale"
-if grep -qF 'NEVER auto-accept a recommendation' "$OQR"; then fail "RECOMMEND-CONF: the superseded never-auto-accept rail survives (8.5.0: tech is decided, business never is)"; else ok "RECOMMEND-CONF: superseded rail gone; the citation + business-signal rails replace it"; fi
-grep -qF 'NEVER decide a business matter' "$OQR" && ok "RECOMMEND-CONF: the replacement rail is present (never decide business; never unverifiable citations)" || fail "RECOMMEND-CONF: replacement anti-halu rail missing"
-if grep -qF -- '--accept-recommendations' "$OQR"; then fail "RECOMMEND-CONF: unimplemented --accept-recommendations flag survives"; else ok "RECOMMEND-CONF: unimplemented flag prose removed"; fi
-
-# ── BC-HANDOFF-3 ── (M-02 ownership flip: the OPERATIVE bind handoff template is the
-# skill's own auto-memory-handoff.md; handoff-contract's per-skill section is now a
-# routing index with no YAML blocks. Pin the operative template — same assertions.)
-AMH="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handoff.md"
-python3 - "$AMH" <<'PY' && ok "HANDOFF-3: operative bind template uses <vault>/bound/ + emitted_at (no legacy vault-bound/)" || fail "HANDOFF-3: operative bind handoff template stale"
-import re, sys
-doc = open(sys.argv[1]).read()
-# Header suffix is NOT part of this pin — it moved from "(--auto)" to "(UNCONDITIONAL)"
-# when bind's handoff stopped being --auto-gated (fork-safety fix, 2026-07-30). The pinned
-# subject is the TEMPLATE BODY below it, unchanged: <vault>/bound/ + emitted_at, no legacy
-# vault-bound/. Anchor on the stable header stem so a future rename cannot silently skip it.
-m = re.search(r"## Handoff emission[^\n]*\n.*?```yaml\n(.*?)```", doc, re.S)
-assert m, "bind handoff template not found"
-b = m.group(1)
-sys.exit(0 if ("emitted_at:" in b and "<vault>/bound/" in b and "vault-bound/" not in b) else 1)
-PY
+# grades the CATEGORY call, not the decision), so a tech OQ is decided at every confidence.
+# 9.0 P1 repoint: bind-codebase oq-resolution.md (Step 2.7) + binding-contract.md are gone; the
+# rule now lives once, in the relocated OQ contract references/vault-core.md, where `plan`
+# decides tech OQs at authoring time. File-scoped negatives became plugin-wide negatives.
+grep -qF 'A correctly tagged tech OQ is decided by the AI at every confidence' "$VC" && ok "RECOMMEND-CONF: tech OQs are decided at every confidence (no high-only dead code)" || fail "RECOMMEND-CONF: decision still confidence-gated"
+if grep -rqF 'flow through as blocking' "${ROOT}/plugins/mega-sdd"; then fail "RECOMMEND-CONF: contradictory 'flow through as blocking' survives"; else ok "RECOMMEND-CONF: no resolution_mode mutation on confidence grounds (plugin-wide)"; fi
+grep -qF '**What confidence gates**: the CATEGORY call, not the decision.' "$VC" && ok "RECOMMEND-CONF: vault-core — confidence never gates a tech decision" || fail "RECOMMEND-CONF: vault-core confidence gate stale"
+if grep -rqF 'NEVER auto-accept a recommendation' "${ROOT}/plugins/mega-sdd"; then fail "RECOMMEND-CONF: the superseded never-auto-accept rail survives (8.5.0: tech is decided, business never is)"; else ok "RECOMMEND-CONF: superseded rail gone; the citation + business-signal rails replace it"; fi
+grep -qF 'Two things stay forbidden: an invented citation, and "deciding" a missing fact.' "$VC" \
+  && grep -qF '**Never decided by the AI** (they are `business`' "$VC" \
+  && ok "RECOMMEND-CONF: the replacement rail is present (never decide business; never unverifiable citations)" || fail "RECOMMEND-CONF: replacement anti-halu rail missing"
+if grep -rqF -- '--accept-recommendations' "${ROOT}/plugins/mega-sdd"; then fail "RECOMMEND-CONF: unimplemented --accept-recommendations flag survives"; else ok "RECOMMEND-CONF: unimplemented flag prose removed (plugin-wide)"; fi
 
 # ── BC-VAL-6 (docs): canonical conflict-ID examples ──
 grep -qF 'CONFLICT-N (BLOCKING)' "$BM" && ok "VAL-6: binding-mode presents conflicts as CONFLICT-N" || fail "VAL-6: binding-mode still models C-NNN headings"
-grep -qF 'conflict_id: CONFLICT-7' "$COQ" && ok "VAL-6: constitution halt YAML uses the canonical conflict-ID form" || fail "VAL-6: constitution example still C-007"
 
-# ── template + marker grammar pins ──
-grep -qF 'ALWAYS 6 columns' "$BMT" && ok "PARITY: template pins 6-columns-always (5-col churn loop prevented)" || fail "PARITY: template annotation still ambiguous"
-grep -qF 'Resolution markers are STRUCTURAL' "$BMT" && ok "GATE-2: template documents the structural marker grammar" || fail "GATE-2: template grammar note missing"
-grep -qF '`conflict_unresolved` (the moat' "$VH" && ok "MSG-1: validate-handoff command routes per drop type" || fail "MSG-1: command remediation stale"
+# ── marker grammar + drop routing pins ──
+# 9.0 P1 repoint (was bind-codebase binding-md-template.md): the structural marker grammar
+# is documented where it is written — resolve-oq binding-mode's layout-2 leg.
+tr '\n' ' ' < "$BM" | tr -s ' ' | grep -qF 'a marker anywhere else (prose, a legacy table) does NOT clear the gate' \
+  && ok "GATE-2: binding-mode documents the structural marker grammar (only heading/Resolution-line markers clear the gate)" || fail "GATE-2: structural marker grammar note missing"
+# 9.0 P1 repoint (was bind-codebase handoff-validation.md): the conflict_unresolved drop
+# is raised by the per-unit JIT gate and routes to the moat halt (resolve-oq --binding).
+grep -qF 'FAIL with `conflict_unresolved` drops ⇒ **halt `binding_conflict`**' "$JIT" && ok "MSG-1: JIT bind gate routes conflict_unresolved to the binding_conflict halt" || fail "MSG-1: conflict_unresolved remediation stale"
 
 if [ "$FAILED" -eq 0 ]; then note "ALL 4D OK"; else note "4D had failures"; fi
 exit $FAILED

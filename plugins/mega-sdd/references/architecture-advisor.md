@@ -110,7 +110,7 @@ sitasi KB atau "census: <pertanyaan> → <jawaban>">
 ## Consequences
 <Yang jadi lebih mudah, yang jadi lebih sulit, utang yang diterima secara sadar>
 
-## Claims ([INTENT] — dikonsumsi generate-intent --kb)
+## Claims ([INTENT] — dikonsumsi plan --kb)
 - [INTENT] <klaim arsitektur target, mis. "Modul acquisition berjalan sebagai
   module dalam modular monolith .NET 8, boundary per bounded context"> [Source: ADR-001]
 - [INTENT] ...
@@ -121,7 +121,7 @@ sitasi KB atau "census: <pertanyaan> → <jawaban>">
 
 ## Downstream contract
 
-- `generate-intent --kb` consumes `decisions/ADR-*.md` with `Status: accepted`
+- `plan --kb` consumes `decisions/ADR-*.md` with `Status: accepted`
   as a legitimate input document (a recorded human decision — same source class
   as a PRD); vault claims born from it cite the ADR. `Status: proposed` is never
   consumed as a decision — it surfaces as an OQ.

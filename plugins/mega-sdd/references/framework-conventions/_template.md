@@ -51,7 +51,7 @@ extends: <other-pack-or-null>           # optional — pack inheritance (e.g., l
 
 ## Hard Rules emitted
 
-These rules merge into `binding.md` §Suggested Unit Hard Rules on the classic lane (`bind-codebase` 2.9); on every lane the dispatch builder filters the glob-matched records into the bolt's T2 `framework_pack_rules`.
+The dispatch builder (`build-dispatch-prompt.sh` priority 7) filters the glob-matched records into the bolt's T2 `framework_pack_rules`.
 
 ```
 HARD_RULE: <human-readable rule statement>
@@ -140,9 +140,9 @@ Extends `references/framework-conventions/_universal.md` §ERD Quality Rails:
 ## Flow-artifact derivation
 
 > Consumed by `validate-flow-coverage.sh` (code-delivery slice A). Declares how an
-> input-accepting state-transition step in `flows.md` maps to a REQUIRED code
-> artifact. The validator is tech-agnostic: it reads these signatures, never
-> hardcodes a stack. A pack that omits this section → the validator writes
+> input-accepting state-transition step in the vault flows (`context.md ## Flows`;
+> `flows.md` on layout-2) maps to a REQUIRED code artifact. The validator is
+> tech-agnostic: it reads these signatures, never hardcodes a stack. A pack that omits this section → the validator writes
 > `status: SKIP` (graceful, never errors). NOTE: `target_files` is read from BOTH the unit
 > frontmatter `target_files:` list (canonical) and the `## Target files` body block (union).
 
@@ -242,7 +242,8 @@ detail_view_render:
      $this->get(route('{resource}.show', $m))->assertOk()->assertSee((string) $m->{display_field});>
   test_glob: <glob where that render test lives, e.g. tests/Feature/**/*Test.php>
   # Only `detail_view_glob` is machine-parsed (validate-unit-spec.sh); `detail_view_render.template` is read by
-  # generate-units when it authors the acceptance test; `test_glob` has no consumer today.
+  # plan when it authors the render acceptance test (decomposition-rails §Render test) and by bolt-implementer
+  # as defense-in-depth; `test_glob` has no consumer today.
 ```
 
 ## UI quality signatures

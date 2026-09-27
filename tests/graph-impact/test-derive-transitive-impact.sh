@@ -89,14 +89,18 @@ OUT_G=$(run "U-005"); RC=$?
 
 echo "── z: syntax + doc pins ──"
 bash -n "$SCRIPT" 2>/dev/null && ok "z1 bash -n clean" || fail "z1 syntax"
-TT="$P/skills/generate-units/references/task-typing.md"
+# 9.0 P1: generate-units was retired; its task-typing contract (incl. reconcile step 2.6) moved to plan/references.
+TT="$P/skills/plan/references/task-typing.md"
+[ -f "$TT" ] || fail "z0 task-typing.md missing at $TT"
 grep -q "derive-transitive-impact.sh" "$TT" && ok "z2 reconcile step 2.6 wired" || fail "z2 step 2.6 missing"
 grep -q "verify-recommended" "$TT" && ok "z3 verify-recommended phrasing" || fail "z3 phrasing missing"
 grep -qi "fail-open\|never blocks" "$TT" && ok "z4 fail-open wording" || fail "z4 fail-open missing"
 grep -q "derive-transitive-impact\|transitive" "$P/skills/orchestrate-flow/references/routing-rules.md" && ok "z5 delta-lane sentence" || fail "z5 delta sentence missing"
 grep -qi "blast-radius order\|blast radius" "$P/commands/sync.md" && ok "z6 sync triage ordering (D2)" || fail "z6 triage ordering missing"
 # negative pin: NO new status enum value leaked into the state model
-grep -rqE 'status: *(needs-verify|verify-recommended)' "$P/skills/generate-units" "$P/scripts/compute-unit-staleness.sh" \
+# (9.0 P1: unit authoring now lives in skills/plan — the retired skills/generate-units dir would make this vacuous)
+[ -d "$P/skills/plan" ] || fail "z7 skills/plan missing (negative pin would be vacuous)"
+grep -rqE 'status: *(needs-verify|verify-recommended)' "$P/skills/plan" "$P/scripts/compute-unit-staleness.sh" \
   && fail "z7 a new status enum value leaked (advisory only!)" || ok "z7 no new status enum value"
 
 echo

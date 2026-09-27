@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # derive-codebase-map.sh — deterministic assembler for codebase-map.md.
+# No 9.0 executor (the scan procedure that ran it is retired): a P1b prune
+# candidate; the "Step N" references below are that retired procedure's.
 #
 # WHY THIS EXISTS (spec §5b, 2026-07-30-token-and-latency-optimization.md)
 # -----------------------------------------------------------------------
@@ -15,8 +17,7 @@
 # shape, the staleness stamp, secret-scan chaining, atomic rename, validator
 # refresh. The model REMAINS the extraction-output parser and the author of
 # §5/§6/§7 — parsing AST captures in-script is deliberately out of
-# scope (unverifiable on a box with no compiled grammars; see scan-procedure
-# §Step 5's identical refusal).
+# scope (unverifiable on a box with no compiled grammars).
 #
 # THE 4 ANTI-HALLUCINATION RAILS, STRUCTURAL HERE (previously prose-trusted):
 #   1. Carried rows are byte-COPIES of the prior map (original
@@ -248,8 +249,8 @@ def cell(line, n):
 
 def norm_path(rel):
     """Normalize a File cell to a filesystem path: strip backtick wrapping and
-    a trailing `:<line>` citation (SKILL.md mandates `src/foo.ts:42`-style
-    citations; fixtures carry bare paths — both are valid inputs here)."""
+    a trailing `:<line>` citation (maps carry `src/foo.ts:42`-style citations;
+    fixtures carry bare paths — both are valid inputs here)."""
     rel = rel.strip()
     if len(rel) >= 2 and rel.startswith("`") and rel.endswith("`"):
         rel = rel[1:-1].strip()

@@ -8,18 +8,22 @@
 #   A  resolve-oq KB mode: 4-path detection, §6 walk, no-derive, marker formats,
 #      the claim-stays-[OPEN] honesty rail, vault-wins precedence
 #   B  reachability: KB triggers in the always-loaded description
-#   C  kb-submode routing: resolved §6 → vault OQ born pre-resolved
+#   C  KB-input routing: resolved §6 → vault OQ born pre-resolved
+#      (9.0 P1: generate-intent deleted; kb-submode.md relocated verbatim to
+#      plan/references/kb-input.md — `plan --kb` is the surviving consumer)
 #   D  extract hand-off offers answering now (offer only, never auto-invoke)
 #   E  output-language §OQ authoring: human-first contract + the ❌/✅ pair
 #   F  authoring surfaces point at the ONE contract home (no restatement)
+#      (9.0 P1: vault-core.md relocated from generate-intent/references/ to the
+#      plugin-level references/vault-core.md)
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 RO="$ROOT/plugins/mega-sdd/skills/resolve-oq/SKILL.md"
-KS="$ROOT/plugins/mega-sdd/skills/generate-intent/references/kb-submode.md"
+KS="$ROOT/plugins/mega-sdd/skills/plan/references/kb-input.md"
 EX="$ROOT/plugins/mega-sdd/skills/extract-intelligence/SKILL.md"
 OL="$ROOT/plugins/mega-sdd/references/output-language.md"
 PT="$ROOT/plugins/mega-sdd/skills/extract-intelligence/references/prd-kontrak-template.md"
-VC="$ROOT/plugins/mega-sdd/skills/generate-intent/references/vault-core.md"
+VC="$ROOT/plugins/mega-sdd/references/vault-core.md"
 err=0; ok(){ echo "  ok: $*"; }; bad(){ echo "  FAIL: $*"; err=1; }
 
 echo "── A: resolve-oq KB mode ──"
@@ -39,7 +43,7 @@ desc=$(sed -n '/^description:/p' "$RO")
 echo "$desc" | grep -q "jawab OQ hasil extract" && echo "$desc" | grep -q "resolve oq kb" \
   && ok "B1 KB triggers live in the always-loaded description" || bad "B1 KB triggers missing"
 
-echo "── C: kb-submode routing ──"
+echo "── C: KB-input routing (plan --kb) ──"
 grep -q "Vault OQ born PRE-RESOLVED" "$KS" && ok "C1 resolved §6 → pre-resolved vault OQ row" || bad "C1 routing row missing"
 grep -qF 'a §6 `[~]` carries over as out-of-scope' "$KS" && ok "C2 out-of-scope carry" || bad "C2 OOS carry missing"
 

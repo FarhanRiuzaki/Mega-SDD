@@ -213,7 +213,10 @@ grep -qF 'express-batched' "$RO/SKILL.md" && grep -qF 'ceil(N/4)' "$RO/SKILL.md"
   && pass "SKILL: express-batched scope + chunking rule" || fail "batched scope missing"
 grep -qF 'auto-deferred (P<n>, express)' "$RO/SKILL.md" \
   && pass "SKILL: mechanical defer reason format" || fail "defer reason missing"
-grep -qF 'A standalone/explicit invocation (any spine) and every classic-spine invocation keep the fully interactive walk' "$RO/SKILL.md" \
+# 9.0 P1: the classic spine is retired, so the "every classic-spine invocation"
+# clause went with it; the surviving rail (a standalone/explicit invocation
+# keeps the interactive walk, auto-defer never applies there) is repointed.
+grep -qF 'A standalone/explicit invocation (any spine) keeps the fully interactive walk — auto-defer NEVER applies there' "$RO/SKILL.md" \
   && pass "SKILL: interactive walk preserved outside the express chain" || fail "rail re-scope missing"
 grep -qF 'this rail governs ANSWERS' "$RO/SKILL.md" \
   && pass "SKILL: refuse-rail scoped to answers (defer invents nothing)" || fail "refuse-rail scope missing"
@@ -243,8 +246,10 @@ grep -qF 'unknown rc is never a LOW tier' "$P/skills/execute-bolts/references/re
   && pass "router fallback = standard on unknown rc" || fail "rc fallback missing"
 
 OF="$P/skills/orchestrate-flow/SKILL.md"
-grep -qF 'Diagnostics are LEAN-BY-DEFAULT on the express spine (P3)' "$OF" \
-  && pass "diagnostics lean-by-default under express" || fail "lean default missing"
+# 9.0 P1: express is the only spine, so the "on the express spine" qualifier
+# (and the classic-spine keep-them branch) was dropped; lean-by-default survives.
+grep -qF 'Diagnostics are LEAN-BY-DEFAULT (P3):** the ADVISORY diagnostics in this loop' "$OF" \
+  && pass "diagnostics lean-by-default (express is the only spine)" || fail "lean default missing"
 # v7.4.0 (Fase 5 №5): the phase-advisor was REMOVED — the scope-gated
 # default-on sentence must be GONE, not merely reworded (negative pin).
 if grep -qF 'advisor legs stay default-on' "$OF"; then

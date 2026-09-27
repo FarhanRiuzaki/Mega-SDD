@@ -87,7 +87,11 @@ n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
 # qualifier (binding_conflict at execute-bolts dispatch) — +125 B, still under the 4030 cap.
 # 2026-09-27 re-baseline (research/2026-09-27-lane-router-results.md): the tier-L row names the lane router
 # (route-lane.sh → direct / assisted / guarded) — +13 B, still under the 4030 cap.
-[ "$n" -eq 3982 ] && ok "core anchor unchanged ($n B — extras adds nothing to it)" || fail "core anchor changed: $n B (baseline 3982)"
+# 9.0 P1 re-baseline (spec 2026-09-27-v9-simplification-design.md): bind-codebase was deleted, so the Hard-gate line
+# no longer names bind-codebase/binding.md/classic lane — it now states the surviving JIT-bind CONFLICT gate
+# (bolts/U-XXX/binding.json, pre-flight 3.9 → binding_conflict at execute-bolts dispatch, resolve-oq --binding).
+# That is the only in-anchor edit — −30 B (3982 → 3952), still under the 4030 cap; extras still adds nothing.
+[ "$n" -eq 3952 ] && ok "core anchor unchanged ($n B — extras adds nothing to it)" || fail "core anchor changed: $n B (baseline 3952)"
 printf '%s' "$CORE" | grep -qi "extras\|slice" && fail "extras/slice leaked into the core anchor" || ok "no extras/slice mention in the core anchor"
 has "$P/references/paths.md" ".mega-sdd/slices/" && ok "core paths.md lists the slices/ artifact home" || fail "paths.md lacks the slices/ row"
 grep -q 'mega-sdd-extras.*built' "$P/CLAUDE.md" && ok "core CLAUDE.md clause records extras as built" || fail "CLAUDE.md clause still says demand-only"

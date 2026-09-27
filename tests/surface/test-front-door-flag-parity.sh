@@ -10,8 +10,10 @@
 #      the aliases from its side.
 #   2. Ghost-flag guard: every `--flag` token in the argument-hint must appear
 #      in the mega-sdd.md BODY too (a hint-only flag is an undefined promise).
-#   3. The generate-intent preflight check honors a POSITIONAL input (the
-#      root-only probe false-failed on PRD/prd-simkredit.md).
+#   3. The input preflight check honors a POSITIONAL input (the root-only
+#      probe false-failed on PRD/prd-simkredit.md). 9.0: the check moved from
+#      the deleted generate-intent section to §plan preflight checks; the
+#      precedence is now stated inline (no "generate-intent Rule 2" to cite).
 #
 # CI-safe: bash + python3 only.
 set -uo pipefail
@@ -82,8 +84,15 @@ echo "$GHOSTS" | grep -q "^GHOSTS:$" \
   || fail "hint-only ghost flags: $(echo "$GHOSTS" | grep GHOSTS)"
 
 # ── 3. positional-aware preflight check ──────────────────────────────────────
-grep -qF "POSITIONAL input" "$PC" && grep -qF "generate-intent Rule 2" "$PC" \
-  && pass "prd_or_kb_input_present honors a positional input (Rule 2 precedence)" \
+# 9.0 repoint: generate-intent was deleted, so its "Rule 2" citation is gone;
+# the positional-over-root precedence it named is now stated inline in the
+# plan preflight entry — pin that clause (same strength: positional wins, the
+# root probe is the no-positional fallback) inside the plan section.
+PLAN_PC=$(awk '/^## plan preflight checks/{f=1;next} /^## /{f=0} f' "$PC")
+printf '%s\n' "$PLAN_PC" | grep -qF "prd_or_kb_input_present" \
+  && printf '%s\n' "$PLAN_PC" | grep -qF "POSITIONAL input" \
+  && printf '%s\n' "$PLAN_PC" | grep -qF "the root probe below applies only when no positional exists" \
+  && pass "prd_or_kb_input_present (plan preflight) honors a positional input (positional precedence over the root probe)" \
   || fail "preflight check still root-only (positional PRD false-fails)"
 grep -qF "probes.prd.present" "$PC" \
   && pass "preflight check consults the widened probes.prd" \

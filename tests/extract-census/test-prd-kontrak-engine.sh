@@ -66,7 +66,7 @@ grep -qF 'modules/<domain>.prd.md' "$TPL" && grep -qF 'source_files:' "$TPL" \
   && pass "template pins modules/<domain>.prd.md + source_files claim contract" \
   || fail "template output contract incomplete"
 grep -qF '## Reengineering Opportunities' "$TPL" && grep -qF '## Mutability Tier Distribution' "$TPL" \
-  && pass "README keeps the two generate-intent-read headings verbatim" \
+  && pass "README keeps the two plan --kb-read headings verbatim" \
   || fail "README heading contract broken"
 grep -qF '## Per-locked-field policy' "$TPL" && grep -qF '## Entity-level summary' "$TPL" \
   && pass "data-mutation-policy consumer headings preserved (build-dispatch-prompt contract)" \
@@ -77,13 +77,19 @@ grep -qF '_Tidak terdeteksi._' "$TPL" \
   && pass "explicit-absence line mandated (never silent omission)" || fail "explicit absence missing"
 
 # ── consumers repointed ──────────────────────────────────────────────────────
-grep -qF 'census.json' "$P/skills/generate-intent/references/kb-submode.md" \
-  && grep -qF 'modules/*.prd.md' "$P/skills/generate-intent/references/kb-submode.md" \
-  && pass "kb-submode consumes the PRD-kontrak grammar" || fail "kb-submode not repointed"
-grep -qF 'legacy numbered-tree' "$P/skills/generate-intent/references/kb-submode.md" \
-  && pass "kb-submode keeps the legacy-tree back-compat lane" || fail "legacy lane dropped"
-grep -qF 'validate-extract-census.sh' "$P/skills/bind-codebase/references/auto-memory-handoff.md" \
-  && pass "bind preflight = census gate (scorecard retired)" || fail "bind preflight not repointed"
+# 9.0 P1: generate-intent + bind-codebase were deleted; the KB consumer
+# contract (generate-intent kb-submode.md) and the KB extraction preflight
+# (bind-codebase auto-memory-handoff.md §Extraction-scorecard preflight) were
+# relocated verbatim into plan/references/kb-input.md (the `plan --kb` lane).
+KBIN="$P/skills/plan/references/kb-input.md"
+grep -qF 'census.json' "$KBIN" \
+  && grep -qF 'modules/*.prd.md' "$KBIN" \
+  && pass "plan --kb input consumes the PRD-kontrak grammar" || fail "plan kb-input not repointed"
+grep -qF 'legacy numbered-tree' "$KBIN" \
+  && pass "plan --kb input keeps the legacy-tree back-compat lane" || fail "legacy lane dropped"
+grep -qF 'validate-extract-census.sh' "$KBIN" \
+  && pass "plan --kb extraction preflight = census gate (scorecard retired)" \
+  || fail "plan --kb extraction preflight not repointed"
 grep -qF 'validate-extract-census.sh' "$P/scripts/certify-artifact.sh" \
   && pass "certify kb rung certifies PRD-kontrak via the census gate" || fail "certify kb rung not repointed"
 grep -qF 'census.json' "$P/scripts/build-prd-core.sh" \

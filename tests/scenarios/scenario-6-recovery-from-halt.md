@@ -3,7 +3,9 @@
 **Time**: ~15 minutes
 **Goal**: Pipeline halted mid-chain. Understand the halt, fix the underlying issue, and resume cleanly. No data loss; no partial commits.
 
-Halts are mega-sdd's safety net — they fire when anti-hallucination rails detect real issues. Knowing how to interpret + recover is essential for production use.
+Halts are mega-sdd's safety net — they fire when a rail meets something it must not decide on its own. Knowing how to interpret + recover is essential for production use. A halt is a finding to read, not automatically a defect in your code: check the evidence it cites before you act (see the `binding_conflict` walkthrough).
+
+Halts belong to the guarded pipeline (`plan` → `execute-bolts`) and to the extract, sync, emit and install-deps lanes. The direct and assisted lanes carry no halt envelope: when the work turns out to need the pipeline they stop and offer `/mega-sdd <input> --guarded` (`plugins/mega-sdd/references/direct-lane.md` §Escalating to guarded).
 
 > **Command forms in this catalog** — `/mega-sdd` and `/mega-sdd --resume` are the registered front door. Bare skill invocations shown in recovery steps (e.g. `execute-bolts U-001`, `resolve-oq --binding`) are typed as plain text in the session — they phrase-route to their skill (the typed `/mega-sdd:<skill>` command forms were removed at 6.0.0).
 
@@ -11,17 +13,20 @@ Halts are mega-sdd's safety net — they fire when anti-hallucination rails dete
 
 | Halt | What it means | When |
 |---|---|---|
-| `bind_conflict` | Vault claim contradicts existing code | bind-codebase phase |
-| `oq_recommend_underspecified` | Recommendation missing citation/rationale | bind-codebase phase |
-| `dedup_ambiguous` | `create` unit targets existing files | generate-units phase |
+| `binding_conflict` | A unit's claim contradicts existing code | execute-bolts pre-flight 3.9 (JIT bind, per unit) |
+| `plan_coverage_gap` | A PRD/KB requirement heading has no unit and no OQ | plan Step 5 |
+| `oq_recommend_underspecified` | Recommendation missing citation/rationale | plan Step 5 (`validate-vault-oqs.sh`) |
+| `dedup_ambiguous` | `create` unit targets existing files | plan Step 4 (and `plan --reconcile`) |
 | `hard_rule_violated` | Bolt modified locked code | execute-bolts post-flight |
-| `hard_rule_unparseable` | Bolt's Hard Rule has bad syntax | execute-bolts pre-flight |
-| `cross_squad_interface_draft` | Consumer waiting for producer to lock interface | execute-bolts --per-squad |
+| `hard_rule_unparseable` | Unit's Hard Rule has bad syntax | plan Step 5 / execute-bolts pre-flight |
+| `cross_squad_interface_draft` | Consumer waiting for producer to lock interface | execute-bolts --per-squad (migrated multi-squad vaults) |
 | `module_blocked_by` | Prerequisite module not complete | execute-bolts --module=X |
-| `oq_business_p1_unresolved` | P1 business OQ blocking downstream | orchestrate-flow oq_gate (after generate-intent) |
+| `oq_business_p1_unresolved` | P1 business OQ blocking downstream | orchestrate-flow oq_gate (a P1 business OQ plan's batched ask left open) |
 | `quality_gate_failed` | a module's per-module quality gate failed twice | extract-intelligence |
 
-Each halt provides a YAML `blocker` artifact with `next_action` field telling you exactly what to do.
+A pre-9.0 layout-2 vault can still show the legacy name `bind_conflict` (its whole-vault `binding.md`). It builds only after `/mega-sdd:migrate-paths --vault-layout=3` and the mandatory full JIT re-bind, which re-raises every live CONFLICT as `binding_conflict`.
+
+Each halt provides a YAML `blocker` artifact with `next_action` field telling you exactly what to do. Above the YAML the displayer prints a plain-language keterangan block — **Apa yang ditanya** / **Kenapa berhenti** / **Pilihan lo** (`plugins/mega-sdd/references/halt-protocol.md` §Canonical `next_action` field shape).
 
 ## Recovery pattern (universal)
 
@@ -32,7 +37,7 @@ For any halt:
 3. Resolve the underlying issue
 4. Run `/mega-sdd --resume`
 
-Mega-sdd's `--resume` is CWD-driven + checkpoint-aware. It detects where you stopped + continues forward.
+Mega-sdd's `--resume` is CWD-driven: it re-derives state from disk (`derive-state.sh`) and continues from the first incomplete phase.
 
 ## Scenario walkthrough — `hard_rule_violated`
 
@@ -160,30 +165,36 @@ bash <plugin>/scripts/run-postflight-scan.sh --cwd=. --unit=U-001
 
 After the revert + a passing post-flight scan, `/mega-sdd --resume` re-dispatches the unit.
 
-## Scenario walkthrough — `bind_conflict`
+## Scenario walkthrough — `binding_conflict`
 
-Equally common. Different recovery pattern.
+Equally common. Different recovery pattern. Binding is per unit: `execute-bolts` binds each unit just in time at dispatch (pre-flight 3.9 → `bolts/U-XXX/binding.json`), so the CONFLICT closes that unit only — the other units proceed and its dependents are skipped with the reason.
 
 ### The halt
 
 ```
-⛔ HALT — bind_conflict
+⛔ HALT — binding_conflict
 
 blocker:
-  type: bind_conflict
+  type: binding_conflict
   emitted_at: 2026-05-21T15:35:00Z
-  emitted_by: bind-codebase
+  source_skill: execute-bolts
   details:
-    conflict_count: 1
+    unit_id: U-004
+    binding: .mega-sdd/vaults/login-extension/bolts/U-004/binding.json
     conflicts:
-      - id: C-007
-        vault_claim: "Auth uses Bearer tokens"
-        codebase_reality: "Auth uses session cookies (Laravel default)"
+      - id: C-U004-01
+        kind: text
+        expect: "API auth uses Bearer tokens"
+        anchor: routes/api.php:12
+        evidence: "routes/api.php:12 — /api/* sits behind the session-cookie guard (Laravel default)"
         suggested_action: SPLIT
+        suggested_action_rationale: "Sanctum tokens for /api/*, sessions for web — least churn"
   next_action: "Run resolve-oq --binding"
 ```
 
-The four actions at the walk: KEEP_VAULT — migrate code to Bearer auth (high effort); KEEP_CODE — preserve session auth, update vault; DEFER — flag as future work; SPLIT — Sanctum for /api/*, sessions for web.
+The four actions at the walk: KEEP_VAULT — code harus diubah mengikuti vault (migrate all auth to Bearer; high effort); KEEP_CODE — vault di-update mengikuti kenyataan code (preserve session auth); DEFER — jadi OQ yang dibawa unit (the gate opens; execute-bolts asks before the final bolt); SPLIT — claim dipecah jadi sub-claim (Sanctum for /api/*, sessions for web).
+
+**Check the anchor before you pick.** A CONFLICT can be the pipeline's own anchor error rather than a spec-vs-code contradiction. In the 9.0 brownfield benchmark the gate fired 3 times in 3 runs and all 3 were false positives — one line range the pipeline mistyped, two anchors moved by a sibling unit's legitimate commit — each resolved `KEEP_CODE` (`research/2026-09-27-brownfield-results.md` §3). The writer repairs a stale line range itself when the content is unchanged; a range it cannot repair stays a CONFLICT, and `KEEP_CODE` + a hand-corrected `## Anchors` line is the human path. Never edit an anchor just to make a claim pass.
 
 ### Recovery
 
@@ -191,18 +202,18 @@ The four actions at the walk: KEEP_VAULT — migrate code to Bearer auth (high e
 resolve-oq --binding
 ```
 
-(A converging `--deep` chain — the default — enters resolve-oq itself on `bind_conflict`; the manual walk below applies under `--no-converge`.)
+(A converging `--deep` chain — the default — enters `resolve-oq --binding` itself inside `execute-bolts` on `binding_conflict`; the manual walk below applies under `--no-converge`.)
 
 Interactive walker:
 
 ```
-CONFLICT C-007:
-  Vault: "Auth uses Bearer tokens"
-  Code:  "Auth uses session cookies"
+CONFLICT C-U004-01 (U-004):
+  Unit claims: "API auth uses Bearer tokens"
+  Code:        routes/api.php:12 — session-cookie guard
   
   Recommendation: SPLIT — Sanctum for /api/*; sessions for web (recommended)
-  Rationale: Laravel best practice (framework pack §auth) + minimal churn
-  Source: scan citation routes/api.php:12 + config/sanctum.php:1 (KB/vault/codebase-grounded)
+  Rationale: Laravel best practice (framework pack §Security idioms) + minimal churn
+  Source: binding evidence routes/api.php:12 + config/sanctum.php:1
   Fallback-if-wrong: If client requires single-auth uniformity, revisit
   Confidence: HIGH
   
@@ -210,16 +221,16 @@ CONFLICT C-007:
     [S] SPLIT (recommended) — Sanctum API + session web
     [K] KEEP_VAULT — migrate all to Bearer (high effort)
     [C] KEEP_CODE — preserve session auth; update vault
-    [D] DEFER — handle later
+    [D] DEFER — handle later (becomes an OQ the unit carries)
 ```
 
-Pick [S]. The resolution lands in binding.md (Resolution line; DEFER → binding.md Open Questions table). Resume:
+Pick [S]. resolve-oq records the choice through the sole writer (`write-unit-binding.sh --resolve=C-U004-01=SPLIT --by=user`) in `bolts/U-004/binding.json` — hook-guarded evidence, never edited by hand. SPLIT (like KEEP_CODE) also edits the unit's `## Claims`, so U-004 is re-bound once (`rebind-units.sh --units=U-004`) before it dispatches; KEEP_VAULT / DEFER open the gate with no re-bind. Resume:
 
 ```
 /mega-sdd --resume
 ```
 
-Chain continues from `bind-codebase` (re-runs with conflict resolved).
+`execute-bolts` re-derives the gate; U-004 dispatches, then the dependents it held back.
 
 ## Scenario walkthrough — `quality_gate_failed` (extract-intelligence)
 
@@ -270,11 +281,10 @@ There is NO auto-resume after Abort: the next `extract-intelligence` run starts 
 
 `/mega-sdd --resume` does the right thing:
 
-1. Re-inspects CWD state (artifact presence)
-2. Reads checkpoints if any
-3. Identifies the latest incomplete phase
-4. Re-runs that phase if needed (idempotent for clean states)
-5. Continues forward per the handoff YAML protocol
+1. Re-derives state from disk (`derive-state.sh` — artifact presence; no checkpoint file is read)
+2. Identifies the latest incomplete phase
+3. Re-runs that phase if needed (idempotent for clean states)
+4. Continues forward per the handoff YAML protocol
 
 It's safe to run `--resume` multiple times. If issue still exists, same halt fires.
 
@@ -298,20 +308,20 @@ cat .mega-sdd/vaults/<slug>/bolts/U-XXX/postflight.json
 
 JSON detail of Hard Rule state before/after.
 
+```bash
+cat .mega-sdd/vaults/<slug>/bolts/U-XXX/binding.json
+```
+
+The unit's JIT-bind verdicts: CONFIRMED / CONFLICT / OQ per claim, with its anchor, the evidence, and any recorded resolution.
+
 ## Common pitfalls during recovery
-
-### Lost checkpoint after manual git checkout
-
-If you `git checkout .` to discard ALL bolt changes, you also discarded `.mega-sdd/vaults/<slug>/.internal/checkpoints/*.jsonl`. Recovery cursor lost.
-
-Fix: re-run with `/mega-sdd --resume` (CWD-driven cursor will rebuild from artifact presence; just slower than checkpoint-driven).
 
 ### Recovery loop
 
 Same halt fires after `--resume`. You haven't fixed the underlying issue. Read the blocker YAML AGAIN; the `next_action` is specific. If unclear, check:
 
 - For `hard_rule_violated`: did you actually adjust the rule OR revert the code?
-- For `bind_conflict`: did `resolve-oq --binding` actually save the resolution? Check vault.json changelog.
+- For `binding_conflict`: did `resolve-oq --binding` actually save the resolution? Check the claim's `resolution` in `bolts/U-XXX/binding.json`.
 - For `dedup_ambiguous`: did you actually update target_files in the unit?
 
 ### Force-commit after `hard_rule_violated`
@@ -326,11 +336,11 @@ execute-bolts U-XXX --force-skip-postflight
 
 # Additional halt walkthroughs
 
-These 14 high-frequency halt walkthroughs cover the gap between the original 3 walkthroughs above and the halt families in `references/halt-families/` (per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`). These complement the universal recovery patterns documented above — each walkthrough shows the trigger, halt envelope, and recovery options.
+These walkthroughs cover the high-frequency halts beyond the three above, from the halt families in `references/halt-families/` (per `plugins/mega-sdd/references/halt-protocol.md §halt-protocol`). They complement the universal recovery patterns documented above — each walkthrough shows the trigger, halt envelope, and recovery options.
 
 ## Scenario walkthrough — `handoff_missing`
 
-**When you'll see it.** A sub-skill in an `--auto` chain exits without emitting a `handoff:` YAML block in its chat output. Orchestrator can't decide auto-continue / pause / stop without that block. The check looks at the sub-skill's chat output (last assistant message), NOT a file on disk.
+**When you'll see it.** A sub-skill in an `--auto` chain exits without emitting a `handoff:` YAML block in its chat output. Orchestrator can't decide auto-continue / pause / stop without that block. The check looks at the sub-skill's chat output (last assistant message), NOT a file on disk. (`plan` emits no handoff by design — the front door re-derives state from disk after it — so this halt never names `plan`.)
 
 **Example halt envelope:**
 
@@ -338,17 +348,17 @@ These 14 high-frequency halt walkthroughs cover the gap between the original 3 w
 type: handoff_missing
 source_skill: orchestrate-flow
 details:
-  failing_skill: bind-codebase
-  last_known_step: "Step 7 (binding entries written)"
+  failing_skill: detect-drift
+  last_known_step: "Step 4 (DRIFT-REPORT.md being written)"
   chat_tail_excerpt: "... write to file failed: ENOSPC: no space left on device\nProcess exited with code 1"
 next_action:
   type: inspect_subskill_logs
-  hint: "Sub-skill `bind-codebase` exited without emitting handoff YAML in chat. Inspect chat_tail_excerpt for crash logs / OS-level failures."
+  hint: "Sub-skill `detect-drift` exited without emitting handoff YAML in chat. Inspect chat_tail_excerpt for crash logs / OS-level failures."
 ```
 
-**Recovery:** read `chat_tail_excerpt` for the crash signal. Re-run sub-skill standalone to reproduce (`bind-codebase <vault-path>`). If reproducible → file a skill-author bug. If transient (disk full, OOM) → fix the environmental issue and retry.
+**Recovery:** read `chat_tail_excerpt` for the crash signal. Re-run sub-skill standalone to reproduce (`detect-drift --vault=<vault-dir> --code=<repo-root>`). If reproducible → file a skill-author bug. If transient (disk full, OOM) → fix the environmental issue and retry.
 
-Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol §handoff_missing`; `orchestrate-flow/references/handoff-contract.md §Pre-validation`.
+Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol` (flow family: `halt-families/flow.md §handoff_missing`); `orchestrate-flow/references/handoff-contract.md §Pre-validation`.
 
 ## Scenario walkthrough — `artifact_missing`
 
@@ -360,22 +370,21 @@ Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol §hand
 type: artifact_missing
 source_skill: orchestrate-flow
 details:
-  failing_skill: generate-units
-  missing_paths: ["<vault>/units/U-007.md", "<vault>/units/U-008.md"]
-  present_paths: ["<vault>/units/U-001.md", ..., "<vault>/units/U-006.md"]
-  handoff_file: "<vault>/.internal/checkpoints/2026-05-25-generate-units.handoff.yaml"  # optional replay copy; the orchestrator reads chat output
+  failing_skill: extract-intelligence
+  missing_paths: ["<kb>/modules/swift-messaging.prd.md", "<kb>/modules/reporting.prd.md"]
+  present_paths: ["<kb>/modules/reference-data.prd.md", ..., "<kb>/modules/import-lc.prd.md"]
 next_action:
   type: re_run_producer
-  hint: "Producer declared 8 unit files but only wrote 6. Re-run generate-units standalone to reproduce. Likely cause: crash mid-loop."
+  hint: "Producer declared 6 module PRDs but only wrote 4. Re-run extract-intelligence standalone to reproduce. Likely cause: crash mid-loop."
 ```
 
 **Recovery:** re-run the producer skill standalone; inspect chat for mid-write crash signals. If reproducible → file bug. If transient → re-run + retry chain.
 
 ## Scenario walkthrough — `partial_state_corrupt` + saga rollback
 
-**When you'll see it.** `execute-bolts --resume` reads `<vault>/bolts/U-XXX/partial-state.json` and JSON parse fails. Previously silent overwrite; now ALWAYS-STOP with forensics path suggestion.
+**When you'll see it.** `<vault>/bolts/U-XXX/partial-state.json` (a crashed bolt's resume record) fails JSON parse. At GROUND (`scripts/ground.sh`, which the front door and sync run at entry) this is a C1 self-resolve: the file is renamed aside to `partial-state.json.corrupt-<ISO8601>` (forensics kept), a `[self-resolved]` line is printed, and the next `--resume` restarts the unit fresh from its spec. You only meet a halt when a standalone `execute-bolts --resume` loads the corrupt file before GROUND ran.
 
-**Recovery option 1 (forensics + restart):**
+**Recovery option 1 (forensics + restart — the same rename by hand):**
 
 ```bash
 mv <vault>/bolts/U-007/partial-state.json <vault>/bolts/U-007/partial-state.json.corrupt-$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -389,21 +398,22 @@ execute-bolts U-007 --rollback   # applies rollback_hints[] in reverse order
 execute-bolts U-007              # fresh re-run from clean slate
 ```
 
-Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol §partial_state_corrupt`; `execute-bolts/SKILL.md §Partial-state, resume + saga rollback` (+ `references/partial-state-and-saga.md`).
+Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol` (bolts family: `halt-families/bolts.md §partial_state_corrupt`); `execute-bolts/SKILL.md §Partial-state, resume + saga rollback` (+ `references/partial-state-and-saga.md`).
 
 ## Scenario walkthrough — `oq_blocker`
 
-**When you'll see it.** Generate-intent or any AI consumer reading the vault non-interactively encounters an unresolved P1 Open Question that blocks downstream work.
+**When you'll see it.** An AI consumer reading the vault non-interactively (per `<vault>/_meta/ai-consumer-guide.md`) meets an unresolved P1 Open Question that blocks its work. `plan` never emits it: a P1 business OQ its batched ask left open stays `blocking`, and the units that need it surface at bolts as `oq_business_p1_unresolved`.
 
 **Recovery:**
 
 ```bash
 resolve-oq <vault-path>       # interactive Q&A walk through unresolved OQs
 # OR
-# Edit constraints.md ## Open Questions directly + add "status: resolved" + answer; then re-run upstream skill
+# Edit context.md ## Open Questions directly (`[x]` + `→ Resolved v<X.Y>: <answer>`), then re-derive vault.json:
+bash <plugin>/scripts/derive-vault-json.sh --vault=<vault-path>
 ```
 
-If the OQ is `category: tech` and can be auto-resolved via codebase scan: re-run `bind-codebase` (it auto-resolves tech OQs with HIGH classification_confidence).
+Technical OQs are not yours to answer: `plan` decides every `tech` OQ itself (a labelled, cited AI decision). A leftover open `[tech / scan]` OQ on a migrated pre-9.0 vault is decided in the next `resolve-oq` walk.
 
 ## Scenario walkthrough — `diff_conflict`
 
@@ -425,14 +435,14 @@ options: ["supersede", "keep_vault", "capture_both"]
 
 ## Scenario walkthrough — `dispatch_prompt_too_large`
 
-**When you'll see it.** Current semantics: fires ONLY when constitution_clauses alone exceeds 10KB after all disposable T2 sections truncated to drop floor. Real config issue, not bolt-fixable.
+**When you'll see it.** Current semantics: fires ONLY when all three hold — every disposable T2 section is already truncated to its drop floor, the prompt still exceeds the hard cap (`cap_hard`, 12 KB), and a non-empty constitution-clause section (never truncated) is what remains. Real config issue, not bolt-fixable.
 
 **Recovery:** the halt envelope shows `warnings: [{section, rule_applied, bytes_saved}, ...]` — review which sections truncated. If constitution_clauses is the bulk, consider:
 1. Splitting the unit (smaller scope = fewer constitution clauses referenced)
-2. Reducing the unit's `vault_source` array to fewer sections
+2. Citing fewer constitution clause ids in the unit (the builder injects the ids the unit names in prose, frontmatter, `binding_refs` or `## Hard rules`)
 3. (Last resort) editing the constitution to merge or shorten clauses
 
-Cross-refs: `execute-bolts/references/context-enrichment.md §T2 section priority + truncation cascade`.
+Cross-refs: `execute-bolts/references/context-enrichment.md §T2 section priority + truncation cascade` + §Halt path.
 
 ## Scenario walkthrough — `provenance_missing`
 
@@ -449,45 +459,27 @@ execute-bolts U-007 --resume   # post-flight will pass now
 
 Cross-refs: `agents/bolt-implementer.md §Provenance trailer`.
 
-## Scenario walkthrough — `bind_conflict_constitution_violation`
-
-**When you'll see it.** A claim being bound conflicts with a security/compliance clause in `<vault>/constitution.md` §B or §F. Constitution is non-negotiable — overrides binding gate.
-
-**Example envelope:**
-
-```yaml
-type: bind_conflict_constitution_violation
-source_skill: bind-codebase
-details:
-  claim_id: C-042
-  claim_text: "POST /api/login endpoint uses session cookies"
-  conflict: "Constitution §B-002 requires JWT for all auth endpoints"
-  constitution_clause: "B-002"
-```
-
-**Recovery:**
-1. Review constitution §B-002. Is it still valid? If outdated, edit constitution.md + re-run binding.
-2. If constitution is correct, the claim is wrong — fix the PRD/vault and re-run binding.
-3. Never bypass — constitution violations are blocking by design.
-
 ## Scenario walkthrough — `cross_squad_dep_invalid`
 
-**When you'll see it.** A unit's `depends_on` points at a unit in another squad (cross-squad coupling must route through `consumes_interfaces`; a not-yet-locked interface is `cross_squad_interface_draft`, a dangling ref is `interface_ref_missing`).
+**When you'll see it.** Only on a migrated pre-9.0 vault that carries `_meta/squads.yaml` (`plan` never authors squads), when `plan` re-writes its units (`plan --regenerate`): a unit's `depends_on` points at a unit in another squad. Cross-squad coupling must route through `consumes_interfaces`; a not-yet-locked interface is `cross_squad_interface_draft`, a dangling ref is `interface_ref_missing`.
 
 **Recovery:**
 
 ```bash
-# Option A: producer squad locks the interface
+# Option A: re-partition the squads so both units sit in one squad
+# Edit <vault>/_meta/squads.yaml, then re-run:
+plan <prd> --regenerate
+
+# Option B: replace the cross-squad depends_on with an interface
+# Edit the unit: drop the depends_on edge, add the producer's interface id to consumes_interfaces
+# (the interface note lives in <vault>/interfaces/), then re-run plan --regenerate
+
+# Option C: the interface exists but is still draft → that is cross_squad_interface_draft:
+# the producer squad lands its unit and locks the interface (status: locked in <vault>/interfaces/)
 execute-bolts U-<producer-unit> --squad=producer-squad
-
-# Option B: consumer waits (orchestrate-flow auto-handles via convergence loop with backoff)
-/mega-sdd --converge --max-cycles=3
-
-# Option C: fix the ref if it points to wrong interface
-# Edit unit's consumes_interfaces field; re-run generate-units --refresh
 ```
 
-Cross-refs: `generate-units/references/decomposition-rails.md §Squad assignment` + `generate-intent/references/squad-partition.md`.
+Cross-refs: `plugins/mega-sdd/references/halt-families/units.md §cross_squad_dep_invalid` + `plan/references/decomposition-rails.md §Squad assignment`.
 
 ---
 
@@ -603,109 +595,42 @@ Internal bug — fsd-template.md has a slot marker that section-mapping.md has n
 /mega-sdd:emit fsd --sections=1,2,3,4,5,6,7,8,10  # skip section 9 (or whichever is failing)
 ```
 
-### `subtype: starterkit_metrics_inconsistent` (orchestrate-flow / generate-units)
-
-generate-units emitted `units_with_starterkit_rules > 0` BUT scan-codebase's starterkit-context.yaml flags `partial: true`. Rules may cite incomplete framework conventions.
-
-Recovery:
-
-```bash
-# Force-deep re-scan to complete starterkit slices:
-scan-codebase --force-deep
-
-# Regenerate units against complete starterkit:
-generate-units --regenerate
-```
-
 ### `module_quality_threshold_unmet` or omitted (extract-intelligence)
 
 The extract default — the envelope emits with `subtype` absent; `module_quality_threshold_unmet` is the registry's documentation label for it. Existing walkthrough above at §`quality_gate_failed` (extract-intelligence) covers this case.
 
 ---
 
-## Scenario walkthrough — PRD-scope halts
+## Scenario walkthrough — PRD-scope halt
 
-PRD multi-scope handling carries 3 halts; all 3 get explicit recovery walkthroughs.
+PRD multi-scope handling carries one halt, raised by `plan` (and by the scope-flag PreToolUse gate `validate-scope-flag.sh`). A PRD without a `scopes:` block is single-scope: no picker, no retrofit prompt, so the old retrofit halts never fire.
 
 ### `scope_not_declared_in_prd`
 
 ```yaml
 blocker:
   type: scope_not_declared_in_prd
-  source_skill: generate-intent
-  details:
-    requested_scope: "BE"
-    declared_scopes: ["FE", "MW"]
-    prd_path: "<project>/prd.md"
-  next_action:
-    hint: "Requested --scope=BE not in PRD's declared scopes [FE, MW]. Pick valid scope OR retrofit PRD to add BE."
+  source_skill: plan
+  context: "Step 0.9 scope picker"
+  requested_scope: "BE"
+  declared_scopes: ["FE", "MW"]
+  options: ["re-pick-from-declared", "cancel"]
+  resolver_route: user
 ```
 
 Recovery:
 
 ```bash
 # Option 1: pick valid scope from declared list
-generate-intent ./prd.md --scope=FE
+plan ./prd.md --scope=FE
 
-# Option 2: edit PRD frontmatter to add missing scope
+# Option 2: edit PRD frontmatter (by hand) to add missing scope
 # Add to PRD frontmatter:
 #   scopes:
 #     BE:
 #       name: Backend
 # Then re-run
-generate-intent ./prd.md --scope=BE
-```
-
-### `prd_no_scopes_block_user_rejected_retrofit`
-
-```yaml
-blocker:
-  type: prd_no_scopes_block_user_rejected_retrofit
-  source_skill: generate-intent
-  details:
-    prd_path: "<project>/prd.md"
-    retrofit_attempted: true
-    user_action: rejected
-```
-
-Recovery (interactive path only — the express `--auto` chain records `scope_inferred: single` instead): user explicitly rejected the AI retrofit (auto-add scopes block). 3 paths:
-
-```bash
-# Option 1: manually edit PRD frontmatter to add scopes block
-# Then re-run
-generate-intent ./prd.md
-
-# Option 2: opt-out of multi-scope; run with all scopes as one
-generate-intent ./prd.md --scope=all
-
-# Option 3: accept retrofit (changed mind) — re-run plainly; the retrofit bridge re-offers
-generate-intent ./prd.md
-```
-
-### `prd_retrofit_low_confidence`
-
-```yaml
-blocker:
-  type: prd_retrofit_low_confidence
-  source_skill: generate-intent
-  details:
-    overall_confidence: LOW
-    retrofit_preview_path: "<prd>.retrofit.md"
-```
-
-Recovery: AI retrofit subagent unsure about scope inference. User reviews:
-
-```bash
-# Inspect what retrofit proposes
-cat <prd>.retrofit.md
-
-# Then choose:
-# (a) Accept anyway despite LOW confidence — re-run and accept at the interactive prompt:
-generate-intent ./prd.md
-# (b) Fall back to all scopes as one:
-generate-intent ./prd.md --scope=all
-# (c) Cancel + manually retrofit PRD frontmatter:
-# Edit PRD; re-run
+plan ./prd.md --scope=BE
 ```
 
 ---
@@ -732,9 +657,9 @@ Recovery options:
 ```bash
 # Option 1: code-supersede (codebase reality is correct; update vault)
 diff-vault ./new-prd-spring.md   # if new PRD reflects Spring
-# OR re-extract intelligence + regenerate vault:
-extract-intelligence ./
-generate-intent --kb=<kb>
+# OR re-extract intelligence + plan a new vault from the KB:
+extract-intelligence ./ --out=./.mega-sdd/
+plan --kb=.mega-sdd/knowledge-base/ --vault=.mega-sdd/vaults/<new-slug>
 
 # Option 2: vault-supersede (codebase regressed; revert to Laravel)
 git revert <commit-range>   # roll back framework migration
@@ -742,13 +667,13 @@ git revert <commit-range>   # roll back framework migration
 git checkout <pre-migration-tag>
 
 # Option 3: split — keep both as separate vault scopes
-# Manually retrofit PRD scopes block: scopes: [legacy-laravel, new-spring]
-generate-intent ./prd.md --scope=new-spring
+# Add a scopes block to the PRD frontmatter by hand (one key per scope: legacy-laravel, new-spring — each with a name)
+plan ./prd.md --scope=new-spring --vault=.mega-sdd/vaults/<new-slug>
 ```
 
 ### `constitution_drift_detected`
 
-§B (security) or §F (compliance) constitution clause drift detected in code.
+§B (security) or §F (compliance) constitution clause drift detected in code — or `constitution.md`'s hash no longer matches the one pinned in `vault.json`.
 
 ```yaml
 blocker:
@@ -775,9 +700,10 @@ detect-drift
 
 # OPTION: if constitution clause itself is wrong (rare), update it:
 # Edit <vault>/constitution.md §B-007
-# Re-run: detect-drift
 # (Constitution edits require sign-off per CLAUDE.md governance)
 ```
+
+Editing `constitution.md` moves its hash away from the `constitution_hash` pinned in `vault.json`, so every later `detect-drift` run halts on the hash mismatch: `/mega-sdd:sync` does not clear it (no re-bind re-pins the hash). Either revert `constitution.md` to the pinned state, or accept the change — bolts already read the live `constitution.md` at dispatch — and expect the halt to re-fire until a re-pin path exists (`plugins/mega-sdd/references/halt-families/flow.md §constitution_drift_detected`).
 
 ---
 
@@ -812,7 +738,7 @@ cat <vault>/units/U-012.md
 # Step 3: edit unit OR escalate
 # If acceptance_test wrong: edit acceptance_test field; re-run
 # If target_files too broad: tighten scope; re-run
-# If genuinely blocked: author the OQ into `constraints.md ## Open Questions`
+# If genuinely blocked: author the OQ into `context.md ## Open Questions`
 # for human review (e.g. "U-012 cannot pass acceptance test as specified")
 ```
 
@@ -872,11 +798,12 @@ execute-bolts U-009
 
 ## What you learned
 
-- Halts are SAFETY NET, not bugs — they fire on real issues mega-sdd's rails caught
+- Halts are the SAFETY NET, not bugs — but a halt is a finding to check, not a verdict: a `binding_conflict` can be the pipeline's own stale anchor
 - Each halt's `next_action` field tells you exactly what to do
-- `--resume` is universal recovery (CWD-driven + checkpoint-aware)
+- `--resume` is universal recovery (CWD-driven: state re-derived from disk)
 - A failed bolt's commit already landed (detect-after); the gate blocks further bolts until the user fixes forward or `git revert`s it
 - Multiple recovery paths per halt type; choose based on context
+- A recovered run is done only when `execute-bolts` ends with the result contract every lane delivers: the acceptance-criterion → test table, `delivery-check.sh` `VERDICT: PASS` on the final commit, and the assumptions and decisions made
 
 ## Wrap-up
 

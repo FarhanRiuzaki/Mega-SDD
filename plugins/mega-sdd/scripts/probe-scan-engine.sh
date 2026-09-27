@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# probe-scan-engine.sh — deterministic scan-codebase Step-0 engine resolution.
+# probe-scan-engine.sh — deterministic ast-grep engine resolution.
 #
 # D2 ladder (spec 2026-08-02-reuse-first-grounding-index.md §D2, v5.31.0;
 # v7.4.0 Fase 5 №4 removed the --engine=tree-sitter opt-in lane entirely —
@@ -20,9 +20,9 @@
 #   { engine, precision_tier, astgrep_version,
 #     astgrep_langs: [primary langs], fallbacks: [{lang, tier, reason}], halt }
 # A forced --engine with ZERO --lang args resolves from an empty language set
-# (engine falls out as regex) — the SKILL always passes the detected languages.
+# (engine falls out as regex) — the caller always passes the detected languages.
 # Exit: 0 resolved · 2 usage · 3 dep_missing (forced engine absent; digest still
-# printed with halt populated so the SKILL can emit the blocker verbatim).
+# printed with halt populated so the caller can emit the blocker verbatim).
 
 set -u
 CWD="."; FORCED=""; TIMEOUT=30; LANG_ARGS=()

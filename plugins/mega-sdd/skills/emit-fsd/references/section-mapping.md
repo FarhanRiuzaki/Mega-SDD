@@ -41,8 +41,8 @@
 
 1. **Vault files** (layout-2: `<vault>/vault.md`, `model.md`, `flows.md`, `constraints.md`, `vault.json`; legacy: `00-index.md` … `06-constraints.md`) — declarative intent. Of these the builder actually READS only `vault.md ## Overview` (§1/§2/§10), `flows.md` (§5 fallback), `constraints.md ## Non-functional requirements` (§6) and `vault.json` (header/§10); `model.md` is never a builder input (§7 entities come from the codebase map)
    - **1b. Layout-3** (`<vault>/context.md` — the same four names resolve to its H2 sections via `_lib/vault_md.resolve_doc`) + the PRD at `vault.json.prd_path_at_generation` for §1/§2 (quoted verbatim, cited `<prd> §<heading>`; layout-2 never reads the PRD)
-2. **Binding** (`<vault>/binding.md`, `<vault>-bound/` OR `bound-vault/`) — code-validated state (classic lane; a lite vault has no `binding.md` — §7.3 renders Pending)
-3. **Codebase map** (`<project>/.mega-sdd/codebase/codebase-map.md`) — actual codebase facts
+2. **Binding** — code-validated state: `<vault>/binding.md` (else `<vault>/bound/binding.md`) on a layout-2 (classic-built) vault; a layout-3 vault has no `binding.md` — §7.3 reads the per-unit `<vault>/bolts/U-*/binding.json` instead
+3. **Codebase map** (`<project>/.mega-sdd/codebase/codebase-map.md`, else `<project>/codebase-map.md`) — actual codebase facts (legacy: no producer since 9.0, so only a pre-9.0 map is read)
 4. **Units** (`<vault>/units/U-NNN.md`) — decomposition
 5. **Bolts** (`<vault>/bolts/U-NNN/bolt-report.md`) — execution results
 
@@ -59,7 +59,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 ## Section 1 — Overview
 
 **Slot:** `{{section-1-content}}`
-**Source:** the vault Overview (`vault.md ## Overview`; legacy `01-overview.md`) §Purpose/§Product + §Scope/§Target users (the generate-intent template emits §Product/§Problem/§Success criteria/§Out of Scope — the builder accepts BOTH vocabularies, numbered headings tolerated); layout-3: the PRD section `<prd> §<heading>` (quoted verbatim from `vault.json.prd_path_at_generation`)
+**Source:** the vault Overview (`vault.md ## Overview`; legacy `01-overview.md`) §Purpose/§Product + §Scope/§Target users (a layout-2 (classic-built) `vault.md` carries §Product/§Problem/§Success criteria/§Out of Scope — the builder accepts BOTH vocabularies, numbered headings tolerated); layout-3: the PRD section `<prd> §<heading>` (quoted verbatim from `vault.json.prd_path_at_generation`)
 **Extraction:** Read entire §Purpose|§Product block + §Scope|§Target-users block; preserve markdown formatting; strip vault-internal anchors.
 **Citation:** `[¹] Source: vault/<resolved overview doc>:L<purpose_start>-L<scope_end> (sha256: pending)` — the builder stamps the doc it actually read (`vault.md` on layout-2, `01-overview.md` legacy; layout-3: the PRD section `<prd> §<heading>` (L<from>-L<to>))
 **Missing source:** emit `[Pending — vault/<resolved overview doc> not yet generated]`
@@ -99,14 +99,14 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 - `acceptance_test_summary`: 1-line condensation of `unit.acceptance_test.command` + expected outcome
 
 **Citation:** per-story footer `[Source: units/U-NNN.md (sha256: pending)]`
-**Missing source (no units/):** emit `[Pending — units/ directory not yet generated. Run generate-units after vault stabilizes.]`
+**Missing source (no units/):** emit ``[Pending — units/ directory not yet generated. Run `plan <prd>` (units are written with the vault).]``
 
 ## Section 5 — Functional Requirements
 
 **Slots:** `{{section-5-fr-table}}`, `{{section-5-fr-details}}`
 **Source priority (P4 repair — modern-first via legacy-first-hit):**
 1. `<vault>/02-functional.md` — every FR-NNN heading (the legacy vault generation; wins when the file exists)
-2. `<vault>/flows.md` — every `### F-*` flow heading (the MODERN vault generation — today's generate-intent emits no 02-functional.md; the flows + per-flow DoD are its functional enumeration, the same substrate SIT builds from). Description = the flow's Definition-of-Done bullets; **priority stays an honest `—`** (flows carry no Priority field — never default one).
+2. `<vault>/flows.md` (layout-3: `context.md ## Flows`) — every `### F-*` flow heading (the MODERN vault generation — neither plan's layout-3 `context.md` nor a layout-2 `flows.md` vault carries 02-functional.md; the flows + per-flow DoD are its functional enumeration, the same substrate SIT builds from). Description = the flow's Definition-of-Done bullets; **priority stays an honest `—`** (flows carry no Priority field — never default one).
 **Extraction (legacy branch):**
 - Parse markdown headings matching `^#{2,3}\s+FR-\d+` pattern
 - Per FR: extract title (text after FR-NNN), description (body until next heading), priority (look for `**Priority:**` line; default `MEDIUM`)
@@ -147,18 +147,18 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 
 **Slots:** `{{section-7-entities-content}}`, `{{section-7-modules-content}}`, `{{section-7-binding-confirmed-content}}`
 **Source priority:**
-1. `binding.md` §Confirmed Claims (post-binding state)
-2. `codebase-map.md` §Entities + §Modules (raw codebase facts)
+1. `binding.md` §Confirmed Claims (layout-2); else every `CONFIRMED` claim of `<vault>/bolts/U-*/binding.json` (layout-3, written per unit by execute-bolts)
+2. `codebase-map.md` §Entities + §Modules (raw codebase facts; pre-9.0 maps only)
 
 (That is the whole list. `build-fsd-core.sh` reads NO vault doc for §7 — not `model.md` DBML, not a legacy `04-design.md`; a consumer census on 2026-09-10 found zero readers of either in the builder, and this ref documents what the script executes, never a wished-for source. Entities missing from the map render as `[Pending — …]`, never from the vault.)
 
 **Extraction:**
 - Entities: from codebase-map.md §Entities table — emit as nested list (entity name + 1-line description)
 - Modules: from codebase-map.md §Modules table — emit as table with `Module | Path | Responsibility`
-- Confirmed Claims: from binding.md `## Confirmed Claims` section — emit each as bulleted item with `[C-NNN]` ID prefix
+- Confirmed Claims: from binding.md `## Confirmed Claims` section — emit each as bulleted item with `[C-NNN]` ID prefix; binding.json fallback → one line per claim ``- [U-XXX/<id>] `<expect>` -> `<anchor>` [Source: bolts/U-XXX/binding.json (sha256: pending)]`` (the per-line `[Source:]` keeps the citation stamper from reading the anchor as a citation)
 
-**Citation:** per source `[¹] binding.md:L<line>` AND `[²] codebase-map.md §Entities (sha256: pending)`
-**Missing source:** if binding.md absent → emit `[Pending — binding.md not yet generated. Run bind-codebase.]`; if codebase-map absent → `[Pending — codebase-map.md not yet generated. Run scan-codebase.]`
+**Citation:** per source `[¹] binding.md:L<line>` (or each `bolts/U-XXX/binding.json` read) AND `[²] codebase-map.md §Entities (sha256: pending)`
+**Missing source:** no binding.md §Confirmed Claims and no CONFIRMED binding.json claim → `[Pending — binding.md / bolts/U-*/binding.json: no confirmed claim yet (execute-bolts binds each unit before it runs)]`; codebase-map absent → `[Pending — codebase-map.md absent (pre-9.0 scan artefact); entities are codebase facts, never copied from the vault]` (§7.1) / `[Pending — codebase-map.md absent (pre-9.0 scan artefact); module inventory not recorded]` (§7.2)
 
 ## Section 8 — API & Data Contracts
 
@@ -171,7 +171,7 @@ User override: `--mode=pre-dev` OR `--mode=post-dev` forces regardless of CWD st
 - Append entities content: nested list of all entities from §Entities (sha256-stamped per row)
 
 **Citation:** per row `[Source: codebase-map.md §Public interfaces:L<line> (sha256: pending)]` — the model never transcribes `Last_Scanned_Sha256` values; the stamp is computed by the script from `codebase-map.md` bytes
-**Missing source:** emit `[Pending — codebase-map.md not yet generated]`
+**Missing source:** emit `[Pending — codebase-map.md absent (pre-9.0 scan artefact)]`
 
 ## Section 9 — Test Plan & UAT
 

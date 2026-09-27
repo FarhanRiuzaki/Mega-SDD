@@ -39,7 +39,7 @@ What the script executes, for each unit with a non-empty `## Hard rules` body se
 
 **For v2 grammar:** probe `command -v ast-grep`. Absent → halt `dep_missing` (install guidance is in the v2 Hard-rule-grammar ref listed in SKILL.md). Validate each YAML block via parse-via-scan (`ast-grep test --validate` does NOT exist in the CLI — the snippet is in `hard-rule-grammar-v2.md` §Pre-flight, the single owner of the parse-check mechanics). Unparseable → halt `hard_rule_unparseable`.
 
-**For v1 grammar (legacy path preserved):** parse each rule line against the 5-grammar set per `generate-units/references/unit-schema.md` §Hard rule grammar (plus the directive tier — see §Directive rules below, which is ACCEPTED, not unparseable). NEVER silently skip a line that matches neither — unparseable → halt `hard_rule_unparseable`:
+**For v1 grammar (legacy path preserved):** parse each rule line against the 5-grammar set per `plan/references/unit-schema.md` §Hard rule grammar (plus the directive tier — see §Directive rules below, which is ACCEPTED, not unparseable). NEVER silently skip a line that matches neither — unparseable → halt `hard_rule_unparseable`:
 
 - `DO NOT modify <path>`
 - `DO NOT add new <manifest> dependencies`
@@ -97,7 +97,7 @@ blocker:
     unit_id: U-XXX
     offending_line: "<verbatim>"
     expected_grammar: [DO_NOT_MODIFY, DO_NOT_ADD_DEPS, NAMING_RULE, SIGNATURE_RULE, FILE_PRESENCE_RULE]
-  next_action: "Fix the unit's ## Hard rules section per generate-units/references/unit-schema.md §Hard rule grammar."
+  next_action: "Fix the unit's ## Hard rules section per plan/references/unit-schema.md §Hard rule grammar."
 ```
 
 ```yaml
@@ -155,7 +155,7 @@ Post-flight results are written to `<vault>/bolts/U-XXX/postflight.json` (per-ru
 
 ## Framework-pack rule provenance
 
-Framework-pack rules (pulled into a unit's Hard Rules by `generate-units` Step 12.4.5) are validated identically to other Hard Rules — Step 12.4.5 emits them **in an executable production** (packs ship `rule_type` inventories, not ready-made ast-grep blocks; the translation happens at emission time per the pack→bolt table in `bind-codebase/references/hard-rules-and-packs.md §2.9` — v1 production, verbatim v2 YAML when the pack carries a real `rule:` body, or the honest `directive`/Anti-pattern tier). The violation surface includes a `framework_pack_source` field in the halt YAML so the user knows WHICH framework rule fired.
+`plan` promotes no framework-pack rule into a unit's Hard Rules — pack rules reach the bolt as the advisory T2 `framework_pack_rules` slice (`context-enrichment.md`), never a B1 obligation. A unit that already carries pack-derived Hard Rules (a migrated layout-2 vault) has them validated identically to other Hard Rules — they sit **in an executable production** (packs ship `rule_type` inventories, not ready-made ast-grep blocks; the pack→bolt table in `plan/references/validation-passes.md §12.4.5` — v1 production, verbatim v2 YAML when the pack carries a real `rule:` body, or the honest `directive`/Anti-pattern tier). The violation surface includes a `framework_pack_source` field in the halt YAML so the user knows WHICH framework rule fired.
 
 ## Per-sibling cross-cutting registration scan (defense-in-depth)
 

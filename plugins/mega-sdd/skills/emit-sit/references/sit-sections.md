@@ -57,7 +57,7 @@ fallback on a numeric collision (deterministic, script-owned).
 **Source:** `<vault>/flows.md` (F-* flows in scope; layout-3: `context.md ## Flows`, resolved by the script) + `<vault>/_meta/modules.yaml` (module DoD)
 **Fragment carries:** the TS ↔ F-id ↔ judul ↔ tipe ↔ DoD-count table + the per-module DoD list.
 **Narrative (model):** 2–4 kalimat Indonesia — cakupan uji (flow apa saja, scope mana), dasar penurunannya (vault flows + module DoD), dan apa yang di luar cakupan.
-**Missing source:** fragment emits `[Pending — vault/flows.md belum berisi flow F-*]` / the honest no-modules note — keep verbatim.
+**Missing source:** fragment emits ``[Pending — flows doc vault (context.md ## Flows / flows.md / 04-flows.md) belum berisi flow F-* — jalankan `plan <prd>` dulu]`` / the honest no-modules note — keep verbatim.
 
 ## Section 2 — Skenario Uji
 

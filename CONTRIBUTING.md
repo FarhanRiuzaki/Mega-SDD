@@ -4,17 +4,35 @@
 
 ## Repository layout
 
-This is a Claude Code plugin marketplace + the plugin itself. Plugin code lives under `plugins/mega-sdd/`. Specs/plans live under `docs/superpowers/`.
+This is a Claude Code plugin marketplace + the plugin itself. Plugin code lives under `plugins/mega-sdd/`. Specs/plans live under `docs/superpowers/`. Benchmarks (the vanilla-vs-mega-sdd harness, runbooks, results, and the complexity budget) live under `benchmarks/`, and the measured reports under `research/`.
+
+The shape to keep in mind (9.0, spec `docs/superpowers/specs/2026-09-27-v9-simplification-design.md`): the `/mega-sdd` front door runs `scripts/route-lane.sh` first and picks a lane.
+- **direct** and **assisted** build in the main session with no vault. Their procedure is `plugins/mega-sdd/references/direct-lane.md`.
+- **guarded** runs the ONE spec pipeline: `plan` → `execute-bolts`.
+
+Every lane ends with the same result contract: an acceptance-criterion → test table, `scripts/delivery-check.sh` `VERDICT: PASS` on the final commit, and the assumptions/decisions list. `tests/v9/test-result-contract.sh` pins it. The classic chain (`generate-intent` / `scan-codebase` / `bind-codebase` / `generate-units`) was removed in 9.0: don't re-introduce it or route to it (`tests/v9/test-no-removed-skill-refs.sh`).
 
 ## SDD invariants
 
-These are the non-negotiable rails. Any PR violating them will be closed:
+These are the non-negotiable rails of the guarded lane. Any PR violating them will be closed:
 
-1. **Anti-hallucination at intent layer:** uncertain claims → Open Question, never guess.
-2. **Binding gate is BLOCKING:** `bind-codebase` MUST NOT produce `<vault>/bound/` while conflicts exist (classic); on `--lite` the per-unit `bolts/U-XXX/binding.json` `gate` closes the same gate.
+1. **Anti-hallucination at the spec layer (`plan`):** uncertain claims → Open Question, never guess.
+2. **Binding gate is BLOCKING:** `execute-bolts` binds each unit just in time (`scripts/write-unit-binding.sh` → `bolts/U-XXX/binding.json`); a unit with an unresolved CONFLICT MUST NOT be dispatched — it halts `binding_conflict` until `resolve-oq --binding` resolves it. A migrated layout-2 vault with an unresolved CONFLICT stays blocked until the mandatory JIT re-bind re-verdicts it.
 3. **Unit grounding:** every unit has `target_files` whitelist + ≥1 acceptance test.
 4. **Bolt isolation:** every bolt produces exactly one PR's worth of commits; no skipping pre-commit hooks.
 5. **Drift surfaces, never silently:** detect-drift writes a report, even when clean.
+
+These rails buy traceability and audit, not a measured code-quality gain. Three benchmark blocks against vanilla Claude Code showed none (`plugins/mega-sdd/CLAUDE.md` §The 5 non-negotiable invariants).
+
+## Claims against plain Claude Code
+
+Don't write "faster / cheaper / lighter / stronger than Claude Code" anywhere: README, CHANGELOG, specs, PR text. The exception is a metric whose `compare-arms.py` verdict is `BETTER` vs the vanilla arm, with n ≥ 3 clean runs per arm and Critical findings not `WORSE`. Protocol: `benchmarks/runbooks/vanilla-vs-megasdd.md`; rule: `plugins/mega-sdd/CLAUDE.md` §Release evidence & complexity budget.
+
+What is measured today:
+- the direct and assisted lanes are **on par** with vanilla;
+- the guarded pipeline surfaced the same seeded spec traps as vanilla at ~6× the cost.
+
+Reports: `research/2026-09-27-{vanilla-vs-megasdd,lane-router,brownfield}-results.md`.
 
 ## Skill changes
 
@@ -31,8 +49,17 @@ Shell suites live in TWO trees — `plugins/mega-sdd/tests/` (plugin-local) and 
 
 ```bash
 bash tests/hooks/session-start.test.sh
+bash tests/lanes/test-lanes.sh
 bash plugins/mega-sdd/tests/graph/test-vault-layout2.sh
 ```
+
+The complexity budget is a ratchet (`benchmarks/config/complexity-budget.json`, enforced by `tests/benchmarks/test-complexity-budget.sh`). It covers:
+- the always-loaded description listing;
+- SKILL.md bytes;
+- the T01 context traces;
+- the lines of scripts + hooks.
+
+None of these may grow past its ceiling without a `raises` entry that carries the evidence. When you shrink something, lower the ceiling in the same change.
 
 The markdown fixtures under `tests/skill-triggering/` and `tests/integration/` are manual walkthroughs: read them and step through each case in a fresh Claude Code session.
 
@@ -104,9 +131,10 @@ When adding a new skill to the plugin:
 1. Create directory under `plugins/mega-sdd/skills/<skill-name>/`.
 2. Add `SKILL.md` with frontmatter: `name`, `version: 0.1.0`, `description`.
 3. **Do NOT add a `commands/<skill-name>.md` file.** The public command surface is three verbs (`/mega-sdd`, `/mega-sdd:sync`, `/mega-sdd:emit`) plus three maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`) — exactly 6 command files, nothing else (the 5.x deprecation aliases were removed at 6.0.0, the `memory` one-timer in v7.3.0, `/mega-sdd:slice` in v7.4.0). A new skill is internal — it is reached through the `/mega-sdd` front door (state-based routing) or, for a document, the `/mega-sdd:emit` verb. Only a deliberate spec-level decision may extend the canonical surface (see `plugins/mega-sdd/CLAUDE.md` §Commands — `/mega-sdd:slice`, added 6.8.0 per spec `2026-08-12-playwright-embed-design.md` and removed in v7.4.0 by owner decision, is the worked example of that escape hatch in both directions).
-4. Reference `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` for shared definitions instead of duplicating.
+4. Reference `plugins/mega-sdd/references/vault-core.md` for shared definitions instead of duplicating.
 5. **Implement `--auto` flag handling (v0.14 convention)**: any new skill that has prompts must document its `--auto` behaviour in the SKILL.md body (what `--auto` skips — logistics — vs what stays interactive — substance). When blocked in `--auto`, emit a `blocker` artifact per `plugins/mega-sdd/references/halt-protocol.md` §halt-protocol — pick the existing type (`oq_blocker`, `diff_conflict`, `drift_framework_mismatch`) or propose a new type as part of the contract bump.
 6. Add a CHANGELOG entry that includes the new skill at version 0.1.0.
+7. **Budget:** a new skill grows the always-loaded description listing and the SKILL.md bytes, so it needs a `raises` entry in `benchmarks/config/complexity-budget.json`. For a feature, that entry cites the vanilla comparison (see §Claims against plain Claude Code).
 
 ## Audit + spec workflow
 

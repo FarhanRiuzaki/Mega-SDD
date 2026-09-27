@@ -294,8 +294,9 @@ if UNIT_TIER not in ("", "xs", "s", "m", "l"):
 #              and the builder's NON-BODY scaffolding alone floors at 2 385 B, so
 #              the old 2048 was satisfiable only when pack content was MISSING —
 #              it fired on 123/123 runs, pure noise. At 12288 it fires only above
-#              ~6.8 KB of unit body, where it means what it should: a
-#              generate-units atomicity smell, not a budget complaint.
+#              ~6.8 KB of unit body, where it means what it should: a plan
+#              unit-atomicity smell (unit too big for one PR-sized bolt - split
+#              it in plan), not a budget complaint.
 # `cap_t1 + cap_t2 == cap_hard` is EXPLICITLY RETIRED as a constraint (it was an
 # arithmetic coincidence). Do NOT re-derive one of these from another.
 CAP_HARD = 12288
@@ -1001,8 +1002,8 @@ reuse_candidates = fm_maps(FM, "reuse_candidates")
 properties = fm_maps(FM, "properties")
 
 # target_files: (path, operation) pairs. Frontmatter is the primary carrier; the
-# `## Target files` BODY block is a SECOND carrier unit-schema.md never mentions
-# but validate-unit-spec.sh:678-681 accepts ("TF units carry paths ONLY in the
+# `## Target files` BODY block is a SECOND carrier plan/references/unit-schema.md
+# never mentions but validate-unit-spec.sh:678-681 accepts ("TF units carry paths ONLY in the
 # body block ... so reading frontmatter alone misses them"). A frontmatter-only
 # reader silently produces an EMPTY whitelist for those units.
 def _expand_braces(p):
@@ -1051,8 +1052,8 @@ acceptance_tests = []
 _at = re.search(r"^acceptance_test\s*:\s*(.*?)(?=^\S|\Z)", UNIT_TEXT, re.DOTALL | re.MULTILINE)
 
 # `_authored_by` is pulled with a STANDALONE regex BEFORE any structured parse.
-# decomposition-rails.md:159-170 documents it as a mapping key SIBLING of a block
-# sequence under the SAME `acceptance_test:` key — that is structurally INVALID
+# plan/references/decomposition-rails.md §Adversarial test review pass documents
+# it as a mapping key SIBLING of a block sequence under the SAME `acceptance_test:` key — that is structurally INVALID
 # YAML, and a structured load would throw on the WHOLE frontmatter, on exactly
 # the units that need the NOTE.
 #
@@ -1064,8 +1065,8 @@ _at = re.search(r"^acceptance_test\s*:\s*(.*?)(?=^\S|\Z)", UNIT_TEXT, re.DOTALL 
 # absent is one of the conditions that FIRES the weak-provenance NOTE. The same
 # prompt then showed the real strong value in the verbatim unit body three
 # sections above while asserting it was missing, and instructed the subagent to
-# cap confidence at MEDIUM on exactly the units generate-units spent adversarial
-# review on. Absent WITHIN the block = genuinely absent.
+# cap confidence at MEDIUM on exactly the units plan put through its adversarial
+# pass (Step 4). Absent WITHIN the block = genuinely absent.
 _ab = re.search(r"(?m)^\s*_authored_by\s*:\s*(.+)$", _at.group(0) if _at else "")
 authored_by = _yl_scalar(_ab.group(1)) if _ab else None
 
@@ -1112,7 +1113,7 @@ if vault_sha256 is None:
 
 design_system = vault_json.get("design_system") if isinstance(vault_json.get("design_system"), dict) else None
 scope_meta = vault_json.get("scope_metadata") if isinstance(vault_json.get("scope_metadata"), dict) else {}
-# scope_id/scope_name MUST be sourced verbatim, never inferred (unit-schema.md:326).
+# scope_id/scope_name MUST be sourced verbatim, never inferred (plan/references/unit-schema.md §Scope fields).
 scope_id = unit_scope or str(scope_meta.get("id") or "")
 scope_name = unit_scope_name or str(scope_meta.get("name") or "")
 
@@ -1432,8 +1433,8 @@ if os.path.isfile(_REUSE_T1_PATH):
 else:
     omit("t1.reuse_index_line",
          "reuse-index.yaml absent at ./.mega-sdd/codebase/reuse-index.yaml — the Iron Rule 4 "
-         "pointer line is NOT emitted for a file that does not exist (run scan-codebase to "
-         "produce the index)")
+         "pointer line is NOT emitted for a file that does not exist (no 9.0 producer - "
+         "reuse lookup rides symbol-index.json from GROUND)")
 if reuse_candidates:
     t1.append("")
     t1.append("## Reuse candidates (fast-path hint — NOT the boundary)")
@@ -1468,13 +1469,14 @@ _locked_entries = []                                 # [(path, source-label)]
 
 # (a) data-mutation-policy.md — a real artifact: extract-intelligence
 # synthesis writes it (KB ROOT in the PRD-kontrak grammar; the legacy
-# numbered tree kept it under 99-rebuild-architecture/), generate-intent
+# numbered tree kept it under 99-rebuild-architecture/), plan --kb
 # reads it, and the dispatch prompt carries it forward. KB root candidates
-# mirror the bind-codebase KB probe order; per root, the PRD-kontrak home is
-# probed first.
+# follow the references/paths.md KB probe order; per root, the PRD-kontrak
+# home is probed first.
 DMP_PATH = None
 _dmp_cands = []
-for _kb in (".mega-sdd/knowledge-base", "docs/knowledge-base", "old-reference/knowledge-base"):
+for _kb in (".mega-sdd/knowledge-base", "docs/knowledge-base", "docs/mega-sdd/knowledge-base",
+            "old-reference/knowledge-base"):
     _root = os.path.join(CWD, _kb.replace("/", os.sep))
     _dmp_cands.append(os.path.join(_root, "data-mutation-policy.md"))
     _dmp_cands.append(os.path.join(_root, "99-rebuild-architecture",
@@ -1977,7 +1979,9 @@ for r in pack_rules:
     if not raw_glob:
         continue                                     # tolerate a record without one
     # Chain overlay: child rules override parent on path_glob conflict
-    # (hard-rules-and-packs.md:12) — packs are walked most-specific-first, so the
+    # (references/framework-conventions/_template.md: first-occurrence-wins, most-
+    # specific pack overrides; scripts/_lib/resolve-framework-pack.sh walks the
+    # chain most-specific-first) — packs are walked most-specific-first, so the
     # first claimant of a glob string wins and later (more generic) ones drop.
     if raw_glob in _claimed_globs:
         continue
@@ -1999,8 +2003,9 @@ for r in pack_rules:
     slug = re.sub(r"[^a-z0-9]+", "-", rtype.lower()).strip("-") or "custom"
     _type_ordinal[slug] = _type_ordinal.get(slug, 0) + 1
     # Pack rules have NO `id:` key in ANY of the 175 records across 27 packs.
-    # The id is SYNTHESIZED deterministically (validation-passes.md:73-75 is the
-    # precedent) so the same input yields the same id across runs.
+    # The id is SYNTHESIZED deterministically (plan/references/validation-passes.md
+    # §12.4.5 Framework pack provenance citation is the precedent) so the same
+    # input yields the same id across runs.
     r["id"] = "framework-pack-%s-%03d" % (slug, _type_ordinal[slug])
     r["matched"] = hit
     matched_rules.append(r)
@@ -2241,7 +2246,7 @@ else:
 
 # ── Priority 4 — KB anti-patterns ────────────────────────────────────────────
 # "domain tags" IS A PHANTOM FIELD. It appears at context-enrichment.md:76 and
-# bolt-dispatch-prompt.md:20/143/145 and NOWHERE else — not in unit-schema.md,
+# bolt-dispatch-prompt.md:20/143/145 and NOWHERE else — not in plan/references/unit-schema.md,
 # not in any validator, not in any writer. Units carry no `domain`/`domain_tags`
 # key. Populating this section from a substitute key (`module:`, `vault_source`)
 # would be a FABRICATED T2 inclusion, violating both the inclusion-cites-its-
@@ -2292,8 +2297,9 @@ if _rt is not None:
                 epath = nslash(str(e.get("path") or ""))
                 name = str(e.get(namefield) or "").strip()
                 # "path overlaps target_files" is undefined in context-enrichment.md;
-                # the sibling contract for the SAME index (starterkit-derivation.md:171)
-                # defines it as a PREFIX overlap. That is the tiebreaker used here.
+                # the sibling contract for the SAME index (the pre-9.0 starterkit derivation,
+                # §7.7.f Reuse candidate derivation) defined it as a PREFIX overlap.
+                # That is the tiebreaker used here.
                 overlap, why = 0, ""
                 for tp in TARGET_PATHS:
                     if epath and (epath == tp or epath.startswith(tp.rstrip("/") + "/")
@@ -2570,8 +2576,9 @@ for cat in ("controller", "view", "component"):       # exemplar scope is EXACTL
     # `_source[0]` IS the faithful MECHANICAL implementation of "pick the FIRST
     # entry whose file lints clean". `exemplar_selection` exists ONLY at CATEGORY
     # level, never per-entry, so the linter-clean information lives entirely in
-    # the ORDERING scan-codebase already applied (deep-scan-dispatch.md:152-156,
-    # "# ORDERED best-first"). Tagged => [0] IS the linter-clean pick; untagged
+    # the ORDERING the starterkit-context.yaml writer applied (best-first,
+    # exemplar_selection: linter-clean - execute-bolts/references/starterkit-enrichment.md
+    # §EXEMPLAR SELECTION). Tagged => [0] IS the linter-clean pick; untagged
     # => the prose's own fallback is also `source_list[0]`. Same answer both ways.
     # There is NO `_source[1]` fallback: the contract computes chosen_source ONCE.
     chosen = str(srcs[0]).split(":")[0]
@@ -3137,7 +3144,7 @@ if claim_rows:
                 [_render_claims("full"), _render_claims("agg"), ""],
                 ["per-claim -> aggregate (HIGH×N / MEDIUM×N / LOW×N)", "drop section (drop floor)"])
 elif not binding_refs:
-    omit("confidence_labels", "unit has no binding_refs (greenfield / standalone generate-units)")
+    omit("confidence_labels", "unit has no binding_refs (greenfield / plan-written unit with no OQ/CONFLICT refs)")
 elif not binding_text:
     omit("confidence_labels", "no binding.md in %s" % VAULT)
 else:
@@ -3170,7 +3177,8 @@ def _render_hints(with_expectations):
         pbt = []
         for p in properties:
             # A property with an empty/absent `cites:` is an INVENTED invariant —
-            # dropped, never emitted (validation-passes.md:164 no-fabrication rail).
+            # dropped, never emitted (plan/references/validation-passes.md §h. PBT
+            # properties citation check - the no-fabrication rail).
             if not str(p.get("cites") or "").strip():
                 continue
             pbt.append("- %s [%s]: %s  (cites: %s)"
@@ -3327,11 +3335,11 @@ t1_text = "\n".join(x for x in t1 if x is not None)
 consumed_t1 = blen(t1_text)
 if consumed_t1 > CAP_T1:
     # A REPORTING THRESHOLD, not a budget — and at 12288 what it now reports is a
-    # generate-units ATOMICITY SMELL (a unit too big to be one PR-sized bolt),
+    # plan ATOMICITY SMELL (unit too big to be one PR-sized bolt),
     # not a budget complaint. At the old 2048 it fired on 123/123 measured runs.
     WARNINGS.append("T1 exceeded its %d-byte reporting threshold (actual=%d) — T1 is NEVER "
                     "truncated (the unit body is verbatim and non-negotiable); this is a unit "
-                    "ATOMICITY signal for generate-units, not a budget failure"
+                    "ATOMICITY signal for plan (split the unit), not a budget failure"
                     % (CAP_T1, consumed_t1))
 
 # TRUNCATION TRIGGER — cap_t2 (10240) ONLY. See the constants block: the four
@@ -3430,7 +3438,8 @@ def render_tracker(file_total):
 # grammar has no `10-domains/`; the fixed path was dead in 36/36 field
 # dispatches). No root → no line, and the absence is recorded.
 _KB_ROOT_REL = None
-for _kb in (".mega-sdd/knowledge-base", "docs/knowledge-base", "old-reference/knowledge-base"):
+for _kb in (".mega-sdd/knowledge-base", "docs/knowledge-base", "docs/mega-sdd/knowledge-base",
+            "old-reference/knowledge-base"):
     if os.path.isdir(os.path.join(CWD, _kb.replace("/", os.sep))):
         _KB_ROOT_REL = _kb
         break

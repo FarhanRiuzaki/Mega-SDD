@@ -736,12 +736,18 @@ RAIL='Reuse index: .mega-sdd/codebase/reuse-index.yaml'
 [ "$(cntF "$RAIL" "$PR_BARE")" = "0" ] \
   && ok "G2: with NO index on disk the pointer line is NOT emitted (no instruction to read a missing file)" \
   || fail "G2: the reuse-index pointer shipped for a file that does not exist"
-$PY - "$WORK/bare.json" <<'PY' && ok "G2b: ...and the omission is RECORDED (t1.reuse_index_line, names scan-codebase)" || fail "G2b: pointer omission not recorded"
+# 9.0 P1: scan-codebase (the old reuse-index producer) was deleted, so the reason
+# now names the surviving route — reuse lookup via GROUND's symbol-index.json —
+# and must NOT send the reader to a skill that no longer exists.
+$PY - "$WORK/bare.json" <<'PY' && ok "G2b: ...and the omission is RECORDED (t1.reuse_index_line, names the GROUND symbol-index route)" || fail "G2b: pointer omission not recorded"
 import json, sys
 d = json.load(open(sys.argv[1]))
 om = {o["section"]: o["reason"] for o in d["sections_omitted"]}
 assert "t1.reuse_index_line" in om, sorted(om)
-assert "scan-codebase" in om["t1.reuse_index_line"], om["t1.reuse_index_line"]
+r = om["t1.reuse_index_line"]
+assert "reuse-index.yaml absent" in r, r
+assert "symbol-index.json" in r and "GROUND" in r, r
+assert "scan-codebase" not in r, r
 PY
 [ "$(cntF '## Reuse candidates' "$PR_BARE")" = "0" ] \
   && ok "G3: ...while the 'Reuse candidates' HINT block stays absent (nothing invented)" \

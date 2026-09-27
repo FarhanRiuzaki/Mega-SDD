@@ -1,6 +1,6 @@
 # Laravel — Auth Libraries Detection Patterns
 
-> Catalog consumed by `auth-extractor` subagent in `scan-codebase` v2.6.0+ deep-scan.
+> Detection catalog for the legacy `starterkit-context.yaml §auth` block (producer removed in 9.0).
 
 **Output target:** `starterkit-context.yaml §auth` block (see `references/starterkit-context-schema.md`)
 
@@ -213,4 +213,4 @@ Multiple libs may coexist (e.g., Sanctum + Breeze). Detection order matters for 
 5. **Sanctum** (token/SPA auth)
 6. `not_detected` (none of the above)
 
-If multiple match, emit the highest-precedence as `lib:`; list others in `libs:` (Task 3 libs-extractor handles that).
+If multiple match, emit the highest-precedence as `lib:`; list others in `libs:`.

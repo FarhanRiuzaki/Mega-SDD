@@ -10,10 +10,8 @@
 
 - [Purpose](#purpose)
 - [Check entry format](#check-entry-format)
-- [scan-codebase preflight checks](#scan-codebase-preflight-checks)
-- [bind-codebase preflight checks](#bind-codebase-preflight-checks)
+- [plan preflight checks](#plan-preflight-checks)
 - [execute-bolts preflight checks](#execute-bolts-preflight-checks)
-- [generate-intent preflight checks](#generate-intent-preflight-checks)
 - [detect-drift preflight checks](#detect-drift-preflight-checks)
 - [diff-vault preflight checks](#diff-vault-preflight-checks)
 - [resolve-oq preflight checks](#resolve-oq-preflight-checks)
@@ -22,6 +20,7 @@
 - [Cold-halt anticipation checks](#cold-halt-anticipation-checks)
 - [install-deps preflight checks](#install-deps-preflight-checks)
 - [emit-fsd preflight checks](#emit-fsd-preflight-checks)
+- [Removed skills (9.0)](#removed-skills-90)
 - [Read protocol (Step 5)](#read-protocol-step-5)
 - [Anti-halu rails](#anti-halu-rails)
 - [Adding new checks](#adding-new-checks)
@@ -29,7 +28,7 @@
 
 ## Purpose
 
-Catalog of lightweight checks that detect known halt preconditions BEFORE invoking the skill. Per spec §4.2: "Instead of 'scan-codebase halted on dep_missing 8 minutes in', user sees 'before chain starts: tree-sitter not installed; install or use --engine=regex'." (historical wording — the AST engine is ast-grep)
+Catalog of lightweight checks that detect known halt preconditions BEFORE invoking the skill. Instead of execute-bolts halting `dep_missing` on a v2 Hard Rule mid-run, the user sees before chain start: "ast-grep not installed, so GROUND built no symbol index; run `/mega-sdd:install-deps`".
 
 ---
 
@@ -53,71 +52,71 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 
 ---
 
-## scan-codebase preflight checks
+## plan preflight checks
+
+- **check_id: `prd_or_kb_input_present`**
+  command: plan hop with a POSITIONAL input (a PRD path) → `test -f <positional-input>` (a positional that resolves to a file IS the input; the root probe below applies only when no positional exists). With `--kb=<kb-dir>` → `test -f <kb-dir>/README.md && ls <kb-dir>/modules/*.prd.md`. Otherwise: `test -f <project>/prd.md` OR the derive-state digest's `probes.prd.present` (which scans root + one level inside dirs whose name case-insensitively matches `PRD`/`docs`/`documents`/`requirements`).
+  expected: at least one input
+  on_fail: "plan requires an input — a positional PRD, root prd.md, a PRD candidate in PRD/ or docs/, or --kb=<kb-dir> (extract-intelligence output). For a free-text brief: write it to a file or use the direct/assisted lane. Or run extract-intelligence first."
+  fatal: yes
+  predicts_halt: (chain order error)
+  note: model-run — the positional and `--kb` are invisible to `validate-preflight.sh --chain`, so the script skips this check. A root-only probe against an explicitly-supplied positional PRD is a FALSE FAIL predicting a halt plan would never raise (field finding, training-nextjs 2026-08-03).
 
 - **check_id: `ast_engine_present`**
-  command: `command -v ast-grep`
+  command: `command -v ast-grep` (a repo with no source files passes: there is no symbol index to build)
   expected: exit 0
-  on_fail: "ast-grep not installed; scan-codebase falls back to the regex engine (lower precision). Install: brew install ast-grep / cargo install ast-grep — OR run `/mega-sdd:install-deps`."
+  on_fail: "ast-grep not installed; GROUND builds no symbol index, so plan types brownfield units greenfield (+WARN), JIT bind leaves symbol claims OQ, v2 Hard Rules halt dep_missing. Install ast-grep (brew install ast-grep / scoop install ast-grep) OR run `/mega-sdd:install-deps`."
   fatal: no
-  predicts_halt: dep_missing (only under a forced `--engine=`; avoided if user OK with the fallback tier OR installs a binary)
+  predicts_halt: dep_missing (execute-bolts: a v2 Hard Rule with ast-grep absent, `hard-rule-scan.md` exit 6)
 
-- **check_id: `framework_pack_present`**
-  command: `test -f plugins/mega-sdd/references/framework-conventions/<detected-framework>.md`
-  expected: file exists
-  on_fail: "no framework pack for <framework>; scan-codebase will use _universal.md fallback patterns (lower starterkit detection precision)"
-  fatal: no
-  predicts_halt: framework_pack_missing (avoided — fallback always exists)
-
-## bind-codebase preflight checks
-
-- **check_id: `binding_input_complete`**
-  command: `test -f <vault-path>/vault.json && test -f <codebase-map-path>`
-  expected: both files exist
-  on_fail: "bind-codebase requires both vault.json AND codebase-map.md. Run scan-codebase first if codebase-map.md absent; run generate-intent first if vault.json absent."
+- **check_id: `plan_layout2_vault`** (dispatch-time only)
+  command: resolve the dispatch's TARGET vault (`--vault=<name|dir>`, else `.mega-sdd/vaults/<slug>` from the `<prd>` positional; unresolvable under `--kb` / `--reconcile` → pass), then `test -f <target>/context.md || ! { test -f <target>/vault.md || ls <target>/0[0-6]-*.md; }`
+  expected: the target is layout-3 (`context.md` present; a migrated vault has one), not yet written, or unresolvable
+  on_fail: "plan writes layout-3 only and the target vault <dir> is layout-2 (no context.md) — run /mega-sdd:migrate-paths --vault-layout=3 --vault=<dir> first (a legacy 7-file vault takes --vault-layout first; then the mandatory full JIT re-bind), or pass --vault=<new-dir> for a separate plan-born vault."
   fatal: yes
-  predicts_halt: bind_conflict (vault.json absent) OR dep_missing (codebase-map absent)
-  express_carve_out: when the bind hop carries `--express` OR the express spine is active with no `--no-express`/`--classic` on the hop (derive-state `derived.spine` — the deterministic validator applies the same flag-or-config rule), run ONLY the vault.json arm (`test -f <vault-path>/vault.json`, still fatal) — the express lane reads NO codebase-map (`bind-codebase/references/express-bind.md`), so the map arm would falsely halt a valid express chain.
+  predicts_halt: (dispatch refusal — plan writes layout-3 only; the layout-2 migration rung is spec 2026-09-27 §4)
+  note: run by the PreToolUse preflight on a `plan` dispatch (`validate-preflight.sh --skill=mega-sdd:plan --args-b64=…`, no `--predictive`). `--chain` cannot see `--vault=` or the positional, so the predictive run skips it (same reason as `prd_or_kb_input_present`). Only the dispatch's own target is probed, never every vault dir: a layout-2 vault next to a new PRD must not block that PRD.
 
-- **check_id: `constitution_file_check`**
-  command: `test -f <vault-path>/constitution.md`
-  expected: file exists (only relevant if --strict-constitution flag passed)
-  on_fail: "--strict-constitution requires constitution.md in vault; not found"
-  fatal: yes (only when --strict-constitution explicitly set)
-  predicts_halt: bind_conflict_constitution_violation
+No framework-pack check: GROUND's pack matcher and the bolt dispatch (`scripts/_lib/resolve-framework-pack.sh`) always fall back to `_universal.md`, so a missing pack never halts. The pre-9.0 `framework_pack_present` probe (a scan-codebase check) could only test that the fallback file exists, and was retired with scan-codebase.
 
 ## execute-bolts preflight checks
 
 - **check_id: `units_directory_present`**
   command: `test -d <vault-path>/units && ls <vault-path>/units/U-*.md | head -1`
   expected: at least 1 unit file exists
-  on_fail: "execute-bolts requires generated units. Run generate-units first."
+  on_fail: "execute-bolts requires generated units. Run plan <prd> first (plan writes units/U-*.md)."
   fatal: yes
-  predicts_halt: (chain order error — invokes generate-units instead)
+  predicts_halt: (chain order error — invokes plan instead)
 
-## generate-intent preflight checks
+- **check_id: `ast_engine_present`**
+  command: `command -v ast-grep` (a repo with no source files passes)
+  expected: exit 0
+  on_fail: "ast-grep not installed; a unit carrying v2 (ast-grep YAML) Hard Rules halts dep_missing at pre-flight, and the JIT bind leaves symbol claims OQ. Install ast-grep (brew install ast-grep / scoop install ast-grep) OR run `/mega-sdd:install-deps`."
+  fatal: no
+  predicts_halt: dep_missing (`hard-rule-scan.md` exit 6 — v2 grammar, ast-grep absent)
+  note: the same probe as the plan entry, repeated here because the halt it predicts fires at execute-bolts: a chain that starts at execute-bolts (`units_pending_bolts`) has no plan hop to carry the warning. A `plan,execute-bolts` chain reports it once per hop. Not fatal: a unit without v2 Hard Rules runs fine without ast-grep.
 
-- **check_id: `prd_or_kb_input_present`**
-  command: when the chain's generate-intent hop carries a POSITIONAL input → `test -f <positional-input>` (generate-intent Rule 2 — a positional that resolves to a file IS the input; the root probe below is Rule-7 territory and only applies when no positional exists). Otherwise: `test -f <project>/prd.md || test -d <project>/.mega-sdd/knowledge-base/` OR the derive-state digest's `probes.prd.present` (which scans root + one level inside dirs whose name case-insensitively matches `PRD`/`docs`/`documents`/`requirements`).
-  expected: at least one input
-  on_fail: "generate-intent requires an input — a positional PRD path, root prd.md, a PRD candidate in PRD//docs/, OR a knowledge-base (extract-intelligence output). Provide one OR run extract-intelligence first."
+- **check_id: `lite_plan_coverage_pass`**
+  command: `python3 -c "import json,sys; sys.exit(0 if json.load(open('<project>/.mega-sdd/.plan-coverage-state.json')).get('status') == 'PASS' else 1)"`
+  expected: exit 0 (the census `validate-plan-coverage.sh` writes at plan Step 5 is PASS)
+  on_fail: ".mega-sdd/.plan-coverage-state.json is missing or FAIL (plan_coverage_gap): every PRD requirement heading must be owned by a unit's prd_source or quoted by an open question BEFORE execute-bolts. Run validate-plan-coverage.sh --cwd --prd --vault (plan Step 5; legacy KB: --kb=<kb-dir>) and close the listed gaps; a missing state is a skipped census, not a pass. A layout-2 vault: /mega-sdd:migrate-paths --vault-layout=3 first (a migrated vault is exempt)."
   fatal: yes
-  predicts_halt: (chain order error)
-  note: a root-only probe against an explicitly-supplied positional PRD is a FALSE FAIL predicting a halt generate-intent would never raise (field finding, training-nextjs 2026-08-03).
+  predicts_halt: plan_coverage_gap
+  note: ALWAYS ON. 9.0 has one pipeline, so no lane or config key (`lane:`, `--lite`) switches the rail off. The only exemption is a MIGRATED layout-2 vault (`<vault>/_meta/archive/layout2/` present; its classic-born units carry no `prd_source`, spec 2026-09-27 §7 #12): the check is then not run at all. A missing state is fatal, except when a `plan` hop earlier in the same chain writes it (chain-aware, see §Read protocol).
 
 ## detect-drift preflight checks
 
 - **check_id: `vault_present_for_drift`**
   command: `test -f <vault-path>/vault.json`
   expected: file exists
-  on_fail: "detect-drift requires a vault. Run generate-intent first."
+  on_fail: "detect-drift requires a vault. Run plan <prd> first."
   fatal: yes
   predicts_halt: (chain order error)
 
 - **check_id: `binding_present_for_drift`**
-  command: `test -f <vault-path>/binding.md && grep -q "^## Confirmed Claims" <vault-path>/binding.md`
-  expected: binding.md exists with at least one Confirmed Claims section
-  on_fail: "detect-drift compares against bound vault state. Run bind-codebase first to establish binding."
+  command: layout-3 (`<vault-path>/context.md` present) → `ls <vault-path>/bolts/U-*/binding.json | head -1`; otherwise (readable layout-2) → `test -f <vault-path>/binding.md && grep -q "^## Confirmed Claims" <vault-path>/binding.md`
+  expected: layout-3: at least one per-unit `binding.json`; layout-2: binding.md with a Confirmed Claims section
+  on_fail: "detect-drift needs binding verdicts: run execute-bolts --all --lite (JIT bind → bolts/U-*/binding.json) or scripts/rebind-units.sh --units=all; a layout-2 vault with no binding.md needs /mega-sdd:migrate-paths --vault-layout=3 first."
   fatal: yes
   predicts_halt: (chain order error — drift has no anchor points)
 
@@ -133,7 +132,7 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 - **check_id: `current_vault_present_for_diff`**
   command: `test -f <vault-path>/vault.json`
   expected: file exists
-  on_fail: "diff-vault requires current vault to compare new source against. Run generate-intent first."
+  on_fail: "diff-vault requires a current vault to compare the new source against. Run plan <prd> first."
   fatal: yes
   predicts_halt: (chain order error)
 
@@ -154,16 +153,16 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 ## resolve-oq preflight checks
 
 - **check_id: `vault_present_for_oq`**
-  command: `test -f <vault-path>/vault.json && { test -f <vault-path>/constraints.md || test -f <vault-path>/06-constraints.md; }`
-  expected: vault.json + the OQ doc of the vault's layout exist (layout-2 `constraints.md`; legacy `06-constraints.md` — no layout ever had `03-open-questions.md`)
-  on_fail: "resolve-oq requires a vault with vault.json + the OQ doc (constraints.md, or 06-constraints.md on the legacy layout). Run generate-intent first."
+  command: `test -f <vault-path>/vault.json && { test -f <vault-path>/context.md || test -f <vault-path>/constraints.md || test -f <vault-path>/06-constraints.md; }`
+  expected: vault.json + the OQ doc of the vault's layout exist (layout-3 `context.md`; layout-2 `constraints.md`; legacy `06-constraints.md` — no layout ever had `03-open-questions.md`)
+  on_fail: "resolve-oq requires a vault with vault.json + the OQ doc (context.md on layout-3; constraints.md / 06-constraints.md on readable layout-2/legacy vaults). Run plan <prd> (or plan --kb=<kb-dir>) first."
   fatal: yes
   predicts_halt: (chain order error)
 
 - **check_id: `oq_status_field_present`**
   command: `python3 -c "import json; v=json.load(open('<vault-path>/vault.json')); exit(0 if any('status' in oq for oq in v.get('open_questions', [])) else 1)"`
   expected: at least one OQ entry has status field (schema)
-  on_fail: "vault.json open_questions[] entries lack 'status' field (old schema). resolve-oq cannot track Resolve/Out-of-Scope/Defer outcomes without status field. Regenerate vault via generate-intent --regenerate."
+  on_fail: "vault.json open_questions[] entries lack 'status' field (old schema). resolve-oq cannot track Resolve/Out-of-Scope/Defer outcomes without status field. Re-derive with scripts/derive-vault-json.sh --vault=<dir>; a plan-born vault can be rebuilt with plan <prd> --regenerate (layout-2: /mega-sdd:migrate-paths --vault-layout=3 first)."
   fatal: no
   predicts_halt: (no halt; degraded interactive walk)
 
@@ -202,14 +201,14 @@ Catalog of lightweight checks that detect known halt preconditions BEFORE invoki
 - **check_id: `vault_present_for_agents_md`**
   command: `test -f <vault-path>/vault.json`
   expected: file exists
-  on_fail: "emit-agents-md requires a vault. Run generate-intent first."
+  on_fail: "emit-agents-md requires a vault. Run plan <prd> first."
   fatal: yes
   predicts_halt: (chain order error)
 
 - **check_id: `units_present_for_agents_md`**
   command: `test -d <vault-path>/units && ls <vault-path>/units/U-*.md | head -1`
   expected: at least 1 unit file exists
-  on_fail: "emit-agents-md is unit-aware (lists units in AGENTS.md). Run generate-units first."
+  on_fail: "emit-agents-md is unit-aware (lists units in AGENTS.md). Run plan <prd> first (plan writes the units) OR pass --no-units for a vault-only AGENTS.md."
   fatal: no
   predicts_halt: (no halt; degraded AGENTS.md)
 
@@ -234,7 +233,7 @@ Most halts are runtime-only (cannot statically predict). These 4 feasible static
 - **check_id: `units_have_acceptance_tests`** (anticipates `unit_underspecified`)
   command: `for f in <vault-path>/units/U-*.md; do grep -q "^acceptance_test:" "$f" || { echo "no acceptance_test: $f"; exit 1; }; done`
   expected: exit 0 (every unit has acceptance_test field)
-  on_fail: "One or more units lack acceptance_test field. execute-bolts will halt unit_underspecified. Edit affected units OR re-run generate-units --regenerate."
+  on_fail: "One or more units lack acceptance_test field. execute-bolts will halt unit_underspecified. Edit affected units (≥1 acceptance_test per the unit contract) OR re-run plan <prd> --regenerate."
   fatal: yes
   predicts_halt: unit_underspecified
 
@@ -251,7 +250,6 @@ Most halts are runtime-only (cannot statically predict). These 4 feasible static
 - `predictive_check_failed`, `model_tier_unknown` — orchestrate-flow self-checks during runtime
 - `test_fail`, `hard_rule_violated`, `provenance_missing` — emitted during execute-bolts execution, not anticipatable pre-flight
 - `cross_squad_interface_draft` — depends on producer skill state at runtime (interface lock status)
-- `deep_scan_subagent_failed/_all_failed/cache_corrupt` — depends on subagent runtime outcomes
 
 These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkthroughs for recovery (no static preflight feasible).
 
@@ -276,7 +274,7 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
 - **check_id: `vault_present_for_fsd`**
   command: `test -f <vault-path>/vault.json`
   expected: file exists
-  on_fail: "emit-fsd requires a vault. Run generate-intent first."
+  on_fail: "emit-fsd requires a vault. Run plan <prd> first."
   fatal: yes
   predicts_halt: dep_missing (chain order error)
 
@@ -294,6 +292,16 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
   fatal: no
   predicts_halt: (no halt; degraded — HTML fallback)
 
+## Removed skills (9.0)
+
+- **check_id: `skill_removed_in_9`**
+  command: the hop's skill is one of `generate-intent`, `bind-codebase`, `generate-units`, `scan-codebase` (`scripts/_lib/state_probes.py` `REMOVED_SKILLS`, the single list)
+  expected: no hop names a removed skill
+  on_fail: the skill's one-line replacement from `REMOVED_SKILLS`, e.g. "bind-codebase was removed in 9.0 — use plan → `execute-bolts --all --lite`, which binds each unit at dispatch (full audit: `scripts/rebind-units.sh --units=all`)."
+  fatal: yes
+  predicts_halt: (chain order error — a stale 8.x chain, e.g. a paused `--resume`)
+  note: both modes emit it: the predictive run (`--chain=…`) and the dispatch mode (`--skill=mega-sdd:<name>`). It never depends on lane, config or vault layout, and none of the removed skill's pre-9.0 probes run. The removed skills are not coming back: the fix is the replacement hop the message names.
+
 ---
 
 ## Read protocol (Step 5)
@@ -302,14 +310,22 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
 
 ```
 For each skill in proposed chain:
+  If skill is in §Removed skills (9.0) → fatal skill_removed_in_9; next skill (none of its probes run)
   Read this catalog's §<skill> section
+    (execute-bolts also runs §Cold-halt anticipation checks; its lite_plan_coverage_pass
+     is skipped only on a migrated layout-2 vault)
+  Skip entries marked model-run or dispatch-time only
   For each check entry:
     Run command
     If expected condition met → pass; continue to next check
     If condition not met:
+      If fatal: yes AND an earlier hop of this chain produces the missing input
+        (plan → units, plan coverage) → pass (chain-aware; the PreToolUse gate re-checks it at that hop)
       If fatal: yes → emit halt predictive_check_failed; STOP chain
       If fatal: no → accumulate warning; log to user; continue chain
 ```
+
+**Dispatch-time mode.** Separately from Step 5, the PreToolUse hook runs `validate-preflight.sh --skill=<skill> --args-b64=<dispatch args>` (no `--predictive`) on every `plan` and `execute-bolts` dispatch and blocks the dispatch on a fatal. It reads the dispatch args, so it owns the checks a `--chain` run cannot see: `plan_layout2_vault` (plan) and the execute-bolts units check (`bolts_units_missing`, the dispatch twin of `units_directory_present`). Called for a removed skill name, it returns `skill_removed_in_9` as well.
 
 ---
 

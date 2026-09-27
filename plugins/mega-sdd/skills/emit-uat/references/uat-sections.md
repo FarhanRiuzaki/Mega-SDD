@@ -63,7 +63,7 @@ PREPEND this block quote to the narrative verbatim:
 > ⚠ **SIT belum executed** — SEOJK 21/2017 §2.3.1.5: UAT hanya boleh dimulai setelah berita acara SIT diterima dari pengembang. Dokumen ini boleh DISIAPKAN lebih awal, tetapi eksekusi menunggu gate tersebut.
 ```
 
-**Missing source:** fragment emits `[Pending — vault/flows.md belum berisi flow F-* — jalankan generate-intent dulu]` — keep verbatim.
+**Missing source:** fragment emits ``[Pending — flows doc vault (context.md ## Flows / flows.md / 04-flows.md) belum berisi flow F-* — jalankan `plan <prd>` dulu]`` — keep verbatim.
 
 ## Section 2 — Skenario UAT
 

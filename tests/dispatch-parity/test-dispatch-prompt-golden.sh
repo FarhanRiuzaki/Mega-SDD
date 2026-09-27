@@ -21,6 +21,18 @@
 # that injection IS a builder seam an extraction must preserve byte-for-byte,
 # so an edit to those three docs legitimately regens f2 (state why in the
 # regen commit). No other plugin content reaches any golden.
+# REGEN LOG — 9.0 P1 (classic skills generate-intent / bind-codebase /
+# generate-units / scan-codebase deleted): wording only, no logic change.
+# (1) builder omit reason t1.reuse_index_line "(run scan-codebase to produce the
+# index)" -> "(no 9.0 producer - reuse lookup rides symbol-index.json from
+# GROUND)" [f1..f5 stdout.json, f1/f3 dispatch-prompt.md]; (2) builder omit
+# reason confidence_labels "(greenfield / standalone generate-units)" ->
+# "(greenfield / plan-written unit with no OQ/CONFLICT refs)" [same files];
+# (3) corpus-frozen ui-design-heuristics.md anti-hallucination line
+# "an Open Question for generate-intent" -> "an Open Question for the vault
+# (`context.md ## Open Questions` — report it)" [f2 dispatch-prompt.md], which
+# re-baselines f2 t2_bytes / consumed_t2 5448 -> 5489 (+41 B = exactly that
+# line's growth). Every other golden artifact stayed byte-identical.
 # Normalization: fixture-root -> @PROJ@, plugin-root -> @PLUGIN@, un-normalized
 # byte counters (file_total / file_bytes) -> @N@, plugin version stamp -> @VER@
 # (the builder is otherwise deterministic — no datetime/random anywhere in it).

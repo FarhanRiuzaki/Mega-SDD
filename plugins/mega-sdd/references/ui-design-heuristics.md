@@ -14,7 +14,7 @@
 > **Anti-hallucination.** Apply these to data and affordances that the unit + vault flows
 > already establish. Never invent fields, statuses, copy, or brand voice not grounded in the
 > unit spec / vault. If a required affordance has no source (e.g. no design system), that is
-> an Open Question for generate-intent — not a value to make up here.
+> an Open Question for the vault (`context.md ## Open Questions` — report it) — not a value to make up here.
 
 ## 1. Visual hierarchy
 

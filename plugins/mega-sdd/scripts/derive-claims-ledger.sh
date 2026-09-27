@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # derive-claims-ledger.sh — deterministic generator (v6 P1): <vault>/claims-ledger.json
 # is DERIVED from the vault markdown, never hand-written or model-emitted.
-# The ledger is the claim-enumeration input for bind-codebase --express: one terse
-# machine-checked file replacing the model's whole-vault read. The markdown stays
+# No 9.0 runtime consumer (the whole-vault bind it fed is retired): it survives
+# as a layout-grammar cross-check (P1b prune candidate). The markdown stays
 # the single grammar (md-authoritative rail) — this script shares its parsers with
 # derive-vault-json.sh via _lib/vault_md.py and cross-checks its own line-aware
 # extraction against them (grammar can never fork silently).
@@ -13,9 +13,6 @@
 # --paths "vault regenerated -> full re-bind" fallback covers renumbering.
 # `source` is exactly `NN-name.md:LINE` (make-bound.sh SRC_RE form).
 # `hints` are ADVISORY retrieval seeds, never a retrieval boundary.
-# THE LEDGER IS A SKELETON, NEVER THE CLAIM BOUNDARY: express bind runs a model
-# completeness sweep over the vault docs and APPENDS claims this grammar cannot
-# see (prose constraints, named-H2 components) — express-bind.md §E2.
 # Exit 0 = derived; 2 = grammar mismatch / zero claims (ledger NOT written);
 # 3 = usage / unreadable vault.
 set -u
@@ -362,10 +359,9 @@ if errors:
     print(
         "KETERANGAN: ledger tidak bisa di-derive — BUKAN selalu cacat vault: "
         "klaim bisa saja hidup di luar grammar deriver, atau vault memang tanpa "
-        "klaim (greenfield). bind --express akan fallback ke lane standar "
-        "(baca vault utuh) secara eksplisit; perbaiki markdown vault HANYA jika "
-        "pesan FAIL di atas menunjuk baris vault. JANGAN menulis "
-        "claims-ledger.json manual (anti-laundering: E1 selalu re-derive)."
+        "klaim (greenfield). Perbaiki markdown vault HANYA jika pesan FAIL di "
+        "atas menunjuk baris vault. JANGAN menulis claims-ledger.json manual "
+        "(anti-laundering)."
     )
     sys.exit(2)
 

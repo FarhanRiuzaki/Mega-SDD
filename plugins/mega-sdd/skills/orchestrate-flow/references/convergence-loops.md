@@ -19,10 +19,10 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 
 | Halt type | Auto-loop action | Safety condition |
 |---|---|---|
-| `bind_conflict` | Auto-invoke `resolve-oq --binding` with grounded recommendations → next step is ACTION-MIX dependent (S4): KEEP_CODE/SPLIT resolutions → re-run `bind-codebase`; KEEP_VAULT/DEFER-only → proceed to `generate-units` (a re-bind re-raises the same CONFLICT from the unchanged vault-vs-code contradiction — looping it burns every cycle; per `resolve-oq/references/binding-mode.md` Step 5) | Recommendation confidence ≥ 0.80; else stop |
+| `binding_conflict` (execute-bolts 3.9, per unit) | Auto-invoke `resolve-oq --binding <vault>` with grounded recommendations; it writes each choice via `write-unit-binding.sh --resolve`. Next step is ACTION-MIX dependent: KEEP_CODE/SPLIT edits the unit's `## Claims` → `rebind-units.sh --units=U-XXX` (3.9b) → re-dispatch; KEEP_VAULT/DEFER-only → the resolution in `binding.json` already opens the gate (open = CONFLICT without resolution), so continue that unit's dispatch with no re-bind (a re-bind would only spend the unit's one 3.9b at this HEAD — `rebind_exhausted`; per `execute-bolts/references/jit-bind-and-quarantine.md` §3.9/§3.9b) | Recommendation confidence ≥ 0.80; else stop |
 | `module_blocked_by` | Auto-run prerequisite module first → resume requested module | All prerequisites identifiable + non-circular |
 | `cross_squad_interface_draft` | Wait (with backoff: 30s, 60s, 120s) for producer to lock interface; retry up to 3 times | Producer squad interface still `draft` after retries → stop |
-| `oq_recommend_underspecified` | Auto-regenerate recommendation fields from binding context → re-run generate-intent | Memory has fallback rationale template |
+| `oq_recommend_underspecified` | Auto-regenerate the missing recommendation fields from GROUND evidence (symbol index) + KB → re-run `plan` (the OQ lives in context.md) | Memory has fallback rationale template |
 
 ## `--converge` flag
 
@@ -54,16 +54,18 @@ loop until clean OR max-cycles reached:
       # The resolver's emitted next_action decides the next hop — a
       # resolver may route BACK to the halted skill (retry model) or FORWARD past it:
       if resolver's next_action routes BACK to the halted skill
-         (e.g. bind_conflict resolved via KEEP_CODE/SPLIT → re-run bind-codebase):
-        re-run halted skill from checkpoint
+         (e.g. binding_conflict resolved via KEEP_CODE/SPLIT → re-bind that unit:
+          `rebind-units.sh --units=U-XXX`, execute-bolts 3.9b):
+        re-bind + re-dispatch that unit
         check if halt clears → loop continues
         if halt persists → escalate (treat as manual)
       else (resolver returns status:completed with a FORWARD next_action —
-            e.g. bind_conflict resolved KEEP_VAULT/DEFER-only → generate-units, per the
-            Cycle-eligible table above + binding-mode.md Step 5):
+            e.g. binding_conflict resolved KEEP_VAULT/DEFER-only → the unit's gate is
+            open; continue its execute-bolts dispatch):
         EXIT the convergence loop for this halt; rejoin the normal --deep chain at
-        next_action.suggested_skill. There is NO "halt to clear" — do NOT re-run the
-        halted skill (a re-bind would re-raise the same CONFLICT and burn every cycle).
+        next_action.suggested_skill. There is NO "halt to clear" — do NOT re-bind: the
+        gate is already open, and a re-bind would only spend the unit's one 3.9b
+        re-bind at this HEAD.
 
     if resolver needs-manual:
       escalate: stop chain, surface blocker, user resolves
@@ -78,16 +80,16 @@ loop until clean OR max-cycles reached:
 ## Per-cycle chat output
 
 ```
-▶ Phase 3 of 5: bind-codebase
-⛔ Halt: bind_conflict (3 conflicts detected)
+▶ Phase 2 of 2: execute-bolts, U-008 pre-flight 3.9 (JIT bind)
+⛔ Halt: binding_conflict (U-008: 3 conflicts)
 🔁 Cycle 1/3: auto-resolving via resolve-oq...
-   ↳ C-007 (auth conflict) → recommendation: KEEP_CODE (vault D-004 + code anchor; conf: 0.95) → ACCEPTED
-   ↳ C-009 (sanctum vs passport) → recommendation: KEEP_VAULT (per constitution §B-001) → ACCEPTED
-   ↳ C-011 (audit table schema) → recommendation: SPLIT (per past pattern) → ACCEPTED
-✓ Cycle 1 complete: 3 conflicts resolved. Re-running bind-codebase...
+   ↳ C-U008-01 (auth conflict) → recommendation: KEEP_CODE (vault D-004 + code anchor; conf: 0.95) → ACCEPTED
+   ↳ C-U008-02 (sanctum vs passport) → recommendation: KEEP_VAULT (per constitution §B-001) → ACCEPTED
+   ↳ C-U008-03 (audit table schema) → recommendation: SPLIT (per past pattern) → ACCEPTED
+✓ Cycle 1 complete: 3 conflicts resolved (write-unit-binding.sh --resolve). Mixed actions → re-binding U-008 (rebind-units.sh --units=U-008)...
 
-▶ Phase 3 of 5: bind-codebase (re-run)
-✓ Phase 3 of 5: bind-codebase → status: completed, items: 24 claims, blocked: 0
+▶ U-008 re-bind (execute-bolts 3.9b)
+✓ U-008 binding.json → gate open, 24 claims, 0 unresolved CONFLICT → dispatching bolt-implementer
    Convergence: 1 cycle (3 conflicts auto-resolved from grounded evidence; 0 manual)
 ```
 
@@ -103,11 +105,11 @@ blocker:
   details:
     cycles_attempted: 3
     halt_history:
-      - cycle: 1, halt: bind_conflict, auto-resolved: yes
-      - cycle: 2, halt: bind_conflict (different conflicts), auto-resolved: yes
-      - cycle: 3, halt: bind_conflict (recurring), auto-resolved: no — recommendation confidence dropped to 0.65
-    last_halt: bind_conflict (C-019, auth-related; sources disagree)
-  next_action: "Recurring conflict detected after 3 cycles. Run resolve-oq --binding manually OR re-configure vault claim."
+      - cycle: 1, halt: binding_conflict, auto-resolved: yes
+      - cycle: 2, halt: binding_conflict (different conflicts), auto-resolved: yes
+      - cycle: 3, halt: binding_conflict (recurring), auto-resolved: no — recommendation confidence dropped to 0.65
+    last_halt: binding_conflict (U-008 C-U008-03, auth-related; sources disagree)
+  next_action: "Recurring conflict detected after 3 cycles. Run resolve-oq --binding manually OR edit the unit's ## Claims and re-bind it (rebind-units.sh --units=U-008)."
 ```
 
 ## Anti-halu rails
@@ -128,7 +130,7 @@ blocker:
 
 ## Bolt halt convergence bridge
 
-Convergence loops handle: `bind_conflict`, `module_blocked_by`, `cross_squad_interface_draft`, `oq_recommend_underspecified`.
+Convergence loops handle: `binding_conflict`, `module_blocked_by`, `cross_squad_interface_draft`, `oq_recommend_underspecified`.
 
 The **propose-and-confirm bridge** extends convergence to bolt halts:
 

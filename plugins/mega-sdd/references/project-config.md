@@ -21,14 +21,14 @@ knowledge_base: ""         # ABSENT = probe the in-project KB paths (.mega-sdd/k
                            #   (the one holding README.md) when the KB lives outside the tree — a monorepo where FE and BE
                            #   apps share one KB submodule: `../../knowledge/<repo>/.mega-sdd/knowledge-base/`. Relative to
                            #   the project root, absolute allowed, `~` expanded. Read by derive-state (probes.knowledge_base,
-                           #   source: config) → routing + generate-intent auto-detect (`--kb=<this dir>`). A configured path
+                           #   source: config) → routing + `plan --kb` auto-detect (`--kb=<this dir>`). A configured path
                            #   whose README.md is missing counts as ABSENT (+ a note) — it never falls through to a stale
                            #   local copy. analyze's kb_* validators stay project-local by design.
-spine: express      # express (default) | classic; classic restores scan-first chains + the Stop-hook analyze aggregate
-lane: standard      # standard (default) | lite. The DURABLE form of the front-door `--lite` flag (derived.lane):
-                           #   lite = execute-bolts pre-flight 3.9 JIT bind on EVERY wave + W1 zero-idle + `validate-preflight.sh
+spine: express      # express (GROUND) is the only spine; `classic` no longer selects a chain (the front door names the
+                           #   removal in one line). The Stop hook still reads `spine: classic` as a `profile: full` alias.
+lane: lite          # lite is the only pipeline; `standard` is retired (the front door says so in one line and proceeds
+                           #   lite). Lite = execute-bolts pre-flight 3.9 JIT bind on EVERY wave + W1 zero-idle + `validate-preflight.sh
                            #   --predictive` refuses the execute-bolts hop while .plan-coverage-state.json is missing/FAIL.
-                           #   Set it once per project so `--resume` and every hop know the lane without re-typing the flag.
 # profile:          # ABSENT is the default: diagnostics lean-by-default on the express spine (Stop-hook analyze aggregate OFF). Set `full` to re-enable the aggregate; `lean` additionally cuts the advisory chain diagnostics (opt-in)
 review_panel: auto         # execute-bolts review-panel tier: auto (risk-based) | minimal | standard | full
                            #   (see execute-bolts references/review-panel.md; CLI --review-panel= overrides this key)
@@ -58,13 +58,13 @@ preview_url: ""            # dev-server base URL (e.g. http://localhost:5173) �
                            #   `scripts/uat-run.sh` (UAT e2e); the execute-bolts controller passes
                            #   the URL into the capture ladder as an argument — `capture-views.sh`
                            #   never reads config. Empty → design lens is code-only.
-# render_html: on          # ABSENT = off for the PIPELINE hand-offs (generate-intent / generate-units / plan /
-                           #   execute-bolts / extract-intelligence): no HTML beside the md — the render is
+# render_html: on          # ABSENT = off for the PIPELINE hand-offs (plan / execute-bolts /
+                           #   extract-intelligence): no HTML beside the md — the render is
                            #   regenerable via `/mega-sdd:emit html` and was 78–88% of committed .mega-sdd/
                            #   lines in the 2026-09 benchmark. `on` restores the auto-render. The emit lanes
                            #   (prd/fsd/sit/uat/html — a user asked for a document) always render; `off`
                            #   skips even those.
-# unit_granularity: fine   # ABSENT = default (medium) unit size in generate-units; `coarse` = story-sized units
+# unit_granularity: fine   # ABSENT = default (medium) unit size in plan (unit sizing; same scale as `--max-complexity`); `coarse` = story-sized units
                            #   (600 LOC / 8 files — same as `--max-complexity=large`), `fine` = smaller.
                            #   Precedence: flag > config > default.
 defaults:

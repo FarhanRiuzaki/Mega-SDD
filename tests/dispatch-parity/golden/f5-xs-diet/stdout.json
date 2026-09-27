@@ -31,7 +31,7 @@
     },
     {
       "section": "t1.reuse_index_line",
-      "reason": "reuse-index.yaml absent at ./.mega-sdd/codebase/reuse-index.yaml \u2014 the Iron Rule 4 pointer line is NOT emitted for a file that does not exist (run scan-codebase to produce the index)"
+      "reason": "reuse-index.yaml absent at ./.mega-sdd/codebase/reuse-index.yaml \u2014 the Iron Rule 4 pointer line is NOT emitted for a file that does not exist (no 9.0 producer - reuse lookup rides symbol-index.json from GROUND)"
     },
     {
       "section": "t1.anti_context.do_not_modify.data_mutation_policy",
@@ -87,7 +87,7 @@
     },
     {
       "section": "confidence_labels",
-      "reason": "unit has no binding_refs (greenfield / standalone generate-units)"
+      "reason": "unit has no binding_refs (greenfield / plan-written unit with no OQ/CONFLICT refs)"
     },
     {
       "section": "validation_hints",

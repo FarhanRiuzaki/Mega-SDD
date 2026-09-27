@@ -11,17 +11,26 @@
 #   D  unit-schema atomicity: threshold stays advisory-no-validator + names the knob
 #   E  lint-units merge_candidate advisory: all 6 criteria + never-halt/never-auto-merge
 #   F  precedent guard: squad-subagent.md still rejects the group-subagent topology
+#
+# 9.0 P1: generate-units was removed; `plan` is the only unit producer. Its unit
+# flags + Step 3 atomize were relocated VERBATIM to plan/references/unit-procedure.md
+# and the unit schema to plan/references/unit-schema.md — the knob survives, so the
+# pins are repointed (not retired). A1 additionally pins that plan/SKILL.md surfaces
+# the enum (it is the entry point the lint-units remedy `plan --regenerate
+# --max-complexity=large` names).
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-GU="$ROOT/plugins/mega-sdd/skills/generate-units/SKILL.md"
-US="$ROOT/plugins/mega-sdd/skills/generate-units/references/unit-schema.md"
+PS="$ROOT/plugins/mega-sdd/skills/plan/SKILL.md"
+GU="$ROOT/plugins/mega-sdd/skills/plan/references/unit-procedure.md"
+US="$ROOT/plugins/mega-sdd/skills/plan/references/unit-schema.md"
 DP="$ROOT/plugins/mega-sdd/skills/orchestrate-flow/references/diagnostics-procedures.md"
 SQ="$ROOT/plugins/mega-sdd/skills/execute-bolts/references/squad-subagent.md"
 err=0; ok(){ echo "  ok: $*"; }; bad(){ echo "  FAIL: $*"; err=1; }
 
 echo "── A: the large knob ──"
-grep -q -- '--max-complexity=small|medium|large' "$GU" && ok "A1 flag enum carries large" || bad "A1 enum missing large"
-grep -q "600 LOC" "$GU" && grep -q "story-sized" "$GU" && ok "A2 large semantics (600 LOC, story-sized) in SKILL" || bad "A2 large semantics missing"
+grep -q -- '--max-complexity=small|medium|large' "$GU" && grep -q -- '--max-complexity=small|medium|large' "$PS" \
+  && ok "A1 flag enum carries large (unit-procedure + plan SKILL)" || bad "A1 enum missing large"
+grep -q "600 LOC" "$GU" && grep -q "story-sized" "$GU" && ok "A2 large semantics (600 LOC, story-sized) in unit-procedure" || bad "A2 large semantics missing"
 grep -qE '600 LOC.*8 files|≤8 files' "$GU" && ok "A3 file bound 8 rides with large" || bad "A3 file bound missing"
 
 echo "── B: config + precedence ──"
