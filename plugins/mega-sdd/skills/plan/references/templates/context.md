@@ -34,7 +34,8 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/context"]
      source carries them (an architect's D-NNN record; a PRD Background). NEVER
      write `## Architecture`, `## Glossary`, `## Sources`, `## Last updated`,
      `## Phase context`, `## Source documents` — zero readers
-     (spec 2026-09-10 §2). An H2 is a section BOUNDARY: any sub-grouping inside a
+     (spec 2026-09-10 §2). `## Coverage exclusions` is the LAST H2 (read by
+     validate-plan-coverage.sh). An H2 is a section BOUNDARY: any sub-grouping inside a
      section (flow types, entity descriptions, NFR classes) uses H3/H4, never H2.
      Section grammar is byte-identical to layout-2 (_lib/vault_md.py). -->
 
@@ -209,3 +210,12 @@ Ref: <table>.<fk_field> > <other_table>.id  // many-to-one
 | OQ-ID | Keputusan | Dasar (sitasi) | Kalau salah |
 |---|---|---|---|
 | OQ-AR-1 [P2] | <the pick, one line> | <codebase `file:line` / `pack:<fw> §…` / `docs:<lib>@<ver>` / `PRD §X`> | <fallback_if_wrong> |
+
+## Coverage exclusions
+
+> Written at the end of plan Step 4: one line per censused anchor (the gate's
+> next_action lists them) no unit and no OQ [covers: …] decides, with a real
+> reason; an H2 line covers none of its H3s; never a requirement of this vault. Rules:
+> `plan/references/context-authoring.md §Coverage exclusions`.
+
+- "<exact PRD heading text>" — <why nothing is built for it>

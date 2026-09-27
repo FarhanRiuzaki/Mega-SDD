@@ -13,7 +13,7 @@
 #
 # Checks (highest-signal subset of the catalog):
 #   execute-bolts   : needs units/U-*.md                           → FATAL if absent
-#                     plan-coverage census PASS for a plan-born
+#                     a fresh plan-coverage PASS entry for EVERY plan-born
 #                     (layout-3, un-migrated) vault carrying units → FATAL lite_plan_coverage_pass
 #   plan            : target vault is layout-2 (no context.md)     → FATAL (migrate-paths --vault-layout=3)
 #   generate-intent / bind-codebase / generate-units / scan-codebase
@@ -117,19 +117,18 @@ def writable_target(path):
     return os.path.isdir(p) and os.access(p, os.W_OK)
 
 
+def _rail_vaults():
+    """Every canonical plan-born vault carrying units (context.md present, not migrated) — the dispatch twin's set."""
+    import prd_headings
+    return prd_headings.plan_vaults(cwd)
+
+
 def c_plan_coverage_pass(_):
-    """The PRD→units coverage rail (v8 P1 F5, 7.34.0 debt #2): bolts may not
-    start while the coverage census is missing or FAIL. The state is written by
-    validate-plan-coverage.sh (plan Step 5)."""
-    p = os.path.join(cwd, ".mega-sdd", ".plan-coverage-state.json")
-    if not os.path.isfile(p):
-        return False  # missing census = skipped, not a pass (fatal, not fail-open)
-    try:
-        with open(p, encoding="utf-8") as f:
-            d = json.load(f)
-    except Exception:
-        return False  # an unreadable census is not a PASS (the dispatch twin agrees)
-    return isinstance(d, dict) and d.get("status") == "PASS"
+    """The PRD→units coverage rail: bolts may not start until every plan-born vault has a PASS entry in
+    .mega-sdd/.plan-coverage-state.json whose digest still matches its PRD, context.md exclusions / OQs and units
+    (written by validate-plan-coverage.sh, plan Step 5; prd_headings.coverage_verdict — pure reads)."""
+    import prd_headings
+    return prd_headings.coverage_verdict(cwd, _rail_vaults())[0]
 
 
 def plan_coverage_exempt():
@@ -146,13 +145,16 @@ def plan_coverage_exempt():
 
 PLAN_COVERAGE_CHECKS = [
     ("lite_plan_coverage_pass", True, c_plan_coverage_pass,
-     ".mega-sdd/.plan-coverage-state.json is missing or FAIL "
-     "(plan_coverage_gap): every PRD requirement heading must be owned by a "
-     "unit's prd_source or quoted by an open question BEFORE execute-bolts. "
-     "Run validate-plan-coverage.sh --cwd --prd --vault (plan Step 5; legacy "
-     "KB: --kb=<kb-dir>) and close the listed gaps; a missing state is a "
-     "skipped census, not a pass. A layout-2 vault: /mega-sdd:migrate-paths "
-     "--vault-layout=3 first (a migrated vault is exempt)."),
+     ".mega-sdd/.plan-coverage-state.json is missing, FAIL or stale for a "
+     "plan-born vault (plan_coverage_gap): every PRD anchor needs a decision "
+     "BEFORE execute-bolts — a unit's prd_source, an open question carrying [covers: <ref>], "
+     "or a line in the vault's context.md ## Coverage exclusions with a real "
+     "reason. Run validate-plan-coverage.sh --cwd --prd --vault for each vault "
+     "(plan Step 5; KB: --kb=<kb-dir>) and close the listed gaps; a missing "
+     "state is a skipped census, not a pass, and an edit to the PRD, the "
+     "exclusions, an OQ or a unit's prd_source makes it stale. A layout-2 "
+     "vault: /mega-sdd:migrate-paths --vault-layout=3 first (a migrated vault "
+     "is exempt)."),
 ]
 
 
@@ -535,8 +537,9 @@ def _missing_inputs(check_id):
             miss.add("units")
     elif check_id == "lite_plan_coverage_pass":
         # produced by the plan hop that precedes bolts on the chain — a
-        # missing state at chain START is not a skipped census
-        if not os.path.isfile(os.path.join(cwd, ".mega-sdd", ".plan-coverage-state.json")):
+        # missing state (or a vault entry missing / stale) at chain START is not a skipped census
+        import prd_headings
+        if prd_headings.coverage_verdict(cwd, _rail_vaults())[2]:
             miss.add("plan_coverage")
     elif check_id == None:
         if not os.path.isfile(os.path.join(VAULT, "vault.json")):
@@ -767,28 +770,16 @@ def _coverage_rail_vaults():
     `_meta/archive/layout2/` absent (a migrated vault is exempt, spec §7 #12; a
     layout-2/legacy vault has no census). No dispatch arg narrows it: execute-bolts
     has no --vault flag and the in-run bolt-implementer gate carries no args."""
-    return [d for d in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*")))
-            if os.path.isfile(os.path.join(d, "context.md"))
-            and not os.path.isdir(os.path.join(d, "_meta", "archive", "layout2"))
-            and (glob.glob(os.path.join(d, "units", "U-*.md")) or glob.glob(os.path.join(d, "units", "U-*", "unit.md")))]
+    import prd_headings
+    return prd_headings.plan_vaults(cwd)
 
 
-def _coverage_census():
-    """(passed, why) READ from validate-plan-coverage.sh's state (plan Step 5) — never
-    recomputed here, so the hook adds no process. Only status PASS passes."""
-    try:
-        with open(os.path.join(cwd, ".mega-sdd", ".plan-coverage-state.json"), encoding="utf-8") as f:
-            d = json.load(f)
-    except FileNotFoundError:
-        return False, "missing (a skipped census is not a pass)"
-    except Exception:
-        d = None
-    if not isinstance(d, dict):
-        return False, "unreadable"
-    gaps = d.get("gaps") if isinstance(d.get("gaps"), list) else []
-    heads = [re.sub(r"\s+", " ", str(g["heading"]))[:60] for g in gaps if isinstance(g, dict) and g.get("heading")]
-    listed = (": " + "; ".join(heads[:3]) + (" …" if len(heads) > 3 else "")) if heads else ""
-    return d.get("status") == "PASS", "%s (%d gap(s)%s)" % (str(d.get("status"))[:20], len(gaps), listed)
+def _coverage_census(rail):
+    """(passed, why) READ from validate-plan-coverage.sh's state (plan Step 5) — the census is never recomputed here
+    (no process): every rail vault needs a PASS entry whose digest still matches (prd_headings.coverage_verdict)."""
+    import prd_headings
+    passed, why, _ = prd_headings.coverage_verdict(cwd, rail)
+    return passed, why
 
 
 if name in REMOVED_SKILLS:
@@ -817,15 +808,16 @@ elif name == "execute-bolts":
     checks.append({"check": "units_directory_present", "status": "FAIL" if fatal else "PASS"})
     rail = [] if fatal else _coverage_rail_vaults()
     if rail:  # the dispatch twin of --predictive lite_plan_coverage_pass (V6, 2026-09-27 audit)
-        passed, why = _coverage_census()
+        passed, why = _coverage_census(rail)
         if not passed:
             fatal = {"check_id": "lite_plan_coverage_pass",
                      "on_fail": ("plan_coverage_gap — the plan-coverage census .mega-sdd/.plan-coverage-state.json is %s "
-                                 "for the plan-born vault %s: every PRD requirement heading must be owned by a unit's "
-                                 "prd_source or quoted by an open question BEFORE execute-bolts. Run "
-                                 "scripts/validate-plan-coverage.sh --cwd=<root> --prd=<prd> --vault=%s (plan Step 5; "
-                                 "legacy KB: --kb=<kb-dir> instead of --prd) and close the listed gaps."
-                                 % (why, ", ".join(os.path.relpath(v, cwd) for v in rail), os.path.relpath(rail[0], cwd)))}
+                                 "(plan-born vault(s) %s): every PRD anchor needs a decision BEFORE execute-bolts — a "
+                                 "unit's prd_source, an open question carrying [covers: <ref>], or a line in that vault's context.md "
+                                 "## Coverage exclusions with a real reason. Run "
+                                 "scripts/validate-plan-coverage.sh --cwd=<root> --prd=<prd> --vault=<vault> for each (plan "
+                                 "Step 5; KB: --kb=<kb-dir> instead of --prd) and close the listed gaps."
+                                 % (why, ", ".join(os.path.relpath(v, cwd) for v in rail)))}
         checks.append({"check": "lite_plan_coverage_pass", "status": "PASS" if passed else "FAIL"})
 
 status = "FATAL" if fatal else ("WARN" if warnings else "PASS")

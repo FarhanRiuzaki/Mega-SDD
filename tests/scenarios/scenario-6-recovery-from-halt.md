@@ -14,7 +14,7 @@ Halts belong to the guarded pipeline (`plan` → `execute-bolts`) and to the ext
 | Halt | What it means | When |
 |---|---|---|
 | `binding_conflict` | A unit's claim contradicts existing code | execute-bolts pre-flight 3.9 (JIT bind, per unit) |
-| `plan_coverage_gap` | A PRD/KB requirement heading has no unit and no OQ | plan Step 5 |
+| `plan_coverage_gap` | A PRD/KB heading has no unit, no open OQ carrying `[covers: …]` and no `## Coverage exclusions` line | plan Step 5 |
 | `oq_recommend_underspecified` | Recommendation missing citation/rationale | plan Step 5 (`validate-vault-oqs.sh`) |
 | `dedup_ambiguous` | `create` unit targets existing files | plan Step 4 (and `plan --reconcile`) |
 | `hard_rule_violated` | Bolt modified locked code | execute-bolts post-flight |

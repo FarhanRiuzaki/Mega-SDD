@@ -159,7 +159,7 @@ Each KB claim is routed by its markers:
 
 KB gotchas become unit **Anti-patterns** by default. A gotcha is promoted to a machine-checked **Hard rule** only when it is cited (verified) AND mechanically detectable, and its anchor file exists in the target. `[INFERRED]` and `[OPEN]` items are never promoted.
 
-Before it returns, `validate-plan-coverage.sh --kb=<kb>` checks the KB's requirement headings. Every censused heading of every module PRD needs a unit whose `prd_source` names it, or an OQ that quotes it AND names the module file. A gap halts `plan_coverage_gap`, and while coverage is missing or FAIL the bolts hop is refused.
+Before it returns, `validate-plan-coverage.sh --kb=<kb>` checks the KB's requirement headings. Every censused heading of every module PRD needs a unit whose `prd_source` names it, an open OQ carrying `[covers: <kb>/modules/<module>.prd.md#<slug>]`, or a module-qualified line in `context.md ## Coverage exclusions`. A gap halts `plan_coverage_gap`, and while the vault's coverage entry is missing, FAIL or stale the bolts hop is refused.
 
 ```
 ✓ Phase 2 of 3: plan → status: completed, items: 47 units, blocked: 0
@@ -316,7 +316,7 @@ If 30+ OQs feels overwhelming:
 
 ### `plan` halts on `plan_coverage_gap`
 
-A module PRD heading has no unit whose `prd_source` names it, and no OQ that quotes it and names the module file. Add the unit, raise the OQ, or move the heading under an explicit Out-of-scope section of that module. Never patch the census to make the gap disappear.
+A module PRD heading has no unit whose `prd_source` names it, and no open OQ carrying `[covers: …]` for it. Add the unit, raise the OQ, or declare it in `context.md ## Coverage exclusions` (`- <module>.prd.md#"<heading>" — <reason>`). Never patch the census to make the gap disappear.
 
 ### Bolt halt on hard_rule_violated in legacy-rebuild
 

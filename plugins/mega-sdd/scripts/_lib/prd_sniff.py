@@ -3,8 +3,11 @@ vault (no `## Overview` / `## Architecture` prose), FSD §1/§2 and PRD §1/§3
 read the PRD FILE directly. Deterministic heading-NAME matching (EN + ID
 synonyms, case-insensitive, numbered headings tolerated) — a section the PRD
 does not carry is None (the caller renders `[Pending — PRD §<name>]`), never
-a paraphrase. The slug rule is byte-identical to validate-plan-coverage.sh so
-a requirement heading here cross-references a unit's `prd_source` verbatim.
+a paraphrase. The slug here is the ASCII rule; the prd_source resolver
+(_lib/prd_headings.py, shared by validate-unit-spec.sh and
+validate-plan-coverage.sh) accepts it as an alias, so a requirement heading here
+cross-references a unit's `prd_source` (a repeated heading name needs the
+resolver's unique `x-1` slug; this module does not number them).
 
     sniff(md) -> {
       "background": {"heading", "body", "line"} | None,
@@ -28,7 +31,7 @@ SYNONYMS = {
                      "kebutuhan", "kebutuhan fungsional", "fitur", "features",
                      "feature", "fungsional", "halaman", "pages", "screens", "layar"),
 }
-# meta sections that are never a requirement row (mirrors validate-plan-coverage's set)
+# meta sections that are never a requirement row (this module's own list — validate-plan-coverage.sh classifies no heading)
 _META = ("background", "latar belakang", "goals", "tujuan", "scope", "ruang lingkup",
          "sources", "sumber", "data model", "model data", "nfr", "non-functional",
          "non functional", "open questions", "pertanyaan terbuka", "glossary",

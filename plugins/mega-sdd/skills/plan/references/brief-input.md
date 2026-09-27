@@ -129,6 +129,8 @@ Build the seed-PRD content per the file structure below. Apply citation conventi
 - <topic> — <what's still unclear> *(Q&A §N)*
 ```
 
+**Coverage of the seed (plan Step 4 → Step 5 gate).** The seed's own frame sections carry no behaviour: `plan` writes one `## Coverage exclusions` line for the title `Seed PRD — <slug>` (its generated-by block is text of its own, so the gate censuses it) and for each of `§brief`, `§qa`, `A`–`D`, `F` (and any H3 under it), `G > Business` (`G` itself has no text of its own: a container, its H3s stand in), `H` and `I` (e.g. `- "§qa — Q&A elaboration session" — elaboration transcript; its answers are cited in A–I`). `E` (and each feature H3 under it) and `G` with its `Technical` / `Regulatory & compliance` H3s get units — or a `[business]` OQ carrying `[covers: <seed>#<slug>]` when they only say `(unspecified)`.
+
 ### Step 3a — Citation conventions (apply on every claim)
 
 | Citation marker | Means |

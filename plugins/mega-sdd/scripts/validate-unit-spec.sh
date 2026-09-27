@@ -198,7 +198,11 @@ def xs_body_over(fm, body):
     return over or None
 
 
-PRD_REF_RE = re.compile(r"^(?P<file>[^#:\s]+?\.md)(?:#(?P<slug>[^\s]+)|:(?P<line>\d+))$")
+# The ref grammar + heading census are SHARED with validate-plan-coverage.sh (_lib/prd_headings.py): a ref resolves
+# here exactly when the coverage gate can match it (setext / indented / HTML headings, {#id}, a whole F-id, unique
+# slugs x, x-1 … for repeated headings, a file path with spaces).
+import prd_headings as _ph
+_PRD_DOCS = {}
 
 
 def parse_prd_source_refs(fm):
@@ -222,29 +226,28 @@ def parse_prd_source_refs(fm):
     return refs
 
 
-def _slug(text):
-    return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", text.strip().lower())).strip("-")
-
-
 def resolve_prd_source(ref):
-    m = PRD_REF_RE.match(ref.strip())
+    m = _ph.REF_RE.match(ref.strip())
     if not m:
         return False, "shape must be <prd-file>.md#<heading-slug> or <prd-file>.md:<line>"
-    path = os.path.join(cwd, m.group("file"))
-    if not os.path.isfile(path):
-        return False, f"file not found under project root: {m.group('file')}"
+    path = os.path.join(cwd, m.group(1))
+    if not os.path.isfile(path) or not _ph.exact_case(cwd, m.group(1)):  # names are case-sensitive, as in the gate
+        return False, f"file not found under project root (exact case): {m.group(1)}"
     try:
-        text = open(path, encoding="utf-8", errors="replace").read()
+        doc = _PRD_DOCS.get(path) or _PRD_DOCS.setdefault(path, _ph.parse(path, m.group(1)))
     except OSError as e:
         return False, f"unreadable: {e}"
-    if m.group("line"):
-        n = int(m.group("line")); total = text.count("\n") + 1
+    if m.group(3):
+        n = int(m.group(3)); total = len(doc["lines"])
         return (1 <= n <= total), ("" if 1 <= n <= total else f"line {n} outside 1..{total}")
-    want = _slug(m.group("slug"))
-    heads = [_slug(h) for h in re.findall(r"^#{1,6}[ \t]+(.+?)\s*$", text, re.MULTILINE)]
-    if want in heads:
+    hits = _ph.resolve_frag(doc, m.group(2))
+    if len(hits) == 1:
         return True, ""
-    return False, f"no heading with slug '{want}' (have: {', '.join(heads[:8])}{'…' if len(heads) > 8 else ''})"
+    if hits:
+        return False, (f"ambiguous: {len(hits)} headings match '{m.group(2)}' — cite a unique slug "
+                       f"({', '.join(h['slug'] for h in hits)}) or <file>:<line>")
+    heads = [h["slug"] for h in doc["heads"]]
+    return False, f"no heading with slug '{_ph.slug(m.group(2))}' (have: {', '.join(heads[:8])}{'…' if len(heads) > 8 else ''})"
 
 
 def vault_source_shape(value):

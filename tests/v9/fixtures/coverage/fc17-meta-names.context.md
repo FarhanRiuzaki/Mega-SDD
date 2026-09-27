@@ -1,0 +1,46 @@
+# fc17 — the natural coverage exclusions (test sidecar: the vault's context.md)
+
+## Coverage exclusions
+
+- "Section 1: Overview" — document context — background for the flows, no behaviour of its own
+- "Document Purpose" — document context — background for the flows, no behaviour of its own
+- "The Problem" — document context — background for the flows, no behaviour of its own
+- "Hypothesis" — document context — background for the flows, no behaviour of its own
+- "Opportunity" — document context — background for the flows, no behaviour of its own
+- "Target Personas" — who the product is for — context for the flows
+- "Key Stakeholders" — who is involved — no behaviour to build
+- "Stakeholders and Roles" — who is involved — no behaviour to build
+- "RACI" — who is involved — no behaviour to build
+- "Document Information" — document context — background for the flows, no behaviour of its own
+- "Rumusan Masalah" — document context — background for the flows, no behaviour of its own
+- "🎯 Goals" — document context — background for the flows, no behaviour of its own
+- "Part 1: Background" — document context — background for the flows, no behaviour of its own
+- "Key Assumptions" — project risk / assumption register — no behaviour to build
+- "External Dependencies" — project risk / assumption register — no behaviour to build
+- "Key Risks" — project risk / assumption register — no behaviour to build
+- "Release Timeline" — project schedule, not software behaviour
+- "Timeline & Milestones (tentative)" — project schedule, not software behaviour
+- "Timeline" — project schedule, not software behaviour
+- "Jadwal" — project schedule, not software behaviour
+- "Questions" — document context — background for the flows, no behaviour of its own
+- "FAQ" — document context — background for the flows, no behaviour of its own
+- "Related Docs" — reference material, not a requirement
+- "Links" — reference material, not a requirement
+- "Designs" — reference material, not a requirement
+- "Competitive Analysis" — document context — background for the flows, no behaviour of its own
+- "User Research" — reference material, not a requirement
+- "Supporting Documents" — document context — background for the flows, no behaviour of its own
+- "Other Considerations" — document context — background for the flows, no behaviour of its own
+- "Additional Notes" — document context — background for the flows, no behaviour of its own
+- "Explicitly Out of Scope" — the PRD excludes it from this release
+- "Payments" — listed under 'Explicitly Out of Scope' — excluded by the PRD
+- "Insurance claims" — listed under 'Explicitly Out of Scope' — excluded by the PRD
+- "Features Out" — the PRD excludes it from this release
+- "Loyalty points" — listed under 'Features Out' — excluded by the PRD
+- "In Scope / Out of Scope" — the PRD excludes it from this release
+- "Out of Scope" — the PRD excludes it from this release
+- "Appendix A: Wireframes" — reference material, not a requirement
+- "Appendix: Research Notes" — reference material, not a requirement
+- "Lampiran" — reference material, not a requirement
+- "Lampiran A: Wireframe" — reference material, not a requirement
+- "Persetujuan" — document sign-off, not product behaviour

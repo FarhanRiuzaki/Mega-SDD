@@ -111,6 +111,8 @@ for dep in PRD frontmatter.cross_scope_dependencies:
         filtered_prd += f"- {dep}\n"
 ```
 
+**Coverage (Step 5).** `validate-plan-coverage.sh` censuses the whole PRD file, not the filtered copy. Every heading of a sibling scope's sections therefore gets one `context.md ## Coverage exclusions` line, for example `- "<heading>" — scope <id>, planned in its own vault`. This is the one kind of line that declares a requirement: it belongs to another vault, and that vault's own plan must cover it (`plan/references/context-authoring.md §Coverage exclusions`).
+
 ## Sibling scope informational
 
 When chosen_scope = BE and PRD has scopes = {BE, MW, FE}:

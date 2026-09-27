@@ -2,7 +2,7 @@
 
 > Relocated from `skills/generate-intent/references/generation-guide.md`, `skills/generate-intent/references/self-check.md`, `skills/generate-intent/SKILL.md` (§OQ classification) and `skills/bind-codebase/SKILL.md` (§Procedure Step 2) in 9.0 (P1); tuned text kept verbatim.
 
-Loaded by `plan/SKILL.md` at Step 3 (writing `context.md` + `constitution.md`) and Step 7 (self-check). The layout-3 shape (the four hard-header H2 anchors, the optional H2s, the forbidden H2s, the OQ line grammar) is carried by `plan/references/templates/context.md`; this file carries only the content rules the template does not. OQ tags, the classifier table, the `vault.json` schema and the constitution schema are owned by `plugins/mega-sdd/references/vault-core.md`. Nothing here loosens a rail.
+Loaded by `plan/SKILL.md` at Step 3 (writing `context.md` + `constitution.md`), at the end of Step 4 (`## Coverage exclusions`) and Step 7 (self-check). The layout-3 shape (the four hard-header H2 anchors, the optional H2s, the forbidden H2s, the OQ line grammar) is carried by `plan/references/templates/context.md`; this file carries only the content rules the template does not. OQ tags, the classifier table, the `vault.json` schema and the constitution schema are owned by `plugins/mega-sdd/references/vault-core.md`. Nothing here loosens a rail.
 
 ## Contents
 - Project constitution gate (multi-PRD lifecycle)
@@ -11,6 +11,7 @@ Loaded by `plan/SKILL.md` at Step 3 (writing `context.md` + `constitution.md`) a
 - Operator-workflow-UX capture + Design-Source OQ
 - OQ classification — `recommend` fields, validation gate, memoization
 - Project scale xs
+- Coverage exclusions (end of Step 4, before the Step-5 gate)
 - Step 7 — self-check before delivery
 
 ## Project constitution gate (multi-PRD lifecycle)
@@ -105,6 +106,21 @@ Tech OQs need no xs carve-out: at EVERY scale they are decided by the AI at Step
 
 The target class: a "3 static screens" PRD stops producing a wall of interactive questions — OQ COUNT is unchanged (honesty), the interactive ceremony shrinks. `xs` can only ever come from structural evidence in the source document; absent/unparseable structure means `standard`.
 
+## Coverage exclusions (end of Step 4, before the Step-5 gate)
+
+The Step-5 gate (`validate-plan-coverage.sh`) checks that every censused ANCHOR has a decision. Anchors: every PRD H1-H3 with text of its own or with no sub-heading; a heading with no text of its own and sub-headings is a CONTAINER, and its sub-headings (H4-H6 too) are censused in its place; and `(text before the first heading)` when text precedes every heading. Under `--kb` the template's own §1 / §6 (numbered tree: §1 / §10 / §11) are no anchors. Each anchor has a unique slug in document order (`x`, `x-1` …), and `next_action` prints it. An anchor is decided by one of:
+
+- a unit whose `prd_source` names it (or a line inside it). A requirement of this vault — an NFR, compliance, data-model or constraint section too — is decided by the unit(s) that honour it: add its ref to their `prd_source` list;
+- an open, deferred or out-of-scope OQ (`[~]` + `→ Out of Scope v<X>: <reason>`) carrying `[covers: <prd>#<slug>, …]` (or `<prd>:<line>`): the anchor waits on the answer, nothing is built for it meanwhile, and Step 7 lists it. Nothing else in an OQ decides — not a quote, a `§`, an `[origin:]` or a ref in its text. A resolved OQ, or a `[ ]` line carrying `→ Resolved`, decides nothing: turn the answer into a unit or a line here;
+- a line here.
+
+The gate never guesses what a heading means. Once the units exist, write `## Coverage exclusions` as the LAST H2 of `context.md`:
+
+- **One `- ` item per anchor.** Either `- "<exact heading text>" — <one-line reason>`, with separator `—`, `–`, `-`, `:` or `→`, or `- <slug> — <reason>`, the literal slug as the gate prints it, with separator `—`, `–`, `→` or ` - `. Paste the gate's `next_action` lines and replace `<reason>`. The text is the heading as rendered: case, curly quotes, dashes, emphasis/code markers, emoji, escapes / entities and a trailing `?` `:` `!` `.` are folded, and a trailing `{#id}` may be dropped. Use the slug for a heading with markup, or for a name another anchor also bears, even after a section number (`"Users"` next to `1. Users`): such a quoted name is INVALID. Under `--kb` the module file is REQUIRED: `- <m>.prd.md#"<heading>" — <reason>`.
+- **Per anchor.** An H2 line covers none of its H3s. H4+ lines and bold pseudo-headings inside an anchor that has text ride on it; check that they hold nothing buildable.
+- **A real reason** — why nothing is built for it: context, schedule, sign-off, excluded by the PRD, a later tranche, or `scope <id>, planned in its own vault` for another declared scope's heading under `--scope` (`plan/references/scope-flow.md`). The gate FAILs naming the line on an empty or placeholder reason (`TBD`, `TBD — …`, `pending`, `n/a`, `-`, `<reason>`), on a pending decision (`awaiting …`, `to be confirmed`, `menunggu …`, `belum diputuskan`, `unclear`, `ask PO` — that is a `[business]` OQ with `[covers:]`), on a bullet that is no declaration (`- Note: …`) and on an ordered item that parses as one.
+- **Never a requirement of this vault.** Behaviour in scope gets a unit, and a gap in the source gets a `[business]` OQ.
+
 ## Step 7 — self-check before delivery
 
 Applied to `context.md` + `constitution.md` after the Step-7 verdict table (`plan/references/plan-procedure.md §Step 7`). Verify:
@@ -133,6 +149,9 @@ Applied to `context.md` + `constitution.md` after the Step-7 verdict table (`pla
 - [ ] **No tech OQ is left for a human:** every `[tech / recommend]` OQ is `[x]` + `→ **Resolved v{X.Y}** (AI decision, <date>): <pick>`; no `[tech / blocking]` bracket exists; every AI-decided OQ is genuinely technical (no scope / limit / money / retention / regulation / edge-case / `[LOCKED]` / PRD-vs-repo contradiction) — `validate-vault-oqs.sh --strict-tech` exits 0.
 - [ ] `context.md` has the `## AI Technical Decisions` table when any tech OQ was decided (one row per decision, P1 first); the section is omitted when nothing was decided.
 - [ ] **`constitution.md`** (the additional vault file): exists unless `--no-constitution`, and **every `X-NNN` clause cites a source** (`§` / `(source: …)` / a KB/PRD anchor / a `file:line` / a link). An uncited clause is a defaulted or invented rule — demote it to an Open Question, never ship it (it would become a BLOCKING Hard rule at execute-bolts). This mirrors the deterministic `validate-constitution.sh` per-clause check.
+
+**Coverage exclusions:**
+- [ ] Each `## Coverage exclusions` line names a heading that asks for NO behaviour, with a real reason; the Step-7 summary lists them all.
 
 **Each doc must be readable in <10 minutes by an architect.**
 

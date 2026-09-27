@@ -1,6 +1,6 @@
 ---
 name: analyze
-version: 2.4.2
+version: 2.4.3
 description: Unified cross-artifact consistency analysis — semantic-scoped validator re-runs (unchanged files reuse their ledgered verdict) + vault checks; produces CONSISTENCY-REPORT.md. Triggers — "analyze", "consistency check", "check consistency", "consistency report", "run all validators", "cek konsistensi", or paraphrases.
 ---
 
@@ -64,7 +64,7 @@ Consistency check FAILED:
 Resolution:
 - binding_units_handoff FAIL → layout-3: unresolved CONFLICT in `bolts/U-*/binding.json` → `resolve-oq --binding`, then `rebind-units.sh` + `plan --reconcile`; layout-2 `binding.md` drop → `/mega-sdd:migrate-paths --vault-layout=3`
 - unit_spec FAIL → fix unit frontmatter per validate-unit-spec.sh findings
-- plan_coverage FAIL → PRD heading with no unit: `plan --regenerate`, or add a unit / raise an OQ quoting the heading / move it under an explicit Out-of-scope heading
+- plan_coverage FAIL → PRD heading with no decision (or a vault whose coverage entry is stale): `plan --regenerate`, or add a unit / raise an OQ carrying `[covers: <prd>#<slug>]` / declare it in `context.md ## Coverage exclusions` (`- "<heading>" — <reason>`), then re-run `validate-plan-coverage.sh`
 - vault_oqs FAIL → fix OQ structure in vault docs
 - FAIL traceable to a missing optional native dep (e.g. ast-grep → no symbol index / v2 rules) → run `/mega-sdd:install-deps`, re-run GROUND (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/ground.sh" --cwd="$(pwd)"`, rebuilds the symbol index), then `rebind-units.sh` + `plan --reconcile` (re-types units from fresh evidence; `plan --regenerate` only if units must be re-derived)
 <etc.>

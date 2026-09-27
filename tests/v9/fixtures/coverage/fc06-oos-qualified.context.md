@@ -1,0 +1,60 @@
+# fc06 — the natural coverage exclusions (test sidecar: the vault's context.md)
+
+## Coverage exclusions
+
+- "Out of Scope (for now)" — the PRD excludes it from this release
+- "Excluded item 0" — the PRD excludes it from this release
+- out-of-scope-v1 — the PRD excludes it from this release (its name folds to the same text as the "Out of Scope - v1" section, so the unique slug is used)
+- "Excluded item 1" — the PRD excludes it from this release
+- out-of-scope-v1-1 — the PRD excludes it from this release
+- "Excluded item 2" — the PRD excludes it from this release
+- "Out of Scope for Now" — the PRD excludes it from this release
+- "Excluded item 3" — the PRD excludes it from this release
+- "Out of Scope (Future)" — the PRD excludes it from this release
+- "Excluded item 4" — the PRD excludes it from this release
+- "Out of Scope (future release)" — the PRD excludes it from this release
+- "Excluded item 5" — the PRD excludes it from this release
+- "Out of scope: future phases" — the PRD excludes it from this release
+- "Excluded item 6" — the PRD excludes it from this release
+- "Out of Scope / Later" — the PRD excludes it from this release
+- "Excluded item 7" — the PRD excludes it from this release
+- "Out of Scope & Future Considerations" — the PRD excludes it from this release
+- "Excluded item 8" — the PRD excludes it from this release
+- "Out of scope (Phase 2+)" — the PRD excludes it from this release
+- "Excluded item 9" — the PRD excludes it from this release
+- "Out of Scope (Not in MVP)" — the PRD excludes it from this release
+- "Excluded item 10" — the PRD excludes it from this release
+- "Out of Scope for Q4" — the PRD excludes it from this release
+- "Excluded item 11" — the PRD excludes it from this release
+- "Out of Scope in this PRD" — the PRD excludes it from this release
+- "Excluded item 12" — the PRD excludes it from this release
+- "Out of scope (explicitly)" — the PRD excludes it from this release
+- "Excluded item 13" — the PRD excludes it from this release
+- "Out of Scope (v1) — WAJIB diisi" — the PRD excludes it from this release
+- "Excluded item 14" — the PRD excludes it from this release
+- "Di Luar Lingkup (Sementara)" — the PRD excludes it from this release
+- "Excluded item 15" — the PRD excludes it from this release
+- "Di Luar Lingkup Pengembangan" — the PRD excludes it from this release
+- "Excluded item 16" — the PRD excludes it from this release
+- "Tidak Termasuk Lingkup" — the PRD excludes it from this release
+- "Excluded item 17" — the PRD excludes it from this release
+- "Di Luar Lingkup Rilis 1" — the PRD excludes it from this release
+- "Excluded item 18" — the PRD excludes it from this release
+- "Di Luar Ruang Lingkup Proyek" — the PRD excludes it from this release
+- "Excluded item 19" — the PRD excludes it from this release
+- "Tidak Termasuk dalam MVP" — the PRD excludes it from this release
+- "Excluded item 20" — the PRD excludes it from this release
+- "Di Luar Cakupan" — the PRD excludes it from this release
+- "Excluded item 21" — the PRD excludes it from this release
+- "Not in Scope" — the PRD excludes it from this release
+- "Excluded item 22" — the PRD excludes it from this release
+- "Non-Goals & Out of Scope" — the PRD excludes it from this release
+- "Excluded item 23" — the PRD excludes it from this release
+- "Won't Have (this time)" — the PRD excludes it from this release
+- "Excluded item 24" — the PRD excludes it from this release
+- "What's Out of Scope" — the PRD excludes it from this release
+- "Excluded item 25" — the PRD excludes it from this release
+- "Future Work" — the PRD excludes it from this release
+- "Excluded item 26" — the PRD excludes it from this release
+- "Not Doing" — the PRD excludes it from this release
+- "Excluded item 27" — the PRD excludes it from this release

@@ -103,8 +103,9 @@ Interpret the verdict (per `extract-intelligence/SKILL.md §Step 5`):
    module IS the phasing unit, and the unit of `plan`'s self-slice (Step 2:
    one `context.md`, units written module by module). Consuming ALL modules
    is the default; to scope a vault to a subset, generate per the README's
-   recommended order and record out-of-scope modules as explicit
-   constraints/OQs, or point `plan` at a single module PRD (positional). A
+   recommended order and record each heading of an out-of-scope module
+   as a `## Coverage exclusions` line naming the module file (or an open OQ
+   carrying `[covers: …]`), or point `plan` at a single module PRD (positional). A
    `--phase=N` flag against a PRD-kontrak KB → log
    "PRD-kontrak KB has no phase lane (module = phasing unit); flag ignored"
    and proceed (never halt).
@@ -179,13 +180,14 @@ Step 4 pulls these into each relevant unit's `## Hard rules` (machine-validated 
 
 ## KB coverage rule (Step 5)
 
-A KB run passes `--kb=<kb-dir>` in place of `--prd` to `validate-plan-coverage.sh --cwd=<root> --kb=<kb-dir> --vault=<vault>` (`plan/references/plan-procedure.md` Step 5, row 4). It checks the KB's requirement headings against the units:
+A KB run passes `--kb=<kb-dir>` in place of `--prd` to `validate-plan-coverage.sh --cwd=<root> --kb=<kb-dir> --vault=<vault>` (`plan/references/plan-procedure.md` Step 5, row 4). It checks that every module heading has a decision:
 
-- **Censused headings.** PRD-kontrak: every H2/H3 of every `<kb>/modules/*.prd.md` except `1. Purpose` and `6. Open Questions`. Legacy numbered tree (no `modules/`): every H2/H3 of `<kb>/10-domains/**/*.md` except `1. Purpose`, `10. Open Questions` and `11. Source References`. The leading section number is ignored when matching these names. Headings under an explicit Out-of-scope section are not censused.
-- **A unit covers a heading** when its `prd_source` names that module or domain file plus the heading slug (`<kb>/modules/<m>.prd.md#<slug>`; numbered tree `<kb>/10-domains/<d>.md#<slug>`), or a `:line` inside the heading's range.
-- **An OQ covers a heading only when it quotes the heading AND names the module or domain file** (`<m>.prd.md` / `<d>.md`). Every module carries the same section names, so a quote without the file name covers nothing. The quote is the heading text as written, section number included (case-insensitive). An OQ the AI already decided (`resolved_by: ai`) does not count.
-- **Out-of-scope modules** (§Consumption — PRD-kontrak grammar, item 5): a constraint row does not count. Each censused heading of such a module needs an OQ that quotes it and names the module file.
-- **Exit 1** → halt `plan_coverage_gap`. Each gap names its file. Fix it with a unit whose `prd_source` names the heading, or an OQ that quotes the heading and names the file. Never patch the census. While the coverage state is missing or FAIL, `validate-preflight.sh --predictive` refuses the `execute-bolts` hop.
+- **Censused headings.** PRD-kontrak: every anchor (`plan/references/context-authoring.md §Coverage exclusions`: an H1-H3 with text of its own or no sub-heading, a container's sub-headings, the text before the first heading) of every `<kb>/modules/*.prd.md` except `1. Purpose` and `6. Open Questions`. Legacy numbered tree (no `modules/`): every anchor of `<kb>/10-domains/**/*.md` except `1. Purpose`, `10. Open Questions` and `11. Source References`; its `50-integrations/` and `99-rebuild-architecture/` are not censused (their contracts reach the vault through §Consumption — prose only). The leading section number is ignored when matching these names (the extractor's own template sections — no other name is special: an `Out of scope` section and every heading under it are censused).
+- **A unit covers a heading** when its `prd_source` names that module or domain file plus the heading's unique slug (`<kb>/modules/<m>.prd.md#<slug>`; numbered tree `<kb>/10-domains/<d>.md#<slug>`; a repeated heading is `<slug>-1`, `<slug>-2` … in document order), or a `:line` inside the heading's range. The path is relative to the project root — a bare module basename is no ref (`validate-unit-spec.sh` rejects it too).
+- **An OQ covers a heading only through `[covers: <kb>/modules/<m>.prd.md#<slug>]`** (numbered tree `<kb>/10-domains/<d>.md#<slug>`; or `:<line>`), on an open, deferred or out-of-scope OQ. A quote, a `§`, an `[origin: …]` or a resolved OQ (a human's or the AI's answer) covers nothing.
+- **A declaration covers a heading** when `context.md ## Coverage exclusions` carries a line that names the module file: `- <m>.prd.md#"<heading>" — <reason>` or `- <m>.prd.md#<slug> — <reason>`. After a slug the separator is `—`, `–` or ` - `, never `:` (grammar: `plan/references/context-authoring.md §Coverage exclusions`). A line without the file is INVALID under `--kb` (every module shares the section names); one line per heading — an H2 line covers none of its H3s.
+- **Out-of-scope modules** (§Consumption — PRD-kontrak grammar, item 5): a constraint row does not count. Each censused heading of such a module gets a declaration line (`- <m>.prd.md#"<heading>" — later tranche per the README order`) or an open OQ carrying `[covers: …]`.
+- **Exit 1** → halt `plan_coverage_gap`. Each gap names its file, and `next_action` prints its paste-ready declaration line. Fix it with a unit whose `prd_source` names the heading, an OQ carrying `[covers: <ref>]`, or a declaration with a real reason. Never patch the census. While the vault's coverage entry is missing, FAIL or stale (a module added to the KB after the run makes it stale), `validate-preflight.sh` refuses the `execute-bolts` hop.
 
 ## KB Q&A loop
 

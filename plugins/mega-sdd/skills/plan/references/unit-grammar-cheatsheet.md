@@ -11,7 +11,7 @@
 
 | Field | Reader | Regex (verbatim) | Shape that passes |
 |---|---|---|---|
-| `prd_source:` | `scripts/validate-unit-spec.sh`, `scripts/validate-plan-coverage.sh` | `^prd_source:[ \t]*(.*)$` | heading slug of the PRD requirement (`#slug` or `:line`); list allowed; omit ONLY with an OQ |
+| `prd_source:` | `scripts/validate-unit-spec.sh`, `scripts/validate-plan-coverage.sh` | `^prd_source:[ \t]*(.*)$` | `<prd>.md#<slug>` (the heading's unique slug as the coverage gate prints it: `x`, `x-1` … for a repeated name; `{#id}`, an html id or a whole `F-<X>-<NNN>` id also resolve) or `<prd>.md:<line>`; path relative to the project root (spaces allowed); list allowed; omit ONLY with an OQ |
 | `context_source:` | `scripts/validate-unit-spec.sh` | `^(?:vault_source\|context_source):\s*(.+?)\s*$` | `context.md#<anchor>` (`#F-U-001`, `#Data-model`, `#Constraints`); never `vault_source` in layout 3 |
 | `target_files:` | `scripts/validate-unit-spec.sh`, `scripts/validate-flow-coverage.sh` | `^target_files[ \t]*:[ \t]*(.*)$` | block list of `- path: <repo-relative>` + `operation: create\|modify` (inline `[a, b]` tolerated) |
 | `acceptance_test:` | `scripts/validate-unit-spec.sh`, `scripts/run-acceptance-tests.sh` | `^acceptance_test\s*:\s*(.*?)(?=^\S\|\Z)` | ≥ 1 entry; `type: test` MUST carry `command:` + `expects:` (substring); `type: render` for detail views; `type: manual` = `desc:` only |
@@ -40,7 +40,10 @@ Every rule line starts with `- ` in the unit body; `validate-unit-spec.sh` count
 | entity description | `scripts/_lib/vault_md.py` | `^###\s+`?([A-Za-z0-9_]+)`?\s*$` | `### <entity>` blocks after the DBML |
 | OQ priority | `scripts/_lib/vault_md.py` | `\[\s*(P[123])\s*\]` | every OQ carries `[P1]`/`[P2]`/`[P3]` |
 | OQ origin | `scripts/_lib/vault_md.py` | `\[\s*origin:\s*([^\]]+?)\s*\]` | `[origin: context.md#<anchor>]` when the gap arose elsewhere |
+| OQ coverage decision | `scripts/_lib/prd_headings.py` | `\[\s*covers:\s*([^\]]+?)\s*\]` | `[covers: <prd>#<slug>, <prd>:<line>]` — the anchor waits on this OQ (open / deferred / `[~]` with a reason); the only way an OQ decides coverage |
 | OQ deferred marker | `scripts/_lib/vault_md.py` | `\*\*Deferred\b[^*\n]*\*\*\s*:\s*\S` | xs: `**Deferred (plan)**: resurfaced after bolts` |
+
+`## Coverage exclusions` (last H2; `scripts/validate-plan-coverage.sh`): `- "<exact heading text>" — <reason>` or `- <slug> — <reason>` per anchor no unit / OQ `[covers:]` decides (`--kb`: `- <m>.prd.md#"<heading>" — <reason>`); a name two anchors share (a section number aside) takes the slug; `:` only after a quoted key, `→` after either — rules `plan/references/context-authoring.md §Coverage exclusions`.
 
 ## Body sections `validate-unit-spec.sh` measures (xs diet + L2 shape)
 

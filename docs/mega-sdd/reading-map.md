@@ -142,7 +142,7 @@ Reading order: `README.md` → the module you'll rebuild first (`modules/<domain
 
 `extract-intelligence` → KB → `plan --kb=<KB>` → `execute-bolts --all --lite`.
 
-For PRD-kontrak KBs the **module is the phasing unit**. `plan --kb=<KB>` consumes ALL modules by default — one `context.md`, units written module by module in the README's recommended rebuild order. To scope a vault to a subset, record each out-of-scope module as OQs (one per heading, quoting it and naming `<module>.prd.md` — a constraint row alone fails the plan-coverage rail, `plan_coverage_gap`), or point `plan` at a single module PRD (positional). `plan` detects the grammar (census.json present → PRD-kontrak lane).
+For PRD-kontrak KBs the **module is the phasing unit**. `plan --kb=<KB>` consumes ALL modules by default — one `context.md`, units written module by module in the README's recommended rebuild order. To scope a vault to a subset, declare each heading of an out-of-scope module in `context.md ## Coverage exclusions` (`- <module>.prd.md#"<heading>" — later tranche`) or raise an open OQ per heading carrying `[covers: <kb>/modules/<module>.prd.md#<slug>]` — a constraint row alone fails the plan-coverage rail, `plan_coverage_gap` — or point `plan` at a single module PRD (positional). `plan` detects the grammar (census.json present → PRD-kontrak lane).
 
 Legacy numbered-tree KBs keep the `--phase` lane:
 

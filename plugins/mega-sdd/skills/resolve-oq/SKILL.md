@@ -1,6 +1,6 @@
 ---
 name: resolve-oq
-version: 2.17.0
+version: 2.18.0
 description: Interactive resolver for Open Questions — walks the OQ roll-up by priority, lands stakeholder answers in the vault, bumps version; --binding resolves CONFLICT entries from per-unit bolts/U-*/binding.json (or an older layout-2 binding.md); with no vault but an extract-intelligence KB present, KB mode walks the PRD-kontrak §6 OQs so legacy questions get answered right after extraction. Use when the user says "resolve open questions", "answer the OQs", "walk through OQ list", "jawab OQ list", "tackle the P1 blockers", "jawab OQ hasil extract", "resolve oq kb", "jawab open question kb", or paraphrases.
 ---
 
@@ -70,6 +70,8 @@ Echo `VAULT_DIR=<resolved-absolute-path>` after Step 0 and re-echo at the start 
 **Step 3 — Update vault metadata.** Patch-bump the vault version in the lock home (vault.md frontmatter `vault_version:`; legacy: `00-index.md` Vault Lock Status) — one shared `v{X.Y}` for the whole round. Append a Changelog entry listing Resolved / Out of Scope / Deferred / Still-open counts (template in `references/interactive-walk.md`). Update `Last updated` to today.
 
 **Step 4 — Self-check before exit.** Every resolved OQ `[x]` with a `→ Resolved v{X.Y}` pointer in BOTH origin doc and roll-up; every OOS `[~]` present in the target Out of Scope section; every Deferred `[ ]` with a defer note; no OQ silently dropped; version bumped; Changelog accurate; `Last updated` set; promoted entries exist (grep the cross-reference); no invented answers; `vault.json` summary + per-OQ `status` match the markdown. Full checklist in `references/interactive-walk.md`.
+
+**Step 4.5 — Re-run the coverage gate (layout-3 plan-born vault).** An answered OQ no longer decides the heading its `[covers: …]` named. **Run** `bash <plugin-root>/scripts/validate-plan-coverage.sh --cwd=<root> --prd=<prd_path_at_generation> --vault=<VAULT_DIR>` (KB-born: `--kb=<kb-dir>`); exit 1 → list each heading with its `next_action` line in the summary (execute-bolts stays refused until it PASSes).
 
 **Step 5 — Present summary.** Stats (`{R} resolved · {O} OOS · {D} deferred · {S} skipped · {N} unreached (Esc ended the walk before them — name the resume tag) · {U} untouched`); new `v{X.Y}`; absolute `VAULT_DIR`; top 3 remaining P1 blockers if any; next step (re-run after stakeholder follow-up; lock manually for sprint). If any OQs deferred to binding → next: `/mega-sdd --resume` (`execute-bolts --all --lite`) — each citing unit re-asks its `TBD: OQ-XXX` at dispatch, uncited ones show in the delivery report; greenfield → warn there is no code to answer them against (re-defer to a stakeholder). No "I have resolved…" preamble.
 

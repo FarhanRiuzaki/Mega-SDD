@@ -51,7 +51,7 @@ Expected characteristics:
 
 After running `plan`, the vault should illustrate:
 
-1. **Anti-hallucination**: every claim cites back to PRD sections (§A through §P); a requirement with no unit and no OQ halts `plan_coverage_gap`. No invented entities or flows.
+1. **Anti-hallucination**: every claim cites back to PRD sections (§A through §P); a PRD heading with no unit, no open OQ carrying `[covers: …]` and no declared exclusion halts `plan_coverage_gap`. No invented entities or flows.
 2. **Gap surfacing**: TBDs in the PRD become OQs with priority labels — including ones the PRD doesn't list explicitly.
 3. **Project-shape-driven structure**: `project_shape: web-app` in the `context.md` frontmatter; flows are typed by prefix (`F-U-` user · `F-S-` system · `F-C-` cross-cutting).
 

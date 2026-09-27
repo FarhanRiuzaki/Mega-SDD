@@ -267,6 +267,11 @@ mk_unit() { mkdir -p "$1/units"; printf -- '---\nid: U-001\ntask_type: create\na
 mk_l3() { mkdir -p "$1"; printf -- '---\ntype: context\nvault_layout: 3\n---\n# Context\n' > "$1/context.md"
   printf '{"vault_version": "1.0", "open_questions": []}\n' > "$1/vault.json"; mk_unit "$1"; }
 mk_l2() { mkdir -p "$1"; printf '# vault\n' > "$1/vault.md"; printf '{"vault_version": "1.0", "open_questions": []}\n' > "$1/vault.json"; mk_unit "$1"; }
+# the census is the REAL gate's state: one entry per vault, bound to its PRD / exclusions / OQs / units by a digest
+# (a hand-written {"status": "PASS"} names no vault, so it passes no plan-born vault)
+cov_prd() { printf '# PRD\n\n## Contact Form\nA form: name, email, message.\n' > "$1/PRD.md"; }
+cov_decl() { printf '\n## Coverage exclusions\n- "Contact Form" — fixture: coverage is not under test here\n' >> "$1/context.md"; }
+cov_run() { bash plugins/mega-sdd/scripts/validate-plan-coverage.sh --cwd="$1" --prd="$1/PRD.md" --vault="$2" --quiet >/dev/null 2>&1; }
 
 # 11a. removed skill in a dir with NO .mega-sdd/ → FATAL, never the no-project PASS;
 # and it writes nothing (no .mega-sdd/ is created in a non-project).
@@ -299,8 +304,7 @@ printf '%s' "$R" | grep -q '^1 FATAL lite_plan_coverage_pass | ' && printf '%s' 
   && printf '%s' "$R" | grep -q 'validate-plan-coverage.sh' && printf '%s' "$R" | grep -q 'missing' \
   && pass "11b layout-3 vault, no census -> dispatch FATAL lite_plan_coverage_pass (plan_coverage_gap, remedy named)" \
   || fail "11b missing census not refused at dispatch: $R"
-printf '{"status": "FAIL", "gaps": [{"heading": "Contact Form", "slug": "contact-form", "line": 3, "file": "PRD.md"}]}\n' \
-  > "$D/.mega-sdd/.plan-coverage-state.json"
+cov_prd "$D"; cov_run "$D" "$DV"  # 'Contact Form' has no decision → the vault's entry is FAIL
 R="$(dpf "$D" execute-bolts)"
 printf '%s' "$R" | grep -q '^1 FATAL lite_plan_coverage_pass | ' && printf '%s' "$R" | grep -q 'Contact Form' \
   && pass "11b layout-3 vault, FAIL census -> dispatch FATAL naming the gap heading" \
@@ -311,6 +315,11 @@ printf '%s' "$R" | grep -q '^1 FATAL lite_plan_coverage_pass | ' \
   && pass "11b layout-3 vault, malformed census -> dispatch FATAL (fail-closed)" \
   || fail "11b malformed census not refused at dispatch: $R"
 printf '{"status": "PASS", "gaps": []}\n' > "$D/.mega-sdd/.plan-coverage-state.json"
+R="$(dpf "$D" execute-bolts '--all --lite')"
+printf '%s' "$R" | grep -q '^1 FATAL lite_plan_coverage_pass | .*missing for .mega-sdd/vaults/app' \
+  && pass "11b a hand-written {\"status\": \"PASS\"} names no vault → the plan-born vault's entry is missing → FATAL" \
+  || fail "11b a vault-less PASS census opened the rail: $R"
+cov_decl "$DV"; cov_run "$D" "$DV"
 R="$(dpf "$D" execute-bolts '--all --lite')"
 printf '%s' "$R" | grep -q '^0 PASS - ' && pass "11b layout-3 vault, PASS census -> dispatch PASS rc=0" \
   || fail "11b PASS census refused: $R"
@@ -370,15 +379,15 @@ printf '%s' "$R" | grep -q '^1 FATAL bolts_units_missing | ' && pass "11e no uni
 
 # ══ 12. the REAL PreToolUse hook: Skill entry AND the in-run bolt-implementer dispatch ══
 HOOK="plugins/mega-sdd/hooks/pre-tool-use"
-H="$TMP/hookproj"; HV="$H/.mega-sdd/vaults/app"; mk_l3 "$HV"; printf '# Constitution\n' > "$HV/constitution.md"
+H="$TMP/hookproj"; HV="$H/.mega-sdd/vaults/app"; mk_l3 "$HV"; printf '# Constitution\n' > "$HV/constitution.md"; cov_prd "$H"; cov_decl "$HV"
 ( cd "$H" && git init -q . && git -c user.email=t@t -c user.name=t add -A \
   && git -c user.email=t@t -c user.name=t commit -q -m seed ) >/dev/null 2>&1
 hook_skill() { printf '{"session_id":"cov-rail","cwd":"%s","tool_name":"Skill","tool_input":{"skill":"mega-sdd:execute-bolts","args":"--all --lite"}}' "$H" \
   | bash "$HOOK" 2>/dev/null; }
 hook_agent() { printf '{"session_id":"cov-rail","cwd":"%s","tool_name":"Agent","tool_input":{"subagent_type":"mega-sdd:bolt-implementer","description":"bolt","prompt":"mega-sdd-trace:execute-bolts:U-001\\nREAD FIRST, IN FULL: %s/bolts/U-001/dispatch-prompt.md"}}' "$H" "$HV" \
   | bash "$HOOK" 2>/dev/null; }
-printf '{"status": "FAIL", "gaps": [{"heading": "Contact Form", "slug": "contact-form", "line": 3, "file": "PRD.md"}]}\n' \
-  > "$H/.mega-sdd/.plan-coverage-state.json"
+cp "$HV/context.md" "$TMP/hctx.bak"; grep -v 'Contact Form' "$TMP/hctx.bak" > "$HV/context.md"
+cov_run "$H" "$HV"; cp "$TMP/hctx.bak" "$HV/context.md"  # a FAIL entry (the tree is back to the committed context.md)
 OUT=$(hook_skill)
 printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' && printf '%s' "$OUT" | grep -q 'plan_coverage_gap' \
   && pass "12 real hook: Skill mega-sdd:execute-bolts on a FAIL census is DENIED (plan_coverage_gap)" \
@@ -398,7 +407,7 @@ OUT=$(hook_skill)
 printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' && printf '%s' "$OUT" | grep -q 'plan_coverage_gap' \
   && pass "12 real hook: a MISSING census (skipped plan Step 5) is DENIED too" \
   || fail "12 real hook allowed execute-bolts with no census: ${OUT:0:300}"
-printf '{"status": "PASS", "gaps": []}\n' > "$H/.mega-sdd/.plan-coverage-state.json"
+cov_run "$H" "$HV"
 OUT=$(hook_skill)
 printf '%s' "$OUT" | grep -q 'plan_coverage_gap' \
   && fail "12 real hook still cites plan_coverage_gap on a PASS census: ${OUT:0:300}" \

@@ -91,7 +91,31 @@ Audit: 29 agen mengklasifikasi setiap script, lib, referensi plugin, dan cabang 
 - `docs/gateway-contract.md` diperbarui secara additive: tag lane baru, dan daftar skill yang ber-announce jadi 10 (empat skill yang dihapus berhenti mengeluarkan tag).
 - Dipin oleh `tests/v9/test-gateway-trace.sh`.
 
+### Changed — gate coverage PRD jadi *declared coverage* (hasil verifikasi 9.0)
+- **Masalahnya:** `validate-plan-coverage.sh` ngebedain heading requirement, meta dan out-of-scope pakai heuristik (daftar nama, qualifier, aturan kata MUST di badan, dll). Kritikus verifikasi nemu gate ini **fail-open**: PRD dengan 4 requirement MUST tanpa unit tetap lolos. Tiga ronde serangan adversarial (fail-open + fail-closed) masing-masing nemu 2–3 HIGH **baru di dua arah**, dan tiap perbaikan satu arah bikin error di arah lain. Contohnya:
+  - "Open Questions" dipaksa jadi requirement;
+  - satu kata "must" deskriptif di Background nyeret section intro lain;
+  - "Out of Scope (Post-MVP)" kehilangan pengecualiannya;
+  - flow To-Be di bawah "Latar Belakang" hilang diam-diam.
+
+  Skripnya tumbuh 182 → 588 baris tanpa konvergen.
+- **Sekarang:** setiap heading H2/H3 di PRD (diparse seperti CommonMark) wajib punya **keputusan eksplisit**:
+  - disebut `prd_source` sebuah unit;
+  - dikutip OQ `[business]` lewat tag `[covers: <ref>]`;
+  - atau dideklarasikan di `context.md` → `## Coverage exclusions`, satu baris per heading, pakai alasan asli (`- "<heading>" — <alasan>`).
+
+  Gate berhenti nebak apakah sebuah heading itu "meta". Yang dicek sekarang cuma apakah keputusannya ada. Hasilnya: penghilangan diam-diam jadi keputusan yang kelihatan dan bisa direview, dan blok palsu selesai dengan satu baris. `--kb` cuma ngecualiin section template KB milik plugin sendiri. Spec §7 #13.
+- **Friksi terukur:** 5–12 baris deklarasi per PRD (xs 5, brownfield 4, clinic ±9, template PRD ±12). Heading yang cuma pengelompok (tanpa teks sendiri) dihitung lewat sub-heading-nya.
+- **Dampak migrasi:** vault lama tanpa deklarasi bakal FAIL di gate ini sampai deklarasinya ditambah. Dari 14 vault bench, 9 FAIL dan 3 dikecualikan (layout-2). Gate nyetak baris siap-tempel di `next_action`. PRD `.pdf` / `.docx` / `.txt` dibuatin rendisi markdown dulu oleh `plan`.
+- **Gate ikut jalan ulang** setelah `resolve-oq` (Step 4.5) dan `diff-vault` (Step 6.5), karena jawaban OQ bisa mengubah apa yang memutus sebuah heading.
+- **Ukuran:** gate 286 baris ditambah parser bersama `scripts/_lib/prd_headings.py` 518 baris, yang juga dipakai `validate-unit-spec.sh` buat resolver `prd_source`. Differential fuzz lawan commonmark.js: 3 heading meleset di 30.000 dokumen acak.
+- **Dipin oleh:**
+  - `tests/v9/test-plan-coverage-prd.sh`: 287 cek, 72 RED di skrip lama;
+  - `tests/v9/test-kb-to-plan.sh`: 64 cek;
+  - `tests/plan-coverage/test-plan-coverage.sh`.
+
 ### Skill version moves
+- Verifikasi 9.0 (declared coverage): `plan` 2.0.0 → 2.1.0 · `resolve-oq` 2.17.0 → 2.18.0 · `diff-vault` 2.6.0 → 2.6.1 · `analyze` 2.4.2 → 2.4.3
 - Dihapus: `generate-intent` 2.25.2 · `bind-codebase` 2.20.1 · `generate-units` 2.29.1 · `scan-codebase` 2.31.1
 - `plan` 1.2.1 → 2.0.0 · `execute-bolts` 2.55.0 → 3.0.0 · `orchestrate-flow` 2.29.3 → 3.0.0 · `using-mega-sdd` 4.3.0 → 4.4.0 · `resolve-oq` 2.16.0 → 2.17.0 · `diff-vault` 2.5.1 → 2.6.0 · `detect-drift` 3.2.0 → 3.3.0 · `extract-intelligence` 2.6.1 → 2.7.0
 

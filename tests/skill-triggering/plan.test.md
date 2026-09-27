@@ -115,8 +115,8 @@ Route check: these phrases are in `plan`'s description (and `spec out` / `pecah 
 - **Expect:** a `## 5. Edge Cases & Gotchas` entry that is cited (implicitly `[VERIFIED]`) AND mechanically detectable → `DO NOT modify <file>` in the unit's `## Hard rules`; an `[INFERRED]` / `[OPEN]` gotcha → `## Anti-patterns` only; a rule whose file is not in the tracked source (symbol index / disk) → Anti-pattern, never a Hard rule that would fail `hard_rule_unanchored` at bolt time
 
 ### K8: KB coverage gap
-- **Setup:** a module heading (neither §1 Purpose nor §6 Open Questions) with no unit `prd_source` and no OQ that quotes it AND names the module file
-- **Expect:** Step 5 `validate-plan-coverage.sh --cwd=<root> --kb=<kb-dir> --vault=<vault>` exits 1 → halt `plan_coverage_gap` naming the heading and its module file; an OQ quoting the heading without the file name covers nothing
+- **Setup:** a module heading (neither §1 Purpose nor §6 Open Questions) with no unit `prd_source`, no open OQ carrying `[covers: <kb>/modules/<m>.prd.md#<slug>]`, and no module-qualified `## Coverage exclusions` line
+- **Expect:** Step 5 `validate-plan-coverage.sh --cwd=<root> --kb=<kb-dir> --vault=<vault>` exits 1 → halt `plan_coverage_gap` naming the heading and its module file; an OQ that quotes the heading or cites its `§` covers nothing, and so does a resolved OQ
 
 ## Seed PRD from a brief (the guarded brief path)
 
@@ -139,7 +139,7 @@ Route check: these phrases are in `plan`'s description (and `spec out` / `pecah 
 
 ### B2: Every unit cites both sources
 - Each unit carries `prd_source:` AND `context_source: context.md#<anchor>`; never `vault_source`
-- A PRD heading with no unit `prd_source` and no OQ → halt `plan_coverage_gap` (`validate-plan-coverage.sh`), never silently dropped
+- A PRD heading with no unit `prd_source`, no open OQ carrying `[covers: …]` and no `context.md ## Coverage exclusions` line → halt `plan_coverage_gap` (`validate-plan-coverage.sh`), never silently dropped
 
 ### B3: Claims are contracts, not verdicts
 - Brownfield (`--mode=existing`): a unit whose symbol-index query hit carries `## Anchors` + `## Claims`; a miss carries a `must-not-exist` claim

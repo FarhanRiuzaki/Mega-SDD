@@ -28,7 +28,7 @@ spine: express      # express (GROUND) is the only spine; `classic` no longer se
                            #   removal in one line). The Stop hook still reads `spine: classic` as a `profile: full` alias.
 lane: lite          # lite is the only pipeline; `standard` is retired (the front door says so in one line and proceeds
                            #   lite). Lite = execute-bolts pre-flight 3.9 JIT bind on EVERY wave + W1 zero-idle + `validate-preflight.sh
-                           #   --predictive` refuses the execute-bolts hop while .plan-coverage-state.json is missing/FAIL.
+                           #   --predictive` refuses the execute-bolts hop while .plan-coverage-state.json is missing/FAIL/stale.
 # profile:          # ABSENT is the default: diagnostics lean-by-default on the express spine (Stop-hook analyze aggregate OFF). Set `full` to re-enable the aggregate; `lean` additionally cuts the advisory chain diagnostics (opt-in)
 review_panel: auto         # execute-bolts review-panel tier: auto (risk-based) | minimal | standard | full
                            #   (see execute-bolts references/review-panel.md; CLI --review-panel= overrides this key)

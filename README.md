@@ -203,7 +203,7 @@ flowchart LR
     BOLTS --> CHECK["delivery-check.sh<br/>VERDICT: PASS"] --> RESULT(["result contract"])
 ```
 
-- **`plan`** is ONE model phase. It writes the vault (`context.md` with flows, DBML, NFRs and OQs, plus `constitution.md` and `vault.json`) and the atomic units (`units/U-*.md`). Every unit cites the PRD section it covers, and a coverage check refuses the bolts hop while a PRD heading is owned by neither a unit nor an OQ. Business OQs go to you in ONE batched ask. Technical OQs are decided by the AI as labelled, cited, reversible choices.
+- **`plan`** is ONE model phase. It writes the vault (`context.md` with flows, DBML, NFRs and OQs, plus `constitution.md` and `vault.json`) and the atomic units (`units/U-*.md`). Every unit cites the PRD section it covers, and a coverage check refuses the bolts hop while a PRD heading has no decision: a unit, an open OQ carrying `[covers: <prd>#<slug>]`, or a line in `context.md ## Coverage exclusions` saying why nothing is built for it. Business OQs go to you in ONE batched ask. Technical OQs are decided by the AI as labelled, cited, reversible choices.
 - **`execute-bolts`** works in dependency waves. Before a unit is dispatched it is bound to the code at HEAD: every claim about existing code gets CONFIRMED / CONFLICT / OQ with an anchor (`bolts/U-XXX/binding.json`). An unresolved CONFLICT blocks that unit (its dependents are skipped with the reason) until a human resolves it. The `bolt-implementer` agent builds it test-first, a risk-tiered blind review panel reads the diff, and hooks enforce the pre/post-flight Hard Rule scans and the evidence gates.
 - **What the lane adds over the other two** is an audit trail. Each unit is traced to its PRD section. Each claim about existing code carries a verdict and an anchor. Each bolt keeps its dispatch prompt, acceptance evidence and review findings on disk. It also feeds the team documents (`/mega-sdd:emit`) and `/mega-sdd:sync`.
 - **What it does not add** is better code. See the next section.
@@ -419,7 +419,7 @@ Pre-9.0 vaults (layout-2: `vault.md`, `model.md`, `flows.md`, `constraints.md` +
 Mega-sdd halts on real issues; never silent failures. Common halt types:
 
 - `binding_conflict` — a unit's claim contradicts the code at HEAD (per-unit JIT bind)
-- `plan_coverage_gap` — a PRD heading is owned by neither a unit nor an OQ
+- `plan_coverage_gap` — a PRD heading has no decision (no unit, no open OQ carrying `[covers: …]`, no `## Coverage exclusions` line with a reason)
 - `dedup_ambiguous` — create unit targets existing files
 - `hard_rule_violated` — bolt modified locked code
 - `hard_rule_unparseable` — Hard Rule grammar invalid

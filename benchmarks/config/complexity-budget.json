@@ -3,10 +3,10 @@
  "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only); raised 2026-09-27 (see raises[]); LOWERED 2026-09-27 at 9.0 P1: generate-intent / bind-codebase / generate-units / scan-codebase deleted, their surviving contracts relocated into skills/plan/references/ + references/. T01 lite = the guarded pipeline trace re-pointed to the relocated successors (benchmarks/tasks/T01-greenfield-chain/files.lite.txt header). T01 default = what a default run on a clear greenfield PRD commands since the lane router: the DIRECT lane (using-mega-sdd + the front door + references/direct-lane.md; files.optimized.txt) \u2014 a redefinition, not a like-for-like shrink: the pre-9.0 default traced the classic chain (484,930 B). LOWERED again 2026-09-27 at 9.0 P1b: 6 executor-less scripts (-1,531 lines) and the dead hook legs keyed on removed skill ids (-102 lines) deleted.",
  "ceilings": {
   "always_loaded_description_chars": 12490,
-  "t01_lite_commanded_bytes": 451814,
+  "t01_lite_commanded_bytes": 460241,
   "t01_default_commanded_bytes": 39305,
-  "skill_md_total_bytes": 274854,
-  "scripts_total_lines": 43988,
+  "skill_md_total_bytes": 276852,
+  "scripts_total_lines": 44618,
   "hooks_total_lines": 3224
  },
  "raises": [
@@ -80,6 +80,25 @@
     ]
    },
    "measured_benefit": "Defect fixes, each with a failing-first regression test that fails on 1ab6c43e: validate-handoff-binding-units.sh +76 (V4: an unresolved CONFLICT on a migrated layout-2 vault stopped blocking after rebind-units --units=all; invariant #2) -> tests/v9/test-migrated-conflict-blocks.sh; validate-preflight.sh +70 (V6: the plan-coverage rail was only enforced in --predictive mode, the PreToolUse dispatch path let execute-bolts through on a coverage FAIL; removed-skill dispatch FATAL without .mega-sdd/) -> tests/scripts/test-predictive-preflight.sh; validate-plan-coverage.sh +44 (V7: --kb fail-open, real requirement headings like \"Purpose code validation\" silently dropped; fenced-code headings censused) -> tests/v9/test-kb-to-plan.sh; route-lane.sh +3 (V6: a legacy vault without vault.json routed to direct) -> tests/lanes/test-lanes.sh. Evidence of the defects: the independent verification workflow v9-independent-verification (verdicts V4/V6/V7 PARTIAL), reproduced by each reviewer on the pre-fix code."
+  },
+  {
+   "date": "2026-09-28",
+   "change": "plan-coverage gate -> declared coverage (spec \u00a77 #13): scripts/_lib/prd_headings.py (CommonMark-faithful census, shared with validate-unit-spec) + validate-plan-coverage.sh rewrite; plan skill writes \"## Coverage exclusions\"; resolve-oq Step 4.5 / diff-vault Step 6.5 re-run the gate",
+   "metric": {
+    "t01_lite_commanded_bytes": [
+     451814,
+     460241
+    ],
+    "skill_md_total_bytes": [
+     274854,
+     276852
+    ],
+    "scripts_total_lines": [
+     43988,
+     44618
+    ]
+   },
+   "measured_benefit": "Defect fix. The heuristic gate was fail-open (9.0 verification: a PRD with 4 uncovered MUST requirements passed) and did not converge under attack: 3 adversarial rounds each found 2-3 new HIGH findings in both directions (research/2026-09-27-v9-verification.md \u00a74). Regression tests that fail on the pre-redesign gate: tests/v9/test-plan-coverage-prd.sh (287 checks, 72 RED on the old script), tests/v9/test-kb-to-plan.sh C3/M5/F4. Cost disclosed: coverage machinery 182 -> 804 lines; plan-skill text +8.4 KB commanded bytes."
   }
  ]
 }

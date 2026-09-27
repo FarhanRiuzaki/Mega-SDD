@@ -667,7 +667,7 @@ PYEOF
 fi  # end of FULL vs AGGREGATE_ONLY branch
 
 # --- Phase 3: Aggregate and write report ---
-ANALYZE_OUTPUT=$(CWD="$CWD" TS="$TS" VAULT_CONSISTENCY="$VAULT_CONSISTENCY" REUSE_DUP_OUTPUT="$REUSE_DUP_OUTPUT" \
+ANALYZE_OUTPUT=$(CWD="$CWD" TS="$TS" VAULT_CONSISTENCY="$VAULT_CONSISTENCY" REUSE_DUP_OUTPUT="$REUSE_DUP_OUTPUT" LIB_DIR="$SCRIPT_DIR/_lib" \
   V1_RC="$V1_RC" V2_RC="$V2_RC" V3_RC="$V3_RC" V3B_RC="$V3B_RC" V4_RC="$V4_RC" V5_RC="$V5_RC" V7_RC="$V7_RC" \
   V7M_RC="$V7M_RC" V7F_RC="$V7F_RC" V7VF_RC="$V7VF_RC" V7S_RC="$V7S_RC" V7C_RC="$V7C_RC" V10_RC="$V10_RC" V11_RC="$V11_RC" V12_RC="$V12_RC" \
   V3_ST="$V3_ST" V4_ST="$V4_ST" V5_ST="$V5_ST" V7_ST="$V7_ST" V7M_ST="$V7M_ST" V7F_ST="$V7F_ST" V7VF_ST="$V7VF_ST" V7C_ST="$V7C_ST" \
@@ -800,6 +800,16 @@ for name, vr in validator_results.items():
 # markdown exists but no kb_* validator recognizes the layout — a discovery
 # misconfiguration must flip overall LOUDLY. "SKIP because there is no subject"
 # and "SKIP because I cannot see the subject" are different verdicts.
+# plan_coverage = the preflight's own verdict (prd_headings.coverage_verdict: per-vault entry, digest, pinned sources) —
+# the slot's top-level status alone reads PASS for an entry the preflight refuses as stale (pure read, no census)
+if boundaries.get("plan_coverage", {}).get("status") not in (None, "SKIP", "NOT_RUN"):
+    try:
+        import sys; sys.path.insert(0, os.environ["LIB_DIR"]); import prd_headings
+        ok_, why_, _ = prd_headings.coverage_verdict(cwd, prd_headings.plan_vaults(cwd))
+        boundaries["plan_coverage"].update(status="PASS" if ok_ else "FAIL", detail=why_[:300])
+    except Exception as e:
+        boundaries["plan_coverage"].update(status="ERROR", detail="coverage verdict: %s" % e)
+
 if os.environ.get("KB_MISCONF", "0") == "1":
     boundaries["kb_discovery"] = {
         "status": "FAIL", "state_file": "—",

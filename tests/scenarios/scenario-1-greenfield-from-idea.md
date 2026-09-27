@@ -189,7 +189,7 @@ An answer lands in `context.md ## Open Questions`. A P1 business OQ left unanswe
 ✓ Phase 1 of 2: plan → status: completed, items: 14 units, blocked: 0
 ```
 
-Before the next hop, the validators must pass: unit spec, flow coverage, and plan coverage. Plan coverage means every PRD heading has a unit or an OQ; a gap halts `plan_coverage_gap`. `plan` emits no handoff YAML, so the front door re-derives state from disk before it dispatches bolts.
+Before the next hop, the validators must pass: unit spec, flow coverage, and plan coverage. Plan coverage means every PRD heading has a unit, an open OQ carrying `[covers: …]`, or a `context.md ## Coverage exclusions` line with a reason; a gap halts `plan_coverage_gap`. `plan` emits no handoff YAML, so the front door re-derives state from disk before it dispatches bolts.
 
 ### Step B4 — Phase 2: `execute-bolts --all --lite`
 

@@ -145,7 +145,7 @@ acceptance_test:                   # how to verify the bolt succeeded
                                    # real display field asserted) lives in the TEST's own assertions,
                                    # never as prose in expects
 prd_source: docs/PRD.md#halaman-kontak   # spec 2026-09-10 App. F1 — the PRD heading (`<prd-file>#<heading-slug>`,
-                                   #   slug = lowercase, non-alphanumerics → `-`) or line (`<prd-file>:<line>`) this
+                                   #   slug = the heading's unique slug, shared rule _lib/prd_headings.py) or line (`<prd-file>:<line>`) this
                                    #   unit implements; repo-relative; a YAML list is allowed. RESOLVED by
                                    #   validate-unit-spec.sh when present (halt prd_source_unresolvable — a citation
                                    #   to a heading that does not exist is a fabricated requirement); absent =

@@ -26,7 +26,7 @@ Each layer has a different audience, different anti-hallucination rails, and dif
 - **Input:** PRD, BRD, Figma; a seed PRD the front door writes from a brief under `--guarded`; or an `extract-intelligence` knowledge base (`plan --kb=<kb>`)
 - **Output:** layout-3 vault written by `plan`: `context.md` + `constitution.md` + `vault.json`. Pre-9.0 layout-2 vaults (`vault.md` / `model.md` / `flows.md` / `constraints.md`) and legacy 7-file vaults are read-only; building on one takes `migrate-paths --vault-layout=3` first
 - **Repo access:** Not required (brownfield: the GROUND symbol index, read-only)
-- **Rails:** Open Question promotion, source citation, halt-on-ambiguity, the plan-coverage rail (`validate-plan-coverage.sh` — a requirement with no unit and no OQ halts)
+- **Rails:** Open Question promotion, source citation, halt-on-ambiguity, the plan-coverage rail (`validate-plan-coverage.sh` — a PRD heading with no unit, no open OQ carrying `[covers: …]` and no `## Coverage exclusions` line halts)
 
 ## Layer 2 — Bind (just-in-time, per unit)
 
