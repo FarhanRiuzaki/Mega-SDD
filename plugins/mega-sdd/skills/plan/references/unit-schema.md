@@ -1,6 +1,6 @@
 # Unit Schema
 
-A "unit" is an atomic, AI-executable dev prompt derived from a (bound-)vault. Each unit corresponds to one bolt — one PR-sized code commit. Units are the contract handed off to `execute-bolts` via the `bolt-implementer` agent.
+A "unit" is an atomic, AI-executable dev prompt that `plan` derives from the PRD + `context.md`. Each unit corresponds to one bolt — one PR-sized code commit. Units are the contract handed off to `execute-bolts` via the `bolt-implementer` agent.
 
 ## Contents
 - Required frontmatter
@@ -37,26 +37,26 @@ vault_source: <doc>.md#<anchor>    # ONE grammar: <doc> = vault.md | model.md | 
 task_type: create                  # create | extend | verify
                                    # create: new code, target_files all `create`
                                    # extend: modify existing; Migration notes mandatory
-                                   #   AUTO-emitted for PARTIAL_FIELDS_* binding states with Migration notes populated from binding's field_diff
+                                   #   emitted when a symbol-index hit is an artifact the PRD demands a change to; Migration notes authored from the PRD-vs-code delta
                                    # verify: NO code generation; only acceptance_test against existing implementation
-                                   # Default: create. Auto-assigned from binding.md Implementation State Map when present.
+                                   # Default: create. Assigned by `plan` from the symbol-index typing (plan-procedure.md §Step 4; greenfield ⇒ create).
 status: implemented                # OPTIONAL (living-vault lifecycle; absence = legacy/not-yet-executed)
                                    # implemented: bolt committed AND all bolt-report target_hashes still match the working tree
                                    # stale: bolt committed BUT a target file changed since (per scripts/compute-unit-staleness.sh)
                                    #   - eligible for re-execution in the sync lane
-                                   # superseded: the claim this unit derives from vanished from the (re-)bound vault
-                                   #   - assigned ONLY by generate-units --reconcile; unit kept (audit trail), never deleted;
+                                   # superseded: the claim this unit derives from vanished from the revised vault (task-typing.md §Reconcile pass)
+                                   #   - assigned ONLY by plan --reconcile; unit kept (audit trail), never deleted;
                                    #     execute-bolts SKIPS superseded units with a warning
 grounding_confidence: HIGH | MEDIUM | LOW
-risk: low | medium | high | critical   # OPTIONAL — written by generate-units Step 2.5 from the risk signals in references/adversarial-test-prompt.md (auth/payment/PII/regulatory-touching targets, LOCKED-claim refs); consumed by Step 9.5 (risk: high|critical auto-escalates to a separate adversarial-review subagent; critical bumps the review model). Absent = low.   # — reflects defensive generation checks
-                                   # HIGH = binding present + all anchors verified + no target collisions + binding state all HIGH-conf
+risk: low | medium | high | critical   # OPTIONAL — written by plan's unit walk Step 2.5 from the risk signals in adversarial-test-prompt.md (auth/payment/PII/regulatory-touching targets, LOCKED-claim refs); consumed by Step 9.5 (risk: high|critical auto-escalates to a separate adversarial-review subagent; critical bumps the review model). Absent = low.   # — reflects defensive generation checks
+                                   # HIGH = symbol index present + every anchor an exact index hit (file:line) + no target collisions
                                    #   AND (verify units only, A1) every acceptance criterion grounded in a NON-TEST source
                                    #   anchor `[grounded: path:line]` — see ## Acceptance criteria. A verify unit certifies
                                    #   EXISTING behavior; a criterion present only in a test stub / the PRD is NOT grounding.
                                    #   Any ungrounded criterion → NOT HIGH (downgrade, or split verify[built]+create[unbuilt]).
                                    #   Enforced: validate-unit-spec.sh halt verify_grounding_untrusted (HIGH verify units only).
-                                   # MEDIUM = binding present BUT some anchors aspirational OR some UNKNOWN state OR codebase-map precision: regex
-                                   # LOW = no binding (standalone generate-units) OR no codebase-map OR significant unverified anchors
+                                   # MEDIUM = symbol index present BUT some anchors aspirational OR some candidate typed on a fuzzy hit (fuzzy ⇒ create, never verify)
+                                   # LOW = no symbol-index evidence (greenfield, or index absent ⇒ typed as greenfield + WARN, plan-procedure.md §Step 4) OR significant unverified anchors
                                    # Required on newly generated units; may be absent on legacy units.
 mutability: "LOCKED — BI Reg 23/2/2021 §4: field name+type+validation MUST preserve (kb_locked)"
                                    # ONE QUOTED line: `<TIER> — <rationale incl. source>`, TIER = LOCKED | INTENT | ARTIFACT.
@@ -78,9 +78,10 @@ reuse_candidates:                  # OPTIONAL — fast-path hints from reuse-ind
   - { name: <symbol>, path: <file>, signature: <sig>, purpose: <1-line> }
                                    # Absent when no candidate matched; never fabricated.
                                    # These are hints — the bolt receives the full reuse-index.yaml path and scans it at write time.
+                                   # `plan` does not write it; readers (build-dispatch-prompt.sh) keep honouring it on legacy units that carry it.
 module: <module-id>                # — semantic grouping per _meta/modules.yaml
-                                   # Format: M-<kebab-case>. Auto-derived from vault_source matching modules.yaml.
-                                   # M-default for vaults without modules.yaml. M-unassigned for unit's vault_source not matching any module.
+                                   # Format: M-<kebab-case>. Auto-derived from vault_source|context_source matching modules.yaml.
+                                   # M-default for vaults without modules.yaml. M-unassigned for unit's vault_source|context_source not matching any module.
 depends_on: []                     # list of unit IDs that must complete first
                                    # MUST be same-squad units only when multi-squad mode active.
                                    # Cross-squad coupling MUST route through `consumes_interfaces` (see below).
@@ -150,14 +151,14 @@ prd_source: docs/PRD.md#halaman-kontak   # spec 2026-09-10 App. F1 — the PRD h
                                    #   to a heading that does not exist is a fabricated requirement); absent =
                                    #   legacy unit, tolerated. Input of validate-plan-coverage.sh.
 context_source: flows.md#F-U-001   # alias of vault_source (same `<doc>.md#<anchor>` grammar); writers
-                                   #   emit ONE of the two (classic chain: vault_source; lite PLAN: context_source).
+                                   #   emit ONE of the two (`plan`: context_source; classic-born units of a migrated vault carry vault_source).
 binding_refs:                      # binding manifest IDs this unit honors
   - C-001
   - OQ-012
 ---
 ```
 
-**Legacy keys.** Legacy units may carry `grounding_evidence` / `superpowers_skills` / `estimated_complexity` / a nested `mutability` map — readers tolerate all of them; `generate-units` no longer writes them. **Zero-reader writer diet (spec App. F1d):** the consumer census 2026-09-10 found ZERO readers for `mutability`, `estimated_complexity`, `grounding_evidence`, `superpowers_skills` and `acceptance_test[].ears` — new units MUST NOT carry them. The diet is writer-side only: no validator requires their absence.
+**Legacy keys.** Legacy units may carry `grounding_evidence` / `superpowers_skills` / `estimated_complexity` / a nested `mutability` map — readers tolerate all of them; the writer (`plan`) no longer writes them. **Zero-reader writer diet (spec App. F1d):** the consumer census 2026-09-10 found ZERO readers for `mutability`, `estimated_complexity`, `grounding_evidence`, `superpowers_skills` and `acceptance_test[].ears` — new units MUST NOT carry them. The diet is writer-side only: no validator requires their absence.
 
 ## Required body sections (polished AI-coding-prompt shape)
 
@@ -170,10 +171,10 @@ binding_refs:                      # binding manifest IDs this unit honors
 ## Context (read first)
 <which vault sections, which binding entries, KB sections (if KB present), and WHY this scope exists. Conversational directive prose, NOT bullets. Aim for 2-4 sentences that orient an AI coding agent (xs class: ≤ 2): what's the surrounding system, what's the user-visible outcome, what changes nothing.>
 
-## Anchors  (mandatory for ALL task_types when binding evidence exists)
+## Anchors  (mandatory for ALL task_types when symbol-index evidence exists)
 <file:line where existing code lives that this unit references or modifies. AI coding agent reads these BEFORE writing.>
-<For task_type=verify and task_type=extend: MANDATORY — cite the implementation anchor from binding.>
-<For task_type=create: MANDATORY when at least one binding entry exists pointing to a related pattern in codebase-map. Cite the closest pattern to follow. Optional when fully greenfield.>
+<For task_type=verify and task_type=extend: MANDATORY — cite the implementation anchor from the symbol-index hit.>
+<For task_type=create: MANDATORY when at least one symbol-index hit points to a related pattern. Cite the closest pattern to follow. Optional when fully greenfield.>
 
 - src/Http/Controllers/UserController.php:45-67 — existing pattern; follow this shape
 - src/Models/User.php:12 — entity to extend
@@ -186,7 +187,7 @@ binding_refs:                      # binding manifest IDs this unit honors
 - C-U005-02 "no login route exists yet" — expect: routes/web.php — must-not-exist
 - C-U005-03 "migration for nasabah table exists" — expect: database/migrations — must-exist
 
-Grammar: `- C-U<NNN>-<NN> "<verbatim expectation>" — expect: <path>[:<symbol>] | <path> — must-exist | <path> — must-not-exist`. `<path>[:<symbol>]` ⇒ symbol claim (symbol index); bare `<path>` with must-exist/must-not-exist ⇒ filesystem claim (0 model tokens); a quoted expectation without a resolvable symbol ⇒ text claim (ladder E3, express-bind.md).
+Grammar: `- C-U<NNN>-<NN> "<verbatim expectation>" — expect: <path>[:<symbol>] | <path> — must-exist | <path> — must-not-exist`. `<path>[:<symbol>]` ⇒ symbol claim (symbol index); bare `<path>` with must-exist/must-not-exist ⇒ filesystem claim (0 model tokens); a quoted expectation without a resolvable symbol ⇒ text claim (ladder E3, `execute-bolts/references/jit-bind-and-quarantine.md §E3`).
 
 ## Hard rules  (validated at bolt time by execute-bolts pre/post-flight)
 <Machine-parseable constraints. Grammar closed in v1 (5 rule types). One rule per line. Empty section allowed (no rules to enforce).>
@@ -282,7 +283,7 @@ file src/Models/AuditLog.php MUST exist after bolt
 | `DO_NOT_MODIFY` | Snapshot file checksum | Compare checksum; differs → violated |
 | `DO_NOT_ADD_DEPS` | Snapshot manifest content | Diff manifest; new top-level entry under deps/dependencies/etc. → violated |
 | `NAMING_RULE` | (none — new-file only) | Apply case-style regex against all new files matching glob; mismatch → violated |
-| `SIGNATURE_RULE` | Snapshot function signature via codebase-map symbol lookup | Re-extract signature; differs → violated |
+| `SIGNATURE_RULE` | Snapshot function signature via the shared declaration extractor (`run-preflight-scan.sh`, the same one post-flight uses) | Re-extract signature; differs → violated |
 | `FILE_PRESENCE_RULE` | (none) | Probe path exists in repo; missing → violated |
 
 A line matching neither a mechanical type nor the directive tier is unparseable → halt with `hard_rule_unparseable` blocker. NEVER silently skip.
@@ -295,13 +296,13 @@ A line matching neither a mechanical type nor the directive tier is unparseable 
 | `extend` | At least one `operation: modify`; new files allowed `operation: create` | MANDATORY | MANDATORY (REMOVE/KEEP/ADD) | Tests for new behavior; existing-behavior assertions in `existing_interfaces` | Numbered modification steps |
 | `verify` | Empty OR all `operation: none` | MANDATORY (cite the existing implementation) | Omitted | All assertions against existing implementation | ONE line: "No code changes. Run acceptance tests against existing implementation at <anchor>." |
 
-> `generate-units` auto-emits `create` and `verify` types based on the binding's Implementation State Map.
+> `plan` emits `create` and `verify` types from the symbol-index typing (`plan-procedure.md §Step 4`): greenfield ⇒ every unit `create`; brownfield ⇒ an index hit for the artifact the unit would create → `verify` (unchanged code), no hit → `create`. Full rule set: `task-typing.md`.
 >
-> `extend` type is AUTO-EMITTED when bind-codebase detects `PARTIAL_FIELDS_MISSING` / `PARTIAL_FIELDS_SURPLUS` / `PARTIAL_FIELDS_BOTH` states. Migration notes populated from binding's `field_diff` column (ADD/KEEP/REMOVE lists). User can override via interactive prompt for PARTIAL_FIELDS_SURPLUS (which signals ambiguity between feature drift / vault gap / legacy / rename).
+> `extend` type is emitted when the index hit is an artifact the PRD demands a change to. Migration notes (ADD/KEEP/REMOVE lists) are authored from the PRD-vs-code delta. A surplus that signals ambiguity between feature drift / vault gap / legacy / rename folds into `plan`'s single batched ask (`plan-procedure.md §Step 6`), never a mid-phase prompt.
 
 ## Atomicity rules
 
-- One unit = one PR-sized commit. If the body steps would produce >300 lines of code change, SPLIT into multiple sequential units (allocated U-00N at Step 6 topological numbering) with an explicit `depends_on` chain — never dotted sub-IDs (U-001.1 would break the content-hash ID-stability contract `--refresh`/`--reconcile` depend on). The >300 LOC / ≤5 files threshold is an authoring judgment (advisory — no validator measures it). Under granularity `large` (`--max-complexity=large` / config `unit_granularity: coarse`) the threshold rises to >600 LOC / ≤8 files — same advisory class, "PR-sized" becomes "story-sized"; every other rail (whitelist, task_type, Hard rules, per-unit review) is granularity-independent.
+- One unit = one PR-sized commit. If the body steps would produce >300 lines of code change, SPLIT into multiple sequential units (allocated U-00N at the unit walk's Step 6 topological numbering) with an explicit `depends_on` chain — never dotted sub-IDs (U-001.1 would break the content-hash ID-stability contract `--regenerate`/`--reconcile` depend on). The >300 LOC / ≤5 files threshold is an authoring judgment (advisory — no validator measures it). Under granularity `large` (`--max-complexity=large` / config `unit_granularity: coarse`) the threshold rises to >600 LOC / ≤8 files — same advisory class, "PR-sized" becomes "story-sized"; every other rail (whitelist, task_type, Hard rules, per-unit review) is granularity-independent.
 - `target_files` whitelist is enforced by `execute-bolts` at three layers: the dispatch prompt forbids out-of-whitelist writes (rules tier), the review panel checks scope (judgment tier), and the deterministic B3 whitelist observer (`validate-bolt-artifacts.sh --whitelist-scan`, Stop-hook + gate-time) diffs each bolted unit's COMMITTED paths against `target_files` ∪ sanctioned extras (vault/bolt artifacts, `.mega-sdd/`, test files) — escaped paths block the next `execute-bolts` with `whitelist_violation`.
 - `existing_interfaces` is enforced by acceptance tests — any test against a listed interface must continue passing.
 - `task_type` is enforced by `execute-bolts` — `verify` units MUST NOT modify any file; violations are halt-conditions at bolt time.
@@ -310,9 +311,9 @@ A line matching neither a mechanical type nor the directive tier is unparseable 
 
 ## Multi-squad rules
 
-Applies only when `_meta/squads.yaml` exists with ≥2 squads. Single-squad / no-squad-config vaults skip these rules.
+Applies only when `_meta/squads.yaml` exists with ≥2 squads (a migrated vault — `plan` never authors `squads.yaml` or `interfaces/`). Single-squad / no-squad-config vaults skip these rules.
 
-- `squad:` field is REQUIRED on every unit. `generate-units` assigns based on the routing rules in `generate-intent/references/squad-partition.md` (cross-skill ref — the layer-hint table, hybrid feature>layer priority, and squads.yaml validation live there).
+- `squad:` field is REQUIRED on every unit. `plan` assigns based on the routing rules in `decomposition-rails.md §Squad assignment` (ownership precedence, unrouted → `default`, ambiguous → halt).
 - `depends_on` MUST reference units with the SAME `squad:`. Cross-squad direct deps are rejected with `cross_squad_dep_invalid` halt.
 - Cross-squad coupling MUST go through interface notes:
   - Producer side: declare `produces_interfaces: [<id>, ...]` listing every interface this unit creates/implements.
@@ -322,7 +323,7 @@ Applies only when `_meta/squads.yaml` exists with ≥2 squads. Single-squad / no
 
 ## Interface reference resolution
 
-When `generate-units` emits a unit with `consumes_interfaces: [api-leave-request-submit]`:
+When `plan` emits a unit with `consumes_interfaces: [api-leave-request-submit]`:
 1. Verify `<vault>/interfaces/api-leave-request-submit.md` exists.
 2. Read its frontmatter: `producer`, `status`.
 3. Confirm `producer` squad ≠ the unit's `squad` (it's a CROSS-squad interface, not intra-squad).
@@ -330,18 +331,19 @@ When `generate-units` emits a unit with `consumes_interfaces: [api-leave-request
 
 ## Dependency graph
 
-`depends_on` builds a DAG. `generate-units` rejects cycles. `execute-bolts` topologically sorts the graph; independent units may run in parallel via `execute-bolts --parallel` (wave-parallel `bolt-implementer` dispatch).
+`depends_on` builds a DAG. `plan` rejects cycles. `execute-bolts` topologically sorts the graph; independent units may run in parallel via `execute-bolts --parallel` (wave-parallel `bolt-implementer` dispatch).
 
 ## ID stability
 
 Unit IDs are stable across regenerations:
 - `diff-vault` preserves IDs by content hash
-- `generate-units` with `--refresh` flag re-numbers; default does not
+- `plan --regenerate` preserves the IDs of unchanged units by content hash; it does not re-number
+- `plan --reconcile` never creates or re-numbers a unit (`task-typing.md §Reconcile pass`)
 
 ## Greenfield vs brownfield
 
-- **Greenfield:** units derived directly from vault (no binding). `binding_refs` is empty.
-- **Brownfield:** units derived from bound-vault. `binding_refs` populated; OQs propagate to unit acceptance criteria as "TBD: <question>" items.
+- **Greenfield:** units derived directly from the PRD + `context.md` (no symbol-index query; every unit `create`). `binding_refs` carries only the OQ ids the unit depends on.
+- **Brownfield:** units typed from the symbol index (`## Anchors` + `## Claims`; verdicts come from the JIT bind at dispatch, never from `plan`). `binding_refs` populated; OQs propagate to unit acceptance criteria as "TBD: <question>" items.
 
 ### Scope fields
 

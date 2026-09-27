@@ -44,9 +44,9 @@ done
 case "$FORCED" in ""|ast-grep|regex) : ;; *) echo "probe-scan-engine.sh: bad --engine=$FORCED (tree-sitter lane removed v7.4.0)" >&2; exit 2 ;; esac
 case "$TIMEOUT" in ''|*[!0-9]*|0) echo "probe-scan-engine.sh: --timeout must be a positive integer, got '$TIMEOUT'" >&2; exit 2 ;; esac
 
-# Query files live next to the scan-codebase skill, resolved relative to this script.
+# Query files live in the plugin's assets/astgrep-queries/, resolved relative to this script.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-QUERIES_DIR="${SCRIPT_DIR}/../skills/scan-codebase/queries"
+QUERIES_DIR="${SCRIPT_DIR}/../assets/astgrep-queries"
 
 # `command -v` probes are shell builtins — no process cost, and probed ONCE here.
 AG_BIN=""

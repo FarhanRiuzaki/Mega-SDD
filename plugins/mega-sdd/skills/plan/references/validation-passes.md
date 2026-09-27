@@ -1,21 +1,23 @@
-# generate-units — post-write validation passes (Step 12.x)
+# plan — post-write validation passes (Step 12.x)
+
+> Relocated from `skills/generate-units/references/validation-passes.md` in 9.0 (P1), with the §12.4.5 pack overlay sentence + pack→bolt translation table from `skills/bind-codebase/references/hard-rules-and-packs.md` §2.8 / §2.9a; tuned text kept verbatim.
 
 ## Contents
 - 12.3 — Per-anchor verification
 - 12.4 — Inject constitution clauses
-- 12.4.5 — Framework pack provenance citation
-- 12.5 — Polished-prompt render pass (a–g)
+- 12.4.5 — Framework pack provenance citation (+ the pack→bolt translation table)
+- 12.5 — Polished-prompt render pass (a–e, g, h)
 - 12.6 — Deduplication check
 - 12.7 — Sibling-consistency sweep
 
-Loaded by `generate-units/SKILL.md` Step 12. The 12.x sub-procedures run in declared order, then step 13 logs the audit event so it reflects all post-write validation outcomes. The emitted YAML for every blocker named here is in the halt-protocol reference listed in the skill router.
+Loaded by `plan/SKILL.md` Step 4 (the unit walk's Step 12). The 12.x sub-procedures run in declared order, then plan Step 5 runs the validators and logs the `units_generated` event (`derive-vault-json.sh --event`) so it reflects all post-write validation outcomes. The emitted YAML for every blocker named here is in the halt-protocol reference listed in the skill router.
 
 ## 12.3 — Per-anchor verification (runs FIRST as a precondition check before constitution inject + render)
 
-Per the §Step 12.3 per-anchor check in the defensive-generation reference (listed in the skill router). For each Anchor entry in each unit's `## Anchors` section:
+For each Anchor entry in each unit's `## Anchors` section:
 
 1. Parse `<file>:<line-range> — <description>` format
-2. Probe file existence (fs OR codebase-map §1)
+2. Probe file existence (filesystem)
 3. Apply outcome:
    - **File MISSING + greenfield unit** → WARNING in unit body footer (HTML comment): "anchor aspirational for new file; verify before bolt"
    - **File MISSING + brownfield unit** → stronger WARNING: "anchor points to non-existent file; binding may be incomplete; review"
@@ -26,13 +28,13 @@ Anchor warnings are SOFT — they do NOT halt generation. Anchors can be aspirat
 
 ## 12.4 — Inject constitution clauses
 
-Per `generate-intent/references/vault-core.md §constitution`.
+Per `plugins/mega-sdd/references/vault-core.md §constitution`.
 
 For each unit, read `<vault>/constitution.md` + identify clauses relevant to the unit's:
 - target_files paths (matches §A clauses for files in those paths)
 - task_type (different clauses apply for create vs extend vs verify)
 - module (per `_meta/modules.yaml` if multi-module)
-- vault_source (clauses referenced in that vault section)
+- context_source (clauses referenced in that `context.md` section)
 
 Inject relevant clauses into the unit's `## Hard rules` section:
 
@@ -63,9 +65,25 @@ Format:
 
 ## 12.4.5 — Framework pack provenance citation
 
-When `binding.md` §Suggested Unit Hard Rules contains rules sourced from framework pack (introduced by bind-codebase Step 2.8), emit each pack-derived Hard Rule into the unit's `## Hard rules` section WITH explicit provenance citation. Tools consuming the unit must see WHICH framework pack rule applies (audit trail, debugging, override decisions).
+**plan promotes no framework-pack rule into a unit's `## Hard rules`.** Pack rules reach the bolt as the advisory T2 `framework_pack_rules` slice: at dispatch, `scripts/build-dispatch-prompt.sh` (priority 7) reads the `## Hard Rules emitted` section of every pack in the resolved chain (`scripts/_lib/resolve-framework-pack.sh`, which reads `state.json` `derived.framework_pack`) and keeps the rules whose `path_glob` matches the unit's `target_files`. They guide the implementer; they are never a B1 post-flight obligation. The rest of this pass governs a unit that DOES carry pack-derived Hard rules (a unit from a migrated layout-2 vault, whose `binding.md` §Suggested Unit Hard Rules pulled them in): each pack-derived Hard Rule sits in the unit's `## Hard rules` section WITH explicit provenance citation. Tools consuming the unit must see WHICH framework pack rule applies (audit trail, debugging, override decisions).
 
-**One grammar per unit.** A unit's `## Hard rules` carries EITHER v1 dash productions OR v2 fenced ast-grep YAML — never both (`hard_rule_mixed_grammar` halts at bolt time). Pack rules translate per the pack→bolt table in `bind-codebase/references/hard-rules-and-packs.md §2.9a`: when the unit's other rules are v1 (binding-suggested `DO NOT modify …`), emit the pack rule as its v1 production (or Anti-pattern) — do NOT drop a fenced YAML block into a v1 unit; when the pack carries a real ast-grep `rule:` body and the unit has no v1 rules, emit v2 fenced YAML (the shape below) for ALL of the unit's rules — v2 rules require `ast-grep` at bolt pre-flight (HALTs `dep_missing` if absent); run `/mega-sdd:install-deps --tools=ast-grep` ahead of execute-bolts if it isn't installed yet.
+**One grammar per unit.** A unit's `## Hard rules` carries EITHER v1 dash productions OR v2 fenced ast-grep YAML — never both (`hard_rule_mixed_grammar` halts at bolt time). Pack rules translate per the pack→bolt table below: when the unit's other rules are v1 (e.g. `DO NOT modify …`), emit the pack rule as its v1 production (or Anti-pattern) — do NOT drop a fenced YAML block into a v1 unit; when the pack carries a real ast-grep `rule:` body and the unit has no v1 rules, emit v2 fenced YAML (the shape below) for ALL of the unit's rules — v2 rules require `ast-grep` at bolt pre-flight (HALTs `dep_missing` if absent); run `/mega-sdd:install-deps --tools=ast-grep` ahead of execute-bolts if it isn't installed yet.
+
+**Pack chain overlay** (the chain protocol the priority-7 filter above and a carried pack rule's citation both follow). Read the pack file completely; extract its `## Hard Rules emitted` section into structured records; if the pack has `extends: <parent>` frontmatter, load the parent first then overlay (child rules override parent on `path_glob` conflict).
+
+**Pack→bolt translation table (packs ship `rule_type` inventories, NOT ready-made ast-grep blocks; a pack rule reaches a unit's `## Hard rules` ONLY through one of these productions, so the bolt-stage scan can always execute what the unit carries):**
+
+| Pack `rule_type` | Emitted into the unit as | Bolt-time check |
+|---|---|---|
+| `NAMING_RULE` (has `path_glob` + case style) | v1 `<path-glob> MUST follow <case-style> naming` | deterministic (filename regex) |
+| `LOCATION_RULE` (files-belong-here) | v1 `<path-glob> MUST follow …` when expressible; else Anti-pattern | deterministic / advisory |
+| `DEP_RULE` (no new deps / pinned manifest) | v1 `DO NOT add new <manifest> dependencies` | deterministic (manifest diff) |
+| `LOCK_RULE` (do-not-touch file) | v1 `DO NOT modify <path>` | deterministic (commit-touch / sha) |
+| `SIGNATURE_RULE` | v1 `function <name> MUST preserve signature: <sig>` | deterministic (decl compare) |
+| rule carrying a real ast-grep `rule:` body | v2 fenced YAML block (verbatim) | deterministic (`ast-grep scan`) |
+| `CUSTOM` / `SECURITY` / `PERFORMANCE` prose | `## Anti-patterns` (informational) by default; a generic `MUST/DO NOT` directive line ONLY when the obligation is genuinely load-bearing (honest tier — post-flight records it `directive_unverified` unless attested) | advisory / attested |
+
+A pack rule that fits NO row is an Anti-pattern, never a Hard rule — emitting prose the scan cannot execute breaks the chain of custody (`unit-spec` counts it, the bolt scan can't check it, B1 then demands a verdict nothing can produce).
 
 Format inside unit's `## Hard rules` section:
 
@@ -119,30 +137,18 @@ d. **Migration notes rule**:
    - `task_type: create` OR `task_type: verify` → `## Migration notes` section MUST be absent.
 
 e. **Anti-patterns harvesting (suggestion, not requirement)**:
-   - If binding has CONFLICTs or KB has gotchas in domains this unit covers → suggest filling `## Anti-patterns` section with the relevant items
-   - Auto-populate from `binding.md` "## Suggested Unit Hard Rules" and KB `## 9. Edge Cases & Gotchas` sections when applicable
+   - If the KB (`plan --kb`) has gotchas in domains this unit covers → suggest filling `## Anti-patterns` section with the relevant items
+   - Auto-populate from the Anti-pattern suggestions in `plan/references/kb-input.md` §KB-derived Hard rules + Anti-patterns and the KB module PRD `## 5. Edge Cases & Gotchas` sections (`<kb>/modules/*.prd.md`, PRD-kontrak; a legacy numbered-tree KB carries them as `## 9. Edge Cases & Gotchas`) when applicable
    - Anti-patterns are guidance only — no halt if absent
 
-f. **Starterkit citation check**:
+g. **OQ-ID propagation check**:
 
-   ```
-   IF unit.frontmatter.starterkit_context_consumed == true:
-     FOR EACH hard_rule in unit.hard_rules:
-       IF hard_rule.source == "starterkit-context.yaml" AND hard_rule.citation field is missing or empty:
-         → HALT `starterkit_rule_citation_missing`  (ALWAYS STOP — blocker YAML in the halt-protocol reference)
-         → do NOT write the unit
-   ```
-
-   This rail enforces that every starterkit-derived Hard Rule includes its citation — mirrors the "every Hard Rule needs a Citation" rail (Step 12.4.5) extended to starterkit-derived rules.
-
-g. **OQ-ID propagation check** (audit response 2026-05-27 §F):
-
-   Every Open Question that influenced this unit's content MUST appear in `binding_refs:` frontmatter. An OQ "influenced" the unit when its resolution (per `binding.md` or `binding-<phase>.md` Resolution Table) corresponds to design choices reflected in the unit body, target_files, hard rules, or migration notes.
+   Every Open Question that influenced this unit's content MUST appear in `binding_refs:` frontmatter. An OQ "influenced" the unit when its resolution (per `context.md` `## Open Questions`, mirrored in `vault.json` `open_questions`) corresponds to design choices reflected in the unit body, target_files, hard rules, or migration notes.
 
    ```
    FOR EACH unit being written:
-     binding_resolution_table = parse binding.md (or binding-<phase>.md) Resolution Table
-     oq_ids_in_table = collect all OQ-* IDs from resolution table
+     oq_table = parse context.md ## Open Questions (or vault.json open_questions)
+     oq_ids_in_table = collect all OQ-* IDs from oq_table
      oq_ids_in_binding_refs = unit.frontmatter.binding_refs intersect (OQ-* prefix)
 
      # An OQ is "implementation-relevant" to this unit when:
@@ -161,13 +167,13 @@ g. **OQ-ID propagation check** (audit response 2026-05-27 §F):
 
 ### h. PBT properties citation check (when `properties:` present)
 
-Every entry in a unit's `properties:` array MUST carry a non-empty `cites:` field resolving to a vault section / binding claim / KB rule (per `references/pbt-integration.md` §citation). A property with no citation is an INVENTED invariant — reject the unit write and re-derive or drop the property (no-fabrication rail). Model-executed check (no deterministic validator; the bolt-side B1 postflight cite-check is the backstop).
+Every entry in a unit's `properties:` array MUST carry a non-empty `cites:` field resolving to a vault section / binding claim / KB rule (per `plan/references/pbt-integration.md` §Anti-halu rails). A property with no citation is an INVENTED invariant — reject the unit write and re-derive or drop the property (no-fabrication rail). Model-executed check (no deterministic validator; the bolt-side B1 postflight cite-check is the backstop).
 
 ## 12.6 — Deduplication check
 
-After all units written, sanity-check `task_type: create` units against the Implementation State Map:
+After all units written, sanity-check `task_type: create` units against the filesystem:
 
-- For each `task_type: create` unit where EVERY `target_files` entry's path already exists — probe the FILESYSTEM first, codebase-map §1 as corroboration only (§1 is depth-limited; a truncated map must not silently pass a real collision) — AND its operation is `create`:
+- For each `task_type: create` unit where EVERY `target_files` entry's path already exists — probe the FILESYSTEM — AND its operation is `create`:
   - This signals a likely mistake — the unit wants to create a file that already exists.
   - **Exception (7.6 reconciliation):** a collision the user ALREADY accepted at Step 7.6 (option 4 force-create, recorded in the unit body's collision note) does NOT re-halt here — 12.6 is the backstop for collisions that never got a 7.6 decision, not a second vote on one the user made.
   - Otherwise halt with structured `dedup_ambiguous` blocker (per DESIGN-OQ-2). NEVER silent-rewrite. (YAML in the halt-protocol reference listed in the skill router.)

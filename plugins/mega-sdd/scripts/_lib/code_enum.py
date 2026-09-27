@@ -10,11 +10,11 @@
 import os
 import subprocess
 
-# Extensions covered by the shipped ast-grep packs (membership-only gate for
-# the file enumeration — ast-grep assigns each file's language by its own ext
-# mapping, so the values here are documentation of WHICH pack's lane covers
-# the ext). .jsx maps to javascript (ast-grep's js grammar parses JSX; jsx.yml
-# must never exist — it would double-count every .jsx symbol).
+# Extensions covered by the shipped ast-grep packs (assets/astgrep-queries/astgrep;
+# membership-only gate for the file enumeration — ast-grep assigns each file's
+# language by its own ext mapping, so the values here are documentation of WHICH
+# pack's lane covers the ext). .jsx maps to javascript (ast-grep's js grammar
+# parses JSX; jsx.yml must never exist — it would double-count every .jsx symbol).
 EXTS = {".ts": "typescript", ".tsx": "tsx", ".js": "javascript",
         ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
         ".php": "php", ".py": "python", ".rs": "rust", ".go": "go",

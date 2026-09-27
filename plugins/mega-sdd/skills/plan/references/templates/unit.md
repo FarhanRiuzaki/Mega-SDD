@@ -1,9 +1,9 @@
 ---
 id: U-XXX
 title: <imperative title>
-vault_source: <e.g., vault.md#Architecture — legacy vaults: 02-architecture.md#auth>
+context_source: <e.g., context.md#F-U-001 — or context.md#Data-model / context.md#Constraints; never vault_source>
 prd_source: <e.g., docs/PRD.md#halaman-kontak — PRD heading slug or :line this unit implements; list allowed; omit ONLY if the requirement has no PRD home>
-task_type: create                  # create | extend | verify — from the binding Implementation State Map when present (unit-schema.md)
+task_type: create                  # create | extend | verify — from the symbol-index typing (plan-procedure.md §Step 4; greenfield ⇒ create) (unit-schema.md)
 grounding_confidence: HIGH         # HIGH | MEDIUM | LOW per unit-schema.md — required on newly generated units
 module: M-default                  # M-<kebab> per _meta/modules.yaml; M-default when no modules.yaml
 depends_on: []

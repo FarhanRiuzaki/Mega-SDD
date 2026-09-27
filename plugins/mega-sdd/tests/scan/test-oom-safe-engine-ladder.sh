@@ -151,23 +151,23 @@ PACKS=(typescript tsx javascript php python rust go ruby java csharp \
        kotlin swift scala c cpp dart elixir lua bash haskell)
 MISS=0
 for L in "${PACKS[@]}"; do
-  [ -f "$PLUG/skills/scan-codebase/queries/astgrep/$L.yml" ] || { fail "missing pack $L.yml"; MISS=1; }
+  [ -f "$PLUG/assets/astgrep-queries/astgrep/$L.yml" ] || { fail "missing pack $L.yml"; MISS=1; }
 done
 [ "$MISS" = "0" ] && ok "all ${#PACKS[@]} rule packs shipped (glossary)"
 # Lane law (the tsx regression class): tsx has its OWN pack — rules parked in
 # typescript.yml are invisible to the filename-derived Step-0 router.
-grep -q "language: tsx" "$PLUG/skills/scan-codebase/queries/astgrep/tsx.yml" \
-  && ! grep -q "language: tsx" "$PLUG/skills/scan-codebase/queries/astgrep/typescript.yml" \
+grep -q "language: tsx" "$PLUG/assets/astgrep-queries/astgrep/tsx.yml" \
+  && ! grep -q "language: tsx" "$PLUG/assets/astgrep-queries/astgrep/typescript.yml" \
   && ok "tsx rules live in tsx.yml only (lane law)" || fail "tsx lane law broken"
 for L in "${PACKS[@]}"; do
-  grep -q "^id: " "$PLUG/skills/scan-codebase/queries/astgrep/$L.yml" && \
-  grep -q "kind: " "$PLUG/skills/scan-codebase/queries/astgrep/$L.yml" || fail "pack $L.yml not kind-based"
+  grep -q "^id: " "$PLUG/assets/astgrep-queries/astgrep/$L.yml" && \
+  grep -q "kind: " "$PLUG/assets/astgrep-queries/astgrep/$L.yml" || fail "pack $L.yml not kind-based"
 done
 ok "packs are id'd kind-based rules"
 
 echo "== live tier-2 extraction (SKIPPED unless a real ast-grep is installed) =="
 if command -v ast-grep >/dev/null 2>&1; then
-  N=$(cd "$W/repo" && ast-grep scan --inline-rules "$(awk 'FNR==1 && NR!=1 {print "---"} {print}' "$PLUG"/skills/scan-codebase/queries/astgrep/*.yml)" --json=compact . 2>/dev/null | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")
+  N=$(cd "$W/repo" && ast-grep scan --inline-rules "$(awk 'FNR==1 && NR!=1 {print "---"} {print}' "$PLUG"/assets/astgrep-queries/astgrep/*.yml)" --json=compact . 2>/dev/null | python3 -c "import json,sys; print(len(json.load(sys.stdin)))")
   [ "${N:-0}" -ge 2 ] && ok "one-spawn concatenated-pack scan extracted $N definitions (js+py fixtures)" \
     || fail "live extraction found $N (<2)"
 else
@@ -201,7 +201,7 @@ if [ -e "$PLUG/skills/generate-units/references/pagerank-targeting.md" ]; then
 else
   ok "D1: pagerank-targeting.md stays removed; reuse rides the dispatch symbol_slice"
 fi
-grep -qF "ast-grep 0.42.3" "$PLUG/skills/scan-codebase/queries/VERSIONS.md" \
+grep -qF "ast-grep 0.42.3" "$PLUG/assets/astgrep-queries/VERSIONS.md" \
   && ok "VERSIONS.md pins the tested ast-grep" || fail "VERSIONS pin missing"
 
 [ "$FAILED" = "0" ] && echo "ALL OOM-SAFE-LADDER PROOFS OK" || echo "OOM-safe-ladder proofs FAILED"

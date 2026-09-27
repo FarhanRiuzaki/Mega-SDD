@@ -36,7 +36,7 @@ command -v ast-grep >/dev/null 2>&1 || {
 }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PACKS_DIR="${SCRIPT_DIR}/../skills/scan-codebase/queries/astgrep"
+PACKS_DIR="${SCRIPT_DIR}/../assets/astgrep-queries/astgrep"
 [ -d "$PACKS_DIR" ] || { echo "build-symbol-index.sh: rule packs missing at $PACKS_DIR" >&2; exit 4; }
 export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 

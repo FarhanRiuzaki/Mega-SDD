@@ -1,44 +1,44 @@
 # AI Consumer Guide — mega-sdd vault protocol
 
-> **Static copy installed by mega-sdd; identical across vaults; do not hand-edit — re-copied on regen** (a plain `cp` of this template at vault generation time). Per-vault specifics (which P1 OQ clusters block which work areas, layer-routing anchors, vault metadata) live in `vault.md` (legacy: 00-index.md §Implementation Notes) — this file carries the GENERIC consumer protocol only.
+> **Static copy installed by mega-sdd; identical across vaults; do not hand-edit — re-copied on regen** (a plain `cp` of this template at vault generation time). Per-vault specifics (which P1 OQ clusters block which work areas, layer-routing anchors, vault metadata) live in `context.md` / `vault.json` (legacy layout-2: `vault.md`; older: 00-index.md §Implementation Notes) — this file carries the GENERIC consumer protocol only.
 
-This guide is for AI dev tools (Claude Code, Cursor, etc.) and humans that read the vault as source of truth when writing/modifying code. The vault (layout-3: one `context.md` with `## Flows` / `## Data model` / `## Constraints` / `## Open Questions` [+ Overview/Architecture/Decisions]; layout-2: `vault.md` + `model.md` + `flows.md` + `constraints.md`; legacy: `00-index.md` … `06-constraints.md`) is the single source of truth for requirements; this file tells you how to consume it safely.
+This guide is for AI dev tools (Claude Code, Cursor, etc.) and humans that read the vault as source of truth when writing/modifying code. The vault (layout-3: one `context.md` with `## Flows` / `## Data model` / `## Constraints` / `## Open Questions` [+ Overview/Decisions when sourced]; legacy layout-2: `vault.md` + `model.md` + `flows.md` + `constraints.md`; older: `00-index.md` … `06-constraints.md`) is the single source of truth for requirements; this file tells you how to consume it safely.
 
 ## MANDATORY before writing/modifying any code
 
 1. **Confirm project shape & mode with the user**:
-   - Ask: *"This vault states shape `<shape>` and mode `<mode>` (see the vault.md frontmatter lock; legacy: `00-index.md` §Vault Lock Status). Are you working in a project that matches?"*
+   - Ask: *"This vault states shape `<shape>` and mode `<mode>` (see the `context.md` frontmatter lock; legacy layout-2: `vault.md`; older: `00-index.md` §Vault Lock Status). Are you working in a project that matches?"*
    - On mismatch → STOP, escalate.
 
 2. **For mode `existing`** — additional MANDATORY steps:
    - Ask the user: *"Share a short description of the existing codebase (project root, framework, key tables that are relevant), or confirm I should scan first before continuing."*
-   - **Cross-check entities** (`model.md`; layout-3: `context.md ## Data model`) against the existing schema:
+   - **Cross-check entities** (`context.md ## Data model`; legacy layout-2: `model.md`) against the existing schema:
      - New entity in vault, name doesn't collide with existing → safe to create.
      - Vault entity that shares a name with an existing one → STOP, clarify extend vs replace.
-   - **Cross-check flows** (`flows.md`; layout-3: `context.md ## Flows`) against existing routes/handlers/cron jobs:
+   - **Cross-check flows** (`context.md ## Flows`; legacy layout-2: `flows.md`) against existing routes/handlers/cron jobs:
      - New flow, no collision → safe to add.
      - Flow that touches an existing endpoint/job → STOP, clarify extend vs replace.
-   - **Cross-check decisions** (`vault.md ## Decisions`; layout-3: `context.md ## Decisions`) against existing patterns:
+   - **Cross-check decisions** (`context.md ## Decisions`; legacy layout-2: `vault.md ## Decisions`) against existing patterns:
      - Decision that **conflicts** with an existing pattern → STOP, escalate to architect for a transition plan.
 
 3. **For mode `new`** — checks still apply:
-   - Confirm tech stack from the vault with the user (`vault.md ## Architecture` — layout-3: `context.md ## Architecture` — may still have Open Questions on stack).
+   - Confirm tech stack from the vault with the user (`context.md ## Constraints` technical constraints + `## Decisions` — legacy layout-2: `vault.md ## Architecture` — may still have Open Questions on stack).
    - If P1 Open Questions are unresolved → STOP, do not auto-pick a stack default.
 
 4. **Use the relevant layer section based on what you're implementing**:
-   - Working on backend → focus on the Backend layer of `vault.md ## Architecture` + the backend section of `flows.md`.
-   - Working on UI (mobile/web) → focus on the relevant UI layer in `vault.md ## Architecture` + user flows in `flows.md`.
+   - Working on backend → focus on the system flows (`F-S-*`) in `context.md ## Flows` (legacy layout-2: the Backend layer of `vault.md ## Architecture` + the backend section of `flows.md`).
+   - Working on UI (mobile/web) → focus on the user flows (`F-U-*`) in `context.md ## Flows` (legacy layout-2: the relevant UI layer in `vault.md ## Architecture` + user flows in `flows.md`).
    - Cross-cutting feature → check the cross-cutting flows section + multiple layer sections.
 
 ## During implementation
 
-- **Do not inject requirements** that aren't in the vault. If a new requirement is needed → STOP, append it to the vault's `## Open Questions` (layout-2: constraints.md, with an `[origin:]` token; legacy: the relevant doc) and ask the user.
+- **Do not inject requirements** that aren't in the vault. If a new requirement is needed → STOP, append it to the vault's `## Open Questions` (`context.md`, with an `[origin:]` token; legacy layout-2: constraints.md; older: the relevant doc) and ask the user.
 - **Do not skip Definition of Done**. For each flow you implement, validate DoD before marking it complete.
-- **Cite the vault** in commit messages when touching business logic — e.g., `feat: cap tenor per vault flows.md F-U-001 step 5`. Never put a vault claim/flow/OQ id in a CODE COMMENT — those id strings rot into misinformation and no validator consumes them there; trace lives in commits, unit specs, and reports.
+- **Cite the vault** in commit messages when touching business logic — e.g., `feat: cap tenor per vault context.md F-U-001 step 5`. Never put a vault claim/flow/OQ id in a CODE COMMENT — those id strings rot into misinformation and no validator consumes them there; trace lives in commits, unit specs, and reports.
 
 ## When you encounter an inconsistency
 
-- Vault internal conflict (e.g., `model.md` vs `flows.md`) → STOP, surface to the user with quotes from both sides.
+- Vault internal conflict (e.g., `context.md ## Data model` vs `## Flows`; legacy layout-2: `model.md` vs `flows.md`) → STOP, surface to the user with quotes from both sides.
 - Vault vs existing code conflict → STOP, escalate to user. Show the vault quote + the existing-code reference.
 - Vault vs original PRD (if user grants PRD access) → STOP, escalate to user. The vault should reflect the PRD; if not, the vault is stale.
 
@@ -59,7 +59,7 @@ blocker:
   resolver_owner: "Mike Patel (Eng Lead)"
   resolver_route: "ask in PM Slack channel #timeoff-team or via PRD §L review"
   vault_version: "1.0"
-  source_skill: generate-intent
+  source_skill: plan
 ```
 
 For multiple blockers in one task, emit an array:
@@ -73,7 +73,7 @@ blockers:
     resolver_owner: "Mike Patel"
     resolver_route: "ask in #timeoff-team"
     vault_version: "1.0"
-    source_skill: generate-intent
+    source_skill: plan
   - type: oq_blocker
     tag: OQ-DM-1
     priority: P1
@@ -81,7 +81,7 @@ blockers:
     resolver_owner: "Mike Patel + security"
     resolver_route: "ask in #timeoff-team"
     vault_version: "1.0"
-    source_skill: generate-intent
+    source_skill: plan
 ```
 
 The agent runner decides what to do (page resolver, create ticket, post to Slack). The skill's job is to emit the structured artifact reliably — don't paraphrase, don't drop fields. See the mega-sdd plugin's `references/halt-protocol.md` §halt-protocol for the full schema and the two non-OQ types (`diff_conflict`, `drift_framework_mismatch`).
@@ -92,8 +92,8 @@ The agent runner decides what to do (page resolver, create ticket, post to Slack
 
 If your task is fully blocked by P1 OQs but you want to make incremental progress, work on artifacts that don't depend on the unresolved decisions:
 
-- **From DoD bullets** (in `flows.md`): draft test specs / Gherkin scenarios. The DoD is the test contract.
-- **From entities** (in `model.md`): scaffold ORM models / type definitions with `// TODO(OQ-...): resolved type pending` markers.
+- **From DoD bullets** (in `context.md ## Flows`; legacy layout-2: `flows.md`): draft test specs / Gherkin scenarios. The DoD is the test contract.
+- **From entities** (in `context.md ## Data model`; legacy layout-2: `model.md`): scaffold ORM models / type definitions with `// TODO(OQ-...): resolved type pending` markers.
 - **From flows**: sketch UI mocks / API stub signatures using vault-stated names but no business logic yet.
 - **From OOS section**: confirm with PM what's NOT in scope — saves wasted scaffolding.
 
@@ -111,7 +111,7 @@ These skills share the vault as state. They preserve OQ tag identity, ADR `D-XXX
 
 ## Standard terms
 
-Generic cross-doc terms and acronyms (product-specific PRD terms live in `vault.md ## Glossary`; legacy: 00-index.md):
+Generic cross-doc terms and acronyms (product-specific PRD terms stay in the source PRD — `context.md` carries no glossary; legacy layout-2: `vault.md ## Glossary`; older: 00-index.md):
 
 | Term | Definition |
 |------|----------|
@@ -130,4 +130,4 @@ Generic cross-doc terms and acronyms (product-specific PRD terms live in `vault.
 | a11y (cond.) | Numeronym for "accessibility" (a + 11 letters + y). |
 | semantic HTML (cond.) | Use of meaningful HTML elements (`<button>`, `<nav>`, `<main>`, etc.) for accessibility and structure. |
 
-> Rows marked `(cond.)` are relevant only when the vault carries design-system sections (`vault.md ## Architecture > UI components & patterns` / `constraints.md ## Design system`); ignore them otherwise. This table is static — it never varies per vault.
+> Rows marked `(cond.)` are relevant only when the vault carries design-system sections (`context.md ## Constraints > Design system`; legacy layout-2: `vault.md ## Architecture > UI components & patterns` / `constraints.md ## Design system`); ignore them otherwise. This table is static — it never varies per vault.

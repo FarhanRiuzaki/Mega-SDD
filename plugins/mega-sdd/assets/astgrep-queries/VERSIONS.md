@@ -48,7 +48,7 @@ pack stops matching after an ast-grep upgrade, report it like a grammar-drift is
 
 These inputs fall back to regex extraction regardless of grammar/rule-pack availability:
 - Blade templates (.blade.php), ERB templates (.erb)
-- F# (.fs) — extracts via the dedicated F# regex row in `references/scan-procedure.md` Step 5 (no ast-grep built-in). Kotlin extracts at AST tier since the v5.33.0 glossary (`kotlin.yml`); its regex row remains only as the `astgrep_absent` fallback.
+- F# (.fs) — no ast-grep built-in, so no pack and no symbol-index rows: a `symbol` claim on F# code is never CONFIRMED by the index, and `text` claims reach F# code only through the targeted-Read / Grep rungs of the JIT bind retrieval ladder (`execute-bolts/references/jit-bind-and-quarantine.md`). Kotlin extracts at AST tier since the v5.33.0 glossary (`kotlin.yml`); its regex row remains only as the `astgrep_absent` fallback.
 - Vue / Svelte single-file components
 - Bleeding-edge TypeScript syntax (when the grammar lags the language)
 - Configuration files (YAML / TOML — parsed as text)

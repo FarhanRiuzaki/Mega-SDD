@@ -1,8 +1,8 @@
 # Adversarial Acceptance-Test Review Prompt
 
-> Prompt template for `generate-units` Step 9.5 — adversarial review of acceptance_test authored in Step 9. Closes audit Pattern F structural risk (D4-006): "Never trust AI to both generate and validate" (ACM FSE 2025).
+> Prompt template for the `plan` unit walk's Step 9.5 — adversarial review of acceptance_test authored in Step 9. Closes audit Pattern F structural risk (D4-006): "Never trust AI to both generate and validate" (ACM FSE 2025).
 
-**Consumed by:** `generate-units/SKILL.md` Step 9.5
+**Consumed by:** `plan` Step 4 — the unit walk's Step 9.5 (`plan/references/unit-procedure.md`)
 **Output target:** updates `acceptance_test` in unit frontmatter with merged gap assertions + sets `_authored_by:` provenance field
 
 ## Contents
@@ -67,9 +67,9 @@ adversarial_review:
 
 ## Opt-in subagent mode (`--adversarial-subagent` flag)
 
-When user passes `--adversarial-subagent` to `generate-units`, OR when unit frontmatter declares `risk: high`, dispatch a SEPARATE subagent for the adversarial review. Separate LLM context = stronger blind-spot coverage at the cost of one extra dispatch per high-risk unit.
+When user passes `--adversarial-subagent` to `plan`, OR when unit frontmatter declares `risk: high`, dispatch a SEPARATE subagent for the adversarial review. Separate LLM context = stronger blind-spot coverage at the cost of one extra dispatch per high-risk unit.
 
-> **Who writes `risk:`** — generate-units Step 2.5 stamps the frontmatter field when a unit's target_files/binding_refs hit the risk signals (auth/authn/authz surfaces, payment/money movement, PII/regulated data, `[LOCKED]`-claim refs, security-sensitive packs). Without the stamp, escalation only fires via the manual `--adversarial-subagent` flag.
+> **Who writes `risk:`** — plan's unit walk Step 2.5 stamps the frontmatter field when a unit's target_files/binding_refs hit the risk signals (auth/authn/authz surfaces, payment/money movement, PII/regulated data, `[LOCKED]`-claim refs, security-sensitive packs). Without the stamp, escalation only fires via the manual `--adversarial-subagent` flag.
 
 Subagent dispatch contract:
 - Model: sonnet (default; opus for `risk: critical` units)
@@ -77,9 +77,9 @@ Subagent dispatch contract:
 - Wall-clock budget: ≤3 min per unit
 - Output format: same YAML structure as default mode
 
-Subagent is dispatched per-unit; main thread iterates units sequentially when `--adversarial-subagent` is set (no parallel — keeps simplifikasi).
+Subagent is dispatched per-unit; the reviews of all flagged units go out as ONE message dispatching N read-only `Explore` reviewers at once, never serial (`plan/references/plan-procedure.md` §Step 4, L3c).
 
-## Gap merge logic (generate-units Step 9.5 post-review)
+## Gap merge logic (Step 9.5 post-review)
 
 Main thread (NOT the adversarial reviewer) handles merge:
 
@@ -106,4 +106,4 @@ Legacy units (no field present) → treat as `same-pass` for execute-bolts surfa
 - Adversarial reviewer MUST NOT modify the unit body — only proposes test additions
 - Adversarial reviewer MUST output strict YAML matching the schema above; parse failures → fallback to `same-pass` provenance + log warning
 - `--no-adversarial-review` flag preserved for users who explicitly want the same-pass behavior (debug / regression testing)
-- Legacy units re-encountered by `generate-units --regenerate` get the adversarial review pass on rewrite; user-marked `_authored_by: human` units are preserved untouched
+- Legacy units re-encountered by `plan --regenerate` get the adversarial review pass on rewrite; user-marked `_authored_by: human` units are preserved untouched

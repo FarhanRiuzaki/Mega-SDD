@@ -1,4 +1,4 @@
-# generate-units — decomposition & dependency rails
+# plan — decomposition & dependency rails
 
 ## Contents
 - Flow-step → artifact derivation (Step 2.2)
@@ -10,11 +10,11 @@
 - UI contract for view-bearing units (Step 9.b)
 - Adversarial test review pass (Step 9.5)
 
-Loaded by `generate-units/SKILL.md` for the decomposition/grouping/ID/test steps. The emitted YAML for every halt named here is in the halt-protocol reference (see the skill router's "Specialist references"); this file names the trigger condition only.
+Loaded by `plan/SKILL.md` for the decomposition/grouping/ID/test steps. The emitted YAML for every halt named here is in the halt-protocol reference (`plugins/mega-sdd/references/halt-protocol.md`; units family `plugins/mega-sdd/references/halt-families/units.md`); this file names the trigger condition only.
 
 ## Flow-step → artifact derivation (Step 2.2)
 
-Do NOT decompose flows at module granularity only. For each USER flow (`F-U-*`) in `flows.md`, enumerate its **input-accepting state-transition steps** — every numbered step (including signals in its sub-bullets, e.g. `workflow_state → SUBMITTED`) that accepts a payload to advance state (submit / review / approve / reject / confirm / dispatch / apply / finalize / enrich / examine / resubmit per the active pack's `## Flow-artifact derivation` `flow_signal`). The set of per-step input-validation artifacts a module unit ships **equals** the set of input-accepting steps its flow enumerates — no more, no fewer:
+Do NOT decompose flows at module granularity only. For each USER flow (`F-U-*`) in `context.md ## Flows`, enumerate its **input-accepting state-transition steps** — every numbered step (including signals in its sub-bullets, e.g. `workflow_state → SUBMITTED`) that accepts a payload to advance state (submit / review / approve / reject / confirm / dispatch / apply / finalize / enrich / examine / resubmit per the active pack's `## Flow-artifact derivation` `flow_signal`). The set of per-step input-validation artifacts a module unit ships **equals** the set of input-accepting steps its flow enumerates — no more, no fewer:
 
 - **One artifact per step, not one per controller.** A 5-stage maker-checker flow needs 5 Form Requests (Laravel) / 5 serializers (DRF) / 5 validation schemas (Express) — list each in the unit's `## Target files`. Listing only `Store…Request` + `CraApprove…Request` while the flow has 5 input steps is the exact under-decomposition the validator flags (proven: 8 missing per-stage Form Requests in the tradefinance Phase-2 run).
 - **Drop conditional scaffold artifacts with no gating flow.** A generic CRUD scaffolder emits an `edit`/update view for every resource, but a maker-checker entity advanced through workflow transitions has no update/PUT flow step — so that view is a dead stub. Do NOT list a conditional artifact (active pack `## Conditional scaffold artifacts` `artifact_glob`) in `## Target files` unless a flow step matches its `requires_flow_endpoint` (proven: 6 dead `edit.blade.php` stubs in the same run).
@@ -33,7 +33,7 @@ a. **File overlap**: target unit modifies a file the dependent unit creates OR r
 b. **Symbol cross-reference**: dependent unit's body Anchors cite a symbol planned by target unit
    - Source: parse `## Anchors` for symbol names; cross-reference target unit's `target_files` + planned outputs
 c. **Migration Notes reference**: extend unit's Migration notes ADD/KEEP/REMOVE explicitly references a symbol another unit creates
-d. **Vault dependency declaration**: vault section explicitly orders flows (e.g., `flows.md §F-U-002` says "after F-U-001 complete")
+d. **Vault dependency declaration**: vault section explicitly orders flows (e.g., `context.md ## Flows §F-U-002` says "after F-U-001 complete")
 e. **Module-level blocked_by**: unit's module has explicit `blocked_by: [<other-module>]` AND other module has units that target same files
 f. **SPLIT chain edge (Step 2.5 mandate)**: the verify/create pair emitted by a NEW+IMPLEMENTED SPLIT — the `create` half MUST depend_on the `verify` half so the existing implementation is certified BEFORE new code can perturb it. This edge is evidence class (f) by construction (same source claim-set), even though the pair's target_files are disjoint — without it the pair parallelizes and the verify assertions race the new code.
 
@@ -57,12 +57,12 @@ Then:
 
 ## Module assignment (Step 4.5)
 
-Semantic grouping layer ABOVE atomic units (units stay atomic; modules group related units per domain/flow/component). The modules-layer schema (auto-derivation, `modules.yaml` format, why modules ≠ bigger units) is in the modules-schema reference listed in the skill router.
+Semantic grouping layer ABOVE atomic units (units stay atomic; modules group related units per domain/flow/component). The modules-layer schema (auto-derivation, `modules.yaml` format, why modules ≠ bigger units) is in the modules-schema reference (`plugins/mega-sdd/references/modules-schema.md`).
 
 - **Load `_meta/modules.yaml`** if present
-- **Auto-derive** when absent: scan vault sections (`## F-U-*` flows, `## D-*` ADRs by domain cluster, named components in `vault.md ## Architecture`); write `_meta/modules.yaml.auto` (note `.auto` suffix; user renames to lock in)
-- **KB module-graph seed (legacy-rebuild vaults):** when `vault.md` (legacy `00-index.md`) §Implementation Notes carries `kb_module_graph: <path>` (written by generate-intent's KB sub-mode), read that `module-dependency-graph.md` FIRST and seed the auto-derivation from its module list + dependency edges — the extraction already computed the grouping; don't re-derive it blind. KB edges are a SEED for `blocked_by` declarations, not evidence: every cross-module `depends_on` still requires the concrete-coupling evidence rule below. Absent/unreadable path → fall through to plain auto-derivation silently.
-- **For each unit candidate**: match `vault_source` against `module.vault_sections` patterns; assign `unit.module = <module-id>`
+- **Auto-derive** when absent: scan vault sections (`## F-U-*` flows, `## D-*` ADRs by domain cluster, named components in `context.md ## Architecture` when present (layout-2 `vault.md ## Architecture`)); write `_meta/modules.yaml.auto` (note `.auto` suffix; user renames to lock in)
+- **KB module-graph seed (legacy-rebuild vaults):** when the `context.md` frontmatter (layout-2 `vault.md`, legacy `00-index.md` §Implementation Notes) carries `kb_module_graph: <path>` (written by plan's KB input, `kb-input.md`), read that `module-dependency-graph.md` FIRST and seed the auto-derivation from its module list + dependency edges — the extraction already computed the grouping; don't re-derive it blind. KB edges are a SEED for `blocked_by` declarations, not evidence: every cross-module `depends_on` still requires the concrete-coupling evidence rule below. Absent/unreadable path → fall through to plain auto-derivation silently.
+- **For each unit candidate**: match `vault_source|context_source` against `module.vault_sections` patterns; assign `unit.module = <module-id>`
 - **Unassigned units** → `module: M-unassigned` (fallback); emit chat warning if ≥10% of units unassigned
 - **Cross-module dependency validation**: every unit `depends_on` edge crossing module boundary requires explicit `blocked_by` declaration in the dependent module's modules.yaml entry. Cycle through Step 4 if module DAG has cycle (halt `module_cycle_detected`); missing `blocked_by` → halt `cross_module_dep_invalid`.
 
@@ -78,9 +78,9 @@ Load `_meta/squads.yaml` if present.
 - Skip all multi-squad validations
 
 **If ≥2 squads declared:**
-- Per `generate-intent/references/squad-partition.md` routing rules (cross-skill ref), assign `squad:` to each unit based on its `vault_source` and the relevant layer/feature tags.
+- Assign `squad:` to each unit based on its `vault_source|context_source` and the relevant layer/feature tags.
 - For each candidate unit:
-  - Determine primary layer from its `vault_source` (e.g., a unit derived from `vault.md#Architecture` (legacy `02-architecture.md#backend`) → layer `backend`)
+  - Determine primary layer from its `vault_source|context_source` (e.g., a unit derived from `context.md#Architecture` (layout-2 `vault.md#Architecture`, legacy `02-architecture.md#backend`) → layer `backend`)
   - Match against squad ownership rules with precedence: `owns_components` > `owns_flow_prefixes` > `owns_layers` > `owns_feature_tags`
   - Set `squad: <matched-id>`
 - **Unrouted units**: emit warning (not halt) and assign `squad: default` so execution can proceed. User should refine `squads.yaml` and re-run.
@@ -91,8 +91,7 @@ Load `_meta/squads.yaml` if present.
 Stable scheme:
 - Sort candidates topologically
 - Number U-001, U-002, ...
-- On `--refresh`: re-number from scratch
-- On default re-run: preserve IDs of unchanged units by content hash
+- On re-run (`plan --regenerate`): preserve IDs of unchanged units by content hash
 
 ## Render test for view-bearing units (Step 9 — code-delivery slice D)
 
@@ -100,26 +99,26 @@ If any `target_files` path matches the active framework pack `## Test patterns` 
 
 ## UI contract for view-bearing units (Step 9.b — code-delivery slice F)
 
-A unit is **view-bearing** when any `target_files` path matches the active framework pack `## UI quality signatures` → `view_glob` (a renderable view; pack omits the section → no view convention → skip this step, no contract). For each view-bearing unit, attach a `## UI contract` section to the unit body so the bolt subagent renders a production-grade view, not raw scaffold. Every entry is GROUNDED in the vault (`flows.md` steps + states, `02-architecture` entities/fields, the design-system signals in `01-context`/`starterkit-context.yaml`) — **never invented**. If a needed source is absent (e.g. no design system for required colors/states), record it as an Open Question per `generate-intent/references/vault-core.md`; do NOT default a value (anti-hallucination rail).
+A unit is **view-bearing** when any `target_files` path matches the active framework pack `## UI quality signatures` → `view_glob` (a renderable view; pack omits the section → no view convention → skip this step, no contract). For each view-bearing unit, attach a `## UI contract` section to the unit body so the bolt subagent renders a production-grade view, not raw scaffold. Every entry is GROUNDED in the vault (`context.md ## Flows` steps + states, `context.md ## Data model` entities/fields (legacy `02-architecture`), the design-system signals in `vault.json` `design_system` (legacy `01-context`)/`starterkit-context.yaml`) — **never invented**. If a needed source is absent (e.g. no design system for required colors/states), record it as an Open Question per `plugins/mega-sdd/references/vault-core.md`; do NOT default a value (anti-hallucination rail).
 
 ```yaml
 ## UI contract
-label_map:                       # human label per displayed field — from `model.md` (legacy 02-architecture) field names + `vault.md ## Overview` (legacy 01-context) copy; NEVER a Str::title(column) like "Customer Id"
+label_map:                       # human label per displayed field — from `context.md ## Data model` (layout-2 `model.md`, legacy 02-architecture) field names + `context.md ## Overview` (layout-2 `vault.md ## Overview`, legacy 01-context) copy; NEVER a Str::title(column) like "Customer Id"
   customer_id: "Customer"
   created_at: "Created"
 fk_display:                      # FK column => the related entity's display field, resolved via the relation (pack `## Relation derivation`); never render the raw id
   customer_id: "customer.name"
   branch_id: "branch.name"
-value_formatting:                # money/number/date/status formatting — from field types in `model.md` (legacy 02-architecture)
+value_formatting:                # money/number/date/status formatting — from field types in `context.md ## Data model` (layout-2 `model.md`, legacy 02-architecture)
   amount: "currency (2dp, thousands sep)"
   status: "human label + badge (map enum -> label from flow states)"
   created_at: "human date (null-safe placeholder)"
-required_states:                 # the states this view MUST handle — DERIVED from the flow (flows.md), not boilerplate
+required_states:                 # the states this view MUST handle — DERIVED from the flow (context.md ## Flows), not boilerplate
   - empty       # list with zero rows (grounded: flow allows an empty collection)
   - loading     # async fetch/action present in the flow
   - error       # failure branch present in the flow (surface via the project notification idiom)
   - pending     # workflow item mid-process (maker-checker / multi-stage flow) -> show human status label
-grounded_in: ["flows.md F-U-003 step 2", "model.md §Widget"]   # citations (anti-halu)
+grounded_in: ["context.md#F-U-003 step 2", "context.md#Data-model §Widget"]   # citations (anti-halu)
 design_system_ref: "vault.design_system"   # present ONLY when the vault carries a design_system block (vault-core.md §design_system); propagates the resolved style/palette/a11y (+ its source) to the bolt so the view renders on-system, not generic. Omit when absent.
 ```
 
@@ -151,7 +150,7 @@ Sets `_authored_by: same-pass`. Use for debug / regression testing only — NOT 
 
 **Regenerate behavior:**
 
-When `generate-units --regenerate` re-encounters a unit:
+When `plan --regenerate` re-encounters a unit:
 - If existing unit has `_authored_by: human` → PRESERVE acceptance_test untouched (user-edited; do not overwrite)
 - Otherwise → rewrite per Step 9 + run Step 9.5 adversarial review
 

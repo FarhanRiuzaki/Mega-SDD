@@ -162,9 +162,9 @@ brew upgrade ast-grep ripgrep jd pandoc semgrep gitleaks
 npm update -g @mermaid-js/mermaid-cli markdownlint-cli2
 ```
 
-Mega-sdd is tested against versions pinned in `plugins/mega-sdd/skills/scan-codebase/queries/VERSIONS.md` (ast-grep rule-pack glossary). Major version drift may produce warnings; minor versions typically compatible.
+Mega-sdd is tested against versions pinned in `plugins/mega-sdd/assets/astgrep-queries/VERSIONS.md` (ast-grep rule-pack glossary). Major version drift may produce warnings; minor versions typically compatible.
 
 ## References
 
-- `plugins/mega-sdd/skills/scan-codebase/queries/VERSIONS.md` — ast-grep rule-pack registry
+- `plugins/mega-sdd/assets/astgrep-queries/VERSIONS.md` — ast-grep rule-pack registry
 - Tool-adoption history and rationale: `CHANGELOG.md` + git log

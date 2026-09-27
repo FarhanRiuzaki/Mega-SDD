@@ -10,6 +10,7 @@ Appendix F2–F4 (JIT bind) and F6c (quarantine); audit
 ## Contents
 
 - [3.9 JIT bind per wave](#39-jit-bind-per-wave-spec-app-f2f4)
+- [E3 Text-claim ladder (fail-closed)](#e3-text-claim-ladder-fail-closed)
 - [3.9b The BOLTS gate denied a dispatch](#39b-the-bolts-gate-denied-a-dispatch-state-anchor-spec-2026-09-25-8)
 - [3.10 Quarantine instead of parking](#310-quarantine-instead-of-parking-w1-zero-idle-spec-app-f6c)
 
@@ -42,8 +43,8 @@ script; the model's only judgment is the ladder E3 verdict on `text` claims.
      CONFIRMED; only elsewhere → CONFLICT collision; nowhere → OQ; index absent
      → OQ with the reason). Nothing for the model to do.
    - **Stale line-range anchors are repaired by the writer, never by hand (`research/2026-09-15-v8-p3-report.md §5`).** A `## Anchors` range that no longer fits the file is re-verdicted against the anchor's *authoring snapshot* (the commit that introduced that token into the unit file): **R1-shift** when the authored lines exist verbatim, uniquely, at another offset; **R2-clamp** when the file is byte-identical to the snapshot and EITHER the range overshoots EOF by exactly one line (the trailing-newline miscount — the live class: clinic U-008 / xs U-006) OR the range is a whole-file anchor (`<file>:1-N`, any overshoot — lines past EOF never existed, so lines 1..n ARE what the author read; e.g. `login/page.tsx:1-25` on an unchanged 22-line file). Both record `repair: {from, to, rule, reference, content_sha256}` on the claim (+ `repairs[]` in `binding.json`) and rewrite the unit's `## Anchors` token, so the next bind sees it fit. Changed content, a non-unique match, a PARTIAL range (start > 1) overshooting by more than one line, or no snapshot ⇒ **CONFLICT** — resolve via `resolve-oq --binding` (KEEP_CODE + a hand-corrected anchor is still the human path for those). Never pre-empt the writer by editing an anchor to make a claim pass.
-   - For each `text` claim run the express-bind ladder E3 VERBATIM
-     (`bind-codebase/references/express-bind.md §Step E3`: index → targeted
+   - For each `text` claim run the text-claim ladder E3 VERBATIM
+     (§E3 below: index → targeted
      Read → collision sweep two legs → bounded grep → KB → ungrounded ⇒
      OQ/CONFLICT, **never CONFIRMED-by-absence**). Write your verdicts to a
      temp JSON `{"<claim-id>": {"verdict", "state", "anchor", "confidence",
@@ -80,6 +81,123 @@ script; the model's only judgment is the ladder E3 verdict on `text` claims.
 
 **3.9 runs on every layout-3 vault** too (not only under `--lite` / `lane: lite`): a
 plan-born vault's units are gated per unit at dispatch.
+
+## E3 Text-claim ladder (fail-closed)
+
+Relocated from `skills/bind-codebase/references/express-bind.md`, `skills/bind-codebase/references/binding-contract.md`, `skills/bind-codebase/references/implementation-state.md` (the `kb_confirmed` rail + the ADD/KEEP/REMOVE set ops) and `skills/bind-codebase/SKILL.md` in 9.0 (P1); tuned text kept verbatim.
+
+### The per-claim retrieval ladder
+
+Per `text` claim (`kind: "text"` in `_wave-claims.json`, or in a 3.9b `_claims.json`), in order, stopping at the first rung that yields decisive evidence:
+
+1. **Index query** — **Run** `bash <plugin-root>/scripts/query-symbol-index.sh --cwd=<root>
+   --name=<variant>` for each symbol the claim's `text` / `expect` names (entities) or its
+   leading terms (flows/decisions); optionally `--dir=` for the claim's expected home.
+   Index rows are POINTERS, never evidence.
+2. **Targeted Read** of the candidate files at the returned `file:line` anchors.
+   **Verdicts anchor to READ evidence only** — an index row alone can never mint
+   CONFIRMED (rail A3: query, never inject).
+3. **Collision sweep (moat-critical, entities/components/naming claims)** — two
+   legs, BOTH mandatory: (a) one repo-WIDE `--name=<primary symbol>` index query
+   with NO `--dir`/`--file` filter; (b) one bounded repo-wide `Grep` for the
+   primary symbol name — the index sees only tracked files with covered
+   extensions, and "found where expected" does not prove "absent elsewhere"
+   (untracked files, `.vue`/templates/configs live outside it). EVERY hit outside
+   the claim's expected home is Read and evaluated: contradicting → **CONFLICT**
+   (the pre-existing-collision class), never skipped because it is "elsewhere".
+4. **Bounded repo Grep** — when 1–3 are silent, up to 2 `Grep` queries over the
+   repo for the claim's terms (routes, config keys, and dynamic constructs live
+   outside the symbol index). Hits → Read → evaluate.
+5. **KB consultation** — when 1–4 are silent and a KB is present (KB roots:
+   `plugins/mega-sdd/references/paths.md §Read-side compatibility`), the marker/tier
+   semantics in §KB consultation (rung 5) below apply unchanged.
+6. **Still ungrounded ⇒ verdict per claim type, never CONFIRMED-by-absence:**
+   - contradicting evidence found anywhere → **CONFLICT**;
+   - no evidence + claim describes NEW work → **OQ** with State `NEW`, Anchor `—`
+     (NEW is a plan statement, not an existence assertion; the `NEW` row below
+     downgrades the verdict to OQ when there is no anchor at all, and the writer
+     refuses a CONFIRMED without one);
+   - no evidence + claim ASSERTS something exists/holds in the code → **OQ**
+     (Anchor `—`), with the honest note that the ladder found nothing.
+
+### KB consultation (rung 5)
+
+- **KB consultation fires ONLY when the code evidence (rungs 1–4) is silent.** Marker-aware, dual-axis (mutability-tier) verdicts:
+  - `[VERIFIED][LOCKED]` → CONFIRMED + `mutability_source: kb_locked` (CONFLICT severity HIGH if code diverges — 1:1 preservation required by regulatory/contractual lock).
+  - `[VERIFIED][INTENT]` → CONFIRMED + `kb_intent` (CONFLICT severity MEDIUM — rebuild has design freedom).
+  - `[VERIFIED][ARTIFACT]` → CONFIRMED-with-discard-recommendation + `kb_artifact`.
+  - `[INFERRED]` → CONFIRMED with note; `[OPEN]` → **OQ**; no KB match → **OQ** (no auto-resolve attempted).
+  - Pre-tier KBs (no markers) → treat as `[INTENT]` for back-compat.
+- **Never override a code CONFLICT via the KB.** The KB is consulted only when the code evidence is silent — this preserves the gate's primary contract.
+
+### Verdict vocabulary
+
+For each claim:
+
+- **CONFIRMED**: claim has matching evidence in the code (entity exists, endpoint registered, naming matches majority).
+- **CONFLICT**: claim contradicts code evidence (vault says "use bearer auth", code uses sessions).
+- **OQ**: claim references a code element NOT in the code (e.g., "the legacy user table" — the ladder finds no `user` table).
+
+For each CONFIRMED claim, additionally classify implementation readiness (condensed for read evidence):
+
+| State | Definition | Read-evidence signal |
+|---|---|---|
+| `IMPLEMENTED` | Entity AND its handler/method/function exist AND signature/field-set matches claim exactly (V == C) | route + handler symbol + (if entity claim) all claimed fields detected in the Read source |
+| `PARTIAL_FIELDS_MISSING` | Entity/handler exists but code lacks some claimed fields (C ⊂ V) | field-level set diff over the Read entity source |
+| `PARTIAL_FIELDS_SURPLUS` | Entity/handler exists but code has fields the claim doesn't mention (V ⊂ C) | field-level set diff over the Read entity source |
+| `PARTIAL_FIELDS_BOTH` | Shared fields exist but both sides also diverge (rare; bidirectional drift) | field-level set diff over the Read entity source |
+| `NEW` | No matching evidence (verdict downgraded from CONFIRMED to OQ when no anchor at all) | the ladder found nothing (rung 6) |
+| `UNKNOWN` | The ladder is silent on this claim type (e.g., dynamic routes, magic methods) OR ambiguous/disjoint match OR the entity's source file was unreachable (no Read — PARTIAL collapses to UNKNOWN) | heuristic detection limit reached |
+
+**Confidence labeling.** Every classification carries a confidence tag:
+- `high` — single unambiguous match in the Read code
+- `medium` — fuzzy match (case-insensitive, partial path)
+- `low` — multiple potential matches OR heuristic could not classify (state becomes `UNKNOWN`)
+
+**Conservative default.** When in doubt → `UNKNOWN` with low confidence. Never silently claim `IMPLEMENTED` without a concrete anchor.
+
+### Verdict + state semantics (read evidence)
+
+- **Field-level diff** (the `PARTIAL_FIELDS_*` states): computed from the READ entity source directly —
+  the claim's `text` (or the `context.md` entity it names) carries the vault field set, the Read supplies the code
+  field set. A field diff is allowed ONLY when the entity's source file was
+  actually Read this run; file unreachable → `UNKNOWN`/low, Field diff `n/a`
+  (never inferred from index signatures — a signature is one line, not a field set).
+- **`[reason:]` tokens**: `truncated_section` cannot occur (there is no capped map
+  in this lane); `ambiguous_match` / `dynamic` / `kb_confirmed` keep their
+  standard meanings (the `UNKNOWN` row above; `kb_confirmed` — CONFIRMED reached via KB
+  because the code evidence was silent → classify as `UNKNOWN` with `low` confidence (the KB
+  documents domain knowledge, not necessarily implementation)).
+  **Never mint `regex_tier` in this lane** — there is no
+  engine-tier signal without the map, and "the index returned no rows" is
+  indistinguishable from "the symbol does not exist"; evidence found only via
+  Grep/Read anchors normally, and real match ambiguity uses `ambiguous_match`.
+- **Where each part lands.** The writer keeps five fields per `text` claim — `verdict`,
+  `state`, `anchor`, `confidence`, `evidence` (`scripts/_lib/unit_binding.py`). `anchor`
+  holds only real `file:line` pieces joined by ` + ` (the writer reads every piece as a
+  scope path) and is `null` where the rules above say Anchor `—`. A field diff
+  (`ADD: [...] · KEEP: [...] · REMOVE: [...]` — `ADD = V \ C` (missing in code),
+  `KEEP = V ∩ C` (shared), `REMOVE = C \ V` (surplus in code)), a `[reason: <enum>]` token, and a KB tier
+  (`kb_locked` / `kb_intent` / `kb_artifact`, with its CONFLICT severity) go in `evidence`.
+
+### Context discipline (anti-rot)
+
+The A1 rail, applied to this pass: keep the wave's CLAIM SET and the RUNNING VERDICT TABLE
+(claim id → verdict/state/anchor/confidence) live; **shed raw file-read content
+after each claim's verdict lands** — the verdict row + its anchor is the durable
+residue, the read bytes are not. Never accumulate whole-file reads across claims.
+On a large claim set, process claims in unit order and run the writer (`--verdicts=`)
+per unit as its verdicts land — the artifact, not the context, is the memory.
+
+### Anti-hallucination rails
+
+- An index row is a pointer, never evidence — no verdict cites the index.
+- The collision sweep is NOT optional and NOT scoped: entity/component/naming
+  claims always get the repo-wide name query, even after rung 2 confirmed the
+  expected home ("found where expected" does not prove "absent elsewhere").
+- Ungrounded ⇒ OQ / CONFLICT per rung 6 — CONFIRMED-by-absence is the failure
+  class this ladder exists to prevent; when in doubt between OQ and CONFIRMED,
+  it is OQ.
 
 ## 3.9b The BOLTS gate denied a dispatch (state anchor, spec 2026-09-25 §8)
 
