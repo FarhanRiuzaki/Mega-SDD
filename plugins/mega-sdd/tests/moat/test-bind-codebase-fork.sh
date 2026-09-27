@@ -21,8 +21,9 @@
 #   - skills/plan/references/context-authoring.md (the project constitution gate)
 #   - references/halt-families/bind.md (a layout-2 CONFLICT still blocks — spec §7 #9)
 # The classic `bound/` artefact strings (Step-5 decision gate heading, "DO NOT write bound/",
-# the make-bound.sh refusal sentence) were retired: the lite lane produces no `bound/`, and
-# make-bound.sh's refusal stays pinned empirically by tests/moat/test-make-bound-gate.sh.
+# the bound/ writer's refusal sentence) were retired: the lite lane produces no `bound/`, and
+# 9.0 P1b deleted that writer. The layout-2 CONFLICT refusal stays pinned empirically on its
+# surviving carrier, validate-handoff-binding-units.sh (tests/moat/test-conflict-unresolved.sh).
 #
 # CI-safe: bash + python3 only. No network, no fixtures.
 set -uo pipefail

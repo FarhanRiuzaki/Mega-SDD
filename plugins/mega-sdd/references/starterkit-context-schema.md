@@ -369,16 +369,16 @@ cache_signatures:
                                         # bookkeeping even though its OUTPUT lives in the
                                         # sibling reuse-index.yaml
     auth:
-      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §auth + auth-libs.md + src_component(auth) + detector version)
+      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §auth + src_component(auth) + detector version)
       generated_at: "2026-05-25T10:00:00Z"
     authz:
-      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §authz + authz-libs.md + src_component(authz) + detector version)
+      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §authz + src_component(authz) + detector version)
       generated_at: "2026-05-25T10:00:00Z"
     ui_ux:
-      signature_sha256: <hex>           # sha256(frontend_locks_digest + framework_pack §ui + ui-libs.md + src_component(ui_ux) + detector version)
+      signature_sha256: <hex>           # sha256(frontend_locks_digest + framework_pack §ui + src_component(ui_ux) + detector version)
       generated_at: "2026-05-25T10:00:00Z"
     libs:
-      signature_sha256: <hex>           # sha256(all_locks_digest + framework_pack §libs + generic-libs.md + src_component(libs) + detector version)
+      signature_sha256: <hex>           # sha256(all_locks_digest + framework_pack §libs + src_component(libs) + detector version)
       generated_at: "2026-05-25T10:00:00Z"
     reuse:
       signature_sha256: <hex>           # sha256(listing+mtimes of hinted first-party dirs + framework_pack §Reuse discovery + detector version)
@@ -414,5 +414,4 @@ Downstream consumers MUST handle `partial: true` gracefully: if a slice they nee
 
 ## See also
 
-- `plugins/mega-sdd/references/lib-patterns/laravel/*.md` (per-lib detection patterns the pre-9.0 producer used)
 - `plugins/mega-sdd/skills/execute-bolts/SKILL.md` §Step 4.5.b-starterkit (`references/starterkit-enrichment.md`; consumer — T2 slice injection)

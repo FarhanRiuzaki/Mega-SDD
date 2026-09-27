@@ -265,7 +265,7 @@ Mega-sdd adopts stable native binaries instead of reinventing them — all optio
 | `semgrep` | execute-bolts L0 code gate 4 (SAST on bolt diffs) | gate SKIPs with a note |
 | `gitleaks` | execute-bolts L0 code gate 3 (secret scan) | plugin regex fallback (always scanned) |
 
-`python3` is the one REQUIRED interpreter: the hooks parse through it, and without it the PreToolUse gates fail closed. Full per-platform install matrix + **platform support table** (macOS/Linux/WSL = full; Git Bash = works with a `python3` shim; native cmd = prose-only, not recommended): [`references/tooling-install.md`](./references/tooling-install.md). Running the gates in CI / headless (`claude -p`, claude-code-action, pure-script exit-code gates): [`references/ci-recipe.md`](./references/ci-recipe.md).
+`python3` is the one REQUIRED interpreter: the hooks parse through it, and without it the PreToolUse gates fail closed. Full per-platform install matrix + **platform support table** (macOS/Linux/WSL = full; Git Bash = works with a `python3` shim; native cmd = prose-only, not recommended): [`references/tooling-install.md`](./references/tooling-install.md). Running the gates in CI / headless (`claude -p`, claude-code-action, pure-script exit-code gates): [`docs/mega-sdd/ci-recipe.md`](../../docs/mega-sdd/ci-recipe.md).
 
 ## What's new
 

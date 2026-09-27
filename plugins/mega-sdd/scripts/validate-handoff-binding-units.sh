@@ -69,7 +69,7 @@ done
 _SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
 # P0 v4.92.0 (binding RECERTIFY): the freshness check reuses the ONE binding.md
 # frontmatter grammar — _lib/binding_md.py parse_frontmatter_metadata — via the
-# MEGA_SDD_LIB_DIR sys.path pattern (validate-binding-json.sh precedent).
+# MEGA_SDD_LIB_DIR sys.path pattern (derive-binding-json.sh precedent).
 export MEGA_SDD_LIB_DIR="${_SCRIPT_DIR}/_lib"
 _RPR_HELPER="${_SCRIPT_DIR}/_lib/resolve-project-root.sh"
 if [ -f "$_RPR_HELPER" ] && [ -n "${CWD:-}" ]; then

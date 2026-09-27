@@ -13,10 +13,10 @@
 #                        tests/express-default/test-p2-ground-express-default.sh).
 #   BC-MAPARG-1 + r2     the pre-tool-use DEGENERATE-MAP arm keyed on
 #   (POISON-A/B, SPACES, SKILL_NAME=mega-sdd:bind-codebase and its map positional. The
-#   S4R-1)               skill no longer exists, so the arm cannot fire; it is kept
-#                        byte-for-byte in P1 (§3 Hooks, §7 #7) and is a P1b prune
-#                        candidate (its wiring stays grep-pinned by
-#                        tests/god-review-s3/test-3a-validator-gate.sh INT-1).
+#   S4R-1)               skill no longer exists, so the arm could not fire; it was kept
+#                        byte-for-byte in P1 (§3 Hooks, §7 #7) and pruned in P1b. The
+#                        map validator it called keeps its run-analyze V12 executor
+#                        (pinned by tests/god-review-s3/test-3a-validator-gate.sh).
 #   BC-TRUNC-1           the capped-map truncation signal (implementation-state.md,
 #                        binding-contract.md, binding-json-schema.md, the
 #                        generate-units UNKNOWN sub-rule). No capped map exists in the

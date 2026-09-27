@@ -231,7 +231,7 @@ def parse_reuse_index(path):
     this file's category mapping (losing which category an entry belongs to), and
     two shapes exist in the wild that must both work —
 
-      references/reuse-index-schema.md      what deep-scan actually emits
+      what the old schema documented        what deep-scan actually emitted
       ------------------------------       ----------------------------
       truncated: { helpers: false }        reuse_index:
       helpers:                               helpers:

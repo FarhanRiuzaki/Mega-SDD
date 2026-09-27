@@ -374,8 +374,7 @@ case "${TOOL_NAME:-}" in
     #    execute-bolts aggregator re-runs handoff-binding-units, unit-spec,
     #    flow-coverage, sibling-consistency (both modes), bolt-artifacts
     #    (5 scans, B1 --recompute), ui-quality, factory-ledger before reading
-    #    a single state (S4 BC-GATE-1 / S5 GU-HOOK-1 / S6 EB-GATE-1), and the
-    #    bind gate lazily re-validates the codebase map (INT-1);
+    #    a single state (S4 BC-GATE-1 / S5 GU-HOOK-1 / S6 EB-GATE-1);
     #  · the Stop hook still runs the bolt-artifact detection scans per turn;
     #  · run-analyze FULL re-runs the whole validator set — including the four
     #    advisories whose only writer used to be this fan-out (№C, V13–V16) —

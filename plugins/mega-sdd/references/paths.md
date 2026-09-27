@@ -41,7 +41,7 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── vault.md, model.md, flows.md,          # layout-2 (pre-9.0 classic-born; read-only — migrate-paths --vault-layout=3 folds it;
 │   │   │   constraints.md                         #   legacy vaults: 00-index.md ... 06-constraints.md — see §Vault layout)
 │   │   ├── vault.json                             # Manifest (carries vault_layout: 3 | 2)
-│   │   ├── claims-ledger.json                     # Derived claim index (layout-2 only; no 9.0 consumer — migrate-paths archives it to _meta/archive/layout2/)
+│   │   ├── claims-ledger.json                     # pre-9.0 legacy claim index (layout-2 only; no 9.0 producer or consumer — migrate-paths archives it to _meta/archive/layout2/)
 │   │   ├── binding.md                             # Binding manifest (layout-2 legacy, read-only — migrate-paths --vault-layout=3 archives it; 9.0 binds per unit, see bolts/U-*/binding.json)
 │   │   ├── bound/                                 # Bound-vault (layout-2 legacy, read-only; build-locked-index.sh and migrate-paths read it)
 │   │   ├── units/U-*.md, _index.md                # Atomic units
@@ -123,7 +123,7 @@ Layout-2 (pre-9.0 classic-born; read-only in 9.0; marker `vault_layout: 2` in th
 | `flows.md` | `04-flows.md` | Mermaid flows + DoD (the hot surface — hook + locators dual-probe) |
 | `constraints.md` (+ `## Open Questions`, `[origin:]` tokens) | `06-constraints.md` + per-doc OQ sections + the roll-up | constraints + THE one authored OQ home |
 
-The `## Overview` / `## Architecture` / `## Decisions` anchors are a HARD-HEADER CONTRACT — derive-vault-json + derive-claims-ledger exit 2 naming the missing header (DOC_CODE re-keys filename→section on layout-2).
+The `## Overview` / `## Architecture` / `## Decisions` anchors are a HARD-HEADER CONTRACT — derive-vault-json exits 2 naming the missing header (DOC_CODE re-keys filename→section on layout-2).
 
 ### Layout-3 (`context.md` — the plan-born shape)
 
@@ -147,7 +147,6 @@ ONE file `context.md` (marker `vault_layout: 3` in its frontmatter + vault.json)
 | `build-symbol-index.sh` (script) | symbol-index | `.mega-sdd/codebase/symbol-index.json` | — (new artifact, no legacy location) |
 | `plan` | vault/ (layout-3: context.md + constitution.md + vault.json) | `.mega-sdd/vaults/<slug>/` | `docs/mega-sdd/vaults/<slug>/` (read-side only; plan always writes the canonical path) |
 | `execute-bolts` (JIT bind, `write-unit-binding.sh`) | binding.json | `<vault>/bolts/U-*/binding.json` | layout-2 `<vault>/binding.md` + `<vault>/bound/` / `<vault>-bound/` (read-only; migrate-paths archives) |
-| `derive-claims-ledger.sh` (script) | claims-ledger (layout-2 only) | `<vault>/claims-ledger.json` | — (new artifact, no legacy location) |
 | `plan` | units/ | `<vault>/units/` | `<vault>-bound/units/` (or `<vault>/units/`) |
 | `execute-bolts` | bolts/ | `<vault>/bolts/U-*/` | `<vault>/bolts/U-*/` |
 | `execute-bolts` | lens-inputs/ | `<vault>/lens-inputs/U-*/` | n/a |

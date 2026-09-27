@@ -7,8 +7,7 @@
 #      checked-in expected json (state_reason set + token stripped from anchor;
 #      vault_source from the Confirmed list, null otherwise; resolution only on
 #      the Claim-mapped claim; head/provenance from frontmatter; verbatim
-#      '—'/'n/a' preserved); then validate-binding-json.sh on the derived pair
-#      exits 0
+#      '—'/'n/a' preserved)
 #   2  CONFLICT-ADV-N resolved-heading variant derives resolution
 #   3  unknown [reason: bogus] token → exit 2, json untouched
 #   4  Anchor cell citing truncation with NO token → exit 2 (anti-dull)
@@ -21,7 +20,7 @@
 #      re-derive → resolution appears, head unchanged, pre-existing json
 #      atomically replaced; unchanged content preserves generated_at
 #      (idempotent, no churn)
-#  10  no --vault → exit 3 (usage, matching validate-binding-json.sh)
+#  10  no --vault → exit 3 (usage)
 #
 # Run: bash plugins/mega-sdd/tests/graph/test-derive-binding-json.sh
 set -uo pipefail
@@ -29,7 +28,6 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 DERIVE="${PLUGIN_ROOT}/scripts/derive-binding-json.sh"
-VALIDATE="${PLUGIN_ROOT}/scripts/validate-binding-json.sh"
 FX="${SCRIPT_DIR}/fixtures"
 [ -f "$DERIVE" ] || { echo "missing $DERIVE"; exit 1; }
 
@@ -51,7 +49,7 @@ PY
 
 echo "== W2: derive-binding-json =="
 
-# ── 1. round-trip vs checked-in expected json + parity on the derived pair ──
+# ── 1. round-trip vs checked-in expected json ──
 V1="$WORK/v1"; mkdir -p "$V1"
 cp "$FX/derive-full/binding.md" "$V1/binding.md"
 OUT=$( (cd "$WORK" && bash "$DERIVE" --vault v1 </dev/null 2>&1) ); RC=$?
@@ -61,9 +59,6 @@ OUT=$( (cd "$WORK" && bash "$DERIVE" --vault v1 </dev/null 2>&1) ); RC=$?
 json_eq_ignoring_stamp "$V1/binding.json" "$FX/derive-full/expected-binding.json" \
   && ok "1: derived json equals checked-in expected (token stripped → state_reason; vault_source/resolution mapped; verbatim cells)" \
   || fail "1: derived json diverges from expected: $(cat "$V1/binding.json" 2>/dev/null | head -5)"
-bash "$VALIDATE" --vault "$V1" </dev/null >/dev/null 2>&1; RC=$?
-[ "$RC" -eq 0 ] && ok "1: validate-binding-json.sh exits 0 on the derived pair" \
-  || fail "1: parity validator rejects the derived pair (rc=$RC)"
 
 # ── 2. CONFLICT-ADV-N resolved-heading variant ──
 V2="$WORK/v2"; mkdir -p "$V2"
@@ -262,7 +257,7 @@ sys.exit(0 if (c['resolution'] == 'DEFER' and d['head'] == 'feedbeef1234'
 
 # ── 10. usage: no --vault → exit 3 ──
 bash "$DERIVE" </dev/null >/dev/null 2>&1; RC=$?
-[ "$RC" -eq 3 ] && ok "10: missing --vault → exit 3 (matches validate-binding-json.sh convention)" \
+[ "$RC" -eq 3 ] && ok "10: missing --vault → exit 3 (usage)" \
   || fail "10: usage exit wrong (rc=$RC)"
 
 if [ "$FAILED" -eq 0 ]; then echo "ALL W2 DERIVE OK"; exit 0; else echo "W2 derive FAILED"; exit 1; fi

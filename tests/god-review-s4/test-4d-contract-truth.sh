@@ -2,9 +2,9 @@
 # test-4d-contract-truth.sh — god-review stage 4, Batch 4D.
 # Pins contract truth + schema/enum coherence:
 #
-#   BC-PARITY-5COL     validate-binding-json.sh: aligned separators are not claim
-#                      rows; short rows are ERRORS (not silent skips); a claims[]
-#                      entry missing "id" is a clean FAIL (exit 2), not a traceback.
+#   BC-PARITY-5COL     _lib/binding_md.py parse_state_map (driven through its
+#                      generator, derive-binding-json.sh): aligned separators are not
+#                      claim rows; short rows are ERRORS (exit 2), not silent skips.
 #   BC-RESOLVE-TOKEN   resolve-oq --binding writes the structural marker grammar the
 #                      gate reads; CONFIRMED_PENDING_CODE_UPDATE is gone plugin-wide;
 #                      the derived binding.json carries the closed `resolution` enum.
@@ -31,19 +31,24 @@
 #   RETIRED  PARITY "ALWAYS 6 columns" template annotation (binding.md has no author
 #            left; the 5-cell-row ERROR stays pinned behaviourally above)
 #
+# 9.0 P1b: validate-binding-json.sh was deleted (its only executor, make-bound.sh,
+# left with bind-codebase). BC-PARITY-5COL V1/V2 pin the SURVIVING binding_md
+# grammar, so they were REPOINTED to derive-binding-json.sh (parse_state_map
+# full=True, exit 2 on parse errors). V3 (claims[] missing "id") was json-side
+# validator logic with no surviving owner and was RETIRED with it.
+#
 # Run: bash tests/god-review-s4/test-4d-contract-truth.sh
 set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-VBJ="${ROOT}/plugins/mega-sdd/scripts/validate-binding-json.sh"
 DBJ="${ROOT}/plugins/mega-sdd/scripts/derive-binding-json.sh"
 BMD="${ROOT}/plugins/mega-sdd/scripts/_lib/binding_md.py"
 UB="${ROOT}/plugins/mega-sdd/scripts/_lib/unit_binding.py"
 BM="${ROOT}/plugins/mega-sdd/skills/resolve-oq/references/binding-mode.md"
 VC="${ROOT}/plugins/mega-sdd/references/vault-core.md"
 JIT="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/jit-bind-and-quarantine.md"
-for f in "$VBJ" "$DBJ" "$BMD" "$UB" "$BM" "$VC" "$JIT"; do
+for f in "$DBJ" "$BMD" "$UB" "$BM" "$VC" "$JIT"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -56,7 +61,7 @@ trap 'rm -rf "$WORK"' EXIT
 
 note "== 4D: contract truth + schema coherence =="
 
-# ── BC-PARITY-5COL: empirical validator behavior ──
+# ── BC-PARITY-5COL: empirical State Map grammar behavior (via the generator) ──
 V1="$WORK/v1"; mkdir -p "$V1"
 cat > "$V1/binding.md" <<'MD'
 # Binding Manifest
@@ -64,9 +69,12 @@ cat > "$V1/binding.md" <<'MD'
 |:---|:---:|---|---|---|---|
 | C-001 | CONFIRMED | IMPLEMENTED | a.php:1 | high | n/a |
 MD
-printf '%s\n' '{"claims": [{"id": "C-001", "verdict": "CONFIRMED", "state": "IMPLEMENTED"}]}' > "$V1/binding.json"
-bash "$VBJ" --vault "$V1" >/dev/null 2>&1; RC=$?
-[ "$RC" -eq 0 ] && ok "PARITY: aligned separators (|:---:|) parse as separators, not phantom claims" || fail "PARITY: aligned separator still phantom-FAILs (rc=$RC)"
+bash "$DBJ" --vault "$V1" </dev/null >/dev/null 2>&1; RC=$?
+[ "$RC" -eq 0 ] && python3 -c '
+import json, sys
+ids = [c["id"] for c in json.load(open(sys.argv[1]))["claims"]]
+sys.exit(0 if ids == ["C-001"] else 1)' "$V1/binding.json" \
+  && ok "PARITY: aligned separators (|:---:|) parse as separators, not phantom claims" || fail "PARITY: aligned separator still phantom-FAILs (rc=$RC)"
 
 V2="$WORK/v2"; mkdir -p "$V2"
 cat > "$V2/binding.md" <<'MD'
@@ -75,23 +83,10 @@ cat > "$V2/binding.md" <<'MD'
 |---|---|---|---|---|---|
 | C-002 | CONFIRMED | NEW | — | n/a |
 MD
-printf '%s\n' '{"claims": []}' > "$V2/binding.json"
-OUT=$(bash "$VBJ" --vault "$V2" 2>&1); RC=$?
+OUT=$(bash "$DBJ" --vault "$V2" </dev/null 2>&1); RC=$?
 [ "$RC" -eq 2 ] && echo "$OUT" | grep -q "malformed State Map row" \
   && ok "PARITY: 5-cell row is an ERROR (silent-skip divergence hole closed)" \
   || fail "PARITY: short row still silently skipped (rc=$RC)"
-
-V3="$WORK/v3"; mkdir -p "$V3"
-cat > "$V3/binding.md" <<'MD'
-# Binding Manifest
-## Implementation State Map (0)
-|---|---|---|---|---|---|
-MD
-printf '%s\n' '{"claims": [{"verdict": "CONFIRMED", "state": "NEW"}]}' > "$V3/binding.json"
-OUT=$(bash "$VBJ" --vault "$V3" 2>&1); RC=$?
-[ "$RC" -eq 2 ] && echo "$OUT" | grep -q "missing 'id'" && ! echo "$OUT" | grep -q "Traceback" \
-  && ok "PARITY: claims[] entry missing id → clean FAIL exit 2 (no traceback)" \
-  || fail "PARITY: id-less claim crashes or passes (rc=$RC): $(echo "$OUT" | head -2)"
 
 # ── BC-RESOLVE-TOKEN + RSOQ-LIVELOCK ──
 grep -qF 'Resolution write-back grammar' "$BM" && ok "RESOLVE-TOKEN: binding-mode defines the structural write-back grammar" || fail "RESOLVE-TOKEN: grammar missing"

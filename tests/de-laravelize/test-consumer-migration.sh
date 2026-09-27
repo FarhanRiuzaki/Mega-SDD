@@ -8,6 +8,7 @@ err=0
 #     deleted with the skill (no deep-scan remains) -> retired.
 #   - generate-units/references/auto-and-memory.md was relocated into
 #     plan/references/unit-procedure.md -> the OLD-ontology guard is repointed there.
+# 9.0 (P1b): references/lib-patterns/ was deleted (no surviving consumer) -> its rbac-libs.md entry is retired.
 files=(
   "plugins/mega-sdd/skills/plan/references/unit-procedure.md"
   "plugins/mega-sdd/skills/execute-bolts/references/bolt-dispatch-prompt.md"
@@ -15,7 +16,6 @@ files=(
   "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md"
   "plugins/mega-sdd/skills/execute-bolts/references/halts-and-handoff.md"
   "plugins/mega-sdd/references/model-tiers.md"
-  "plugins/mega-sdd/references/lib-patterns/laravel/rbac-libs.md"
 )
 for f in "${files[@]}"; do
   # A missing file would make the negative grep below pass vacuously.

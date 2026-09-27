@@ -47,9 +47,8 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks the unresolved CONFL
    the resolved claims'
    `resolution:` fields appear from the RESOLVED blocks' Claim lines. Exit 2 = the
    write-back is malformed (most often a RESOLVED block still missing its Claim
-   line) — fix the markdown and re-run. Do NOT re-run `validate-binding-json.sh`
-   after a derive — parity is tautological immediately after deriving from the
-   same markdown.
+   line) — fix the markdown and re-run.
+   `derive-binding-json.sh` is the single binding.json writer; there is no separate parity re-run.
 
    Per-action behavior (vault.json is never hand-edited — the Step-4 derive run carries every manifest effect):
 

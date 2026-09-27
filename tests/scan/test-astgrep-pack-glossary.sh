@@ -4,13 +4,14 @@
 #
 # STRUCTURAL (always):
 #   1. Every glossary pack exists (20 languages).
-#   2. LANE LAW: every rule's `language:` equals its pack's basename — the
-#      Step-0 router derives lanes from FILENAMES, so a rule parked in another
-#      file is invisible to routing (exactly how 182 .tsx files fell to regex).
+#   2. LANE LAW: every rule's `language:` equals its pack's basename — one
+#      language per pack file; a rule parked in another file is the misfiling
+#      that once sent 182 .tsx files to regex (ast-grep never matches
+#      `typescript`-tagged rules against .tsx).
 #   3. Rule ids are unique across all packs.
 #   4. jsx.yml must NOT exist (ast-grep's javascript grammar parses .jsx; a
-#      jsx pack would double-count every .jsx symbol in the index) — jsx routes
-#      via the ASTGREP_ALIASES map instead.
+#      jsx pack would double-count every .jsx symbol in the index) — .jsx maps
+#      to the javascript lane in scripts/_lib/code_enum.py EXTS instead.
 #
 # LIVE (only when a real ast-grep is installed — skipped gracefully in CI):
 #   5. For the 13 sampled packs (the 11 new + ts/js), the sample exercises
@@ -21,8 +22,9 @@
 #      the sample's (ruleId, 0-based line) set must match EXACTLY - a rule
 #      that also fires on usage sites/locals/signature types passes the
 #      "fires >=1" arm while poisoning the index; this arm catches it.
-#   6. Router pin: probe-scan-engine routes tsx AND jsx to astgrep_langs
-#      (no `no_astgrep_pack` fallback — the training-nextjs regression).
+#   6. Index pin: build-symbol-index.sh indexes a .tsx file on the tsx lane
+#      AND a .jsx file on the javascript lane (no silent drop — the
+#      training-nextjs regression).
 #   7. Dup guard: a .jsx sample scanned with ALL packs concatenated yields
 #      exactly ONE function row (a second row = someone added jsx.yml back).
 #
@@ -32,7 +34,8 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PACKS="$REPO_ROOT/plugins/mega-sdd/assets/astgrep-queries/astgrep"
-PROBE="$REPO_ROOT/plugins/mega-sdd/scripts/probe-scan-engine.sh"
+CODE_ENUM="$REPO_ROOT/plugins/mega-sdd/scripts/_lib/code_enum.py"
+SYMIDX="$REPO_ROOT/plugins/mega-sdd/scripts/build-symbol-index.sh"
 
 fails=0
 pass() { echo "  PASS: $1"; }
@@ -80,8 +83,8 @@ echo "$LANE" | grep -q "^DUP:$" && pass "rule ids unique across all packs" \
 # ── 4. jsx.yml must not exist ────────────────────────────────────────────────
 [ ! -f "$PACKS/jsx.yml" ] && pass "no jsx.yml (jsx aliases to the javascript lane — dup guard)" \
   || fail "jsx.yml exists — every .jsx symbol will double-count in the index"
-grep -q 'ASTGREP_ALIASES = {"jsx": "javascript"}' "$PROBE" \
-  && pass "probe carries the jsx->javascript alias" || fail "jsx alias missing from probe-scan-engine.sh"
+grep -qF '".jsx": "javascript"' "$CODE_ENUM" \
+  && pass "code_enum carries the jsx->javascript alias" || fail "jsx alias missing from _lib/code_enum.py"
 
 # ── LIVE arms ────────────────────────────────────────────────────────────────
 if ! command -v ast-grep >/dev/null 2>&1; then
@@ -273,19 +276,20 @@ echo "$EXACT" | grep -q "^BAD:$" \
   && pass "exact-set pins hold for c/kotlin/haskell/dart/swift (usage-site/local/signature noise stays silent)" \
   || fail "exact-set drift: $(echo "$EXACT" | grep BAD | head -c 400)"
 
-# ── 6. router pin: tsx + jsx land on the ast lane ────────────────────────────
+# ── 6. index pin: tsx + jsx land on the ast lane ─────────────────────────────
+# (9.0 P1b: the Step-0 router probe-scan-engine.sh is gone; the surviving
+# consumer is build-symbol-index.sh over code_enum.py EXTS, so the pin moved here)
 printf 'export function P(){return <a/>}\n' > "$W/r.tsx"
 printf 'export function Q(){return <a/>}\n' > "$W/r.jsx"
-DIGEST=$(bash "$PROBE" --cwd="$W" --lang=tsx:r.tsx --lang=jsx:r.jsx 2>/dev/null)
-echo "$DIGEST" | python3 -c "
+mkdir -p "$W/idx" && cp "$W/r.tsx" "$W/r.jsx" "$W/idx/"
+bash "$SYMIDX" --cwd="$W/idx" --out="$W/idx.json" >/dev/null 2>&1; IRC=$?
+IDX_LANES=$(python3 -c "
 import json, sys
-d = json.load(sys.stdin)
-langs = d.get('astgrep_langs', [])
-falls = [f for f in d.get('fallbacks', []) if f.get('reason') == 'no_astgrep_pack']
-ok = 'tsx' in langs and 'jsx' in langs and not falls
-sys.exit(0 if ok else 1)" \
-  && pass "probe routes tsx + jsx to astgrep_langs (the training-nextjs regression pin)" \
-  || fail "probe still drops tsx/jsx to regex: $DIGEST"
+d = json.load(open(sys.argv[1], encoding='utf-8'))
+print(' '.join(sorted({'%s:%s' % (s['file'], s['lang']) for s in d.get('symbols', [])})))" "$W/idx.json" 2>/dev/null)
+[ "$IRC" = "0" ] && [[ " $IDX_LANES " == *" r.tsx:tsx "* ]] && [[ " $IDX_LANES " == *" r.jsx:javascript "* ]] \
+  && pass "build-symbol-index indexes .tsx on the tsx lane + .jsx on the javascript lane (the training-nextjs regression pin)" \
+  || fail "symbol index drops tsx/jsx from the ast lane: rc=$IRC lanes=[$IDX_LANES]"
 
 # ── 7. dup guard: one function row for a .jsx file across ALL packs ──────────
 ALLRULES=$(awk 'FNR==1 && NR!=1 {print "---"} {print}' "$PACKS"/*.yml)

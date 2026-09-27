@@ -189,6 +189,6 @@ ast-grep matches AST patterns; it does NOT do dataflow analysis, and it is STATE
 ## References
 
 - ast-grep docs: https://ast-grep.github.io/
-- AST engine: ast-grep only (no tree-sitter lane); query glossary under `plugins/mega-sdd/assets/astgrep-queries/astgrep/`, engine resolver `scripts/probe-scan-engine.sh`
+- AST engine: ast-grep only (no tree-sitter lane); query glossary under `plugins/mega-sdd/assets/astgrep-queries/astgrep/` (consumed by `scripts/build-symbol-index.sh`); engine probe `command -v ast-grep` (`hard-rule-scan.md` §Pre-flight: grammar detection)
 - Design spec: `docs/superpowers/specs/2026-05-20-tech-oq-autoresolve-design.md` §6 (v1 grammar)
 - Design spec: `docs/superpowers/specs/2026-05-21-tech-upgrades-iter6-design.md` §4.2

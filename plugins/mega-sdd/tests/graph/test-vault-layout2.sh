@@ -202,13 +202,9 @@ s = open(p).read().replace("## Decisions", "## Keputusan")
 open(p, "w").write(s)
 EOF
 OUT3=$(bash "$P/scripts/derive-vault-json.sh" --vault="$T/bad" </dev/null 2>&1); R3=$?
-OUT3L=$(bash "$P/scripts/derive-claims-ledger.sh" --vault="$T/bad" </dev/null 2>&1); R3L=$?
 [ "$R3" -eq 2 ] && echo "$OUT3" | grep -q '## Decisions' \
   && pass "B3: deriver hard-header FAIL (rc=2, names ## Decisions)" \
   || fail "B3: deriver hard-header (rc=$R3)"
-[ "$R3L" -eq 2 ] && echo "$OUT3L" | grep -q '## Decisions' \
-  && pass "B3: ledger hard-header FAIL (rc=2, names ## Decisions)" \
-  || fail "B3: ledger hard-header (rc=$R3L)"
 
 # B4 — OQ centralization rail: a stray OQ checkbox outside constraints.md FAILS
 cp -R "$FIX/derive-vault-v2" "$T/stray"
@@ -218,21 +214,8 @@ OUT4=$(bash "$P/scripts/derive-vault-json.sh" --vault="$T/stray" </dev/null 2>&1
   && pass "B4: stray OQ outside constraints.md FAILS loud (rc=2)" \
   || fail "B4: stray OQ rail (rc=$R4)"
 
-# B5 — claims-ledger: same claim-id SET across layouts (DOC_CODE via section)
-bash "$P/scripts/derive-claims-ledger.sh" --vault="$T/v2" </dev/null >/dev/null 2>&1
-bash "$P/scripts/derive-claims-ledger.sh" --vault="$T/v1" </dev/null >/dev/null 2>&1
-B5_OUT=$("$PY" - "$T" <<'EOF'
-import json, sys
-t = sys.argv[1]
-a = {c["id"] for c in json.load(open(t + "/v1/claims-ledger.json"))["claims"]}
-b = {c["id"] for c in json.load(open(t + "/v2/claims-ledger.json"))["claims"]}
-srcs = {c["source"].rsplit(":", 1)[0] for c in json.load(open(t + "/v2/claims-ledger.json"))["claims"]}
-print(("PASS: " if a == b else "FAIL: ") + "B5-idset")
-print(("PASS: " if srcs <= {"vault.md", "model.md", "flows.md", "constraints.md"} else "FAIL: ") + "B5-sources")
-EOF
-)
-echo "$B5_OUT"
-echo "$B5_OUT" | grep -q '^FAIL' && rc=1
+# B5 retired in 9.0 P1b: scripts/derive-claims-ledger.sh was deleted (its only executor was the
+# removed bind-codebase); the layout-2 claim set is still parsed by _lib/vault_md.py (B1-B4 above).
 
 # B6 — vault-flows Mermaid mandate fires on a layout-2 flows.md write
 PRJ="$T/proj"; mkdir -p "$PRJ/.mega-sdd/vaults/v"

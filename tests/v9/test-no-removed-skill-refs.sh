@@ -4,12 +4,9 @@
 # (generate-intent, bind-codebase, generate-units, scan-codebase), and every reference
 # path a surviving SKILL.md / command names resolves on disk.
 #
-# Allowed on purpose (each is a P1b cleanup item, listed so P1b can tighten this test):
-#   - "Relocated from skills/<removed>/..." provenance notes in relocated files;
-#   - hooks/pre-tool-use legs keyed on a removed skill id: dead code that can no longer
-#     fire (spec §7 #7 keeps P1 hook edits to correctness only);
-#   - scripts/derive-codebase-map.sh `generated_by: mega-sdd:scan-codebase` — the layout-2
-#     marker existing maps carry (spec §7 #8).
+# Allowed on purpose: "Relocated from skills/<removed>/..." provenance notes in relocated
+# files. P1b pruned the last removed-skill-id legs (hooks/pre-tool-use DEGENERATE-MAP gate
+# + Factory-arm alternates), so the id grep below is strict over the whole plugin.
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"; P="$ROOT/plugins/mega-sdd"
 rc=0; ok() { echo "PASS: $1"; }; bad() { echo "FAIL: $1"; rc=1; }
@@ -22,10 +19,8 @@ done
 hits=$(grep -rnE "skills/($RM)/" "$P" --exclude-dir=tests 2>/dev/null | grep -v -i 'relocated from' || true)
 [ -z "$hits" ] && ok "no path into a removed skill directory (provenance notes excepted)" || { bad "paths into removed skill dirs:"; echo "$hits" | head -20; }
 
-ids=$(grep -rnE "mega-sdd:($RM)" "$P" --exclude-dir=tests 2>/dev/null \
-  | grep -v '^'"$P"'/hooks/pre-tool-use:' \
-  | grep -v '^'"$P"'/scripts/derive-codebase-map.sh:.*generated_by' || true)
-[ -z "$ids" ] && ok "no dispatch / proposal of a removed skill id outside the allow-listed P1b legs" || { bad "removed skill ids still dispatched/proposed:"; echo "$ids" | head -20; }
+ids=$(grep -rnE "mega-sdd:($RM)" "$P" --exclude-dir=tests 2>/dev/null || true)
+[ -z "$ids" ] && ok "no dispatch / proposal of a removed skill id anywhere in the plugin (tests excluded)" || { bad "removed skill ids still dispatched/proposed:"; echo "$ids" | head -20; }
 
 # every `references/...md` / `<skill>/references/...md` / `plugins/mega-sdd/references/...md`
 # path named in a surviving SKILL.md or command resolves

@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 # test-p1-claims-ledger-express.sh — v6 P1 proof suite (spec
-# 2026-08-03-v6-express-spine-design.md §P1.4):
+# 2026-08-03-v6-express-spine-design.md §P1.4), trimmed to what survives 9.0:
 #
-#   1. Ledger determinism — derive-claims-ledger.sh on the shared vault fixture:
-#      claim set, verbatim text, SRC_RE-form sources, byte-identical re-derive,
-#      honest exit 2 on an empty/grammarless vault.
 #   2. Grammar byte-compat — an express-shaped binding.md (no-snapshot provenance
-#      + the additive binding_metadata.retrieval key) through the REAL chain:
-#      stamp -> derive-binding-json -> validate-binding-json ->
-#      validate-handoff-binding-units (FAIL on active CONFLICT) -> make-bound
-#      (refuses, then passes once resolved). The retrieval key must be
+#      + the additive binding_metadata.retrieval key) through the REAL layout-2
+#      chain: stamp -> derive-binding-json -> validate-handoff-binding-units
+#      (FAIL on active CONFLICT, PASS once resolved). The retrieval key must be
 #      parser-invisible (binding.json equal with/without it).
 #   3. Seed-not-boundary reachability — a colliding symbol OUTSIDE the claim's
 #      expected dir MUST be reachable via the unfiltered index query (the
@@ -18,8 +14,6 @@
 #      never-CONFIRMED-by-absence.
 #   4. Flag surface — --express stays in the front-door hint with a body bullet
 #      (translation law); ladder E3 is routed from execute-bolts SKILL.md.
-#   5. Registrations — claims-ledger.json registered in paths.md + the Stop-hook
-#      prune list.
 #
 # 9.0 P1 (spec 2026-09-27 §2/§7): bind-codebase and its express-bind.md /
 # binding-contract.md / auto-memory-handoff.md are deleted. The per-claim
@@ -32,9 +26,17 @@
 # --paths / prior-binding.md composition, binding.md frontmatter provenance
 # (no-snapshot / retrieval key / snapshot-verified override), the
 # binding_input_complete predictive carve-out, and the --express spine switch
-# (orchestrate-flow §Flags, bind-hop append, bind SKILL). Sections 1–2 stay:
-# derive-claims-ledger.sh / derive-binding-json.sh / make-bound.sh are kept in
-# P1 for layout-2 read support (spec 2026-09-27 §7 #8).
+# (orchestrate-flow §Flags, bind-hop append, bind SKILL). Section 2 stays:
+# derive-binding-json.sh + validate-handoff-binding-units.sh are the layout-2
+# read/gate side (spec 2026-09-27 §7 #8/#10).
+#
+# 9.0 P1b: derive-claims-ledger.sh, make-bound.sh and validate-binding-json.sh
+# were deleted (no surviving executor). RETIRED with them: section 1 (ledger
+# determinism — the whole section pinned the ledger deriver), the section-2
+# parity call and make-bound refuse/derive legs (the CONFLICT gate itself stays
+# pinned through validate-handoff-binding-units, both directions), and section 5
+# (claims-ledger.json registrations in paths.md + the Stop-hook prune list —
+# the file has no writer left).
 #
 # CI-safe: bash + python3 only; no ast-grep dependency (index fixtures are
 # hand-written; query-symbol-index.sh is a pure reader).
@@ -52,159 +54,16 @@ fail() { echo "  FAIL: $1"; fails=$((fails + 1)); }
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-# ══ 1. Ledger determinism ═════════════════════════════════════════════════════
-V1="$WORK/proj1/.mega-sdd/vaults/demo"
-mkdir -p "$V1"
-cp "$FIX"/0*.md "$V1/"
-
-bash "$P/scripts/derive-claims-ledger.sh" --vault "$V1" >/dev/null 2>&1
-[ $? -eq 0 ] && [ -f "$V1/claims-ledger.json" ] \
-  && pass "ledger derives (rc 0) on the shared vault fixture" \
-  || fail "ledger derive failed on the shared vault fixture"
-
-LEDGER_CHECK=$(V="$V1" python3 - <<'PY'
-import json, os, re
-d = json.load(open(os.path.join(os.environ["V"], "claims-ledger.json")))
-errs = []
-ids = [c["id"] for c in d["claims"]]
-types = {c["type"] for c in d["claims"]}
-if len(ids) != len(set(ids)):
-    errs.append("duplicate claim ids")
-for want in ("mode", "entity", "flow", "decision"):
-    if want not in types:
-        errs.append(f"missing claim type {want}")
-SRC_RE = re.compile(r"^(\d{2}-[A-Za-z0-9._-]+\.md):(\d+)$")
-for c in d["claims"]:
-    if not SRC_RE.match(c["source"]):
-        errs.append(f"{c['id']}: source not SRC_RE form: {c['source']}")
-ent = next((c for c in d["claims"] if c["type"] == "entity" and c.get("entity") == "leave_request"), None)
-if not ent:
-    errs.append("leave_request entity claim missing")
-else:
-    if "LeaveRequest" not in ent["hints"]["symbols"]:
-        errs.append("PascalCase hint variant missing")
-    if not ent.get("fields"):
-        errs.append("entity fields[] empty")
-if not d.get("doc_shas", {}).get("03-data-model.md"):
-    errs.append("doc_shas missing 03-data-model.md")
-print(";".join(errs) if errs else "OK")
-PY
-)
-[ "$LEDGER_CHECK" = "OK" ] \
-  && pass "ledger schema: types, unique ids, SRC_RE sources, hints, fields, doc_shas" \
-  || fail "ledger schema check: $LEDGER_CHECK"
-
-# verbatim text: the entity claim text is the fixture's Purpose comment, verbatim
-grep -qF '"text": "System user account"' "$V1/claims-ledger.json" \
-  && pass "claim text is verbatim vault text (Purpose comment)" \
-  || fail "entity claim text not verbatim from the vault"
-
-# byte-identical re-derive (generated_at preserved on identical content)
-S1=$(python3 -c "import hashlib;print(hashlib.sha256(open('$V1/claims-ledger.json','rb').read()).hexdigest())")
-bash "$P/scripts/derive-claims-ledger.sh" --vault "$V1" >/dev/null 2>&1
-S2=$(python3 -c "import hashlib;print(hashlib.sha256(open('$V1/claims-ledger.json','rb').read()).hexdigest())")
-[ "$S1" = "$S2" ] \
-  && pass "re-derive is byte-identical (deterministic, generated_at preserved)" \
-  || fail "re-derive changed bytes"
-
-# empty vault -> honest exit 2, ledger NOT written
-V2="$WORK/proj2/.mega-sdd/vaults/empty"
-mkdir -p "$V2"
-for f in 00-index.md 01-overview.md 02-architecture.md 03-data-model.md 04-flows.md 05-decisions.md 06-constraints.md; do
-  printf '# stub\n' > "$V2/$f"
-done
-bash "$P/scripts/derive-claims-ledger.sh" --vault "$V2" >/dev/null 2>&1
-RC=$?
-[ "$RC" -eq 2 ] && [ ! -f "$V2/claims-ledger.json" ] \
-  && pass "zero-claims vault -> exit 2, ledger NOT written (fail-closed)" \
-  || fail "zero-claims vault: rc=$RC written=$([ -f "$V2/claims-ledger.json" ] && echo yes || echo no)"
-
-# missing vault dir -> exit 3
-bash "$P/scripts/derive-claims-ledger.sh" --vault "$WORK/nope" >/dev/null 2>&1
-[ $? -eq 3 ] && pass "missing vault dir -> exit 3" || fail "missing vault dir rc != 3"
-
-# ── 1b. Round-folded adversarial arms ────────────────────────────────────────
-# abs vs rel vs trailing-slash invocation -> byte-identical ledger (the vault
-# field records the slug, never the caller's argument)
-S_ABS=$(python3 -c "import hashlib;print(hashlib.sha256(open('$V1/claims-ledger.json','rb').read()).hexdigest())")
-( cd "$WORK/proj1" && bash "$P/scripts/derive-claims-ledger.sh" --vault .mega-sdd/vaults/demo >/dev/null 2>&1 )
-bash "$P/scripts/derive-claims-ledger.sh" --vault "$V1/" >/dev/null 2>&1
-S_REL=$(python3 -c "import hashlib;print(hashlib.sha256(open('$V1/claims-ledger.json','rb').read()).hexdigest())")
-[ "$S_ABS" = "$S_REL" ] \
-  && pass "abs/rel/trailing-slash invocations are byte-identical (vault = slug)" \
-  || fail "invocation form changed ledger bytes"
-grep -qF '"vault": "demo"' "$V1/claims-ledger.json" \
-  && pass "vault field is the slug, not the caller path" \
-  || fail "vault field leaks the invocation path"
-
-# mode claim comes from the Vault Lock SECTION, never a prose decoy line
-V4="$WORK/proj4/.mega-sdd/vaults/decoy"
-mkdir -p "$V4"; cp "$FIX"/0*.md "$V4/"
-python3 - "$V4/00-index.md" <<'PY'
-import sys
-p = sys.argv[1]
-c = open(p, encoding="utf-8").read()
-open(p, "w", encoding="utf-8").write("# Vault\n\n- **Implementation mode**: `WRONG-decoy`\n\n" + c)
-PY
-bash "$P/scripts/derive-claims-ledger.sh" --vault "$V4" >/dev/null 2>&1
-python3 - "$V4/claims-ledger.json" <<'PY' && pass "mode claim scoped to the Vault Lock section (decoy ignored)" || fail "mode claim harvested from a prose decoy line"
-import json, sys
-d = json.load(open(sys.argv[1]))
-m = [c for c in d["claims"] if c["type"] == "mode"]
-sys.exit(0 if m and "WRONG-decoy" not in m[0]["text"] else 1)
-PY
-
-# grammar-marginal DBML fails LOUD (exit 2), never a silently narrowed universe
-V5="$WORK/proj5/.mega-sdd/vaults/marginal"
-mkdir -p "$V5"; cp "$FIX"/0*.md "$V5/"
-printf '# DM\n\n```dbml\nTable caf\303\251_orders {\n  id int\n}\n```\n' > "$V5/03-data-model.md"
-bash "$P/scripts/derive-claims-ledger.sh" --vault "$V5" >/dev/null 2>&1
-[ $? -eq 2 ] && pass "unparseable Table name -> exit 2 (no silent entity drop)" \
-  || fail "unparseable Table name did not fail loud"
-printf '# DM\n\n```dbml\nTable inline { id int }\nTable after {\n  id int\n}\n```\n' > "$V5/03-data-model.md"
-bash "$P/scripts/derive-claims-ledger.sh" --vault "$V5" >/dev/null 2>&1
-[ $? -eq 2 ] && pass "one-line Table block -> exit 2 (depth desync fails loud)" \
-  || fail "one-line Table did not fail loud"
-
-# constraint (NFR table, incl. escaped pipe) + component (## §) claim types
-V6="$WORK/proj6/.mega-sdd/vaults/full"
-mkdir -p "$V6"; cp "$FIX"/0*.md "$V6/"
-cat > "$V6/06-constraints.md" <<'EOF'
-# Constraints
-
-## §tech-constraints Technical constraints
-
-## Non-functional requirements
-
-| Category | Requirement | Source |
-|----------|-------------|--------|
-| Performance | p95 API \| latency < 300ms | PRD §7 |
-| Scalability | Support 10k concurrent users | PRD §8 |
-EOF
-bash "$P/scripts/derive-claims-ledger.sh" --vault "$V6" >/dev/null 2>&1
-python3 - "$V6/claims-ledger.json" <<'PY' && pass "constraint + component types extracted; escaped pipe unescaped verbatim" || fail "constraint/component extraction or escaped-pipe handling wrong"
-import json, sys
-d = json.load(open(sys.argv[1]))
-types = {c["type"] for c in d["claims"]}
-cons = [c for c in d["claims"] if c["type"] == "constraint"]
-comp = [c for c in d["claims"] if c["type"] == "component"]
-ok = ("constraint" in types and "component" in types
-      and any(c["text"] == "p95 API | latency < 300ms" for c in cons)
-      and any(c.get("native_id") == "tech-constraints" for c in comp))
-sys.exit(0 if ok else 1)
-PY
-
 # ══ 2. Grammar byte-compat (express-shaped binding through the real chain) ═══
 PROJ="$WORK/proj3"
 EV="$PROJ/.mega-sdd/vaults/demo"
 mkdir -p "$EV"
 cp "$FIX"/0*.md "$EV/"
-cp "$FIX/expected-vault.json" "$EV/vault.json"   # make-bound requires a vault manifest
 
 write_express_binding() {  # $1 = 1 active conflict | 2 resolved (DEFER)
   # Variant 2 mirrors a post-resolve-oq DEFER: the CONFLICT block stays as a
   # ✅ RESOLVED (DEFER) record, the State Map row re-verdicts to OQ, Summary
-  # conflict drops to 0 — make-bound proceeds (no CONFLICT verdict), the gate
+  # conflict drops to 0 (no CONFLICT verdict), the gate
   # sees the DEFER-resolved id as an ADVISORY extra (KEEP_VAULT would demand a
   # citing unit and correctly stay blocking — deliberately not this arm).
   local C_HEAD='### CONFLICT-1 — product name collision'
@@ -301,10 +160,6 @@ PY
   && pass "binding.json carries provenance/head/verdicts verbatim (retrieval key invisible)" \
   || fail "binding.json content: $DBJ_CHECK"
 
-bash "$P/scripts/validate-binding-json.sh" --vault "$EV" >/dev/null 2>&1 \
-  && pass "validate-binding-json parity rc 0" \
-  || fail "binding.json parity failed"
-
 # retrieval-key invisibility: strip the key, re-derive, compare (minus generated_at)
 cp "$EV/binding.json" "$WORK/with-key.json"
 python3 - "$EV/binding.md" <<'PY'
@@ -336,12 +191,7 @@ grep -q '"conflict_unresolved"' "$PROJ/.mega-sdd/.validation-blockers.json" 2>/d
   && pass "CONFLICT gate FAILs on the express binding (conflict_unresolved)" \
   || fail "CONFLICT gate did not fire on express binding (rc=$GATE_RC)"
 
-bash "$P/scripts/make-bound.sh" --vault "$EV" >/dev/null 2>&1
-[ $? -eq 2 ] && [ ! -d "$EV/bound" ] \
-  && pass "make-bound REFUSES (rc 2) while the express CONFLICT is active" \
-  || fail "make-bound did not refuse on active CONFLICT"
-
-# resolved variant -> gate opens, bound/ derives
+# resolved variant -> gate opens
 write_express_binding 2
 bash "$P/scripts/derive-binding-json.sh" --vault "$EV" >/dev/null 2>&1 \
   || fail "derive-binding-json failed on resolved express binding"
@@ -349,10 +199,6 @@ bash "$P/scripts/validate-handoff-binding-units.sh" --cwd="$PROJ" --quiet >/dev/
 grep -q '"status": "PASS"' "$PROJ/.mega-sdd/.validation-blockers.json" 2>/dev/null \
   && pass "gate PASSes once the express CONFLICT is structurally resolved" \
   || fail "gate did not PASS after resolution"
-bash "$P/scripts/make-bound.sh" --vault "$EV" >/dev/null 2>&1 \
-  && [ -f "$EV/bound/binding.md" ] \
-  && pass "make-bound derives bound/ from the resolved express binding" \
-  || fail "make-bound failed on resolved express binding"
 
 # ══ 3. Seed-not-boundary reachability ════════════════════════════════════════
 IDX="$WORK/symbol-index.json"
@@ -435,23 +281,14 @@ grep -qF 'references/jit-bind-and-quarantine.md' "$XB" \
   && pass "execute-bolts SKILL.md routes to ladder E3 (one level deep)" \
   || fail "ladder E3 reference not routed from execute-bolts SKILL.md"
 
-# ══ 5. Registrations ══════════════════════════════════════════════════════════
+# ══ 5. Registrations — RETIRED ═══════════════════════════════════════════════
 # (RETIRED 9.0 P1: the loud standard-lane fallback + standard-fallback audit
 # token, the fallback no-retrieval-key rule, and express binding.md provenance
 # = no-snapshot — the standard bind lane and the whole-vault express binding.md
 # writer are deleted. Section 2 still proves the layout-2 READ side parses the
 # no-snapshot + retrieval-key frontmatter.)
-
-PM="$P/references/paths.md"
-grep -qF 'claims-ledger.json' "$PM" \
-  && grep -qF 'derive-claims-ledger.sh' "$PM" \
-  && pass "claims-ledger.json registered in paths.md (layout + per-skill row)" \
-  || fail "paths.md registration missing"
-# (v7.5.0 №D: the PostToolUse debounce probe died with the validator fan-out —
-# the Stop-hook probe below is the surviving prune list.)
-grep -qF 'claims-ledger.json' "$P/hooks/stop" \
-  && pass "claims-ledger.json in the Stop-hook prune list" \
-  || fail "Stop prune list missing claims-ledger.json"
+# (RETIRED 9.0 P1b: the claims-ledger.json paths.md registration and Stop-hook
+# prune-list pins — derive-claims-ledger.sh, the file's only writer, is deleted.)
 
 # ══ verdict ═══════════════════════════════════════════════════════════════════
 echo

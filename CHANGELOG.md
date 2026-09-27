@@ -72,6 +72,17 @@ Rilis ini juga membawa dua bagian di bawah (bagian 2: lane router, bagian 3: pem
 - `plan --reconcile` cuma flip task_type/status dan nandai unit `superseded`. Requirement baru lewat `diff-vault` → `plan --regenerate`. `commands/sync.md` dikoreksi (spec §7 #5).
 - Nggak ada command yang dihapus (tetap 6 file).
 
+### P1b — pangkas yang kehilangan setiap eksekutor (aturan: disebut di dok ≠ dieksekusi)
+Audit: 29 agen mengklasifikasi setiap script, lib, referensi plugin, dan cabang hook berdasarkan eksekutor nyata. Semua kandidat hapus dibantah oleh skeptis dulu. Closure transitif menambah satu item, yaitu `validate-binding-json.sh`, yang eksekutor satu-satunya `make-bound.sh`.
+- **Script dihapus (−1.531 baris):**
+  - `derive-codebase-map.sh`: writer map; reader map lama tetap ada.
+  - `make-bound.sh` dan `validate-binding-json.sh`: dihapus sekaligus.
+  - `derive-claims-ledger.sh`, `probe-scan-engine.sh`, `check-freshness.sh`: gak ada eksekutor.
+- **Referensi dihapus:** `lib-patterns/` (9 file) dan `reuse-index-schema.md`. `ci-recipe.md` dipindah ke `docs/mega-sdd/` dan dikoreksi untuk 9.0.
+- **Hook (−102 baris):** cabang gate DEGENERATE-MAP `bind-codebase` (mati), alternatif pola untuk skill yang dihapus, dan sisa `mega-sdd:auto` sejak 6.0. Gak ada gate atau verdict hidup yang berubah.
+- **Test:** 5 file dipensiunkan karena seluruh assertion-nya memaku artefak yang dihapus. Assertion yang memaku perilaku yang bertahan di-repoint ke `validate-handoff-binding-units.sh` / `derive-binding-json.sh`, dan beberapa malah diperketat (mis. L6 blackbox sekarang wajib exit 1 + drop `conflict_unresolved`, bukan asal non-zero). `tests/v9/test-no-removed-skill-refs.sh` sekarang tanpa allowlist: nggak ada id skill yang dihapus di mana pun di plugin.
+- **Tetap:** jalur baca layout-2 (`_lib/vault_md.py`, `_lib/binding_md.py`, `derive-binding-json.sh` + penandanya, `validate-codebase-map.sh`) dan kontrak gateway.
+
 ### Observability — kontrak gateway dipertahankan (wajib, permintaan owner)
 - `mega-sdd-trace:turn`, `mega-sdd-trace:<skill>` di announce, baris trace di setiap prompt dispatch, dan `mega-sdd-note:` **nggak berubah**. Hook `user-prompt-submit` / `session-note` / `session-start` byte-identik dengan 8.8.1.
 - **Regresi yang ditemukan dan ditutup: lane direct/assisted nggak kelihatan di gateway.** Lane ini nggak nulis `.mega-sdd/`, jadi `:turn` hening, dan nggak manggil skill, jadi nggak ada announce. Sekarang:

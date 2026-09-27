@@ -145,7 +145,8 @@ def _section_body(heading_pat, text):
 
 # vault_source grammar (skills/plan/references/unit-schema.md §Required
 # frontmatter, v8 P0): the doc set is the one derive-delta-paths.sh VAULT_DOC_RE
-# accepts (make-bound.sh SRC_RE is its layout-2 subset), including the layout-3
+# accepts (the layout-2 vault/model/flows/constraints names + the legacy 0N-*.md
+# shape that _lib/vault_md.py resolves), including the layout-3
 # context.md that `plan` cites in context_source, plus constitution.md (units
 # cite clauses there). Shapes are named so the advisory says WHAT drifted, not
 # just "non-canonical".

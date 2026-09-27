@@ -11,8 +11,8 @@
 #                              literal in the diff-body sections — layout-2
 #                              `vault.md`/`model.md`/`flows.md`/`constraints.md`
 #                              OR legacy `0N-*.md`; ONE doc-set regex,
-#                              VAULT_DOC_RE, shared by step 1 and step 2 and
-#                              mirrored on make-bound.sh SRC_RE)
+#                              VAULT_DOC_RE, shared by step 1 and step 2 —
+#                              the doc set _lib/vault_md.py resolves)
 #   2. affected claims      <- binding.json claims[] whose vault_source doc
 #                              is in the touched set
 #   3. anchor paths         <- those claims' anchor cells, parsed EXACTLY the
@@ -123,10 +123,11 @@ def norm(p):
 
 
 # The ONE vault-doc grammar this script trusts (P0 fix, 2026-09-10): the
-# layout-2 names + the legacy `0N-*.md` shape — the same doc set make-bound.sh
-# SRC_RE accepts, so a binding.json claim source and a VAULT-DIFF literal are
-# judged by one rule. The lookbehind keeps `sub-vault.md`-style substrings from
-# reading as a vault doc (over-inclusion is safe here, but not needed).
+# layout-2 names + the legacy `0N-*.md` shape (+ layout-3 context.md) — the doc
+# set _lib/vault_md.py resolves, so a binding.json claim source and a
+# VAULT-DIFF literal are judged by one rule. The lookbehind keeps
+# `sub-vault.md`-style substrings from reading as a vault doc (over-inclusion
+# is safe here, but not needed).
 # Before this fix the two regexes below were legacy-only, so on every layout-2
 # vault (v7 Fase 3 default) the script died at "no vault-doc literal" and the
 # delta lane always fell to a FULL re-bind — fail-closed, never silent, but the

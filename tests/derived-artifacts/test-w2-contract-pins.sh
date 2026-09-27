@@ -18,20 +18,24 @@
 #       Anchor cell). Repointed 9.0 from binding-md-template.md to the grammar
 #       owner _lib/binding_md.py, pinned on its PARSE BEHAVIOUR (not comments)
 #   P3  binding-mode re-derives via derive-binding-json.sh; the hand-patch-json
-#       instruction ("set the claim's `resolution:`") is gone; no post-derive
-#       parity re-run is prescribed
+#       instruction ("set the claim's `resolution:`") is gone; derive-binding-json
+#       is named the single binding.json writer (no separate parity re-run)
 #   P4  binding.json schema: generated_by = derive-binding-json@1.0.0, schema
 #       stays "1.0", the resolution enum is KEEP_VAULT|KEEP_CODE|DEFER|SPLIT|null.
 #       Repointed 9.0 from binding-json-schema.md to the derived output (P6's
 #       pair) + binding_md.RESOLUTION_ACTIONS. The 'bind-time authoring
 #       obligation' pin is RETIRED (it described the deleted bind skill's
 #       Anchor-authoring duty).
-#   P5  _lib/binding_md.py exists; BOTH the validator and the generator import
-#       it (one grammar, never forked)
-#   P6  empirical: derive on the plugin round-trip fixture → parity validator
-#       exits 0 on the derived pair (top-level CI exercises the shared lib)
+#   P5  _lib/binding_md.py exists; the generator imports it (one grammar,
+#       never forked)
+#   P6  empirical: derive on the plugin round-trip fixture exits 0 (top-level
+#       CI exercises the shared lib; P4 reads the derived binding.json)
 #   P7  tests/god-review-s4/test-4d-contract-truth.sh still exits 0 (all its
 #       string + empirical pins survive W2)
+#
+# 9.0 P1b: validate-binding-json.sh was deleted (its only executor, make-bound.sh,
+# left with bind-codebase). Its halves of P5/P6 went with it; P3 pins the
+# reworded binding-mode posture (derive-binding-json is the single writer).
 #
 # Run: bash tests/derived-artifacts/test-w2-contract-pins.sh
 set -uo pipefail
@@ -43,9 +47,8 @@ BM="${P}/skills/resolve-oq/references/binding-mode.md"
 LIBDIR="${P}/scripts/_lib"
 LIB="${LIBDIR}/binding_md.py"
 DERIVE="${P}/scripts/derive-binding-json.sh"
-VALIDATE="${P}/scripts/validate-binding-json.sh"
 FX="${P}/tests/graph/fixtures/derive-full"
-for f in "$BM" "$DERIVE" "$VALIDATE"; do
+for f in "$BM" "$DERIVE"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -109,15 +112,12 @@ PY
 grep -qF 'derive-binding-json.sh' "$BM" && ok "P3: binding-mode re-derives binding.json via the script" || fail "P3: re-derive instruction missing"
 if grep -qF "set the claim's" "$BM"; then fail "P3: hand-patch-json instruction survives"; else ok "P3: hand-patch-json instruction gone"; fi
 grep -qF -- '- **Claim**: C-NNN' "$BM" && ok "P3: write-back ensures the Claim line (legacy self-heal)" || fail "P3: Claim-line self-heal missing"
-grep -qF 'Do NOT re-run `validate-binding-json.sh`' "$BM" && ok "P3: no tautological post-derive parity re-run" || fail "P3: parity-re-run posture missing"
+grep -qF '`derive-binding-json.sh` is the single binding.json writer; there is no separate parity re-run' "$BM" && ok "P3: derive-binding-json named the single writer (no post-derive parity re-run)" || fail "P3: single-writer posture missing"
 
-# ── P5: shared lib, both scripts ──
+# ── P5: shared lib, imported by the generator ──
 [ -f "$LIB" ] && ok "P5: scripts/_lib/binding_md.py exists" || fail "P5: binding_md.py missing"
 # anchored to REAL import statements — the bare 'binding_md' token also lives
 # in header comments, so a grammar fork that keeps the comment would pass
-grep -qE '(^|[[:space:]])(from binding_md import|import binding_md)' "$VALIDATE" \
-  && ok "P5: validator imports the shared parser (import statement, not a comment)" \
-  || fail "P5: validator does not IMPORT binding_md (comment-only reference?)"
 grep -qE '(^|[[:space:]])(from binding_md import|import binding_md)' "$DERIVE" \
   && ok "P5: generator imports the shared parser (import statement, not a comment)" \
   || fail "P5: generator does not IMPORT binding_md (comment-only reference?)"
@@ -127,9 +127,7 @@ grep -qE '(^|[[:space:]])(from binding_md import|import binding_md)' "$DERIVE" \
 V="$WORK/v1"; mkdir -p "$V"
 cp "$FX/binding.md" "$V/binding.md"
 bash "$DERIVE" --vault "$V" </dev/null >/dev/null 2>&1; RC=$?
-[ "$RC" -eq 0 ] || fail "P6: derive failed on the round-trip fixture (rc=$RC)"
-bash "$VALIDATE" --vault "$V" </dev/null >/dev/null 2>&1; RC=$?
-[ "$RC" -eq 0 ] && ok "P6: validate-binding-json.sh green on a freshly derived pair" || fail "P6: parity validator rejects the derived pair (rc=$RC)"
+[ "$RC" -eq 0 ] && ok "P6: derive green on the round-trip fixture" || fail "P6: derive failed on the round-trip fixture (rc=$RC)"
 
 # ── P4: schema pins — on the derived output of P6 (the schema doc was not relocated) ──
 jq_py() {  # <python-expr over d> — evaluates against P6's derived binding.json

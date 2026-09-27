@@ -8,8 +8,8 @@
 # byte-identical stamped or not). The 4-code gloss text in PHASE 0 is the
 # SINGLE SOURCE of the enum legend (keterangan contract) — binding.md is a
 # durable Tier-3 artifact (English); the DISPLAYER localizes at prompt time.
-# Shares its md grammar with validate-binding-json.sh via _lib/binding_md.py
-# (the B1 shared-engine precedent — parsing can never fork).
+# Shares its md grammar with every other binding.md reader via
+# _lib/binding_md.py (the B1 shared-engine precedent — parsing can never fork).
 # Exit 0 = derived; 2 = derive/parse error — the artifact does not match the
 # mega-sdd grammar. Externally-authored binding.md: not a bug — the grammar
 # was never adopted; layout-3 has no binding.md (migrate-paths --vault-layout=3

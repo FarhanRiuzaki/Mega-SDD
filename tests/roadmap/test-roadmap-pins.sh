@@ -37,16 +37,31 @@ grep -q '@AGENTS.md' "$P/skills/emit-agents-md/SKILL.md" \
   && pass "C: interop pair (AGENTS.md + @AGENTS.md stub, consent-gated)" \
   || fail "C: interop pair missing"
 
-# D — CI recipe exists + pointers + the --bare warning
-[ -f "$P/references/ci-recipe.md" ] \
-  && grep -q -- '--bare' "$P/references/ci-recipe.md" \
-  && grep -q 'ci-recipe.md' "$P/references/project-config.md" \
-  && grep -q 'ci-recipe.md' "$P/README.md" \
+# D — CI recipe exists + pointers + the --bare warning. 9.0 P1b relocated it from
+# $P/references/ci-recipe.md (no skill/hook/script loads it) to repo docs; the pointers
+# must name the new path.
+CIR="docs/mega-sdd/ci-recipe.md"
+[ -f "$CIR" ] && [ ! -e "$P/references/ci-recipe.md" ] \
+  && grep -q -- '--bare' "$CIR" \
+  && grep -q 'docs/mega-sdd/ci-recipe.md' "$P/references/project-config.md" \
+  && grep -q 'docs/mega-sdd/ci-recipe.md' "$P/README.md" \
   && pass "D: CI recipe shipped + wired (incl. --bare bypass warning)" \
   || fail "D: CI recipe missing or unwired"
-grep -q "Don't auto-resolve PENDING-SYNC.md in CI" "$P/references/ci-recipe.md" \
+grep -q "Don't auto-resolve PENDING-SYNC.md in CI" "$CIR" \
   && pass "D2: CI recipe preserves the moat (no auto-resolve)" \
   || fail "D2: CI moat rule missing"
+# D3 — the per-unit CONFLICT gate: without --units= a bolts/U-*/binding.json CONFLICT is only
+# advisory (validate-handoff-binding-units.sh exits 0), so every gate invocation in the recipe
+# and in project-config's Headless/CI section must carry --units=all; the full audit is rebind-units --units=all.
+# The check reads the COMMAND token only (up to the closing backtick / `;` / `|`), so a
+# `--units=all` in the surrounding prose cannot satisfy it.
+GATE_RE='validate-handoff-binding-units\.sh"? --cwd[^`;|]*'
+! grep -ohE "$GATE_RE" "$CIR" "$P/references/project-config.md" | grep -v -- '--units=all' | grep -q . \
+  && [ "$(grep -cE "$GATE_RE" "$CIR")" -ge 4 ] \
+  && grep -qE "$GATE_RE" "$P/references/project-config.md" \
+  && grep -qE 'rebind-units\.sh"? --cwd[^`;|]*--units=all' "$CIR" \
+  && pass "D3: CI gates carry --units=all (per-unit CONFLICT blocks) + full audit via rebind-units" \
+  || fail "D3: a CI gate step omits --units=all (per-unit CONFLICTs would pass)"
 
 # E — EARS optional tier (backward-compatible). The unit schema moved from the deleted
 # generate-units skill to plan/references/unit-schema.md (9.0 P1 relocation).

@@ -631,12 +631,11 @@ PYCE
         ;;
     esac
     # Branch 1c: scope flag validation for orchestrate-flow (the /mega-sdd front
-    # door) / plan; the mega-sdd:auto case arm is inert since the
-    # 6.0.0 alias cull (no auto skill exists) — kept as a harmless dead match.
+    # door) / plan.
     # Reads transcript_path to find user's most recent message +
     # extract --scope=X flag (args not in tool_input). Validates against PRD scopes.
     case "${SKILL_NAME:-}" in
-      mega-sdd:auto|mega-sdd:plan|mega-sdd:orchestrate-flow)
+      mega-sdd:plan|mega-sdd:orchestrate-flow)
         if [ -n "${TRANSCRIPT_PATH:-}" ] && [ -f "$TRANSCRIPT_PATH" ]; then
           # Extract most recent USER message text from transcript
           USER_MSG=$(TRANSCRIPT_PATH="$TRANSCRIPT_PATH" python3 -c '
@@ -696,12 +695,13 @@ except Exception:
     # side; this closes the backward side (factory-routing.md step-4 safety checks).
     # RECOMPUTE first (like preflight/scope-flag below) so a ledger reset SELF-CLEARS:
     # the validator with no raw ledger writes SKIP → no block (no stale-state deadlock).
-    # Per-phase precision: ONLY the stuck phase is blocked — a sibling phase (e.g. a
-    # re-scan to FIX the stuck bind) stays allowed. orchestrate-flow / auto are NOT
-    # gated: they own the --resume recovery route. Placed BEFORE preflight so a stuck
-    # preflight-gated phase reports the more-specific Factory halt.
+    # Per-phase precision: ONLY the stuck phase is blocked — a sibling phase (e.g. an
+    # extract-intelligence re-run while the `plan` phase is stuck) stays allowed.
+    # orchestrate-flow is NOT gated: it owns the --resume recovery route. Placed
+    # BEFORE preflight so a stuck preflight-gated phase reports the more-specific
+    # Factory halt.
     case "${SKILL_NAME:-}" in
-      mega-sdd:extract-intelligence|mega-sdd:generate-intent|mega-sdd:scan-codebase|mega-sdd:bind-codebase|mega-sdd:generate-units)
+      mega-sdd:extract-intelligence)
         FACTORY_VALIDATOR="${SCRIPT_DIR_RPR}/../scripts/validate-factory-ledger.sh"
         if [ -x "$FACTORY_VALIDATOR" ]; then
           bash "$FACTORY_VALIDATOR" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
@@ -1411,106 +1411,6 @@ elif ATTEMPT_PATH:
         fi
       }
       if [ -n "$GATE_REASON" ]; then emit_block "$GATE_REASON"; fi
-    fi
-
-    # ─── bind-codebase DEGENERATE-MAP gate (clinic-project audit 2026-06-12) ──
-    # The moat's invariant #1 is spec↔code grounding; binding against a
-    # codebase-map.md that is missing its frontmatter languages AND all content
-    # sections is false grounding (the clinic run bound against an empty shell
-    # and every downstream verdict inherited the void). Block bind-codebase when
-    # the map validator attests the map is structurally degenerate; a partial
-    # map (some sections present) is NOT blocked — only the empty-shell shape.
-    if [ "${SKILL_NAME:-}" = "mega-sdd:bind-codebase" ]; then
-      # ── INT-1 self-heal (god-review S3): the scan procedure's mandated write
-      # path is temp-file + mv (Step 10a scrub) and nothing re-validates the map at
-      # write time (the PostToolUse dispatch died in №D v7.5.0; the mv never fired
-      # it anyway) — so .codebase-map-state.json can be stale in BOTH
-      # directions (fail-open on a fresh degenerate map; permanent false-block
-      # after a valid re-scan). Re-validate lazily when the map is newer than its
-      # state (GateGuard lazy-rebuild pattern). Probe order mirrors bind-codebase.
-      CM_STATE="${PROJECT_ROOT}/.mega-sdd/.codebase-map-state.json"
-      # S4 BC-MAPARG-1: bind-codebase accepts an explicit second-positional map
-      # path — a custom-path map used to escape this gate entirely (degenerate
-      # custom map bound ungated; valid custom map falsely blocked on a stale
-      # canonical shell). When the Skill args name an existing *.md that is not
-      # a vault doc, validate THAT file (--file-path mode) instead of the probe.
-      # S4 round-2 hardening: shlex tokenizing (quoted paths with spaces),
-      # vault-doc paths are never map candidates (a vault .md named positionally
-      # must not be validated as the map), LAST candidate wins (vault positional
-      # comes first; the map is the later positional).
-      CM_MAP=""
-      CM_ARG=$(printf '%s' "${SKILL_ARGS_B64:-}" | PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
-import base64, os, shlex, sys
-root = os.environ.get("PROJECT_ROOT", "")
-try:
-    args = base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace")
-except Exception:
-    raise SystemExit(0)
-try:
-    toks = shlex.split(args)
-except Exception:
-    toks = args.split()
-cand = None
-for tok in toks:
-    if not tok.endswith(".md") or tok.startswith("--"):
-        continue
-    if "/vaults/" in tok or tok.startswith("vaults/") or "/.mega-sdd/vaults/" in tok:
-        continue  # vault docs are never codebase maps
-    p = tok if os.path.isabs(tok) else os.path.join(root, tok)
-    if os.path.isfile(p):
-        cand = p
-if cand:
-    print(cand)
-' 2>/dev/null)
-      if [ -n "$CM_ARG" ]; then
-        CM_MAP="$CM_ARG"
-      else
-        CM_MAP="${PROJECT_ROOT}/.mega-sdd/codebase/codebase-map.md"
-        [ -f "$CM_MAP" ] || CM_MAP="${PROJECT_ROOT}/codebase-map.md"
-      fi
-      if [ -n "$CM_ARG" ]; then
-        # Custom-path map: validate the actual bind input (--file-path).
-        # S4 round-2 (state-poisoning fix): the shared .codebase-map-state.json
-        # must keep describing the CANONICAL map — a custom-map verdict left in
-        # it either opened the NEXT plain bind over a degenerate canonical map
-        # (PASS poisoning) or false-blocked it (FAIL poisoning). Snapshot the
-        # state, evaluate, then restore before acting on the verdict.
-        CM_BAK="$(mktemp 2>/dev/null || mktemp -t cmbak)"
-        CM_HAD_STATE=0
-        [ -f "$CM_STATE" ] && { cp "$CM_STATE" "$CM_BAK" 2>/dev/null; CM_HAD_STATE=1; }
-        bash "${SCRIPT_DIR_RPR}/../scripts/validate-codebase-map.sh" --cwd="$PROJECT_ROOT" --file-path="$CM_MAP" --quiet >/dev/null 2>&1 || true
-      elif [ -f "$CM_MAP" ]; then
-        # Tie-loses hazard: bash-3.2 -nt compares whole seconds, and mv/cp -p can
-        # preserve an OLDER mtime — so trust the state only when it is STRICTLY
-        # newer than the map; any tie or inversion re-validates (cheap, bind-only path).
-        if [ ! -f "$CM_STATE" ] || [ ! "$CM_STATE" -nt "$CM_MAP" ]; then
-          bash "${SCRIPT_DIR_RPR}/../scripts/validate-codebase-map.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true
-        fi
-      fi
-      MAP_REASON=$(PROJECT_ROOT="$PROJECT_ROOT" python3 -c '
-import json, os
-p = os.path.join(os.environ["PROJECT_ROOT"], ".mega-sdd", ".codebase-map-state.json")
-try:
-    d = json.load(open(p))
-except Exception:
-    d = None
-if d and d.get("status") == "FAIL":
-    issues = d.get("issues", [])
-    sec = next((i for i in issues if i.get("halt_type") == "codebase_map_sections_incomplete"), None)
-    if sec and "7 sections" in (sec.get("detail") or "") or (sec and len(sec.get("missing", [])) >= 7):
-        print("mega-sdd:bind-codebase is blocked — codebase-map.md is structurally DEGENERATE (all content sections missing per the map validator). Binding against an empty map produces false CONFIRMED/CONFLICT verdicts (invariant #1: spec-to-code grounding). Re-run scan-codebase to produce a real map, then bind. State: %s" % p)
-' 2>/dev/null)
-      # S4 round-2: restore the canonical-map state BEFORE acting on the custom
-      # verdict — the shared state must never carry a custom-file verdict.
-      if [ -n "$CM_ARG" ]; then
-        if [ "${CM_HAD_STATE:-0}" -eq 1 ]; then
-          cp "$CM_BAK" "$CM_STATE" 2>/dev/null || true
-        else
-          rm -f "$CM_STATE" 2>/dev/null || true
-        fi
-        rm -f "${CM_BAK:-}" 2>/dev/null || true
-      fi
-      if [ -n "$MAP_REASON" ]; then emit_block "$MAP_REASON"; fi
     fi
     ;;
 

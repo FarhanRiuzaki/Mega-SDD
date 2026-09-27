@@ -7,11 +7,18 @@
 # (vault fixture = plugins/mega-sdd/tests/graph/fixtures/derive-vault, binding
 # adapted from fixtures/derive-full). The proof is two-sided:
 #   happy path  — every deriver/validator produces the real artifact chain;
-#   gate firing — make-bound refuses on CONFLICT, preflight refuses a
+#   gate firing — validate-handoff-binding-units blocks on an active CONFLICT
+#                 (conflict_unresolved), preflight refuses a
 #                 tamper-then-mint (exit 8), postflight catches a committed
 #                 violation (MISMATCH), citation-map halts on a fabricated
 #                 path, drift is detected on source change.
 # Runs entirely in a mktemp workspace; never touches the repo.
+#
+# 9.0 P1b: make-bound.sh and validate-binding-json.sh were deleted (no surviving
+# executor). The S5 parity leg went with the validator; the S6 CONFLICT refusal
+# was RE-POINTED to the surviving invariant-#2 carrier, validate-handoff-binding-units
+# (the bound/ mirror + BIND-annotation assertions left with make-bound; S7+ never
+# read bound/). The per-unit JIT leg of the same gate stays pinned at S14c-e.
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -80,8 +87,8 @@ if [ -f "$VAULT/_meta/ai-consumer-guide.md" ] \
   ok "guide installed via cp, cksum-identical to shipped template"
 else bad "consumer guide cp failed"; fi
 
-# ── S5 binding (model-sim, ACTIVE CONFLICT) + stamp + derive + parity ────────
-stage "S5 binding write -> stamp -> derive -> parity"
+# ── S5 binding (model-sim, ACTIVE CONFLICT) + stamp + derive ─────────────────
+stage "S5 binding write -> stamp -> derive"
 write_binding() { # $1 = act (1: active conflict, 2: resolved/clean)
   local C050_VERDICT="CONFLICT" C050_HEAD="### CONFLICT-1 — product name collision"
   local RESLINE=""
@@ -147,21 +154,20 @@ G=0; for g in KEEP_VAULT KEEP_CODE DEFER SPLIT; do grep -q "$g = " "$VAULT/bindi
 [ $G -eq 4 ] && ok "all 4 keterangan glosses present in artifact" || bad "glosses missing ($G/4)"
 OUT="$(bash "$SCR/derive-binding-json.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
 [ $RC -eq 0 ] && ok "derive-binding-json re-run rc=0 (stamp idempotent)" || bad "derive-binding-json rc=$RC: $OUT"
-OUT="$(bash "$SCR/validate-binding-json.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
-[ $RC -eq 0 ] && ok "parity gate PASS" || bad "parity rc=$RC: $OUT"
 
-# ── S6 CONFLICT gate LIVE: refuse, resolve, produce ──────────────────────────
-stage "S6 make-bound: refusal on CONFLICT, then clean production"
-OUT="$(bash "$SCR/make-bound.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
-if [ $RC -eq 2 ] && [ ! -d "$VAULT/bound" ]; then
-  ok "GATE FIRED: make-bound refused (exit 2), no bound/ — $(echo "$OUT" | head -1)"
-else bad "expected refusal, rc=$RC bound=$([ -d "$VAULT/bound" ] && echo yes || echo no): $OUT"; fi
+# ── S6 CONFLICT gate LIVE: block, resolve, clear ─────────────────────────────
+stage "S6 validate-handoff-binding-units: block on CONFLICT, clear once resolved"
+BLK="$PROJ/.mega-sdd/.validation-blockers.json"
+bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --quiet </dev/null >/dev/null 2>&1; RC=$?
+python3 -c "import json,sys;d=json.load(open(sys.argv[1]));assert d['status']=='FAIL' and [x for x in d['drops'] if x['type']=='conflict_unresolved' and x.get('conflict_id')=='CONFLICT-1'], d" "$BLK" 2>/dev/null \
+  && [ $RC -eq 1 ] && ok "GATE FIRED: active CONFLICT-1 -> conflict_unresolved, exit 1" \
+  || bad "expected a conflict_unresolved block on CONFLICT-1, rc=$RC: $(head -c 300 "$BLK" 2>/dev/null)"
 write_binding 2
 bash "$SCR/derive-binding-json.sh" --vault "$VAULT" </dev/null >/dev/null 2>&1
-OUT="$(bash "$SCR/make-bound.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
-[ $RC -eq 0 ] && [ -d "$VAULT/bound" ] && ok "clean re-bind produced bound/: $OUT" || bad "make-bound rc=$RC: $OUT"
-cmp -s "$VAULT/binding.md" "$VAULT/bound/binding.md" && ok "bound/binding.md mirror byte-identical" || bad "mirror differs"
-grep -q "<!-- BIND: " "$VAULT/bound/04-flows.md" && ok "BIND annotations injected from binding.json" || bad "annotations missing"
+bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --quiet </dev/null >/dev/null 2>&1; RC=$?
+python3 -c "import json,sys;d=json.load(open(sys.argv[1]));assert not [x for x in d['drops'] if x['type']=='conflict_unresolved'], d['drops']" "$BLK" 2>/dev/null \
+  && ok "resolved CONFLICT-1 (✅ RESOLVED heading) no longer blocks as conflict_unresolved" \
+  || bad "resolved binding still conflict_unresolved (rc=$RC): $(head -c 300 "$BLK" 2>/dev/null)"
 
 # ── S7 bind event into vault.json ────────────────────────────────────────────
 stage "S7 derive-vault-json --event bind"

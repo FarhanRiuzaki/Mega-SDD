@@ -9,15 +9,16 @@
 #      and `### Performance` (Constraints) are NOT flow entries
 #   R5 run-analyze: vault_files_complete PASS on {context.md, vault.json}; counts sync PASS
 #   R6 state_probes: has_vault() true with context.md only; probe_oq_counts fallback = P1 open 1
-#   R7 derive-claims-ledger: rc 0; claim ids minus CN == the layout-2 fixture's ids; the H3 NFR
-#      table under `## Constraints` yields C-CN-01
+#   R7 RETIRED 9.0 P1b — derive-claims-ledger.sh was deleted (no surviving executor); the
+#      cross-layout claim-id set it pinned was assembled inside that script. Cross-layout
+#      parse parity stays pinned by plugins/mega-sdd/tests/graph/test-vault-layout2.sh B2.
 #   R8 build-locked-index indexes a [LOCKED] anchor found in context.md
-#   R9 static pins: make-bound / render-html / certify-artifact / validate-preflight name context.md
+#   R9 static pins: render-html / certify-artifact / validate-preflight / locked-index name context.md
 #   R10 DOCS builders (sit / uat / fsd / prd) run on the layout-3 vault and see F-U-001
 # Run: bash tests/v8-layout3/test-consumers-rekey.sh </dev/null
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; ROOT="$(cd "$HERE/../.." && pwd)"; P="$ROOT/plugins/mega-sdd"; S="$P/scripts"
-FIX="$HERE/fixtures/context-vault"; FIX2="$P/tests/graph/fixtures/derive-vault-v2"
+FIX="$HERE/fixtures/context-vault"
 rc=0; fail() { echo "FAIL: $1"; rc=1; }; pass() { echo "PASS: $1"; }
 T=$(mktemp -d); PRJ="$T/proj"; V="$PRJ/.mega-sdd/vaults/v"; mkdir -p "$V/units" "$PRJ/src"
 cp "$FIX/context.md" "$FIX/constitution.md" "$V/"
@@ -80,28 +81,14 @@ PYX
 )
 echo "$PY_OUT" | grep -q '"has_vault": true' && echo "$PY_OUT" | grep -q '"oq": {"pending_p0_p1": 0' && echo "$PY_OUT" | grep -q '"oq_with_business_p1": {"pending_p0_p1": 1' \
   && pass "R6: has_vault true + OQ fallback from context.md alone — an open P1 tech/scan never gates (0), an open P1 business does (1)" || fail "R6: $PY_OUT"
-# R7 — claims ledger parity
-cp -R "$FIX2" "$T/v2"; rm -f "$T/v2/vault.json"
-bash "$S/derive-claims-ledger.sh" --vault="$V" </dev/null >"$T/l3.log" 2>&1; R7=$?
-bash "$S/derive-claims-ledger.sh" --vault="$T/v2" </dev/null >/dev/null 2>&1
-[ "$R7" -eq 0 ] && pass "R7: claims ledger rc=0 on layout-3" || fail "R7: ledger rc=$R7 ($(head -c 300 "$T/l3.log"))"
-python3 - "$V/claims-ledger.json" "$T/v2/claims-ledger.json" <<'PYX' || rc=1
-import json, sys
-a = json.load(open(sys.argv[1]))["claims"]; b = json.load(open(sys.argv[2]))["claims"]
-ia = {c["id"] for c in a if not c["id"].startswith("C-CN-")}; ib = {c["id"] for c in b if not c["id"].startswith("C-CN-")}
-assert ia == ib, (sorted(ia ^ ib))
-assert any(c["id"] == "C-CN-01" and c["type"] == "constraint" for c in a), "NFR H3 table row not harvested"
-assert all(c["source"].startswith("context.md:") for c in a), "sources must name context.md"
-print("PASS: R7: claim ids (minus CN) identical to the layout-2 fixture; C-CN-01 from the H3 NFR table; sources = context.md")
-PYX
 # R8 — locked index
 printf 'export const guard = 1;\n' > "$PRJ/src/proxy.ts"
 printf '\n### D-009: Guard\n**Decision**: keep `src/proxy.ts:1` [LOCKED] · **Source**: PRD §9.\n' >> "$V/context.md"
 bash "$S/build-locked-index.sh" --cwd="$PRJ" </dev/null >/dev/null 2>&1
 grep -q 'proxy.ts' "$PRJ/.mega-sdd/.locked-files-index.json" 2>/dev/null && pass "R8: build-locked-index harvested a [LOCKED] anchor from context.md" || fail "R8: locked index missing context.md anchor ($(ls "$PRJ/.mega-sdd" | tr '\n' ' '))"
 # R9 — static pins
-grep -q '"context.md", "vault.md", "model.md"' "$S/make-bound.sh" && grep -q 'context.md' "$S/render-html.sh" && grep -q 'context.md (layout-3)' "$S/certify-artifact.sh" && grep -q '"context.md",' "$S/validate-preflight.sh" && grep -q 'vaults/\*/context.md' "$S/build-locked-index.sh" \
-  && pass "R9: make-bound / render-html / certify-artifact / validate-preflight / locked-index name context.md" || fail "R9: a static consumer lost context.md"
+grep -q 'context.md' "$S/render-html.sh" && grep -q 'context.md (layout-3)' "$S/certify-artifact.sh" && grep -q '"context.md",' "$S/validate-preflight.sh" && grep -q 'vaults/\*/context.md' "$S/build-locked-index.sh" \
+  && pass "R9: render-html / certify-artifact / validate-preflight / locked-index name context.md" || fail "R9: a static consumer lost context.md"
 # R10 — DOCS builders
 bash "$S/build-sit-evidence.sh" --vault="$V" --cwd="$PRJ" --quiet </dev/null >"$T/sit.log" 2>&1; R10a=$?
 bash "$S/build-uat-scaffold.sh" --vault="$V" --cwd="$PRJ" --quiet </dev/null >"$T/uat.log" 2>&1; R10b=$?
