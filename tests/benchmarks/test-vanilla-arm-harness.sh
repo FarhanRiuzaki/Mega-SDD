@@ -147,6 +147,27 @@ grep -q '^purity=PASS' "$T/log-vanilla/run.meta" || fail "launcher: vanilla arm 
 grep -qx -- '--settings' "$T/args-vanilla" || fail "launcher: vanilla arm must pass --settings (plugins disabled)"
 grep -qx -- '--settings' "$T/args-megasdd" && fail "launcher: mega-sdd arm must launch exactly as before (no --settings)"
 grep -q '^purity=FAIL' "$T/log-megasdd/run.meta" || fail "launcher: mega-sdd arm without the plugin must record purity=FAIL"
+grep -qx 'plugin=Version: 0.0.0' "$T/log-megasdd/run.meta" || fail "launcher: without P0_PLUGIN_DIR, plugin= records the installed copy"
+# P0_PLUGIN_DIR: plugin= records the TREE under test, never the installed copy the session disables
+# (v9 smoke recorded plugin=Version: 8.7.2 beside purity=PASS mega-sdd 9.0.0).
+mkdir -p "$T/tree/.claude-plugin" "$T/tree-nover/.claude-plugin"
+echo '{"name":"mega-sdd","version":"9.9.9"}' > "$T/tree/.claude-plugin/plugin.json"
+echo '{"name":"mega-sdd"}' > "$T/tree-nover/.claude-plugin/plugin.json"
+( cd "$ROOT" && STUB_ARGS="$T/args-tree" PATH="$T/bin:$PATH" P0_ARM=megasdd P0_PLUGIN_DIR="$T/tree" \
+    bash benchmarks/scripts/p0-headless-run.sh "$T/arm2" prd.md "$T/log-tree" >/dev/null 2>&1 )
+sleep 1
+grep -qx 'plugin=Version: 9.9.9' "$T/log-tree/run.meta" || fail "launcher: P0_PLUGIN_DIR must record the tree's plugin.json version as plugin= (got: $(grep '^plugin=' "$T/log-tree/run.meta" 2>/dev/null))"
+grep -qx -- "$T/tree" "$T/args-tree" || fail "launcher: P0_PLUGIN_DIR must be passed as --plugin-dir"
+STUB_ARGS="$T/args-nover" PATH="$T/bin:$PATH" P0_ARM=megasdd P0_PLUGIN_DIR="$T/tree-nover" \
+  bash "$S/p0-headless-run.sh" "$T/arm2" prd.md "$T/log-nover" >/dev/null 2>&1; [ $? -eq 2 ] || fail "launcher: a P0_PLUGIN_DIR plugin.json without a version must exit 2 (never fall back to the installed version)"
+[ -e "$T/args-nover" ] && fail "launcher: a versionless P0_PLUGIN_DIR must not launch claude"
+# a RELATIVE P0_PLUGIN_DIR is read from the caller's cwd but claude starts in the arm: it must be
+# made absolute, or plugin=/plugin_dir= name a tree other than the one --plugin-dir resolves to
+( cd "$T" && STUB_ARGS="$T/args-rel" PATH="$T/bin:$PATH" P0_ARM=megasdd P0_PLUGIN_DIR=tree \
+    bash "$S/p0-headless-run.sh" "$T/arm2" prd.md "$T/log-rel" >/dev/null 2>&1 )
+sleep 1
+grep -qx -- "$T/tree" "$T/args-rel" && grep -qx "plugin_dir=$T/tree" "$T/log-rel/run.meta" \
+  || fail "launcher: a relative P0_PLUGIN_DIR must be passed and recorded as an absolute path (got: $(grep -A1 -- '--plugin-dir' "$T/args-rel" 2>/dev/null | tail -1))"
 
 [ $err -eq 0 ] && echo "PASS: vanilla-arm harness (purity, metrics, compare, launcher guards)"
 exit $err

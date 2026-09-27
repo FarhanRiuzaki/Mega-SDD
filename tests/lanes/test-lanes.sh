@@ -61,6 +61,22 @@ out="$(bash "$R" --cwd="$V" --text="ubah flow checkout")"
 out="$(bash "$R" --cwd="$B" --prd="$T/clear.md" --lane=direct)"
 [ "$(echo "$out" | lane)" = direct ] && echo "$out" | grep -q '"override": {"from": "assisted"' && ok "L9 --lane override wins and is recorded" || bad "L9 $out"
 bash "$R" --cwd="$G" --lane=bogus >/dev/null 2>&1; [ $? -eq 2 ] && ok "L10 bad --lane → exit 2" || bad "L10 usage exit"
+# L11 vault_present sees exactly the vault shapes derive-state routes on (state_probes.probe_vaults):
+# a canonical dir with vault.json OR any vault doc (a pre-vault.json vault used to route to direct
+# while derive-state treated it as a vault); the legacy roots need vault.json; a dot-dir or a
+# <name>-bound copy is never a vault. <fixture>:<expected vault_present 1|0>
+for fx in .mega-sdd/vaults/x/context.md:1 .mega-sdd/vaults/x/02-model.md:1 .mega-sdd/vaults/x/flows.md:1 \
+          .mega-sdd/vaults/x/vault.json:1 docs/mega-sdd/vaults/x/vault.json:1 vaults/x/vault.json:1 \
+          docs/mega-sdd/vaults/x/context.md:0 vaults/x/02-model.md:0 .mega-sdd/vaults/x-bound/vault.json:0 \
+          .mega-sdd/vaults/.archived/vault.json:0 .mega-sdd/vaults/x/notes.md:0; do
+  f="${fx%:*}"; want="${fx##*:}"; W="$T/v11/$(echo "$f" | tr '/.' '__')"; mkrepo "$W"; mkdir -p "$(dirname "$W/$f")"; echo '{}' > "$W/$f"
+  out="$(bash "$R" --cwd="$W" --text="ubah warna tombol")"
+  got=0; echo "$out" | fired | grep -qw vault_present && got=1
+  probe="$(PYTHONPATH="$P/scripts/_lib" python3 -c 'import sys, state_probes; print(int(bool(state_probes.probe_vaults(sys.argv[1]))))' "$W")"
+  exp_lane=direct; [ "$want" = 1 ] && exp_lane=guarded
+  [ "$got" = "$want" ] && [ "$probe" = "$want" ] && [ "$(echo "$out" | lane)" = "$exp_lane" ] \
+    && ok "L11 $f → vault_present=$got (state_probes agrees), lane $exp_lane" || bad "L11 $f want=$want router=$got state_probes=$probe: $out"
+done
 
 echo "── D: delivery-check.sh ──"
 command -v npm >/dev/null 2>&1 || { echo "SKIP: npm not installed — D checks need it"; exit $rc; }

@@ -126,17 +126,18 @@ Under `--auto`: one upfront confirmation, zero mid-chain questions — human-req
 
 ## Measured against plain Claude Code
 
-Setup: n=3 clean runs per arm, opus, vanilla Claude Code (mega-sdd disabled) as the control, medians. The protocol and decision rules were locked before the runs (`benchmarks/runbooks/vanilla-vs-megasdd.md`).
+Setup: n=3 clean runs per arm, opus, vanilla Claude Code (mega-sdd disabled) as the control, medians. The protocol and decision rules were locked before the runs (`benchmarks/runbooks/vanilla-vs-megasdd.md`). The routed rows are two greenfield fixtures only; assisted on existing code (the brownfield default) is unmeasured.
 
 | Block | vanilla | mega-sdd | verdict |
 |---|---|---|---|
-| greenfield xs (routed → direct) | 3.2 min · $1.03 · AC 12/12 | 2.7 min · $1.16 · AC 12/12 | on par (the xs speed gap is not claimed) |
-| greenfield clinic (routed → assisted) | 30.0 min · $7.68 · AC 10/10 | 26.6 min · $9.30 · AC 10/10 | on par |
+| greenfield xs (routed → direct) | 3.2 min · $1.03 · AC 12/12 | 2.7 min · $1.16 · AC 12/12 | OVERLAP: cost 1.13×, tokens 1.30× (the xs speed gap is not claimed) |
+| greenfield clinic (routed → assisted) | 30.0 min · $7.68 · AC 10/10 | 26.6 min · $9.30 · AC 10/10 | OVERLAP: cost 1.21×, tokens 1.38× |
 | brownfield, 7 seeded traps (guarded) | 19.1 min · $6.46 · traps 5/5 | 60.8 min · $38.93 · traps 5/5 | same traps at ~6× the cost |
-| old default pipeline, greenfield (lite/classic) | — | 2.3–12× slower, 9–22× costlier | equal or lower quality |
+| old default pipeline, greenfield (lite/classic) | — | 2.4–12× slower, 8.8–22× costlier | equal or lower quality |
 
 - The guarded CONFLICT gate fired 3× in 3 runs, all false positives on the pipeline's own anchors. None of the seeded contradictions reached it.
 - The runs were headless, so the interactive value of a CONFLICT halt is unmeasured.
+- No hook runs `delivery-check.sh`. On direct/assisted it is a prose rule: the routed runs ran it 3/3 while it was a procedure step and 6/6 once "done = `VERDICT: PASS`" was written into the lane instructions.
 - mega-sdd makes **no** claim to be faster, cheaper, lighter or stronger than plain Claude Code (rule: [`CLAUDE.md` §Release evidence](./CLAUDE.md#release-evidence--complexity-budget)).
 
 Reports: [greenfield](../../research/2026-09-27-vanilla-vs-megasdd-results.md) · [lane router](../../research/2026-09-27-lane-router-results.md) · [brownfield](../../research/2026-09-27-brownfield-results.md) · the full tables: [root README](../../README.md#measured-against-plain-claude-code).
@@ -175,7 +176,7 @@ The plugin emits exactly two in-band artifacts for an LLM gateway, and nothing e
 
 ## Guarded-lane defense layers
 
-The guarded pipeline **won't let an agent act on what isn't grounded**: an uncertain claim becomes an Open Question, never a guess. These layers make its output traceable and auditable. Measured against plain Claude Code they did not produce better code ([Measured](#measured-against-plain-claude-code)), so they are an audit mechanism, not a quality claim. The full list:
+The guarded pipeline is built so an agent does not act on what isn't grounded: its procedure turns an uncertain claim into an Open Question rather than a guess (technical OQs are AI-decided as labelled choices; headless runs record business defaults as assumptions). These layers make its output traceable and auditable. Measured against plain Claude Code they did not produce better code ([Measured](#measured-against-plain-claude-code)), so they are an audit mechanism, not a quality claim. The full list:
 
 1. **Spec** — `plan` promotes uncertain claims to Open Questions
 2. **OQ classification** — business vs tech; tech is decided by the AI as a labelled, cited, reversible choice; business stays human
@@ -275,7 +276,7 @@ Mega-sdd adopts stable native binaries instead of reinventing them — all optio
 - **The classic chain is removed.** The skills `generate-intent`, `scan-codebase`, `bind-codebase` and `generate-units` are gone (20 → 16 skills), along with the scan-first spine. Their surviving contracts were relocated into `plan` and `execute-bolts`.
 - **`plan --kb`** is the legacy-rebuild hand-off from `extract-intelligence`.
 - **Pre-9.0 vaults** are read; to build on one, run `migrate-paths --vault-layout=3`.
-- **Measured against vanilla Claude Code** (n=3 per arm): routed = on par; guarded = the same trap coverage at ~6× the cost. Details in CHANGELOG 9.0.0 and the research reports linked above.
+- **Measured against vanilla Claude Code** (n=3 per arm): routed = within vanilla's range on two greenfield fixtures (medians 1.1–1.2× cost, 1.3–1.4× tokens, ranges overlapping; assisted on existing code unmeasured); guarded = the same trap coverage at ~6× the cost. Details in CHANGELOG 9.0.0 and the research reports linked above.
 
 **v8.5.0 – v8.8.1** — technical OQs decided by the AI as labelled, cited, reversible choices (8.5.0); the per-unit attempt cap enforced by the hook (8.6.0); the in-band gateway session note (8.7.0); the **state anchor** (8.8.x): code at HEAD is the source of truth, shown as a per-vault FRESH/STALE block at session start and enforced by the fail-closed binding-freshness gate at bolt dispatch.
 

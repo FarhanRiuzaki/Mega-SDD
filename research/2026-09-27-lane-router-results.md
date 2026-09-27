@@ -25,7 +25,10 @@ vanilla on every cost dimension, with equal or lower quality).
 
   **Not measured:** `guarded` (no brownfield fixture yet) and the interactive batched ask (headless).
 - **Snapshots.** Two plugin snapshots were used:
-  - `routed-v1` (xs 1–3): delivery-check was a step in the procedure. One of three runs skipped it.
+  - `routed-v1` (xs 1–3): delivery-check was a step in the procedure. An earlier version of this
+    doc said one of the three runs skipped it. The local run streams (`stream.jsonl`, not committed)
+    show a `delivery-check.sh` call ending in `VERDICT: PASS` in all three, so that claim is
+    withdrawn. Neither version can be checked from the committed raw data.
   - `routed` (xs 4–6, clinic 1–3): "done = delivery-check `VERDICT: PASS`" is stated as the
     definition of done, in the front door and at the top of `direct-lane.md`. All six runs ran
     the check.
@@ -48,7 +51,7 @@ vanilla on every cost dimension, with equal or lower quality).
 
 | clinic | vanilla (09-26/27) | routed (assisted) | lite |
 |---|---|---|---|
-| review-ready (min) | 30.0 [25.5–35.8] | 26.6 [22.7–29.6] | 70.5 [65.0–93.9] |
+| review-ready (min) | 30.0 [25.5–35.8] | 26.6 [22.7–29.6] | 70.6 [65.0–93.9] |
 | cost (USD) | 7.68 [6.29–7.81] | 9.30 [6.95–9.79] | 67.33 [53.29–73.27] |
 | tokens total | 13.1 M | 18.1 M | 146.9 M |
 | tool calls / subagents | 98 / 0 | 141 / 1 | 1,777 / 126 |
@@ -58,7 +61,10 @@ vanilla on every cost dimension, with equal or lower quality).
 | blind rubric | 90 [89–90] | 91 [90–91] | 85 |
 | delivery-check | 3/3 PASS | 3/3 PASS | 0/3 (build fails with an empty env) |
 
-Same-day controls (`vanilla-day2`, n=1, scored in the SAME scorer session as `routed`):
+Same-day controls (`vanilla-day2`, n=1, scored in the same scoring batch as `routed`: one
+`blind-score.sh` call per scenario, in which every label gets its own fresh `claude -p` session. The
+batch grouping comes from the local scoring lists; the committed per-run files record only each
+label's own `scorer_sid`):
 
 | scenario | review-ready | cost | AC | Critical / Important | rubric |
 |---|---|---|---|---|---|
@@ -69,14 +75,17 @@ Same-day controls (`vanilla-day2`, n=1, scored in the SAME scorer session as `ro
 
 | claim | verdict | honest reading |
 |---|---|---|
-| routed faster than vanilla on xs | `BETTER` for review-ready, output tokens | **Not claimed.** The routed runs were on a different day from vanilla 1–3. The same-day vanilla (3.7 min) also sits above the routed range, but that is n=1. The gap is ~0.5 min on a 3-minute task, and the prompts differ (vanilla's spells out "tests per criterion, commit"). The honest summary is "on par". |
-| routed cheaper than vanilla | `OVERLAP` both scenarios (clinic median 1.21×) | not claimed |
-| routed quality ≥ vanilla | AC, Critical `OVERLAP`. xs rubric `WORSE` (93–94 vs 95–96) | the rubric gap is ≤ 2 points across **different scorer sessions**. The same-session vanilla scored 94. Clinic Important 0 vs 1–2 is also cross-session: same-session vanilla = 0 too. Read as "not shown to differ" |
+| routed faster than vanilla on xs | `BETTER` for review-ready, wall, output tokens and code + test lines (565 [529–582] vs 741 [700–1,042]). `routed-v1`: `BETTER` for code + test lines only | **Not claimed.** The routed runs were on a different day from vanilla 1–3. The same-day vanilla (3.7 min) also sits above the routed range, but that is n=1. The gap is ~0.5 min on a 3-minute task, and the prompts differ (vanilla's spells out "tests per criterion, commit"). The honest summary is "on par". |
+| routed cheaper than vanilla | `OVERLAP` both scenarios (xs median 1.13×, clinic 1.21×) | not claimed |
+| routed quality ≥ vanilla | AC, Critical `OVERLAP`. xs rubric `WORSE` (93–94 vs 95–96). Clinic Important `BETTER` (0 vs 1–2) | the xs rubric gap is 1 point at the median (94 vs 95), across **different scoring batches**. The same-batch vanilla scored 94. Clinic Important 0 vs 1–2 is also cross-batch: the same-batch vanilla = 0 too. Read as "not shown to differ" |
+| other clinic verdicts | `WORSE`: subagents (1 vs 0) and distinct files read (9 [3–30] vs 1 [0–2]). `BETTER`: markdown lines added outside `.mega-sdd/` (51 [35–54] vs 78 [57–95]). Everything else `OVERLAP` | none claimed. The one subagent is the assisted lane's blind review |
 | routed vs the pipeline it replaces | every cost dimension: non-overlapping ranges vs lite and classic. AC 12/12 and 10/10 vs 11/12 and 9–10/10 | this is the change's measured effect |
 
 **Bottom line:** on these two greenfield scenarios, mega-sdd with the router is **on par with vanilla
-Claude Code**. It does not beat vanilla. The 9–22× overhead of the old default path is gone. It
-still ships a check vanilla does not run: the delivery-check, which the old pipeline failed 9/9.
+Claude Code**. It does not beat vanilla. The old default path's overhead (2.4–12× the time, 8.8–22×
+the cost) is gone. It still ships a check vanilla does not run: the delivery-check. The old pipeline
+failed it on all 9 clean pipeline runs. The 10th pipeline run, clinic lite-1 (excluded from the
+medians for a system sleep), passed D1–D5.
 
 ## 4. Artefact footprint (MEASURED on the committed trees of the earlier runs)
 
@@ -85,11 +94,17 @@ Replaying the new `.mega-sdd/.gitignore` + opt-in render against the 10 mega-sdd
 | run | `.mega-sdd/` lines committed | would stay tracked | cut |
 |---|---|---|---|
 | xs lite 1 / 3 | 48,118 / 40,284 | 5,113 / 4,268 | 89% / 89% |
-| xs classic 1–3 | 39,390–40,191 | 7,003–7,683 | 80–82% |
-| clinic lite 2–4 | 123,419–126,305 | 19,348–21,463 | 82–84% |
+| xs lite 2 (committed no HTML render) | 3,766 | 3,672 | 2.5% |
+| xs classic 1–3 | 39,390–40,191 | 7,003–7,683 | 81–82% |
+| clinic lite 2–4 | 123,419–126,305 | 19,348–21,463 | 83–85% |
+| clinic lite 1 (excluded run, sleep) | 125,275 | 12,228 | 90% |
+
+Line counts are the files' lines at each final HEAD. Cut ranges are rounded, not truncated (xs
+classic 80.9–82.2%, clinic lite 2–4 82.6–84.7%).
 
 - **What goes:**
-  - the HTML render (78–88% of all lines);
+  - the HTML render: 73.7–87.3% of committed `.mega-sdd/` lines (git numstat) in 9 of the 10
+    repos; xs lite-2 committed no HTML at all;
   - per-lens copies of the unit body, prompts and pack slices;
   - gate-state caches;
   - `state.json`.
@@ -112,35 +127,37 @@ Replaying the new `.mega-sdd/.gitignore` + opt-in render against the 10 mega-sdd
 | clinic lite, 3/3 (not 2/3 as first reported): `build` fails with an empty env | env validated at module import, so it throws while prerendering `/staff/*` | D4 (fresh checkout, `env -i`) + implementer rule 5b: validate at request time |
 | clinic lite-2: 1/220 tests TZ-dependent | test assumed a UTC host | D3 (UTC and UTC+14) + rule 5b |
 
-Routed runs: delivery-check 9/9 PASS (6 xs + 3 clinic), checked afterwards on each final HEAD. This includes xs
-routed-1, the v1 run that skipped the check in-session.
+Routed runs: delivery-check 9/9 PASS (6 xs + 3 clinic), checked afterwards on each final HEAD
+(`delivery-check.json` per run). The three v1 runs are included; see §1 for what they did in-session.
 
 ## 6. Limits
 
 - **Headless.** The assisted batched ask can't be answered, so the model took conservative
   defaults. The interactive value of the ask is unmeasured.
-- **Greenfield only.** `guarded` is untested and so is the moat. The next experiment is
-  `benchmarks/runbooks/brownfield-ambiguous-prd.md`, designed but not run.
+- **Greenfield only.** `guarded` is untested in this block and so is the moat. The next experiment,
+  `benchmarks/runbooks/brownfield-ambiguous-prd.md`, was designed here and run later the same day:
+  `research/2026-09-27-brownfield-results.md`.
 - **Different day from vanilla 1–3.** One same-day vanilla per scenario is the drift check, not a
   second control arm.
 - **Prompt asymmetry.** Vanilla gets a task sentence that spells out the deliverables. Routed gets
   `/mega-sdd:mega-sdd <PRD>`, which is how a user starts the plugin.
-- **Scorer drift across sessions** (see §3). The xs `scoring-routed-*` labels are independent of the
-  earlier rounds.
+- **Scorer drift across scoring batches** (see §3). The xs `scoring-routed-*` labels are independent
+  of the earlier rounds.
 - **Blind-strip warning on clinic.** `PRD/prd-clinic.md` itself contains the word "mega-sdd". The
   file ships to every arm, vanilla included, so it doesn't reveal the arm.
 - **Measured tree vs final tree.** Two changes landed after the runs, found by the full suite. Neither touches a routing decision on these fixtures:
   - the tier-L row in the injected anchor was shortened (the anchor has a byte cap);
   - `route-lane.sh` bounds its `git ls-files` call to 30 s and treats a timeout as `existing_code`.
-- **Cost of this block:** runs $42.04 + scorer $5.41 = **$47.45** (MEASURED from `metrics.json` and
-  the scorer streams).
+- **Cost of this block:** runs $42.04 + scorer $5.41 = **$47.45**. The runs are MEASURED from the
+  committed `metrics.json`. The scorer figure comes from the local scorer streams (11 sessions), so
+  it is not checkable from the committed raw data.
 
 ## 7. Simplifications applied after the measurement (UNMEASURED in runs)
 
 | change | evidence | what it is not |
 |---|---|---|
-| A new PRD on the guarded lane defaults to **lite**. `lane: standard` keeps classic, and existing vaults keep the lane they were built on | xs n=3: lite beats classic on time and cost with no overlap, quality overlaps. Clinic classic historical n=1 ($260 / 102 min) | not measured on clinic in this fixture, a deviation from the locked two-scenario rule (runbook §9). Classic is not removed: brownfield may still need it |
-| Lens **`standards` only rides with `quality`** (H1) | field yield: 5 dispatches, 0 Critical, 1 unique fix (a key name), ~335k tokens; quality found 22 fixes in 5 dispatches | not A/B-tested; n = one field project |
+| A new PRD on the guarded lane defaults to **lite**. `lane: standard` keeps classic, and existing vaults keep the lane they were built on | xs n=3: lite beats classic on time and cost with no overlap, quality overlaps. Clinic classic historical n=1 ($259.66 / 301.4 min wall, plugin 7.35.0, another fixture; runbook §8c) vs clinic lite $53–73 / 65–94 min | not measured on clinic in this fixture, a deviation from the locked two-scenario rule (runbook §9). Classic is not removed: brownfield may still need it |
+| Lens **`standards` only rides with `quality`** (H1) | field yield: 5 dispatches, 0 Critical, 1 unique fix (a key name), ~335k tokens; quality found 22 fixes in 5 dispatches. Source: `research/2026-08-30-lens-yield-field.md` §2–3 (~335k is that report's ESTIMATE, 5 × 67k); not checkable from committed raw data | not A/B-tested; n = one field project |
 
 **Kept, with reasons:**
 

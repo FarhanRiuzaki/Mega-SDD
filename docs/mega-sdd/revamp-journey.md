@@ -1,5 +1,7 @@
 # Revamp Journey — dari aplikasi legacy sampai jadi baru (dan tetap hidup)
 
+> **Sejarah (pra-9.0).** Dokumen ini menggambarkan pipeline sebelum 9.0 — `scan-codebase`, `bind-codebase` dan `generate-units` sudah dihapus (jalur 9.0: `extract-intelligence` → `plan --kb` → `execute-bolts`), dan "gerbang anti-halusinasi" di bawah bukan klaim terukur: di benchmark brownfield gerbang CONFLICT tidak menangkap satu pun dari 3 kontradiksi spec-vs-kode yang ditanam (3 kali nyala, semuanya false positive). Hasil terukur 9.0: [README — Measured](../../README.md#measured-against-plain-claude-code) · [brownfield](../../research/2026-09-27-brownfield-results.md) · [lane router](../../research/2026-09-27-lane-router-results.md) · [greenfield](../../research/2026-09-27-vanilla-vs-megasdd-results.md).
+
 Panduan end-to-end untuk tim yang mau **revamp aplikasi legacy ke stack baru** memakai mega-sdd: mulai dari codebase lama yang tidak ada dokumentasinya, sampai aplikasi baru yang jalan, punya dokumen tim lengkap (PRD/FSD/SIT/UAT), dan tetap sinkron selama maintenance.
 
 > **Bentuk vs walkthrough** — dokumen ini menjelaskan *alurnya dan kenapa tiap babak ada*. Untuk langkah copy-paste dengan expected output, pakai walkthrough-nya: [Scenario 4 — Legacy Rebuild](../../tests/scenarios/scenario-4-legacy-rebuild.md) (single-phase) dan [Scenario 10 — Phased Rebuild](../../tests/scenarios/scenario-10-phased-rebuild-walkthrough.md) (multi-phase).

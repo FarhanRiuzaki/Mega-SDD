@@ -1,6 +1,6 @@
 # Adversarial Acceptance-Test Review Prompt
 
-> Prompt template for the `plan` unit walk's Step 9.5 — adversarial review of acceptance_test authored in Step 9. Closes audit Pattern F structural risk (D4-006): "Never trust AI to both generate and validate" (ACM FSE 2025).
+> Prompt template for the `plan` unit walk's Step 9.5 — adversarial review of acceptance_test authored in Step 9: "Never trust AI to both generate and validate" (ACM FSE 2025).
 
 **Consumed by:** `plan` Step 4 — the unit walk's Step 9.5 (`plan/references/unit-procedure.md`)
 **Output target:** updates `acceptance_test` in unit frontmatter with merged gap assertions + sets `_authored_by:` provenance field
@@ -76,8 +76,9 @@ Subagent dispatch contract:
 - Tool surface: Read, Grep (read-only)
 - Wall-clock budget: ≤3 min per unit
 - Output format: same YAML structure as default mode
+- Trace line: the prompt carries `mega-sdd-trace:plan` on its own line (`docs/gateway-contract.md`: every subagent dispatch prompt carries one)
 
-Subagent is dispatched per-unit; the reviews of all flagged units go out as ONE message dispatching N read-only `Explore` reviewers at once, never serial (`plan/references/plan-procedure.md` §Step 4, L3c).
+Per unit; all flagged units' reviews go out as ONE message of N read-only `Explore` dispatches, never serial (`plan/references/plan-procedure.md` §Step 4, L3c).
 
 ## Gap merge logic (Step 9.5 post-review)
 
@@ -105,5 +106,5 @@ Legacy units (no field present) → treat as `same-pass` for execute-bolts surfa
 
 - Adversarial reviewer MUST NOT modify the unit body — only proposes test additions
 - Adversarial reviewer MUST output strict YAML matching the schema above; parse failures → fallback to `same-pass` provenance + log warning
-- `--no-adversarial-review` flag preserved for users who explicitly want the same-pass behavior (debug / regression testing)
+- `--no-adversarial-review` keeps the same-pass behavior for users who explicitly want it (debug / regression testing)
 - Legacy units re-encountered by `plan --regenerate` get the adversarial review pass on rewrite; user-marked `_authored_by: human` units are preserved untouched

@@ -53,7 +53,7 @@ Run the unit walk (`plan/references/unit-procedure.md` Steps 2 → 12.7) with th
 - **PRE-CODE diet (L2/L3, spec `2026-09-16-clinic-levers-design.md`, MEASUREMENT PENDING — MEASURED cause: the clinic plan took 56 m, §2f):**
   - **Grammar source (L3a):** the SHAPE every validator parses is in `references/unit-grammar-cheatsheet.md` (each regex copied verbatim and parity-pinned) — read it; **never open `validate-*.sh` / `_lib/*.py` to learn a field** (±10 m of the 56).
   - **Write in batches (L3b):** units are written one module per message — every unit Write of that module in ONE turn (≤ 8 Writes), never one unit per turn (13 m for 22 sequential writes); Step 5 validates the batch.
-  - **Adversarial review in parallel (L3c):** the Step 9.5 review of every `risk: high` unit is ONE message dispatching N read-only `Explore` reviewers at once, never serial (±20 m serial for 5 units); gaps merge with `_authored_by:` exactly as before.
+  - **Adversarial review in parallel (L3c):** the Step 9.5 review of every `risk: high` unit is ONE message dispatching N read-only `Explore` reviewers at once, never serial (±20 m serial for 5 units), each prompt carrying the line `mega-sdd-trace:plan`; gaps merge with `_authored_by:`.
   - **DAG shape (L2):** depth ≤ 4 hops, no hub with ≥ 3 direct dependents unless it is a true foundation (schema/migration), no unit with > 6 steps or > 4 `target_files` — `validate-unit-spec.sh` names offenders in `dag_shape_advisory` (critical path, hubs, split candidates); split or reorder before Step 5 ends. The clinic critical path U-001→…→U-021 was 5 hops ≈ the whole bolt-stage once the panel barrier was gone.
 
 ## Step 5 — validator order + halt mapping

@@ -68,8 +68,11 @@ cwd, prd, text, lane_flag, code_min, scale = sys.argv[1:7]
 code_min = int(code_min)
 fired, ev = [], {}
 
-vaults = [p for pat in ('.mega-sdd/vaults/*/vault.json', 'docs/mega-sdd/vaults/*/vault.json', 'vaults/*/vault.json')
-          for p in glob.glob(os.path.join(cwd, pat))]
+# vault = what derive-state routes on (state_probes.probe_vaults + _vault_docs; parity: test-lanes L11)
+ANY = ('vault.json', '0[0-6]-*.md', 'context.md', 'vault.md', 'model.md', 'flows.md', 'constraints.md')
+vaults = sorted({os.path.dirname(p) for rel, marks in (('.mega-sdd/vaults', ANY), ('docs/mega-sdd/vaults', ANY[:1]), ('vaults', ANY[:1]))
+                 for m in marks for p in glob.glob(os.path.join(glob.escape(cwd), rel, '*', m))
+                 if os.path.isfile(p) and not os.path.dirname(p).endswith('-bound')})
 if vaults:
     fired.append('vault_present'); ev['vaults'] = [os.path.relpath(v, cwd) for v in vaults]
 

@@ -336,6 +336,56 @@ RESOLUTION_LINE_RE = re.compile(
 RESOLVED_ACTION_RE = re.compile(
     r"RESOLVED\s*\(\s*(KEEP_VAULT|KEEP_CODE|DEFER|SPLIT)\b", re.IGNORECASE
 )
+def _conflict_blocks(blines):
+    """Yield every structured conflict block of a legacy binding.md as a dict
+    {cid, head, block, active, resolved, action}. ONE grammar for the live binding
+    docs (Pass 3b) and a migrated vault's archived binding.md (the migrated leg)."""
+    i = 0
+    n_lines = len(blines)
+    while i < n_lines:
+        is_conflict_head = bool(CONFLICT_HEADING_RE.match(blines[i]))
+        is_claimid_head = (not is_conflict_head) and bool(CLAIMID_HEADING_RE.match(blines[i]))
+        if not (is_conflict_head or is_claimid_head):
+            i += 1
+            continue
+        head = blines[i]
+        j = i + 1
+        # Block spans from the heading to the next h1–h3 heading (exclusive) or EOF.
+        while j < n_lines and not HEADING_RE.match(blines[j]):
+            j += 1
+        block = "\n".join(blines[i:j])
+        # Canonical CONFLICT-N headings are active fail-closed; C-NNN claim
+        # headings are active only with a STRUCTURAL blocking verdict signal
+        # (heading-trailing or a Verdict line — never mid-prose mentions).
+        active = is_conflict_head or bool(
+            HEAD_BLOCKING_RE.search(head) or VERDICT_BLOCKING_LINE_RE.search(block)
+        )
+        cm = CONFLICT_RE.search(head)
+        if not cm and is_claimid_head:
+            cm = re.search(r"\bC-\d+\b", head)
+        cid = cm.group(0) if cm else "CONFLICT-?"
+        resolved = bool(HEAD_RESOLVED_RE.search(head) or RESOLUTION_LINE_RE.search(block))
+        _action = None
+        if resolved:
+            # Anchor the resolution ACTION to the SAME surface that established `resolved`
+            # — the heading, else the dedicated `- **Resolution**:`/`- **Status**:` line —
+            # NEVER a free block scan: a stray "RESOLVED (DEFER)" in a rationale bullet or a
+            # sibling-conflict cross-reference must not demote a KEEP_VAULT conflict's
+            # un-droppable citation obligation (invariant #2).
+            _hm = RESOLVED_ACTION_RE.search(head)
+            if _hm:
+                _action = _hm.group(1).upper()
+            else:
+                for _ln in block.splitlines():
+                    if RESOLUTION_LINE_RE.search(_ln):
+                        _lm = RESOLVED_ACTION_RE.search(_ln)
+                        _action = _lm.group(1).upper() if _lm else None
+                        break
+        yield {"cid": cid, "head": head, "block": block, "active": active,
+               "resolved": resolved, "action": _action}
+        i = j
+
+
 # Per-conflict-ID resolution action (None = resolved but no recognized action → fail-closed).
 conflict_resolution_action = {}
 for bp in binding_paths:
@@ -344,86 +394,49 @@ for bp in binding_paths:
             blines = f.read().splitlines()
     except Exception:
         continue
-    i = 0
-    n_lines = len(blines)
-    while i < n_lines:
-        is_conflict_head = bool(CONFLICT_HEADING_RE.match(blines[i]))
-        is_claimid_head = (not is_conflict_head) and bool(CLAIMID_HEADING_RE.match(blines[i]))
-        if is_conflict_head or is_claimid_head:
-            head = blines[i]
-            j = i + 1
-            # Block spans from the heading to the next h1–h3 heading (exclusive) or EOF.
-            while j < n_lines and not HEADING_RE.match(blines[j]):
-                j += 1
-            block = "\n".join(blines[i:j])
-            # Canonical CONFLICT-N headings are active fail-closed; C-NNN claim
-            # headings are active only with a STRUCTURAL blocking verdict signal
-            # (heading-trailing or a Verdict line — never mid-prose mentions).
-            active = is_conflict_head or bool(
-                HEAD_BLOCKING_RE.search(head) or VERDICT_BLOCKING_LINE_RE.search(block)
-            )
-            cm = CONFLICT_RE.search(head)
-            if not cm and is_claimid_head:
-                cm = re.search(r"\bC-\d+\b", head)
-            cid = cm.group(0) if cm else "CONFLICT-?"
-            resolved = bool(HEAD_RESOLVED_RE.search(head) or RESOLUTION_LINE_RE.search(block))
-            if resolved:
-                # Anchor the resolution ACTION to the SAME surface that established `resolved`
-                # — the heading, else the dedicated `- **Resolution**:`/`- **Status**:` line —
-                # NEVER a free block scan: a stray "RESOLVED (DEFER)" in a rationale bullet or a
-                # sibling-conflict cross-reference must not demote a KEEP_VAULT conflict's
-                # un-droppable citation obligation (invariant #2).
-                _hm = RESOLVED_ACTION_RE.search(head)
-                if _hm:
-                    _action = _hm.group(1).upper()
-                else:
-                    _action = None
-                    for _ln in block.splitlines():
-                        if RESOLUTION_LINE_RE.search(_ln):
-                            _lm = RESOLVED_ACTION_RE.search(_ln)
-                            _action = _lm.group(1).upper() if _lm else None
-                            break
-                # Multi-block / multi-file fail-closed: a DEFER elsewhere must never override a
-                # non-DEFER (or unknown) resolution already recorded for the same conflict-ID.
-                if cid not in conflict_resolution_action:
-                    conflict_resolution_action[cid] = _action
-                elif conflict_resolution_action[cid] == "DEFER" and _action != "DEFER":
-                    conflict_resolution_action[cid] = _action
-            if active and not resolved:
-                drops.append({
-                    "type": "conflict_unresolved",
-                    "conflict_id": cid,
-                    "source_binding": os.path.relpath(bp, cwd),
-                    "heading": head.lstrip("# ").strip(),
-                    "expected": (
-                        "resolve the CONFLICT via resolve-oq --binding (writes the "
-                        "✅/RESOLVED marker into the heading or a `- **Resolution**:` line — "
-                        "prose mentions of the word elsewhere in the block do NOT count) "
-                        "before running bolts"
-                    ),
-                })
-            i = j
-        else:
-            i += 1
+    for _b in _conflict_blocks(blines):
+        cid = _b["cid"]
+        if _b["resolved"]:
+            _action = _b["action"]
+            # Multi-block / multi-file fail-closed: a DEFER elsewhere must never override a
+            # non-DEFER (or unknown) resolution already recorded for the same conflict-ID.
+            if cid not in conflict_resolution_action:
+                conflict_resolution_action[cid] = _action
+            elif conflict_resolution_action[cid] == "DEFER" and _action != "DEFER":
+                conflict_resolution_action[cid] = _action
+        if _b["active"] and not _b["resolved"]:
+            drops.append({
+                "type": "conflict_unresolved",
+                "conflict_id": cid,
+                "source_binding": os.path.relpath(bp, cwd),
+                "heading": _b["head"].lstrip("# ").strip(),
+                "expected": (
+                    "resolve the CONFLICT via resolve-oq --binding (writes the "
+                    "✅/RESOLVED marker into the heading or a `- **Resolution**:` line — "
+                    "prose mentions of the word elsewhere in the block do NOT count) "
+                    "before running bolts"
+                ),
+            })
 
 # S4 BC-BINDING-DELETE (fail-closed backstop): units citing CONFLICT-IDs while
 # ZERO binding docs exist means the binding surface was deleted out from under
 # the units — the old behavior demoted the orphan citations to warnings and
 # re-validated to PASS, erasing active CONFLICTs without resolution.
-# Migrated vault (9.0, design §7 #9 — "still blocks until the mandatory JIT re-bind
-# re-verdicts it"): `migrate-paths --vault-layout=3` archives binding.md, keeps
-# CONFLICT-N in binding_refs and copies each cited block into the unit's
-# bolts/U-XXX/binding-migrated.json. A cited CONFLICT-ID is covered ONLY when EVERY
-# citing unit's binding-migrated.json carries it (a plain deletion leaves no such
-# record) AND the unit is either `resolved` (the block records the pre-migration human
-# resolution — Pass 3b's structural markers) or `rebound` (bolts/U-XXX/binding.json is
-# this unit's `unit-binding/2` stamp from the sole, hook-guarded writer: its own
-# verdicts now gate it — an open CONFLICT blocks its dispatch via the --units= leg
-# below, and the BOLTS binding-freshness gate re-binds a stamp that no longer
-# describes HEAD). Anything else still blocks (invariant #2). No tool writes a
-# resolution into binding-migrated.json after the migration, so the re-bind is the
-# legitimate way out; a rebound conflict no human resolved stays visible as the
-# advisory extra conflict_migrated_rebound (never erased silently).
+# Migrated vault (design §7 #9, invariant #2 — "still blocks until the mandatory JIT
+# re-bind RE-VERDICTS it"): `migrate-paths --vault-layout=3` archives binding.md under
+# <vault>/_meta/archive/layout2/ and copies each block a unit cites into that unit's
+# bolts/U-XXX/binding-migrated.json. Migrated conflicts = OWNED (a unit's
+# binding-migrated.json `conflicts[]`, cited or not) ∪ ARCHIVED (an open block of the
+# archived binding.md no unit owns — Pass 3b's grammar). One is covered ONLY when its
+# block AND its archived original record a human resolution (Pass 3b's markers) or it is RE-VERDICTED:
+# the owning unit's own unit-binding/2 binding.json (sole, hook-guarded writer) carries
+# a claim that NAMES it (the CONFLICT-ID or the block's `**Claim**: C-NNN`, a token in
+# the claim id/text) with a fresh CONFIRMED or CONFLICT verdict (a CONFLICT then gates
+# the unit via the --units= leg below; OQ = no verdict yet). An archived unowned one may
+# be re-verdicted by any unit of its vault. The re-bind ALONE never covers it — it
+# verdicts only the claims a unit states (9.0 verifier V4: the advisory downgrade
+# `conflict_migrated_rebound` let an un-re-verdicted CONFLICT pass). Uncovered →
+# binding_missing (as in 8.8.1); re-verdicted → advisory conflict_migrated_reverdicted.
 def _unit_bolt_dir(up):
     if os.path.basename(up) == "unit.md":            # <vault>/units/U-XXX/unit.md
         return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(up))),
@@ -439,56 +452,115 @@ def _read_json_obj(path):
         return None                                  # absent / unreadable
     return _d if isinstance(_d, dict) else None
 
-def _migrated_coverage(up, cid):
-    """'resolved' | 'rebound' | None (not covered → blocks)."""
-    _bdir = _unit_bolt_dir(up)
-    _mdoc = _read_json_obj(os.path.join(_bdir, "binding-migrated.json")) or {}
-    _hit = [e for e in (_mdoc.get("conflicts") or []) if isinstance(e, dict) and e.get("id") == cid]
-    if not _hit:
-        return None
-    _blk = _hit[0].get("block")
-    if isinstance(_blk, str) and _blk.strip() and (
-            HEAD_RESOLVED_RE.search(_blk.strip().splitlines()[0]) or RESOLUTION_LINE_RE.search(_blk)):
-        return "resolved"
-    _bj = _read_json_obj(os.path.join(_bdir, "binding.json")) or {}
-    if _bj.get("schema") == "unit-binding/2" and _bj.get("unit") == os.path.basename(_bdir):
-        return "rebound"
-    return None
+MIG_CLAIM_LINE_RE = re.compile(r"(?m)^\s*[-*]\s*\*\*Claim\*\*\s*:\s*(C-[A-Za-z0-9_-]+)")  # = _lib/binding_md.py
+MIG_LINK_RE = re.compile(r"\bCONFLICT-(?:[A-Z][A-Z0-9-]*-)?\d+\b|\bC-\d+\b")
+
+def _block_resolved(blk):
+    return bool(isinstance(blk, str) and blk.strip() and (
+        HEAD_RESOLVED_RE.search(blk.strip().splitlines()[0]) or RESOLUTION_LINE_RE.search(blk)))
+
+def _link_keys(cid, blk):
+    return {cid} | set(MIG_CLAIM_LINE_RE.findall(blk if isinstance(blk, str) else ""))
+
+def _reverdict(bdir, keys):
+    """(status, fresh claim rows): reverdicted | reverdict_pending | not_reverdicted | no_rebind."""
+    _bj = _read_json_obj(os.path.join(bdir, "binding.json"))
+    if not _bj or _bj.get("schema") != "unit-binding/2" or _bj.get("unit") != os.path.basename(bdir):
+        return "no_rebind", []
+    _linked = [c for c in (_bj.get("claims") or []) if isinstance(c, dict) and keys & set(
+        MIG_LINK_RE.findall("%s %s" % (c.get("id") or "", c.get("text") or "")))]
+    _rows = [{"unit_id": os.path.basename(bdir), "claim_id": c.get("id"), "verdict": c.get("verdict"),
+              "resolution": c.get("resolution")} for c in _linked if c.get("verdict") in ("CONFIRMED", "CONFLICT")]
+    return ("reverdicted" if _rows else "reverdict_pending" if _linked else "not_reverdicted"), _rows
 
 migrated_extras = []   # advisory rows, merged into `extras` at Pass 4
-if units_paths and unit_conflict_citations and not binding_paths:
-    _uncovered = []
-    for cid, ups in sorted(unit_conflict_citations.items()):
-        _cov = [(up, _migrated_coverage(up, cid)) for up in ups]
-        if not all(c for _, c in _cov):
-            _uncovered.append(cid)
-        elif any(c == "rebound" for _, c in _cov):
-            migrated_extras.append({
-                "type": "conflict_migrated_rebound", "conflict_id": cid,
-                "unit_ids": sorted(os.path.basename(_unit_bolt_dir(up)) for up, c in _cov if c == "rebound"),
-                "warning": (
-                    "migrated CONFLICT carried no human resolution; the unit's JIT re-bind "
-                    "(bolts/U-XXX/binding.json) now gates its dispatch. Advisory: review the "
-                    "block in bolts/U-XXX/binding-migrated.json — a contradiction the unit's "
-                    "own claims do not cover is not re-raised by the re-bind."
-                ),
-            })
-    if _uncovered:
-        drops.append({
-            "type": "binding_missing",
-            "conflict_ids_cited": _uncovered,
-            "expected": (
-                "units cite CONFLICT-IDs but no binding doc exists under .mega-sdd/vaults/ — "
-                "deleting/moving binding.md erases active CONFLICTs without resolution "
-                "(invariant #2) and breaks unit citation resolution (invariant #3). "
-                "Restore the binding doc — or, on a vault migrated by /mega-sdd:migrate-paths "
-                "--vault-layout=3 (each listed ID recorded in the citing unit's "
-                "bolts/U-XXX/binding-migrated.json), run the mandatory full JIT re-bind "
-                "(scripts/rebind-units.sh --units=all): the re-bound unit's own verdicts in "
-                "bolts/U-XXX/binding.json then gate it (resolve an open CONFLICT there via "
-                "resolve-oq --binding)."
-            ),
-        })
+migrated_ids = set()   # CONFLICT-IDs a migration record declares (no conflict_id_extra noise)
+_mig_uncovered, _mig_reverdicted, _plain_uncovered, _handled = [], {}, set(), set()
+_units_by_vault = {}   # vault dir -> [bolt dir]
+for up in units_paths:
+    _bd = _unit_bolt_dir(up)
+    _units_by_vault.setdefault(os.path.dirname(os.path.dirname(_bd)), []).append(_bd)
+_archived = {}         # vault dir -> {cid: {"open": bool, "keys": set}} (a live binding doc → Pass 3b)
+for _vd in sorted(_units_by_vault):
+    _ap = os.path.join(_vd, "_meta", "archive", "layout2", "binding.md")
+    if not os.path.isfile(_ap) or any(os.path.dirname(bp) == _vd for bp in binding_paths):
+        continue
+    try:
+        _alines = open(_ap, encoding="utf-8", errors="replace").read().splitlines()
+    except Exception:
+        continue
+    for _b in _conflict_blocks(_alines):
+        if _b["active"] or _b["resolved"]:           # else a claim-detail heading, not a conflict
+            _r = _archived.setdefault(_vd, {}).setdefault(_b["cid"], {"open": False, "keys": set()})
+            _r["keys"] |= _link_keys(_b["cid"], _b["block"])
+            _r["open"] = _r["open"] or (_b["active"] and not _b["resolved"])
+
+for up in units_paths:   # OWNED + CITED, per unit
+    _bd = _unit_bolt_dir(up)
+    _vd = os.path.dirname(os.path.dirname(_bd))
+    _owned = {e["id"].strip(): e.get("block") for e in reversed(
+        (_read_json_obj(os.path.join(_bd, "binding-migrated.json")) or {}).get("conflicts") or [])
+        if isinstance(e, dict) and isinstance(e.get("id"), str) and e["id"].strip()}
+    _cited = {c for c, ups in unit_conflict_citations.items() if up in ups} if not binding_paths else set()
+    for cid in sorted(set(_owned) | _cited):
+        _arec = _archived.get(_vd, {}).get(cid)
+        if cid in _owned:
+            _src, _open = os.path.join(_bd, "binding-migrated.json"), not _block_resolved(_owned[cid]) or bool(_arec and _arec["open"])
+            _keys = _link_keys(cid, _owned[cid]) | (_arec["keys"] if _arec else set())
+        elif _arec is not None:
+            _src, _open, _keys = os.path.join(_vd, "_meta", "archive", "layout2", "binding.md"), _arec["open"], _arec["keys"]
+        else:
+            _plain_uncovered.add(cid)                 # cited, no binding doc, no migration record
+            continue
+        migrated_ids.add(cid); _handled.add((_vd, cid))
+        _st, _rows = _reverdict(_bd, _keys) if _open else ("resolved", [])
+        if _rows:
+            _mig_reverdicted.setdefault(cid, []).extend(_rows)
+        elif _open:
+            _mig_uncovered.append({"conflict_id": cid, "unit_id": os.path.basename(_bd),
+                                   "source": os.path.relpath(_src, cwd), "reason": _st})
+
+for _vd, _recs in sorted(_archived.items()):   # ARCHIVED, owned by no unit
+    for cid, _r in sorted(_recs.items()):
+        migrated_ids.add(cid)
+        if not _r["open"] or (_vd, cid) in _handled:
+            continue
+        _res = [_reverdict(_bd, _r["keys"]) for _bd in sorted(_units_by_vault[_vd])]
+        _rows = [row for _, rw in _res for row in rw]
+        if _rows:
+            _mig_reverdicted.setdefault(cid, []).extend(_rows)
+        else:
+            _mig_uncovered.append({"conflict_id": cid, "unit_id": None,
+                                   "source": os.path.relpath(os.path.join(_vd, "_meta", "archive", "layout2", "binding.md"), cwd),
+                                   "reason": "reverdict_pending" if any(s == "reverdict_pending" for s, _ in _res) else "uncited_unresolved"})
+
+for cid, _rows in sorted(_mig_reverdicted.items()):
+    migrated_extras.append({
+        "type": "conflict_migrated_reverdicted", "conflict_id": cid,
+        "unit_ids": sorted({r["unit_id"] for r in _rows}), "claims": _rows,
+        "warning": ("migrated CONFLICT re-verdicted by a fresh claim verdict in bolts/U-XXX/binding.json — "
+                    "that verdict now gates the unit (an open CONFLICT blocks its dispatch). Advisory: check "
+                    "the claim states the contradiction the migrated block records."),
+    })
+if _plain_uncovered or _mig_uncovered:
+    drops.append({
+        "type": "binding_missing",
+        "conflict_ids_cited": sorted(_plain_uncovered | {m["conflict_id"] for m in _mig_uncovered}),
+        "migrated_unverdicted": _mig_uncovered,
+        "expected": (
+            "an unresolved CONFLICT has no verdict gating it (invariant #2). Cited CONFLICT-IDs "
+            "with no binding doc and no migration record: deleting/moving binding.md erases active "
+            "CONFLICTs — restore it. A migrated vault's unresolved CONFLICT (migrated_unverdicted: "
+            "bolts/U-XXX/binding-migrated.json or _meta/archive/layout2/binding.md): the full JIT "
+            "re-bind (scripts/rebind-units.sh --units=all) verdicts only the claims a unit states, so "
+            "give the owning unit a `## Claims` line that NAMES it — e.g. `- C-U001-R1 \"<what the "
+            "vault expects> (CONFLICT-1)\" — expect: <path> — must-exist` — and re-bind that unit "
+            "(rebind-units.sh --units=<U>): a fresh CONFIRMED opens the gate, a CONFLICT gates the "
+            "unit until a human resolves it via resolve-oq --binding, an OQ (text claim) needs the "
+            "ladder E3 verdict first. A decision taken before the migration counts only when the "
+            "migrated block carries the ✅/RESOLVED marker."
+        ),
+    })
 
 # --- Pass 4: extras (cited by units but not in binding) ---
 extras = list(migrated_extras)
@@ -501,7 +573,9 @@ for oq_id, cites in sorted(unit_oq_citations.items()):
             "warning": "OQ-ID cited in unit frontmatter but not declared in any binding doc or vault.json",
         })
 for conflict_id, cites in sorted(unit_conflict_citations.items()):
-    if conflict_id not in binding_conflicts:
+    # a migration record (binding-migrated.json / archived binding.md) declares it —
+    # the migrated leg above owns its verdict
+    if conflict_id not in binding_conflicts and conflict_id not in migrated_ids:
         extras.append({
             "type": "conflict_id_extra",
             "conflict_id": conflict_id,
@@ -738,8 +812,10 @@ def _next_action(drops):
             "conflict/binding drops: resolve via resolve-oq --binding <bolts/U-XXX/binding.json> "
             "(human-in-the-loop), then re-bind the unit (3.9b rebind-units.sh --units=<U>) "
             "until conflicts=0; layout-2 binding.md: /mega-sdd:migrate-paths --vault-layout=3 "
-            "first (a migrated CONFLICT-ID clears once its units are re-bound: the mandatory "
-            "full JIT re-bind, rebind-units.sh --units=all)"
+            "first, then the mandatory full JIT re-bind (rebind-units.sh --units=all) — a "
+            "migrated CONFLICT-ID clears only when a claim that names it gets a fresh verdict "
+            "in its unit's binding.json, or its migrated block records a human resolution; "
+            "the re-bind alone never clears it (see the drop's `expected`)"
         )
     if types & {"oq_id_dropped", "conflict_id_dropped"}:
         parts.append(

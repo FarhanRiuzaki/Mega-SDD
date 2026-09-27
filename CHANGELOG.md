@@ -23,7 +23,7 @@ Rilis ini juga membawa dua bagian di bawah (bagian 2: lane router, bagian 3: pem
   - `scan-codebase` → GROUND (`scripts/ground.sh` + symbol index). Producer `codebase-map.md` udah nggak ada; map yang sudah ada tetap kebaca.
 - **Chain classic dan spine classic** (`generate-intent → scan-codebase → bind-codebase → generate-units`). Pipeline tinggal satu, yaitu lite: `plan` → `execute-bolts` → `delivery-check.sh`.
 - **`scripts/compute-lock-digests.sh`**: caller-nya cuma skill yang dihapus.
-  - Script lain yang kehilangan executor tetap ada di P1 untuk baca layout-2: `make-bound.sh`, `derive-claims-ledger.sh`, `derive-codebase-map.sh`, `validate-codebase-map.sh`, `derive-binding-json.sh`. Pruning-nya di P1b (spec §7 #8).
+  - Script lain yang kehilangan executor dibiarkan di P1 untuk baca layout-2: `make-bound.sh`, `derive-claims-ledger.sh`, `derive-codebase-map.sh`, `validate-codebase-map.sh`, `derive-binding-json.sh` (spec §7 #8). P1b (bagian di bawah) menghapus tiga yang pertama; `validate-codebase-map.sh` dan `derive-binding-json.sh` tetap sebagai jalur baca layout-2.
 - `references/halt-families/scan.md`.
 - **`ripgrep` dari tool-matrix `install-deps`** (dan dari `references/tooling-install.md`). Konsumennya cuma scan-codebase. `ast-grep` tetap dipakai (symbol index GROUND, Hard rule v2).
 - Yang nggak ikut direlokasi karena producer-nya udah nggak ada:
@@ -96,11 +96,11 @@ Audit: 29 agen mengklasifikasi setiap script, lib, referensi plugin, dan cabang 
 - `plan` 1.2.1 → 2.0.0 · `execute-bolts` 2.55.0 → 3.0.0 · `orchestrate-flow` 2.29.3 → 3.0.0 · `using-mega-sdd` 4.3.0 → 4.4.0 · `resolve-oq` 2.16.0 → 2.17.0 · `diff-vault` 2.5.1 → 2.6.0 · `detect-drift` 3.2.0 → 3.3.0 · `extract-intelligence` 2.6.1 → 2.7.0
 
 ### Notes
-- **P1b (belum):** audit caller per script/reference dengan aturan "dieksekusi oleh skill yang selamat" (sekadar disebut di dok nggak dihitung). Kandidatnya: lima script layout-2 di atas, `lib-patterns/`, bagian producer di `starterkit-context-schema`, dan `shared-snapshot-schema` (spec §7 #11). Walk `binding.md` classic di resolve-oq juga tetap sampai P1b (spec §7 #10).
+- **Sisa kandidat pangkas setelah P1b** (spec §7 #11): dua file schema, `references/starterkit-context-schema.md` (bagian producer-nya) dan `references/shared-snapshot-schema.md`. Keduanya butuh audit sendiri dengan aturan yang sama (disebut di dok ≠ dieksekusi). Walk `binding.md` di resolve-oq tetap ada sebagai jalur baca layout-2 (spec §7 #10).
 
 ## 9.0.0 (bagian 2) — lane router: tugas yang jelas dikerjakan seperti Claude Code biasa, pipeline hanya untuk yang butuh
 
-Sumber: `research/2026-09-27-vanilla-vs-megasdd-results.md`. Pada PRD greenfield, pipeline (lite/classic) 2,3–12× lebih lama dan 9–22× lebih mahal daripada vanilla Claude Code, sementara kualitasnya setara atau lebih rendah. Perubahan ini memindahkan default, bukan menghapus moat. Pipeline (binding CONFLICT, OQ, panel) tetap utuh di lane `guarded`.
+Sumber: `research/2026-09-27-vanilla-vs-megasdd-results.md`. Pada PRD greenfield, pipeline (lite/classic) 2,4–12× lebih lama dan 8,8–22× lebih mahal daripada vanilla Claude Code, sementara kualitasnya setara atau lebih rendah. Perubahan ini memindahkan default, bukan menghapus moat. Pipeline (binding CONFLICT, OQ, panel) tetap utuh di lane `guarded`.
 
 ### Changed
 - **Front door merutekan dulu, baru menjalankan pipeline.**
@@ -110,19 +110,19 @@ Sumber: `research/2026-09-27-vanilla-vs-megasdd-results.md`. Pada PRD greenfield
     - `guarded`: ada vault, atau file PRD di app yang sudah ada. Isinya pipeline seperti sebelumnya.
   - Flag `--direct` / `--assisted` / `--guarded` memaksa lane. `--lite`, `--classic`, dan flag khusus pipeline otomatis berarti guarded.
   - Prosedur: `references/direct-lane.md`.
-- **Render HTML di hand-off pipeline jadi opt-in** (`render_html: on`). Lane emit tetap merender. Pada 10 repo benchmark, HTML adalah 78–88% baris `.mega-sdd/` yang ter-commit.
+- **Render HTML di hand-off pipeline jadi opt-in** (`render_html: on`). Lane emit tetap merender. Pada 9 dari 10 repo benchmark, HTML adalah 73,7–87,3% baris `.mega-sdd/` yang ter-commit (git numstat). Repo ke-10, xs lite-2, nggak meng-commit HTML sama sekali.
 - **`.mega-sdd/.gitignore` dikelola `derive-state.sh`.**
   - Di-ignore: salinan per-lens unit/pack, cache gate-state, `state.json`, `html/`.
   - Tetap di-track: spec, unit, bukti bolt, `l0-results`, dan `dispatch-prompt.md`.
   - `.gitignore` tanpa marker dianggap milik user dan tidak pernah ditimpa.
-  - Diukur pada repo benchmark: baris `.mega-sdd/` ter-commit turun 80–90% (xs ±40k → 4–8k, klinik ±124k → 19–21k).
+  - Diukur pada repo benchmark: baris `.mega-sdd/` ter-commit turun 81–89% di 8 dari 9 run bersih (xs ±40k → 4–8k, klinik ±124k → 19–21k). xs lite-2 cuma meng-commit 3.766 baris tanpa HTML, jadi turunnya 2,5%.
 
 - **PRD baru di lane guarded → lite secara default.**
   - Front door mencatatnya sebagai `lane: lite` di config. Vault lama tetap di lane-nya, dan `lane: standard` mengembalikan chain classic. Flag `--classic` tetap switch spine.
-  - Dasar: xs n=3, lite BETTER vs classic di waktu dan biaya dengan kualitas OVERLAP; klinik classic historis $260/102 menit vs lite $53–73.
+  - Dasar: xs n=3, lite BETTER vs classic di waktu dan biaya dengan kualitas OVERLAP; klinik classic historis n=1 $259,66 / wall 301,4 menit (plugin 7.35.0, fixture lain) vs lite $53–73 / 65–94 menit.
   - **Deviasi dari aturan yang dikunci:** aturan meminta kedua skenario, sedangkan klinik classic belum diukur di fixture ini. Dicatat di runbook §9.
 - **Lens `standards` hanya ikut bila `quality` ikut** (H1, `resolve-review-tier.sh`).
-  - Bukti lapangan: 5 dispatch, 0 Critical, 1 fix unik (nama key), ±335k token. Quality: 5 dispatch, 22 fix.
+  - Bukti lapangan: 5 dispatch, 0 Critical, 1 fix unik (nama key), ±335k token. Quality: 5 dispatch, 22 fix. Sumbernya `research/2026-08-30-lens-yield-field.md` §2–3 (satu project lapangan; ±335k itu ESTIMATE di laporan itu, 5 × 67k). Tidak bisa dicek dari data mentah benchmark yang ter-commit.
   - Diterapkan tanpa A/B atas mandat owner. Efeknya pada run **belum diukur**.
   - Pin: `tests/size-weighted/test-standards-lens-h1.sh`.
 
@@ -132,18 +132,18 @@ Sumber: `research/2026-09-27-vanilla-vs-megasdd-results.md`. Pada PRD greenfield
   - Pipeline guarded 3,2× lebih lambat (60,8 vs 19,1 menit) dan 6,0× lebih mahal ($38,93 vs $6,46), dengan 78 subagent.
   - Gate CONFLICT menyala 3× dan semuanya false positive (anchor buatan pipeline sendiri). Tidak ada jebakan yang ditangkap gate ini.
   - Guarded sekarang hanya jalan untuk vault yang sudah ada, atau dengan `--guarded` / `--lite` / `--classic`.
-  - Biaya blok: $148,30.
+  - Biaya blok: $148,30. Bagian scorer-nya ($4,46) diambil dari stream scorer lokal, jadi tidak bisa dicek dari data mentah yang ter-commit.
 
 ### Added
 - **`scripts/delivery-check.sh`:** cek dari sudut pandang reviewer pada checkout HEAD yang fresh.
   - Blocking: `scripts.test` asli; test lolos di TZ=UTC dan UTC+14; `build` lolos dengan env kosong.
   - Advisory: halaman Next.js app-router yang tidak di-link dari mana pun.
   - Wajib di akhir setiap lane. Di guarded, temuannya ditutup dalam satu commit `fix(delivery)` oleh controller.
-  - Dijalankan ke 16 repo benchmark: 6/6 vanilla PASS dan 9/9 run mega-sdd bersih FAIL. Ini mereproduksi secara mekanis semua defect yang sebelumnya ditemukan manual. Temuan baru: klinik lite-3 juga gagal build dengan env kosong, jadi 3/3, bukan 2/3 seperti laporan awal.
+  - Dijalankan ke 16 repo benchmark (6 vanilla + 10 pipeline): 6/6 vanilla PASS, 9/9 run pipeline bersih FAIL, dan run pipeline ke-10 (klinik lite-1, dikeluarkan dari median karena sistem sleep) PASS di D1–D5. Ini mereproduksi secara mekanis semua defect yang sebelumnya ditemukan manual. Temuan baru: klinik lite-3 juga gagal build dengan env kosong, jadi 3/3, bukan 2/3 seperti laporan awal.
 - `bolt-implementer` step 5b: zona waktu dipin, secret divalidasi saat request (bukan saat import/prerender), dan test tanpa `scripts.test` dilaporkan.
 - `tests/lanes/test-lanes.sh`: 32 cek untuk router, delivery-check, `.gitignore`, dan wiring.
 - Harness: arm `routed` (`P0_ENTRY=frontdoor`, prompt `/mega-sdd:mega-sdd <PRD>`).
-- `benchmarks/runbooks/brownfield-ambiguous-prd.md`: eksperimen berikutnya. **Belum dijalankan.**
+- `benchmarks/runbooks/brownfield-ambiguous-prd.md`: eksperimen berikutnya setelah blok router. Dijalankan 2026-09-27; hasilnya di bullet `existing_code` di atas (`research/2026-09-27-brownfield-results.md`).
 
 ### Notes — hasil arm `routed` vs vanilla (MEASURED 2026-09-27, n=3 run bersih per arm, opus)
 Laporan: `research/2026-09-27-lane-router-results.md`. Router memilih `direct` untuk xs dan `assisted` untuk klinik.
@@ -153,17 +153,18 @@ Laporan: `research/2026-09-27-lane-router-results.md`. Router memilih `direct` u
 | xs review-ready | 3,2 m | 2,7 m | 20,2 m |
 | xs biaya | $1,03 | $1,16 | $11,29 |
 | xs AC / rubric | 12/12 / 95 | 12/12 / 94 | 11/12 / 84 |
-| klinik review-ready | 30,0 m | 26,6 m | 70,5 m |
+| klinik review-ready | 30,0 m | 26,6 m | 70,6 m |
 | klinik biaya | $7,68 | $9,30 | $67,33 |
 | klinik subagent / baris `.mega-sdd/` | 0 / 0 | 1 / 0 | 126 / 123.824 |
 | klinik AC / Critical / rubric | 10/10 / 0 / 90 | 10/10 / 0 / 91 | 9–10/10 / 0 / 85 |
-| delivery-check | 8/8 PASS (termasuk vanilla-4) | 9/9 PASS | 0/6 (classic xs juga 0/3) |
+| delivery-check | 8/8 PASS (termasuk vanilla-4) | 9/9 PASS | 0/6 run bersih (classic xs juga 0/3) |
 
 **Verdict:** routed **setara** dengan vanilla (OVERLAP), dan **tidak lebih baik**.
-- xs review-ready formalnya `BETTER`, tapi tidak diklaim. Alasannya: harinya berbeda dengan vanilla 1–3, prompt-nya asimetris, dan selisihnya cuma ±0,5 menit.
-- Rubric xs formalnya `WORSE` sebesar ≤2 poin antar sesi scorer. Vanilla yang dinilai di sesi yang sama mendapat 94.
+- xs: review-ready, wall, output token, dan baris kode+test formalnya `BETTER`, tapi tidak diklaim. Alasannya: harinya berbeda dengan vanilla 1–3, prompt-nya asimetris, dan selisih waktunya cuma ±0,5 menit.
+- Rubric xs formalnya `WORSE`: median 94 vs 95, antar batch scoring yang berbeda. Vanilla hari yang sama yang dinilai di batch scoring yang sama mendapat 94. (Tiap label dinilai sesi `claude -p` sendiri; pengelompokan batch ada di daftar scoring lokal, bukan di file per run yang ter-commit.)
+- Klinik: Important (0 vs 2) dan baris markdown di luar `.mega-sdd/` (51 vs 78) formalnya `BETTER`; subagent (1 vs 0, review buta lane assisted) dan distinct files read (9 vs 1) formalnya `WORSE`. Tidak ada yang diklaim.
 
-Yang terukur adalah hilangnya overhead pipeline di jalur default greenfield. Lane `guarded` dan moat-nya **belum diukur** (lihat runbook brownfield). Biaya blok: $47,45.
+Yang terukur adalah hilangnya overhead pipeline di jalur default greenfield. Lane `guarded` dan moat-nya **tidak diukur di blok ini**; blok brownfield sesudahnya yang mengukurnya (bullet `existing_code` di atas). Biaya blok: $47,45; bagian scorer-nya ($5,41) diambil dari stream scorer lokal, jadi tidak bisa dicek dari data mentah yang ter-commit.
 
 
 ## 9.0.0 (bagian 3) — pembanding vanilla Claude Code + complexity budget + hasil terukur pertama vs vanilla
@@ -180,7 +181,7 @@ Sumber: audit 2026-09-26. Semua benchmark di repo ini membandingkan mega-sdd den
 - **`benchmarks/runbooks/vanilla-vs-megasdd.md`:**
   - "seperti Feather" dijadikan target relatif ke vanilla (usulan; owner mengunci sebelum run pertama).
   - Arm dan kondisi yang disamakan, urutan acak ber-seed, aturan berhenti.
-  - Checklist AC tersembunyi (xs X1–X12, klinik C1–C8), review buta dengan scorer tanpa plugin mega-sdd.
+  - Checklist AC tersembunyi (xs X1–X12, klinik C1–C10; `benchmarks/runbooks/ac-checklist-*.md`), review buta dengan scorer tanpa plugin mega-sdd.
   - Aturan keputusan dikunci sebelum ada angka. Hipotesis overhead H1–H3 didaftarkan, belum diterapkan.
   - Semua hasil: "belum diukur".
 - **Complexity budget sebagai ratchet:** `benchmarks/config/complexity-budget.json` + `tests/benchmarks/test-complexity-budget.sh`.
@@ -196,11 +197,13 @@ Laporan: `research/2026-09-27-vanilla-vs-megasdd-results.md`. Data per run: `ben
 | **xs** review-ready (median) | 3,2 m | 20,2 m | 38,5 m |
 | xs biaya | $1,03 | $11,29 | $22,47 |
 | xs AC / rubric | 12/12 / 95 | 11/12 / 84 | 11/12 / 82 |
-| **klinik** review-ready | 30,0 m | 70,5 m | belum diukur |
+| **klinik** review-ready | 30,0 m | 70,6 m | belum diukur |
 | klinik biaya | $7,68 | $67,33 | belum diukur |
 | klinik AC / rubric | 10/10 / 90 | 9–10/10 / 85 | belum diukur |
 
-- Speed / token / biaya / lightness: **WORSE** vs vanilla di setiap arm dan skenario (rentang run tidak overlap). Critical 0 di semua run. Kualitas klinik tidak terbukti berbeda; kualitas xs lebih rendah.
+- **WORSE** vs vanilla di setiap arm dan skenario (rentang run tidak overlap): speed (review-ready, wall, API time), token (total / input / output / cache read), biaya, tool call, subagent, distinct files read, dan baris `.mega-sdd/` ter-commit.
+- Metrik lightness lain: baris kode+test OVERLAP di xs dan WORSE di klinik lite (1,8×); baris markdown di luar `.mega-sdd/` OVERLAP di xs dan **BETTER** di klinik lite (0 [0–41] vs 78 [57–95]; dokumen pipeline masuk ke `.mega-sdd/`, yang WORSE); interaction points OVERLAP (0 semua).
+- Critical 0 di semua run. Kualitas klinik tidak terbukti berbeda; kualitas xs lebih rendah (AC, completion, dan rubric WORSE; Important WORSE di lite).
 - Tidak ada klaim "mega-sdd lebih cepat / hemat / ringan / kuat dari Claude Code" yang boleh ditulis (`plugins/mega-sdd/CLAUDE.md` §Release evidence).
 - Default lane **tidak diubah**. Aturan yang dikunci butuh lite vs classic di kedua skenario, dan klinik classic belum diukur. Di xs, lite mengalahkan classic dengan rentang tidak overlap.
 - Harness: `sleep-check.py` (sistem sleep mengeluarkan satu run klinik), `blind-score.sh` (strip trailer di semua file teks), `arm-metrics.py` (hitungan API retry; record `result` kosong di tengah proses tidak lagi dihitung sebagai proses baru — sebelumnya menggandakan $73,27 jadi $146,54).

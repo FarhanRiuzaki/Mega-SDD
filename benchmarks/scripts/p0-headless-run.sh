@@ -62,12 +62,19 @@ VSYS="Benchmark run on a disposable fixture (vanilla control arm, benchmarks/run
 # installed marketplace copy is then disabled and the tree is loaded as mega-sdd@inline — a
 # release candidate measured without touching the user's global plugin cache).
 DISABLE='{"enabledPlugins":{"mega-sdd@mega-sdd":false,"mega-sdd-extras@mega-sdd":false}}'
-EXTRA=()
+EXTRA=(); PLUGIN_VER=""
 if [ "$KIND" = vanilla ]; then
   PROMPT="$VPROMPT"
   EXTRA=(--settings "$DISABLE")
 elif [ -n "${P0_PLUGIN_DIR:-}" ]; then
+  case "$P0_PLUGIN_DIR" in /*) ;; *) P0_PLUGIN_DIR="$PWD/$P0_PLUGIN_DIR" ;; esac   # claude starts in $ARM
   [ -f "$P0_PLUGIN_DIR/.claude-plugin/plugin.json" ] || { echo "P0_PLUGIN_DIR is not a plugin tree: $P0_PLUGIN_DIR" >&2; exit 2; }
+  # plugin= must name the TREE under test, not the installed copy this session disables (the 9.0
+  # smoke recorded plugin=Version: 8.7.2 beside purity=PASS mega-sdd 9.0.0). No version = no run.
+  PLUGIN_VER="$(python3 -c 'import json,sys; v=json.load(open(sys.argv[1])).get("version"); print(v) if v else sys.exit(1)' \
+    "$P0_PLUGIN_DIR/.claude-plugin/plugin.json" 2>/dev/null)" \
+    || { echo "P0_PLUGIN_DIR plugin.json has no readable version: $P0_PLUGIN_DIR" >&2; exit 2; }
+  PLUGIN_VER="Version: $PLUGIN_VER"
   EXTRA=(--settings "$DISABLE" --plugin-dir "$P0_PLUGIN_DIR")
 fi
 SYS="Benchmark run on a disposable fixture (v8 P0 measurement, research/2026-09-10-v8-autonomous-runbook.md §1). The human owner is not present and AskUserQuestion is unavailable in this session. Whenever the mega-sdd chain would ask the user something (front-door confirmation, batched OQ, scope, toolchain, halts that wait for a human), choose the MOST CONSERVATIVE option yourself (the one easiest to revert: defer, keep vault, do not invent UI, do not widen scope), write one line '[ASSUMED-BY-RUNNER: <question> -> <choice>: <reason>]' in your reply, and CONTINUE the chain. Never stop to wait for a human. Do not skip or loosen any gate, validator, acceptance test or review — a failing gate is fixed by fixing the code, never by editing evidence files. NEVER end your turn while any background implementer, panel lens or task is still running — this is a headless session: an ended turn exits the process 10 minutes later and the chain dies (v8 P2 lite 7.37.0 arm, 2026-09-14). Wait for background results with a blocking poll and only end the turn after /mega-sdd:analyze has run."
@@ -77,7 +84,7 @@ ALLOWED="Bash,Read,Write,Edit,MultiEdit,Glob,Grep,Skill,Agent,ToolSearch,TodoWri
 {
   echo "sid=$SID"; echo "arm=$ARM"; echo "prd=$PRD"; echo "model=$MODEL"; echo "flags=$FLAGS"; echo "entry=$ENTRY"; echo "arm_kind=$KIND"; echo "transcript=$TRANSCRIPT"
   echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"; echo "head_before=$(cd "$ARM" && git rev-parse --short HEAD)"
-  echo "plugin=$(claude plugin list 2>/dev/null | grep -A1 'mega-sdd@' | grep -o 'Version: .*' | head -1)"; echo "plugin_dir=${P0_PLUGIN_DIR:-}"
+  echo "plugin=${PLUGIN_VER:-$(claude plugin list 2>/dev/null | grep -A1 'mega-sdd@' | grep -o 'Version: .*' | head -1)}"; echo "plugin_dir=${P0_PLUGIN_DIR:-}"
 } > "$LOG/run.meta"
 BENCH="$(cd "$(dirname "$0")" && pwd -P)"   # before the cd below: $0 may be relative
 cd "$ARM" || exit 2

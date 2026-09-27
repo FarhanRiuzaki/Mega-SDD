@@ -102,7 +102,7 @@ No framework-pack check: GROUND's pack matcher and the bolt dispatch (`scripts/_
   on_fail: ".mega-sdd/.plan-coverage-state.json is missing or FAIL (plan_coverage_gap): every PRD requirement heading must be owned by a unit's prd_source or quoted by an open question BEFORE execute-bolts. Run validate-plan-coverage.sh --cwd --prd --vault (plan Step 5; legacy KB: --kb=<kb-dir>) and close the listed gaps; a missing state is a skipped census, not a pass. A layout-2 vault: /mega-sdd:migrate-paths --vault-layout=3 first (a migrated vault is exempt)."
   fatal: yes
   predicts_halt: plan_coverage_gap
-  note: ALWAYS ON. 9.0 has one pipeline, so no lane or config key (`lane:`, `--lite`) switches the rail off. The only exemption is a MIGRATED layout-2 vault (`<vault>/_meta/archive/layout2/` present; its classic-born units carry no `prd_source`, spec 2026-09-27 §7 #12): the check is then not run at all. A missing state is fatal, except when a `plan` hop earlier in the same chain writes it (chain-aware, see §Read protocol).
+  note: ALWAYS ON. 9.0 has one pipeline, so no lane or config key (`lane:`, `--lite`) switches the rail off. The only exemption is a MIGRATED layout-2 vault (`<vault>/_meta/archive/layout2/` present; its classic-born units carry no `prd_source`, spec 2026-09-27 §7 #12): the check is then not run at all, unless an un-migrated plan-born vault (`context.md`) in the same project carries units. A missing or unreadable state is fatal, except when a `plan` hop earlier in the same chain writes it (chain-aware, see §Read protocol). The PreToolUse hook enforces the rail at dispatch for plan-born vaults (§Dispatch-time mode below), so a direct `execute-bolts` call or a hand `bolt-implementer` dispatch that skipped this predictive run is still refused.
 
 ## detect-drift preflight checks
 
@@ -300,7 +300,7 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
   on_fail: the skill's one-line replacement from `REMOVED_SKILLS`, e.g. "bind-codebase was removed in 9.0 — use plan → `execute-bolts --all --lite`, which binds each unit at dispatch (full audit: `scripts/rebind-units.sh --units=all`)."
   fatal: yes
   predicts_halt: (chain order error — a stale 8.x chain, e.g. a paused `--resume`)
-  note: both modes emit it: the predictive run (`--chain=…`) and the dispatch mode (`--skill=mega-sdd:<name>`). It never depends on lane, config or vault layout, and none of the removed skill's pre-9.0 probes run. The removed skills are not coming back: the fix is the replacement hop the message names.
+  note: both modes emit it: the predictive run (`--chain=…`) and the dispatch mode (`--skill=mega-sdd:<name>`), including in a directory with no `.mega-sdd/` (never the no-project PASS; nothing is written there). It never depends on lane, config or vault layout, and none of the removed skill's pre-9.0 probes run. The removed skills are not coming back: the fix is the replacement hop the message names.
 
 ---
 
@@ -320,12 +320,14 @@ For each skill in proposed chain:
     If expected condition met → pass; continue to next check
     If condition not met:
       If fatal: yes AND an earlier hop of this chain produces the missing input
-        (plan → units, plan coverage) → pass (chain-aware; the PreToolUse gate re-checks it at that hop)
+        (plan → units, plan coverage) → pass (chain-aware; the PreToolUse dispatch
+        gate re-checks both at that hop: bolts_units_missing, and lite_plan_coverage_pass
+        on the plan-born vault plan writes — see Dispatch-time mode)
       If fatal: yes → emit halt predictive_check_failed; STOP chain
       If fatal: no → accumulate warning; log to user; continue chain
 ```
 
-**Dispatch-time mode.** Separately from Step 5, the PreToolUse hook runs `validate-preflight.sh --skill=<skill> --args-b64=<dispatch args>` (no `--predictive`) on every `plan` and `execute-bolts` dispatch and blocks the dispatch on a fatal. It reads the dispatch args, so it owns the checks a `--chain` run cannot see: `plan_layout2_vault` (plan) and the execute-bolts units check (`bolts_units_missing`, the dispatch twin of `units_directory_present`). Called for a removed skill name, it returns `skill_removed_in_9` as well.
+**Dispatch-time mode.** Separately from Step 5, the PreToolUse hook runs `validate-preflight.sh --skill=<skill> --args-b64=<dispatch args>` (no `--predictive`) on every `plan` and `execute-bolts` dispatch and blocks the dispatch on a fatal. It reads the dispatch args, so it owns the checks a `--chain` run cannot see: `plan_layout2_vault` (plan) and the execute-bolts units check (`bolts_units_missing`, the dispatch twin of `units_directory_present`). For `execute-bolts` it also enforces `lite_plan_coverage_pass` by READING `.mega-sdd/.plan-coverage-state.json` (no extra process in the hook): anything but `status: PASS` (missing, FAIL, unreadable) is fatal while any plan-born vault carries units: layout-3 (`context.md`) and not migrated (`_meta/archive/layout2/` absent). No dispatch arg narrows that set: `execute-bolts` has no `--vault` flag, the in-run `bolt-implementer` dispatch carries no args, and the census is one project-wide file. The gate cannot re-derive that file (no PRD path at dispatch, no spawn budget), so it is anti-self-bypass guarded like the other gate states: a Write/Edit or shell forge of it is denied, and its only writer is `validate-plan-coverage.sh`. Exempt: a migrated vault (spec §7 #12), and a layout-2 or legacy vault (no `context.md`). Such a vault was never plan-born, so no census can exist for it; migrating it (`/mega-sdd:migrate-paths --vault-layout=3`) makes it a migrated vault, exempt as well. The predictive run is stricter here: it also refuses an un-migrated layout-2 vault, with the migrate hint. The hook runs this mode on both the `mega-sdd:execute-bolts` Skill entry and every in-run `bolt-implementer` Agent dispatch. Called for a removed skill name, it returns `skill_removed_in_9` as well, even with no `.mega-sdd/`.
 
 ---
 

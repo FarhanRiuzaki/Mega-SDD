@@ -47,10 +47,11 @@
 |---|---|---|---|
 | review-ready (min) | 19.1 [18.9–21.9] | 60.8 [39.8–63.6] | WORSE (3.2×) |
 | cost (USD) | 6.46 [5.99–7.28] | 38.93 [37.64–39.32] | WORSE (6.0×) |
-| tokens total | 11.2 M | 74.5 M | WORSE (6.7×) |
+| tokens total | 11.2 M | 74.5 M | WORSE (6.6×) |
 | subagents | 0 | 78 [77–78] | WORSE |
 | `.mega-sdd/` lines committed | 0 | 15,332 [14,886–15,371] | WORSE (already after the artefact diet; the greenfield clinic lite runs committed ~124k) |
-| code + test lines | 3,294 | 4,020 | — |
+| markdown lines added outside `.mega-sdd/` | 51 [45–53] | 0 [0–0] | BETTER (the pipeline's notes go into `.mega-sdd/`, the row above) |
+| code + test lines | 3,294 [3,173–3,424] | 4,020 [3,915–4,519] | WORSE (1.2×) |
 | **traps surfaced (T1–T5)** | **5/5 in every run** | **5/5 in every run** | **OVERLAP (identical)** |
 | AC (13 items incl. T1c–T5c, B6 race, B3 footnote) | 13/13 ×3 | 13/13 ×3 | OVERLAP |
 | Critical / Important | 0 / 0 | 0 / 0 [0–2] | OVERLAP |
@@ -102,4 +103,6 @@ The excluded `vanilla-1` would not change a verdict: 26.6 min, $6.73, 5/5 traps.
   subtler contradiction, like behaviour hidden across many files, might favour systematic
   binding. That is not shown here.
 - **Cost of the block:** runs $142.35 (7 runs incl. the excluded one) + judge $1.49 + scorer $4.46
-  = **$148.30**.
+  = **$148.30**. The runs are MEASURED from the committed `metrics.json`, the judge from the
+  committed `trap.score.json` (`judge_cost_usd`, 7 runs). The scorer figure comes from the local
+  scorer streams (6 sessions), so it is not checkable from the committed raw data.

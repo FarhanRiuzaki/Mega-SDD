@@ -13,9 +13,12 @@
 #
 # Checks (highest-signal subset of the catalog):
 #   execute-bolts   : needs units/U-*.md                           → FATAL if absent
+#                     plan-coverage census PASS for a plan-born
+#                     (layout-3, un-migrated) vault carrying units → FATAL lite_plan_coverage_pass
 #   plan            : target vault is layout-2 (no context.md)     → FATAL (migrate-paths --vault-layout=3)
 #   generate-intent / bind-codebase / generate-units / scan-codebase
-#                   : removed in 9.0                               → FATAL (one line: use plan)
+#                   : removed in 9.0                               → FATAL (one line: use plan),
+#                                                                    even with no .mega-sdd/
 #
 # Usage: validate-preflight.sh --cwd=<root> --skill=<mega-sdd:NAME> [--quiet]
 # Output: stdout JSON (suppressed by --quiet); OVERWRITE <cwd>/.mega-sdd/.preflight-state.json
@@ -121,15 +124,24 @@ def c_plan_coverage_pass(_):
     p = os.path.join(cwd, ".mega-sdd", ".plan-coverage-state.json")
     if not os.path.isfile(p):
         return False  # missing census = skipped, not a pass (fatal, not fail-open)
-    with open(p, encoding="utf-8") as f:
-        return json.load(f).get("status") == "PASS"
+    try:
+        with open(p, encoding="utf-8") as f:
+            d = json.load(f)
+    except Exception:
+        return False  # an unreadable census is not a PASS (the dispatch twin agrees)
+    return isinstance(d, dict) and d.get("status") == "PASS"
 
 
 def plan_coverage_exempt():
     """9.0: lite is the one pipeline, so the rail is ON by default — no config
     key switches it off. Exempt: a MIGRATED layout-2 vault (spec §7 #12 —
-    classic-born units carry no prd_source)."""
-    return os.path.isdir(os.path.join(VAULT, "_meta", "archive", "layout2"))
+    classic-born units carry no prd_source), unless an un-migrated plan-born
+    sibling (context.md) carries units: the vault sorting first never exempts it."""
+    mig = lambda d: os.path.isdir(os.path.join(d, "_meta", "archive", "layout2"))
+    return mig(VAULT) and not any(
+        os.path.isfile(os.path.join(d, "context.md")) and not mig(d)
+        and (glob.glob(os.path.join(d, "units", "U-*.md")) or glob.glob(os.path.join(d, "units", "U-*", "unit.md")))
+        for d in glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*")))
 
 
 PLAN_COVERAGE_CHECKS = [
@@ -506,8 +518,11 @@ COLD_HALT_CHECKS = [
 # greenfield chain, and in the xs baseline arm the model had to work around it
 # by re-running preflight per hop. An input that is missing NOW but produced by
 # a hop that precedes this skill in --chain is satisfied by the chain itself →
-# "ok" with the reason; the PreToolUse gate re-checks it at that hop anyway.
-# Inputs no earlier hop produces stay fatal.
+# "ok" with the reason; the PreToolUse gate re-checks it at that hop anyway:
+# the dispatch mode below refuses execute-bolts with no units
+# (bolts_units_missing) and, on the plan-born vault that plan hop writes, with a
+# missing/FAIL census (lite_plan_coverage_pass). Inputs no earlier hop produces
+# stay fatal.
 # plan = context.md + vault.json + units + coverage in ONE hop; plan Step 5
 # writes .plan-coverage-state.json.
 PRODUCES = {"plan": {"vault", "units", "plan_coverage"}}
@@ -597,10 +612,17 @@ if [ -f "$_RPR_HELPER" ] && [ -n "${CWD:-}" ]; then
   CWD=$(resolve_project_root "$CWD")
 fi
 if [ -z "$CWD" ]; then CWD="$(pwd)"; fi
+NO_PROJECT=0
 if [ ! -d "${CWD}/.mega-sdd" ]; then
-  # no project — nothing to preflight; never block
-  [ "$QUIET" -eq 0 ] && echo '{"status":"PASS","reason":"no .mega-sdd/ project"}'
-  exit 0
+  # No project: never block, write nothing. The hook's names exit here (0 python);
+  # any other name goes to python, which FATALs a skill in state_probes.REMOVED_SKILLS
+  # (never a fall-through PASS) and prints this same PASS for the rest.
+  case "${SKILL##*:}" in
+    plan|execute-bolts|"")
+      [ "$QUIET" -eq 0 ] && echo '{"status":"PASS","reason":"no .mega-sdd/ project"}'
+      exit 0 ;;
+  esac
+  NO_PROJECT=1
 fi
 
 # P1 (v4.93.0, decision 8): the probe predicates live in the SHARED library
@@ -609,7 +631,7 @@ fi
 # Semantics are IDENTICAL to the inline functions this script carried pre-P1.
 export MEGA_SDD_LIB_DIR="${SCRIPT_DIR}/_lib"
 
-CWD="$CWD" SKILL="$SKILL" ARGS_B64="$ARGS_B64" QUIET="$QUIET" python3 <<'PYEOF'
+CWD="$CWD" SKILL="$SKILL" ARGS_B64="$ARGS_B64" QUIET="$QUIET" NO_PROJECT="$NO_PROJECT" python3 <<'PYEOF'
 import base64, glob, json, os, re, shlex, sys
 from datetime import datetime, timezone
 
@@ -642,6 +664,12 @@ warnings = []
 checks = []
 
 name = skill.split(":")[-1] if skill else ""
+no_project = os.environ.get("NO_PROJECT", "0") == "1"
+if no_project and name not in REMOVED_SKILLS:
+    # the bash no-project PASS, byte-identical, for a name the bash case let through
+    if not quiet:
+        print('{"status":"PASS","reason":"no .mega-sdd/ project"}')
+    sys.exit(0)
 
 
 def _kebab(s):
@@ -734,6 +762,35 @@ def _layout2(vdir):
             or bool(glob.glob(os.path.join(vdir, "0[0-6]-*.md"))))
 
 
+def _coverage_rail_vaults():
+    """Every canonical plan-born vault carrying units: context.md present,
+    `_meta/archive/layout2/` absent (a migrated vault is exempt, spec §7 #12; a
+    layout-2/legacy vault has no census). No dispatch arg narrows it: execute-bolts
+    has no --vault flag and the in-run bolt-implementer gate carries no args."""
+    return [d for d in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*")))
+            if os.path.isfile(os.path.join(d, "context.md"))
+            and not os.path.isdir(os.path.join(d, "_meta", "archive", "layout2"))
+            and (glob.glob(os.path.join(d, "units", "U-*.md")) or glob.glob(os.path.join(d, "units", "U-*", "unit.md")))]
+
+
+def _coverage_census():
+    """(passed, why) READ from validate-plan-coverage.sh's state (plan Step 5) — never
+    recomputed here, so the hook adds no process. Only status PASS passes."""
+    try:
+        with open(os.path.join(cwd, ".mega-sdd", ".plan-coverage-state.json"), encoding="utf-8") as f:
+            d = json.load(f)
+    except FileNotFoundError:
+        return False, "missing (a skipped census is not a pass)"
+    except Exception:
+        d = None
+    if not isinstance(d, dict):
+        return False, "unreadable"
+    gaps = d.get("gaps") if isinstance(d.get("gaps"), list) else []
+    heads = [re.sub(r"\s+", " ", str(g["heading"]))[:60] for g in gaps if isinstance(g, dict) and g.get("heading")]
+    listed = (": " + "; ".join(heads[:3]) + (" …" if len(heads) > 3 else "")) if heads else ""
+    return d.get("status") == "PASS", "%s (%d gap(s)%s)" % (str(d.get("status"))[:20], len(gaps), listed)
+
+
 if name in REMOVED_SKILLS:
     fatal = {"check_id": "skill_removed_in_9", "on_fail": REMOVED_SKILLS[name]}
     checks.append({"check": "skill_removed_in_9", "status": "FAIL"})
@@ -758,6 +815,18 @@ elif name == "execute-bolts":
                  "on_fail": "execute-bolts needs units (.mega-sdd/vaults/<vault>/units/U-*.md) — run `plan <prd>` first "
                             "(legacy KB: `plan --kb=<kb-dir>`; a plan-born vault with no units: `plan <prd> --regenerate`)."}
     checks.append({"check": "units_directory_present", "status": "FAIL" if fatal else "PASS"})
+    rail = [] if fatal else _coverage_rail_vaults()
+    if rail:  # the dispatch twin of --predictive lite_plan_coverage_pass (V6, 2026-09-27 audit)
+        passed, why = _coverage_census()
+        if not passed:
+            fatal = {"check_id": "lite_plan_coverage_pass",
+                     "on_fail": ("plan_coverage_gap — the plan-coverage census .mega-sdd/.plan-coverage-state.json is %s "
+                                 "for the plan-born vault %s: every PRD requirement heading must be owned by a unit's "
+                                 "prd_source or quoted by an open question BEFORE execute-bolts. Run "
+                                 "scripts/validate-plan-coverage.sh --cwd=<root> --prd=<prd> --vault=%s (plan Step 5; "
+                                 "legacy KB: --kb=<kb-dir> instead of --prd) and close the listed gaps."
+                                 % (why, ", ".join(os.path.relpath(v, cwd) for v in rail), os.path.relpath(rail[0], cwd)))}
+        checks.append({"check": "lite_plan_coverage_pass", "status": "PASS" if passed else "FAIL"})
 
 status = "FATAL" if fatal else ("WARN" if warnings else "PASS")
 report = {
@@ -777,12 +846,13 @@ report = {
 }
 
 state_file = os.path.join(cwd, ".mega-sdd", ".preflight-state.json")
-try:
-    with open(state_file, "w") as f:
-        json.dump(report, f, indent=2)
-        f.write("\n")
-except Exception:
-    pass
+if not no_project:  # a non-project gets no .mega-sdd/ written into it
+    try:
+        with open(state_file, "w") as f:
+            json.dump(report, f, indent=2)
+            f.write("\n")
+    except Exception:
+        pass
 
 if not quiet:
     print(json.dumps(report))

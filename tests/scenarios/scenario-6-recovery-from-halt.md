@@ -809,7 +809,7 @@ execute-bolts U-009
 
 For the full scenario catalog, see the [chooser table in the scenarios README](README.md#quick-chooser--which-scenario-fits-you).
 
-Mega-sdd is now your friend for spec-driven AI development. The pipeline is opinionated, anti-hallucinating, and atomic. `/mega-sdd` is THE command; everything else exists for power users.
+Mega-sdd is now your friend for spec-driven AI development. The guarded pipeline is opinionated and atomic: its procedure turns an uncertain claim into an Open Question rather than a guess, and every unit and binding verdict is traceable to its source. That is traceability and audit, not a measured accuracy gain over plain Claude Code (the benchmark blocks showed none; see the root README, "Measured against plain Claude Code"). `/mega-sdd` is THE command; everything else exists for power users.
 
 For deeper architecture details: see [`../../README.md`](../../README.md) advanced sections + [`docs/superpowers/specs/`](../../docs/superpowers/specs/) design docs.
 

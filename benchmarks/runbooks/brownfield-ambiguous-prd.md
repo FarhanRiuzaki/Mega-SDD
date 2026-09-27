@@ -1,12 +1,14 @@
-# Runbook: brownfield + ambiguous PRD, vanilla vs mega-sdd (NOT RUN)
+# Runbook: brownfield + ambiguous PRD, vanilla vs mega-sdd (RUN 2026-09-27)
 
 **Status:** designed and **RUN 2026-09-27**. vanilla vs routed (guarded/lite), n=3 clean per arm.
 Result: traps surfaced 5/5 in both arms (OVERLAP), guarded 3.2× slower and 6.0× costlier. The locked
 §5 rule applied: `existing_code` is now an assisted signal. Analysis:
 `research/2026-09-27-brownfield-results.md`.
 
-**Why this experiment:** on greenfield PRDs (xs, clinic) vanilla Claude Code won on speed, cost and
-lightness, with equal or better quality (`research/2026-09-27-vanilla-vs-megasdd-results.md`).
+**Why this experiment:** on greenfield PRDs (xs, clinic) vanilla Claude Code won on speed, tokens,
+cost and process weight (tool calls, subagents, files read, committed `.mega-sdd/` lines), with
+equal or better quality. Code + test lines and markdown lines outside `.mega-sdd/` did not all go
+vanilla's way (`research/2026-09-27-vanilla-vs-megasdd-results.md` §1).
 
 mega-sdd's remaining claim is what those scenarios could not test:
 - binding a spec against **existing code**, where a spec-vs-code contradiction is a CONFLICT that

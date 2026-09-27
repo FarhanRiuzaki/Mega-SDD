@@ -1,6 +1,6 @@
 # plan — task_type assignment & target_files detail
 
-> Relocated from `skills/generate-units/references/task-typing.md` in 9.0 (P1); tuned text kept verbatim.
+> Relocated from `skills/generate-units/references/task-typing.md` in 9.0 (P1); trimmed to what 9.0 uses.
 
 ## Contents
 - task_type rows keyed to `bolts/U-XXX/binding.json`
@@ -10,7 +10,7 @@
 - Step 7.6 — Per-unit target_files collision check
 - Reconcile pass (`--reconcile` — living-vault sync lane)
 
-Loaded by `plan/SKILL.md` Step 4 (task_type, `target_files`, collision check) and `--reconcile`. Plan-time typing (greenfield ⇒ every unit `create`; brownfield ⇒ a symbol-index hit types `verify`/`extend`, a miss types `create` + a `must-not-exist` claim; never a verdict in a unit) is owned by `plan-procedure.md §Step 4`. This file carries the rows keyed to per-unit binding evidence, the `verify`/`extend` specifics, the brownfield target_files mechanics and the reconcile pass. Emitted halt YAML lives in the halt-protocol reference listed in the skill router.
+Loaded by `plan/SKILL.md` Step 4 (task_type, `target_files`, collision check) and `--reconcile`. Plan-time typing (greenfield ⇒ every unit `create`; brownfield ⇒ a symbol-index hit types `verify`/`extend`, a miss types `create` + a `must-not-exist` claim; never a verdict in a unit) is owned by `plan-procedure.md §Step 4`. Emitted halt YAML lives in the halt-protocol reference listed in the skill router.
 
 ## task_type rows keyed to `bolts/U-XXX/binding.json`
 

@@ -1,6 +1,6 @@
 # Property-Based Testing Integration
 
-> Relocated from `skills/generate-units/references/pbt-integration.md` in 9.0 (P1); tuned text kept verbatim.
+> Relocated from `skills/generate-units/references/pbt-integration.md` in 9.0 (P1); trimmed to what 9.0 uses.
 
 Optional unit-level extension. Per Anthropic NeurIPS 2025 paper "Property-Based Testing with Claude" — PBT catches 30-32% of partial-correctness gaps that example-tests miss.
 

@@ -241,6 +241,195 @@ after=$(find "$EMPTY" | sort)
 [ "$before" = "$after" ] && pass "probes are read-only (no writes into the probed cwd)" \
   || fail "preflight wrote into the probed cwd: $(diff <(printf '%s' "$before") <(printf '%s' "$after") | head -3)"
 
+# ── 10b. a malformed coverage census is not a PASS (fail-closed, both modes) ──
+# A probe exception used to downgrade lite_plan_coverage_pass to a fail-open warn.
+printf '{not json' > "$TMP/proj/.mega-sdd/.plan-coverage-state.json"
+out=$(bash "$S" $SFLAGS --cwd="$TMP/proj" --chain=execute-bolts </dev/null); src=$?
+[ "$src" -eq 3 ] && printf '%s\n' "$out" | grep -q '"check": "lite_plan_coverage_pass", "status": "fatal"' \
+  && pass "malformed .plan-coverage-state.json -> lite_plan_coverage_pass fatal (not a fail-open warn)" \
+  || fail "malformed coverage census not refused (rc=$src): $(printf '%s\n' "$out" | grep -e lite_plan_coverage -e PREFLIGHT)"
+printf '{"status": "PASS", "gaps": []}\n' > "$TMP/proj/.mega-sdd/.plan-coverage-state.json"
+
+# ══ 11. DISPATCH mode (--skill=, no --predictive) — what the PreToolUse hook runs ══
+# V6 (2026-09-27 falsification audit): the coverage rail lived only in --predictive,
+# which the MODEL runs; the hook runs --skill= mode, which checked only that units
+# exist, so a direct execute-bolts dispatch on a vault whose census was missing/FAIL
+# passed. The dispatch mode now reads the same state for a PLAN-BORN vault
+# (layout-3: context.md, no _meta/archive/layout2/). Exempt: a migrated vault
+# (spec §7 #12) and a layout-2/legacy vault (no context.md — never plan-born, so no
+# census can exist; it is migrated first, which makes it exempt anyway).
+dpf() { # $1=cwd $2=skill [$3=args] → "rc STATUS check_id | on_fail" from stdout JSON
+  local b64="" o r; [ -n "${3:-}" ] && b64="$(printf '%s' "$3" | base64 | tr -d '\n')"
+  o=$(bash "$S" --cwd="$1" --skill="mega-sdd:$2" ${b64:+--args-b64="$b64"} </dev/null 2>/dev/null); r=$?
+  printf '%s' "$o" | python3 -c "import json,sys; d=json.load(sys.stdin); print('$r', d.get('status'), d.get('fatal_check_id') or '-', '|', d.get('fatal_on_fail') or '')" 2>/dev/null \
+    || echo "$r NO_JSON - | $o"; }
+mk_unit() { mkdir -p "$1/units"; printf -- '---\nid: U-001\ntask_type: create\nacceptance_test: t\n---\n# U-001\n' > "$1/units/U-001.md"; }
+mk_l3() { mkdir -p "$1"; printf -- '---\ntype: context\nvault_layout: 3\n---\n# Context\n' > "$1/context.md"
+  printf '{"vault_version": "1.0", "open_questions": []}\n' > "$1/vault.json"; mk_unit "$1"; }
+mk_l2() { mkdir -p "$1"; printf '# vault\n' > "$1/vault.md"; printf '{"vault_version": "1.0", "open_questions": []}\n' > "$1/vault.json"; mk_unit "$1"; }
+
+# 11a. removed skill in a dir with NO .mega-sdd/ → FATAL, never the no-project PASS;
+# and it writes nothing (no .mega-sdd/ is created in a non-project).
+NOP="$TMP/noproj"; mkdir -p "$NOP"
+for rs in generate-intent bind-codebase generate-units scan-codebase; do
+  R="$(dpf "$NOP" "$rs")"
+  printf '%s' "$R" | grep -q "^1 FATAL skill_removed_in_9 | $rs was removed in 9.0" \
+    && pass "11a dispatch --skill=mega-sdd:$rs, no .mega-sdd/ -> FATAL skill_removed_in_9 rc=1" \
+    || fail "11a $rs with no .mega-sdd/ fell through: $R"
+done
+[ ! -e "$NOP/.mega-sdd" ] && pass "11a no-project removed-skill FATAL writes nothing (no .mega-sdd/ created)" \
+  || fail "11a removed-skill FATAL created $NOP/.mega-sdd"
+out=$(bash "$S" --cwd="$NOP" --skill=mega-sdd:execute-bolts </dev/null 2>/dev/null); src=$?
+[ "$src" -eq 0 ] && [ "$out" = '{"status":"PASS","reason":"no .mega-sdd/ project"}' ] \
+  && pass "11a a surviving skill with no .mega-sdd/ keeps the byte-identical no-project PASS" \
+  || fail "11a no-project PASS changed (rc=$src): $out"
+# the hook's gated names stay 0-python on the no-project path (hook cost doctrine)
+PYSHIM="$TMP/pyshim"; mkdir -p "$PYSHIM"; PYCNT="$TMP/pycount"
+printf '#!/bin/bash\necho 1 >> "%s"\nexec "%s" "$@"\n' "$PYCNT" "$(command -v python3)" > "$PYSHIM/python3"; chmod +x "$PYSHIM/python3"
+rm -f "$PYCNT"
+PATH="$PYSHIM:$PATH" bash "$S" --cwd="$NOP" --skill=mega-sdd:execute-bolts --quiet </dev/null >/dev/null 2>&1
+PATH="$PYSHIM:$PATH" bash "$S" --cwd="$NOP" --skill=mega-sdd:plan --quiet </dev/null >/dev/null 2>&1
+[ ! -f "$PYCNT" ] && pass "11a no-project plan/execute-bolts dispatch preflight spawns 0 python" \
+  || fail "11a no-project dispatch preflight spawned python ($(wc -l < "$PYCNT" | tr -d ' '))"
+
+# 11b. plan-born layout-3 vault: missing / FAIL / malformed census → FATAL; PASS → PASS
+D="$TMP/disp"; DV="$D/.mega-sdd/vaults/app"; mk_l3 "$DV"
+R="$(dpf "$D" execute-bolts '--all --lite')"
+printf '%s' "$R" | grep -q '^1 FATAL lite_plan_coverage_pass | ' && printf '%s' "$R" | grep -q 'plan_coverage_gap' \
+  && printf '%s' "$R" | grep -q 'validate-plan-coverage.sh' && printf '%s' "$R" | grep -q 'missing' \
+  && pass "11b layout-3 vault, no census -> dispatch FATAL lite_plan_coverage_pass (plan_coverage_gap, remedy named)" \
+  || fail "11b missing census not refused at dispatch: $R"
+printf '{"status": "FAIL", "gaps": [{"heading": "Contact Form", "slug": "contact-form", "line": 3, "file": "PRD.md"}]}\n' \
+  > "$D/.mega-sdd/.plan-coverage-state.json"
+R="$(dpf "$D" execute-bolts)"
+printf '%s' "$R" | grep -q '^1 FATAL lite_plan_coverage_pass | ' && printf '%s' "$R" | grep -q 'Contact Form' \
+  && pass "11b layout-3 vault, FAIL census -> dispatch FATAL naming the gap heading" \
+  || fail "11b FAIL census not refused at dispatch: $R"
+printf '[1, 2' > "$D/.mega-sdd/.plan-coverage-state.json"
+R="$(dpf "$D" execute-bolts)"
+printf '%s' "$R" | grep -q '^1 FATAL lite_plan_coverage_pass | ' \
+  && pass "11b layout-3 vault, malformed census -> dispatch FATAL (fail-closed)" \
+  || fail "11b malformed census not refused at dispatch: $R"
+printf '{"status": "PASS", "gaps": []}\n' > "$D/.mega-sdd/.plan-coverage-state.json"
+R="$(dpf "$D" execute-bolts '--all --lite')"
+printf '%s' "$R" | grep -q '^0 PASS - ' && pass "11b layout-3 vault, PASS census -> dispatch PASS rc=0" \
+  || fail "11b PASS census refused: $R"
+python3 -c "import json,sys; d=json.load(open('$D/.mega-sdd/.preflight-state.json')); sys.exit(0 if {'check':'lite_plan_coverage_pass','status':'PASS'} in d['checks'] else 1)" 2>/dev/null \
+  && pass "11b the dispatch state records the lite_plan_coverage_pass check" \
+  || fail "11b lite_plan_coverage_pass missing from the dispatch state checks"
+rm -f "$D/.mega-sdd/.plan-coverage-state.json"
+
+# 11c. exemptions (no census anywhere): migrated vault, layout-2 vault
+M="$TMP/migr"; MV="$M/.mega-sdd/vaults/app"; mk_l3 "$MV"; mkdir -p "$MV/_meta/archive/layout2"
+R="$(dpf "$M" execute-bolts)"
+printf '%s' "$R" | grep -q '^0 PASS - ' && pass "11c migrated vault (_meta/archive/layout2/) -> exempt, dispatch PASS" \
+  || fail "11c migrated vault not exempt: $R"
+L2="$TMP/l2d"; mk_l2 "$L2/.mega-sdd/vaults/app"
+R="$(dpf "$L2" execute-bolts)"
+printf '%s' "$R" | grep -q '^0 PASS - ' && pass "11c layout-2 vault (no context.md) -> exempt, dispatch PASS" \
+  || fail "11c layout-2 vault not exempt: $R"
+
+# 11d. mixed project: every plan-born vault CARRYING UNITS counts (a unit-less one
+# never blocks). A dispatch arg never narrows the rail: execute-bolts has no --vault
+# flag and the in-run bolt-implementer gate carries no args, so a `--vault=<x>` the
+# skill ignores would exempt the Skill entry only (review 2026-09-27: `--vault=src`,
+# `--vault=/tmp`, or a vault named like a project dir such as app/, passed a FAIL census).
+X="$TMP/mixed"; mk_l2 "$X/.mega-sdd/vaults/old"; mk_l3 "$X/.mega-sdd/vaults/new"; mkdir -p "$X/src" "$X/new"
+R="$(dpf "$X" execute-bolts '--all')"
+printf '%s' "$R" | grep -q '^1 FATAL lite_plan_coverage_pass | ' && printf '%s' "$R" | grep -q 'new' \
+  && pass "11d mixed, no --vault= -> the plan-born vault's missing census blocks (names it)" \
+  || fail "11d mixed without target not refused: $R"
+for va in '--vault=old --all' '--all --vault=src' '--all --vault=new' '--all --vault=/tmp' '--vault .mega-sdd/vaults/new'; do
+  R="$(dpf "$X" execute-bolts "$va")"
+  printf '%s' "$R" | grep -q '^1 FATAL lite_plan_coverage_pass | ' \
+    && pass "11d mixed, dispatch args [$va] do not narrow the rail -> FATAL" \
+    || fail "11d dispatch args [$va] exempted a missing census: $R"
+done
+# the predictive twin: a MIGRATED vault that sorts first never exempts a plan-born sibling
+PM="$TMP/predmix"; mk_l3 "$PM/.mega-sdd/vaults/aaa-old"; mkdir -p "$PM/.mega-sdd/vaults/aaa-old/_meta/archive/layout2"
+mk_l3 "$PM/.mega-sdd/vaults/zzz-new"
+out=$(bash "$S" $SFLAGS --cwd="$PM" --chain=execute-bolts </dev/null)
+printf '%s\n' "$out" | grep -q '"check": "lite_plan_coverage_pass", "status": "fatal"' \
+  && pass "11d predictive: migrated vault sorting first does not exempt the plan-born zzz-new (missing census fatal)" \
+  || fail "11d predictive exempted a plan-born vault behind a migrated one: $(printf '%s\n' "$out" | grep -e lite_plan_coverage -e PREFLIGHT)"
+rm -rf "$PM/.mega-sdd/vaults/zzz-new/units"
+out=$(bash "$S" $SFLAGS --cwd="$PM" --chain=execute-bolts </dev/null)
+printf '%s\n' "$out" | grep -q '"check": "lite_plan_coverage_pass"' \
+  && fail "11d predictive: a unit-less plan-born sibling revoked the migrated exemption: $(printf '%s\n' "$out" | grep lite_plan_coverage)" \
+  || pass "11d predictive: migrated vault + unit-less plan-born sibling -> still exempt"
+rm -rf "$X/.mega-sdd/vaults/new/units"
+R="$(dpf "$X" execute-bolts)"
+printf '%s' "$R" | grep -q '^0 PASS - ' && pass "11d a plan-born vault with no units does not block another vault's bolts" \
+  || fail "11d unit-less plan-born vault blocked: $R"
+
+# 11e. no units at all: bolts_units_missing keeps precedence (one fatal, not two)
+NU="$TMP/nounits"; mkdir -p "$NU/.mega-sdd/vaults/app"; printf '# c\n' > "$NU/.mega-sdd/vaults/app/context.md"
+R="$(dpf "$NU" execute-bolts)"
+printf '%s' "$R" | grep -q '^1 FATAL bolts_units_missing | ' && pass "11e no units -> bolts_units_missing stays the fatal" \
+  || fail "11e: $R"
+
+# ══ 12. the REAL PreToolUse hook: Skill entry AND the in-run bolt-implementer dispatch ══
+HOOK="plugins/mega-sdd/hooks/pre-tool-use"
+H="$TMP/hookproj"; HV="$H/.mega-sdd/vaults/app"; mk_l3 "$HV"; printf '# Constitution\n' > "$HV/constitution.md"
+( cd "$H" && git init -q . && git -c user.email=t@t -c user.name=t add -A \
+  && git -c user.email=t@t -c user.name=t commit -q -m seed ) >/dev/null 2>&1
+hook_skill() { printf '{"session_id":"cov-rail","cwd":"%s","tool_name":"Skill","tool_input":{"skill":"mega-sdd:execute-bolts","args":"--all --lite"}}' "$H" \
+  | bash "$HOOK" 2>/dev/null; }
+hook_agent() { printf '{"session_id":"cov-rail","cwd":"%s","tool_name":"Agent","tool_input":{"subagent_type":"mega-sdd:bolt-implementer","description":"bolt","prompt":"mega-sdd-trace:execute-bolts:U-001\\nREAD FIRST, IN FULL: %s/bolts/U-001/dispatch-prompt.md"}}' "$H" "$HV" \
+  | bash "$HOOK" 2>/dev/null; }
+printf '{"status": "FAIL", "gaps": [{"heading": "Contact Form", "slug": "contact-form", "line": 3, "file": "PRD.md"}]}\n' \
+  > "$H/.mega-sdd/.plan-coverage-state.json"
+OUT=$(hook_skill)
+printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' && printf '%s' "$OUT" | grep -q 'plan_coverage_gap' \
+  && pass "12 real hook: Skill mega-sdd:execute-bolts on a FAIL census is DENIED (plan_coverage_gap)" \
+  || fail "12 real hook allowed execute-bolts on a FAIL census: ${OUT:0:300}"
+OUT=$(hook_agent)
+printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' && printf '%s' "$OUT" | grep -q 'plan_coverage_gap' \
+  && pass "12 real hook: a hand bolt-implementer Agent dispatch on a FAIL census is DENIED (plan_coverage_gap)" \
+  || fail "12 real hook allowed a bolt-implementer dispatch on a FAIL census: ${OUT:0:300}"
+mkdir -p "$H/src"
+OUT=$(printf '{"session_id":"cov-rail","cwd":"%s","tool_name":"Skill","tool_input":{"skill":"mega-sdd:execute-bolts","args":"--all --vault=src"}}' "$H" \
+  | bash "$HOOK" 2>/dev/null)
+printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' && printf '%s' "$OUT" | grep -q 'plan_coverage_gap' \
+  && pass "12 real hook: an ignored --vault=src arg does not exempt the Skill entry from a FAIL census" \
+  || fail "12 real hook: --vault=src bypassed the coverage rail: ${OUT:0:300}"
+rm -f "$H/.mega-sdd/.plan-coverage-state.json"
+OUT=$(hook_skill)
+printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' && printf '%s' "$OUT" | grep -q 'plan_coverage_gap' \
+  && pass "12 real hook: a MISSING census (skipped plan Step 5) is DENIED too" \
+  || fail "12 real hook allowed execute-bolts with no census: ${OUT:0:300}"
+printf '{"status": "PASS", "gaps": []}\n' > "$H/.mega-sdd/.plan-coverage-state.json"
+OUT=$(hook_skill)
+printf '%s' "$OUT" | grep -q 'plan_coverage_gap' \
+  && fail "12 real hook still cites plan_coverage_gap on a PASS census: ${OUT:0:300}" \
+  || pass "12 real hook: a PASS census clears the coverage deny (self-clears, no stale state)"
+
+# 12b. the census the gate READS is anti-self-bypass guarded like every other gate
+# state: the gate cannot re-derive it (no --prd at dispatch, no spawn budget), so a
+# forged {"status":"PASS"} would otherwise open the rail. Its writer runs as
+# `bash validate-plan-coverage.sh …`, which never NAMES the file, so it stays allowed.
+hook_tool() { H="$H" T="$1" TI="$2" python3 -c '
+import json, os, subprocess
+p = {"session_id": "cov-rail", "cwd": os.environ["H"], "tool_name": os.environ["T"], "tool_input": json.loads(os.environ["TI"])}
+print(subprocess.run(["bash", "plugins/mega-sdd/hooks/pre-tool-use"], input=json.dumps(p), capture_output=True, text=True, timeout=180).stdout, end="")'; }
+CS="$H/.mega-sdd/.plan-coverage-state.json"
+OUT=$(hook_tool Write "$(python3 -c 'import json,sys; print(json.dumps({"file_path": sys.argv[1], "content": "{\"status\": \"PASS\"}"}))' "$CS")")
+printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' \
+  && pass "12b a Write of .plan-coverage-state.json (forged PASS) is DENIED" \
+  || fail "12b Write of the coverage census allowed: ${OUT:0:300}"
+for cmd in "echo '{\"status\":\"PASS\"}' > .mega-sdd/.plan-coverage-state.json" \
+           "python3 -c \"open('.mega-sdd/.plan-coverage-state.json','w').write('{}')\"" \
+           "cp /tmp/pass.json $CS"; do
+  OUT=$(hook_tool Bash "$(python3 -c 'import json,sys; print(json.dumps({"command": sys.argv[1]}))' "$cmd")")
+  printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' \
+    && pass "12b Bash forge [${cmd:0:40}…] of the coverage census is DENIED" \
+    || fail "12b Bash forge [${cmd:0:40}…] allowed: ${OUT:0:300}"
+done
+OUT=$(hook_tool Bash '{"command": "bash plugins/mega-sdd/scripts/validate-plan-coverage.sh --cwd=. --prd=PRD.md --vault=.mega-sdd/vaults/app --quiet"}')
+printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' \
+  && fail "12b the sanctioned census writer was denied: ${OUT:0:300}" \
+  || pass "12b the sanctioned writer (bash validate-plan-coverage.sh …) stays allowed"
+
 echo
 [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"
 exit $rc

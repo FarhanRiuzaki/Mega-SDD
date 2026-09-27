@@ -28,9 +28,9 @@ The front door first runs `route-lane.sh`, a script that reads the PRD and the r
 - **assisted**: the spec has open business items, a security surface or several flows, or the repo is an existing app. This is direct plus ONE batched question round before coding and ONE blind review after it.
 - **guarded**: a mega-sdd vault already exists, or you asked for it (`--guarded`; `--lite` implies it). This is the spec pipeline: `plan` → `execute-bolts`, with per-unit binding and audit artefacts.
 
-Whatever the lane, the run is done only when [the result contract](#what-every-run-delivers) is met: every acceptance criterion mapped to a test, `delivery-check.sh` printing `VERDICT: PASS` on the final commit, and every assumption listed.
+Whatever the lane, the run is done only when [the result contract](#what-every-run-delivers) is met: every acceptance criterion mapped to a test, `delivery-check.sh` printing `VERDICT: PASS` on the final commit, and every assumption listed. That is an instruction the run follows, not a hook (measured adherence [below](#what-every-run-delivers)).
 
-What was measured: the routed lanes run **on par** with plain Claude Code (not better). The guarded pipeline costs several times more and exists for teams that need the audit trail. Numbers in [Measured against plain Claude Code](#measured-against-plain-claude-code).
+What was measured, on two greenfield fixtures only: the routed lanes landed **in plain Claude Code's range, not better** (median cost 1.1–1.2× and tokens 1.3–1.4× vanilla, ranges overlapping). Assisted on existing code, the brownfield default, is unmeasured. The guarded pipeline costs several times more and exists for teams that need the audit trail. Numbers in [Measured against plain Claude Code](#measured-against-plain-claude-code).
 
 On a guarded project, when the code moves on afterwards (a manual hotfix, an AI edit in any session, a `git pull`), `/mega-sdd:sync` re-binds only the units the change touches.
 
@@ -178,7 +178,9 @@ The owner principle is consistent, result-oriented output. A run is judged by wh
 - `build` passes with an empty environment (blocking);
 - every Next.js app-router page is linked from some other source file (advisory).
 
-It covers Node projects (a `package.json`). On any other stack it prints `SKIP`, and the run executes that stack's own test and build commands instead. Each check reproduces a defect that the pre-9.0 pipeline shipped in the benchmark runs: its lite and classic runs failed the check 9/9. It is a check plain Claude Code does not run by itself; vanilla's own runs passed it too.
+It covers Node projects (a `package.json`). On any other stack it prints `SKIP`, and the run executes that stack's own test and build commands instead. Each check reproduces a defect that the pre-9.0 pipeline shipped in the benchmark runs: its 9 clean lite and classic runs all failed the check (a 10th lite run, excluded as unclean, passed). It is a check plain Claude Code does not run by itself; vanilla's own runs passed it too.
+
+**How it is enforced.** No hook runs it on any lane. On guarded it is the last step of `execute-bolts`; on direct and assisted it is a prose instruction in [`direct-lane.md`](plugins/mega-sdd/references/direct-lane.md). Measured adherence: all 9 routed benchmark runs ran it, 3/3 while it was only a procedure step and 6/6 once "done = `VERDICT: PASS`" was written into the lane instructions (read from the local run streams, which are not committed). That is n=9 headless runs, not a guarantee.
 
 ## Lanes
 
@@ -256,12 +258,12 @@ Setup for every block: n=3 clean runs per arm, opus, and vanilla Claude Code (me
 
 What the numbers say:
 
-- **Routed (direct / assisted) is on par with vanilla, not better.** The xs speed difference is formally `BETTER` under the locked rule, but it is not claimed: the runs were on different days, the gap is about 0.5 min, and the prompts differ. Cost, AC and Critical overlap. The xs blind rubric is formally `WORSE` (93–94 vs 95–96), but across different scorer sessions, and a same-session vanilla scored 94, so it reads as not shown to differ.
+- **Routed (direct / assisted) landed in vanilla's range on the two greenfield fixtures, not better.** Median cost was 1.13× (xs) and 1.21× (clinic) vanilla, and total tokens 1.30× and 1.38×. Every range overlaps, so the locked rule reads `OVERLAP`: not shown to differ, which is not a saving. Assisted on existing code, the brownfield default, was never measured. The xs speed difference is formally `BETTER` under the locked rule, but it is not claimed: the runs were on different days, the gap is about 0.5 min, and the prompts differ. AC and Critical overlap too. The xs blind rubric is formally `WORSE` (93–94 vs 95–96), but vanilla 1–3 were scored in an earlier batch, and the one vanilla run scored in the routed runs' batch got 94 (n=1), so it reads as not shown to differ.
 - **The guarded pipeline surfaced the same 5/5 seeded traps as vanilla, at ~6× the cost.** Its CONFLICT gate fired 3 times in 3 runs, all false positives on the pipeline's own anchors. None of the seeded contradictions reached the gate. The runs were headless, so the value of a CONFLICT halt with a human answering it is unmeasured.
-- **The old default** (the pipeline on every greenfield PRD) was 2.3–12× slower and 9–22× costlier than vanilla, with equal or lower quality. That is why 9.0 routes first and keeps one pipeline.
+- **The old default** (the pipeline on every greenfield PRD) was 2.4–12× slower and 8.8–22× costlier than vanilla, with equal or lower quality. That is why 9.0 routes first and keeps one pipeline.
 - **So mega-sdd makes no claim to be faster, cheaper, lighter or stronger than plain Claude Code.** What it adds:
-  - a router that kept ordinary work at vanilla cost (measured);
-  - the delivery check (the pre-9.0 pipeline failed it 9/9; the routed and vanilla runs passed it);
+  - a router that kept ordinary greenfield work within vanilla's cost range (two fixtures; medians 1.1–1.2× cost, 1.3–1.4× tokens, overlapping ranges);
+  - the delivery check (the pre-9.0 pipeline failed it in 9/9 clean runs; the routed and vanilla runs passed it). On direct and assisted it is prose-enforced: the routed runs ran it 3/3 before "done = `VERDICT: PASS`" was written into the lane instructions and 6/6 after;
   - on assisted, one batched ask for business decisions. The runs were headless, so its value with a human answering is unmeasured.
 
   Opt-in, it adds the spec and audit artefacts of the guarded lane. Their value is traceability, not code quality.
@@ -498,7 +500,7 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 
 ## Contributing
 
-See [`plugins/mega-sdd/CLAUDE.md`](plugins/mega-sdd/CLAUDE.md) for AI-agent contributor protocol — anti-slop PR requirements, anti-hallucination rail enforcement, the release-evidence rule (no comparative claim without the vanilla comparison), skill edit policy, release process.
+See [`plugins/mega-sdd/CLAUDE.md`](plugins/mega-sdd/CLAUDE.md) for AI-agent contributor protocol — anti-slop PR requirements, CONFLICT-gate and evidence-gate enforcement, the release-evidence rule (no comparative claim without the vanilla comparison), skill edit policy, release process.
 
 For human contributors: [`CONTRIBUTING.md`](CONTRIBUTING.md) — SDD invariants, testing guidelines, repository layout.
 

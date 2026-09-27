@@ -6,11 +6,10 @@ is the procedure for the first two. `guarded` is the spec pipeline (`orchestrate
 
 **Why these lanes exist (measured, `research/2026-09-27-vanilla-vs-megasdd-results.md`).** On a
 greenfield PRD, vanilla Claude Code shipped 12/12 (xs) and 10/10 (clinic) acceptance criteria in
-3–30 min for $1–8. The lite and classic pipelines took 2.3–12× longer, cost 9–22× more and scored
+3–30 min for $1–8. The lite and classic pipelines took 2.4–12× longer, cost 8.8–22× more and scored
 equal or lower. On a brownfield PRD with seeded spec-vs-code traps the pipeline surfaced the same 5/5
 traps as vanilla at 5.2–6.6× the cost (`research/2026-09-27-brownfield-results.md`). So every task
-without an existing vault is built here: no vault, no units, no subagent per unit, no `.mega-sdd/`
-writes. Assisted adds the batched ask — the part of the pipeline that did its job (surfacing).
+without an existing vault is built here, with no vault, units or `.mega-sdd/` writes. Assisted adds the batched ask — the part of the pipeline that did its job (surfacing).
 
 **Done means `delivery-check.sh` printed `VERDICT: PASS` on your last commit, and its output is quoted in your report.** Not "tests pass locally". The check runs on a fresh checkout, which is where the pipeline's own defects hid. A report without that line is an unfinished run.
 
@@ -58,8 +57,8 @@ writes. Assisted adds the batched ask — the part of the pipeline that did its 
 
 ## Assisted: what it adds
 
-Assisted fires on `spec_open_items`, `security_surface` or `multi_flow`. It keeps the direct
-procedure and adds two steps, in this order:
+Assisted fires on `existing_code`, `spec_open_items`, `security_surface` or `multi_flow`. It
+keeps the direct procedure and adds two steps, in this order:
 
 - **Before coding, when the spec has open items:** sort them.
   - A **technical** item is yours to decide: pick, cite why, and list it at step 6.

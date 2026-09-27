@@ -2,11 +2,11 @@
  "_doc": "Complexity budget \u2014 a RATCHET, not a target (plugins/mega-sdd/CLAUDE.md \u00a7Release evidence & complexity budget). tests/benchmarks/test-complexity-budget.sh fails when a measured value exceeds its ceiling. Shrinking is always allowed; lower the ceiling in the same change to lock the gain. Raising a ceiling requires a `raises` entry {change, metric, measured_benefit}: a feature / new stage / new lens / new gate / performance claim cites benchmarks/runbooks/vanilla-vs-megasdd.md results (n >= 3 per arm, vs vanilla); a defect fix cites the regression test that fails without it. No evidence, no raise. Units: bytes / chars / lines exactly as the test measures them.",
  "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only); raised 2026-09-27 (see raises[]); LOWERED 2026-09-27 at 9.0 P1: generate-intent / bind-codebase / generate-units / scan-codebase deleted, their surviving contracts relocated into skills/plan/references/ + references/. T01 lite = the guarded pipeline trace re-pointed to the relocated successors (benchmarks/tasks/T01-greenfield-chain/files.lite.txt header). T01 default = what a default run on a clear greenfield PRD commands since the lane router: the DIRECT lane (using-mega-sdd + the front door + references/direct-lane.md; files.optimized.txt) \u2014 a redefinition, not a like-for-like shrink: the pre-9.0 default traced the classic chain (484,930 B). LOWERED again 2026-09-27 at 9.0 P1b: 6 executor-less scripts (-1,531 lines) and the dead hook legs keyed on removed skill ids (-102 lines) deleted.",
  "ceilings": {
-  "always_loaded_description_chars": 12499,
-  "t01_lite_commanded_bytes": 451893,
-  "t01_default_commanded_bytes": 39307,
-  "skill_md_total_bytes": 274863,
-  "scripts_total_lines": 43795,
+  "always_loaded_description_chars": 12490,
+  "t01_lite_commanded_bytes": 451814,
+  "t01_default_commanded_bytes": 39305,
+  "skill_md_total_bytes": 274854,
+  "scripts_total_lines": 43988,
   "hooks_total_lines": 3224
  },
  "raises": [
@@ -31,7 +31,7 @@
      45356
     ]
    },
-   "measured_benefit": "Feature (router): benchmarks/results/vanilla-ab REPORT.md, arm routed vs vanilla, n=3 clean each \u2014 xs review-ready 2.65 [2.41-2.69] vs 3.17 [3.13-5.72] min, cost 1.16 vs 1.03 USD (OVERLAP), AC 12/12 both; clinic 26.6 vs 30.0 min, 9.30 vs 7.68 USD (OVERLAP), AC 10/10 both, Critical 0 both \u2014 versus the lite pipeline it replaces on greenfield (clinic 70.5 min / 67.33 USD / 126 subagents / 123,824 committed .mega-sdd lines -> 26.6 / 9.30 / 1 / 0). The T01 growth (+2.3 KB, +0.5%) is paid only on the guarded lane. Defect fix (delivery-check): tests/lanes/test-lanes.sh D0-D9 fail without it; on the 16 benchmark repos it flags 9/9 clean mega-sdd runs (missing npm test script, empty-env build, TZ-dependent test, unlinked page) and 0/6 vanilla; routed runs 9/9 PASS. scripts_total_lines includes route-lane.sh + delivery-check.sh (303 lines together) once tracked. +2 lines: resolve-review-tier.sh H1 (standards rides with quality), pinned by tests/size-weighted/test-standards-lens-h1.sh."
+   "measured_benefit": "Feature (router): benchmarks/results/vanilla-ab REPORT.md, arm routed vs vanilla, n=3 clean each \u2014 xs review-ready 2.65 [2.41-2.69] vs 3.17 [3.13-5.72] min, cost 1.16 vs 1.03 USD (OVERLAP), AC 12/12 both; clinic 26.6 vs 30.0 min, 9.30 vs 7.68 USD (OVERLAP), AC 10/10 both, Critical 0 both \u2014 versus the lite pipeline it replaces on greenfield (clinic 70.6 min / 67.33 USD / 126 subagents / 123,824 committed .mega-sdd lines -> 26.6 / 9.30 / 1 / 0). The T01 growth (+2.3 KB, +0.5%) is paid only on the guarded lane. Defect fix (delivery-check): tests/lanes/test-lanes.sh D0-D9 fail without it; on the 16 pre-router benchmark repos (6 vanilla + 10 pipeline) it FAILs all 9 clean pipeline runs (missing npm test script, empty-env build, TZ-dependent test, unlinked page) and passes 6/6 vanilla; the 10th pipeline run, clinic lite-1 (excluded from the medians for a system sleep), passes D1-D5; routed runs 9/9 PASS. scripts_total_lines includes route-lane.sh + delivery-check.sh (303 lines together) once tracked. +2 lines: resolve-review-tier.sh H1 (standards rides with quality), pinned by tests/size-weighted/test-standards-lens-h1.sh."
   },
   {
    "date": "2026-09-27",
@@ -46,7 +46,7 @@
      484933
     ]
    },
-   "measured_benefit": "benchmarks/results/vanilla-ab REPORT.md xs, n=3 clean each: lite vs classic review-ready 20.2 [15.1-23.1] vs 38.5 [36.7-41.8] min, cost 11.29 [9.83-11.90] vs 22.47 [21.87-22.52] USD (non-overlapping), AC 11/12 both, Critical 0 both, rubric 84 vs 82 (OVERLAP). Clinic classic not measured on this fixture (historical n=1: 259.66 USD / 102 min vs lite 53-73 USD) \u2014 deviation from the locked two-scenario rule logged in benchmarks/runbooks/vanilla-vs-megasdd.md section 9."
+   "measured_benefit": "benchmarks/results/vanilla-ab REPORT.md xs, n=3 clean each: lite vs classic review-ready 20.2 [15.1-23.1] vs 38.5 [36.7-41.8] min, cost 11.29 [9.83-11.90] vs 22.47 [21.87-22.52] USD (non-overlapping), AC 11/12 both, Critical 0 both, rubric 84 vs 82 (OVERLAP). Clinic classic not measured on this fixture (historical n=1: 259.66 USD / 301.4 min wall, plugin 7.35.0, another fixture, vs clinic lite 53-73 USD / 65-94 min) \u2014 deviation from the locked two-scenario rule logged in benchmarks/runbooks/vanilla-vs-megasdd.md section 9."
   },
   {
    "date": "2026-09-27",
@@ -69,6 +69,17 @@
     ]
    },
    "measured_benefit": "Defect fix: the bare form did not resolve from the command (no references/ next to it). Regression test: tests/v9/test-no-removed-skill-refs.sh (every reference path named by a SKILL.md / command resolves) fails without it."
+  },
+  {
+   "date": "2026-09-27",
+   "change": "defect fixes from the independent 9.0 verification (V4, V6, V7)",
+   "metric": {
+    "scripts_total_lines": [
+     43795,
+     43988
+    ]
+   },
+   "measured_benefit": "Defect fixes, each with a failing-first regression test that fails on 1ab6c43e: validate-handoff-binding-units.sh +76 (V4: an unresolved CONFLICT on a migrated layout-2 vault stopped blocking after rebind-units --units=all; invariant #2) -> tests/v9/test-migrated-conflict-blocks.sh; validate-preflight.sh +70 (V6: the plan-coverage rail was only enforced in --predictive mode, the PreToolUse dispatch path let execute-bolts through on a coverage FAIL; removed-skill dispatch FATAL without .mega-sdd/) -> tests/scripts/test-predictive-preflight.sh; validate-plan-coverage.sh +44 (V7: --kb fail-open, real requirement headings like \"Purpose code validation\" silently dropped; fenced-code headings censused) -> tests/v9/test-kb-to-plan.sh; route-lane.sh +3 (V6: a legacy vault without vault.json routed to direct) -> tests/lanes/test-lanes.sh. Evidence of the defects: the independent verification workflow v9-independent-verification (verdicts V4/V6/V7 PARTIAL), reproduced by each reviewer on the pre-fix code."
   }
  ]
 }
