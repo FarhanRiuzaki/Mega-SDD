@@ -57,10 +57,10 @@ for p in sorted(glob.glob(os.path.join(vault, "units", "U-*.md")) + glob.glob(os
     txt = open(p, encoding="utf-8", errors="replace").read()
     fm = txt.split("\n---", 1)[0] if txt.startswith("---") else ""
     deps = []
-    m = re.search(r"(?m)^depends_on:[ \t]*(\[[^\]]*\])?[ \t]*\n((?:[ \t]+-[^\n]*\n?)*)", fm)
+    m = re.search(r"(?m)^depends_on:[ \t]*(\[[^\]]*\])?[ \t]*(?:#[^\n]*)?\n((?:[ \t]+-[^\n]*\n?)*)", fm)
     if m:
         if m.group(1): deps = [d.strip().strip("'\"") for d in m.group(1)[1:-1].split(",") if d.strip()]
-        else: deps = [re.sub(r"^[ \t]+-[ \t]*", "", ln).strip().strip("'\"") for ln in m.group(2).splitlines() if ln.strip()]
+        else: deps = [re.sub(r"\s+#.*", "", re.sub(r"^[ \t]+-[ \t]*", "", ln)).strip().strip("'\"") for ln in m.group(2).splitlines() if ln.strip()]
     units[uid] = [d for d in deps if re.match(r"^U-", d)]
 
 def evidence(uid):

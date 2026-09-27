@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [Unreleased — branch eksperimen `exp/p2-inline`] — `execute-bolts --inline` (P2, BELUM TERUKUR)
+
+Pilihan owner "P2 ramping" (spec §8). Branch ini baru di-merge kalau pengukuran terkunci di `benchmarks/runbooks/p2-inline-vs-agents.md` lolos. Aturannya: AC, Critical, Important, trap surfaced dan regresi semuanya **tidak WORSE** dibanding jalur per-unit agent, n=3. Sampai itu terpenuhi, `--inline` opt-in dan nggak ngeklaim apa-apa soal kualitas atau biaya.
+
+### Added
+- **`execute-bolts --inline`** (juga `--inline` di front door, diteruskan ke hop execute-bolts). Unit dikerjakan dalam **satu konteks**, tanpa subagent dan tanpa panel per unit:
+  - lewat `superpowers:executing-plans` kalau ada;
+  - kalau nggak ada, lewat loop bawaan di `execute-bolts/references/inline-run.md`.
+- **`scripts/derive-exec-plan.sh`:**
+  - Nentuin unit pending, urutan topologis, dan karantina dengan predikat yang sama seperti gate per-dispatch (CONFLICT terbuka, `quarantine.json`, freshness binding, dan dependents).
+  - Rencananya kompatibel superpowers (`bolts/_exec-plan-<head12>.md` plus ledger). Tiap task dimulai dengan re-bind unitnya (JIT).
+  - CONFLICT atas file yang dibuat unit sebelumnya di run yang sama ditunda, nggak dikarantina.
+  - `--retire` nutup run.
+- **Penutupan run:**
+  - full suite;
+  - satu review buta, yang prompt dispatch-nya bawa baris `mega-sdd-trace:execute-bolts`. Setiap Critical/Important wajib di-fix RED→GREEN atau diputus dengan alasan;
+  - `delivery-check.sh`;
+  - gate batas-run B1–B4, whitelist, orphans, dan `conflict_bypassed`;
+  - result contract.
+- **Gate baru `conflict_bypassed`** (`validate-bolt-artifacts.sh --conflict-bypass-scan`, body `scripts/_lib/conflict_bypass.py`):
+  - Commit unit dinilai berdasarkan state CONFLICT saat commit itu mendarat.
+  - `write-unit-binding.sh` nyimpen onset tiap CONFLICT (dikunci per jenis + ekspektasi) dan riwayat episode yang ditutup re-bind (`conflict_history`), jadi re-bind nggak bisa menghapus bypass diam-diam. Penyelesaiannya tetap keputusan manusia (`resolve-oq --binding`).
+  - Gate ini jalan di Skill entry, di dispatch, dan di Stop hook, jadi **jalur default juga kena leg ini**. Tapi leg ini cuma nyala kalau memang ada bypass.
+- **Model ancaman (normatif, spec §8.2):** gate nangkep kekhilafan controller yang jujur: lupa karantina, resume setelah compaction, re-run, re-plan. Penghindaran yang disengaja (tanggal dimundurkan, bukti dihapus, commit salah label) di luar cakupan, sama seperti di jalur per-dispatch.
+
+### Fixed (juga kena jalur default)
+- `depends_on` dengan komentar `# …` di belakangnya sekarang di-parse. Sebelumnya dependensinya diam-diam hilang (`derive-ready-units.sh`, `validate-unit-spec.sh`).
+
+### Notes
+- Ukuran setelah dipangkas ke model ancaman jujur (sempat ~1.440 baris baru, sekarang ±730): `derive-exec-plan.sh` 380 · `_lib/conflict_bypass.py` 220 · `_lib/exec_units.py` 129 · `inline-run.md` 130. Budget kompleksitas dinaikkan **sementara** dengan entri `raises` yang eksplisit bilang belum ada bukti. Entri itu wajib diganti hasil runbook sebelum merge, kalau nggak, branch ini dibuang.
+- Dipin oleh `tests/v9/test-inline-lane.sh` (194 cek, termasuk matriks honest-slip) dan `test-4abc-spawn-tax` (flag gabungan).
+
 ## [9.0.0] - 2026-09-27 — satu pipeline: empat skill classic dihapus, `plan → execute-bolts` jadi satu-satunya jalur spec
 
 Sumber: `docs/superpowers/specs/2026-09-27-v9-simplification-design.md`, fase P1. Dasarnya tiga blok benchmark terukur (n=3 run bersih per arm, vanilla Claude Code sebagai kontrol). Di blok mana pun pipeline nggak menghasilkan kode yang lebih baik, dan lite ngalahin classic di semua dimensi biaya dengan kualitas yang overlap. Tiga blok itu jadi usage review yang disyaratkan kontrak plugin sebelum skill boleh dicabut di 9.0.

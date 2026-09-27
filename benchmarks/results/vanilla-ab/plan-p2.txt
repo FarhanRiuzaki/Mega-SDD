@@ -1,0 +1,11 @@
+# P2 block (benchmarks/runbooks/p2-inline-vs-agents.md), seed 20260927:
+# python3 -c "import random; a=['guarded']*3+['guarded-inline']*3+['vanilla']; random.seed(20260927); random.shuffle(a); print(a)"
+# -> ['vanilla', 'guarded-inline', 'guarded-inline', 'guarded', 'guarded', 'guarded-inline', 'guarded']
+# fixture: fixture-brown @ 015ecf3; plugin = git archive of the P2 commit (both guarded arms, same snapshot)
+brownfield-p2 vanilla 5 PRD/prd-clinic-v2.md
+brownfield-p2 guarded-inline 1 PRD/prd-clinic-v2.md
+brownfield-p2 guarded-inline 2 PRD/prd-clinic-v2.md
+brownfield-p2 guarded 1 PRD/prd-clinic-v2.md
+brownfield-p2 guarded 2 PRD/prd-clinic-v2.md
+brownfield-p2 guarded-inline 3 PRD/prd-clinic-v2.md
+brownfield-p2 guarded 3 PRD/prd-clinic-v2.md

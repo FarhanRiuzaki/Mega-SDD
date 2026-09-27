@@ -2,8 +2,10 @@
 # vanilla-ab-batch.sh — run a vanilla-vs-mega-sdd block SEQUENTIALLY, one fresh fixture copy per
 # run (benchmarks/runbooks/vanilla-vs-megasdd.md §4, §6). Each line of <plan> is
 #   <scenario> <arm> <run-id> <prd-rel-path>
-# with <arm> = vanilla | lite | classic | routed | guarded (routed = the front door with the PRD and no flag:
-# the lane router decides; guarded = the front door with --guarded, the one spec pipeline — both P0_ENTRY=frontdoor). Per run:
+# with <arm> = vanilla | lite | classic | routed | guarded | guarded-inline (routed = the front door with the PRD
+# and no flag: the lane router decides; guarded = the front door with --guarded, the one spec pipeline with the
+# per-unit subagent + panel path; guarded-inline = the front door with --guarded --inline, the same pipeline run
+# in one context (spec 2026-09-27-v9-simplification-design.md §8.4) — all three P0_ENTRY=frontdoor). Per run:
 #   1. cp -R <fixture> (node_modules included — installed OUTSIDE the clock) → <work>/<scenario>-<run-id>
 #   2. vanilla only: the user-level /mega-sdd wrapper (~/.claude/commands/mega-sdd.md) is moved
 #      aside for the run and restored after (the mega-sdd arm's session-start re-heals it anyway);
@@ -35,11 +37,12 @@ while read -r SCEN ARMNAME RID PRD; do
     classic) KIND=megasdd; FLAGS="" ;;
     routed)  KIND=megasdd; FLAGS="" ;;
     guarded) KIND=megasdd; FLAGS="--guarded" ;;
+    guarded-inline) KIND=megasdd; FLAGS="--guarded --inline" ;;
     *) echo "unknown arm: $ARMNAME" >&2; continue ;;
   esac
   [ "$KIND" = vanilla ] && [ -f "$WRAP" ] && mv -f "$WRAP" "$WRAP_BAK"
   echo "== $(date -u +%H:%M:%SZ) launch $SCEN $ARMNAME $RID"
-  ENTRY=chain; case "$ARMNAME" in routed|guarded) ENTRY=frontdoor ;; esac
+  ENTRY=chain; case "$ARMNAME" in routed|guarded|guarded-inline) ENTRY=frontdoor ;; esac
   P0_ARM=$KIND P0_ENTRY=$ENTRY P0_FLAGS="$FLAGS" P0_PLUGIN_DIR="${P0_PLUGIN_DIR:-}" \
     bash "$BENCH/p0-headless-run.sh" "$ARMDIR" "$PRD" "$OUT" "$MODEL" > "$OUT.launch.log" 2>&1
   PID=$(grep -m1 '^pid=' "$OUT/run.meta" 2>/dev/null | cut -d= -f2)

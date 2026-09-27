@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 3.0.0
+version: 3.0.1
 description: Multi-skill lifecycle orchestrator — inspects CWD state, proposes a chain of mega-sdd sub-skills, confirms once, executes in --auto mode with halt-pauses; --deep chains to pipeline-end; --resume continues a paused chain; --sync runs the reconcile lane. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -123,6 +123,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 - `--classic` / `spine: classic` (config): retired — the front door names the removal in one line and ignores the flag (the Stop hook's one exception: Step 7)
 - `--strict-quality`: escalate advisory quality findings to chain-pausing
 - `--lite`: the pipeline's lane marker — forwarded to every `plan` / `execute-bolts` hop (JIT bind every wave, W1 zero-idle, plan-coverage PASS before bolts); the pipeline is lite with or without it. **P2 2-hop lane:** with a PRD and no vault the engine proposes `plan <prd> --lite --mode=…` → `execute-bolts --all --lite` (`references/routing-rules.md` lane-lite row); `plan` emits NO handoff YAML — re-derive state from disk after it returns and run the predictive preflight for the bolts hop (`references/handoff-consumption.md §Lite lane exemption`).
+- `--inline`: forwarded to the `execute-bolts` hop ONLY (`execute-bolts --all --lite --inline`), never to `plan` — opt-in single-context execution (`execute-bolts/references/inline-run.md`)
 - Checkpoint protocol (`references/checkpoint-protocol.md`) is a DECLARED contract — no skill emits per-step checkpoints at HEAD; `--resume` is CWD-driven only
 
 ## Greenfield vs brownfield routing

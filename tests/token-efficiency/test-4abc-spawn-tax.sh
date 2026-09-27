@@ -4,7 +4,7 @@
 #   4a-i  resolver cache: byte-parity cold→hit, ZERO python spawns on a hit
 #         (PATH-shim proof), invalidation on every input class, existence-parity.
 #   4a-ii composable scans: single-vs-multi rc parity on a real vault fixture,
-#         all six state files from ONE invocation, call sites collapsed.
+#         all seven state files from ONE invocation, call sites collapsed.
 #   4c    Stop turn-gate: scans skipped when nothing changed (state mtime
 #         proof), re-run on HEAD move AND on evidence-tree writes; the hook's
 #         own debug-log append never defeats the skip (memory/ prune).
@@ -82,27 +82,28 @@ printf -- '---\nid: U-001\n---\nx\n' > "$PV/.mega-sdd/vaults/v1/units/U-001.md"
 # singles — the bolt-identity commit with NO bolt-report makes the orphan scan
 # write a real FAIL state, so the parity below is proven on a NON-trivial verdict
 declare -a RCS=()
-for f in --orphan-scan --batch-suite-gate --postflight-scan --whitelist-scan --acceptance-scan; do
+for f in --orphan-scan --batch-suite-gate --postflight-scan --whitelist-scan --acceptance-scan --conflict-bypass-scan; do
   bash "$VBA" --cwd="$PV" $f --quiet >/dev/null 2>&1; RCS+=($?)
 done
 MAXRC=0; for r in "${RCS[@]}"; do [ "$r" -gt "$MAXRC" ] && MAXRC=$r; done
 S_STATES=$(ls -A "$PV/.mega-sdd/" | grep -c 'state.json' || true)
 rm -f "$PV/.mega-sdd/".*-state.json 2>/dev/null
-bash "$VBA" --cwd="$PV" --orphan-scan --batch-suite-gate --postflight-scan --whitelist-scan --acceptance-scan --quiet >/dev/null 2>&1; MRC=$?
+bash "$VBA" --cwd="$PV" --orphan-scan --batch-suite-gate --postflight-scan --whitelist-scan --acceptance-scan --conflict-bypass-scan --quiet >/dev/null 2>&1; MRC=$?
 M_STATES=$(ls -A "$PV/.mega-sdd/" | grep -c 'state.json' || true)
 [ "$MRC" = "$MAXRC" ] && ok "multi rc ($MRC) == max of single rcs ($MAXRC)" || fail "multi rc $MRC != singles max $MAXRC"
-[ "$M_STATES" = "$S_STATES" ] && [ "$M_STATES" -ge 1 ] && ok "one multi call writes the same state-file set as five singles ($M_STATES, non-empty)" || fail "state sets differ or empty: multi=$M_STATES singles=$S_STATES"
+[ "$M_STATES" = "$S_STATES" ] && [ "$M_STATES" -ge 1 ] && ok "one multi call writes the same state-file set as the singles ($M_STATES, non-empty)" || fail "state sets differ or empty: multi=$M_STATES singles=$S_STATES"
 
 note "== 4a-ii. call sites collapsed =="
 N_PTU=$(grep -c 'validate-bolt-artifacts.sh' "$PTU")
 [ "$N_PTU" = "1" ] && ok "pre-tool-use: exactly ONE validate-bolt-artifacts invocation" || fail "pre-tool-use has $N_PTU invocations"
-grep -q -- '--orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --panel-scan' "$PTU" \
-  && ok "gate call carries all six scans + --recompute (B1 recompute-at-gate preserved)" || fail "gate flags wrong"
+grep -q -- '--orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --panel-scan --conflict-bypass-scan' "$PTU" \
+  && ok "gate call carries all seven scans + --recompute (B1 recompute-at-gate preserved)" || fail "gate flags wrong"
 N_STP=$(grep -c 'bash "$VALIDATOR_OS"' "$STP")
 [ "$N_STP" = "1" ] && ok "stop: exactly ONE validator invocation" || fail "stop has $N_STP invocations"
-# 7.11.0: --panel-scan (F-07) joins both lanes — detection on Stop, gate at PreToolUse.
-grep -q -- '--orphan-scan --batch-suite-gate --postflight-scan --whitelist-scan --acceptance-scan --panel-scan --quiet' "$STP" \
-  && ok "stop call carries the six scans WITHOUT --recompute (read-only lane unchanged)" || fail "stop flags wrong"
+# 7.11.0: --panel-scan (F-07) joins both lanes — detection on Stop, gate at PreToolUse; so does
+# --conflict-bypass-scan (conflict_bypassed, spec 2026-09-27 v9 §8).
+grep -q -- '--orphan-scan --batch-suite-gate --postflight-scan --whitelist-scan --acceptance-scan --panel-scan --conflict-bypass-scan --quiet' "$STP" \
+  && ok "stop call carries the seven scans WITHOUT --recompute (read-only lane unchanged)" || fail "stop flags wrong"
 if grep -q -- '--postflight-scan --recompute' "$STP"; then fail "stop gained --recompute (forbidden lane)"; else ok "no recompute on the Stop lane"; fi
 
 note "== 4c. Stop turn-gate: skip/rescan semantics (state-mtime proof) =="

@@ -35,6 +35,19 @@
   - the PreToolUse gate re-runs the validator with `--units=U-004` on any `bolt-implementer` dispatch — a hand dispatch cannot bypass it
   - resolution via `resolve-oq --binding` (`write-unit-binding.sh --resolve=<claim-id>=<ACTION> --by=user`)
 
+### BI1: --inline runs every unit in this session from a generated plan
+- **Setup:** a layout-3 vault with U-001..U-004; U-003 has an open CONFLICT, U-004 `depends_on: [U-003]`
+- **Prompt:** `/mega-sdd --guarded --inline` (forwarded as `execute-bolts --all --lite --inline`)
+- **Expect:**
+  - the announce line ends with `mega-sdd-trace:execute-bolts`
+  - `derive-exec-plan.sh --pending` → `rebind-units.sh --units=<pending>` → `derive-exec-plan.sh`: U-003 `binding_conflict`, U-004 `depends_on_quarantined` in ONE `Karantina:` chat line; the plan names U-001, U-002 only
+  - no `bolt-implementer` dispatch, no panel; each task re-binds (a CONFLICT there → `write-unit-quarantine.sh`, dependents skipped, the run continues), tests first, commits with the canonical trailers, then commits its evidence (`chore(sdd): evidence U-XXX`)
+  - ONE blind review of `run_base..HEAD` (no `.mega-sdd/` in its package, the trace line on its own line), `delivery-check.sh` `VERDICT: PASS`, the run-boundary gate with `--conflict-bypass-scan` exits 0 before the result contract
+
+### BI2: --inline never launders a CONFLICT
+- **Setup:** as BI1, the model commits U-003 anyway, then re-binds it (the commit created the file the CONFLICT claimed)
+- **Expect:** the run-boundary gate FAILS `closed_conflict` for U-003 (and U-004 via U-003 if committed); the result is never reported done; the remedy offered is `resolve-oq --binding` (the human decides the closed episode) — never another re-bind
+
 ### BH0: BOLTS gate deny → 3.9b (state anchor, 8.8.0)
 - **Setup:** a lite wave already bound at 3.9; before the next dispatch a teammate commit lands in U-002's anchored file
 - **Expect:** the `bolt-implementer` dispatch is DENIED `binding_stale` naming the path; the controller runs `rebind-units.sh --units=U-002` (3.9b), rebuilds `dispatch-prompt.md` with `build-dispatch-prompt.sh`, and re-dispatches — it never edits `binding.json`, never runs `git stash`, and a second deny at the same HEAD (`rebind_exhausted`) goes to quarantine, not to another 3.9b

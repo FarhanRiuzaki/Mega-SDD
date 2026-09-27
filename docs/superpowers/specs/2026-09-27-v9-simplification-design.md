@@ -138,7 +138,7 @@ Script pruning is **P1b**:
 |---|---|---|
 | **P1** ✅ done 2026-09-27 (commit 6727b30f) | Relocate contracts → delete the 4 classic skills → state engine + orchestrate-flow + front door on one pipeline → `plan --kb` → tests pruned/updated → docs, contract, CHANGELOG, 9.0.0 | full suite green; `claude plugin validate` passes; complexity budget lowered to measured values; no surviving file references a removed skill path (grep check, pinned by a test); **extract-intelligence → `plan --kb` path pinned by a test**; the result contract (AC→test table, delivery-check PASS, assumptions) is stated identically in every lane's procedure |
 | **P1b** ✅ done 2026-09-27 (−1,531 script lines, −102 hook lines, −11 reference files) | Script / reference pruning audit (executed-by-a-survivor rule) | the same checks. `scripts_total_lines` lowered |
-| **P2** | Inline execution for guarded: `execute-bolts` runs units in the main session with the script gates (acceptance, postflight, whitelist, delivery-check) and NO per-unit implementer/panel subagents. Panel opt-in via `--panel` | brownfield block, n=3: inline vs current guarded vs vanilla. Adopt as default only if AC / Critical / regressions are not WORSE than current guarded |
+| **P2** | Inline execution for guarded: `execute-bolts` runs units in the main session with the script gates (acceptance, postflight, whitelist, delivery-check) and NO per-unit implementer/panel subagents (opt-in `--inline`; no flag = today's per-unit path, see §8) | brownfield block, n=3: inline vs current guarded vs vanilla. Adopt as default only if the five quality metrics of §8.4 are not WORSE than current guarded |
 | **P3** | Remove what P2 made dead (review agents, panel scripts, dispatch gates) only if P2 was adopted | the same checks + a lower budget |
 
 **Rollback:** each phase is a separate commit on the branch. A phase is reverted with `git revert`;
@@ -174,3 +174,153 @@ deleted.
 | 11 | lib-patterns/, starterkit-context-schema producer sections, shared-snapshot-schema | P1b prune candidates | they lost their producer or consumer; pruning them needs its own audit |
 | 12 | Migrated layout-2 vaults and the lite plan-coverage FATAL | Exempt when `_meta/archive/layout2/` exists. `plan --regenerate` is allowed on them | classic-born units carry no `prd_source` |
 | 13 | How the plan-coverage gate decides that a PRD heading needs no unit (decided after the 9.0 verification) | **Declared coverage.** Every anchor of the PRD — an H1-H3 with text of its own or no sub-heading; the sub-headings (H4 too) of a text-less heading that has them; the text before the first heading (parsed as CommonMark does; unique slugs `x`, `x-1` …) — must be one of: named by a unit's `prd_source`; bound by an open, deferred or out-of-scope OQ through `[covers: <prd>#<slug>]` (the only OQ route — round 5 showed quotes and `§` citations covering whole features by accident; a resolved OQ covers nothing); or listed in `context.md ## Coverage exclusions` with a real reason (not a placeholder, not a pending decision), one line per anchor. The gate no longer guesses whether a heading is "meta" or "out of scope". `--kb` keeps only the plugin's own KB-template sections. The gate reads markdown only (a non-`.md` PRD gets a rendition first). The state holds one entry per vault, bound by a digest to its sources, exclusions, OQs and units and to the sources the vault pins; the execute-bolts preflight and analyze refuse a missing, FAIL or stale entry | the heuristic classifier did not converge. Three adversarial rounds each found 2–3 new HIGH findings in both directions (a requirement dropped silently / a non-requirement blocking the plan), every fix produced the opposite error, and the script grew from 182 to 588 lines. Declared coverage turns a silent omission into a visible, reviewable decision, and lets a false block be cleared in one line |
+
+## 8. P2: lean inline execution for guarded, built on superpowers (owner choice 2026-09-27: "P2 ramping")
+
+**Why.** The P2 design workflow (`v9-p2-superpowers-design`: 4 readers, 3 variants, a 3-judge panel,
+a synthesis and an attack) found two things.
+
+First, the guarded pipeline's extra defects are fragmentation defects: work split into per-unit
+subagents leaves cross-cutting pieces unowned.
+
+| defect | pipeline runs | single-context runs |
+|---|---|---|
+| no `npm test` script | 7/7 | 0/11 |
+| page unreachable from navigation | 7/7 | 0/11 |
+| leftover scaffold content | 6/7 | 0/11 |
+| clinic: build fails with an empty env | 3/3 | 0/7 |
+
+Second, the per-unit review panel flagged problems, but 213 of its 217 Important findings were mapped
+to advisory and never fixed.
+
+The full-fidelity synthesis kept every per-dispatch gate 1:1 through new handshakes, markers and
+receipts. The attack returned about 30 fixes. The owner chose the lean variant instead: the
+per-dispatch CONFLICT gate it would have preserved fired 3 times on the brownfield block, all false
+positives, and caught none of the seeded contradictions.
+
+### 8.1 Flow (`execute-bolts --inline`; the guarded default only if §8.4 passes)
+
+1. **Bind every unit up front** (script, 0 model tokens): `rebind-units.sh --units=all` →
+   `validate-handoff-binding-units.sh --units=all`. A unit with an open CONFLICT is QUARANTINED for
+   this run, together with its dependents. If every unit is blocked, the run halts with
+   `binding_conflict` and a keterangan. CONFLICTs route to `resolve-oq --binding` as before.
+   *Implementation (`scripts/derive-exec-plan.sh`):* the gate applies the per-dispatch predicates —
+   the validator, an open or unparseable per-unit CONFLICT, a recorded `quarantine.json`, the
+   dispatch gate's freshness function (`freshness.gate_check`, a missing binding included) and the
+   dependents. The bind is scoped: `rebind-units.sh --units=<pending>` (the not-done units,
+   `derive-exec-plan.sh --pending`) and the validator runs `--units=<candidates>`. "Every unit
+   blocked" halts `binding_conflict` only when a quarantine is a `binding_conflict`; otherwise the
+   run exits 1 with `halt: null` and the Karantina table. An `fs_must_exist` CONFLICT on a file an
+   in-scope ancestor creates is deferred, not quarantined: an up-front bind cannot see a file an
+   earlier task will create, so every task starts by re-binding its unit (the per-wave JIT bind of
+   the default path, as a plan step); a CONFLICT there quarantines the unit
+   (`write-unit-quarantine.sh`) and skips its dependents. An `own_wip` CONFLICT (the unit's own
+   uncommitted create target — untracked, carrying its provenance header — seen at a resume) quarantines
+   nothing; once the unit is done its next re-bind re-verdicts it CONFIRMED. No run record is written: the
+   run-start verdict lives in the bindings and quarantine files the boundary re-reads.
+2. **Execute in ONE context:**
+   - **superpowers present (`executing-plans` available):** a generated plan
+     (`bolts/_exec-plan-<head12>.md` plus its built-in ledger, from the units in `depends_on` order) runs
+     through `superpowers:executing-plans`. The plan is the open run until the close retires it
+     (`derive-exec-plan.sh --retire`): a compaction, a re-run of the up-front bind or a new session gets
+     it back (`resumed`), never a new plan, so the run base and the ledger survive.
+   - **superpowers absent:** the built-in inline procedure (`execute-bolts/references/inline-run.md`)
+     does the same.
+   - **Per unit:** read the unit, implement it, write and run its `acceptance_test`, and commit with
+     the canonical trailers (`Unit: U-XXX`, `SDD-PROVENANCE`, `SDD-Acceptance: v5`).
+   - **Right after each commit:** the existing evidence writers `run-acceptance-tests.sh` and
+     `run-postflight-scan.sh` run, and a short `bolt-report.md` is written.
+   - **Nothing is dispatched per unit:** no subagent, no panel.
+3. **Close the run:**
+   - `run-full-suite.sh` writes `_batch-suite.json`;
+   - ONE blind review subagent reviews `base..HEAD`, and its prompt carries
+     `mega-sdd-trace:execute-bolts`. Every Critical and Important finding is fixed, or ruled out in
+     the report with a reason;
+   - `delivery-check.sh` must print PASS;
+   - the plan's `## After the last task` carries these steps, so the last task's brief (what a compacted
+     controller reads) overrides executing-plans' own Final Review and Finish;
+   - the run-boundary gates pass, the run is retired, and the result contract is reported.
+4. **Run-boundary gates (deterministic, existing + one new leg):**
+   - existing: B1 postflight (recomputed), B2 batch-suite, B3 whitelist, B4 acceptance, orphans
+     (every unit commit has its `bolt-report.md`);
+   - **new: `conflict_bypassed`** (`validate-bolt-artifacts.sh --conflict-bypass-scan`, body
+     `_lib/conflict_bypass.py`). A commit is judged against the CONFLICT state it landed under.
+     `write-unit-binding.sh` keeps each CONFLICT claim's onset (`conflict_since`, keyed by kind +
+     expect, never the positional id) across re-binds, and moves every CONFLICT a re-bind closes into
+     an append-only `conflict_history` (since, closed_at); a human resolution ends an episode, and
+     `--resolve` also decides a closed one. A unit commit that landed inside an unresolved episode,
+     after its `quarantine.json`, or while a `depends_on` ancestor was so blocked and not yet
+     implemented (done by its evidence, first commit before the block), fails the gate at the next
+     `execute-bolts` entry and in the Stop hook. So does a unit whose first commit landed on a tree
+     where a claim its binding holds did not hold, when no bind saw that tree (`rebind_skipped`: the
+     task's re-bind was skipped). A claim that already held in the tree the commit landed on is not a
+     bypass: a deferred `fs_must_exist`, and an `own_wip` ALREADY_EXISTS whose target was absent before
+     the unit's first commit (a mid-task resume) — never a user's untracked file. Identity is the
+     validators' `unit_of`; times are author times; an unparseable binding of a bolted unit fails closed.
+
+### 8.2 The moat change, stated plainly
+
+- **Before:** the CONFLICT block fires at each unit's `bolt-implementer` dispatch.
+- **P2 inline:**
+  - the block fires at run start, when the unit is quarantined before any work;
+  - it is re-checked at the run boundary by `conflict_bypassed`, a deterministic detect-after in the
+    same topology the B1–B4 gates already use.
+- **What is lost:** the hook on the mid-run re-bind of later units after earlier units moved the
+  code. Each task re-binds its unit as a plan step (prose). `conflict_bypassed` checks every commit
+  against the recorded bindings: a commit past a CONFLICT that re-bind records, and a skipped re-bind
+  whose claim did not hold on the tree the unit landed on (`rebind_skipped`). It does not re-bind at
+  the boundary, so a skipped re-bind whose claims all still held stays invisible (and harmless).
+- **Threat model (normative).** The gates catch an honest controller's slips: it forgets a
+  quarantine, resumes after a compaction, re-runs, re-plans, or a later run re-binds a unit it
+  already committed. They do not defend against deliberate evasion — backdated author dates, deleted
+  or moved evidence directories, mislabelled commits, a blocked unit's change hidden inside another
+  unit's commit on a shared file. The per-dispatch path has the same limit: a controller can always
+  write code without dispatching. Evasion is out of scope for both paths.
+- **No flag keeps today's per-dispatch path** (there is no `--agents` flag), until P3 decides
+  whether to delete it. `conflict_bypassed` reads git and the bindings, not the mode, so it also
+  guards that path: a unit committed past its own open CONFLICT or quarantine (a hand
+  implementation the dispatch gate never saw) fails it there too. A normal default run never trips
+  it (the dispatch gate blocks first). The default path is therefore not byte-unchanged: it gains
+  this leg at the Skill entry and each dispatch.
+
+### 8.3 What changes and what is deleted
+
+- **P2 changes:**
+  - `execute-bolts` gains `--inline`, plus the `inline-run.md` reference and the plan generator;
+  - `validate-bolt-artifacts.sh` gains `conflict_bypassed`;
+  - the one-review close.
+- **P2 deletes nothing.**
+- **P3, only if §8.4 adopts inline, deletes the per-dispatch machinery:**
+  - the per-unit panel lenses;
+  - `resolution-verifier`;
+  - `merge-panel-findings.sh`;
+  - attempt-cap;
+  - the per-dispatch hook legs;
+  - `build-dispatch-prompt.sh`'s per-unit path, if nothing else uses it.
+
+### 8.4 Measurement (locked before any run)
+
+- **Fixture:** `fixture-brown` @ `015ecf3`, the Harbor Clinic app plus PRD v2 with 7 seeded traps.
+- **Arms:**
+  - `guarded` (the batch arm name; `guarded-agents` in earlier drafts): the per-unit subagent +
+    panel path, from the same P2 snapshot;
+  - `guarded-inline`: P2;
+  - `vanilla`: the existing clean vanilla runs 2–4, plus one same-day vanilla run as a drift check.
+- **Runs:** n=3 clean per guarded arm, in seeded random order.
+- **Metrics (spread shown next to every median):**
+  - AC, Critical / Important, rubric (blind scorer);
+  - traps surfaced (`trap-judge.py`);
+  - v1 regressions;
+  - delivery-check;
+  - `conflict_bypassed` = 0;
+  - time, cost, tokens, subagents, committed `.mega-sdd` lines.
+- **Decision rule:** adopt `--inline` as the guarded default when, against `guarded`,
+  **all five hold**:
+  - AC not WORSE;
+  - Critical not WORSE;
+  - Important not WORSE;
+  - traps surfaced not WORSE;
+  - regressions not WORSE.
+
+  Cost and time are reported, never traded against a quality loss. If any quality metric is WORSE,
+  `--inline` stays opt-in and P3 does not run.
