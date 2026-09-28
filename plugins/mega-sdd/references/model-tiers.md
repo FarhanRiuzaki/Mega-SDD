@@ -27,7 +27,7 @@ Pick the LEAST powerful model that can handle the task. Each tier has clear crit
 - No architectural reasoning required
 - Speed/cost dominates quality requirement
 
-**Examples:** manifest-only lib detection; catalog lookup; `verify`-only bolt routing (the `haiku ← tier minimal AND task_type verify` rung in `resolve-review-tier.sh`).
+**Examples:** manifest-only lib detection; catalog lookup.
 
 ### sonnet — pick when ANY of these hold (default)
 - Pattern recognition across multiple documents

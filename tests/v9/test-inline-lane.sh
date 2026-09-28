@@ -604,7 +604,7 @@ fd = rd(P + "/commands/mega-sdd.md")
 assert "quarantined and reported" in fd, "front door --deep binding_conflict"
 eb = rd(P + "/skills/execute-bolts/SKILL.md")
 mr = [l for l in eb.splitlines() if l.startswith("  - `--max-retries=N`")][0]
-assert "`--agents`" in mr and "prose" in mr, "--max-retries scope"
+assert "prose" in mr and "resolve-review-tier" not in mr, "--max-retries scope"
 for f in ("--parallel", "--per-squad"):
     assert "(`--agents` only)" in [l for l in eb.splitlines() if l.startswith("  - `%s`" % f)][0], f
 assert "(every run)" not in eb and "every run —" not in rd(P + "/skills/execute-bolts/references/jit-bind-and-quarantine.md")[:400], "3.9 every run"

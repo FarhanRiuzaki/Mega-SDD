@@ -69,7 +69,7 @@ Mode: every run is inline (BI1, BI2, BI4, BH6); `--agents` is retired (BI3); BJ1
 
 ### BH2: Test failure → retry → halt
 - **Setup:** unit with always-failing test
-- **Expect:** 3 retries, then halt + bolt-report with failure details
+- **Expect:** prose cap (`--max-retries`, default 3; no hook counts it): the step still failing after 3 fixes → STOP the run and report the failure
 
 ### BH3: --dry-run does not commit
 - **Setup:** any valid unit

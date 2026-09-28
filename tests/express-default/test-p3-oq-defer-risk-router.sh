@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# test-p3-oq-defer-risk-router.sh — v6 P3 proof suite (spec §P3.5):
-#   1. resolve-review-tier.sh — deterministic router fixtures (minimal newly
-#      reachable; every risk signal forces full; unknown rc never a low tier).
+# test-p3-oq-defer-risk-router.sh — v6 P3 proof suite (spec §P3.5). The router
+# fixtures (§1/1b) left with resolve-review-tier.sh in P3 (spec v9 §8.6).
 #   2. OQ prose pins — batched P1 walk, auto-defer recorded + rails re-scoped,
 #      A6 resurface surfaces (metrics id list, _summary section, Step 9 +
 #      appendix bullets).
@@ -12,200 +11,9 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 P="$REPO_ROOT/plugins/mega-sdd"
-RT="$P/scripts/resolve-review-tier.sh"
 fails=0
 pass() { echo "  PASS: $1"; }
 fail() { echo "  FAIL: $1"; fails=$((fails + 1)); }
-WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
-
-mkunit() {  # $1=file $2=task_type $3=risk(optional) $4=paths(space-sep) $5=body [$6=section]
-  # v7.8: signal-4 vocabulary is scoped to the unit CONTRACT sections, so the
-  # body must land in one for the signal to be reachable. $6 overrides the
-  # section — used to prove narrative-only vocabulary does NOT fire.
-  local f="$1" tt="$2" risk="$3" paths="$4" body="$5" sect="${6:-Hard rules}"
-  {
-    printf -- '---\nunit_id: U-001\ntask_type: %s\n' "$tt"
-    [ -n "$risk" ] && printf 'risk: %s\n' "$risk"
-    printf 'target_files:\n'
-    for pth in $paths; do printf '  - path: %s\n    operation: create\n' "$pth"; done
-    printf 'binding_refs:\n  - C-001\n---\n\n# Unit\n\n## %s\n%s\n' "$sect" "$body"
-  } > "$f"
-}
-
-# ── 1. Router fixtures ───────────────────────────────────────────────────────
-mkunit "$WORK/u-verify.md" verify "" "app/Models/User.php" "Verify the model exists."
-T=$(bash "$RT" --unit "$WORK/u-verify.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
-[ "$T" = "minimal" ] && pass "verify unit -> minimal" || fail "verify tier=$T"
-
-mkunit "$WORK/u-small.md" create "" "app/Services/Report.php app/Views/report.blade.php" "Render laporan bulanan sederhana."
-T=$(bash "$RT" --unit "$WORK/u-small.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
-[ "$T" = "minimal" ] && pass "<=2-file clean create -> minimal (the newly-reachable case)" || fail "small tier=$T"
-
-mkunit "$WORK/u-3file.md" create "" "a/One.php a/Two.php a/Three.php" "Clean tiga file."
-T=$(bash "$RT" --unit "$WORK/u-3file.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
-[ "$T" = "standard" ] && pass "3-file clean -> standard (default)" || fail "3file tier=$T"
-
-mkunit "$WORK/u-many.md" create "" "a/1.php a/2.php a/3.php a/4.php" "Empat file."
-OUT=$(bash "$RT" --unit "$WORK/u-many.md")
-# v7.8 (spec 2026-08-29 Fase 3): file_count is a SIZE fact, not a risk fact —
-# it buys quality+standards, never security, so the tier LABEL is standard.
-# The pre-v7.8 pin asserted full; it is updated, not dropped.
-echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='standard' and 'file_count' in d['signals_fired'] and d['lenses']==['spec','quality','standards'], d" \
-  && pass ">=4 files -> standard + quality lens (size is not risk)" || fail "many: $OUT"
-
-mkunit "$WORK/u-vocab.md" create "" "app/Services/Pay.php" "Handle payment settlement via token."
-OUT=$(bash "$RT" --unit "$WORK/u-vocab.md")
-echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and 'vocabulary' in d['signals_fired'] and 'security' in d['lenses'], d" \
-  && pass "payment/token vocabulary in Hard rules -> full + security lens" || fail "vocab: $OUT"
-
-# v7.8 the other side of the scope: the SAME words in orientation narrative are
-# not evidence of a security surface and must NOT buy the security lens.
-mkunit "$WORK/u-vocab-narrative.md" create "" "app/Services/Pay.php" "Handle payment settlement via token." "Context (read first)"
-OUT=$(bash "$RT" --unit "$WORK/u-vocab-narrative.md")
-echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert 'vocabulary' not in d['signals_fired'] and 'security' not in d['lenses'], d" \
-  && pass "same vocabulary in ## Context only -> no security lens (scope holds)" || fail "narrative-vocab: $OUT"
-
-mkunit "$WORK/u-manifest.md" extend "" "composer.json app/Support/Helper.php" "Tambah dependency util."
-OUT=$(bash "$RT" --unit "$WORK/u-manifest.md")
-echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and 'manifest' in d['signals_fired']" \
-  && pass "dependency manifest in target_files -> full" || fail "manifest: $OUT"
-
-# ── 1b. v7.1 implementer_model + effort (derived from the SAME verdict) ─────
-MODEL_OF() { bash "$RT" --unit "$1" | python3 -c "import json,sys;d=json.load(sys.stdin);print(d['implementer_model'],d['effort'])"; }
-M=$(MODEL_OF "$WORK/u-verify.md")
-[ "$M" = "haiku low" ] && pass "verify/minimal -> implementer haiku + effort low" || fail "verify model=$M"
-M=$(MODEL_OF "$WORK/u-small.md")
-[ "$M" = "sonnet high" ] && pass "minimal NON-verify -> sonnet (haiku is verify-only)" || fail "small model=$M"
-M=$(MODEL_OF "$WORK/u-3file.md")
-[ "$M" = "sonnet high" ] && pass "standard -> sonnet high" || fail "3file model=$M"
-M=$(MODEL_OF "$WORK/u-vocab.md")
-[ "$M" = "opus high" ] && pass "full (security signal) -> opus high" || fail "vocab model=$M"
-
-mkunit "$WORK/u-risk.md" create high "app/Anything.php" "Netral."
-OUT=$(bash "$RT" --unit "$WORK/u-risk.md")
-# v7.8: risk: high buys the quality lens; only risk: critical also buys security.
-echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='standard' and 'risk_field' in d['signals_fired'] and 'security' not in d['lenses'], d" \
-  && pass "risk: high alone -> standard + quality (critical still forces full)" || fail "risk: $OUT"
-
-cat > "$WORK/u-b.md" <<'EOF'
----
-unit_id: U-009
-task_type: create
-target_files:
-  - path: app/Http/Middleware/Check.php
-    operation: create
-binding_refs:
-  - C-004
-  - B-002
----
-
-# Unit
-Netral body.
-EOF
-OUT=$(bash "$RT" --unit "$WORK/u-b.md")
-echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and 'constitution_b' in d['signals_fired']" \
-  && pass "constitution §B clause in binding_refs -> full" || fail "B-clause: $OUT"
-
-cat > "$WORK/pack.md" <<'EOF'
----
-framework: fake
-auth_hints:
-  - app/Http/Middleware/*
-authz_hints:
-  - app/Policies/*
----
-EOF
-mkunit "$WORK/u-glob.md" create "" "app/Policies/PostPolicy.php" "Netral."
-OUT=$(bash "$RT" --unit "$WORK/u-glob.md" --pack "$WORK/pack.md")
-echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and 'auth_globs' in d['signals_fired']" \
-  && pass "pack authz glob hit -> full" || fail "glob: $OUT"
-
-bash "$RT" --unit "$WORK/nonexistent.md" >/dev/null 2>&1
-[ $? -eq 2 ] && pass "unreadable unit -> exit 2 (caller falls back to standard, never minimal)" || fail "unreadable rc"
-
-# ── 1b. Round-folded negative-recall fixtures ────────────────────────────────
-cat > "$WORK/pack2.md" <<'EOF2'
----
-framework: fake
-auth_hints:
-  - "**/auth*"
-  - "**/login*"
----
-EOF2
-mkunit "$WORK/u-caps.md" create "" "app/Http/Controllers/Auth/LoginController.php" "Implement the user authentication flow with authorization middleware."
-OUT=$(bash "$RT" --unit "$WORK/u-caps.md" --pack "$WORK/pack2.md")
-echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and ('auth_globs' in d['signals_fired'] or 'vocabulary' in d['signals_fired']), d" \
-  && pass "round-1: capitalized Auth path + derived words -> full (case-folded globs + stems)" || fail "caps arm: $OUT"
-
-mkunit "$WORK/u-plural.md" create "" "app/S.php" "Store hashed passwords and refresh tokens; sessions expire nightly."
-T=$(bash "$RT" --unit "$WORK/u-plural.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
-[ "$T" = "full" ] && pass "round-4: plural vocabulary fires" || fail "plural tier=$T"
-
-mkunit "$WORK/u-id.md" create "" "app/S.php" "Simpan sandi pengguna untuk alur autentikasi; manajer menyetujui pengajuan."
-T=$(bash "$RT" --unit "$WORK/u-id.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
-[ "$T" = "full" ] && pass "round-3: sandi/autentikasi/menyetujui fire (doc-verbatim list + stems)" || fail "id-vocab tier=$T"
-
-printf '\xef\xbb\xbf' > "$WORK/u-bom.md"
-cat >> "$WORK/u-bom.md" <<'EOF2'
----
-unit_id: U-020
-task_type: create
-risk: critical
-target_files:
-  - path: app/One.php
-    operation: create
----
-
-# Unit
-Netral.
-EOF2
-T=$(bash "$RT" --unit "$WORK/u-bom.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
-[ "$T" = "full" ] && pass "round-2: BOM does not blank the frontmatter (risk still fires)" || fail "bom tier=$T"
-
-cat > "$WORK/u-flow.md" <<'EOF2'
----
-unit_id: U-021
-task_type: create
-target_files: [app/A.php, app/B.php, app/C.php, app/D.php, composer.json]
----
-
-# Unit
-Netral.
-EOF2
-OUT=$(bash "$RT" --unit "$WORK/u-flow.md")
-echo "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert d['tier']=='full' and 'manifest' in d['signals_fired'] and d['target_files']==5, d" \
-  && pass "round-doc4: inline-flow target_files parsed (manifest + count fire)" || fail "flow arm: $OUT"
-
-mkunit "$WORK/u-zero.md" create "" "" "Netral tanpa file."
-T=$(bash "$RT" --unit "$WORK/u-zero.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
-[ "$T" = "standard" ] && pass "round-2: zero declared files on create -> standard, never minimal" || fail "zero tier=$T"
-
-cat > "$WORK/u-cb.md" <<'EOF2'
----
-unit_id: U-022
-task_type: create
-target_files:
-  - path: app/One.php
-    operation: create
-binding_refs:
-  - C-B-001
----
-
-# Unit
-Netral.
-EOF2
-T=$(bash "$RT" --unit "$WORK/u-cb.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
-[ "$T" = "minimal" ] && pass "round-10: composite id C-B-001 does NOT false-fire constitution_b" || fail "cb tier=$T"
-
-mkunit "$WORK/u-author.md" create "" "app/One.php" "Track the author of each post."
-T=$(bash "$RT" --unit "$WORK/u-author.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
-[ "$T" = "minimal" ] && pass "round: 'author' still does not fire 'auth' (boundary intact)" || fail "author tier=$T"
-
-# false-positive guard: 'akseskan'-style word-boundary (access inside a longer word)
-mkunit "$WORK/u-fp.md" create "" "app/One.php" "Proses aksesibilitas laporan."
-T=$(bash "$RT" --unit "$WORK/u-fp.md" | python3 -c "import json,sys;print(json.load(sys.stdin)['tier'])")
-[ "$T" = "minimal" ] && pass "vocab word-boundary: 'aksesibilitas' does not fire 'akses'" || fail "fp tier=$T"
 
 # ── 2. OQ prose pins ─────────────────────────────────────────────────────────
 RO="$P/skills/resolve-oq"
@@ -235,7 +43,7 @@ grep -qF 'Deferred open questions (P3/A6)' "$P/skills/orchestrate-flow/reference
 grep -qF 'Deferred-OQ resurface (P3/A6, ALWAYS' "$P/skills/orchestrate-flow/SKILL.md" \
   && pass "Step 9 resurfaces deferred OQs (deep or not)" || fail "Step 9 line missing"
 
-# ── 3. Risk-router wiring + lean default ─────────────────────────────────────
+# ── 3. Lean default ──────────────────────────────────────────────────────────
 
 OF="$P/skills/orchestrate-flow/SKILL.md"
 # 9.0 P1: express is the only spine, so the "on the express spine" qualifier

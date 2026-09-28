@@ -1270,47 +1270,6 @@ if IN_RUN:
     except Exception as _bfe:
         fails.append(("binding-freshness", "freshness NOT evaluated (%s) — failing CLOSED; a bolt never runs on a binding the gate could not check. Keterangan: gate kesegaran binding gagal dievaluasi; perbaiki penyebabnya lalu dispatch ulang." % type(_bfe).__name__))
 
-# attempt-cap (spec 2026-09-20-hook-enforced-attempt-cap-design.md), IN-RUN and
-# PER UNIT: `--max-retries` was a number the controller was trusted to count —
-# and a count that lives in model context does not survive compaction or a
-# --resume (field: U-008 ran 4 fix rounds against a budget of 3). The budget is
-# READ from review-tier.json (resolve-review-tier.sh, D2); the dispatch count is
-# attempts.json, written HERE and only on a final ALLOW (a denied dispatch costs
-# no budget). No review-tier.json / no retry_budget in it (a bolt dispatched by an
-# older plugin) = silent — never a retro-block. Exempt from the in-flight drop:
-# it is about the in-flight unit by definition. Corrupt attempts.json reads as 0
-# (only the moat file is fail-closed).
-ATTEMPT_PATH = None
-ATTEMPT_N = 0
-if IN_RUN and os.environ.get("AGENT_UNIT"):
-    au = os.environ["AGENT_UNIT"]
-    try:
-        if AGENT_VAULT_DIR:
-            # identity resolved the vault: the budget is THAT unit dir, never a same-ID unit elsewhere
-            _rtp = os.path.join(AGENT_VAULT_DIR, "bolts", au, "review-tier.json")
-            _rtp = _rtp if os.path.isfile(_rtp) else None
-        else:
-            _rtp = vault_layouts.find_bolt_artifact(os.environ["PROJECT_ROOT"], au, "review-tier.json")
-        _rt = json.load(open(_rtp)) if _rtp else {}
-    except Exception:
-        _rtp, _rt = None, {}
-    _bud = _rt.get("retry_budget") if isinstance(_rt, dict) else None
-    if _rtp and isinstance(_bud, int) and not isinstance(_bud, bool) and _bud >= 0:
-        ATTEMPT_PATH = os.path.join(os.path.dirname(_rtp), "attempts.json")
-        try:
-            ATTEMPT_N = int((json.load(open(ATTEMPT_PATH)) or {}).get("dispatches", 0))
-        except Exception:
-            ATTEMPT_N = 0
-        if ATTEMPT_N >= 1 + _bud:
-            _open = []
-            try:
-                _fj = json.load(open(os.path.join(os.path.dirname(_rtp), "findings.json")))
-                _open = [str(f.get("id")) for f in (_fj.get("findings") or []) if f.get("status") == "open"][:8]
-            except Exception:
-                pass
-            fails.append(("attempt-cap", "unit %s has spent its implementer budget (review_critical_unresolved): %d bolt-implementer dispatch(es) already ran against a budget of 1 + %d retr%s (source: %s)%s. Another implementer round is not allowed — write the halt YAML and the bolt-report `## Review panel` section, then stop this unit (quarantine it when the halt class allows, SKILL.md 3.10). Keterangan: jatah percobaan unit ini habis; pipeline berhenti supaya biaya tidak jalan terus tanpa hasil. Lanjutnya keputusan manusia: perbaiki akar masalahnya, lalu hapus %s (atau naikkan `max_retries:` di .mega-sdd/config.yaml) dan jalankan ulang." % (au, ATTEMPT_N, _bud, "y" if _bud == 1 else "ies", _rt.get("retry_budget_source", "?"), (" — open finding(s): " + ", ".join(_open)) if _open else "", ATTEMPT_PATH)))
-            ATTEMPT_PATH = None
-
 # flow-coverage (status==FAIL)
 d = L(".flow-coverage-state.json")
 if d and d.get("status") == "FAIL":
@@ -1375,31 +1334,6 @@ if fails:
         print(os.environ.get("GATE_SUBJECT", "mega-sdd:execute-bolts") + " is blocked — " + prefix + body)
     else:
         print(os.environ.get("GATE_SUBJECT", "mega-sdd:execute-bolts") + " is blocked — " + fails[0][1])
-elif ATTEMPT_PATH:
-    # final ALLOW of a bolt-implementer dispatch: count it (sole writer; the file
-    # is in the anti-self-bypass set). Silent on any error — never a block.
-    try:
-        import datetime, subprocess
-        try:
-            _prev = json.load(open(ATTEMPT_PATH))
-            _log = _prev.get("log") if isinstance(_prev, dict) and isinstance(_prev.get("log"), list) else []
-        except Exception:
-            _log = []
-        try:
-            _head = subprocess.run(["git", "-C", os.environ["PROJECT_ROOT"], "rev-parse", "--short", "HEAD"],
-                                   capture_output=True, text=True, timeout=5).stdout.strip() or None
-        except Exception:
-            _head = None
-        _n = ATTEMPT_N + 1
-        _log = (_log + [{"n": _n, "head": _head,
-                         "at": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")}])[-20:]
-        _tmp = ATTEMPT_PATH + ".tmp.%d" % os.getpid()
-        with open(_tmp, "w") as _fh:
-            json.dump({"schema": 1, "unit": os.environ.get("AGENT_UNIT"), "dispatches": _n,
-                       "log": _log, "written_by": "pre-tool-use"}, _fh, indent=1)
-        os.replace(_tmp, ATTEMPT_PATH)
-    except Exception:
-        pass
 ' 2>/dev/null) || {
         _GRC=$?
         if [ "${GATE_MODE:-run}" = "in-run" ]; then

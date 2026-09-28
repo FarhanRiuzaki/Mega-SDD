@@ -1057,7 +1057,7 @@ def discover_units():
 
 def _tf_paths(fm_text):
     """target_files paths from one unit's frontmatter — block-mapping, scalar-list,
-    and inline-flow shapes (same three shapes resolve-review-tier.sh parses)."""
+    and inline-flow shapes."""
     out = []
     m = re.search(r"(?ms)^target_files:\s*\n((?:[ \t]+.*\n?)*)", fm_text)
     blk = m.group(1) if m else ""
