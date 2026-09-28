@@ -76,11 +76,11 @@ handoff:
   metadata:                             # optional; carries resolved model tiers when present
     model_tiers:                        # resolved model tier per named subagent role
       extract-intelligence-module: sonnet  # example; actual entries depend on chain roles
-      code-quality-reviewer: opus       # catalog default; may be overridden by CLI/project/user
+      extract-intelligence-verify: sonnet  # catalog default; may be overridden by CLI/project/user
       # ... (all roles relevant to chain)
     model_tier_sources:                 # catalog | user | project | cli
       extract-intelligence-module: catalog
-      code-quality-reviewer: catalog
+      extract-intelligence-verify: catalog
 ```
 
 ---

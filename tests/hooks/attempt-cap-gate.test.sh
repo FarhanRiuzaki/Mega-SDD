@@ -12,7 +12,7 @@
 #   C  migration guarantee: no review-tier.json, or one without retry_budget
 #      (written by an older plugin) → silent allow, no attempts.json
 #   D  anti-self-bypass: Bash and Write/Edit on bolts/U-*/attempts.json are denied
-#   E  merge-panel-findings.sh reports budget_left and prints gate: halt at 0
+#   (E, the merge-panel-findings.sh budget verdict, went with that script in P3 C3.)
 set -u
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 PLUGIN="$REPO/plugins/mega-sdd"
@@ -116,23 +116,6 @@ OUT=$(drive "$(bash_payload "rm -f .mega-sdd/vaults/app/bolts/U-001/attempts.jso
 printf '%s' "$OUT" | grep -q '"deny"' && ok "D2 a Bash rm of attempts.json is denied (the reset is the human's)" || bad "D2 rm not denied: [$(printf '%s' "$OUT" | head -c 200)]"
 OUT=$(drive "$(write_payload "$V/bolts/U-001/attempts.json")")
 printf '%s' "$OUT" | grep -q '"deny"' && ok "D3 a Write to attempts.json is denied" || bad "D3 Write not denied: [$(printf '%s' "$OUT" | head -c 200)]"
-
-echo "── E: merge-panel-findings early verdict ──"
-MV="$WORK/m/vault"; mkdir -p "$MV/bolts/U-001" "$WORK/m/in"
-cat > "$WORK/m/in/sec.txt" <<'EOF'
-FINDINGS:
-critical | src/a.js:3 | secret in code | hard-coded token
-EOF
-printf '{"tier":"standard","retry_budget":1,"retry_budget_source":"flag"}' > "$MV/bolts/U-001/review-tier.json"
-printf '{"schema":1,"unit":"U-001","dispatches":1}' > "$MV/bolts/U-001/attempts.json"
-O1=$(bash "$PLUGIN/scripts/merge-panel-findings.sh" --vault="$MV" --unit=U-001 --head=abc1234 --round=1 --spec-verdict=pass --lens=security:"$WORK/m/in/sec.txt" 2>/dev/null)
-printf '%s' "$O1" | grep -q '"budget_left":1' && printf '%s' "$O1" | grep -q '"gate":"re-dispatch"' && ok "E1 budget left → gate re-dispatch, budget_left 1" || bad "E1 $O1"
-printf '{"schema":1,"unit":"U-001","dispatches":2}' > "$MV/bolts/U-001/attempts.json"
-O2=$(bash "$PLUGIN/scripts/merge-panel-findings.sh" --vault="$MV" --unit=U-001 --head=abc1235 --round=2 --spec-verdict=pass --lens=security:"$WORK/m/in/sec.txt" 2>/dev/null)
-printf '%s' "$O2" | grep -q '"budget_left":0' && printf '%s' "$O2" | grep -q '"gate":"halt"' && ok "E2 budget spent + a Critical still open → gate halt" || bad "E2 $O2"
-rm -f "$MV/bolts/U-001/review-tier.json"
-O3=$(bash "$PLUGIN/scripts/merge-panel-findings.sh" --vault="$MV" --unit=U-001 --head=abc1236 --round=3 --spec-verdict=pass --lens=security:"$WORK/m/in/sec.txt" 2>/dev/null)
-printf '%s' "$O3" | grep -q '"budget_left":null' && printf '%s' "$O3" | grep -q '"gate":"re-dispatch"' && ok "E3 no budget record → unknown never invents a halt" || bad "E3 $O3"
 
 [ "$fail" -eq 0 ] && echo "ALL PASS" || echo "SOME FAILED"
 exit $fail

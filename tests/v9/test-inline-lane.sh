@@ -609,7 +609,7 @@ for f in ("--parallel", "--per-squad"):
     assert "(`--agents` only)" in [l for l in eb.splitlines() if l.startswith("  - `%s`" % f)][0], f
 assert "(every run)" not in eb and "every run —" not in rd(P + "/skills/execute-bolts/references/jit-bind-and-quarantine.md")[:400], "3.9 every run"
 cond = eb.split("**Only when the condition holds")[1]
-assert "`references/review-panel.md` — `--agents`" in cond, "review-panel conditional"
+assert "review-panel.md" not in eb and cond, "review-panel.md retired (P3 C3)"
 br = rd(P + "/skills/execute-bolts/references/superpowers-bridge.md")
 assert "the ONLY dispatch path" not in br and "(default)" not in br.split("## Dispatch order")[1][:200] and "`--agents`" in br[:600], "bridge scope"
 assert "`--max-retries" in rd(P + "/skills/execute-bolts/references/inline-run.md").split("## (b)")[0], "inline-run flag table"

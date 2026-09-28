@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # test-b3-anchor-and-panel.sh — token-efficiency Batch B3 (M-11 + M-13).
 #
-#   M-11  review-panel sizes the unit-body payload per lens: spec lens FULL,
-#         other lenses DROP the Implementation-steps narrative; agent bodies
-#         single-source the floor/ceiling doctrine + Iron Rules.
+#   M-11  (retired in P3 C3 with review-panel.md and the lens agents.)
 #   M-13a anchor routing core is slimmed (keyword bullets → pointer at the
 #         always-loaded descriptions); the unioned keywords live in descriptions.
 #   M-13b the SessionStart hook is SOURCE-AWARE: resume skips the anchor, compact
@@ -17,10 +15,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 HOOK="${ROOT}/plugins/mega-sdd/hooks/session-start"
 ANCHOR="${ROOT}/plugins/mega-sdd/skills/using-mega-sdd/SKILL.md"
-RP="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/review-panel.md"
-DR="${ROOT}/plugins/mega-sdd/agents/design-reviewer.md"
-BI="${ROOT}/plugins/mega-sdd/agents/bolt-implementer.md"
-for f in "$HOOK" "$ANCHOR" "$RP" "$DR" "$BI"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+for f in "$HOOK" "$ANCHOR"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
@@ -86,18 +81,6 @@ for kw in "bound-vault" "legacy intelligence" "source of truth dari legacy"; do
   echo "$DESC" | grep -qiF "$kw" && ok "M-13a: unioned keyword in description: $kw" || fail "M-13a: keyword lost from description: $kw"
 done
 
-# ── M-11: per-lens payload contract in review-panel.md ──
-grep -qiF 'spec lens gets the full unit body verbatim' "$RP" && ok "M-11: spec lens keeps the FULL unit body (moat checks intact)" || fail "M-11: spec-lens-full contract missing"
-grep -qiF 'NOT the Implementation-steps NARRATIVE' "$RP" && ok "M-11: other lenses DROP the Implementation-steps narrative" || fail "M-11: narrative-drop contract missing"
-# review-round fix: Migration notes (the KEEP/preserve list) must NOT be stripped —
-# the security lens's bypass-detection needs it on extend units (pre-existing
-# controls are absent from binding_refs). Only the step narrative is trimmed.
-grep -qiF 'Migration notes STAYS in every lens' "$RP" && ok "M-11: Migration notes RETAINED for all lenses (security bypass-detection intact)" || fail "M-11: Migration notes wrongly stripped (security moat risk)"
-grep -qiF 'sized to the lens' "$ROOT/plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md" && ok "M-11: superpowers-bridge flow diagram matches the sized-per-lens contract (no inert-savings contradiction)" || fail "M-11: superpowers-bridge flow still says full unit body to every lens"
-grep -qiF 'blind' "$RP" && ok "M-11: blind-dispatch rail still present (unit-body SIZING changed, not sharing)" || fail "M-11: blindness rail lost"
-# ── M-11: agent-body de-dup ──
-grep -qiF 'ceiling moves named in §Floor vs ceiling' "$DR" && ok "M-11: design-reviewer check #0 points at §Floor vs ceiling (single-sourced)" || fail "M-11: design-reviewer still re-enumerates the ceiling list"
-grep -qiF 'honor every Iron Rule above' "$BI" && ok "M-11: bolt-implementer self-review references the Iron Rules (no re-list)" || fail "M-11: bolt-implementer still re-lists Iron Rules"
 
 if [ "$FAILED" -eq 0 ]; then note "ALL B3 OK"; else note "B3 had failures"; fi
 exit $FAILED

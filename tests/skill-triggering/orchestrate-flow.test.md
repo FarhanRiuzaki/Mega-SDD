@@ -303,7 +303,7 @@ All deep-chain rules (DC1-DC7) follow `references/routing-rules.md` §Deep-chain
 ### OF-MT2 — CLI flag overrides project config
 
 **Setup:**
-- CLI flag: `--model-tier=extract-intelligence-module:opus` (a non-panel role — panel `*-reviewer` lenses are frontmatter-pinned and NOT overridable via `model_tiers:`, per review-panel.md/model-tiers.md §Override syntax)
+- CLI flag: `--model-tier=extract-intelligence-module:opus` (a catalog role, per model-tiers.md §Override syntax)
 - `<project>/.mega-sdd/config.yaml` has `model_tiers: { extract-intelligence-module: haiku }`
 
 **Trigger:** `/mega-sdd --model-tier=extract-intelligence-module:opus ./legacy-php/ --out=./rebuild/`

@@ -236,14 +236,6 @@ grep -qF 'Deferred-OQ resurface (P3/A6, ALWAYS' "$P/skills/orchestrate-flow/SKIL
   && pass "Step 9 resurfaces deferred OQs (deep or not)" || fail "Step 9 line missing"
 
 # ── 3. Risk-router wiring + lean default ─────────────────────────────────────
-grep -qF 'resolve-review-tier.sh' "$P/skills/execute-bolts/references/review-panel.md" \
-  && pass "review-panel routes tier via the script (A5)" || fail "router not wired"
-grep -qF 'signals_fired' "$P/skills/execute-bolts/references/superpowers-bridge.md" \
-  && pass "bolt-report requires signals_fired (audit trail)" || fail "audit trail missing"
-grep -qE 'minimal.*task_type: verify.*OR' "$P/skills/execute-bolts/references/review-panel.md" \
-  && pass "minimal predicate rewritten (reachable)" || fail "predicate not rewritten"
-grep -qF 'unknown rc is never a LOW tier' "$P/skills/execute-bolts/references/review-panel.md" \
-  && pass "router fallback = standard on unknown rc" || fail "rc fallback missing"
 
 OF="$P/skills/orchestrate-flow/SKILL.md"
 # 9.0 P1: express is the only spine, so the "on the express spine" qualifier

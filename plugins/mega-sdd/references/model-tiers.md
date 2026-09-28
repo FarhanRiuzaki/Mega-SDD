@@ -3,8 +3,8 @@
 > Single source of truth for which model tier each named subagent role uses across the mega-sdd plugin.
 
 **Version:** 1.0
-**Consumed by:** the extract-intelligence module / claim-verify dispatch (rows 6, 23) + `scripts/ground.sh` Guard 8 (validates `model_tiers:` override role names against the Role column); agent-backed roles are pinned in `agents/*.md` frontmatter (parity with rows 6, 15-23)
-**Resolved by:** `mega-sdd:orchestrate-flow` (SKILL.md "Model-tier override resolution" bullet; procedure in `references/chain-execution.md`) (override chain: CLI > project config > catalog default — non-panel roles only; `*-reviewer` lenses are frontmatter-pinned, see §Override syntax)
+**Consumed by:** the extract-intelligence module / claim-verify dispatch (rows 6, 23) + `scripts/ground.sh` Guard 8 (validates `model_tiers:` override role names against the Role column); agent-backed roles are pinned in `agents/*.md` frontmatter (parity with rows 6, 22, 23)
+**Resolved by:** `mega-sdd:orchestrate-flow` (SKILL.md "Model-tier override resolution" bullet; procedure in `references/chain-execution.md`) (override chain: CLI > project config > catalog default)
 
 ---
 
@@ -36,7 +36,7 @@ Pick the LEAST powerful model that can handle the task. Each tier has clear crit
 - Bounded reasoning depth (≤5 reasoning steps)
 - Mid-range cost/quality tradeoff
 
-**Examples:** extract-intelligence module + claim-verify agents; spec-reviewer; implementer for typical tasks.
+**Examples:** extract-intelligence module + claim-verify agents; implementer for typical tasks.
 
 ### opus — pick when ANY of these hold
 - Open-ended reasoning (no fixed output schema)
@@ -45,7 +45,7 @@ Pick the LEAST powerful model that can handle the task. Each tier has clear crit
 - Deep code review (cross-cutting concerns, security, performance)
 - Cross-cutting pattern detection across a codebase
 
-**Examples:** code-quality-reviewer; security-reviewer (the review-panel opus criteria); implementer overridden up for a complex rebuild.
+**Examples:** implementer overridden up for a complex rebuild.
 
 ### inherit — the operator-tiered escape hatch (deliberate, not "unpinned")
 
@@ -66,36 +66,28 @@ Sonnet is the safe middle ground. Escalate to opus only with concrete evidence t
 ## Catalog
 
 Row numbers are stable, so gaps are deliberate: 1–5 retired with the
-scan-codebase deep-scan (9.0), 7–10 retired with the wave pipeline, 11–14 + 18
-removed (zero dispatch sites anywhere in the plugin — a `model_tiers:` override
+scan-codebase deep-scan (9.0), 7–10 retired with the wave pipeline, 16–21b with
+the review panel (P3), 11–14 + 18 removed (zero dispatch sites anywhere in the plugin — a `model_tiers:` override
 naming them now gets an honest `model_tier_unknown` notice instead of validating
 silently and doing nothing).
 
 | # | Role | Tier | Rationale |
 |---|---|---|---|
 | 6 | `extract-intelligence-module` | sonnet | Per-module PRD-kontrak extraction; bounded file-set per agent, disciplines ride the agent body (extract-intelligence). Synthesis (README roll-up + data-mutation-policy) runs on the MAIN thread — no dispatched role |
-| 23 | `extract-intelligence-verify` | sonnet | Claim-verify lane: adversarial per-module citation grading against explicit claims with a known output schema — the spec-reviewer/resolution-verifier class of bounded judgment; escalate via `model_tiers:` override for gnarly legacy dialects |
+| 23 | `extract-intelligence-verify` | sonnet | Claim-verify lane: adversarial per-module citation grading against explicit claims with a known output schema — bounded judgment; escalate via `model_tiers:` override for gnarly legacy dialects |
 | 15 | `implementer` | sonnet | Typical implementation task (subagent-driven-development pattern); user can override to opus for complex tasks |
-| 16 | `spec-reviewer` | sonnet | Compliance verification against spec (subagent-driven-development pattern) |
-| 17 | `code-quality-reviewer` | **opus** | Deep code review; cross-cutting concerns; security/performance (subagent-driven-development pattern) |
-| 19 | `security-reviewer` | **opus** | Semantic authz-vs-spec + architectural-drift reasoning; deep code review per the opus criteria (review-panel security lens) |
-| 20 | `standards-reviewer` | sonnet | Pattern recognition vs pack rules + sibling files; bounded judgment with known output schema (review-panel standards lens) |
-| 21 | `design-reviewer` | sonnet | Code-evidence checks against an explicit design contract (tokens/states/a11y rubric); pattern recognition, not open-ended taste (review-panel design lens) |
-| 21b | `resolution-verifier` | sonnet | Fix-round verification: per-finding resolved/unresolved against new-head evidence + delta review of the fix range — bounded judgment against an explicit finding ledger, known output schema (review-panel §Attempt rounds) |
 | 22 | `bolt-implementer` | **inherit → v7.1 per-unit routed** | AMENDED v7.1 (spec 2026-08-22-per-unit-model-routing-design.md): config `model_tiers.bolt_implementer:` default `inherit` keeps the operator-tier behavior below verbatim; `auto` routes per unit from the SAME deterministic risk signals as the review-panel tier (opus←full, haiku←verify-only, sonnet←else) + a one-step evidence-gated cascade — NOT the hard pin the old rationale rejected (the pin follows per-unit evidence, both directions of the old cost argument are answered). Ship default stays `inherit` until the clinic A/B passes (≥25% token saving, panel quality equal — user gate). ORIGINAL rationale (still governs `inherit`): Deliberately operator-tiered, not unpinned: the implementer writes the code the LOCKED "akurasi code WAJIB" mandate is about, so it tracks the tier the operator chose for the session — a session run on a stronger model gets a stronger implementer with no plugin edit. A hard pin would also cut the wrong way in both directions: pinning down risks paying more via panel rejections + re-dispatches than the per-token saving, pinning up taxes every routine bolt. `inherit` is an EXPLICIT frontmatter value (`agents/bolt-implementer.md`), and any catalog↔frontmatter parity check must accept it as such (spec `2026-07-30-token-and-latency-optimization.md` §Phase 1a, amended) |
 
-**Distribution:** 2 opus + 7 sonnet + 1 inherit (10 rows; `haiku` is reached only through the per-unit route for verify units — it has no catalog row). Sonnet-dominant by design; the sole `inherit` is the bolt implementer, whose tier is an operator choice.
+**Distribution:** 3 sonnet + 1 inherit (4 rows; `haiku` is reached only through the per-unit route for verify units — it has no catalog row). Sonnet-dominant by design; the sole `inherit` is the bolt implementer, whose tier is an operator choice.
 
 ---
 
 ## Override syntax
 
 > **Scope:** the `model_tiers:` override chain applies to SKILL-LEVEL
-> model picks (module extraction, audit probes, consolidators). It does NOT apply to
-> the execute-bolts review-panel lenses (`*-reviewer`) — those are pinned in each
-> plugin agent's frontmatter, which the runtime reads directly; a
-> `model_tiers: {security-reviewer: …}` entry is silently ignored at panel dispatch
-> (see `execute-bolts/references/review-panel.md`). Do not configure panel lenses here.
+> model picks (module extraction, audit probes, consolidators). A role with no
+> catalog row (e.g. a retired review-panel `*-reviewer` lens) gets GROUND's
+> `model_tier_unknown` notice and is otherwise ignored.
 
 ### CLI flag (per-run override)
 

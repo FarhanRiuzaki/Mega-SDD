@@ -30,8 +30,6 @@ lane: lite          # lite is the only pipeline; `standard` is retired (the fron
                            #   lite). Lite = execute-bolts pre-flight 3.9 JIT bind on EVERY wave + W1 zero-idle + `validate-preflight.sh
                            #   --predictive` refuses the execute-bolts hop while .plan-coverage-state.json is missing/FAIL/stale.
 # profile:          # ABSENT is the default: diagnostics lean-by-default on the express spine (Stop-hook analyze aggregate OFF). Set `full` to re-enable the aggregate; `lean` additionally cuts the advisory chain diagnostics (opt-in)
-review_panel: auto         # execute-bolts review-panel tier: auto (risk-based) | minimal | standard | full
-                           #   (see execute-bolts references/review-panel.md; CLI --review-panel= overrides this key)
 model_tiers:
   bolt_implementer: inherit  # per-unit model routing: inherit (DEFAULT — today's behavior,
                              # session model, no model param passed) | auto (router: the same
@@ -55,9 +53,7 @@ code_gates: true           # false → skip the L0 toolchain + SAST gates (execu
 gateguard: true            # false → disable the LOCKED-file deny-once investigation gate (PreToolUse
                            #   Edit/Write; inert anyway when no [LOCKED] anchors exist in any vault)
 preview_url: ""            # dev-server base URL (e.g. http://localhost:5173) — read by
-                           #   `scripts/uat-run.sh` (UAT e2e); the execute-bolts controller passes
-                           #   the URL into the capture ladder as an argument — `capture-views.sh`
-                           #   never reads config. Empty → design lens is code-only.
+                           #   `scripts/uat-run.sh` (UAT e2e).
 # render_html: on          # ABSENT = off for the PIPELINE hand-offs (plan / execute-bolts /
                            #   extract-intelligence): no HTML beside the md — the render is
                            #   regenerable via `/mega-sdd:emit html` and was 78–88% of committed .mega-sdd/

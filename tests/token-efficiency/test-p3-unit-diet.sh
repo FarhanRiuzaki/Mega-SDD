@@ -11,9 +11,7 @@
 #       structured authority; verify keeps expanded (marker-bearing when HIGH) body
 #       criteria (the A1 substrate); create/extend get the pointer line; ears: only
 #       where it adds precision beyond expects: (roadmap pins intact).
-#   (c) per-lens slice trim — security+standards drop Goal/Context/Out-of-scope;
-#       quality KEEPS Goal + Out of scope (drops Context); spec lens FULL body;
-#       design slice unchanged; blind BETWEEN-lens rail untouched.
+#   (c) per-lens slice trim — the bridge diagram's wording (review-panel.md went in P3 C3).
 # Plus the tolerance pair: validate-unit-spec.sh passes a unit WITHOUT the diet
 # keys AND one WITH them (writer-side diet, reader-side tolerance); A1 unaffected
 # in both directions.
@@ -32,10 +30,9 @@ US="${P}/skills/plan/references/unit-schema.md"
 TU="${P}/skills/plan/references/templates/unit.md"
 UP="${P}/skills/plan/references/unit-procedure.md"
 VP="${P}/skills/plan/references/validation-passes.md"
-RP="${P}/skills/execute-bolts/references/review-panel.md"
 BR="${P}/skills/execute-bolts/references/superpowers-bridge.md"
 V="${P}/scripts/validate-unit-spec.sh"
-for f in "$US" "$TU" "$UP" "$VP" "$RP" "$BR" "$V"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+for f in "$US" "$TU" "$UP" "$VP" "$BR" "$V"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
 ok()   { printf '  \xe2\x9c\x93 %s\n' "$*"; }
@@ -90,17 +87,7 @@ grep -qF 'verify_grounding_untrusted' "$US" && ok "A1 enforcement pointer intact
 grep -qF 'Acceptance criteria are the frontmatter' "$TU" && ok "template Acceptance-criteria placeholder is the pointer-line form" || fail "template still scaffolds expanded placeholder bullets"
 grep -qF 'TBD OQ items / prose-only constraints' "$TU" && ok "template names the only non-restating additions (TBD OQs, prose-only constraints)" || fail "template non-restating guidance missing"
 
-# ── (c) review-panel per-lens slice trim matches the locked decision ──
-grep -qF 'security and standards lenses ALSO drop the `## Goal` / `## Context (read first)` / `## Out of scope` prose' "$RP" \
-  && ok "security + standards drop Goal/Context/Out-of-scope" || fail "security/standards orientation-prose trim missing"
-grep -qF 'KEEPS Goal + Out of scope' "$RP" && ok "quality lens KEEPS Goal + Out of scope (scope-creep judgment)" || fail "quality Goal+OoS keep missing"
-grep -qF 'while still dropping Context' "$RP" && ok "quality lens drops Context" || fail "quality Context-drop missing"
-grep -qF 'design lens slice is unchanged' "$RP" && ok "design lens slice unchanged (locked decision: not trimmed)" || fail "design-lens disposition undocumented"
-# the four pre-existing pin strings must survive the wording extension
-grep -qiF 'spec lens gets the full unit body verbatim' "$RP" && ok "pin survives: spec lens FULL body verbatim" || fail "pin lost: spec-lens-full"
-grep -qiF 'NOT the Implementation-steps NARRATIVE' "$RP" && ok "pin survives: Implementation-steps narrative drop" || fail "pin lost: narrative drop"
-grep -qiF 'Migration notes STAYS in every lens' "$RP" && ok "pin survives: Migration notes in every lens" || fail "pin lost: Migration notes"
-grep -qiF 'blind' "$RP" && grep -qF 'NEVER contains' "$RP" && ok "pin survives: blind BETWEEN-lens rail (sizing changed, sharing untouched)" || fail "pin lost: blind rail"
+# ── (c) bridge per-lens slice wording (review-panel.md itself was deleted in P3 C3) ──
 # bridge diagram stays in sync
 grep -qF 'Anchors/Anti-patterns + Migration notes' "$BR" && ok "pin survives: bridge slice includes Anchors/Anti-patterns + Migration notes" || fail "pin lost: bridge slice list"
 grep -qiF 'sized to the lens' "$BR" && ok "pin survives: bridge sized-to-the-lens contract" || fail "pin lost: sized to the lens"

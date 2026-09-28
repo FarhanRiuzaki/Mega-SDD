@@ -1105,18 +1105,6 @@ if d and d.get("status") == "FAIL" and live_issues(d):
         units = ", ".join(i.get("unit_id", "?") for i in red[:8])
         fails.append(("acceptance-evidence", "recorded acceptance evidence is RED for %s unit(s) (%s%s) — an acceptance_test entry failed against the committed code even after the single bounded auto-retry (halt acceptance_red). Keterangan: kode yang sudah di-commit gagal acceptance test unit-nya — perbaiki kodenya (atau revert commit bolt), lalu jalankan `bash <plugin>/scripts/run-acceptance-tests.sh --cwd=<project-root> --unit=U-XXX` sampai hijau. State: %s/.bolt-acceptance-state.json" % (len(red), units, ", …" if len(red) > 8 else "", md)))
 
-# panel-evidence (F-07 — spec 2026-08-30 §3.1): a bolt dispatched WITH a
-# review-tier.json (7.11.0+) must carry a script-merged findings.json (tier ≠
-# minimal) and a script-written l0-results.json. Legacy bolts are advisory.
-d = L(".bolt-panel-state.json")
-_panel_iss = [i for i in live_issues(d or {}) if not (
-    i.get("halt_type") == "panel_evidence_missing" and i.get("unit_id") in panel_pending)]
-if d and d.get("status") == "FAIL" and _panel_iss:
-    iss = _panel_iss
-    units = ", ".join(sorted({i.get("unit_id", "?") for i in iss})[:8])
-    kinds = ", ".join(sorted({i.get("halt_type", "?") for i in iss}))
-    fails.append(("panel-evidence", "panel-evidence scan found %d dispatched bolt(s) without script-written review evidence (%s; %s). The blind lens panel and the L0 gates caught every real defect of the field run — they are not optional: merge the panel with `bash <plugin>/scripts/merge-panel-findings.sh --vault=<vault> --unit=U-XXX --head=<sha> --round=N --spec-verdict=… --lens=…` and record L0 with `bash <plugin>/scripts/run-code-gates.sh --cwd=<root> --base=<bolt-base> --head=<bolt-head> --unit=<unit.md> --write`. Keterangan: bolt yang di-dispatch dengan review-tier.json wajib punya ledger panel hasil merge skrip dan rekaman L0 hasil skrip — bukan tulisan tangan. State: %s/.bolt-panel-state.json" % (len(iss), units, kinds, md)))
-
 # acceptance-expects (F-18 — spec 2026-08-30 §3.3), IN-RUN and PER UNIT only:
 # the unit being dispatched must not carry a vacuous acceptance contract
 # (`type: test` with a command and no `expects`). Never at the run boundary —

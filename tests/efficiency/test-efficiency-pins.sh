@@ -24,11 +24,6 @@ else
   pass "E2: post-tool-use carries no validator dispatch (fan-out stays dead)"
 fi
 
-# E3 — code-quality-reviewer aligned with catalog (opus)
-grep -q '^model: opus' "$P/agents/code-quality-reviewer.md" \
-  && pass "E3: code-quality-reviewer = opus (catalog row 17)" \
-  || fail "E3: code-quality-reviewer model misaligned with catalog"
-
 # E4 — detect-drift reuses map §7
 grep -q 'REUSE FIRST' "$P/skills/detect-drift/SKILL.md" \
   && pass "E4: drift framework reuse-first" \

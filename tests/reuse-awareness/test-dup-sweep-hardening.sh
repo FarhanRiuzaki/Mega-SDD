@@ -154,15 +154,6 @@ printf '%s' "$J" | grep -q "findId" && fail "M2: 2-char root matched (noise clas
 
 echo "== wiring pins =="
 PLUG="${ROOT}/plugins/mega-sdd"
-grep -qF "Reuse-duplication evidence (mechanical, advisory)" "$PLUG/skills/execute-bolts/references/review-panel.md" \
-  && ok "review-panel: quality lens carries the evidence heading contract" || fail "review-panel wiring missing"
-grep -qF "OMITTED, never emitted empty" "$PLUG/skills/execute-bolts/references/review-panel.md" \
-  || grep -qF "the heading is OMITTED" "$PLUG/skills/execute-bolts/references/review-panel.md" \
-  && ok "zero-rows -> heading omitted rule stated" || fail "empty-heading rule missing"
-grep -qF "Reuse-duplication evidence (mechanical, advisory)" "$PLUG/agents/code-quality-reviewer.md" \
-  && ok "quality agent instructed: verify each row, lead not verdict" || fail "agent instruction missing"
-grep -qF "validate-reuse-duplication.sh --cwd=<root> --range=" "$PLUG/skills/execute-bolts/SKILL.md" \
-  && ok "SKILL panel step names the evidence run" || fail "SKILL pointer missing"
 if grep -q "validate-reuse-duplication" "$PLUG/hooks/pre-tool-use"; then
   fail "sweep wired into PreToolUse (must stay advisory — never a hook)"
 else

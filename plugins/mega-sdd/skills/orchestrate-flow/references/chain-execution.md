@@ -62,11 +62,10 @@ e. **Emit final `model_tiers:` dict in handoff metadata** for all downstream ski
    metadata:
      model_tiers:
        extract-intelligence-module: sonnet
-       extract-intelligence-verify: sonnet
-       code-quality-reviewer: sonnet  # override applied — was opus in catalog
+       extract-intelligence-verify: opus  # override applied — was sonnet in catalog
      model_tier_sources:  # provenance trail (OPTIONAL)
        extract-intelligence-module: catalog
-       code-quality-reviewer: project-config
+       extract-intelligence-verify: project-config
    ```
 f. **Forward-compat tolerance**: if any role in override sources doesn't exist in catalog → emit SOFT halt `model_tier_unknown` (warn-only); log warning; ignore that override; chain proceeds with catalog default.
    ```yaml
@@ -78,7 +77,7 @@ f. **Forward-compat tolerance**: if any role in override sources doesn't exist i
      override_file: "<project>/.mega-sdd/config.yaml:line-N"
    next_action: "Role 'some-future-role' not found in plugins/mega-sdd/references/model-tiers.md catalog. Log warning and continue with default tier. Either remove from override OR add the role to the catalog if it's a real subagent role."
    ```
-g. **Logging**: log resolved tier summary, e.g. `Model tier overrides applied: code-quality-reviewer=sonnet (project-config); audit-probe=sonnet (cli-flag)`
+g. **Logging**: log resolved tier summary, e.g. `Model tier overrides applied: extract-intelligence-verify=opus (project-config); audit-probe=sonnet (cli-flag)`
 h. **No file writes** — purely resolution; resolved tiers live in handoff metadata only.
 
 ## Iter classifier hooks (EP1 / EP2)

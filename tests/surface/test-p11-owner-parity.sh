@@ -89,19 +89,10 @@ if grep -qF 'The EXIT CODE is the discriminator' "$EB" && grep -qF 'The EXIT COD
    && grep -qF -- '--quiet' "$EB" && grep -qF -- '--quiet' "$BR"; then
   pass "S6b: exit-code discriminator + --quiet ban present at BOTH operational surfaces"
 else fail "S6b: exit-code contract pair broken"; fi
-n_ret=$(grep -lF 'findings only, no narrative (return-size contract)' "$P"/agents/*.md | wc -l | tr -d ' ')
-[ "$n_ret" -ge 6 ] \
-  && grep -qF 'findings-only' "$P/skills/execute-bolts/references/review-panel.md" \
-  && pass "S6c: findings-only return contract in $n_ret agent bodies + the panel owner" \
-  || fail "S6c: return-contract parity broken (agents carrying it: $n_ret)"
 grep -qF 'step_type' "$P/agents/bolt-implementer.md" \
   && grep -qF 'canonical taxonomy' "$P/skills/execute-bolts/references/partial-state-and-saga.md" \
   && pass "S6d: step_type enum pair present (agent copy + canonical taxonomy home)" \
   || fail "S6d: step_type pair broken"
-grep -qF 'findings.json' "$P/agents/resolution-verifier.md" \
-  && grep -qF 'ONLY file' "$P/agents/resolution-verifier.md" \
-  && pass "S6e: verifier bolt-dir scoping (findings.json ONLY-file rule) in the agent body" \
-  || fail "S6e: verifier scoping pair broken"
 
 echo
 [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"

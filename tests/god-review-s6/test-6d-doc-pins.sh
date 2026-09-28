@@ -7,11 +7,9 @@
 #               handoff-contract points at it and carries NO inline copy (M-02).
 #   PHANTOMS    --strict-provenance gone; `ast-grep test --validate` only ever mentioned
 #               as NOT existing; missing_dependency retired from the dispatch vocabulary.
-#   EB-DOC-4/HONEST-4  spec-reviewer body is blind-era (no implementer-report trust);
-#               all five lenses carry a read-only rail.
 #   EB-DOC-7    stale create/extend/modify enum phrase eliminated.
 #   LOCKED-DRIFT one eligibility (override-only) — no surface still says propose-eligible.
-#   EB-PHANTOM-1 review-panel no longer claims a per-lens model_tiers override.
+#   (P3 C3: the panel lens agents and review-panel.md are deleted; their pins went with them.)
 # Run: bash tests/god-review-s6/test-6d-doc-pins.sh
 set -uo pipefail
 
@@ -46,7 +44,7 @@ BAD=0
 # moved to references/halt-protocol.md, which the net scans.
 TOPO_BAD='halts?[[:space:]]+pre-commit|pre-commit[[:space:]]+halts?|halts? before commit|re-validate[^.]*before commit|code[^.]{0,20}working tree|preserved in (the )?working tree|remains? in[^.]{0,20}\(not committed\)'
 for f in "$EB/SKILL.md" "$EB/references/hard-rule-scan.md" "$EB/references/hard-rule-grammar-v2.md" \
-         "$EB/references/code-gates.md" "$EB/references/review-panel.md" "$EB/references/batch-and-fanout.md" \
+         "$EB/references/code-gates.md" "$EB/references/batch-and-fanout.md" \
          "$EB/references/halts-and-handoff.md" "${ROOT}/tests/skill-triggering/execute-bolts.test.md" \
          "${ROOT}/tests/skill-triggering/auto.test.md" "${ROOT}/tests/scenarios/scenario-2-prd-driven-feature.md" \
          "${ROOT}/tests/scenarios/scenario-6-recovery-from-halt.md" \
@@ -128,23 +126,9 @@ grep -q "dep_missing" "$P/agents/bolt-implementer.md" \
   && ok "bolt-implementer carries the canonical dep_missing halt type" \
   || fail "bolt-implementer missing the dep_missing halt type (vocabulary did not land in the agent)"
 
-echo "── panel agents ──"
-grep -q "implementer claims" "$P/agents/spec-reviewer.md" \
-  && fail "spec-reviewer still describes the implementer's report as its input" \
-  || ok "spec-reviewer body is blind-era (no report in prompt)"
-grep -q "base/head commit SHAs" "$P/agents/spec-reviewer.md" && grep -q "git diff" "$P/agents/spec-reviewer.md" \
-  && ok "spec-reviewer derives the change set from the diff" || fail "spec-reviewer lacks the diff instruction"
-for a in code-quality-reviewer security-reviewer standards-reviewer design-reviewer; do
-  grep -q "Read-only discipline" "$P/agents/$a.md" || fail "$a missing the read-only rail"
-done
-grep -q "never modify anything" "$P/agents/design-reviewer.md" && ok "all four sibling lenses carry the read-only rail"
-grep -q "never run a Bash command that mutates" "$P/agents/spec-reviewer.md" && ok "spec-reviewer carries the read-only rail inline" || fail "spec-reviewer read-only rail missing"
-
 echo "── enum + eligibility coherence ──"
 grep -rqE "create/extend/modify" "$EB" && fail "stale create/extend/modify enum phrase survives" || ok "task_type enum phrases honest ({create,verify,extend})"
 grep -rq "propose-and-confirm OR override" "$EB" && fail "locked-drift dual-eligibility survives" || ok "bolt_introduces_locked_drift is override-only everywhere"
-grep -q "Models are NEVER hardcoded" "$EB/references/review-panel.md" && fail "phantom per-lens model override claim survives" || ok "panel model pinning documented honestly"
-grep -q "risk: high" "$EB/references/review-panel.md" && ok "unit risk: frontmatter consumed as panel signal 6" || fail "risk: signal missing from tier selection"
 
 echo "── whitelist observer documented where it exists ──"
 grep -q "whitelist-scan" "$EB/SKILL.md" && grep -q "whitelist_violation" "$EB/SKILL.md" \

@@ -149,10 +149,6 @@ after5=$(grep -A1 '^5\. \*\*Reuse symbol index' "$P/skills/execute-bolts/SKILL.m
 if [ "$after5" = "6." ] && grep -q '^6\. \*\*PBT citation pre-flight' "$P/skills/execute-bolts/SKILL.md"; then
   pass "A11b: duplicate pre-flight ordinal renumbered (Reuse=5, PBT=6, no adjacent 5./5.)"
 else fail "A11b: pre-flight ordinals still collide (line after Reuse-5 starts: '$after5')"; fi
-DRV="$P/agents/design-reviewer.md"
-if ! grep -q "traits/anti-patterns" "$DRV" && grep -qF 'best-for / avoid-for' "$DRV"; then
-  pass "A11c: design-reviewer speaks the delivered slice vocabulary"
-else fail "A11c: design-reviewer still expects the forbidden traits/anti-patterns lines"; fi
 
 # ── C — gateway-tag completion (v7.3.1 restore, docs/gateway-contract.md):
 # EVERY announce-bearing skill + every dispatch template carries the tag.
@@ -172,8 +168,8 @@ done | wc -l | tr -d ' ')
 grep -qF 'mega-sdd-trace:extract-intelligence' "$P/skills/extract-intelligence/references/prd-kontrak-template.md" \
   && pass "C2: module dispatch core carries the tag" || fail "C2: module dispatch tag missing"
 # C3 (deep-scan dispatch tag) RETIRED in 9.0 P1 — deep-scan dispatch deleted with scan-codebase.
-grep -qF 'mega-sdd-trace:execute-bolts' "$P/skills/execute-bolts/references/review-panel.md" \
-  && pass "C4: lens/verifier dispatch rule mandates the tag" || fail "C4: review-panel tag rule missing"
+grep -qE '^[[:space:]]*mega-sdd-trace:execute-bolts$' "$P/skills/execute-bolts/references/inline-run.md" \
+  && pass "C4: the inline close-review prompt carries the tag on its own line" || fail "C4: inline-run reviewer tag missing"
 
 # ── D — infra batch ──
 # D1 (v7.3.1): user-prompt-submit is RESTORED as the pure-shell gateway-marker
