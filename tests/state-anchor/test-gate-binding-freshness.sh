@@ -5,7 +5,8 @@
 # left with the per-dispatch path (P3, spec 2026-09-27 §8.6). Drives gate_check directly on
 # a lite fixture whose binding the REAL writer produced (derive-unit-claims.sh +
 # write-unit-binding.sh): every §8 reason is returned, a raise quarantines `not_evaluated`,
-# the fresh paths stay open, and the Write/Bash guards on the capture and the binding deny.
+# the fresh paths stay open, the Write/Bash guards on the capture and the binding deny, and the
+# Skill-entry aggregator's utf-8 guard holds under a cp1252 console.
 set -u
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 PLUGIN="$REPO/plugins/mega-sdd"
@@ -54,7 +55,7 @@ bind() { # <dir> [extra writer flag]
   bash "$S/derive-unit-claims.sh" --cwd="$F" --vault="$V" --units=U-001 >/dev/null 2>&1
   bash "$S/write-unit-binding.sh" --cwd="$F" --vault="$V" --unit=U-001 --claims="$V/bolts/_wave-claims.json" ${2:-} >/dev/null 2>&1
 }
-gate() { # <dir> [unit] — gate_check's verdict: "" = fresh, else "<reason> <detail json>" (GitError → not_evaluated)
+gate() { # <dir> [unit] — gate_check's verdict: "" = fresh, else "<reason> <detail json>" (any raise → not_evaluated)
   python3 - "$PLUGIN/scripts/_lib" "$1" "${2:-U-001}" <<'PY'
 import json, os, sys
 sys.path.insert(0, sys.argv[1])
@@ -64,6 +65,8 @@ try:
     r, d = fr.gate_check(root, os.path.join(root, ".mega-sdd", "vaults", "web"), sys.argv[3])
 except fr.GitError as e:
     r, d = "not_evaluated", {"error": str(e)}
+except Exception as e:  # mirrors derive-exec-plan.sh: a crash is not_evaluated, never an empty (fresh) verdict
+    r, d = "not_evaluated", {"error": "%s: %s" % (type(e).__name__, e)}
 print("%s %s" % (r, json.dumps(d, sort_keys=True)) if r else "")
 PY
 }
@@ -128,13 +131,25 @@ D=$(fresh k); echo '// wip' >> "$D/src/client.ts"; bind "$D" --rebind; echo '// 
 O=$(gate "$D"); has "$O" "rebind_exhausted" && has "$O" '"cause": "uncommitted_in_scope"' \
   && ok "still stale after a re-bind at the same HEAD: rebind_exhausted, cause named (the bound is a mechanism)" || bad "exhausted: [$O]"
 
-# 14. encoding: an emoji subject + a CJK path under a cp1252 console is still binding_stale (never a crash)
+# 14. encoding: an emoji subject + a CJK path is still binding_stale (never a crash)
 D=$(fresh n); mkdir -p "$D/src"; printf 'x\n' > "$D/src/測試.ts"
 sed -i.bak 's#^- `src/client.ts:1-3` — the `api` client#- `src/client.ts:1-3` — the `api` client\n- `src/測試.ts:1` — cjk#' "$D/.mega-sdd/vaults/web/units/U-001.md"; rm -f "$D/.mega-sdd/vaults/web/units/U-001.md.bak"
 ( cd "$D" && G add -A && G commit -qm unit ) ; bind "$D"
 ( cd "$D" && echo 'y' >> "src/測試.ts" && G commit -qam "feat: 🚀 ship it" )
-O=$(export PYTHONIOENCODING=cp1252; gate "$D")
-has "$O" "binding_stale" && ok "emoji subject + CJK path under PYTHONIOENCODING=cp1252: still binding_stale" || bad "cp1252: [$O]"
+O=$(gate "$D")
+has "$O" "binding_stale" && ok "emoji subject + CJK path: still binding_stale" || bad "cjk/emoji: [$O]"
+
+# 14b. D24a, the hook's utf-8 guard on the Skill-entry aggregator: a FAIL whose deny text carries a
+#      non-cp1252 character, under PYTHONIOENCODING=cp1252, still denies (never crashes into an ALLOW).
+#      The state is read-only so the gate-time re-scan cannot rewrite it.
+D=$(fresh n2); M="$D/.mega-sdd"
+printf '{"status":"FAIL","issues":[{"unit_id":"U-001","reason":"open_conflict 測試"}]}\n' > "$M/.bolt-conflict-bypass-state.json"
+chmod 444 "$M/.bolt-conflict-bypass-state.json"; chmod 555 "$M"
+O=$(printf '{"session_id":"s","cwd":"%s","tool_name":"Skill","tool_input":{"skill":"mega-sdd:execute-bolts","args":"--all --lite"}}' "$D" \
+  | ( cd "$D" && PYTHONIOENCODING=cp1252 bash "$HOOK" 2>/dev/null ))
+chmod 755 "$M"; chmod 644 "$M/.bolt-conflict-bypass-state.json"
+deny_of "$O" && has "$O" "conflict-bypass" \
+  && ok "Skill entry under PYTHONIOENCODING=cp1252, CJK in the deny text: still denied (conflict-bypass named)" || bad "hook cp1252: [${O:0:300}]"
 
 # 15. fail closed: gate_check raises → the run-start quarantine records `freshness: not_evaluated`
 PL="$WORK/plug"; mkdir -p "$PL"; cp -a "$PLUGIN/." "$PL/"
