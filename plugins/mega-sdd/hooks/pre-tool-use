@@ -825,15 +825,15 @@ except Exception as e:
         # its own branch. Same doctrine as the moat: a stale, absent, or forged
         # state is overwritten with current truth BEFORE the aggregator reads
         # it (this also neutralizes any Bash-forged PASS — EB-GATE-5).
-        # The bolt-artifact scans run as ONE composable invocation (spec §4a-ii; --panel-scan joined
-        # in 7.11.0, --conflict-bypass-scan in 9.x) — one bash spawn-chain; every scan's python, state file, and
+        # The bolt-artifact scans run as ONE composable invocation (spec §4a-ii; --conflict-bypass-scan
+        # joined in 9.x) — one bash spawn-chain; every scan's python, state file, and
         # verdict are unchanged. Still here: B1 recompute-at-gate (--recompute
         # re-executes each committed Hard-rule bolt's mechanical rules from git/fs
         # ground truth and OVERWRITES its postflight.json before the state is derived
         # — a forged/stale evidence artifact cannot open the gate) and B4 acceptance
         # evidence (commit-keyed; the artifact is READ, never re-executed here —
         # re-running acceptance tests in a hook is the forbidden inflation).
-        ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --panel-scan --conflict-bypass-scan --quiet >/dev/null 2>&1 || true ) &
+        ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-bolt-artifacts.sh" --cwd="$PROJECT_ROOT" --orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --conflict-bypass-scan --quiet >/dev/null 2>&1 || true ) &
         ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-ui-quality.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-sibling-consistency.sh" --cross-cutting --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &
         ( bash "${SCRIPT_DIR_RPR}/../scripts/validate-factory-ledger.sh" --cwd="$PROJECT_ROOT" --quiet >/dev/null 2>&1 || true ) &

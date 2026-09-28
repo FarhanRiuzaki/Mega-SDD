@@ -208,9 +208,6 @@ dep >/dev/null; R=$?; dep --pending >/dev/null; R2=$?
 cp "$T/u1.bak" "$V/units/U-001.md"; bash "$DEP" --cwd="$F" >/dev/null 2>&1; [ $? -eq 2 ] && ok "e6: usage (no --vault) → exit 2" || bad "e6: usage exit"
 clone cs; printf 'beta\n' > "$T/cs/docs/beta.md"; G "$T/cs" add docs/beta.md && G "$T/cs" commit -qm "chore: hand-written beta"
 [ "$(qr "$(depat "$T/cs")" | grep -c "('U-002', 'binding_stale', 'binding_stale')")" = 1 ] && ok "e7: a binding a later non-unit commit made stale → binding_stale (the dispatch gate's function)" || bad "e7: $(depat "$T/cs")"
-clone cr; printf '{"tier": "standard", "retry_budget": 3}\n' > "$T/cr/.mega-sdd/vaults/demo/bolts/U-006/review-tier.json"; depat "$T/cr" >/dev/null
-[ ! -e "$T/cr/.mega-sdd/vaults/demo/bolts/U-006/review-tier.json" ] && [ -e "$T/cr/.mega-sdd/vaults/demo/bolts/U-006/review-tier.retired.json" ] \
-  && ok "e8: a never-committed in-scope unit's review-tier.json (an earlier per-dispatch attempt) is retired" || bad "e8: $(ls "$T/cr/.mega-sdd/vaults/demo/bolts/U-006/")"
 clone cx; printf '{not json' > "$T/cx/.mega-sdd/vaults/demo/bolts/U-006/binding.json"
 [ "$(qr "$(depat "$T/cx")" | grep -c "('U-006', 'binding_conflict'")" = 1 ] && ok "e9: an unparseable binding at run start → binding_conflict (fail closed)" || bad "e9: $(depat "$T/cx")"
 dep >/dev/null
@@ -454,15 +451,15 @@ cpx "$M10" "$T/m10c"; sleep 1; bolt "$M10" U-006 docs/zeta.md "Zeta page"; bolt 
 python3 -c 'import json,sys; p=sys.argv[1]; d=json.load(open(p)); d["quarantined_at"]="garbage"; json.dump(d, open(p,"w"))' "$(MV "$T/m10c")/bolts/U-006/quarantine.json"
 sleep 1; bolt "$T/m10c" U-006 docs/zeta.md "Zeta page"
 [ "$(scanat "$T/m10c")" = 1 ] && ok "m7b: a quarantine with an unreadable time counts from forever (fail closed)" || bad "m7b: $(reasons "$T/m10c")"
-# m8: deferral needs an in-scope creator; a bolted unit's panel obligation is never retired
+# m8: deferral needs an in-scope creator
 M12="$T/m12"; MK "$M12"; mkunit "$(MV "$M12")" U-001 "Slug helper" src/x.js "depends_on: []"
 mkunit "$(MV "$M12")" U-002 "Extend slug" src/x.js "depends_on: [U-001]" "" modify modify; mkunit "$(MV "$M12")" U-006 "Zeta page" docs/zeta.md "depends_on: []"
 seed "$M12"; rb "$M12" U-001,U-002,U-006; bash "$S/write-unit-quarantine.sh" --cwd="$M12" --vault="$(MV "$M12")" --unit=U-001 --halt=spec_contradiction --reason="X vs Y" >/dev/null 2>&1
-sleep 1; bolt "$M12" U-006 docs/zeta.md "Zeta page" v5; rb "$M12" U-006; printf '{"tier": "standard", "retry_budget": 3}\n' > "$(MV "$M12")/bolts/U-006/review-tier.json"
+sleep 1; bolt "$M12" U-006 docs/zeta.md "Zeta page" v5; rb "$M12" U-006
 OUT="$(depat "$M12")"
 [ "$(qr "$OUT" | grep -c "('U-002', 'binding_conflict', 'U-001')")" = 1 ] && [ "$(J "$OUT" 'd["deferred"]')" = "{}" ] \
   && ok "m8a: a CONFLICT on a path only a quarantined ancestor would create is not deferred" || bad "m8a: $OUT"
-[ "$(J "$OUT" '"U-006" in d["in_scope"]')" = "True" ] && [ -f "$(MV "$M12")/bolts/U-006/review-tier.json" ] && ok "m8b: an in-scope bolted unit's review-tier.json is never retired" || bad "m8b: $OUT"
+[ "$(J "$OUT" '"U-006" in d["in_scope"]')" = "True" ] && ok "m8b: a bolted, re-bound unit stays in scope" || bad "m8b: $OUT"
 # m10: a skipped task re-bind — the unit landed on a tree where its bound claim no longer held, no bind saw that tree (I3)
 M14="$T/m14"; MK "$M14"; mkunit "$(MV "$M14")" U-006 "Drop config" lib/config.js "depends_on: []" "" create delete
 mkunit "$(MV "$M14")" U-007 "Use config" docs/u7.md "depends_on: []" "$(claim U-007 | sed 's|lib/legacy.js|lib/config.js|')"; seed "$M14"; rb "$M14" U-006,U-007
@@ -548,7 +545,7 @@ grep -q -- '--inline' "$SK" && grep -qF 'references/inline-run.md' "$SK" && [ "$
   && ok "h3: SKILL.md: inline (pointer), --agents retired in one line (3.9 runs on every run), --inline a no-op alias, <= 500 lines, the announce tag kept" || bad "h3: SKILL.md wiring"
 [ -f "$IR" ] && [ "$(wc -l < "$IR")" -le 130 ] && grep -qE '^[[:space:]]*mega-sdd-trace:execute-bolts[[:space:]]*$' "$IR" && ok "h4: inline-run.md <= 130 lines, the review template's trace line on its own line" || bad "h4: inline-run.md $(wc -l < "$IR" 2>/dev/null) lines"
 for s in 'derive-exec-plan.sh --cwd=<root> --vault=<vault> --pending' 'rebind-units.sh' '--conflict-bypass-scan' 'delivery-check.sh' '_inline-ledger' 'superpowers:executing-plans' \
-         'resolve-oq --binding' '--panel-scan' 'run-full-suite.sh --cwd=<root> --base=<run_base>' 'comma-join' 'hard_rule_violated' 'l0-results' 'acceptance_expects_missing' \
+         'resolve-oq --binding' 'run-full-suite.sh --cwd=<root> --base=<run_base>' 'comma-join' 'hard_rule_violated' 'l0-results' 'acceptance_expects_missing' \
          'write-unit-quarantine.sh' '`--dry-run`' '`--force`' '`--no-full-suite`' 'Resume' 'chore(sdd): evidence' 'empty commit range' 'Threat model' 'evasion' \
          '--retire' 'own_wip' 'rebind_skipped' '--rebind-wip' 'Close: reviewed' '--max-retries' 'detect-drift'; do
   grep -qF -- "$s" "$IR" && ok "h5: inline-run.md names: $s" || bad "h5: inline-run.md lacks: $s"
