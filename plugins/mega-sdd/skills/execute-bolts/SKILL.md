@@ -1,14 +1,14 @@
 ---
 name: execute-bolts
-version: 3.2.0
-description: Executes units into code commits (bolts) inline with one blind review, or per-unit bolt agents + review panel (--agents), with Hard Rule pre/post-flight scans that HALT on violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
+version: 3.3.0
+description: Executes units into code commits (bolts) inline with one blind review, with Hard Rule pre/post-flight scans that HALT on violation. Use when the user says "execute bolts", "run units", "implement units", "jalanin unit", "eksekusi bolt", or paraphrases.
 ---
 
 # Execute-Bolts
 
-The terminal phase of the SDD pipeline — turns units into code. It is also an anti-hallucination gate: every unit's `## Hard rules` are validated against the real codebase before and after the bolt. **Two modes:** by default every unit runs in THIS session from a generated plan — CONFLICT gate at run start plus each task's re-bind, ONE blind review at the close (`references/inline-run.md`); `--agents` keeps the per-unit `bolt-implementer` + review-panel path (sections marked `--agents`). **Commit topology (one truth):** a unit's commit lands after its tests pass (inline: this session; `--agents`: the `bolt-implementer` subagent); the L0 gates, the review, and the post-flight Hard-rule scan run **after that commit** (detect-after). A violation therefore never claims the code is "uncommitted" — it records the failure (`postflight.json` / halt YAML), blocks further bolts via the PreToolUse gates, and the remediation is fix-forward or revert of the flagged commit.
+The terminal phase of the SDD pipeline — turns units into code. It is also an anti-hallucination gate: every unit's `## Hard rules` are validated against the real codebase before and after the bolt. Every unit runs in THIS session from a generated plan — CONFLICT gate at run start plus each task's re-bind, ONE blind review at the close (`references/inline-run.md`); sections still marked `--agents` describe the retired per-unit path (spec v9 §8.6). **Commit topology (one truth):** a unit's commit lands after its tests pass, in this session; the L0 gates, the review, and the post-flight Hard-rule scan run **after that commit** (detect-after). A violation therefore never claims the code is "uncommitted" — it records the failure (`postflight.json` / halt YAML), blocks further bolts via the PreToolUse gates, and the remediation is fix-forward or revert of the flagged commit.
 
-**Announce at start:** "I'm using the execute-bolts skill to implement units (inline by default; `--agents` = the mega-sdd bolt agents + review panel). `mega-sdd-trace:execute-bolts`"
+**Announce at start:** "I'm using the execute-bolts skill to implement units inline, in this session. `mega-sdd-trace:execute-bolts`"
 
 > **Instruction language:** this skill reasons in English. Code, commit messages, and provenance trailers are emitted verbatim against the codebase.
 
@@ -25,8 +25,8 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
 - **Flags:**
   - `--parallel` (`--agents` only) — the main-thread controller dispatches independent units concurrently, each still running the review panel; **wave width is capped at `config.yaml parallel_max:` (default 4)** (CC's 20-subagent default × an ~80-turn implementer is a token/fleet hazard). **On `--all --agents` this is the DEFAULT** (spec 2026-08-29 Fase 2 — a 30-unit vault whose DAG is 10 deep costs 30 bolt-times sequentially and 10 wave-times in sprints; measured `parallelism_speedup: 3.0`); the flag DEFAULT stays off for standalone non-`--all` invocations, where it is what forces waves on a multi-unit filter. The **Overlap rail** (intersecting `target_files` serialize), depth-1 discipline, wave-plan consumption, and per-unit gate ranges are owned by `references/batch-and-fanout.md §--all` — load it before any parallel dispatch.
   - `--sequential` — opt OUT of wave execution on `--all --agents`: one unit at a time in topological order. Use when the project's test suite is not concurrency-safe (shared test DB / fixtures / caches) and `--worktree` is not an option. Mutually exclusive with `--parallel`; passing both is a usage error.
-  - `--agents` — the per-unit path (spec `docs/superpowers/specs/2026-09-27-v9-simplification-design.md` §8.5): each unit dispatched to `mega-sdd:bolt-implementer` + the risk-tiered review panel, the CONFLICT gate at each dispatch (§Procedure). Without it the run is inline and the dispatch-shaping flags here do nothing (`references/inline-run.md` (a) maps each flag).
-  - `--inline` — accepted no-op alias of the default (the front door, orchestrate-flow and older docs pass it); with `--agents` it is a usage error.
+  - `--agents` — retired; say once `--agents is retired: the per-unit agent path was removed (spec v9 §8.6); running the default inline run.` and run inline (the dispatch-shaping flags here do nothing; `references/inline-run.md` (a) maps each flag).
+  - `--inline` — accepted no-op alias of the default (the front door, orchestrate-flow and older docs pass it).
   - `--sprint=<n>` — execute ONE sprint (one topological wave, 1-indexed) and stop. Prerequisite: every unit in sprints `1..n-1` is complete; otherwise **halt `sprint_blocked_by`**. The sprint numbering is `analyze-parallelism.sh --format=json` `waves[]` — never hand-numbered.
   - `--sprint-checkpoint` — hold at every sprint boundary for human review instead of rolling into the next wave. Prints the sprint summary (units landed, advisory findings, gate results, elapsed) and waits. Off by default. Under `--auto` (non-interactive by contract) it does NOT wait — it emits the sprint summary into the handoff YAML at each boundary (`sprints[]`) and continues; a checkpoint that silently evaporates would be worse than none.
   - `--worktree` — isolate each bolt in a git worktree.

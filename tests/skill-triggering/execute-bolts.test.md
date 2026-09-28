@@ -18,15 +18,15 @@
 
 ### P1: No superpowers installed (v7.4.0 — no vendored fallback exists)
 - **Setup:** uninstall superpowers
-- **Expect:** the default run uses the built-in inline loop (`references/inline-run.md` (c)); under `--agents` dispatch proceeds on the first-class agents; NO halt, NO install demand
+- **Expect:** the run uses the built-in inline loop (`references/inline-run.md` (c)); NO halt, NO install demand
 
 ### P2: Superpowers installed
 - **Setup:** real install present
-- **Expect:** implementer may use its technique skills; dispatch path unchanged (first-class agents)
+- **Expect:** the run invokes `superpowers:executing-plans` with the plan path (`references/inline-run.md` (c)); no agent dispatch
 
 ## Behavior
 
-Mode: the default run is inline (BI1, BI2, BI4); BI3, BJ1, BH0, BH4–BH8, AC1–AC4 and EB-SK* exercise the per-unit path and run with `--agents` (dispatch-shaping flags do nothing without it).
+Mode: every run is inline (BI1, BI2, BI4, BH6); `--agents` is retired (BI3); BJ1, BH0, AC1–AC4 and EB-SK* describe the retired per-unit path and leave with its sections (spec v9 §8.6).
 
 ### BJ1: JIT bind at pre-flight 3.9 (`--agents`) — the CONFLICT gate closes per unit
 - **Setup:** a wave of U-003 + U-004 (U-005 `depends_on: [U-004]`); U-004's `## Claims` expects `POST /api/orders` to use Bearer auth, the code uses session cookies
@@ -50,9 +50,9 @@ Mode: the default run is inline (BI1, BI2, BI4); BI3, BJ1, BH0, BH4–BH8, AC1�
 - **Setup:** as BI1, the model commits U-003 anyway, then re-binds it (the commit created the file the CONFLICT claimed)
 - **Expect:** the run-boundary gate FAILS `closed_conflict` for U-003 (and U-004 via U-003 if committed); the result is never reported done; the remedy offered is `resolve-oq --binding` (the human decides the closed episode) — never another re-bind
 
-### BI3: `--agents` keeps the per-unit path
-- **Prompt:** `/mega-sdd --guarded --agents` (forwarded as `execute-bolts --all --lite --agents`)
-- **Expect:** pre-flight 3.9 JIT bind per wave, one `bolt-implementer` dispatch per unit + the risk-tiered review panel (BJ1, BH0 apply); no `_exec-plan-*.md` is written. `--agents --inline` together → a one-line usage error, nothing runs
+### BI3: `--agents` is retired
+- **Prompt:** `/mega-sdd --guarded --agents`; `/mega-sdd:execute-bolts --all --agents`
+- **Expect:** one line, once: `--agents is retired: the per-unit agent path was removed (spec v9 §8.6); running the default inline run.` — then the BI1 inline run (`_exec-plan-*.md`, no `bolt-implementer` dispatch, no panel); `--agents --inline` together is no error
 
 ### BI4: the close re-binds a leftover own_wip CONFLICT
 - **Setup:** a resumed run: U-011's own test file was untracked with its provenance header at the task's re-bind (CONFLICT `own_wip`); the unit then committed and finished its evidence
@@ -76,19 +76,6 @@ Mode: the default run is inline (BI1, BI2, BI4); BI3, BJ1, BH0, BH4–BH8, AC1�
 - **Prompt:** `/mega-sdd:execute-bolts U-001 --dry-run`
 - **Expect:** procedure walks; no `git commit` calls; bolt-report still written marked status=preview
 
-### BH4 (v1.1+): --per-squad requires multi-squad config
-- **Setup:** vault has no `_meta/squads.yaml`
-- **Prompt:** `/mega-sdd:execute-bolts --per-squad`
-- **Expect:** halt with informative message: `--per-squad` requires ≥2 squads in `_meta/squads.yaml` (a migrated multi-squad vault — `plan` never authors one); suggest plain `execute-bolts --all`
-
-### BH5 (v1.1+): --per-squad runs every squad from the main thread
-- **Setup:** migrated vault with 3 declared squads, units assigned across squads (e.g., 4 BE + 3 FE + 2 integrations)
-- **Prompt:** `/mega-sdd:execute-bolts --per-squad`
-- **Expect:**
-  - NO squad-level subagent: the controller stays in the main thread and walks each squad's units through the per-unit panel flow directly (depth-1 — `references/batch-and-fanout.md §--per-squad` + `references/squad-subagent.md`); only `bolt-implementer` / review-lens agents are dispatched, one per unit / lens
-  - Independent units from different squads dispatch concurrently, bounded by `parallel_max`
-  - The controller consolidates the report into a per-squad table after all units complete (N squads, M units, K commits, halts with squad attribution)
-
 ### BH6 (v1.1+): --squad=<id> filters and runs single squad
 - **Setup:** vault with 3 squads; user runs on their FE laptop
 - **Prompt:** `/mega-sdd:execute-bolts --squad=squad-fe-web`
@@ -98,11 +85,6 @@ Mode: the default run is inline (BI1, BI2, BI4); BI3, BJ1, BH0, BH4–BH8, AC1�
 - **Setup:** FE unit U-FE-002 declares `consumes_interfaces: [api-x]`; `interfaces/api-x.md` has `status: draft`
 - **Prompt:** `/mega-sdd:execute-bolts --squad=squad-fe-web`
 - **Expect:** halt with `cross_squad_interface_draft` blocker; next_action names producer squad
-
-### BH8 (v1.1+): --per-squad combined with --parallel
-- **Setup:** vault with 2 squads; each has internally independent units
-- **Prompt:** `/mega-sdd:execute-bolts --per-squad --parallel`
-- **Expect:** still no squad-level subagent — the main-thread loop dispatches independent units (across BOTH squads) concurrently as `bolt-implementer` agents in one message, bounded by `parallel_max` (independent = no `depends_on` edge AND pairwise-disjoint `target_files`); no resource collision (different working sets); the report is one consolidated per-squad table
 
 ## Hard Rule pre-flight + post-flight (v1.2+, Iter 3)
 

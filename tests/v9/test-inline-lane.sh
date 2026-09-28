@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-inline-lane.sh — P2 lean inline execution (spec docs/superpowers/specs/2026-09-27-v9-simplification-design.md
-# §8): `execute-bolts` (inline by default since §8.5; `--agents` keeps the per-unit path) runs units in ONE context; the CONFLICT gate runs at run start (derive-exec-plan.sh,
+# §8): `execute-bolts` (inline since §8.5; `--agents` retired, §8.6) runs units in ONE context; the CONFLICT gate runs at run start (derive-exec-plan.sh,
 # which resumes an open run until --retire) plus a re-bind at each task; the run-boundary gate `conflict_bypassed`
 # (validate-bolt-artifacts.sh --conflict-bypass-scan) catches an honest controller's slip — a unit committed past an
 # open CONFLICT, a quarantine (its own or a depends_on ancestor's) or a skipped re-bind, judged by the state it landed
@@ -535,6 +535,7 @@ else
 fi
 
 # ── h: wiring + docs ─────────────────────────────────────────────────────────
+RETIRED='--agents is retired: the per-unit agent path was removed (spec v9 §8.6); running the default inline run.'
 SK="$P/skills/execute-bolts/SKILL.md"; IR="$P/skills/execute-bolts/references/inline-run.md"; SPEC="$ROOT/docs/superpowers/specs/2026-09-27-v9-simplification-design.md"
 grep -E -- '--orphan-scan --batch-suite-gate' "$P/hooks/stop" | grep -q -- '--conflict-bypass-scan' && grep -E 'validate-bolt-artifacts\.sh.*--orphan-scan' "$P/hooks/pre-tool-use" | grep -q -- '--conflict-bypass-scan' \
   && ok "h1: the Stop hook and the execute-bolts gate compose --conflict-bypass-scan" || bad "h1: not wired"
@@ -548,8 +549,9 @@ assert all(r"\.bolt-conflict-bypass-state\.json|" in s for s in lists) and all('
 assert "_run.json" not in t and "PROTECTED_DIR" not in t
 PY
 grep -q -- '--inline' "$SK" && grep -qF 'references/inline-run.md' "$SK" && [ "$(wc -l < "$SK")" -le 500 ] && grep -qE 'Announce at start.*`mega-sdd-trace:execute-bolts`' "$SK" \
-  && grep -E '^3\.9\. ' "$SK" | grep -qF 'this step under `--agents`' && grep -qE '^  - `--agents` — the per-unit path' "$SK" && grep -qE '^  - `--inline` — accepted no-op alias of the default' "$SK" \
-  && ok "h3: SKILL.md: inline by default (pointer), --agents keeps the per-unit path (3.9 is --agents only), --inline a no-op alias, <= 500 lines, the announce tag kept" || bad "h3: SKILL.md wiring"
+  && grep -E '^3\.9\. ' "$SK" | grep -qF 'this step under `--agents`' && grep -E '^  - `--agents` — retired' "$SK" | grep -qF -- "$RETIRED" \
+  && grep -qE '^  - `--inline` — accepted no-op alias of the default' "$SK" && ! grep -E '^  - `--inline`' "$SK" | grep -q 'usage error' \
+  && ok "h3: SKILL.md: inline (pointer), --agents retired in one line (3.9 still --agents only), --inline a no-op alias, <= 500 lines, the announce tag kept" || bad "h3: SKILL.md wiring"
 [ -f "$IR" ] && [ "$(wc -l < "$IR")" -le 130 ] && grep -qE '^[[:space:]]*mega-sdd-trace:execute-bolts[[:space:]]*$' "$IR" && ok "h4: inline-run.md <= 130 lines, the review template's trace line on its own line" || bad "h4: inline-run.md $(wc -l < "$IR" 2>/dev/null) lines"
 for s in 'derive-exec-plan.sh --cwd=<root> --vault=<vault> --pending' 'rebind-units.sh' '--conflict-bypass-scan' 'delivery-check.sh' '_inline-ledger' 'superpowers:executing-plans' \
          'resolve-oq --binding' '--panel-scan' 'run-full-suite.sh --cwd=<root> --base=<run_base>' 'comma-join' 'hard_rule_violated' 'l0-results' 'acceptance_expects_missing' \
@@ -560,15 +562,15 @@ done
 ld="$(grep -n 'delivery-check.sh' "$IR" | tail -1 | cut -d: -f1)"; lg="$(grep -n -- '--conflict-bypass-scan' "$IR" | tail -1 | cut -d: -f1)"
 [ -n "$ld" ] && [ -n "$lg" ] && [ "$ld" -lt "$lg" ] && ok "h6: delivery-check runs before the run-boundary gate" || bad "h6: delivery-check $ld, gate $lg"
 grep -q -- '--inline' <(sed -n 's/^argument-hint: //p' "$P/commands/mega-sdd.md") && grep -q 'execute-bolts --all --lite --inline' "$P/commands/mega-sdd.md" \
-  && grep -q -- '--inline' "$P/skills/orchestrate-flow/SKILL.md" && [ "$(sed -n 's/^version: //p' "$P/skills/orchestrate-flow/SKILL.md")" != "3.0.1" ] \
-  && grep -q -- '--agents' <(sed -n 's/^argument-hint: //p' "$P/commands/mega-sdd.md") && grep -q 'execute-bolts --all --lite --agents' "$P/commands/mega-sdd.md" \
-  && grep -q 'execute-bolts --all --lite --agents' "$P/skills/orchestrate-flow/SKILL.md" \
-  && ok "h7: the front door and orchestrate-flow forward --agents and the --inline alias (version bumped)" || bad "h7: --agents / --inline forwarding"
+  && grep -q -- '--inline' "$P/skills/orchestrate-flow/SKILL.md" && [ "$(sed -n 's/^version: //p' "$P/skills/orchestrate-flow/SKILL.md")" != "3.1.0" ] \
+  && ! grep -qE -- '--agents|--no-escalate|<tier>\|' <(sed -n 's/^argument-hint: //p' "$P/commands/mega-sdd.md") && ! grep -q 'execute-bolts --all --lite --agents' "$P/commands/mega-sdd.md" "$P/skills/orchestrate-flow/SKILL.md" \
+  && grep -qF -- "$RETIRED" "$P/commands/mega-sdd.md" && grep -qF -- "$RETIRED" "$P/skills/orchestrate-flow/SKILL.md" \
+  && ok "h7: the front door and orchestrate-flow retire --agents in one line and forward the --inline alias (version bumped)" || bad "h7: --agents retirement / --inline forwarding"
 grep -F '**Step 0 — pick the lane FIRST' "$P/commands/mega-sdd.md" | grep -qF -- '`--inline`, `--agents`) imply `--guarded`' && grep -qF -- '`--agents` imply guarded' "$P/references/direct-lane.md" \
-  && grep -F -- '`--model-tier=' "$P/commands/mega-sdd.md" | grep -qF 'only with `--agents`' \
-  && ok "h7b: Step 0 routes --agents to guarded (front door + direct-lane); --model-tier/--no-escalate are scoped to --agents" || bad "h7b: --agents lane/forwarding scope"
+  && grep -F -- '`--model-tier=<role>:<tier>`' "$P/commands/mega-sdd.md" | grep -qF -- '--model-tier=<tier> and --no-escalate are retired (no implementer is dispatched); --model-tier=<role>:<tier> still sets extract-intelligence tiers.' \
+  && ok "h7b: Step 0 routes --agents to guarded (front door + direct-lane); --model-tier=<role>:<tier> kept, bare <tier>/--no-escalate retired in one line" || bad "h7b: --agents lane / --model-tier scope"
 grep -qE 'guarded-inline\)[[:space:]]*KIND=megasdd; FLAGS="--guarded --inline"' "$ROOT/benchmarks/scripts/vanilla-ab-batch.sh" \
-  && grep -qE 'guarded-agents\)[[:space:]]*KIND=megasdd; FLAGS="--guarded --agents"' "$ROOT/benchmarks/scripts/vanilla-ab-batch.sh" && ok "h8: benchmark arms guarded-agents + the guarded-inline alias" || bad "h8: arms"
+  && ! grep -q 'guarded-agents' "$ROOT/benchmarks/scripts/vanilla-ab-batch.sh" && ok "h8: the guarded-inline alias arm; no guarded-agents arm" || bad "h8: arms"
 python3 - "$P/CLAUDE.md" "$SPEC" "$IR" <<'PYH' && ok "h9: CLAUDE.md (invariant #2 dated exception), spec §8.2 and inline-run (e) state the threat model" || bad "h9: contract/threat-model wording"
 import re, sys
 t, spec, ir = (open(p).read() for p in sys.argv[1:4])

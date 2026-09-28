@@ -37,7 +37,7 @@ orchestrate-flow runs the **guarded** lane — ONE pipeline, `plan` → `execute
 
 ### R6: Units exist, no bolts
 - **State:** units/U-001.md etc., no bolts/
-- **Expect:** Propose `execute-bolts --all --lite` (the default inline run, spec v9 §8.5; with `--agents` the hop is `execute-bolts --all --lite --agents`, wave-parallel by default per `docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2a)
+- **Expect:** Propose `execute-bolts --all --lite` (the inline run, spec v9 §8.5; a typed `--agents` is retired in one line and changes nothing)
 
 ### R7: Blocking OQs present
 - **State:** any state, the vault has unresolved P1 business OQs, status != deferred (the grammar has no P0 — P1 is the blocking tier)
@@ -108,15 +108,15 @@ All routing rules per routing-rules.md fire deterministically from the state eng
 - **Prompt:** `/mega-sdd:orchestrate-flow`
 - **Expect:** state snapshot includes `squad_count: 3`
 
-### MS2: Multi-squad + pending units → --per-squad only with --agents
+### MS2: Multi-squad + pending units → --all (the inline run ignores squads)
 - **Setup:** vault with 3 squads, units exist, no bolts yet
-- **Prompt:** `/mega-sdd:orchestrate-flow` (and `/mega-sdd:orchestrate-flow --agents`)
-- **Expect:** proposed chain contains `execute-bolts --all --lite` (the inline run ignores squads); with `--agents`, `execute-bolts --per-squad --agents`
+- **Prompt:** `/mega-sdd:orchestrate-flow`
+- **Expect:** proposed chain contains `execute-bolts --all --lite` (NOT `--per-squad`)
 
 ### MS3: Single-squad (squad_count=1) → existing behavior
 - **Setup:** vault has `_meta/squads.yaml` with exactly 1 squad declared
 - **Prompt:** `/mega-sdd:orchestrate-flow`
-- **Expect:** proposes `execute-bolts --all --lite` (NOT `--per-squad`, with or without `--agents`)
+- **Expect:** proposes `execute-bolts --all --lite` (NOT `--per-squad`)
 
 ### MS4: No squads.yaml → existing behavior
 - **Setup:** vault has no `_meta/squads.yaml`
@@ -152,7 +152,7 @@ All routing rules per routing-rules.md fire deterministically from the state eng
 - **Expect:** chain STOPS after plan; the blocker is surfaced verbatim; the orchestrator does NOT auto-invoke execute-bolts (and never invents a handoff for the halted hop); the user closes the gap, then `--resume`
 
 ### DC6: Halt on `status: halted`
-- **Setup:** `--deep --no-converge` chain; `execute-bolts` halts `binding_conflict` for a unit (the up-front bind; `--agents`: pre-flight 3.9)
+- **Setup:** `--deep --no-converge` chain; `execute-bolts` halts `binding_conflict` for a unit (the up-front bind)
 - **Expect:** that unit STOPS (dependents skipped with the reason); blocker YAML surfaced verbatim; user resolves via `resolve-oq --binding`
 
 ### DC7: AI technical decisions never pause the chain and never route to resolve-oq

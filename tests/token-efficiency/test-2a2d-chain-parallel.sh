@@ -58,8 +58,6 @@ n=$(grep -c -- 'execute-bolts --all --parallel' "$RR")
 [ "$n" -eq 0 ] && ok "routing-rules proposes no --all --parallel (the default run is inline, one context)" || fail "routing-rules still proposes --all --parallel on $n rows"
 [ "$(grep -cE '^\| (`units_pending_bolts`|Units exist, some not in bolts) .*`execute-bolts --all --lite`' "$RR")" -ge 3 ] \
   && ok "routing-rules: the state row, the decision matrix and the 1-phase chain propose execute-bolts --all --lite" || fail "routing-rules units-pending rows do not propose --all --lite"
-grep -q -- 'already parallel by procedure' "$RR" && grep -F 'already parallel by procedure' "$RR" | grep -qF -- '`--agents`' \
-  && ok "the --per-squad leg is documented as --agents only, parallel by procedure (no flag needed)" || fail "per-squad --agents note missing"
 # 9.0: the classic example row ('execute-bolts --all --parallel → bolts/') left
 # with the classic chain; the one pipeline's example is the wave-default --all
 # batch and must not opt out of waves.
