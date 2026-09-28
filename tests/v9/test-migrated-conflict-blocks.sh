@@ -114,10 +114,11 @@ for U in "" U-001 all; do
   esac
 done
 val "$A" >/dev/null; case "$(summ "$A")" in *conflict_migrated_rebound*) bad "a4: the advisory downgrade conflict_migrated_rebound is still emitted" ;; *) ok "a4: no advisory downgrade (conflict_migrated_rebound) — the block stays a drop" ;; esac
-# a5: the enforcement point itself — the PreToolUse hook denies U-001's bolt-implementer dispatch
-AP="mega-sdd-trace:execute-bolts:U-001\\nUNIT: U-001 \\\"Product model\\\"\\nREAD FIRST, IN FULL: $A/.mega-sdd/vaults/leave/bolts/U-001/dispatch-prompt.md"
-O="$(printf '{"session_id":"sess-mig-0001","cwd":"%s","tool_name":"Agent","tool_input":{"subagent_type":"mega-sdd:bolt-implementer","description":"bolt","prompt":"%s"}}' "$A" "$AP" | ( cd "$A" && bash "$PLUGIN/hooks/pre-tool-use" 2>/dev/null ))"
-case "$O" in *'"permissionDecision": "deny"'*binding_missing*) ok "a5: the PreToolUse hook DENIES U-001's bolt-implementer dispatch (binding_missing)" ;; *) bad "a5: hook did not deny on binding_missing: $(echo "$O" | head -c 400)" ;; esac
+# a5: the enforcement point itself — the PreToolUse hook denies the execute-bolts Skill entry (the
+# per-unit Agent leg was removed in P3, spec v9 §8.6); the gate re-derives the blocker file (removed first) naming CONFLICT-1
+rm -f "$A/.mega-sdd/.validation-blockers.json"
+O="$(printf '{"session_id":"sess-mig-0001","cwd":"%s","tool_name":"Skill","tool_input":{"skill":"mega-sdd:execute-bolts","args":"--all --lite"}}' "$A" | ( cd "$A" && bash "$PLUGIN/hooks/pre-tool-use" 2>/dev/null ))"
+case "$O|$(summ "$A")" in *'"permissionDecision": "deny"'*binding_missing*"|FAIL|"*"binding_missing:"*"CONFLICT-1"*) ok "a5: the PreToolUse hook DENIES the execute-bolts Skill entry (binding_missing, CONFLICT-1)" ;; *) bad "a5: hook did not deny on binding_missing: $(echo "$O" | head -c 400) | $(summ "$A")" ;; esac
 
 # ── b: migrated, never re-bound ──
 B="$T/b"; mkproj "$B" "$UNRESOLVED"; migrate "$B"

@@ -61,7 +61,7 @@ The probes (10 core + the P2 foreign-SDD adoption probe) and where each lands:
 
 ## Decision matrix
 
-**One pipeline.** GROUND (`scripts/ground.sh`: `derive-state.sh` + `build-symbol-index.sh` + pack resolve) runs at the front door, and no chain has a scan or bind hop: binding is the per-unit JIT bind in `execute-bolts` (`write-unit-binding.sh` → `bolts/U-XXX/binding.json`; run start + each task, or per dispatch under `--agents`), and the CONFLICT gate closes before the unit is built. `--classic`, `spine: classic` and `lane: standard` are retired: say so in one line, then ignore them.
+**One pipeline.** GROUND (`scripts/ground.sh`: `derive-state.sh` + `build-symbol-index.sh` + pack resolve) runs at the front door, and no chain has a scan or bind hop: binding is the per-unit JIT bind in `execute-bolts` (`write-unit-binding.sh` → `bolts/U-XXX/binding.json`; run start + each task), and the CONFLICT gate closes before the unit is built. `--classic`, `spine: classic` and `lane: standard` are retired: say so in one line, then ignore them.
 
 ### Starterkit-first ordering
 

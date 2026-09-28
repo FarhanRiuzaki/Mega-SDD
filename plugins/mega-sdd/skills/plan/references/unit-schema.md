@@ -1,6 +1,6 @@
 # Unit Schema
 
-A "unit" is an atomic, AI-executable dev prompt that `plan` derives from the PRD + `context.md`. Each unit corresponds to one bolt — one PR-sized code commit. Units are the contract handed off to `execute-bolts` via the `bolt-implementer` agent.
+A "unit" is an atomic, AI-executable dev prompt that `plan` derives from the PRD + `context.md`. Each unit corresponds to one bolt — one PR-sized code commit. Units are the contract handed off to `execute-bolts`.
 
 ## Contents
 - Required frontmatter
@@ -105,7 +105,7 @@ allowed_new_deps: []               # OPTIONAL — the ALLOWLIST of new third-par
                                    # (the `validate-new-deps.sh --unit=` authorization concern) flags any dep the bolt ADDED that is
                                    # NOT in this list as `dep_unauthorized` (anti-over-engineering /
                                    # scope-creep, the WAJIB "pas" bar) — a deterministic ADVISORY finding
-                                   # fed to the panel, never a halt. `[]` = "no new deps sanctioned".
+                                   # recorded in `l0-results.json`, never a halt. `[]` = "no new deps sanctioned".
                                    # ABSENT (legacy units) → the gate is a no-op (enforced:false), never
                                    # a finding. Distinct from the `DO_NOT_ADD_DEPS` Hard rule (which BLOCKS
                                    # ALL new deps via B1); this is the graduated, advisory allowlist form.
@@ -180,7 +180,7 @@ binding_refs:                      # binding manifest IDs this unit honors
 - .mega-sdd/knowledge-base/modules/customer.prd.md §2 (if KB present; legacy numbered tree: docs/knowledge-base/10-domains/<domain>.md §5) — domain behavior to honor
 
 ## Claims  (brownfield units only; a CONTRACT about existing code, never a verdict)
-<One line per expectation about EXISTING code this unit relies on or changes. Verdicts are NEVER written here — the execute-bolts JIT bind (run start + each task; per dispatch under `--agents`; spec App. F2–F4) verifies each line and records CONFIRMED/CONFLICT/OQ in the hook-guarded `bolts/U-XXX/binding.json`. Greenfield / create-only units omit the section (their claims derive from target_files: create ⇒ must-not-exist).>
+<One line per expectation about EXISTING code this unit relies on or changes. Verdicts are NEVER written here — the execute-bolts JIT bind (run start + each task; spec App. F2–F4) verifies each line and records CONFIRMED/CONFLICT/OQ in the hook-guarded `bolts/U-XXX/binding.json`. Greenfield / create-only units omit the section (their claims derive from target_files: create ⇒ must-not-exist).>
 
 - C-U005-01 "Nasabah model has field `nip` (unique)" — expect: app/Models/Nasabah.php:Nasabah
 - C-U005-02 "no login route exists yet" — expect: routes/web.php — must-not-exist
@@ -330,7 +330,7 @@ When `plan` emits a unit with `consumes_interfaces: [api-leave-request-submit]`:
 
 ## Dependency graph
 
-`depends_on` builds a DAG. `plan` rejects cycles. `execute-bolts` topologically sorts the graph; independent units may run in parallel via `execute-bolts --parallel` (wave-parallel `bolt-implementer` dispatch).
+`depends_on` builds a DAG. `plan` rejects cycles. `execute-bolts` topologically sorts the graph and runs the units in that order, in one context.
 
 ## ID stability
 

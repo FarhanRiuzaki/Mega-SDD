@@ -1,6 +1,6 @@
 # execute-bolts — Hard Rule pre/post-flight scan
 
-The anti-hallucination gate. Each unit's `## Hard rules` are validated against real codebase state **before** the bolt (pre-flight snapshot) and **after** the bolt (post-flight scan); any post-flight violation **HALTS the run**. Commit topology (detect-after — one truth, per SKILL.md): the `bolt-implementer` commits after its tests pass, so the post-flight scan runs against an already-committed bolt; a violation gates every further `execute-bolts` (B1) and the remediation is fix-forward or revert of the flagged commit — never a claim that the code is uncommitted. The skill body owns the gate's existence + trigger; this file owns the grammar, snapshot formats, and per-rule mechanics.
+The anti-hallucination gate. Each unit's `## Hard rules` are validated against real codebase state **before** the bolt (pre-flight snapshot) and **after** the bolt (post-flight scan); any post-flight violation **HALTS the run**. Commit topology (detect-after — one truth, per SKILL.md): the unit's bolt commits after its tests pass, so the post-flight scan runs against an already-committed bolt; a violation gates every further `execute-bolts` (B1) and the remediation is fix-forward or revert of the flagged commit — never a claim that the code is uncommitted. The skill body owns the gate's existence + trigger; this file owns the grammar, snapshot formats, and per-rule mechanics.
 
 ## Contents
 - Pre-flight: grammar detection

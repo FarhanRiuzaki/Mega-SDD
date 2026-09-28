@@ -112,7 +112,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### anchor_missing
 
-- `anchor_missing` — execute-bolts (pre-flight, `check-anchor-freshness.sh`): a `## Anchors` entry `file:line` no longer resolves — the file is not git-tracked (deleted/renamed) or the line is past the end of the file. ALWAYS STOP before dispatch (commit-keyed: a unit whose bolts already committed gets an advisory WARN only, never a retro-block). Keterangan: anchor unit menunjuk file/baris yang sudah tidak ada — bolt-implementer akan membaca evidence yang salah; refresh anchors via `/mega-sdd:sync` atau bind ulang, ATAU perbaiki baris `## Anchors` unit ke path:line yang benar, lalu jalankan ulang execute-bolts.
+- `anchor_missing` — execute-bolts (pre-flight, `check-anchor-freshness.sh`): a `## Anchors` entry `file:line` no longer resolves — the file is not git-tracked (deleted/renamed) or the line is past the end of the file. ALWAYS STOP before the unit is built (commit-keyed: a unit whose bolts already committed gets an advisory WARN only, never a retro-block). Keterangan: anchor unit menunjuk file/baris yang sudah tidak ada — sesi implementasi akan membaca evidence yang salah; refresh anchors via `/mega-sdd:sync` atau bind ulang, ATAU perbaiki baris `## Anchors` unit ke path:line yang benar, lalu jalankan ulang execute-bolts.
 
 ### whitelist_violation
 
@@ -148,4 +148,4 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### ambiguous_spec
 
-- `ambiguous_spec` — execute-bolts, emitted by the `bolt-implementer` subagent: the unit spec admits more than one reading and the agent will not guess (no-fabrication rail). ALWAYS STOP (pure-pause — human interpretation call; propose-and-confirm does not apply). Resolution: clarify the unit (`## Requirements` / `## Implementation steps`), re-dispatch. Recovery menu: `execute-bolts/references/halt-recovery.md`. (Registered 7.29.1.)
+- `ambiguous_spec` — execute-bolts, emitted by the implementing session: the unit spec admits more than one reading and it will not guess (no-fabrication rail). ALWAYS STOP (pure-pause — human interpretation call; propose-and-confirm does not apply). Resolution: clarify the unit (`## Requirements` / `## Implementation steps`), re-run. Recovery menu: `execute-bolts/references/halt-recovery.md`. (Registered 7.29.1.)

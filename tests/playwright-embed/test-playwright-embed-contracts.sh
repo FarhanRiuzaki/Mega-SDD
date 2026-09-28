@@ -87,7 +87,9 @@ n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
 # 9.0 §8.5 re-baseline (RECORDED — research/2026-09-28-p2-inline-results.md; execute-bolts inline by default): the
 # Hard-gate line states the run-start quarantine (JIT bind up front + per task) and scopes the dispatch gate to
 # `--agents`. That line is the ONLY change above the marker: 3952 → 3988 (+36 B, under the 4030 cap).
-[ "$n" -eq 3988 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3988, 9.0 §8.5: Hard-gate line states the inline run-start gate — spec 2026-09-27-v9-simplification-design.md; under the 4030 cap)"
+# P3 C6b re-baseline (RECORDED — spec v9 §8.6, plan research/2026-09-28-p3-deletion-plan.md R15): the per-dispatch
+# path is removed, so the Hard-gate line drops its `--agents` aside. The ONLY change above the marker: 3988 → 3963 (−25 B).
+[ "$n" -eq 3963 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3963, P3 C6b: Hard-gate line drops the retired --agents aside — spec 2026-09-27-v9-simplification-design.md §8.6; under the 4030 cap)"
 # C1b: the COMPACT-mode extraction ('## Hard rule' awk, session-start:150-153 —
 # no frontmatter strip) is pinned separately: a line matching /^## Hard rule/ or
 # 'ANCHOR-CORE ends' inside the frontmatter would move THIS region without
@@ -101,7 +103,8 @@ cn=$(printf '%s' "$CCORE" | wc -c | tr -d ' ')
 # 9.0 P1 re-baseline (RECORDED — same single Hard-gate line change as C1, which sits inside
 # this region too): 1619 → 1589 (−30 B, identical delta to C1).
 # 9.0 §8.5 re-baseline (RECORDED — same single Hard-gate line change as C1): 1589 → 1625 (+36 B, identical delta).
-[ "$cn" -eq 1625 ] && ok "C1b compact-core byte length unchanged ($cn)" || fail "C1b compact core changed: $cn bytes (baseline 1625, 9.0 §8.5 Hard-gate line states the inline run-start gate)"
+# P3 C6b re-baseline (RECORDED — same single Hard-gate line change as C1): 1625 → 1600 (−25 B, identical delta).
+[ "$cn" -eq 1600 ] && ok "C1b compact-core byte length unchanged ($cn)" || fail "C1b compact core changed: $cn bytes (baseline 1600, P3 C6b Hard-gate line drops the retired --agents aside)"
 # C2: no slice mention above the marker (both variants)
 printf '%s' "$CORE" | grep -qi "slice" && fail "C2 'slice' leaked into the anchor core" || ok "C2 anchor core slice-free"
 printf '%s' "$CCORE" | grep -qi "slice" && fail "C2b 'slice' leaked into the compact core" || ok "C2b compact core slice-free"
@@ -119,12 +122,12 @@ grep -qE '^  - id: *playwright' "$P/skills/install-deps/references/tool-matrix.y
   || ok "D4 no playwright tool-matrix row"
 
 echo "── E: context7 consult wiring (6.9.0) ──"
-BI="$P/agents/bolt-implementer.md"
-# E1: the remaining code-emitting surface carries the optional consult guidance
-# (E2/E3b retired v7.4.0 — slice-procedure died with the slice-design skill)
-grep -qi "context7" "$BI" && ok "E1 bolt-implementer carries the Context7 consult guidance" || fail "E1 bolt-implementer guidance missing"
+SP="$ROOT/plugins/mega-sdd-extras/skills/slice-design/references/slice-procedure.md"
+# E1: the remaining code-emitting surface carries the optional consult guidance (P3 C6b: the
+# bolt-implementer agent is deleted, spec v9 §8.6 G1 — the extras slice procedure is the surviving surface)
+grep -qi "context7" "$SP" && ok "E1 extras slice-procedure carries the Context7 consult guidance" || fail "E1 slice-procedure guidance missing"
 # E3: the guidance is non-gating
-grep -qF "never load-bearing" "$BI" && ok "E3 bolt-implementer guidance is non-gating (never load-bearing)" || fail "E3 non-gating wording missing"
+grep -qF "never load-bearing" "$SP" && ok "E3 slice-procedure guidance is non-gating (never load-bearing)" || fail "E3 non-gating wording missing"
 
 echo
 echo "playwright-embed contracts: $PASS ok, $FAIL fail"

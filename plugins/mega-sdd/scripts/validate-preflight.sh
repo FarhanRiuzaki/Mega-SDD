@@ -769,7 +769,7 @@ def _coverage_rail_vaults():
     """Every canonical plan-born vault carrying units: context.md present,
     `_meta/archive/layout2/` absent (a migrated vault is exempt, spec §7 #12; a
     layout-2/legacy vault has no census). No dispatch arg narrows it: execute-bolts
-    has no --vault flag and the in-run bolt-implementer gate carries no args."""
+    has no --vault flag."""
     import prd_headings
     return prd_headings.plan_vaults(cwd)
 

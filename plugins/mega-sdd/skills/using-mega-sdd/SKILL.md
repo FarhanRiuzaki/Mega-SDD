@@ -32,7 +32,7 @@ A `.mega-sdd/` dir in the CWD is a STATUS signal only (the session-start state b
 
 **Gateway marker:** announce lines end with `` `mega-sdd-trace:<skill>` ``; every subagent dispatch prompt carries one `mega-sdd-trace:<skill>` line. Verbatim, no variants (docs/gateway-contract.md).
 
-**Hard gate:** an unresolved CONFLICT in `bolts/U-XXX/binding.json` (JIT bind, up front + per task) quarantines the unit at `execute-bolts` run start (`--agents`: at dispatch; `binding_conflict`) until `resolve-oq --binding` settles it.
+**Hard gate:** an unresolved CONFLICT in `bolts/U-XXX/binding.json` (JIT bind, up front + per task) quarantines the unit at `execute-bolts` run start (`binding_conflict`) until `resolve-oq --binding` settles it.
 
 ## Output language
 
@@ -72,7 +72,7 @@ Maintenance lane (never-ending development): when the code moved outside the pip
 Multi-PRD lane (a project that grows PRD-by-PRD — PRD 1 ships, PRD 2 adds an epic, doc can be PRD/BRD/Figma/brief): route a NEW doc by what changed, never guess (full contract → `plugins/mega-sdd/references/multi-prd-lifecycle.md`):
 - Same source **revised** (PRD v1 → v1.1) → `diff-vault` (one vault evolves; history preserved).
 - **Ticket-scale chat delta** to an owned vault ("tambah kolom X di form Y" — no doc) → the delta lane: `diff-vault --from-prompt` (scoped patch → `rebind-units.sh` (units whose target_files/Anchors hit the patch) → `plan --reconcile`; the `delta_too_large` cap forces an epic-in-disguise to the next row).
-- **New epic** on top of shipped work → **new vault** via `plan <new-prd>` (`implementation_mode: existing`, so task typing queries the symbol index; a claim that contradicts the project constitution becomes a `[P1] [business]` OQ in plan's batched ask) — `execute-bolts`' JIT bind per unit (`bolts/U-XXX/binding.json`) catches contradictions with shipped PRD-1 code at dispatch (CONFLICT gate).
+- **New epic** on top of shipped work → **new vault** via `plan <new-prd>` (`implementation_mode: existing`, so task typing queries the symbol index; a claim that contradicts the project constitution becomes a `[P1] [business]` OQ in plan's batched ask) — `execute-bolts`' JIT bind per unit (`bolts/U-XXX/binding.json`) catches contradictions with shipped PRD-1 code at run start (CONFLICT gate).
 - **Code moved** → `sync`.
 When the doc's title/scope matches an existing vault's source → revision (diff-vault); a new feature area → new vault; several owning vaults plausible → **ASK** (evolve-in-place vs new-epic diverge hard). the front-door status view (`/mega-sdd` with no argument — derive-state) lists every vault + its position so PRD N knows what shipped; `.mega-sdd/constitution.md` (project-scope, inherited by every vault) keeps PRD 2..N from contradicting PRD 1's locked decisions.
 
@@ -82,7 +82,7 @@ When the doc's title/scope matches an existing vault's source → revision (diff
 |---|---|---|
 | Legacy → knowledge-base | extract-intelligence | read-only |
 | PRD / KB → vault + units | plan | read-only (symbol-index query on brownfield; `--kb=<kb-dir>` for legacy rebuild) |
-| Per-unit bind + CONFLICT gate | execute-bolts: up front + each task's re-bind, run-start quarantine (`--agents`: pre-flight 3.9, dispatch gate) (`write-unit-binding.sh` → `bolts/U-XXX/binding.json`; `resolve-oq --binding`) | read-only |
+| Per-unit bind + CONFLICT gate | execute-bolts: up front + each task's re-bind, run-start quarantine (`write-unit-binding.sh` → `bolts/U-XXX/binding.json`; `resolve-oq --binding`) | read-only |
 | Unit → code | execute-bolts | write |
 
 ## Reference

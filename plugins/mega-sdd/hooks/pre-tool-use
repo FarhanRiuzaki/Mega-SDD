@@ -10,10 +10,6 @@
 #   2. Anti-self-bypass: agent attempts to delete/truncate/overwrite guard state
 #      files (.validation-blockers.json, .plan-pending, .replan-budget,
 #      .iter-classifier.json).
-#   3. (spec 2026-08-30 §1.1, F-09) an `Agent` dispatch of `bolt-implementer`
-#      is gated AS execute-bolts with in-run semantics — B2 stays a run-boundary
-#      gate; B1/B4/orphan issues of units legitimately in flight are dropped.
-#      Every other Agent call exits in the 0-fork fast path.
 #
 # Honest design constraint: the human user (Farhan) is not the adversary — they
 # are on the same side as the guard. The agent (Claude) is what we constrain.
@@ -45,7 +41,7 @@ IFS= read -r -d '' STDIN_JSON || true
 [ -n "$STDIN_JSON" ] || STDIN_JSON='{}'
 
 # ─── Fast negative short-circuit (pure shell, BEFORE the python3 parse) ────────
-# Speed: the matcher is global (Skill|Bash|Edit|Write|Agent — F-09 7.9.0), so EVERY such tool call in
+# Speed: the matcher is global (Skill|Bash|Edit|Write), so EVERY such tool call in
 # EVERY project hits this blocking hook — including non-mega-sdd projects, where the
 # .mega-sdd gate below simply no-ops. Resolve cwd + project root in pure shell here
 # and exit 0 BEFORE paying a python3 cold-start (~30-150ms) when there is no
@@ -102,13 +98,6 @@ if [ -n "$SC_CWD" ]; then
       SC_TOOL="${BASH_REMATCH[1]}"; SC_REST2="${BASH_REMATCH[2]}"
     done
     case "$SC_TOOL" in
-      Agent)
-        # F-09 (spec 2026-08-30 §1.1): the ONLY Agent call this hook gates is a
-        # bolt-implementer dispatch (it is gated as execute-bolts, in-run
-        # semantics). Every other Agent call in every project exits here with
-        # ZERO forks — a substring probe on the raw payload, no parse.
-        case "$STDIN_JSON" in *bolt-implementer*) : ;; *) exit 0 ;; esac
-        ;;
       Edit|Write|Bash)
         # Protected-substring pre-filter — ONE union list for ALL tools. The
         # fragments are a SUPERSET of every basename/path the FP_GUARD + Bash
@@ -287,29 +276,6 @@ if tool_name == "Skill":
     emit("SKILL_NAME", tool_input.get("skill", ""))
     args = tool_input.get("args", "") or ""
     emit("SKILL_ARGS_B64", base64.b64encode(str(args).encode()).decode())
-elif tool_name == "Agent":
-    # F-09 (spec 2026-08-30 §1.1): a bolt-implementer dispatch is gated as
-    # execute-bolts (in-run). The shell maps it below; here we only extract.
-    emit("SUBAGENT_TYPE", str(tool_input.get("subagent_type", "") or ""))
-    _pr = str(tool_input.get("prompt", "") or "")
-    _mu = (re.search(r"bolts/(U-[A-Za-z0-9_-]+)/dispatch-prompt\.md", _pr)
-           or re.search(r"(?m)^\s*UNIT:\s*(U-[A-Za-z0-9_-]+)", _pr)
-           or re.search(r"mega-sdd-trace:execute-bolts:(U-[A-Za-z0-9_-]+)", _pr))
-    emit("AGENT_UNIT", _mu.group(1) if _mu else "")
-    # state anchor (spec 2026-09-25 §8 Identity): EVERY unit marker, so the gate can
-    # deny a prompt whose pointer / UNIT: line / trace tag disagree, plus the first
-    # dispatch-prompt pointer (realpath-checked against the vaults in the aggregator)
-    # the builder prints the pointer on its own READ FIRST line as an ABSOLUTE path, which
-    # may contain spaces (~/My Projects) or backslashes (native Windows python): read that
-    # whole line first; a whitespace-free token is only the fallback
-    _pn = _pr.replace(chr(92), "/")
-    _ptrs = (re.findall(r"(?m)^[ \t]*READ FIRST, IN FULL:[ \t]*[\"`<]?(.*?bolts/(U-[A-Za-z0-9_-]+)/dispatch-prompt\.md)[\"`>]?[ \t\r]*$", _pn)
-             or re.findall(r"(\S*?bolts/(U-[A-Za-z0-9_-]+)/dispatch-prompt\.md)", _pn))
-    _ids = ([u for _, u in _ptrs] + re.findall(r"bolts/(U-[A-Za-z0-9_-]+)/dispatch-prompt\.md", _pn)
-            + re.findall(r"(?m)^\s*UNIT:\s*(U-[A-Za-z0-9_-]+)", _pr)
-            + re.findall(r"mega-sdd-trace:execute-bolts:(U-[A-Za-z0-9_-]+)", _pr))
-    emit("AGENT_UNITS_ALL", ",".join(sorted(set(_ids))))
-    emit("AGENT_POINTER", _ptrs[0][0].strip("\"`<>()") if _ptrs else "")
 elif tool_name == "Bash":
     cmd = tool_input.get("command", "")
     emit("BASH_CMD_B64", base64.b64encode(cmd.encode()).decode())
@@ -498,31 +464,9 @@ EOF
 }
 
 # ─── BRANCH 1: Skill invocation gate ─────────────────────────────────────────
-# ─── F-09: a bolt-implementer Agent dispatch IS an execute-bolts dispatch ─────
-# Spec 2026-08-30 §1.1. The matcher used to exclude `Agent` on the assumption
-# "gated phases are Skill-dispatched, never Agent-offloaded" — prose. The field
-# run (HOST-AS400, 117 commits) drove every sprint through hand dispatch and the
-# whole aggregator below evaluated ONCE. Map the dispatch onto the Skill branch
-# so it runs IDENTICALLY (arming, predictive preflight, handoff, factory ledger,
-# aggregator) with in-run semantics: B2 is a RUN-boundary gate and stays on the
-# Skill entry; B1/B4/orphan issues for units whose pipeline is legitimately in
-# flight are dropped (vault_layouts.inflight_units — one definition, shared
-# with the wave commit rail). Any other Agent call exits (the fast path already
-# did, 0-fork; this is the authoritative-path twin).
+# Reset, never inherit: an exported GATE_MODE/GATE_SUBJECT must not reach the aggregator.
 GATE_MODE="run"
 GATE_SUBJECT="mega-sdd:execute-bolts"
-if [ "${TOOL_NAME:-}" = "Agent" ]; then
-  case "${SUBAGENT_TYPE:-}" in
-    mega-sdd:bolt-implementer|bolt-implementer)
-      TOOL_NAME="Skill"
-      SKILL_NAME="mega-sdd:execute-bolts"
-      SKILL_ARGS_B64=""
-      GATE_MODE="in-run"
-      GATE_SUBJECT="bolt-implementer dispatch (gated as mega-sdd:execute-bolts, in-run)"
-      ;;
-    *) exit 0 ;;
-  esac
-fi
 
 case "${TOOL_NAME:-}" in
   Skill)

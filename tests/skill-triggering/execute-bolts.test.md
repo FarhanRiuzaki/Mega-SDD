@@ -26,16 +26,7 @@
 
 ## Behavior
 
-Mode: every run is inline (BI1, BI2, BI4, BH6); `--agents` is retired (BI3); BJ1, BH0 and EB-SK* describe the retired per-unit path and leave with its sections (spec v9 §8.6).
-
-### BJ1: JIT bind at pre-flight 3.9 (`--agents`) — the CONFLICT gate closes per unit
-- **Setup:** a wave of U-003 + U-004 (U-005 `depends_on: [U-004]`); U-004's `## Claims` expects `POST /api/orders` to use Bearer auth, the code uses session cookies
-- **Expect:**
-  - `derive-unit-claims.sh --units=U-003,U-004` (ONE call per wave) → `write-unit-binding.sh` per unit (the sole writer) → `bolts/U-003/binding.json` + `bolts/U-004/binding.json`; a wave with zero symbol/text claims is reported as costing zero model tokens
-  - `validate-handoff-binding-units.sh --units=…` drops `conflict_unresolved` for U-004 → halt `binding_conflict` (ALWAYS STOP for U-004; one-screen shape: the claim, the code reality with `file:line`, KEEP_VAULT / KEEP_CODE / SPLIT)
-  - U-003 proceeds; U-005 is skipped with the reason; no verdict is ever hand-written and `binding.json` is never edited (hook-guarded)
-  - the PreToolUse gate re-runs the validator with `--units=U-004` on any `bolt-implementer` dispatch — a hand dispatch cannot bypass it
-  - resolution via `resolve-oq --binding` (`write-unit-binding.sh --resolve=<claim-id>=<ACTION> --by=user`)
+Mode: every run is inline (BI1, BI2, BI4, BH6); the per-unit `--agents` path is retired (spec v9 §8.6).
 
 ### BI1: the default run executes every unit in this session from a generated plan
 - **Setup:** a layout-3 vault with U-001..U-004; U-003 has an open CONFLICT, U-004 `depends_on: [U-003]`
@@ -43,25 +34,17 @@ Mode: every run is inline (BI1, BI2, BI4, BH6); `--agents` is retired (BI3); BJ1
 - **Expect:**
   - the announce line ends with `mega-sdd-trace:execute-bolts`
   - `derive-exec-plan.sh --pending` → `rebind-units.sh --units=<pending>` → `derive-exec-plan.sh`: U-003 `binding_conflict`, U-004 `depends_on_quarantined` in ONE `Karantina:` chat line; the plan names U-001, U-002 only
-  - no `bolt-implementer` dispatch, no panel; each task re-binds (a CONFLICT there → `write-unit-quarantine.sh`, dependents skipped, the run continues), tests first, commits with the canonical trailers, then commits its evidence (`chore(sdd): evidence U-XXX`)
+  - no verdict is ever hand-written and `binding.json` is never edited (hook-guarded); each task re-binds (a CONFLICT there → `write-unit-quarantine.sh`, dependents skipped, the run continues), tests first, commits with the canonical trailers, then commits its evidence (`chore(sdd): evidence U-XXX`)
   - ONE blind review of `run_base..HEAD` (no `.mega-sdd/` in its package, the trace line on its own line), `delivery-check.sh` `VERDICT: PASS`, the run-boundary gate with `--conflict-bypass-scan` exits 0 before the result contract
 
 ### BI2: the inline run never launders a CONFLICT
 - **Setup:** as BI1, the model commits U-003 anyway, then re-binds it (the commit created the file the CONFLICT claimed)
-- **Expect:** the run-boundary gate FAILS `closed_conflict` for U-003 (and U-004 via U-003 if committed); the result is never reported done; the remedy offered is `resolve-oq --binding` (the human decides the closed episode) — never another re-bind
-
-### BI3: `--agents` is retired
-- **Prompt:** `/mega-sdd --guarded --agents`; `/mega-sdd:execute-bolts --all --agents`
-- **Expect:** one line, once: `--agents is retired: the per-unit agent path was removed (spec v9 §8.6); running the default inline run.` — then the BI1 inline run (`_exec-plan-*.md`, no `bolt-implementer` dispatch, no panel); `--agents --inline` together is no error
+- **Expect:** the run-boundary gate FAILS `closed_conflict` for U-003 (and U-004 via U-003 if committed); the result is never reported done; the remedy offered is `resolve-oq --binding` (the human decides the closed episode in the one-screen shape: the claim, the code reality with `file:line`, KEEP_VAULT / KEEP_CODE / SPLIT; it writes `write-unit-binding.sh --resolve=<claim-id>=<ACTION> --by=user`) — never another re-bind
 
 ### BI4: the close re-binds a leftover own_wip CONFLICT
 - **Setup:** a resumed run: U-011's own test file was untracked with its provenance header at the task's re-bind (CONFLICT `own_wip`); the unit then committed and finished its evidence
 - **Expect:** (d)6 `derive-exec-plan.sh --rebind-wip` (before the run evidence commit) prints `rebound: ["U-011"]`, U-011's binding re-reads CONFIRMED and the `chore(sdd): evidence run` commit carries it, so the (d)7 gate sees it; (d)8 `--retire` then re-binds nothing. Had that re-bind left another CONFLICT, `--rebind-wip` exits 1 (`scope: close`) naming it, a `Close: halt` ledger line keeps it named, `--retire` refuses too and nothing is retired — the human decides it via `resolve-oq --binding`; re-invoking `execute-bolts` resumes at (d)4 (`Close: reviewed`), never a second review
 - **`--dry-run`:** the plan is shown, then `--retire --dry-run` removes it and re-binds nothing
-
-### BH0: BOLTS gate deny → 3.9b (state anchor, 8.8.0)
-- **Setup:** a lite wave already bound at 3.9; before the next dispatch a teammate commit lands in U-002's anchored file
-- **Expect:** the `bolt-implementer` dispatch is DENIED `binding_stale` naming the path; the controller runs `rebind-units.sh --units=U-002` (3.9b), rebuilds `dispatch-prompt.md` with `build-dispatch-prompt.sh`, and re-dispatches — it never edits `binding.json`, never runs `git stash`, and a second deny at the same HEAD (`rebind_exhausted`) goes to quarantine, not to another 3.9b
 
 ### BH1: target_files whitelist enforced
 - **Setup:** unit has `target_files: [src/foo.ts]`; implementation step tries to edit `src/bar.ts`
@@ -79,7 +62,7 @@ Mode: every run is inline (BI1, BI2, BI4, BH6); `--agents` is retired (BI3); BJ1
 ### BH6 (v1.1+): --squad=<id> filters and runs single squad
 - **Setup:** vault with 3 squads; user runs on their FE laptop
 - **Prompt:** `/mega-sdd:execute-bolts --squad=squad-fe-web`
-- **Expect:** only units where `squad: squad-fe-web` execute; BE and integrations units skipped; bolts written only for FE units
+- **Expect:** only units where `squad: squad-fe-web` are selected (the set becomes `--units=<ids>` for the plan, `references/inline-run.md` (a)); BE and integrations units skipped; bolts written only for FE units
 
 ### BH7 (v1.1+): --squad=<id> halts on draft consumed interface
 - **Setup:** FE unit U-FE-002 declares `consumes_interfaces: [api-x]`; `interfaces/api-x.md` has `status: draft`
@@ -155,4 +138,4 @@ Mode: every run is inline (BI1, BI2, BI4, BH6); `--agents` is retired (BI3); BJ1
 
 ## Pass criteria
 
-All triggers fire, pre-flight gates behave, the JIT bind verdicts every unit by script and an open CONFLICT closes only its own unit (BJ1), whitelist + retry/halt protocol works. Hard Rule pre/post-flight (HR1-HR11) follows §4 (pre-flight) + §Post-flight Hard Rule validation. Violations NEVER silent — post-flight is detect-after (the bolt commit already landed): the run HALTS, the B1 gate blocks every further `execute-bolts` until the flagged commit is fixed-forward or reverted.
+All triggers fire, pre-flight gates behave, the JIT bind verdicts every unit by script and an open CONFLICT closes only its own unit (BI1/BI2), whitelist + retry/halt protocol works. Hard Rule pre/post-flight (HR1-HR11) follows §4 (pre-flight) + §Post-flight Hard Rule validation. Violations NEVER silent — post-flight is detect-after (the bolt commit already landed): the run HALTS, the B1 gate blocks every further `execute-bolts` until the flagged commit is fixed-forward or reverted.

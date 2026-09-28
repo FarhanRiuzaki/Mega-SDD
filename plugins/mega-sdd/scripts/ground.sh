@@ -459,8 +459,8 @@ if mt_catalog_path:
                     tier = m.group(2)
                     if role in ("model_tiers", "preferences"):
                         continue
-                    # The catalog names roles with hyphens (`bolt-implementer`), the documented
-                    # config key is underscored (`model_tiers.bolt_implementer`) — compare
+                    # The catalog names roles with hyphens (`extract-intelligence-module`), a config
+                    # key may be underscored (`model_tiers.extract_intelligence_module`) — compare
                     # normalized (doc-audit v8 finding #5: every legitimate override tripped
                     # model_tier_unknown, LIVE-proven).
                     _norm = lambda s: s.replace("_", "-").lower()

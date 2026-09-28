@@ -27,14 +27,12 @@ knowledge_base: ""         # ABSENT = probe the in-project KB paths (.mega-sdd/k
 spine: express      # express (GROUND) is the only spine; `classic` no longer selects a chain (the front door names the
                            #   removal in one line). The Stop hook still reads `spine: classic` as a `profile: full` alias.
 lane: lite          # lite is the only pipeline; `standard` is retired (the front door says so in one line and proceeds
-                           #   lite). Lite = execute-bolts pre-flight 3.9 JIT bind on EVERY wave + W1 zero-idle + `validate-preflight.sh
+                           #   lite). Lite = execute-bolts JIT bind up front + per task + W1 zero-idle + `validate-preflight.sh
                            #   --predictive` refuses the execute-bolts hop while .plan-coverage-state.json is missing/FAIL/stale.
 # profile:          # ABSENT is the default: diagnostics lean-by-default on the express spine (Stop-hook analyze aggregate OFF). Set `full` to re-enable the aggregate; `lean` additionally cuts the advisory chain diagnostics (opt-in)
 model_tiers:
-  bolt_implementer: inherit  # per-unit model routing: inherit (DEFAULT — today's behavior,
-                             # session model, no model param passed) | auto (router: the same
-                             # resolve-review-tier signals pick haiku/sonnet/opus per unit +
-                             # one-step failure cascade) | haiku | sonnet | opus (hard pin)
+  extract-intelligence-module: sonnet  # catalog roles only (references/model-tiers.md): the extract
+                             # roles; a stale bolt_implementer key gets GROUND's model_tier_unknown notice
 parallel_max: 4              # execute-bolts in-flight implementer cap (Claude Code's own default is 20
                              # concurrent subagents — one bolt-implementer is ~80 turns; 4 keeps
                              # a fleet Windows laptop responsive). SCRIPT-READ, not

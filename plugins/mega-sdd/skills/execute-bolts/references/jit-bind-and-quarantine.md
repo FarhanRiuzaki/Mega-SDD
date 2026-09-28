@@ -1,40 +1,27 @@
-# JIT bind per wave + quarantine — the pre-flight 3.9 / 3.10 procedures
+# JIT bind + quarantine — the pre-flight 3.9 binding contract / 3.10 procedure
 
-Loaded by `execute-bolts` SKILL.md pre-flight 3.9 (`--agents`; the default inline run uses §E3 and
-§3.10 — `inline-run.md` (b) binds up front) and 3.10 (a DEFER-class halt fires on a unit). Spec: `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md`
+Loaded by `execute-bolts` SKILL.md pre-flight 3.9 (the binding contract behind `inline-run.md` (b)'s
+up-front bind and each task's re-bind) and 3.10 (a DEFER-class halt fires on a unit). Spec: `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md`
 Appendix F2–F4 (JIT bind) and F6c (quarantine); audit
 `research/2026-09-10-p0-interaction-audit.md` §C (which halts wait for a human).
 
 ## Contents
 
-- [3.9 JIT bind per wave](#39-jit-bind-per-wave-spec-app-f2f4)
+- [3.9 Binding contract](#39-binding-contract-spec-app-f2f4)
 - [E3 Text-claim ladder (fail-closed)](#e3-text-claim-ladder-fail-closed)
 - [3.10 Quarantine instead of parking](#310-quarantine-instead-of-parking-w1-zero-idle-spec-app-f6c)
 
-## 3.9 JIT bind per wave (spec App. F2–F4)
+## 3.9 Binding contract (spec App. F2–F4)
 
-Three script calls per wave, never hand-written verdicts. Every path below is a
+Script calls, never hand-written verdicts. Every path below is a
 script; the model's only judgment is the ladder E3 verdict on `text` claims.
 
-0. **Index first — conditional, per bind (state anchor, spec 2026-09-25 §9).** When the wave
-   carries `symbol` claims and `.mega-sdd/codebase/symbol-index.json` is absent, its
-   `head_commit` ≠ HEAD (an earlier wave committed), or its recorded dirty map differs from
-   the current one on the wave's scope (the rule `rebind-units.sh` applies), run
-   `bash <plugin-root>/scripts/build-symbol-index.sh --cwd=<root>` BEFORE step 1 (exit 3 = no
-   ast-grep → proceed; symbol claims stay OQ). Otherwise the writer stamps every unit with
-   an index-sourced verdict `null` (`index_stale` / `dirty_index`) and each first dispatch is
-   denied. Never per bolt.
-
-1. **Derive the wave's claim set — ONE call per wave.**
-   `bash <plugin-root>/scripts/derive-unit-claims.sh --cwd=<root> --vault=<vault> --units=U-001,…`
-   Writes `<vault>/bolts/_wave-claims.json` (one stable file, overwritten per
-   wave; the FULL head and the wave's `dirty` capture recorded inside) from `target_files` (create ⇒ must-not-exist;
-   modify/delete ⇒ must-exist), `## Anchors`, `existing_interfaces`, and
-   `## Claims`. stdout is one JSON line `{"jit_bind": {units, fs_claims,
-   symbol_claims, text_claims, out}}` — **`symbol_claims=text_claims=0` means
-   the wave costs ZERO model tokens; say so in the report** (the measured no-op).
+1. **Claims — per unit, from `rebind-units.sh`.** It rebuilds a stale symbol index first
+   (never per bolt) and writes each unit's `<vault>/bolts/U-XXX/_claims.json`; its JSON line
+   names each claims path — **`symbol_claims=text_claims=0` means the bind costs ZERO model
+   tokens; say so in the report**.
 2. **Verdict + write — one call per unit, the sole writer.**
-   `bash <plugin-root>/scripts/write-unit-binding.sh --cwd=<root> --vault=<vault> --unit=U-XXX --claims=<vault>/bolts/_wave-claims.json`
+   `bash <plugin-root>/scripts/write-unit-binding.sh --cwd=<root> --vault=<vault> --unit=U-XXX --claims=<vault>/bolts/U-XXX/_claims.json`
    - `fs_*` claims are verdicted by the script from the filesystem; `symbol`
      claims from `.mega-sdd/codebase/symbol-index.json` (in the expected file →
      CONFIRMED; only elsewhere → CONFLICT collision; nowhere → OQ; index absent
@@ -69,12 +56,11 @@ script; the model's only judgment is the ladder E3 verdict on `text` claims.
    dengan kode — pilih KEEP_VAULT / KEEP_CODE / SPLIT lewat `resolve-oq
    --binding`, yang menulis balik via `write-unit-binding.sh --resolve=<claim-id>=<pilihan> --by=user`; file binding.json ter-guard hook, jangan
    diedit.* Units without CONFLICT proceed; a CONFLICT unit's dependents are
-   skipped with the reason. The PreToolUse gate re-runs this validator with
-   `--units=<unit>` on every `bolt-implementer` dispatch — a hand dispatch
-   cannot bypass it.
+   skipped with the reason. The gate is the run-start quarantine (`derive-exec-plan.sh`),
+   each task's re-bind, and `conflict_bypassed` at the run boundary and on Stop.
 
-`sync --full-bind` runs the same three calls over EVERY unit of the vault
-(the adoption / BA-QA audit sweep — "apakah kode sinkron dengan spec").
+`sync --full-bind` = `rebind-units.sh --units=all` (the adoption / BA-QA audit sweep —
+"apakah kode sinkron dengan spec").
 
 ## E3 Text-claim ladder (fail-closed)
 

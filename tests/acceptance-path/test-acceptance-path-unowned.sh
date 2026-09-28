@@ -6,8 +6,8 @@
 # when the unit does not list it in target_files, and B3 never flags it ("units
 # often do not list it" — validate-bolt-artifacts.sh §whitelist scan). The
 # HOST-AS400 U-001 halt was therefore an implementer misjudgment from an
-# incomplete contract, NOT an unfinishable unit; that is fixed in
-# agents/bolt-implementer.md, not by this gate.
+# incomplete contract, NOT an unfinishable unit; that was fixed in the implementer contract
+# (P3 C6b, spec v9 §8.6: the agent is deleted — the inline plan's commit step carries it), not by this gate.
 #
 # What this gate covers is the narrow, unambiguous remainder: a NON-sanctioned
 # path that no unit owns and that does not exist — an acceptance command that
@@ -26,7 +26,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 VAL="$ROOT/plugins/mega-sdd/scripts/validate-unit-spec.sh"
 B3="$ROOT/plugins/mega-sdd/scripts/validate-bolt-artifacts.sh"
 PT="$ROOT/plugins/mega-sdd/hooks/pre-tool-use"
-IMP="$ROOT/plugins/mega-sdd/agents/bolt-implementer.md"
+IMP="$ROOT/plugins/mega-sdd/scripts/derive-exec-plan.sh"
 [ -f "$VAL" ] || { echo "FATAL: validator missing"; exit 1; }
 
 mk_unit() {   # DIR ID TARGETS_BLOCK ACCEPTANCE_CMD
@@ -154,14 +154,12 @@ grep -q 'acceptance_path_unowned' "$ROOT/plugins/mega-sdd/references/halt-protoc
 grep -q '### acceptance_path_unowned' "$ROOT/plugins/mega-sdd/references/halt-families/bolts.md" \
   && ok "E6 has a halt-family guidance entry" || bad "E6 no family entry"
 
-echo "── F: the implementer contract states the sanctioned extras (the real fix) ──"
-grep -q 'sanctioned extras' "$IMP" && ok "F1 implementer told target_files ∪ sanctioned extras" || bad "F1 implementer still says target_files alone"
-grep -qi 'COMMIT the acceptance test even when the unit does not list it' "$IMP" \
-  && ok "F2 implementer told to commit the unlisted acceptance test" \
+echo "── F: the inline plan's commit step commits the unlisted test files (the real fix) ──"
+# P3 C6b: F1-F3 pinned agents/bolt-implementer.md (deleted, spec v9 §8.6 G1); F3's
+# "never park a written test outside the repo" had no inline carrier and is recorded as lost.
+grep -qF 'plus the test files this task wrote' "$IMP" \
+  && ok "F2 the inline commit step commits the test files the task wrote (unlisted in target_files)" \
   || bad "F2 the instruction that prevents the false scope_creep_detected is missing"
-grep -qi 'never park a written test outside the repo' "$IMP" \
-  && ok "F3 parking the test outside the repo is forbidden" \
-  || bad "F3 nothing forbids parking the test outside the repo (fake acceptance evidence)"
 
 rm -rf "$A" "$A2" "$B" "$C" "$D" "$D2"
 echo "──────────────────────────────"

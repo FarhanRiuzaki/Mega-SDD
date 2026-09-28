@@ -205,7 +205,7 @@ if status in ("PASS", "WARN"):
     verdict, rc = "CERTIFIED", 0
     lines = ["Peta codebase lolos validate-codebase-map.sh (frontmatter + 7 section lengkap).",
              "Peta sah dibaca read-only (emit-*, detect-drift, enrichment). Pipeline tidak",
-             "bind ke peta: bind JIT per unit (execute-bolts 3.9) memakai symbol index",
+             "bind ke peta: bind JIT per unit (the up-front bind) memakai symbol index",
              "dari `scripts/ground.sh`."]
     if warn_notes:
         lines.append("Catatan (advisory, tidak menahan):")
@@ -260,7 +260,7 @@ if [ "$RUNG" = "vault" ]; then
   case "$RC" in
     0)
       if [ -f "${APATH%/}/context.md" ]; then
-        VAULT_NEXT="Siap dikonsumsi execute-bolts (bind JIT per unit, pre-flight 3.9); \`plan --reconcile\` menyegarkan task_type."
+        VAULT_NEXT="Siap dikonsumsi execute-bolts (bind JIT per unit, the up-front bind); \`plan --reconcile\` menyegarkan task_type."
       elif [ -f "${APATH%/}/vault.md" ]; then
         VAULT_NEXT="Vault layout-2: dibaca read-only (emit-*, analyze); untuk build/sync jalankan \`/mega-sdd:migrate-paths --vault-layout=3\` dulu."
       else

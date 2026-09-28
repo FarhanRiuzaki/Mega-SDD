@@ -160,8 +160,8 @@ Rows below are the halt-type index — this index is the registry-existence surf
 
 **bind** (`halt-families/bind.md`):
 
-- `bind_conflict` — legacy name (layout-2 `binding.md`) of `binding_conflict`; 9.0 emits `binding_conflict` (execute-bolts pre-flight 3.9). A layout-2 vault builds only after `migrate-paths --vault-layout=3` + the full JIT re-bind. Schema + resolution-code legend: §Type-specific schemas (`binding_conflict`); guidance: `halt-families/bind.md`.
-- `binding_conflict` — execute-bolts pre-flight 3.9: a unit's JIT claim CONFLICTs with the code. ALWAYS STOP for that unit; resolve via `resolve-oq --binding`.
+- `bind_conflict` — legacy name (layout-2 `binding.md`) of `binding_conflict`; 9.0 emits `binding_conflict` (execute-bolts: the up-front bind / a task's re-bind). A layout-2 vault builds only after `migrate-paths --vault-layout=3` + the full JIT re-bind. Schema + resolution-code legend: §Type-specific schemas (`binding_conflict`); guidance: `halt-families/bind.md`.
+- `binding_conflict` — execute-bolts (the up-front bind / a task's re-bind): a unit's JIT claim CONFLICTs with the code. ALWAYS STOP for that unit; resolve via `resolve-oq --binding`.
 
 **units** (`halt-families/units.md`):
 
@@ -182,7 +182,7 @@ Rows below are the halt-type index — this index is the registry-existence surf
 
 **bolts** (`halt-families/bolts.md`):
 
-- `ambiguous_spec` — execute-bolts (emitted by the `bolt-implementer` subagent): the unit spec admits more than one reading and the implementer will not guess. ALWAYS STOP (pure-pause; human interpretation call). Guidance: `halt-families/bolts.md`.
+- `ambiguous_spec` — execute-bolts (emitted by the implementing session): the unit spec admits more than one reading and it will not guess. ALWAYS STOP (pure-pause; human interpretation call). Guidance: `halt-families/bolts.md`.
 - `dispatch_prompt_too_large` — execute-bolts: assembled bolt dispatch prompt exceeds 10KB hard cap. ALWAYS STOP. Resol…
 - `bolt_repeated_partial_failure` — execute-bolts: bolt failed 3 partial-state recovery cycles. ALWAYS STOP. Resolution: re…
 - `provenance_missing` — execute-bolts: bolt modified file lacks provenance traile…
@@ -312,7 +312,7 @@ Only the unified `blocker:` envelope is accepted — the pre-1.0 bare `oq_blocke
 ### Type-specific schemas
 
 ```yaml
-# binding_conflict (alias bind_conflict) — execute-bolts pre-flight 3.9:
+# binding_conflict (alias bind_conflict) — execute-bolts, the up-front bind / a task's re-bind:
 # a CONFLICT in bolts/U-XXX/binding.json
 details:
   unit_id: U-XXX

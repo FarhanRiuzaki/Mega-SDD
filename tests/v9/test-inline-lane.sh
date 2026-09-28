@@ -312,8 +312,6 @@ SKILL_P="$(pj Skill '{"skill":"mega-sdd:execute-bolts","args":"--all --lite --in
 O="$(hook "$SKILL_P")"
 case "$O" in *'"permissionDecision": "deny"'*conflict-bypass*'U-003 open_conflict'*'U-004 depends_on_blocked via U-003'*) ok "g1: Skill execute-bolts DENIED on a FAIL bypass state, naming each unit's reason" ;;
   *) bad "g1: $(printf '%s' "$O" | head -c 600)" ;; esac
-O="$(hook "$(pj Agent "$(python3 -c 'import json,sys; print(json.dumps({"subagent_type":"mega-sdd:bolt-implementer","description":"bolt","prompt":"mega-sdd-trace:execute-bolts:U-006\nUNIT: U-006\nREAD FIRST, IN FULL: "+sys.argv[1]+"/bolts/U-006/dispatch-prompt.md"}))' "$V")")")"
-deny "$O" && case "$O" in *conflict-bypass*) true ;; *) false ;; esac && ok "g2: the in-run bolt-implementer dispatch is denied by the same leg" || bad "g2: $(printf '%s' "$O" | head -c 400)"
 for tool in Write Edit; do
   deny "$(hook "$(pjf $tool "$SST")")" && ok "g3: $tool of the bypass state is denied" || bad "g3: $tool allowed"
 done
@@ -545,9 +543,9 @@ assert all(r"\.bolt-conflict-bypass-state\.json|" in s for s in lists) and all('
 assert "_run.json" not in t and "PROTECTED_DIR" not in t
 PY
 grep -q -- '--inline' "$SK" && grep -qF 'references/inline-run.md' "$SK" && [ "$(wc -l < "$SK")" -le 500 ] && grep -qE 'Announce at start.*`mega-sdd-trace:execute-bolts`' "$SK" \
-  && grep -E '^3\.9\. ' "$SK" | grep -qF 'this step under `--agents`' && grep -E '^  - `--agents` — retired' "$SK" | grep -qF -- "$RETIRED" \
+  && grep -E '^3\.9\. ' "$SK" | grep -qF 'runs on every run' && ! grep -E '^3\.9\. ' "$SK" | grep -qF -- '--agents' && grep -E '^  - `--agents` — retired' "$SK" | grep -qF -- "$RETIRED" \
   && grep -qE '^  - `--inline` — accepted no-op alias of the default' "$SK" && ! grep -E '^  - `--inline`' "$SK" | grep -q 'usage error' \
-  && ok "h3: SKILL.md: inline (pointer), --agents retired in one line (3.9 still --agents only), --inline a no-op alias, <= 500 lines, the announce tag kept" || bad "h3: SKILL.md wiring"
+  && ok "h3: SKILL.md: inline (pointer), --agents retired in one line (3.9 runs on every run), --inline a no-op alias, <= 500 lines, the announce tag kept" || bad "h3: SKILL.md wiring"
 [ -f "$IR" ] && [ "$(wc -l < "$IR")" -le 130 ] && grep -qE '^[[:space:]]*mega-sdd-trace:execute-bolts[[:space:]]*$' "$IR" && ok "h4: inline-run.md <= 130 lines, the review template's trace line on its own line" || bad "h4: inline-run.md $(wc -l < "$IR" 2>/dev/null) lines"
 for s in 'derive-exec-plan.sh --cwd=<root> --vault=<vault> --pending' 'rebind-units.sh' '--conflict-bypass-scan' 'delivery-check.sh' '_inline-ledger' 'superpowers:executing-plans' \
          'resolve-oq --binding' '--panel-scan' 'run-full-suite.sh --cwd=<root> --base=<run_base>' 'comma-join' 'hard_rule_violated' 'l0-results' 'acceptance_expects_missing' \
@@ -572,8 +570,8 @@ import re, sys
 t, spec, ir = (open(p).read() for p in sys.argv[1:4])
 inv2 = re.search(r"\n2\. \*\*The CONFLICT gate blocks\*\*(.*?)\n3\. ", t, re.S).group(1)
 assert "conflict_bypassed" in inv2 and "--inline" in inv2 and "§8.4" in inv2 and "2026-09-27" in inv2 and "evasion" in inv2, "inv2"
-assert "derive-exec-plan.sh" in inv2 and "By default" in inv2 and "Under `--agents`" in inv2, "inv2 default/--agents"
-assert "--agents" in re.search(r"## What we will not accept(.*?)\n## ", t, re.S).group(1), "wna"
+assert "derive-exec-plan.sh" in inv2 and "By default" in inv2 and "§8.6" in inv2 and "Under `--agents`" not in inv2, "inv2 default, per-dispatch path removed (§8.6)"
+assert "§8.6" in re.search(r"## What we will not accept(.*?)\n## ", t, re.S).group(1), "wna"
 assert "### 8.5 Outcome" in spec and "2026-09-28-p2-inline-results.md" in spec.split("### 8.5 Outcome")[1], "spec 8.5"
 s82 = re.search(r"### 8\.2(.*?)### 8\.3", spec, re.S).group(1)
 assert "Threat model" in s82 and "evasion" in s82 and "out of scope" in s82, "spec"
@@ -592,10 +590,10 @@ R = sys.argv[1]; P = R + "/plugins/mega-sdd"
 rd = lambda f: open(f, encoding="utf-8").read()
 core = rd(P + "/skills/using-mega-sdd/SKILL.md").split("ANCHOR-CORE ends")[0]
 hg = [l for l in core.splitlines() if l.startswith("**Hard gate:**")][0]
-assert "run start" in hg and "`--agents`" in hg and "binding_conflict" in hg and "resolve-oq --binding" in hg, "anchor hard gate"
+assert "run start" in hg and "--agents" not in hg and "binding_conflict" in hg and "resolve-oq --binding" in hg, "anchor hard gate"
 assert "| execute-bolts pre-flight 3.9 (" not in rd(P + "/skills/using-mega-sdd/SKILL.md"), "anchor table row"
 cl = rd(P + "/skills/orchestrate-flow/references/convergence-loops.md")
-assert "`scope: close`" in cl and "Close: reviewed" in cl and "`--agents`" in cl.split("## Cycle-eligible halt types")[1][:2500], "convergence rows"
+assert "`scope: close`" in cl and "Close: reviewed" in cl and "--agents" not in cl, "convergence rows"
 fd = rd(P + "/commands/mega-sdd.md")
 assert "quarantined and reported" in fd, "front door --deep binding_conflict"
 eb = rd(P + "/skills/execute-bolts/SKILL.md")
@@ -609,11 +607,11 @@ assert "review-panel.md" not in eb and cond, "review-panel.md retired (P3 C3)"
 br = rd(P + "/skills/execute-bolts/references/superpowers-bridge.md")
 assert "the ONLY dispatch path" not in br and "(default)" not in br.split("## Dispatch order")[1][:200] and "`--agents`" in br[:600], "bridge scope"
 assert "`--max-retries" in rd(P + "/skills/execute-bolts/references/inline-run.md").split("## (b)")[0], "inline-run flag table"
-assert "(JIT bind per unit, CONFLICT gate at dispatch)" not in rd(R + "/CLAUDE.md") and "`--agents` keeps" in rd(R + "/CLAUDE.md"), "root CLAUDE.md"
+assert "(JIT bind per unit, CONFLICT gate at dispatch)" not in rd(R + "/CLAUDE.md") and "`--agents` keeps" not in rd(R + "/CLAUDE.md"), "root CLAUDE.md"
 rm = rd(R + "/README.md")
-assert "`--agents`" in rm and "Before a unit is dispatched it is bound" not in rm, "root README"
+assert "`--agents`" in [l for l in rm.splitlines() if "Removed in P3" in l][0] and "Before a unit is dispatched it is bound" not in rm, "root README"
 ct = rd(R + "/CONTRIBUTING.md")
-assert "quarantined at run start" in ct and "`--agents`" in ct, "CONTRIBUTING rail 2"
+assert "quarantined at run start" in ct and "--agents" not in ct, "CONTRIBUTING rail 2"
 sp = rd(R + "/docs/superpowers/specs/2026-09-27-v9-simplification-design.md")
 assert "no flag = today's per-unit path" not in sp and re.search(r"A normal `--agents` run never trips\s+it", sp) and re.search(r"### 8\.1 .*\(adopted, §8\.5\)", sp), "spec"
 assert "--rebind-wip" in sp.split("### 8.5 Outcome")[1], "spec 8.5 residual fix"

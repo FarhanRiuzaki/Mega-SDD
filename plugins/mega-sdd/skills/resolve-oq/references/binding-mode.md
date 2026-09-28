@@ -1,6 +1,6 @@
 # resolve-oq — binding mode (`--binding`)
 
-Loaded when `resolve-oq` is invoked with `--binding`. Walks the unresolved CONFLICT claims in `<vault>/bolts/U-*/binding.json` (the JIT bind, execute-bolts 3.9) and writes back ONLY via `write-unit-binding.sh --resolve=<C-id>=<ACTION> --by=user` + a `vault.json` event. An older layout-2 vault that has not been migrated still carries the whole-vault `binding.md` its classic bind wrote; the **layout-2 leg** below walks it. The standard OQ walk (Steps 0–5) is covered by the interactive-walk reference the SKILL.md router lists.
+Loaded when `resolve-oq` is invoked with `--binding`. Walks the unresolved CONFLICT claims in `<vault>/bolts/U-*/binding.json` (the JIT bind, execute-bolts up front + per task) and writes back ONLY via `write-unit-binding.sh --resolve=<C-id>=<ACTION> --by=user` + a `vault.json` event. An older layout-2 vault that has not been migrated still carries the whole-vault `binding.md` its classic bind wrote; the **layout-2 leg** below walks it. The standard OQ walk (Steps 0–5) is covered by the interactive-walk reference the SKILL.md router lists.
 
 **Invocation:** `resolve-oq --binding <vault-dir>` — every `bolts/U-*/binding.json` is walked (a `<vault>/bolts/U-XXX/binding.json` argument walks that unit only). A layout-2 vault (or a `<path-to-binding.md>` argument) takes the layout-2 leg.
 

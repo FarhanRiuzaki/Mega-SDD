@@ -204,13 +204,15 @@ flowchart LR
 ```
 
 - **`plan`** is ONE model phase. It writes the vault (`context.md` with flows, DBML, NFRs and OQs, plus `constitution.md` and `vault.json`) and the atomic units (`units/U-*.md`). Every unit cites the PRD section it covers, and a coverage check refuses the bolts hop while a PRD heading has no decision: a unit, an open OQ carrying `[covers: <prd>#<slug>]`, or a line in `context.md ## Coverage exclusions` saying why nothing is built for it. Business OQs go to you in ONE batched ask. Technical OQs are decided by the AI as labelled, cited, reversible choices.
-- **`execute-bolts`** runs every unit in ONE context from a generated plan. Every pending unit is bound to the code at HEAD up front, and again at its own task: every claim about existing code gets CONFIRMED / CONFLICT / OQ with an anchor (`bolts/U-XXX/binding.json`). An unresolved CONFLICT quarantines that unit at run start (its dependents are skipped with the reason) until a human resolves it. Each unit is built test-first with the pre/post-flight Hard Rule scans and the evidence writers, ONE blind review reads the run's diff, and the evidence gates check it at the run boundary. `--agents` keeps the per-unit path: dependency waves, the `bolt-implementer` agent, a risk-tiered blind review panel and the CONFLICT gate at each dispatch.
-- **What the lane adds over the other two** is an audit trail. Each unit is traced to its PRD section. Each claim about existing code carries a verdict and an anchor. Each bolt keeps its dispatch prompt, acceptance evidence and review findings on disk. It also feeds the team documents (`/mega-sdd:emit`) and `/mega-sdd:sync`.
+- **`execute-bolts`** runs every unit in ONE context from a generated plan. Every pending unit is bound to the code at HEAD up front, and again at its own task: every claim about existing code gets CONFIRMED / CONFLICT / OQ with an anchor (`bolts/U-XXX/binding.json`). An unresolved CONFLICT quarantines that unit at run start (its dependents are skipped with the reason) until a human resolves it. Each unit is built test-first with the pre/post-flight Hard Rule scans and the evidence writers, ONE blind review reads the run's diff, and the evidence gates check it at the run boundary.
+- **What the lane adds over the other two** is an audit trail. Each unit is traced to its PRD section. Each claim about existing code carries a verdict and an anchor. Each bolt keeps its binding, acceptance evidence and bolt report on disk. It also feeds the team documents (`/mega-sdd:emit`) and `/mega-sdd:sync`.
 - **What it does not add** is better code. See the next section.
 
 > The enforcement doctrine: **a blocking gate is a deterministic validator wired to a hook — prose that says "HALT" enforces nothing.** Which gates hard-block vs. advise: [`plugins/mega-sdd/CLAUDE.md`](plugins/mega-sdd/CLAUDE.md).
 
 **Removed in 9.0:** the classic chain (`generate-intent → scan-codebase → bind-codebase → generate-units`) and the scan-first "classic spine". `--classic` and a config `lane: standard` are now ignored, with a one-line note. Pre-9.0 vaults: see [Upgrading to 9.0](#2-keep-it-updated).
+
+**Removed in P3:** `--agents` — the per-unit path (the `bolt-implementer` agent, the risk-tiered review panel, per-unit model routing, the attempt cap and the per-dispatch hook legs; spec v9 §8.6). A typed `--agents` still implies `--guarded` and runs the inline run, with a one-line note.
 
 ## Docs lanes
 
@@ -294,7 +296,6 @@ flowchart TB
     subgraph GUARD["Guarded — the spec pipeline (existing vault or --guarded)"]
         PLAN["plan<br/>context.md + constitution.md + units (layout-3)"]:::phase --> BOLTS["execute-bolts<br/>one context · bind up front + per task<br/>pre/post-flight + L0 gates"]:::phase
         BOLTS --> REVIEW["ONE blind review of the run"]:::agent
-        BOLTS -.->|--agents| IMPL["bolt-implementer (TDD)"]:::agent --> PANEL["blind review panel — risk-tiered<br/>spec · quality · security · standards · design"]:::agent
     end
 
     EXTRACT["extract-intelligence<br/>legacy → KB (PRD-kontrak per module)"]:::phase
@@ -312,7 +313,7 @@ flowchart TB
     EXTRACT -->|plan --kb| PLAN
     DIRECT --> CHECK
     ASSIST --> CHECK
-    PANEL --> CHECK --> OUT
+    REVIEW --> CHECK --> OUT
     GUARD <-->|write / read| ART
     MOAT -.blocks on breach.-> BOLTS
     ART --> DOCS
@@ -320,7 +321,7 @@ flowchart TB
 ```
 
 **Legend**:
-- 🟦 **surface, router & phases** · 🟨 **execution agents** (implementer + blind panel; guarded only) · 🟩 **artefacts & result** · 🟥 **checks & enforcement** (delivery check on every lane; hooks + validators on guarded)
+- 🟦 **surface, router & phases** · 🟨 **the blind review** (one reviewer per run; guarded) · 🟩 **artefacts & result** · 🟥 **checks & enforcement** (delivery check on every lane; hooks + validators on guarded)
 - **Solid arrows** = flow · **Dotted arrows** = cross-cutting (gate blocks, the sync loop)
 - Detail per phase: [plugin README](plugins/mega-sdd/README.md) + [architecture deep dive](#architecture-deep-dive) below.
 
@@ -385,12 +386,12 @@ Three maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`) 
 
 | | |
 |---|---|
-| **What** | A lane router (`route-lane.sh`) in front of ONE spec pipeline: direct / assisted build in the main session; guarded runs `plan` → `execute-bolts` → `delivery-check.sh`. The plugin has these parts:<br>• **16 skills** — lean routers with progressive disclosure: each `SKILL.md` ≤500 lines, detail in on-demand `references/`.<br>• **9 first-class subagents** (`agents/`): bolt-implementer, spec-reviewer, code-quality-reviewer, security-reviewer, standards-reviewer, design-reviewer, resolution-verifier, domain-extractor, claim-verifier.<br>• **A 3-verb command surface**: `/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd\|fsd\|sit\|uat\|html\|summary>`, plus 3 maintenance one-timers. Typed legacy forms route as plain text. |
-| **Who** | **Anyone with a PRD or a brief** gets direct/assisted: plain Claude Code plus the delivery check. **Teams that need traceability** (a cited spec, per-unit binding, bolt evidence, FSD/SIT/UAT) opt into guarded. There, the first-class `bolt-implementer` builds each unit (superpowers TDD optional) and a blind panel reviews it. **Rebuild teams** start from `extract-intelligence`. |
+| **What** | A lane router (`route-lane.sh`) in front of ONE spec pipeline: direct / assisted build in the main session; guarded runs `plan` → `execute-bolts` → `delivery-check.sh`. The plugin has these parts:<br>• **16 skills** — lean routers with progressive disclosure: each `SKILL.md` ≤500 lines, detail in on-demand `references/`.<br>• **2 first-class subagents** (`agents/`): domain-extractor, claim-verifier (extract-intelligence).<br>• **A 3-verb command surface**: `/mega-sdd` · `/mega-sdd:sync` · `/mega-sdd:emit <prd\|fsd\|sit\|uat\|html\|summary>`, plus 3 maintenance one-timers. Typed legacy forms route as plain text. |
+| **Who** | **Anyone with a PRD or a brief** gets direct/assisted: plain Claude Code plus the delivery check. **Teams that need traceability** (a cited spec, per-unit binding, bolt evidence, FSD/SIT/UAT) opt into guarded. There, the main session builds every unit test-first in one context (superpowers TDD optional) and one blind reviewer reads the run. **Rebuild teams** start from `extract-intelligence`. |
 | **When** | Any build request from a PRD, a brief, or a legacy codebase. The router decides how much process it gets; you can override it. |
 | **Where** | Guarded outputs are consolidated under `<project>/.mega-sdd/`; direct and assisted write none. User defaults at `~/.mega-sdd/config.yaml`. |
 | **Why** | Measured against plain Claude Code, the pipeline did not produce better code, and it cost 6–22× more. What it does produce is an auditable trail from PRD section to unit to commit. So 9.0 routes ordinary work around the pipeline and keeps the pipeline for the teams that need that trail. |
-| **How** | Every lane: the result contract + `delivery-check.sh`. Guarded adds:<br>• JIT per-unit binding with a CONFLICT gate (a run-start quarantine and the `conflict_bypassed` boundary gate; under `--agents`, a hook at each dispatch);<br>• execution in one context with ONE blind review, or with `--agents` through first-class bolt agents and a risk-tiered blind review panel (spec / quality / security / standards, + design for UI units);<br>• the halt-on-blocker protocol;<br>• deterministic tech (ast-grep + jd). |
+| **How** | Every lane: the result contract + `delivery-check.sh`. Guarded adds:<br>• JIT per-unit binding with a CONFLICT gate (a run-start quarantine and the `conflict_bypassed` boundary gate);<br>• execution in one context with ONE blind review;<br>• the halt-on-blocker protocol;<br>• deterministic tech (ast-grep + jd). |
 
 ### Folder layout (guarded lane)
 
@@ -402,7 +403,7 @@ Three maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`) 
 │   ├── vaults/<slug>/                       # vault per project
 │   │   ├── context.md, constitution.md, vault.json   # layout-3 — the only layout written (by plan)
 │   │   ├── units/                           # U-*.md + _index.md
-│   │   ├── bolts/U-XXX/                     # binding.json (JIT bind) · dispatch-prompt.md · acceptance.json · findings.json · bolt-report.md
+│   │   ├── bolts/U-XXX/                     # binding.json (JIT bind) · acceptance.json · bolt-report.md
 │   │   ├── _meta/modules.yaml               # modules
 │   │   ├── _meta/archive/layout2/           # after migrate-paths --vault-layout=3: the archived pre-9.0 docs + binding.md
 │   │   └── .internal/                       # checkpoints
@@ -473,7 +474,7 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 ├── plugins/mega-sdd/                       # the plugin itself
 │   ├── README.md                           # per-command reference + plugin internals
 │   ├── skills/                             # 16 skills (lean routers + progressive disclosure)
-│   ├── agents/                             # 9 first-class subagents (incl. the blind review panel)
+│   ├── agents/                             # 2 first-class subagents (extract-intelligence)
 │   ├── commands/                           # exactly 6: 3 public verbs + 3 maintenance one-timers
 │   ├── references/                         # direct-lane.md · paths.md · tooling-install.md · framework-conventions/ (25 packs — 24 full + 1 overlay, per `_registry.md`)
 │   ├── assets/render-html/                 # offline HTML template v2 + vendored marked/mermaid/woff2 fonts

@@ -14,7 +14,7 @@ Manual-run fixture for the `resolve-oq` skill.
 
 ### R3: Binding mode
 - **Prompt:** `/mega-sdd:resolve-oq --binding .mega-sdd/vaults/my-app`
-- **Expect:** Walks every open CONFLICT claim in the vault's per-unit `bolts/U-*/binding.json` (the JIT bind at execute-bolts pre-flight 3.9); a `bolts/U-XXX/binding.json` argument walks that unit only. A pre-9.0 layout-2 vault (or a `<path-to-binding.md>` argument) takes the layout-2 leg: CONFLICT + Open Questions entries from `binding.md`
+- **Expect:** Walks every open CONFLICT claim in the vault's per-unit `bolts/U-*/binding.json` (the execute-bolts JIT bind, up front + per task); a `bolts/U-XXX/binding.json` argument walks that unit only. A pre-9.0 layout-2 vault (or a `<path-to-binding.md>` argument) takes the layout-2 leg: CONFLICT + Open Questions entries from `binding.md`
 
 ### R4: Natural English
 - **Prompt:** `resolve open questions`

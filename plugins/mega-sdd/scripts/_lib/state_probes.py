@@ -1233,8 +1233,8 @@ def derive(probes):
 
     # ── No vault: input-shape ladder ─────────────────────────────────────
     # The one pipeline (spec §2): ONE model phase (plan: context.md + units +
-    # ONE batched ask) then bolts. No bind hop (JIT bind at dispatch,
-    # pre-flight 3.9), no handoff YAML between the hops — the orchestrator
+    # ONE batched ask) then bolts. No bind hop (JIT bind per unit,
+    # up front + per task), no handoff YAML between the hops — the orchestrator
     # re-derives state from disk + runs the predictive preflight before the
     # bolts hop. Mode pin: a repo that already carries code = `existing`
     # (brownfield claims), a bare scaffold = `new`; never asked.

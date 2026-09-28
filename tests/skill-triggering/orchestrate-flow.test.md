@@ -71,9 +71,9 @@ orchestrate-flow runs the **guarded** lane — ONE pipeline, `plan` → `execute
 - **State:** a phase at attempt 3 still `unresolved`
 - **Expect:** HALT `phase_stuck` + concrete human question; no 4th auto re-run
 
-### R-FACTORY-4: binding_conflict KEEP_VAULT/DEFER resolution continues the unit (no re-bind loop; `--agents`)
-- **State:** `--deep`/`--converge`; `execute-bolts` pre-flight 3.9 halted U-008 on `binding_conflict`; the auto-invoked `resolve-oq --binding` resolved every conflict via ONLY KEEP_VAULT/DEFER, written through `write-unit-binding.sh --resolve`
-- **Expect:** the resolution in `bolts/U-008/binding.json` already opens the gate, so the loop continues that unit's dispatch with NO re-bind (a re-bind would only spend the unit's one 3.9b at this HEAD → `rebind_exhausted`). KEEP_CODE/SPLIT edits the unit's `## Claims` → `rebind-units.sh --units=U-008` (3.9b) → re-dispatch. Per `references/convergence-loops.md` + `resolve-oq/references/binding-mode.md` Step 5
+### R-FACTORY-4: binding_conflict resolved → the scope run re-binds and re-plans
+- **State:** `--deep`/`--converge`; the `execute-bolts` run start (`derive-exec-plan.sh`) halted on `binding_conflict` (U-008 blocked every pending unit); the auto-invoked `resolve-oq --binding` resolved every conflict, written through `write-unit-binding.sh --resolve`
+- **Expect:** the loop re-invokes `execute-bolts`, whose run start re-binds and re-plans (`inline-run.md` (b)); U-008 is in the plan once its gate is open. Per `references/convergence-loops.md` + `resolve-oq/references/binding-mode.md` Step 5
 
 ### R-SYNC-1: Mode D maintenance/sync chain (per-unit, script hops)
 - **State:** layout-3 vault with units, bolts and per-unit `bolts/U-*/binding.json`; the symbol index exists; a change signal is present (`.mega-sdd/codebase/.dirty-paths.jsonl` non-empty OR git HEAD ≠ the index `head_commit`). Invoked `/mega-sdd:sync` (or `orchestrate-flow --sync`).
@@ -183,7 +183,7 @@ All routing rules per routing-rules.md fire deterministically from the state eng
 ### RES5: --resume after a KEEP_CODE/SPLIT resolution re-binds that unit
 - **Setup:** previous run halted on `binding_conflict` for U-004; user resolved via `/mega-sdd:resolve-oq --binding` with at least one KEEP_CODE or SPLIT (the unit's `## Claims` WAS edited)
 - **Prompt:** `/mega-sdd:orchestrate-flow --deep --resume`
-- **Expect:** U-004 is re-bound before dispatch (`rebind-units.sh --units=U-004`, then `plan --reconcile` per resolve-oq's hand-off); skipped, the BOLTS gate backstops it — the edited unit trips `unit_changed_since_bind` and 3.9b re-binds it. Routing keys on the resolution action mix, never on a whole-vault re-bind
+- **Expect:** U-004 is re-bound before its task (`rebind-units.sh --units=U-004`, then `plan --reconcile` per resolve-oq's hand-off); skipped, the run start backstops it — the edited unit trips `unit_changed_since_bind` and the up-front bind re-binds it. Routing keys on the resolution action mix, never on a whole-vault re-bind
 
 ### RES3: --from override skips earlier completed phases
 - **Setup:** all phases completed; user wants to re-run only `execute-bolts`

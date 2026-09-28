@@ -95,7 +95,6 @@ grep -qF 'bounded by an in-flight cap (`config.yaml parallel_max:`, default **4*
 grep -qF 'default **4** concurrent' "${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/squad-subagent.md" && ok "--per-squad cap made concrete (same bound, both procedures)" || fail "squad-subagent cap still 'sensible' (no number)"
 grep -qF -- '--base=<its-commit>^ --head=<its-commit>' "$BF" && ok "per-unit gate range under a wave = the unit's OWN commit (identity-anchored, never wave-base..wave-head)" || fail "per-unit gate range rule missing"
 grep -qF 'dispatch only units not yet completed' "$BF" && ok "consumed waves skip completed units (resume-safe)" || fail "completed-skip rule missing from wave consumption"
-grep -qF 'index.lock' "${ROOT}/plugins/mega-sdd/agents/bolt-implementer.md" && ok "implementer contract: transient index.lock is retried, never BLOCKED" || fail "index.lock retry contract missing from the implementer body"
 grep -qF 'run the batch with `--worktree`' "$BF" && ok "shared-test-state valve named (--worktree or drop the flag) — never a silent hazard" || fail "test-state valve missing"
 AP="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/diagnostics-procedures.md"
 grep -qF 'never suggest the halting form' "$AP" && ok "analyze-parallelism suggestion is squad-count-conditional (--per-squad halts on single-squad)" || fail "analyze-parallelism still suggests the halting --per-squad form unconditionally"

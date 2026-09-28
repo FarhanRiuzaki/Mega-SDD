@@ -106,13 +106,15 @@ grep -qF 'extract-intelligence-module' "$P/references/model-tiers.md" \
 roles=$(python3 - <<'PY'
 import re
 content = open("plugins/mega-sdd/references/model-tiers.md").read()
+content += "\n| 21b | `foo-bar` | sonnet | synthetic fixture row: the catalog has no [a-z]? row since P3 C6b |\n"
 roles = set(re.findall(r"^\|\s*\d+[a-z]?\s*\|\s*`?([\w-]+)`?\s*\|", content, re.MULTILINE))
 print(",".join(sorted(roles)))
 PY
 )
 echo "$roles" | grep -q "extract-intelligence-module" \
-  && echo "$roles" | grep -q "bolt-implementer" \
-  && pass "catalog regex (as fixed in ground.sh) captures role names incl. 21b row" \
+  && echo "$roles" | grep -q "extract-intelligence-verify" \
+  && echo "$roles" | grep -q "foo-bar" \
+  && pass "catalog regex (as fixed in ground.sh) captures role names incl. a 21b row (synthetic)" \
   || fail "catalog regex capture wrong: $roles"
 grep -qF 'catalog_roles = set(_re_mt.findall(' plugins/mega-sdd/scripts/ground.sh \
   && grep -qF 'd+[a-z]?' plugins/mega-sdd/scripts/ground.sh \

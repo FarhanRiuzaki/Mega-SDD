@@ -422,7 +422,8 @@ moves to the execute-bolts Skill entry, which still denies `binding_missing`.
   remedy script would exist. The CHANGELOG carries this as a release note.
 - **O3, disclosed.** The spawn-ceiling pin C8b moves from the Agent payload to the
   `mega-sdd:execute-bolts` Skill entry on the bound fixture. It measured 91 spawns there, above C8's
-  90 on the unbound fixture, and stays under the ≤95 ceiling. The ceiling is not raised.
+  90 on the unbound fixture, and stays under the ≤95 ceiling. The ceiling is not raised. (C6b
+  re-measured 87 after the C6a leg deletions, on macOS.)
 - **O4, disclosed.** A stale `model_tiers.bolt_implementer` or `*-reviewer` key in
   `.mega-sdd/config.yaml` triggers GROUND's existing `[self-resolved] model_tier_unknown` notice on
   every run. The notice never halts, and users will see it until they remove the key.
@@ -433,7 +434,10 @@ moves to the execute-bolts Skill entry, which still denies `binding_missing`.
 non-inferiority result already reflects their absence on that fixture. None of them was measured on
 its own.
 - **G1.** Iron Rules 5/6 and the Context7 consult guidance no longer reach implement time. The
-  Context7 guidance survives in the extras `slice-procedure.md` and in `plan`.
+  Context7 guidance survives in the extras `slice-procedure.md` and in `plan`. The rest of the
+  implementer body goes too: the transient `index.lock` retry and "never park a written test
+  outside the repo" have no inline carrier (the inline commit step does commit the test files a
+  task wrote).
 - **G2.** Gone: the per-unit trace tag (O1); the per-dispatch freshness, F-18 and attempt-cap legs;
   the `acceptance_test_concern` writer (the FSD label is fixed); and the per-bolt LOCKED drift check
   (`bolt_introduces_locked_drift`) in every mode. The chain-end `detect-drift` auto-gate stays the

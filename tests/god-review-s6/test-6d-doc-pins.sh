@@ -70,9 +70,9 @@ echo "── EB-GATE-2: commit identity on every producer surface ──"
 grep -q "SDD-PROVENANCE: mega-sdd/execute-bolts" "$EB/references/bolt-contract.md" \
   && grep -q "Unit: U-XXX" "$EB/references/bolt-contract.md" \
   && ok "bolt-contract carries both trailers" || fail "bolt-contract trailers missing"
-grep -q "SDD-PROVENANCE" "$P/agents/bolt-implementer.md" && ok "bolt-implementer instructs the trailers" || fail "bolt-implementer trailer instruction missing"
-grep -q "SDD-PROVENANCE: mega-sdd/execute-bolts unit=U-XXX" "$P/agents/bolt-implementer.md" \
-  && ok "bolt-implementer (the dispatch system prompt) scaffolds the full trailer — sole prompt-side copy (M-09)" || fail "bolt-implementer full trailer scaffold missing"
+# P3 C6b (spec v9 §8.6): the bolt-implementer agent is deleted; the inline plan's commit step is the producer.
+grep -qF 'SDD-PROVENANCE: mega-sdd/execute-bolts unit=%s' "$P/scripts/derive-exec-plan.sh" && grep -qF 'Unit: %s' "$P/scripts/derive-exec-plan.sh" \
+  && ok "the inline plan's commit step (derive-exec-plan.sh) scaffolds both trailers" || fail "inline plan commit-step trailer scaffold missing"
 grep -q 'UNIT_SCOPE' "$P/scripts/validate-bolt-artifacts.sh" && grep -q 'trailers:key=Unit' "$P/scripts/validate-bolt-artifacts.sh" \
   && ok "validator accepts scope + trailer identity channels" || fail "validator identity channels missing"
 
@@ -115,16 +115,10 @@ while IFS= read -r line; do
   echo "$line" | grep -qiE "does not exist|does NOT exist" || { fail "ast-grep test --validate presented as real: $line"; BAD=1; }
 done < <(grep -rn "ast-grep test --validate" "$P/skills" "$P/commands" 2>/dev/null | grep -v Binary)
 [ "$BAD" = "0" ] && ok "ast-grep test --validate only ever mentioned as nonexistent"
-# P2d moved the halt vocabulary into the agent system prompt (the dispatch
-# template was deleted in P3) — the canonical dep_missing pin covers the agent.
-BAD=0
-for f in "$P/agents/bolt-implementer.md"; do
-  grep -q "missing_dependency" "$f" && { fail "missing_dependency alias survives in $(basename "$f")"; BAD=1; }
-done
-[ "$BAD" = "0" ] && ok "halt vocabulary uses canonical dep_missing (bolt-implementer agent)"
-grep -q "dep_missing" "$P/agents/bolt-implementer.md" \
-  && ok "bolt-implementer carries the canonical dep_missing halt type" \
-  || fail "bolt-implementer missing the dep_missing halt type (vocabulary did not land in the agent)"
+# The agent that carried the halt vocabulary is deleted (P3 C6b); SKILL.md pre-flight 3.5/4 names it.
+! grep -q "missing_dependency" "$EB/SKILL.md" && grep -q 'halt `dep_missing`' "$EB/SKILL.md" \
+  && ok "halt vocabulary uses canonical dep_missing (execute-bolts SKILL.md)" \
+  || fail "execute-bolts SKILL.md lost the canonical dep_missing halt type"
 
 echo "── enum + eligibility coherence ──"
 grep -rqE "create/extend/modify" "$EB" && fail "stale create/extend/modify enum phrase survives" || ok "task_type enum phrases honest ({create,verify,extend})"
