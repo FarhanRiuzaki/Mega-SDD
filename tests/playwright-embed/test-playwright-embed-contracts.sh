@@ -84,7 +84,10 @@ n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
 # the Hard-gate line no longer names the deleted `bind-codebase` / classic `binding.md`; it now pins the
 # surviving JIT per-unit gate (bolts/U-XXX/binding.json, pre-flight 3.9, binding_conflict, resolve-oq --binding).
 # That line is the ONLY change above the marker: 3982 → 3952 (−30 B, a shrink; the 4030 cap stands).
-[ "$n" -eq 3952 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3952, 9.0 P1: Hard-gate line re-pointed to the JIT per-unit gate — spec 2026-09-27-v9-simplification-design.md; under the 4030 cap)"
+# 9.0 §8.5 re-baseline (RECORDED — research/2026-09-28-p2-inline-results.md; execute-bolts inline by default): the
+# Hard-gate line states the run-start quarantine (JIT bind up front + per task) and scopes the dispatch gate to
+# `--agents`. That line is the ONLY change above the marker: 3952 → 3988 (+36 B, under the 4030 cap).
+[ "$n" -eq 3988 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3988, 9.0 §8.5: Hard-gate line states the inline run-start gate — spec 2026-09-27-v9-simplification-design.md; under the 4030 cap)"
 # C1b: the COMPACT-mode extraction ('## Hard rule' awk, session-start:150-153 —
 # no frontmatter strip) is pinned separately: a line matching /^## Hard rule/ or
 # 'ANCHOR-CORE ends' inside the frontmatter would move THIS region without
@@ -97,7 +100,8 @@ cn=$(printf '%s' "$CCORE" | wc -c | tr -d ' ')
 # v7.0.0 re-baseline: the M/L-scoped Hard rule block grew (tier-S prohibitions).
 # 9.0 P1 re-baseline (RECORDED — same single Hard-gate line change as C1, which sits inside
 # this region too): 1619 → 1589 (−30 B, identical delta to C1).
-[ "$cn" -eq 1589 ] && ok "C1b compact-core byte length unchanged ($cn)" || fail "C1b compact core changed: $cn bytes (baseline 1589, 9.0 P1 Hard-gate line re-pointed to the JIT per-unit gate)"
+# 9.0 §8.5 re-baseline (RECORDED — same single Hard-gate line change as C1): 1589 → 1625 (+36 B, identical delta).
+[ "$cn" -eq 1625 ] && ok "C1b compact-core byte length unchanged ($cn)" || fail "C1b compact core changed: $cn bytes (baseline 1625, 9.0 §8.5 Hard-gate line states the inline run-start gate)"
 # C2: no slice mention above the marker (both variants)
 printf '%s' "$CORE" | grep -qi "slice" && fail "C2 'slice' leaked into the anchor core" || ok "C2 anchor core slice-free"
 printf '%s' "$CCORE" | grep -qi "slice" && fail "C2b 'slice' leaked into the compact core" || ok "C2b compact core slice-free"

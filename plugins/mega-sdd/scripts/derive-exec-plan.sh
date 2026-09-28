@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# derive-exec-plan.sh — the run-start CONFLICT gate and plan generator of `execute-bolts --inline`, zero model
+# derive-exec-plan.sh — the run-start CONFLICT gate and plan generator of the inline `execute-bolts` run (the default), zero model
 # tokens (spec docs/superpowers/specs/2026-09-27-v9-simplification-design.md §8.1; skills/execute-bolts/references/inline-run.md).
 #
-#   derive-exec-plan.sh --cwd=<root> --vault=<vault> [--units=all|U-001,…] [--pending | --retire] [--quiet]
+#   derive-exec-plan.sh --cwd=<root> --vault=<vault> [--units=all|U-001,…] [--pending | --rebind-wip | --retire [--dry-run]] [--quiet]
 #
 # done       derive-ready-units.sh `done`, or _lib/exec_units.done (the rule the run-boundary scan uses).
 # --pending  ONE JSON line {"pending":[…]}: not done, not `status: superseded`, topological — the list the
 #            controller re-binds up front. Writes nothing.
-# --retire   the close's last step: removes the vault's plans, their ledgers and superpowers' workspace
-#            of each (.superpowers/sdd/<plan>/, by its plan-path marker). {"retired":[…]}.
+# --rebind-wip  the close, before its evidence commit: re-binds each unit with an open own_wip CONFLICT (a resume's own work,
+#            done since: CONFIRMED) → {"rebound":[…]}; a CONFLICT left, or named by a `Close: halt` ledger line → exit 1 + halt
+#            {scope: close} + that line. --retire: the same (--dry-run: no re-bind), then removes plans, ledgers, workspaces.
 # open run   a plan whose Run base is HEAD or an ancestor of it: the default mode returns it ("resumed":
 #            true) and never regenerates it — a compaction, a re-run or a new session continues THIS run.
 # default    candidates = pending ∩ --units, topological. A candidate is QUARANTINED by the SAME
@@ -28,18 +29,19 @@
 #            the last task` (the close, in the last task's brief). A never-committed in-scope unit's leftover
 #            review-tier.json is renamed review-tier.retired.json. The validator rewrites .validation-blockers.json.
 # stdout     ONE JSON line: schema exec-plan/1, vault, plan, run_base, in_scope, quarantined, deferred, done, halt (+ resumed).
-# Exit 0 = plan written or resumed · 1 = nothing executable (no plan) · 2 = usage / cycle / unreadable input.
+# Exit 0 = plan written, resumed, re-bound or retired · 1 = nothing executable (no plan), or a CONFLICT left at the
+# close · 2 = usage / cycle / unreadable input / a failed re-bind.
 set -u
-CWD="."; VAULT=""; UNITS="all"; MODE=""; QUIET=0
+CWD="."; VAULT=""; UNITS="all"; MODE=""; QUIET=0; DRY=0
 for arg in "$@"; do case "$arg" in
   --cwd=*) CWD="${arg#*=}" ;; --vault=*) VAULT="${arg#*=}" ;; --units=*) UNITS="${arg#*=}" ;;
-  --pending|--retire) MODE="${arg#--}" ;; --quiet) QUIET=1 ;;
-  *) echo "usage: derive-exec-plan.sh --cwd=<root> --vault=<vault> [--units=all|U-001,…] [--pending | --retire] [--quiet]" >&2; exit 2 ;;
+  --pending|--retire|--rebind-wip) MODE="${arg#--}" ;; --quiet) QUIET=1 ;; --dry-run) DRY=1 ;;
+  *) echo "usage: derive-exec-plan.sh --cwd=<root> --vault=<vault> [--units=…] [--pending | --rebind-wip | --retire [--dry-run]] [--quiet]" >&2; exit 2 ;;
 esac; done
 [ -n "$VAULT" ] && [ -d "$VAULT/units" ] || { echo "usage: --vault=<dir with units/> required" >&2; exit 2; }
 [ -d "$CWD" ] || { echo "usage: --cwd=<existing project root> required" >&2; exit 2; }
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-V_CWD="$CWD" V_VAULT="$VAULT" V_UNITS="${UNITS:-all}" V_MODE="$MODE" V_QUIET="$QUIET" V_SCRIPTS="$SCRIPT_DIR" \
+V_CWD="$CWD" V_VAULT="$VAULT" V_UNITS="${UNITS:-all}" V_MODE="$MODE" V_QUIET="$QUIET" V_DRY="$DRY" V_SCRIPTS="$SCRIPT_DIR" \
   python3 - <<'PYEOF'
 import glob, heapq, json, os, re, shlex, shutil, subprocess, sys
 
@@ -80,16 +82,42 @@ def git_ok(*a):
     return r.stdout.strip() if r and r.returncode == 0 else None
 
 
-if E["V_MODE"] == "retire":  # the run is closed: the next run plans fresh
-    gone = sorted(glob.glob(os.path.join(BOLTS, "_exec-plan-*.md")) + glob.glob(os.path.join(BOLTS, "_inline-ledger-*.md")))
-    top = os.path.realpath(git_ok("rev-parse", "--show-toplevel") or root)
-    ids = {x for p in gone for x in (os.path.relpath(os.path.realpath(p), top), os.path.realpath(p))}
-    gone += [os.path.dirname(m) for m in glob.glob(os.path.join(top, ".superpowers", "sdd", "*", "plan-path"))
-             if open(m, encoding="utf-8", errors="replace").read().strip() in ids]
-    for p in gone:
-        shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
-    print(json.dumps({"retired": gone}))
-    sys.exit(0)
+def open_conflicts(u):  # the open CONFLICT claims of a unit's binding.json ([] without one); None = unparseable
+    bj = os.path.join(BOLTS, u, "binding.json")
+    try:
+        return [c for c in (json.load(open(bj, encoding="utf-8"))["claims"] if os.path.isfile(bj) else [])
+                if c.get("verdict") == "CONFLICT" and not c.get("resolution")]
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None
+
+
+if E["V_MODE"] in ("rebind-wip", "retire"):  # the close: own_wip re-bind + check, then (--retire) the next run plans fresh
+    ledgers = glob.glob(os.path.join(BOLTS, "_inline-ledger-*.md"))
+    held = {u for lg in ledgers for ln in open(lg, encoding="utf-8", errors="replace") if ln.startswith("Close: halt ") for u in ln.split()[3:]}
+    wip = [] if E["V_DRY"] == "1" else sorted((u for u in (os.path.basename(os.path.dirname(b)) for b in glob.glob(os.path.join(
+        BOLTS, "U-*", "binding.json"))) if any(c.get("own_wip") for c in open_conflicts(u) or [])), key=natkey)
+    out = dict({"rebound": wip}, **({"retired": []} if E["V_MODE"] == "retire" else {}))
+    if wip:  # never carried open: the re-bind re-verdicts a done unit's own work
+        r = run(["bash", os.path.join(scripts, "rebind-units.sh"), "--cwd=" + root, "--vault=" + vault, "--units=" + ",".join(wip)])
+        if not r or r.returncode not in (0, 4):
+            die("rebind-units.sh --units=%s failed (exit %s) — nothing retired" % (",".join(wip), r.returncode if r else "none"))
+        out["text_pending"] = int((re.findall(r'"text_pending": (\d+)', r.stdout) or [0])[-1])
+    left = {u: ids for u in sorted(set(wip) | held, key=natkey) for oc in [open_conflicts(u)] for ids in [["binding.json unparseable"]
+            if oc is None else sorted((str(c.get("id")) for c in oc if not c.get("own_wip")), key=natkey)] if ids}
+    if left:  # never closed over: the ledger names it until a human decides it (resolve-oq --binding)
+        [open(lg, "a", encoding="utf-8").write("Close: halt binding_conflict %s\n" % " ".join(left)) for lg in ledgers if set(left) - held]
+        out["halt"] = {"type": "binding_conflict", "scope": "close", "units": left, "next_action": "resolve-oq --binding, then this close "
+                       "step again", "keterangan": "CONFLICT tersisa setelah re-bind: putuskan via resolve-oq --binding, lalu ulangi langkah ini"}
+    elif E["V_MODE"] == "retire":
+        out["retired"] = gone = sorted(glob.glob(os.path.join(BOLTS, "_exec-plan-*.md")) + ledgers)
+        top = os.path.realpath(git_ok("rev-parse", "--show-toplevel") or root)
+        ids = {x for p in gone for x in (os.path.relpath(os.path.realpath(p), top), os.path.realpath(p))}
+        gone += [os.path.dirname(m) for m in glob.glob(os.path.join(top, ".superpowers", "sdd", "*", "plan-path"))
+                 if open(m, encoding="utf-8", errors="replace").read().strip() in ids]
+        for p in gone:
+            shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
+    print(json.dumps(out))
+    sys.exit(1 if left else 0)
 
 units = {}
 for uid, p in xu.unit_files(vault).items():
@@ -188,12 +216,7 @@ def ancestors(u, seen):
 quar, deferred, recorded = {}, {}, set(ready.get("quarantined") or [])
 for u in cands:  # topological: an ancestor is decided before its dependents
     via = next((a for a in sorted(set(units[u]["deps"]), key=natkey) if a not in done and (a in quar or a not in cands)), None)
-    bj = os.path.join(BOLTS, u, "binding.json")
-    try:
-        opn = [c for c in (json.load(open(bj, encoding="utf-8"))["claims"] if os.path.isfile(bj) else [])
-               if c.get("verdict") == "CONFLICT" and not c.get("resolution")]
-    except (OSError, ValueError, KeyError, TypeError, AttributeError):
-        opn = None  # unparseable: fail closed
+    opn = open_conflicts(u)  # None = unparseable: fail closed
     creates = {t["path"] for a in ancestors(u, set()) if a in cands and a not in quar
                for t in units[a]["targets"] if t["operation"] == "create"}
     dfr = sorted({str(c.get("id")) for c in opn or [] if c.get("kind") == "fs_must_exist" and xu.pnorm(c.get("expect")) in creates}, key=natkey)
@@ -245,7 +268,7 @@ except (OSError, ValueError, KeyError, TypeError):
 suite = sh("run-full-suite.sh", "--cwd=" + q(root), "--base=" + base)
 gate = sh("validate-bolt-artifacts.sh", "--cwd=" + q(root), "--orphan-scan --batch-suite-gate --postflight-scan --recompute "
           "--whitelist-scan --acceptance-scan --panel-scan --conflict-bypass-scan")
-retire = sh("derive-exec-plan.sh", "--cwd=" + q(root), "--vault=" + q(vault), "--retire")
+retire, rewip = (sh("derive-exec-plan.sh", "--cwd=" + q(root), "--vault=" + q(vault), m) for m in ("--retire", "--rebind-wip"))
 out = []
 A = out.append
 A("# Inline execution plan — vault %s (%d unit%s)" % (os.path.basename(vault), len(in_scope), "" if len(in_scope) == 1 else "s"))
@@ -269,8 +292,8 @@ A("\n".join([
     "included. The user's execute-bolts invocation is the consent: no worktree, no branch switch, no question.",
     "- **This plan is the run's until the close retires it:** a resume, a compaction or a new session continues THIS plan and its ledger "
     "(trust the ledger and `git log`); derive-exec-plan.sh returns this plan, never a new one, while it is open.",
-    "- **Stops:** an exit code an `Expected:` line does not list is a STOP of the run. `hard_rule_violated`, an OQ P1 business question "
-    "or `bolt_introduces_locked_drift` STOPS THE RUN (the one-screen halt; the human decides). A CONFLICT at a task's re-bind step "
+    "- **Stops:** an exit code an `Expected:` line does not list is a STOP of the run. `hard_rule_violated` or an OQ P1 business question "
+    "STOPS THE RUN (the one-screen halt; the human decides). A CONFLICT at a task's re-bind step "
     "quarantines that unit (the step says how) and skips every task whose **Depends on** reaches it. Any other DEFER-class halt on a "
     "unit with no commit yet is recorded the same way. A unit whose commit landed is never quarantined: fix it forward, or stop the "
     "run. Never commit a stopped unit's work, attributed or not.",
@@ -365,9 +388,11 @@ A("\n".join([
     "trailers inside its `target_files`, then its `run-acceptance-tests.sh` and `run-postflight-scan.sh` run again and its evidence is "
     "committed again; a cross-cutting fix is `fix(review): …` and touches no path a `## Hard rules` line of an in-scope unit protects "
     "and no quarantined unit's target (else attribute it to a unit). A finding about a quarantined unit is ruled out by construction.",
-    "4. **Finishing:** `delivery-check.sh` (VERDICT: PASS); `%s` again when a commit landed since; the run evidence commit "
-    "(`git add -- %s/bolts`, `chore(sdd): evidence run %s`, skipped when `.mega-sdd/` is not versioned); the run-boundary gate "
-    "`%s` (exit 0); then retire the run: `%s`; then the result contract." % (suite, rel_vault, base[:7], gate, retire)]))
+    "4. **Finishing:** append `Close: reviewed` to `%s` (a resume starts here: no second review); `delivery-check.sh` (VERDICT: PASS); "
+    "`%s` again when a commit landed since; `%s` (`text_pending` > 0: ladder E3; exit 1: STOP, `resolve-oq --binding`, then again); "
+    "the run evidence commit (`git add -- %s/bolts`, `chore(sdd): evidence run %s`, skipped if `.mega-sdd/` is unversioned); the gate "
+    "`%s` (exit 0); retire: `%s` (`rebound` non-empty: `chore(sdd): evidence re-bind`, the gate again); the result contract." % (
+        LEDGER, suite, rewip, rel_vault, base[:7], gate, retire)]))
 
 os.makedirs(BOLTS, exist_ok=True)
 with open(PLAN + ".tmp", "w", encoding="utf-8") as f:

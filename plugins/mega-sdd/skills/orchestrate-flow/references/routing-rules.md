@@ -55,21 +55,21 @@ The probes (10 core + the P2 foreign-SDD adoption probe) and where each lands:
 | `maintenance_sync` | Mode D row (freshness substrate + binding + a change signal) | the sync chain (§Mode D — maintenance/sync detail) |
 | `lite_context_no_units` | plan-born vault (`context.md`), no units | `plan <prd> --lite --regenerate` → `execute-bolts --all --lite` |
 | `layout2_needs_migration` | layout-2 vault (no `context.md`; built by the pre-9.0 classic chain) that needs building or syncing | `[]` + note: propose `/mega-sdd:migrate-paths --vault-layout=3` (never run silently; a mandatory full JIT re-bind follows it) |
-| `units_pending_bolts` | units exist, some not in bolts | `execute-bolts --all --parallel` (`--per-squad` when `squad_count ≥ 2` — already parallel by procedure) |
+| `units_pending_bolts` | units exist, some not in bolts | `execute-bolts --all --lite` (the default inline run: one context, plan order; a carried `--agents` is appended — its `--all` is wave-parallel by default, and `--per-squad` when `squad_count ≥ 2` is `--agents` only, already parallel by procedure) |
 | `all_units_executed` | all units executed, no recent drift check | `detect-drift` |
 | `pipeline_complete` | all executed + recent drift check | `[]` |
 
 ## Decision matrix
 
-**One pipeline.** GROUND (`scripts/ground.sh`: `derive-state.sh` + `build-symbol-index.sh` + pack resolve) runs at the front door, and no chain has a scan or bind hop: binding is the per-unit JIT bind at `execute-bolts` pre-flight 3.9 (`write-unit-binding.sh` → `bolts/U-XXX/binding.json`), and the CONFLICT gate closes at dispatch. `--classic`, `spine: classic` and `lane: standard` are retired: say so in one line, then ignore them.
+**One pipeline.** GROUND (`scripts/ground.sh`: `derive-state.sh` + `build-symbol-index.sh` + pack resolve) runs at the front door, and no chain has a scan or bind hop: binding is the per-unit JIT bind in `execute-bolts` (`write-unit-binding.sh` → `bolts/U-XXX/binding.json`; run start + each task, or per dispatch under `--agents`), and the CONFLICT gate closes before the unit is built. `--classic`, `spine: classic` and `lane: standard` are retired: say so in one line, then ignore them.
 
 ### Starterkit-first ordering
 
-The original directive "scan code base harusnya di atur di depan ... starterkit itu wajib ada. jika tidak ada baru greenfield" carried TWO obligations: starterkit is mandatory (unchanged — the halt below stands, fed by the script-side pack matcher in `state.json` `derived.framework_pack`), and code-awareness must precede vault generation. The carrier is GROUND (manifest sniff + pack resolve + symbol index, seconds) + `plan`'s index queries under `--mode=existing`. The fabrication risk the old ordering guarded ("vault gen'd without code awareness") is covered by the verification that was always the moat: an ungrounded unit claim cannot pass the per-unit JIT bind (`write-unit-binding.sh` → `bolts/U-XXX/binding.json`) or its CONFLICT gate at dispatch.
+The original directive "scan code base harusnya di atur di depan ... starterkit itu wajib ada. jika tidak ada baru greenfield" carried TWO obligations: starterkit is mandatory (unchanged — the halt below stands, fed by the script-side pack matcher in `state.json` `derived.framework_pack`), and code-awareness must precede vault generation. The carrier is GROUND (manifest sniff + pack resolve + symbol index, seconds) + `plan`'s index queries under `--mode=existing`. The fabrication risk the old ordering guarded ("vault gen'd without code awareness") is covered by the verification that was always the moat: an ungrounded unit claim cannot pass the per-unit JIT bind (`write-unit-binding.sh` → `bolts/U-XXX/binding.json`) or its CONFLICT gate.
 
 | State (from inspection) | Proposed chain |
 |---|---|
-| **Lane lite** — starterkit detected + no vault + PRD present (every guarded run; `--lite` / config `lane: lite` are accepted markers) | **2-hop:** `plan <prd> --lite --mode=<existing\|new>` → `execute-bolts --all --lite` — no bind hop (JIT bind at dispatch, execute-bolts pre-flight 3.9), no handoff YAML between the hops (state re-derived from disk + `validate-preflight.sh --predictive --chain=execute-bolts`); `--mode=existing` when the repo carries code, `new` for a bare scaffold (never asked). A plan-born vault (`context.md`) with no units → `plan <prd> --lite --regenerate` (position `lite_context_no_units`). A brief goes to `route-lane.sh` (direct / assisted); under `--guarded` the front door first writes it to a seed PRD file (unspecified items become OQs) and `plan` takes that file |
+| **Lane lite** — starterkit detected + no vault + PRD present (every guarded run; `--lite` / config `lane: lite` are accepted markers) | **2-hop:** `plan <prd> --lite --mode=<existing\|new>` → `execute-bolts --all --lite` — no bind hop (the JIT bind runs inside execute-bolts), no handoff YAML between the hops (state re-derived from disk + `validate-preflight.sh --predictive --chain=execute-bolts`); `--mode=existing` when the repo carries code, `new` for a bare scaffold (never asked). A plan-born vault (`context.md`) with no units → `plan <prd> --lite --regenerate` (position `lite_context_no_units`). A brief goes to `route-lane.sh` (direct / assisted); under `--guarded` the front door first writes it to a seed PRD file (unspecified items become OQs) and `plan` takes that file |
 | **Starterkit detected** + Legacy codebase + rebuild intent + no vault | `extract-intelligence <legacy>` (KB) → `plan --kb=<kb> --lite --mode=<existing\|new>` → `execute-bolts --all --lite`. Judge `--mode` on the TARGET scaffold (GROUND's manifests + symbol index), never on a legacy tree inside the repo |
 | **Starterkit ABSENT** + `--greenfield` flag set | PRD → `plan <prd> --lite --mode=new` (stack-agnostic units, every unit `create`); no `execute-bolts` until the user scaffolds — the JIT bind then runs per unit. A brief → `route-lane.sh` (direct lane), or under `--guarded` the seed PRD file → `plan` |
 | **Starterkit ABSENT** + no `--greenfield` flag | HALT `no_starterkit_detected` with options (scaffold first / opt in greenfield / cancel) |
@@ -81,8 +81,8 @@ The original directive "scan code base harusnya di atur di depan ... starterkit 
 | Legacy codebase + no PRD + no vault + rebuild intent (user mentioned "rebuild di stack baru" / "reverse engineer" / "extract intelligence") | `extract-intelligence <legacy>` → `plan --kb=<kb> --lite --mode=<existing\|new>` |
 | `knowledge_base: present` + no vault | `plan --kb=<kb> --lite --mode=<existing\|new>` (skip extract-intelligence — already done). **+ MENTION the `emit-prd` reverse lane** (one line, never auto-chained): a team-readable PRD draft from the KB with `[VERIFIED]/[INFERRED]/[OPEN]` markers carried verbatim (`/mega-sdd:emit prd`, reverse mode). Docs are OUTPUTS — `plan --kb` stays the pipeline continuation. |
 | **Layout-2 vault** (no `context.md` — built by the pre-9.0 classic chain) that needs building or syncing | PROPOSE `/mega-sdd:migrate-paths --vault-layout=3` (layout-2 → `context.md`, then a mandatory full JIT re-bind; never run silently). Afterwards the rows below apply. Reading stays: emit-* and the status view work on layout-2 as they are |
-| Units exist, some not in bolts | `execute-bolts --all --parallel` |
-| Vault has `squad_count: ≥2`, units exist, some not in bolts | `execute-bolts --per-squad` |
+| Units exist, some not in bolts | `execute-bolts --all --lite` |
+| Vault has `squad_count: ≥2`, units exist, some not in bolts | `execute-bolts --all --lite` (with `--agents`: `execute-bolts --per-squad --agents`) |
 | Vault has `squad_count: ≥2`, units exist, user invokes from a single-squad context (e.g., on a dev's laptop with a specific role) | Ask: "Run for which squad?" then propose `execute-bolts --squad=<answer>` |
 | Vault has `squad_count: ≥2` but `interfaces_count: 0` and ≥1 unit has cross-squad coupling hint in `context_source` | `plan <prd> --lite --regenerate` (plan carries the `interface_ref_missing` halt) — proposed only with explicit consent, because it rewrites `context.md` and the units of a vault that has bolts |
 | All units executed, no recent drift check | `detect-drift` |
@@ -104,7 +104,7 @@ The original directive "scan code base harusnya di atur di depan ... starterkit 
 
 - **The chain:** `scripts/derive-changed-paths.sh --vault <vault>` (hop 1 for every vault: git diff index `head_commit`..HEAD ∪ working tree ∪ dirty journal → `<vault>/.sync-changed-paths.txt` — the durable changed set the non-interactive downstream reads once the journal is consumed, because by then the journal is rotated, so it cannot be reconstructed) → short-circuit gate (next bullet) → `detect-drift --scope=@<vault>/.sync-changed-paths.txt` (scoped to those changed paths; its OWN handoff CONTINUES the sync lane straight to the re-bind hop, NEVER to resolve-oq — resolve-oq has no drift-consumption mode) → [`resolve-oq` ONLY if the drift scan CREATED an `OQ-DC-N` stub — resolve-oq handles that stub in its ordinary intent mode; it never ingests drift findings] → `scripts/rebind-units.sh --cwd=. --vault=<vault> --paths=@<vault>/.sync-changed-paths.txt` → `plan --reconcile` → `execute-bolts --all --lite` (stale units only; `superseded` skipped).
 - **Short-circuit gate (after the changed set exists): `scripts/sync-intersect.sh --cwd=<root> --vault=<vault> --paths=@<vault>/.sync-changed-paths.txt` — exit 0 (`in_sync`: changed ∩ binding anchors ∪ unit target_files = ∅) → stamp freshness, one-line SYNC-REPORT.md, chain ENDS (nothing to re-verdict — proportional verification); exit 4 → proceed; exit 2 or ANY other unexpected exit → fail-closed, full chain.** `sync-intersect.sh` and `derive-delta-paths.sh` read the union of `bolts/U-*/binding.json` anchors ∪ units' `## Anchors`; a vault with NO per-unit binding at all → exit 2 → full JIT re-bind.
-- **The re-bind hop** binds PER UNIT (there is no whole-vault binding): `rebind-units.sh` exit 0 = nothing affected (in_sync for the hop), 4 = re-bound (read `gate` — a CONFLICT closes the gate for the affected units exactly as at dispatch), 2/3 = fail-closed → full JIT re-bind.
+- **The re-bind hop** binds PER UNIT (there is no whole-vault binding): `rebind-units.sh` exit 0 = nothing affected (in_sync for the hop), 4 = re-bound (read `gate` — a CONFLICT closes the gate for the affected units exactly as in execute-bolts), 2/3 = fail-closed → full JIT re-bind.
 - **No baseline** (no symbol index, or `derive-changed-paths.sh` exit 3: no baseline stamp / git unavailable / write failed) → skip detect-drift (nothing to scope — a scope-less detect-drift would null-terminate the chain before the re-bind) and run the FULL re-bind `scripts/rebind-units.sh --cwd=. --vault=<vault> --units=all` → `plan --reconcile` → `execute-bolts --all --lite` — never a guessed scope.
 - `plan --reconcile` flips `task_type` / status from the per-unit binding evidence and marks superseded units; it writes no new units (a new requirement goes through `diff-vault` → `plan --regenerate`).
 - The never-ending-development lane per spec `2026-06-10-living-vault-continuous-sync-design.md` §3.3 (per-hop handoff semantics clarified by §3.8).
@@ -132,7 +132,7 @@ When CWD inspection finds `<vault>/_meta/squads.yaml` with ≥2 squads (only mig
 
 - Set `squad_count` in state snapshot to the count
 - Read declared squad IDs to validate any `--squad=<id>` user input
-- Adjust execute-bolts proposal:
+- Adjust execute-bolts proposal (`--agents` only — the default inline run takes every unit in one context, so squads change nothing there):
   - Default to `--per-squad` (main-thread squad loop; concurrent depth-1 bolt-agent dispatch — see `execute-bolts/references/squad-subagent.md`)
   - If user is running in a context that suggests single-squad focus
     (e.g., explicit `--squad=<id>` arg passed to orchestrate-flow, or
@@ -156,7 +156,7 @@ Hard cap: **3 sub-skills per chain** (default mode).
 
 When `--deep` flag is set, the cap-3 rule is replaced with pipeline-end chains.
 
-**Brownfield code-awareness**: vault generation must have codebase context (conventions, existing entities, framework signals) — a vault gen'd blind fabricates entities, discovers PARTIAL_FIELDS_MISSING late, and cold-starts the OQ classifier. The carrier is GROUND (`state.json` manifests + `derived.framework_pack` + the symbol index) + `plan --mode=existing` index queries; the per-unit JIT bind at `execute-bolts` pre-flight 3.9 is the verification backstop (CONFLICT gate at dispatch).
+**Brownfield code-awareness**: vault generation must have codebase context (conventions, existing entities, framework signals) — a vault gen'd blind fabricates entities, discovers PARTIAL_FIELDS_MISSING late, and cold-starts the OQ classifier. The carrier is GROUND (`state.json` manifests + `derived.framework_pack` + the symbol index) + `plan --mode=existing` index queries; the per-unit JIT bind in `execute-bolts` is the verification backstop (its CONFLICT gate).
 
 | State (from inspection) | `--deep` proposed chain |
 |---|---|
@@ -167,7 +167,7 @@ When `--deep` flag is set, the cap-3 rule is replaced with pipeline-end chains.
 | Brief only (no vault, no PRD, no KB) | `route-lane.sh` decides (direct / assisted — no pipeline). Under `--guarded`: the front door writes the brief to a seed PRD file → `plan <brief-file> --lite --mode=<existing\|new>` → `execute-bolts --all --lite` (2 phases) |
 | Plan-born vault (`context.md`), no units | `plan <prd> --lite --regenerate` → `execute-bolts --all --lite` (2 phases) |
 | Layout-2 vault (no `context.md`) | PROPOSE `/mega-sdd:migrate-paths --vault-layout=3` first (never silent; a mandatory full JIT re-bind follows), then the rows above/below |
-| Units exist, some not in bolts | `execute-bolts --all --parallel` (1 phase) |
+| Units exist, some not in bolts | `execute-bolts --all --lite` (1 phase) |
 
 ### Greenfield vs brownfield detection
 

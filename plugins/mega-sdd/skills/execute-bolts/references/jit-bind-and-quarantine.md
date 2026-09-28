@@ -1,7 +1,7 @@
 # JIT bind per wave + quarantine — the pre-flight 3.9 / 3.10 procedures
 
-Loaded by `execute-bolts` SKILL.md pre-flight 3.9 (every run — execute-bolts runs the
-lite lane only) and 3.10 (a DEFER-class halt fires on a unit). Spec: `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md`
+Loaded by `execute-bolts` SKILL.md pre-flight 3.9 (`--agents`; the default inline run uses §E3 and
+§3.10 — `inline-run.md` (b) binds up front) and 3.10 (a DEFER-class halt fires on a unit). Spec: `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md`
 Appendix F2–F4 (JIT bind) and F6c (quarantine); audit
 `research/2026-09-10-p0-interaction-audit.md` §C (which halts wait for a human).
 

@@ -10,7 +10,7 @@ This repository **is** the `mega-sdd` Claude Code plugin (plus its marketplace m
 - The **enforcement doctrine** — *gates > rules > hooks*; "prose that says HALT enforces nothing."
 - The **v4 architecture** (lean skills + progressive disclosure, Hybrid hook enforcement, first-class `agents/`, commands as CLI entry points). On top of it sits the **9.0 shape**:
   - the **lane router** (`route-lane.sh`): direct / assisted / guarded;
-  - **ONE spec pipeline** inside guarded: `plan` (a PRD, a seed PRD from a brief, or `plan --kb` from extract-intelligence) → `execute-bolts` (JIT bind per unit, CONFLICT gate at dispatch);
+  - **ONE spec pipeline** inside guarded: `plan` (a PRD, a seed PRD from a brief, or `plan --kb` from extract-intelligence) → `execute-bolts` (inline by default: one context, JIT bind up front + per task, CONFLICT quarantine at run start, one blind review; `--agents` keeps the per-unit implementer + panel and the CONFLICT gate at dispatch);
   - the **result contract** every lane ends with: AC → test table, `delivery-check.sh` `VERDICT: PASS`, and the assumptions list.
 
   The classic chain (`generate-intent` / `scan-codebase` / `bind-codebase` / `generate-units`) was removed in 9.0. Don't re-introduce it.

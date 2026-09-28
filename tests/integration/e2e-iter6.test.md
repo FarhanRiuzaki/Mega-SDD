@@ -68,7 +68,7 @@ rule:
 
 **Expect chat**:
 ```
-▶ Phase 5 of 6: invoking execute-bolts (--all --parallel --auto)
+▶ Phase 5 of 6: invoking execute-bolts (--all --lite --auto)
   Hard Rule grammar: v2 (ast-grep detected)
   Pre-flight: 3 rules parsed, 3 snapshots captured
   ...

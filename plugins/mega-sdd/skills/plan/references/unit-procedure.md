@@ -113,7 +113,7 @@ Write `<vault>/units/_index.md` with:
 
 Full blocker YAML for every type → `plugins/mega-sdd/references/halt-protocol.md` (the registry routes each type to its family file).
 
-- **Unresolved CONFLICT → the gate closes at dispatch** (invariant #2): no binding exists at plan time, so this walk never halts on one; an open CONFLICT in `bolts/U-XXX/binding.json` BLOCKS that unit's bolt, and a migrated vault's CONFLICT blocks until the mandatory JIT re-bind re-verdicts it. Units are NEVER dispatched over an unresolved CONFLICT.
+- **Unresolved CONFLICT → the gate closes in execute-bolts** (invariant #2; the unit is quarantined before it is built): no binding exists at plan time, so this walk never halts on one; an open CONFLICT in `bolts/U-XXX/binding.json` BLOCKS that unit's bolt, and a migrated vault's CONFLICT blocks until the mandatory JIT re-bind re-verdicts it. Units are NEVER dispatched over an unresolved CONFLICT.
 - Dependency cycle → `cycle_detected`. Cross-squad direct dep → `cross_squad_dep_invalid`. Missing interface ref → `interface_ref_missing`. Two squads claim one artifact → `cross_squad_ambiguous`. Cross-module dep without `blocked_by` → `cross_module_dep_invalid`; module cycle → `module_cycle_detected`.
 - Unit needs target_files but vault too vague → halt. `vault.json` missing → halt (vault corruption).
 - `verify` task_type assigned but its anchor is empty → halt (anchor gap). `create` unit whose target_files all exist → `dedup_ambiguous`.

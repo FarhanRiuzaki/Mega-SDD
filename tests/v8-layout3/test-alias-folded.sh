@@ -34,7 +34,7 @@ pf() { # $1=dir $2=skill [$3=args]  → "STATUS check_id on_fail"
 A="$T/a"; mkdir -p "$A/.mega-sdd/vaults/app/units"; ( cd "$A" && git init -q . ); printf 'lane: lite\n' > "$A/.mega-sdd/config.yaml"
 R="$(pf "$A" generate-units)"; echo "$R" | grep -q '^FATAL skill_removed_in_9 ' && echo "$R" | grep -q 'generate-units was removed in 9.0' && echo "$R" | grep -q 'plan <prd> --regenerate' && echo "$R" | grep -q 'plan --reconcile' \
   && pass "a1: generate-units → FATAL skill_removed_in_9, WHY (removed in 9.0) + plan --regenerate / --reconcile hop named" || fail "a1: $R"
-R="$(pf "$A" bind-codebase)"; echo "$R" | grep -q '^FATAL skill_removed_in_9 ' && echo "$R" | grep -q 'bind-codebase was removed in 9.0' && echo "$R" | grep -q 'execute-bolts --all --lite' && echo "$R" | grep -q 'binds each unit at dispatch' && echo "$R" | grep -q 'rebind-units.sh --units=all' \
+R="$(pf "$A" bind-codebase)"; echo "$R" | grep -q '^FATAL skill_removed_in_9 ' && echo "$R" | grep -q 'bind-codebase was removed in 9.0' && echo "$R" | grep -q 'execute-bolts --all --lite' && echo "$R" | grep -q 'binds each unit before building it' && echo "$R" | grep -q 'rebind-units.sh --units=all' \
   && pass "a2: bind-codebase → FATAL skill_removed_in_9, WHY + bolts JIT-bind hop + full-audit script named" || fail "a2: $R"
 R="$(pf "$A" generate-intent)"; echo "$R" | grep -q '^FATAL skill_removed_in_9 ' && echo "$R" | grep -q 'generate-intent was removed in 9.0' && echo "$R" | grep -q 'plan <prd> --lite' && echo "$R" | grep -q 'plan --kb=<kb-dir>' \
   && pass "a3: generate-intent → FATAL skill_removed_in_9, WHY + plan <prd> / plan --kb hop named" || fail "a3: $R"

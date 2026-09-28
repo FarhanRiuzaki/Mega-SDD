@@ -1,6 +1,6 @@
 ---
 name: using-mega-sdd
-version: 4.4.0
+version: 4.4.1
 description: Session-start router for spec-driven development — weighs every task S/M/L and routes only M/L through a mega-sdd skill; S answers inline. Use when the prompt mentions intent, unit, bolt, vault, PRD, BRD, spec out, dev handoff, binding, bound-vault, open questions, knowledge-base, extract intelligence, reverse engineer, legacy intelligence, rebuild, revamp, sync (code changed, continue from current code), or auto/orchestrate; the Indonesian variants pecah PRD, buat dev, spec ini, siapkan context buat AI dev, kontrak handoff, pecah legacy, rebuild di stack baru, source of truth dari legacy, jalankan otomatis, lanjut, next, kode berubah, lanjutin dari kode sekarang.
 ---
 
@@ -32,7 +32,7 @@ A `.mega-sdd/` dir in the CWD is a STATUS signal only (the session-start state b
 
 **Gateway marker:** announce lines end with `` `mega-sdd-trace:<skill>` ``; every subagent dispatch prompt carries one `mega-sdd-trace:<skill>` line. Verbatim, no variants (docs/gateway-contract.md).
 
-**Hard gate:** an unresolved CONFLICT in `bolts/U-XXX/binding.json` (JIT bind, pre-flight 3.9) closes the unit at `execute-bolts` dispatch (`binding_conflict`) until `resolve-oq --binding` settles it.
+**Hard gate:** an unresolved CONFLICT in `bolts/U-XXX/binding.json` (JIT bind, up front + per task) quarantines the unit at `execute-bolts` run start (`--agents`: at dispatch; `binding_conflict`) until `resolve-oq --binding` settles it.
 
 ## Output language
 
@@ -82,7 +82,7 @@ When the doc's title/scope matches an existing vault's source → revision (diff
 |---|---|---|
 | Legacy → knowledge-base | extract-intelligence | read-only |
 | PRD / KB → vault + units | plan | read-only (symbol-index query on brownfield; `--kb=<kb-dir>` for legacy rebuild) |
-| Per-unit bind + CONFLICT gate | execute-bolts pre-flight 3.9 (`write-unit-binding.sh` → `bolts/U-XXX/binding.json`; `resolve-oq --binding`) | read-only |
+| Per-unit bind + CONFLICT gate | execute-bolts: up front + each task's re-bind, run-start quarantine (`--agents`: pre-flight 3.9, dispatch gate) (`write-unit-binding.sh` → `bolts/U-XXX/binding.json`; `resolve-oq --binding`) | read-only |
 | Unit → code | execute-bolts | write |
 
 ## Reference

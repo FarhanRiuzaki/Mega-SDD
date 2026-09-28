@@ -297,7 +297,7 @@ These halts rely on `chat_tail_excerpt` + `next_action.hint` + scenario-6 walkth
 - **check_id: `skill_removed_in_9`**
   command: the hop's skill is one of `generate-intent`, `bind-codebase`, `generate-units`, `scan-codebase` (`scripts/_lib/state_probes.py` `REMOVED_SKILLS`, the single list)
   expected: no hop names a removed skill
-  on_fail: the skill's one-line replacement from `REMOVED_SKILLS`, e.g. "bind-codebase was removed in 9.0 — use plan → `execute-bolts --all --lite`, which binds each unit at dispatch (full audit: `scripts/rebind-units.sh --units=all`)."
+  on_fail: the skill's one-line replacement from `REMOVED_SKILLS`, e.g. "bind-codebase was removed in 9.0 — use plan → `execute-bolts --all --lite`, which binds each unit before building it (full audit: `scripts/rebind-units.sh --units=all`)."
   fatal: yes
   predicts_halt: (chain order error — a stale 8.x chain, e.g. a paused `--resume`)
   note: both modes emit it: the predictive run (`--chain=…`) and the dispatch mode (`--skill=mega-sdd:<name>`), including in a directory with no `.mega-sdd/` (never the no-project PASS; nothing is written there). It never depends on lane, config or vault layout, and none of the removed skill's pre-9.0 probes run. The removed skills are not coming back: the fix is the replacement hop the message names.

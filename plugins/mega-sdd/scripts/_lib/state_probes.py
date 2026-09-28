@@ -1086,8 +1086,8 @@ REMOVED_SKILLS = {
                       "written with the vault (`plan <prd> --regenerate`; code "
                       "moved: `plan --reconcile`).",
     "bind-codebase": "bind-codebase was removed in 9.0 — use plan → "
-                     "`execute-bolts --all --lite`, which binds each unit at "
-                     "dispatch (full audit: `scripts/rebind-units.sh --units=all`).",
+                     "`execute-bolts --all --lite`, which binds each unit before "
+                     "building it (full audit: `scripts/rebind-units.sh --units=all`).",
     "scan-codebase": "scan-codebase was removed in 9.0 — use plan: GROUND "
                      "(`scripts/ground.sh`, symbol index) grounds every run.",
 }
@@ -1346,15 +1346,11 @@ def derive(probes):
                      "run `plan <prd> --lite --regenerate` with the PRD path")
         return finish("lite_context_no_units", [])
     if bolts < units:
-        # Chain dispatch is wave-parallel (token-and-latency spec §2a): the
-        # --per-squad procedure is parallel by construction; the --all leg
-        # carries --parallel explicitly. Standalone suggestions elsewhere keep
-        # plain --all — this is the CHAIN proposer.
-        chain = (
-            ["execute-bolts --per-squad"] if vault["squad_count"] >= 2
-            else ["execute-bolts --all --parallel"]
-        )
-        return finish("units_pending_bolts", chain)
+        # The default run is inline (v9 spec §8.5): one context, plan order,
+        # so --parallel / --per-squad shape nothing there — they belong to the
+        # --agents path, whose --all is wave-parallel by default; the front
+        # door appends a carried --agents (squads: routing-rules §Multi-squad).
+        return finish("units_pending_bolts", ["execute-bolts --all --lite"])
 
     # All units executed → drift check recency.
     drift = vault["drift_report"]

@@ -14,7 +14,7 @@ Loaded by `plan/SKILL.md` Step 4 (task_type, `target_files`, collision check) an
 
 ## task_type rows keyed to `bolts/U-XXX/binding.json`
 
-A unit's binding evidence exists only after the JIT bind at dispatch (`scripts/write-unit-binding.sh`, sole writer) or a re-bind (`scripts/rebind-units.sh`), so these rows apply wherever typing reads it (the Reconcile pass below). A resolution is the claim's `resolution.action`, recorded by `resolve-oq --binding` through the same writer.
+A unit's binding evidence exists only after the execute-bolts JIT bind (`scripts/write-unit-binding.sh`, sole writer) or a re-bind (`scripts/rebind-units.sh`), so these rows apply wherever typing reads it (the Reconcile pass below). A resolution is the claim's `resolution.action`, recorded by `resolve-oq --binding` through the same writer.
 
 | Claim in `bolts/U-XXX/binding.json` | Unit task_type |
 |---|---|

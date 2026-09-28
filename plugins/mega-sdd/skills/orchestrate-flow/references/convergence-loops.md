@@ -19,7 +19,9 @@ ONLY these halts trigger auto-loop. Other halts ALWAYS stop chain (human-require
 
 | Halt type | Auto-loop action | Safety condition |
 |---|---|---|
-| `binding_conflict` (execute-bolts 3.9, per unit) | Auto-invoke `resolve-oq --binding <vault>` with grounded recommendations; it writes each choice via `write-unit-binding.sh --resolve`. Next step is ACTION-MIX dependent: KEEP_CODE/SPLIT edits the unit's `## Claims` → `rebind-units.sh --units=U-XXX` (3.9b) → re-dispatch; KEEP_VAULT/DEFER-only → the resolution in `binding.json` already opens the gate (open = CONFLICT without resolution), so continue that unit's dispatch with no re-bind (a re-bind would only spend the unit's one 3.9b at this HEAD — `rebind_exhausted`; per `execute-bolts/references/jit-bind-and-quarantine.md` §3.9/§3.9b) | Recommendation confidence ≥ 0.80; else stop |
+| `binding_conflict` — `--agents` (execute-bolts 3.9, per unit) | Auto-invoke `resolve-oq --binding <vault>` with grounded recommendations; it writes each choice via `write-unit-binding.sh --resolve`. Next step is ACTION-MIX dependent: KEEP_CODE/SPLIT edits the unit's `## Claims` → `rebind-units.sh --units=U-XXX` (3.9b) → re-dispatch; KEEP_VAULT/DEFER-only → the resolution in `binding.json` already opens the gate (open = CONFLICT without resolution), so continue that unit's dispatch with no re-bind (a re-bind would only spend the unit's one 3.9b at this HEAD — `rebind_exhausted`; per `execute-bolts/references/jit-bind-and-quarantine.md` §3.9/§3.9b) | Recommendation confidence ≥ 0.80; else stop |
+| `binding_conflict` — default inline run, `scope: all_units` / `run` (every unit blocked at run start) | Auto-invoke `resolve-oq --binding <vault>` as above → re-invoke `execute-bolts`, which re-plans (`inline-run.md` (b)). A partial CONFLICT is NOT a halt there: the unit is quarantined and reported in the Karantina table, never auto-resolved | Same |
+| `binding_conflict` — default inline run, `scope: close` (a CONFLICT the close's re-bind left; `derive-exec-plan.sh --rebind-wip` / `--retire` exit 1) | Auto-invoke `resolve-oq --binding <vault>` as above → re-invoke `execute-bolts`: the open plan resumes at (d)4 (the ledger's `Close: reviewed` line), so the suite and the blind review never run twice; the close re-runs `--rebind-wip`, commits, gates, retires | Same |
 | `module_blocked_by` | Auto-run prerequisite module first → resume requested module | All prerequisites identifiable + non-circular |
 | `cross_squad_interface_draft` | Wait (with backoff: 30s, 60s, 120s) for producer to lock interface; retry up to 3 times | Producer squad interface still `draft` after retries → stop |
 | `oq_recommend_underspecified` | Auto-regenerate the missing recommendation fields from GROUND evidence (symbol index) + KB → re-run `plan` (the OQ lives in context.md) | Memory has fallback rationale template |
@@ -80,7 +82,7 @@ loop until clean OR max-cycles reached:
 ## Per-cycle chat output
 
 ```
-▶ Phase 2 of 2: execute-bolts, U-008 pre-flight 3.9 (JIT bind)
+▶ Phase 2 of 2: execute-bolts --agents, U-008 pre-flight 3.9 (JIT bind)
 ⛔ Halt: binding_conflict (U-008: 3 conflicts)
 🔁 Cycle 1/3: auto-resolving via resolve-oq...
    ↳ C-U008-01 (auth conflict) → recommendation: KEEP_CODE (vault D-004 + code anchor; conf: 0.95) → ACCEPTED

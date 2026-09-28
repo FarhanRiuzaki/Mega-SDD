@@ -7,9 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
-## [Unreleased — branch eksperimen `exp/p2-inline`] — `execute-bolts --inline` (P2, BELUM TERUKUR)
+## [Unreleased] — `execute-bolts` default jadi inline (P2, TERUKUR: non-inferior terhadap jalur per-unit agent, biaya ±60%)
 
-Pilihan owner "P2 ramping" (spec §8). Branch ini baru di-merge kalau pengukuran terkunci di `benchmarks/runbooks/p2-inline-vs-agents.md` lolos. Aturannya: AC, Critical, Important, trap surfaced dan regresi semuanya **tidak WORSE** dibanding jalur per-unit agent, n=3. Sampai itu terpenuhi, `--inline` opt-in dan nggak ngeklaim apa-apa soal kualitas atau biaya.
+Pilihan owner "P2 ramping" (spec §8), diukur dengan runbook terkunci `benchmarks/runbooks/p2-inline-vs-agents.md` di fixture brownfield: n=3 per arm, semua run bersih, vanilla sebagai kontrol (n=4). Analisis lengkap ada di `research/2026-09-28-p2-inline-results.md`.
+
+| | per-unit agents | inline | verdict |
+|---|---|---|---|
+| AC · Critical · Important | 13 [12–13] · 0 · 0 [0–1] | 13 [13–13] · 0 · 0 | OVERLAP |
+| trap surfaced · suite v1 | 5/5 ×3 · 73/73 ×3 | 5/5 ×3 · 73/73 ×3 | OVERLAP |
+| biaya | $42.45 [33.96–43.60] | $25.08 [20.88–25.38] | inline BETTER |
+| subagent · tool call | 70 · 1.040 | 3 · 252 | inline BETTER |
+| waktu review-ready | 55.4 [46.7–67.5] mnt | 50.9 [44.2–51.1] mnt | OVERLAP |
+
+- **Aturan terkunci (spec §8.4) terpenuhi:** kelima metrik kualitas tidak WORSE, dan `conflict_bypassed` = 0. Jadi **inline sekarang default guarded**, sedangkan `--agents` masih bisa dipakai buat jalur per-unit sampai P3.
+- **Yang TIDAK diklaim:**
+  - Guarded (dua-duanya) tetap WORSE dibanding vanilla soal waktu, biaya dan token, dengan kualitas OVERLAP. Guarded tetap opt-in, dan router nggak berubah.
+  - Inline nggak lebih cepat dari agents.
+  - Hasil ini cuma buat satu fixture, n=3.
 
 ### Added
 - **`execute-bolts --inline`** (juga `--inline` di front door, diteruskan ke hop execute-bolts). Unit dikerjakan dalam **satu konteks**, tanpa subagent dan tanpa panel per unit:
@@ -35,8 +49,12 @@ Pilihan owner "P2 ramping" (spec §8). Branch ini baru di-merge kalau pengukuran
 ### Fixed (juga kena jalur default)
 - `depends_on` dengan komentar `# …` di belakangnya sekarang di-parse. Sebelumnya dependensinya diam-diam hilang (`derive-ready-units.sh`, `validate-unit-spec.sh`).
 
+### Changed — default
+- **`execute-bolts` default = inline.** `--agents` tetap pakai jalur per-unit (`bolt-implementer` + panel + gate CONFLICT per dispatch + attempt cap). `--inline` diterima sebagai alias no-op. Flag yang cuma berlaku per dispatch (`--parallel`, `--per-squad`, `--model-tier`, …) ditandai khusus `--agents`, dan state engine nggak lagi ngusulin `--all --parallel`.
+- **Residual dari blok ukur yang udah ditutup:** `derive-exec-plan.sh --rebind-wip` jalan di penutupan run. Langkah ini nge-re-bind unit yang masih nyimpen CONFLICT `own_wip`, jadi nggak ada verdict terbuka yang ketinggalan. Kalau yang tersisa CONFLICT beneran, run halt dengan `binding_conflict` (`scope: close`).
+
 ### Notes
-- Ukuran setelah dipangkas ke model ancaman jujur (sempat ~1.440 baris baru, sekarang ±730): `derive-exec-plan.sh` 380 · `_lib/conflict_bypass.py` 220 · `_lib/exec_units.py` 129 · `inline-run.md` 130. Budget kompleksitas dinaikkan **sementara** dengan entri `raises` yang eksplisit bilang belum ada bukti. Entri itu wajib diganti hasil runbook sebelum merge, kalau nggak, branch ini dibuang.
+- Ukurannya, setelah dipangkas ke model ancaman jujur (sempat ~1.440 baris baru): `derive-exec-plan.sh` 405 · `_lib/conflict_bypass.py` 220 · `_lib/exec_units.py` 129 · `inline-run.md` 130. Kenaikan budget dicatat di `raises` beserta bukti terukurnya. Kenaikan ini sementara: P3 bakal ngehapus mesin per-dispatch yang digantikan.
 - Dipin oleh `tests/v9/test-inline-lane.sh` (194 cek, termasuk matriks honest-slip) dan `test-4abc-spawn-tax` (flag gabungan).
 
 ## [9.0.0] - 2026-09-27 — satu pipeline: empat skill classic dihapus, `plan → execute-bolts` jadi satu-satunya jalur spec

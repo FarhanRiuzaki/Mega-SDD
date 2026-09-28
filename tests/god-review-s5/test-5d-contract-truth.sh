@@ -79,8 +79,9 @@ grep -qF 'resolved-KEEP_VAULT CONFLICT' "$TT" && grep -qF 'toward the VAULT clai
 grep -qF 'NEVER `verify`' "$TT" && ok "KEEPVAULT: no-code verify discharge explicitly forbidden" || fail "KEEPVAULT: verify discharge not forbidden"
 grep -qF 'Mix of CONFIRMED + **unresolved** CONFLICT' "$TT" && ok "KEEPVAULT: halt scoped to UNRESOLVED conflicts" || fail "KEEPVAULT: halt still fires on resolved conflicts"
 # 9.0: the unit walk's halt index (ex generate-units SKILL.md) scopes the gate to UNRESOLVED
-# conflicts and closes it at dispatch (no binding exists at plan time).
-grep -qF '**Unresolved CONFLICT → the gate closes at dispatch**' "$UP" \
+# conflicts and closes it in execute-bolts (no binding exists at plan time; 9.x: the inline default
+# quarantines before the build, --agents at dispatch — wording re-pinned 2026-09-28).
+grep -qF '**Unresolved CONFLICT → the gate closes in execute-bolts**' "$UP" \
   && ok "KEEPVAULT: unit-procedure halt line scoped to unresolved" || fail "KEEPVAULT: unit-procedure halt line stale"
 # (retired 9.0: the bind-codebase hard-rules-and-packs.md carrier pointer — bind-codebase deleted.)
 

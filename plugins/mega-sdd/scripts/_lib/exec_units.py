@@ -1,4 +1,4 @@
-"""exec_units.py — one reading of a unit for `execute-bolts --inline`: the run-start gate
+"""exec_units.py — one reading of a unit for the inline `execute-bolts` run: the run-start gate
 (scripts/derive-exec-plan.sh) and the run-boundary scan (_lib/conflict_bypass.py) parse
 depends_on / target_files and decide "done" the same way.
 

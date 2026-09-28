@@ -138,7 +138,7 @@ Script pruning is **P1b**:
 |---|---|---|
 | **P1** ✅ done 2026-09-27 (commit 6727b30f) | Relocate contracts → delete the 4 classic skills → state engine + orchestrate-flow + front door on one pipeline → `plan --kb` → tests pruned/updated → docs, contract, CHANGELOG, 9.0.0 | full suite green; `claude plugin validate` passes; complexity budget lowered to measured values; no surviving file references a removed skill path (grep check, pinned by a test); **extract-intelligence → `plan --kb` path pinned by a test**; the result contract (AC→test table, delivery-check PASS, assumptions) is stated identically in every lane's procedure |
 | **P1b** ✅ done 2026-09-27 (−1,531 script lines, −102 hook lines, −11 reference files) | Script / reference pruning audit (executed-by-a-survivor rule) | the same checks. `scripts_total_lines` lowered |
-| **P2** | Inline execution for guarded: `execute-bolts` runs units in the main session with the script gates (acceptance, postflight, whitelist, delivery-check) and NO per-unit implementer/panel subagents (opt-in `--inline`; no flag = today's per-unit path, see §8) | brownfield block, n=3: inline vs current guarded vs vanilla. Adopt as default only if the five quality metrics of §8.4 are not WORSE than current guarded |
+| **P2** ✅ adopted 2026-09-28 (§8.5) | Inline execution for guarded: `execute-bolts` runs units in the main session with the script gates (acceptance, postflight, whitelist, delivery-check) and NO per-unit implementer/panel subagents (the default since §8.5; `--agents` = the per-unit path; `--inline` a no-op alias) | brownfield block, n=3: inline vs current guarded vs vanilla. Adopt as default only if the five quality metrics of §8.4 are not WORSE than current guarded |
 | **P3** | Remove what P2 made dead (review agents, panel scripts, dispatch gates) only if P2 was adopted | the same checks + a lower budget |
 
 **Rollback:** each phase is a separate commit on the branch. A phase is reverted with `git revert`;
@@ -198,7 +198,7 @@ receipts. The attack returned about 30 fixes. The owner chose the lean variant i
 per-dispatch CONFLICT gate it would have preserved fired 3 times on the brownfield block, all false
 positives, and caught none of the seeded contradictions.
 
-### 8.1 Flow (`execute-bolts --inline`; the guarded default only if §8.4 passes)
+### 8.1 Flow (`execute-bolts --inline`; the guarded default only if §8.4 passes) (adopted, §8.5)
 
 1. **Bind every unit up front** (script, 0 model tokens): `rebind-units.sh --units=all` →
    `validate-handoff-binding-units.sh --units=all`. A unit with an open CONFLICT is QUARANTINED for
@@ -276,11 +276,11 @@ positives, and caught none of the seeded contradictions.
   or moved evidence directories, mislabelled commits, a blocked unit's change hidden inside another
   unit's commit on a shared file. The per-dispatch path has the same limit: a controller can always
   write code without dispatching. Evasion is out of scope for both paths.
-- **No flag keeps today's per-dispatch path** (there is no `--agents` flag), until P3 decides
-  whether to delete it. `conflict_bypassed` reads git and the bindings, not the mode, so it also
+- **No flag kept today's per-dispatch path** while P2 was opt-in; since §8.5 the default is inline and
+  `--agents` keeps the per-dispatch path until P3 decides whether to delete it. `conflict_bypassed` reads git and the bindings, not the mode, so it also
   guards that path: a unit committed past its own open CONFLICT or quarantine (a hand
-  implementation the dispatch gate never saw) fails it there too. A normal default run never trips
-  it (the dispatch gate blocks first). The default path is therefore not byte-unchanged: it gains
+  implementation the dispatch gate never saw) fails it there too. A normal `--agents` run never trips
+  it (the dispatch gate blocks first). The per-dispatch path is therefore not byte-unchanged: it gains
   this leg at the Skill entry and each dispatch.
 
 ### 8.3 What changes and what is deleted
@@ -324,3 +324,31 @@ positives, and caught none of the seeded contradictions.
 
   Cost and time are reported, never traded against a quality loss. If any quality metric is WORSE,
   `--inline` stays opt-in and P3 does not run.
+
+### 8.5 Outcome (2026-09-28)
+
+The §8.4 block ran as locked (`benchmarks/runbooks/p2-inline-vs-agents.md`; results
+`research/2026-09-28-p2-inline-results.md`, brownfield, n=3 clean per guarded arm). All five quality
+metrics are OVERLAP (AC 13 vs 13, Critical 0 vs 0, Important 0 vs 0, traps 5/5 ×3 in both, v1 suite
+73/73 ×3 in both) and `conflict_bypassed` PASS in every run, so the decision rule adopts inline:
+
+- **The flip:** on a layout-3 vault `execute-bolts` runs `references/inline-run.md` by default.
+  `--agents` keeps the per-unit `bolt-implementer` + review-panel path (the per-dispatch CONFLICT
+  gate with it) until P3 decides its deletion. `--inline` stays an accepted no-op alias (the front
+  door, orchestrate-flow, the `guarded-inline` batch arm and older docs pass it). Invariant #2 now reads:
+  the run-start gate plus `conflict_bypassed` by default, the per-dispatch gate under `--agents`.
+- **What it supports:** the same quality as the per-unit agent path on this fixture at about 60% of
+  the cost ($25.08 vs $42.45 median, ranges disjoint) with 3 subagents instead of 70. Nothing against
+  vanilla: both guarded arms stay WORSE than vanilla on time, cost and tokens at equal quality, so
+  guarded stays opt-in and the router default is unchanged.
+- **The one residual it found:** guarded-inline-2 ended with an open `own_wip` CONFLICT on U-011's own
+  test file, because no re-bind ran after the unit was done. The close now runs
+  `derive-exec-plan.sh --rebind-wip` before the run evidence commit, so that commit carries the
+  re-bound `binding.json` and the run-boundary gate sees it: it re-binds every unit whose binding still
+  holds an open `own_wip` CONFLICT, reports them (`rebound`), and exits 1 (`scope: close`) when that
+  re-bind leaves any other CONFLICT, writing a `Close: halt` line into the run ledger so a re-run stops
+  again until a human decides it. `--retire` repeats the same re-bind and check as a backstop (skipped
+  under `--dry-run`) and never retires over such a CONFLICT (`tests/v9/test-inline-lane.sh` m11).
+- **Given up on the default path, stated:** the per-bolt LOCKED drift check (`--agents` only; the
+  chain-end `detect-drift` auto-gate is the backstop), the hook-counted attempt cap (`--max-retries`
+  is a prose cap per task) and per-unit model routing (`--model-tier` / `--no-escalate` need `--agents`).

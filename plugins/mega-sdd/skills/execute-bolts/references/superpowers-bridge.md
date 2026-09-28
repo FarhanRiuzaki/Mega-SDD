@@ -1,6 +1,6 @@
 # Dispatch Bridge
 
-How `execute-bolts` dispatches each unit — **first-class mega-sdd agents, the ONLY dispatch path** (no vendored superpowers fallback and no bridge halt; a real superpowers install is an optional technique enhancement, never a requirement).
+How `execute-bolts --agents` dispatches each unit — **first-class mega-sdd agents, the only dispatch path** (no vendored superpowers fallback and no bridge halt; a real superpowers install is an optional technique enhancement, never a requirement). **Scope:** the `--agents` path; the default inline run (`inline-run.md`) dispatches no implementer and uses only §bolt-report.md schema here.
 
 ## Contents
 
@@ -16,7 +16,7 @@ How `execute-bolts` dispatches each unit — **first-class mega-sdd agents, the 
 
 ## Dispatch order
 
-0. **First-class mega-sdd agents (default).** The plugin ships its own subagents in `agents/`:
+0. **First-class mega-sdd agents (`--agents`).** The plugin ships its own subagents in `agents/`:
    - `mega-sdd:bolt-implementer` — implements the unit (writes target_files, writes + runs the acceptance test, commits).
    - `mega-sdd:spec-reviewer` — verifies spec compliance + Hard rules honored (read-only).
    - `mega-sdd:code-quality-reviewer` — reviews quality: duplication/reuse, tests, maintainability (read-only).

@@ -24,7 +24,7 @@ Three modes determined by inspection:
 |---|---|---|
 | **A — Starterkit-first** (DEFAULT) | `starterkit: detected` + `pack_match: yes` (`derived.framework_pack` from the GROUND matcher) | GROUND (`ground.sh`: state + symbol index + pack) → `plan <prd>` (pack + index aware) → `execute-bolts --all --lite` (JIT bind per unit) |
 | **B — Framework-detected** (universal fallback) | `starterkit: detected` + `pack_match: no` | same as A with `_universal` conventions |
-| **C — Greenfield (EXPLICIT)** | `--greenfield` flag OR (cwd empty/.git-only AND user confirms via halt) | `plan <prd>` (stack-agnostic; `implementation_mode: new` → every unit `create`) → user scaffolds → `execute-bolts` (JIT bind per unit at dispatch) |
+| **C — Greenfield (EXPLICIT)** | `--greenfield` flag OR (cwd empty/.git-only AND user confirms via halt) | `plan <prd>` (stack-agnostic; `implementation_mode: new` → every unit `create`) → user scaffolds → `execute-bolts` (JIT bind per unit) |
 
 **Default behavior** when starterkit absent AND `--greenfield` NOT set → halt with `no_starterkit_detected`:
 
@@ -34,7 +34,7 @@ halt:
   reason: "Mega-sdd default workflow requires a framework starterkit (composer.json / package.json / Gemfile / etc.) for delivery-grade output. Vault generation produces stack-agnostic designs without it."
   options:
     a: "Scaffold a starterkit first (recommended). For Laravel: clone base-laravel-26. For Django: django-admin startproject. For Rails: rails new. Then re-run."
-    b: "Proceed as greenfield with --greenfield flag (plan writes stack-agnostic units, all create; you scaffold, then execute-bolts JIT-binds each unit at dispatch)"
+    b: "Proceed as greenfield with --greenfield flag (plan writes stack-agnostic units, all create; you scaffold, then execute-bolts JIT-binds each unit before building it)"
     c: "Cancel"
 ```
 
@@ -148,7 +148,7 @@ Inside a `--deep` chain (OR `--auto` mode), the orchestrator AUTOMATICALLY runs 
 | Phase | Auto-runs | Output integration |
 |---|---|---|
 | After `plan` completes (only with `--full`) | `lint-units --changed-only` (per `references/diagnostics-procedures.md §lint-units` Step 1b — just-regenerated units differ from the analyze ledger's `unit_baseline`, so the first chain run ≈ full sweep and iteration runs scope to the delta ∪ dependents; no ledger → honest full sweep) | One-line chat summary: "lint: N of M units (changed ∪ dependents) — N HIGH / M MEDIUM / K LOW grounding; X/Y anchors verified" + halt-on-LOW-strict if `--strict-quality` flag set |
-| Before `execute-bolts` invocation | `analyze-parallelism` — run the script form `bash <plugin-root>/scripts/analyze-parallelism.sh <vault> --cwd=<root> --format=json` (per `references/diagnostics-procedures.md §analyze-parallelism`) | Wave plan computed; the JSON's `waves` array (the `depends_on` topological layering) sits IN CONTEXT when the chain dispatches `execute-bolts --all --parallel` (the routing/handoff rows carry the flag — `docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2a), and execute-bolts consumes it as the layering input per `execute-bolts/references/batch-and-fanout.md §--all` (the `target_files` overlap rail is applied there, per wave, never by this plan) |
+| Before `execute-bolts` invocation | `analyze-parallelism` — run the script form `bash <plugin-root>/scripts/analyze-parallelism.sh <vault> --cwd=<root> --format=json` (per `references/diagnostics-procedures.md §analyze-parallelism`) | Wave plan computed; the JSON's `waves` array (the `depends_on` topological layering) sits IN CONTEXT when the chain dispatches `execute-bolts --all --lite --agents` (waves are that path's `--all` default — `docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2a; the default inline run takes plan order and needs no wave plan), and execute-bolts consumes it as the layering input per `execute-bolts/references/batch-and-fanout.md §--all` (the `target_files` overlap rail is applied there, per wave, never by this plan) |
 | After `execute-bolts` completes | `list-modules` (per `references/diagnostics-procedures.md §list-modules` table format) | Per-module status table in chain end summary |
 | After all phases complete | `emit-agents-md` (per the `emit-agents-md` skill, respecting `config.yaml defaults.emit_agents_md: true\|false`) | `AGENTS.md` (or `.mega-sdd.md` sibling) written at repo root |
 | After all phases complete | `emit-fsd` (per the `emit-fsd` skill, **OPT-IN** — requires `--with-fsd` flag on `auto`/`orchestrate-flow`. Legacy `--no-fsd` still works as no-op for back-compat. Reason: pandoc + Chrome md2pdf render + low user feedback signal per perf audit.) | `<vault>/fsd/FSD.pdf` (+ FSD.md, .citation-map.json) written ONLY when `--with-fsd` passed; chain summary: "FSD emitted: N sections, M citations, mode: <pre-dev\|post-dev>" |
