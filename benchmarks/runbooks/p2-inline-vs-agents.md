@@ -109,8 +109,23 @@ loss. The claim is scoped to this fixture, and it is never phrased as "equal qua
 
 ## 7. Results
 
-_Pending._
+Run 2026-09-27/28, all 7 runs clean. Full analysis: `research/2026-09-28-p2-inline-results.md`.
+
+| | guarded (agents) | guarded-inline | verdict |
+|---|---|---|---|
+| AC | 13 [12–13] | 13 [13–13] | OVERLAP |
+| Critical / Important | 0 / 0 [0–1] | 0 / 0 | OVERLAP |
+| traps surfaced | 5/5 ×3 | 5/5 ×3 | OVERLAP |
+| v1 suite at HEAD | 73/73 ×3 | 73/73 ×3 | OVERLAP |
+| `conflict_bypassed` | PASS ×3 | PASS ×3 | — |
+| rubric | 92 [82–93] | 91 [90–93] | OVERLAP |
+| cost (USD) | 42.45 [33.96–43.60] | 25.08 [20.88–25.38] | inline BETTER |
+| review-ready (min) | 55.4 [46.7–67.5] | 50.9 [44.2–51.1] | OVERLAP |
+| subagents | 70 [61–75] | 3 [3–4] | inline BETTER |
 
 ## 8. Decision
 
-_Pending._
+All five P2-Q metrics are OVERLAP, and P2-M holds (0 bypasses). By the locked rule in §5,
+**`--inline` becomes the guarded default**, and the P3 deletion is proposed with this evidence.
+Both guarded arms stay WORSE than vanilla on time, cost and tokens, so the lane router default is
+unchanged and guarded stays opt-in.

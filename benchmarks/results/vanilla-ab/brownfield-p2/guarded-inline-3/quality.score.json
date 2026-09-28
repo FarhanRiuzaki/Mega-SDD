@@ -1,0 +1,53 @@
+{
+ "completion": 1.0,
+ "ac_pass": 13,
+ "ac_total": 13,
+ "ac": {
+  "B1": "PASS",
+  "B2": "PASS",
+  "B3": "PASS",
+  "B4": "PASS",
+  "B5": "PASS",
+  "B6": "PASS",
+  "B7": "PASS",
+  "B8": "PASS",
+  "T1c": "PASS",
+  "T2c": "PASS",
+  "T3c": "PASS",
+  "T4c": "PASS",
+  "T5c": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 5,
+ "rubric": 90,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:184",
+   "what": "Leave check runs outside the booking transaction; an online booking racing recordLeave can be committed as booked on a leave day without being flagged rescheduling_required."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:274-321",
+   "what": "Offer nonce is consumed before createAppointment; a non-DomainError failure leaves the entry 'offered' with a dead link until the sweep expires it and the patient drops out of the queue."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:160-195",
+   "what": "An outstanding offer does not reserve the slot; anyone can book it online during the 30-minute window (patient is returned to waiting)."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/leave.ts:148-161",
+   "what": "Reassignment overlap check is read-then-write; the DB unique index only covers identical start_time, so overlapping appointments with different starts (longer services) are not protected under concurrency (same as v1)."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:102",
+   "what": "listWaitlist does not validate the date parameter before querying."
+  }
+ ],
+ "blind_label": "BV",
+ "scorer_sid": "8fbb966c-2cd3-4cdf-8fdd-2c81168bd0ab"
+}

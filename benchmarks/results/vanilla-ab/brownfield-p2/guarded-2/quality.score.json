@@ -1,0 +1,43 @@
+{
+ "completion": 1.0,
+ "ac_pass": 13,
+ "ac_total": 13,
+ "ac": {
+  "B1": "PASS",
+  "B2": "PASS",
+  "B3": "PASS",
+  "B4": "PASS",
+  "B5": "PASS",
+  "B6": "PASS",
+  "B7": "PASS",
+  "B8": "PASS",
+  "T1c": "PASS",
+  "T2c": "PASS",
+  "T3c": "PASS",
+  "T4c": "PASS",
+  "T5c": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 3,
+ "rubric": 93,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:372-375",
+   "what": "removeWaitlistEntry sets a pending offer to 'closed'; sweepExpiredOffers only processes 'pending' offers, so the freed slot is never passed to the next patient in the queue"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/staff.ts:105-140",
+   "what": "The v1 reassignAppointment does not check the target doctor's leave or working hours, so staff can reassign a booked appointment onto a doctor who is on leave (the new reassignOne path does check)"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:233-270",
+   "what": "The offered slot is not held while the offer is pending; an online booker can take it, and the offer then fails even though the email promised the slot"
+  }
+ ],
+ "blind_label": "RU",
+ "scorer_sid": "3c6ed308-66e5-4304-8105-270a2d5469f2"
+}

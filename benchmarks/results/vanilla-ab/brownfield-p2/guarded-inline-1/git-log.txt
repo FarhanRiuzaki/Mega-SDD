@@ -1,0 +1,62 @@
+ab6ce83 2026-09-28T03:20:20+07:00 chore(sdd): drift gate report — 8 findings queued in PENDING-SYNC.md
+16e5c0e 2026-09-28T03:16:08+07:00 chore(sdd): run aa591f9 retired
+d8b53db 2026-09-28T03:16:07+07:00 chore(sdd): evidence run aa591f9
+0717e85 2026-09-28T03:15:06+07:00 chore(sdd): evidence U-007 review fix
+20255ee 2026-09-28T03:15:00+07:00 fix(U-007): never strand an accepted offer — void it and requeue the patient on any failure
+97328b3 2026-09-28T03:11:13+07:00 chore(sdd): validator state refresh
+3bceede 2026-09-28T03:10:54+07:00 chore(sdd): evidence U-011 — Verify v1 regression
+6bc41ab 2026-09-28T03:10:33+07:00 chore(U-011): Verify all v1 behaviour and tests still pass with v2 in place
+b3ebe3d 2026-09-28T03:10:00+07:00 chore(sdd): re-bind U-011
+cdc9a62 2026-09-28T03:10:00+07:00 chore(sdd): validator state refresh
+35bdf1a 2026-09-28T03:09:57+07:00 chore(sdd): evidence U-009 — Public waitlist pages
+38b2f14 2026-09-28T03:09:51+07:00 feat(U-009): Public waitlist pages — join from a full date, accept an offer
+c952951 2026-09-28T03:07:41+07:00 chore(sdd): re-bind U-009
+82eeba0 2026-09-28T03:07:41+07:00 chore(sdd): validator state refresh
+ab71c1c 2026-09-28T03:07:37+07:00 chore(sdd): evidence U-008 — Offer expiry sweep
+965c3d9 2026-09-28T03:07:31+07:00 feat(U-008): Expire unaccepted offers after 30 minutes and pass the slot to the next patient
+dd88b49 2026-09-28T03:06:21+07:00 chore(sdd): re-bind U-008
+4f011b9 2026-09-28T03:06:20+07:00 chore(sdd): validator state refresh
+603829c 2026-09-28T03:06:13+07:00 chore(sdd): evidence U-007 — Waitlist offers
+0c05ec0 2026-09-28T03:06:04+07:00 feat(U-007): Offer a freed slot to the first waitlisted patient and accept it via a one-time link
+0dd8598 2026-09-28T03:03:50+07:00 chore(sdd): re-bind U-007
+6138b0b 2026-09-28T03:03:49+07:00 chore(sdd): validator state refresh
+aa591f9 2026-09-28T03:03:31+07:00 chore(sdd): resolve C-U007-A11 KEEP_CODE, release U-007 quarantine (runner, headless)
+f032909 2026-09-28T03:02:56+07:00 chore(sdd): run 2cbe4ee retired
+2eb9e8e 2026-09-28T03:02:51+07:00 chore(sdd): evidence run 2cbe4ee
+96fbcc4 2026-09-28T03:01:56+07:00 chore(sdd): evidence U-003, U-004 review fixes
+9dfb959 2026-09-28T03:01:44+07:00 fix(U-003): leave-affected patient links explain the doctor is unavailable
+60272b6 2026-09-28T03:01:44+07:00 fix(U-004): patient emails state the cancellation window instead of 'cancel any time'
+0cd7665 2026-09-28T02:58:24+07:00 chore(sdd): validator state refresh
+27aa490 2026-09-28T02:58:18+07:00 chore(sdd): evidence U-010 — Reception waitlist panel
+f8220c3 2026-09-28T02:58:14+07:00 feat(U-010): Reception waitlist panel — view each doctor's waitlist per date, remove entries
+baeda83 2026-09-28T02:57:09+07:00 chore(sdd): re-bind U-010
+192cb19 2026-09-28T02:57:08+07:00 chore(sdd): quarantine U-007 (binding_conflict C-U007-A11)
+afc40d0 2026-09-28T02:56:23+07:00 chore(sdd): re-bind U-007
+ed5017d 2026-09-28T02:56:22+07:00 chore(sdd): validator state refresh
+105685f 2026-09-28T02:56:18+07:00 chore(sdd): evidence U-006 — Waitlist domain
+79104db 2026-09-28T02:56:12+07:00 feat(U-006): Waitlist domain — join, list per doctor and date, remove
+fd6a294 2026-09-28T02:54:55+07:00 chore(sdd): re-bind U-006
+ebdc416 2026-09-28T02:54:55+07:00 chore(sdd): validator state refresh
+f584b9f 2026-09-28T02:54:54+07:00 chore(sdd): evidence U-005 — Doctor leave page
+734c3be 2026-09-28T02:54:42+07:00 feat(U-005): Doctor leave page — record leave and resolve affected appointments
+9c54705 2026-09-28T02:52:47+07:00 chore(sdd): re-bind U-005
+d4a8203 2026-09-28T02:52:47+07:00 chore(sdd): validator state refresh
+5709764 2026-09-28T02:52:40+07:00 chore(sdd): evidence U-004 — Resolve leave-affected appointments
+f153e6c 2026-09-28T02:52:22+07:00 feat(U-004): Reassign or cancel leave-affected appointments, individually or in bulk
+7c09bdb 2026-09-28T02:50:01+07:00 chore(sdd): re-bind U-004
+7350ada 2026-09-28T02:50:00+07:00 chore(sdd): validator state refresh
+90f082e 2026-09-28T02:49:55+07:00 chore(sdd): evidence U-003 — Doctor leave
+861eead 2026-09-28T02:49:41+07:00 feat(U-003): Record doctor leave and hide the doctor's slots during it
+33b2507 2026-09-28T02:48:38+07:00 chore(sdd): re-bind U-003
+51df838 2026-09-28T02:48:37+07:00 chore(sdd): validator state refresh
+22bd2f2 2026-09-28T02:48:30+07:00 chore(sdd): evidence U-002 — Cancellation window
+ab1dc2a 2026-09-28T02:48:10+07:00 feat(U-002): Refuse patient cancel/reschedule links inside the cancellation window
+0f49a2a 2026-09-28T02:46:52+07:00 chore(sdd): validator state refresh
+e1c8475 2026-09-28T02:46:42+07:00 chore(sdd): evidence U-001 — Add the v2 schema
+057256c 2026-09-28T02:46:04+07:00 feat(U-001): Add the v2 schema — rescheduling_required status, waitlist and doctor-leave tables
+c6cac34 2026-09-28T02:46:04+07:00 plan(clinic-v2): U-001 owns the StatusBadge variant (execute-bolts ruling)
+6bc47d3 2026-09-28T02:44:20+07:00 chore(sdd): preflight baselines + anchor refresh
+2cbe4ee 2026-09-28T02:43:32+07:00 chore(sdd): refresh validator state
+c39eb31 2026-09-28T02:43:15+07:00 plan(clinic-v2): defer OQ-FL-2 (runner, headless)
+78e1049 2026-09-28T02:43:04+07:00 plan(clinic-v2): vault context + 11 units from PRD v2
+015ecf3 2026-09-27T08:25:21+07:00 fixture: Harbor Clinic v1 app (from vanilla clinic run) + PRD v2

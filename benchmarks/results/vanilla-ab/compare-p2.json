@@ -1,0 +1,479 @@
+{
+ "brownfield": {
+  "stats": {
+   "vanilla": {
+    "n_clean": 4,
+    "review_ready_min": {
+     "n": 4,
+     "median": 18.990000000000002,
+     "min": 17.52,
+     "max": 21.89
+    },
+    "wall_min": {
+     "n": 4,
+     "median": 19.26,
+     "min": 17.8,
+     "max": 22.12
+    },
+    "api_time_min": {
+     "n": 4,
+     "median": 16.345,
+     "min": 15.36,
+     "max": 18.19
+    },
+    "stream_silence_over_5m_min": {
+     "n": 4,
+     "median": 0.0,
+     "min": 0.0,
+     "max": 0.0
+    },
+    "total": {
+     "n": 4,
+     "median": 11526984.0,
+     "min": 9103025,
+     "max": 13150575
+    },
+    "input": {
+     "n": 4,
+     "median": 136.0,
+     "min": 114,
+     "max": 144
+    },
+    "output": {
+     "n": 4,
+     "median": 118886.5,
+     "min": 114031,
+     "max": 134056
+    },
+    "cache_read": {
+     "n": 4,
+     "median": 11170536.5,
+     "min": 8752097,
+     "max": 12760141
+    },
+    "cost_usd": {
+     "n": 4,
+     "median": 6.48,
+     "min": 5.99,
+     "max": 7.28
+    },
+    "tool_calls": {
+     "n": 4,
+     "median": 71.5,
+     "min": 62,
+     "max": 75
+    },
+    "subagent_dispatches": {
+     "n": 4,
+     "median": 0.0,
+     "min": 0,
+     "max": 0
+    },
+    "ask_attempts": {
+     "n": 4,
+     "median": 0.0,
+     "min": 0,
+     "max": 0
+    },
+    "distinct_files_read": {
+     "n": 4,
+     "median": 1.5,
+     "min": 1,
+     "max": 3
+    },
+    "docs_md_added": {
+     "n": 4,
+     "median": 52.0,
+     "min": 45,
+     "max": 67
+    },
+    "process_added": {
+     "n": 4,
+     "median": 0.0,
+     "min": 0,
+     "max": 0
+    },
+    "code_test_added": {
+     "n": 4,
+     "median": 3247.5,
+     "min": 3173,
+     "max": 3424
+    },
+    "completion": {
+     "n": 4,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "ac_rate": {
+     "n": 4,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "critical": {
+     "n": 4,
+     "median": 0.0,
+     "min": 0,
+     "max": 0
+    },
+    "important": {
+     "n": 4,
+     "median": 0.0,
+     "min": 0,
+     "max": 0
+    },
+    "rubric": {
+     "n": 4,
+     "median": 92.0,
+     "min": 91,
+     "max": 93
+    }
+   },
+   "guarded": {
+    "n_clean": 3,
+    "review_ready_min": {
+     "n": 3,
+     "median": 55.36,
+     "min": 46.68,
+     "max": 67.5
+    },
+    "wall_min": {
+     "n": 3,
+     "median": 56.54,
+     "min": 47.84,
+     "max": 68.6
+    },
+    "api_time_min": {
+     "n": 3,
+     "median": 99.93,
+     "min": 94.87,
+     "max": 107.07
+    },
+    "stream_silence_over_5m_min": {
+     "n": 3,
+     "median": 0.0,
+     "min": 0.0,
+     "max": 0.0
+    },
+    "total": {
+     "n": 3,
+     "median": 94484290,
+     "min": 60019072,
+     "max": 105129117
+    },
+    "input": {
+     "n": 3,
+     "median": 1562,
+     "min": 1452,
+     "max": 1636
+    },
+    "output": {
+     "n": 3,
+     "median": 590486,
+     "min": 570050,
+     "max": 614990
+    },
+    "cache_read": {
+     "n": 3,
+     "median": 91055190,
+     "min": 56745586,
+     "max": 101796929
+    },
+    "cost_usd": {
+     "n": 3,
+     "median": 42.45,
+     "min": 33.96,
+     "max": 43.6
+    },
+    "tool_calls": {
+     "n": 3,
+     "median": 1040,
+     "min": 973,
+     "max": 1088
+    },
+    "subagent_dispatches": {
+     "n": 3,
+     "median": 70,
+     "min": 61,
+     "max": 75
+    },
+    "ask_attempts": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "distinct_files_read": {
+     "n": 3,
+     "median": 124,
+     "min": 107,
+     "max": 154
+    },
+    "docs_md_added": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "process_added": {
+     "n": 3,
+     "median": 13562,
+     "min": 13458,
+     "max": 14370
+    },
+    "code_test_added": {
+     "n": 3,
+     "median": 4077,
+     "min": 3446,
+     "max": 4096
+    },
+    "completion": {
+     "n": 3,
+     "median": 1.0,
+     "min": 0.9230769230769231,
+     "max": 1.0
+    },
+    "ac_rate": {
+     "n": 3,
+     "median": 1.0,
+     "min": 0.9230769230769231,
+     "max": 1.0
+    },
+    "critical": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "important": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 1
+    },
+    "rubric": {
+     "n": 3,
+     "median": 92,
+     "min": 82,
+     "max": 93
+    }
+   },
+   "guarded-inline": {
+    "n_clean": 3,
+    "review_ready_min": {
+     "n": 3,
+     "median": 50.88,
+     "min": 44.21,
+     "max": 51.1
+    },
+    "wall_min": {
+     "n": 3,
+     "median": 52.21,
+     "min": 45.29,
+     "max": 52.3
+    },
+    "api_time_min": {
+     "n": 3,
+     "median": 41.16,
+     "min": 37.69,
+     "max": 41.25
+    },
+    "stream_silence_over_5m_min": {
+     "n": 3,
+     "median": 0.0,
+     "min": 0.0,
+     "max": 0.0
+    },
+    "total": {
+     "n": 3,
+     "median": 68610922,
+     "min": 52724076,
+     "max": 69154988
+    },
+    "input": {
+     "n": 3,
+     "median": 450,
+     "min": 392,
+     "max": 476
+    },
+    "output": {
+     "n": 3,
+     "median": 281173,
+     "min": 261030,
+     "max": 281201
+    },
+    "cache_read": {
+     "n": 3,
+     "median": 67419486,
+     "min": 51634750,
+     "max": 67908863
+    },
+    "cost_usd": {
+     "n": 3,
+     "median": 25.08,
+     "min": 20.88,
+     "max": 25.38
+    },
+    "tool_calls": {
+     "n": 3,
+     "median": 252,
+     "min": 226,
+     "max": 271
+    },
+    "subagent_dispatches": {
+     "n": 3,
+     "median": 3,
+     "min": 3,
+     "max": 4
+    },
+    "ask_attempts": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "distinct_files_read": {
+     "n": 3,
+     "median": 12,
+     "min": 7,
+     "max": 16
+    },
+    "docs_md_added": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "process_added": {
+     "n": 3,
+     "median": 8260,
+     "min": 7385,
+     "max": 8907
+    },
+    "code_test_added": {
+     "n": 3,
+     "median": 3216,
+     "min": 3054,
+     "max": 3551
+    },
+    "completion": {
+     "n": 3,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "ac_rate": {
+     "n": 3,
+     "median": 1.0,
+     "min": 1.0,
+     "max": 1.0
+    },
+    "critical": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "important": {
+     "n": 3,
+     "median": 0,
+     "min": 0,
+     "max": 0
+    },
+    "rubric": {
+     "n": 3,
+     "median": 91,
+     "min": 90,
+     "max": 93
+    }
+   }
+  },
+  "verdicts": {
+   "review_ready_min": [
+    "guarded: WORSE",
+    "guarded-inline: WORSE"
+   ],
+   "wall_min": [
+    "guarded: WORSE",
+    "guarded-inline: WORSE"
+   ],
+   "api_time_min": [
+    "guarded: WORSE",
+    "guarded-inline: WORSE"
+   ],
+   "stream_silence_over_5m_min": [
+    "guarded: OVERLAP",
+    "guarded-inline: OVERLAP"
+   ],
+   "total": [
+    "guarded: WORSE",
+    "guarded-inline: WORSE"
+   ],
+   "input": [
+    "guarded: WORSE",
+    "guarded-inline: WORSE"
+   ],
+   "output": [
+    "guarded: WORSE",
+    "guarded-inline: WORSE"
+   ],
+   "cache_read": [
+    "guarded: WORSE",
+    "guarded-inline: WORSE"
+   ],
+   "cost_usd": [
+    "guarded: WORSE",
+    "guarded-inline: WORSE"
+   ],
+   "tool_calls": [
+    "guarded: WORSE",
+    "guarded-inline: WORSE"
+   ],
+   "subagent_dispatches": [
+    "guarded: WORSE",
+    "guarded-inline: WORSE"
+   ],
+   "ask_attempts": [
+    "guarded: OVERLAP",
+    "guarded-inline: OVERLAP"
+   ],
+   "distinct_files_read": [
+    "guarded: WORSE",
+    "guarded-inline: WORSE"
+   ],
+   "docs_md_added": [
+    "guarded: BETTER",
+    "guarded-inline: BETTER"
+   ],
+   "process_added": [
+    "guarded: WORSE",
+    "guarded-inline: WORSE"
+   ],
+   "code_test_added": [
+    "guarded: WORSE",
+    "guarded-inline: OVERLAP"
+   ],
+   "completion": [
+    "guarded: OVERLAP",
+    "guarded-inline: OVERLAP"
+   ],
+   "ac_rate": [
+    "guarded: OVERLAP",
+    "guarded-inline: OVERLAP"
+   ],
+   "critical": [
+    "guarded: OVERLAP",
+    "guarded-inline: OVERLAP"
+   ],
+   "important": [
+    "guarded: OVERLAP",
+    "guarded-inline: OVERLAP"
+   ],
+   "rubric": [
+    "guarded: OVERLAP",
+    "guarded-inline: OVERLAP"
+   ]
+  }
+ }
+}

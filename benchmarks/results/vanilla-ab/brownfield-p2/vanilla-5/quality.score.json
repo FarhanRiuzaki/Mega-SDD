@@ -1,0 +1,53 @@
+{
+ "completion": 1.0,
+ "ac_pass": 13,
+ "ac_total": 13,
+ "ac": {
+  "B1": "PASS",
+  "B2": "PASS",
+  "B3": "PASS",
+  "B4": "PASS",
+  "B5": "PASS",
+  "B6": "PASS",
+  "B7": "PASS",
+  "B8": "PASS",
+  "T1c": "PASS",
+  "T2c": "PASS",
+  "T3c": "PASS",
+  "T4c": "PASS",
+  "T5c": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 5,
+ "rubric": 93,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:206; src/server/leave.ts:36-61",
+   "what": "Leave check runs outside the booking transaction; a booking committing concurrently with recordLeave can remain 'booked' on a leave date"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:206-247",
+   "what": "Offer nonce is spent before createAppointment; a non-SLOT_TAKEN/INVALID_SLOT failure leaves the entry 'offered' with an unusable link until the sweep expires it"
+  },
+  {
+   "severity": "Minor",
+   "where": "vercel.json; src/app/api/cron/waitlist/route.ts",
+   "what": "Expiry sweep runs every 5 minutes, so offers pass to the next patient up to ~35 minutes after sending"
+  },
+  {
+   "severity": "Minor",
+   "where": "tests/integration/leave.test.ts:194",
+   "what": "AC-205 concurrency test runs on PGlite, which effectively serializes the calls; the guarantee rests on the unique index rather than on real parallelism in the test"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:236-245",
+   "what": "Outstanding offers do not hold the freed slot; it stays publicly bookable and the offered patient may lose it (documented design choice)"
+  }
+ ],
+ "blind_label": "XV",
+ "scorer_sid": "0acce686-0c74-4999-97ee-4b0428774b3f"
+}
