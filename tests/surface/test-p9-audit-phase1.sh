@@ -44,7 +44,7 @@ grep -qF 'chain-execution.md` §Starterkit detection + mode classification' "$FD
 HT="$OF/halt-taxonomy.md"
 if ! grep -q 'classification conflict' "$HT" \
    && grep -q '## Self-resolve (C1' "$HT" \
-   && grep -qF 'memory_in_use` · `mode_migrate` · `invalid_handoff` · `partial_state_corrupt` · `verify_unit_writable' "$HT"; then
+   && grep -qF 'memory_in_use` · `mode_migrate` · `invalid_handoff` · `verify_unit_writable' "$HT"; then
   pass "A2: 5 admitted conflicts resolved into the C1 self-resolve list"
 else fail "A2: halt-taxonomy conflicts not resolved"; fi
 

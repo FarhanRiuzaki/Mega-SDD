@@ -21,7 +21,7 @@ esac; done
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
 
 # ─── C1 self-resolve battery (moved here from hooks/session-start, v7 Fase 2) ─
-# session-start must never write vault artifacts (gate-1 mandate); the 9-guard
+# session-start must never write vault artifacts (gate-1 mandate); the guard
 # battery runs at M/L entry instead — BEFORE derive-state so the probes see
 # repaired state. (v7.3.0: guards emit CHAT notices only — no telemetry.)
 # ─── C1 self-resolve: mode_migrate (Iter 67.7.1, script-layer since v7) ─────
@@ -42,7 +42,7 @@ CONFIG_FILE="${CWD}/.mega-sdd/config.yaml"
 # project (the old `telemetry: false` opt-out died with telemetry itself).
 if [ -d "${CWD}/.mega-sdd" ]; then
     # Run C1 self-resolve guards via python (deterministic detection + fix).
-  # Iter 67.7.1: mode_migrate.  Iter 67.7.2 (v3.51.1+): adds partial_state_corrupt.
+  # Iter 67.7.1: mode_migrate first; the other guards follow.
   SELF_RESOLVE_NOTICES=$(CWD="$CWD" PLUGIN_ROOT_HINT="$SCRIPT_DIR/.." MEGA_SDD_LIB_DIR="$SCRIPT_DIR/_lib" python3 <<'PYEOF' 2>/dev/null
 import json
 import os
@@ -52,6 +52,7 @@ from datetime import datetime, timezone
 
 cwd = os.environ["CWD"]
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+ts_fname = ts.replace(":", "-").replace(".", "-")  # filename-safe ISO8601 (Guard 7 .corrupt-<ts>)
 session_id = os.environ.get("CLAUDE_SESSION_ID", "ground-script")  # not a documented hook env var; label-only fallback (stdin session_id is the real source if ever needed)
 notices = []
 
@@ -62,15 +63,13 @@ def emit_event(halt_type, fix_applied, **payload_extras):
 
 # 7.13.0 (doc-audit finding 3): the battery scans EVERY vault layout via the
 # shared vault_layouts helpers, not just the legacy `*-bound/` sibling — the
-# canonical `.mega-sdd/vaults/<name>/` tree was invisible to Guards 2 + 4.
+# canonical `.mega-sdd/vaults/<name>/` tree was invisible to Guard 4.
 # Import failure (broken install) falls back to the pre-7.13 coverage so a
 # missing _lib can never kill the whole battery (this heredoc runs 2>/dev/null).
 sys.path.insert(0, os.environ.get("MEGA_SDD_LIB_DIR", ""))
 try:
-    from vault_layouts import vault_prefixes as _vl_prefixes, unit_files as _vl_unit_files
+    from vault_layouts import unit_files as _vl_unit_files
 except Exception:
-    def _vl_prefixes(c):
-        return (os.path.join(c, ".mega-sdd", "vaults", "*-bound"),)
     def _vl_unit_files(c):
         got = (glob.glob(os.path.join(c, ".mega-sdd", "vaults", "*-bound", "units", "U-*.md")) +
                glob.glob(os.path.join(c, ".mega-sdd", "vaults", "*-bound", "units", "U-*", "unit.md")))
@@ -124,46 +123,6 @@ for vj in vault_jsons:
         vault_json_path=rel_vj,
     )
     notices.append(f"[self-resolved] mode_migrate: {scope_name} mode {old_mode_repr} → {expected_mode}")
-
-# ─── Guard 2: partial_state_corrupt (Iter 67.7.2 — v3.51.1+) ───────────────
-# Scan every vault layout's bolts/U-*/partial-state.json (vault_prefixes —
-# 7.13.0 widened from the legacy `*-bound/`-only glob; realpath-deduped).
-# If file fails JSON parse → rename to partial-state.json.corrupt-<ISO8601>
-# (forensics preserved; --resume restarts fresh per plugins/mega-sdd/references/halt-protocol.md).
-# NEVER halts. Honors same opt-out as mode_migrate (handled by GUARD_ENABLED above).
-ts_fname = ts.replace(":", "-").replace(".", "-")  # filename-safe ISO8601
-_ps_files = []
-for _pre in _vl_prefixes(cwd):
-    _ps_files.extend(glob.glob(os.path.join(_pre, "bolts", "U-*", "partial-state.json")))
-for f in sorted(dict.fromkeys(os.path.realpath(p) for p in _ps_files)):
-    if "/.archived/" in f or "/.archived\\" in f:
-        continue
-    try:
-        with open(f) as fh:
-            json.load(fh)
-        # Parsed cleanly; no action
-        continue
-    except json.JSONDecodeError:
-        # Corrupted — rename and emit
-        corrupt_path = f"{f}.corrupt-{ts_fname}"
-        try:
-            os.rename(f, corrupt_path)
-        except Exception:
-            continue  # rename failed; don't claim resolve
-        rel_orig = os.path.relpath(f, cwd)
-        rel_corrupt = os.path.relpath(corrupt_path, cwd)
-        unit_id = os.path.basename(os.path.dirname(f))  # U-XXX from path
-        emit_event(
-            "partial_state_corrupt",
-            f"renamed → {os.path.basename(corrupt_path)}; --resume will restart fresh",
-            unit_id=unit_id,
-            original_path=rel_orig,
-            corrupt_path=rel_corrupt,
-        )
-        notices.append(f"[self-resolved] partial_state_corrupt: {unit_id} renamed (JSON parse fail); --resume will restart fresh")
-    except Exception:
-        # Non-JSONDecodeError (file system error, encoding etc.) → skip; not a clean self-resolve
-        continue
 
 # ─── Guard 4: verify_unit_writable (Iter 67.7.4 — v3.52.0+) ────────────────
 # Scan units for task_type=verify with non-empty target_files (forbidden per

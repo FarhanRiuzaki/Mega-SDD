@@ -214,7 +214,7 @@ No framework-pack check: GROUND's pack matcher and the bolt dispatch (`scripts/_
 
 ## Cold-halt anticipation checks
 
-Most halts are runtime-only (cannot statically predict). These 4 feasible static checks cover the ones that would otherwise fire cold (no anticipating predictive-check):
+Most halts are runtime-only (cannot statically predict). These 3 feasible static checks cover the ones that would otherwise fire cold (no anticipating predictive-check):
 
 - **check_id: `units_depends_on_dag_acyclic`** (anticipates `cycle_detected`)
   command: `python3 -c "import json, glob; from collections import defaultdict; g=defaultdict(list); [g[d.get('id','')].extend(d.get('depends_on',[])) for f in glob.glob('<vault-path>/units/U-*.md') for d in [{}]]; print('ok')"` (skeleton — actual implementation parses YAML frontmatter from each unit's depends_on and runs DAG cycle detection)
@@ -222,13 +222,6 @@ Most halts are runtime-only (cannot statically predict). These 4 feasible static
   on_fail: "Cycle detected in unit depends_on graph. Inspect <vault>/units/U-*.md frontmatter; resolve cycle BEFORE running execute-bolts."
   fatal: yes
   predicts_halt: cycle_detected
-
-- **check_id: `partial_state_loads_cleanly`** (anticipates `partial_state_corrupt`)
-  command: `for f in <vault-path>/bolts/U-*/partial-state.json; do [ -f "$f" ] || continue; python3 -c "import json; json.load(open('$f'))" 2>&1 || { echo "corrupt: $f"; exit 1; }; done`
-  expected: exit 0 (all partial-state.json files parse cleanly OR none exist)
-  on_fail: "One or more partial-state.json files have JSON parse errors. execute-bolts --resume will halt partial_state_corrupt. Rename .corrupt-<timestamp> and re-run without --resume OR fix the JSON manually."
-  fatal: no
-  predicts_halt: partial_state_corrupt
 
 - **check_id: `units_have_acceptance_tests`** (anticipates `unit_underspecified`)
   command: `for f in <vault-path>/units/U-*.md; do grep -q "^acceptance_test:" "$f" || { echo "no acceptance_test: $f"; exit 1; }; done`

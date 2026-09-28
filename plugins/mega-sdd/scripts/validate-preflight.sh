@@ -357,17 +357,6 @@ def c_dag_acyclic(_):
     return True
 
 
-def c_partial_state(_):
-    for f in glob.glob(os.path.join(VAULT, "bolts", "U-*",
-                                    "partial-state.json")):
-        try:
-            with open(f, encoding="utf-8") as fh:
-                json.load(fh)
-        except Exception:
-            return False
-    return True
-
-
 def c_acceptance_tests(_):
     for f in unit_files():
         with open(f, encoding="utf-8", errors="replace") as fh:
@@ -495,11 +484,6 @@ COLD_HALT_CHECKS = [
      "Cycle detected in unit depends_on graph. Inspect "
      "<vault>/units/U-*.md frontmatter; resolve cycle BEFORE running "
      "execute-bolts."),
-    ("partial_state_loads_cleanly", False, c_partial_state,
-     "One or more partial-state.json files have JSON parse errors. "
-     "execute-bolts --resume will halt partial_state_corrupt. Rename "
-     ".corrupt-<timestamp> and re-run without --resume OR fix the JSON "
-     "manually."),
     ("units_have_acceptance_tests", True, c_acceptance_tests,
      "One or more units lack acceptance_test field. execute-bolts will "
      "halt unit_underspecified. Edit affected units OR re-run "

@@ -83,10 +83,6 @@ fi
 if [ "$s6a_ok" -eq 1 ]; then
   pass "S6a: ✅ RESOLVED marker shape present at the writer (binding-mode) AND parsed by the grammar owner (binding_md.py)"
 else fail "S6a: marker-grammar pair broken (writer/parser drift or deletion)"; fi
-# P3 C6b: the agent copy went with agents/bolt-implementer.md (spec v9 §8.6); the home stays until C7.
-grep -qF 'canonical taxonomy' "$P/skills/execute-bolts/references/partial-state-and-saga.md" \
-  && pass "S6d: step_type canonical taxonomy home present" \
-  || fail "S6d: step_type taxonomy home missing"
 
 echo
 [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"

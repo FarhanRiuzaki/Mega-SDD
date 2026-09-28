@@ -13,7 +13,6 @@
 #   E  no .mega-sdd/ → nothing minted (phantom-root doctrine)
 # And §2c — the C1 battery reads EVERY vault layout via vault_layouts, not just
 # the legacy `*-bound/` sibling:
-#   F  Guard 2 renames a corrupt partial-state.json in a CANONICAL vault
 #   G  Guard 4 flags a verify+writable unit in a CANONICAL vault
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -64,15 +63,6 @@ F4="$WORK/e"; mkdir -p "$F4"
 printf '{"compilerOptions":{}}' > "$F4/tsconfig.json"
 bash "$G" --cwd="$F4" >/dev/null 2>&1
 [ -d "$F4/.mega-sdd" ] && bad "E1 GROUND minted .mega-sdd on a pre-init repo" || ok "E1 no phantom root"
-
-echo "── F: Guard 2 covers the CANONICAL vault layout (was *-bound-only) ──"
-F5="$WORK/f"; mkdir -p "$F5/.mega-sdd/vaults/myvault/bolts/U-009"
-printf '{"decision":"na"}' > "$F5/.mega-sdd/l0-toolchain-decision.json"
-printf 'not json{{{' > "$F5/.mega-sdd/vaults/myvault/bolts/U-009/partial-state.json"
-OUT=$(bash "$G" --cwd="$F5" 2>/dev/null)
-echo "$OUT" | grep -q "partial_state_corrupt: U-009" && ok "F1 corrupt partial-state detected in .mega-sdd/vaults/<plain>/" || bad "F1 canonical layout still invisible: $(echo "$OUT" | head -2)"
-ls "$F5/.mega-sdd/vaults/myvault/bolts/U-009/"partial-state.json.corrupt-* >/dev/null 2>&1 \
-  && ok "F2 forensics preserved (renamed, not deleted)" || bad "F2 corrupt file not renamed"
 
 echo "── G: Guard 4 covers the CANONICAL vault layout ──"
 F6="$WORK/g"; mkdir -p "$F6/.mega-sdd/vaults/myvault/units"

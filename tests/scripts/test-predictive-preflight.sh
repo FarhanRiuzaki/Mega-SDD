@@ -130,7 +130,7 @@ printf '{"status": "PASS", "gaps": []}\n' > "$TMP/proj/.mega-sdd/.plan-coverage-
 out=$(bash "$S" $SFLAGS --cwd="$TMP/proj" --chain=execute-bolts </dev/null); src=$?
 [ "$src" -eq 0 ] && pass "well-formed units + PASS coverage census -> execute-bolts chain exits 0" \
   || fail "clean fixture exited $src: $out"
-for c in units_directory_present units_depends_on_dag_acyclic units_have_acceptance_tests verify_units_have_no_target_files partial_state_loads_cleanly lite_plan_coverage_pass; do
+for c in units_directory_present units_depends_on_dag_acyclic units_have_acceptance_tests verify_units_have_no_target_files lite_plan_coverage_pass; do
   printf '%s\n' "$out" | grep -q "\"check\": \"$c\"" \
     && pass "cold-halt/membership check $c ran under execute-bolts" \
     || fail "check $c missing from execute-bolts chain"

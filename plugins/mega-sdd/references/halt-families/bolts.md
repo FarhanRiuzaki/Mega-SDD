@@ -12,7 +12,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### bolt_repeated_partial_failure
 
-- `bolt_repeated_partial_failure` — execute-bolts: bolt failed 3 partial-state recovery cycles. ALWAYS STOP. Resolution: review unit spec.
+- `bolt_repeated_partial_failure` — the same halt fired twice on one unit with different proposed fixes (propose-and-confirm cycle). ALWAYS STOP. Resolution: review unit spec.
 
 ### provenance_missing
 
@@ -29,10 +29,6 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### pbt_citation_invalid
 
 - `pbt_citation_invalid` — execute-bolts: a PBT property block declares `Cites: §Decision-D-NNN` but the cited ADR ID does not exist in the vault's decisions surface (`context.md ## Decisions` on layout-3; `vault.md ## Decisions` on layout-2; `05-decisions.md` / `decisions/` on legacy). ALWAYS STOP. Resolution: fix the citation in the unit's PBT block (or remove the property if the underlying decision was rescinded), then re-run the bolt.
-
-### partial_state_corrupt
-
-- `partial_state_corrupt` — execute-bolts: `--resume` mode loaded `<vault>/bolts/U-XXX/partial-state.json` (canonical path per execute-bolts §Partial-state contract) and JSON parse failed. **C1 SELF-RESOLVE (SCRIPT-LAYER ENFORCED via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7):** at GROUND, the script scans every vault layout's `<vault>/bolts/U-*/partial-state.json` (`_lib/vault_layouts`); any file failing JSON parse is renamed to `partial-state.json.corrupt-<ISO8601>` (forensics preserved); next `--resume` invocation restarts fresh from unit spec. The chat one-liner is the record. NEVER halts.
 
 ### hard_rule_violated
 

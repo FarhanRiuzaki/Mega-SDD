@@ -46,8 +46,8 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
   - `--no-pbt` — skip Property-Based Testing validation (example-test-only behaviour).
   - `--no-empty-commits` — skip the bolt-report-only commit for `task_type: verify` units with no changes (per the verify-unit special path).
   - `--no-drift-check` — opt out of the end-of-chain detect-drift auto-gate (per `references/halts-and-handoff.md` / `../orchestrate-flow/references/chain-execution.md`).
-  - `--resume` — resume a partially-completed bolt from `<vault>/bolts/U-XXX/partial-state.json` (forward-only from `current_step`).
-  - `--rollback <unit-id-or-vault-path>` — saga compensating actions: replay `rollback_hints[]` in reverse to undo a crashed bolt.
+  - `--resume` — retired; say once `execute-bolts --resume is retired: an open run resumes from its _exec-plan-*.md automatically.` and carry on.
+  - `--rollback <unit>` — retired; say once `--rollback is retired: there is no saga state; revert the unit's commits with git.` and carry on.
 - **Unit selection (living-vault lifecycle):** units with `status: superseded` are SKIPPED with a one-line warning (claim no longer exists); units with `status: stale` are ELIGIBLE for re-execution (treated as not-yet-completed — the sync lane's "stale/new units only" semantics). Absent `status` = legacy behavior unchanged.
   - `--force-skip-postflight` — **DISCOURAGED** escape hatch that skips the ast-grep Hard Rule **postflight** validation for THIS run only. Use only when the ast-grep binary is broken or a known false-positive pattern blocks otherwise-valid work; document the reason in the bolt-report self-assessment. It does **NOT** downgrade the rail — BLOCKING remains BLOCKING per the plugin's "no bypassing anti-hallucination" rule. Any use is logged in the handoff YAML `notes.postflight_skipped: true` and surfaces in `<vault>/bolts/_summary.md`; a follow-up bolt re-run WITHOUT the flag is required before drift-detect / merge.
 
@@ -97,9 +97,9 @@ The default inline run takes the selected units in plan order in one context. Un
 
 **After the last committed code-bearing bolt of the invocation** (single OR batch — a lone bolt can break a sibling), run the project's **FULL** test suite exactly once via the sanctioned writer **`scripts/run-full-suite.sh --cwd=<root>`** (it runs the suite itself, pins HEAD, and records the hook-guarded `<vault>/bolts/_batch-suite.json`). **RED → halt `batch_suite_red`** (do not auto-revert; no `status: completed` handoff). Skipped only for `--dry-run`, a zero-code-commit run, or `--no-full-suite` (logged, never silent). **Enforcement (not prose):** the Stop hook + the execute-bolts gate run `validate-bolt-artifacts.sh --batch-suite-gate`; the PreToolUse aggregator **blocks the next `execute-bolts`** when no green `_batch-suite.json` covers the newest code commit (`batch_suite_gate_missing`) or the covering suite is RED (`batch_suite_red`) — the hook VERIFIES the artifact, it never runs the suite. Out-of-band bypass guard, freshness-anchor mechanics + the sync lane → `references/halts-and-handoff.md §Batch completion — full-suite gate (B2)` — single owner; design → `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md`.
 
-## Partial-state, resume + saga rollback (`--agents`)
+## Resume
 
-The inline run resumes its open plan instead (`references/inline-run.md` (b)). A crashed bolt writes `<vault>/bolts/U-XXX/partial-state.json` (v2.0 schema: `current_step`, `files_modified[]`, `rollback_hints[]`). `--resume` re-executes forward-only from `current_step` (3 partial attempts → **halt `bolt_repeated_partial_failure`**); a corrupt or malformed-hints file → **halt `partial_state_corrupt`** (rename aside, then re-run). `--rollback` replays `rollback_hints[]` in reverse with per-action confirmation (default safe for non-idempotent ops). Schema, step-type taxonomy, resume integrity checks, and the rollback flow → `references/partial-state-and-saga.md`.
+An open run resumes from its `_exec-plan-*.md` (`references/inline-run.md` (b)).
 
 ## Halt protocol + propose-and-confirm
 
@@ -143,7 +143,6 @@ Sources: each unit's `acceptance.json` (criterion → test → verdict); the del
 **Only when the condition holds (do NOT load otherwise):**
 - `references/batch-and-fanout.md` — multi-unit `--agents` invocations only (`--all`/`--parallel`/`--per-squad`/`--squad=`/`--module=`): the batch procedures + wave/overlap rails.
 - `references/squad-subagent.md` — `--per-squad` only: filter + consolidation protocol (depth-1, no squad subagent).
-- `references/partial-state-and-saga.md` — `--resume`/`--rollback` or a crashed bolt only: partial-state v2.0 schema, integrity checks, saga flow.
 - `references/halt-recovery.md` — ONLY when a halt fires or a `properties:` unit is batched: full halt YAMLs, propose-and-confirm UX + config, new-halt-types table, PBT flow.
 - `references/propose-and-confirm-prompt.md` — only when dispatching the AI fix-proposer (eligible halts).
 - `references/hard-rule-grammar-v2.md` — only when authoring/debugging v2 (ast-grep) rules or on grammar halts.

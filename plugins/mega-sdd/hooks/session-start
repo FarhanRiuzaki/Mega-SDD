@@ -251,7 +251,7 @@ if [ -f "$PY_LIB_SS" ]; then
 fi
 
 # ─── C1 self-resolve battery: MOVED to scripts/ground.sh (v7 Fase 2) ─────────
-# The 9-guard block (mode_migrate, partial_state_corrupt, routing_outcome_corrupt,
+# The guard block (mode_migrate, routing_outcome_corrupt,
 # verify_unit_writable, pack integrity ×3, model_tier_unknown dep_missing
 # memory_in_use) now runs at GROUND (M/L entry):
 # session-start must never write vault artifacts (gate-1 mandate, spec
