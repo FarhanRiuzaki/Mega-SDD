@@ -103,7 +103,7 @@ resolution-verifier) and `bolt-implementer` dispatch with a measurement. `domain
 
 KEEP in P1, byte-for-byte except path strings.
 - The gates read per-unit lite evidence. Their layout-2 legs stay because existing layout-2
-  vaults remain readable.
+  vaults remain readable; the in-run layout-2 leg went with the per-dispatch path (P3, §8.6).
 - Measured cost on a repo with no vault: ±6 ms per tool call (fast path). Not a user-visible cost.
 
 ### Scripts

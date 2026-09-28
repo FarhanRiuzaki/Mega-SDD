@@ -810,7 +810,7 @@ def _next_action(drops):
     if types & {"conflict_unresolved", "binding_missing"}:
         parts.append(
             "conflict/binding drops: resolve via resolve-oq --binding <bolts/U-XXX/binding.json> "
-            "(human-in-the-loop), then re-bind the unit (3.9b rebind-units.sh --units=<U>) "
+            "(human-in-the-loop), then re-bind the unit (rebind-units.sh --units=<U>) "
             "until conflicts=0; layout-2 binding.md: /mega-sdd:migrate-paths --vault-layout=3 "
             "first, then the mandatory full JIT re-bind (rebind-units.sh --units=all) — a "
             "migrated CONFLICT-ID clears only when a claim that names it gets a fresh verdict "

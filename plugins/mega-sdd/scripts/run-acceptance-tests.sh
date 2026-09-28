@@ -266,8 +266,8 @@ artifact = {
     "timeout_seconds": timeout_s,
     "entries": results,
     # F-18: how many executed `type: test` entries measured only rc==0 (no
-    # `expects` substring) — 69/69 on the field run. Gated per unit at dispatch
-    # (acceptance_expects_missing); recorded here so the evidence says so.
+    # `expects` substring) — 69/69 on the field run (validate-unit-spec.sh flags
+    # acceptance_expects_missing); recorded here so the evidence says so.
     "expects_missing": len([r for r in results if r.get("type") == "test"
                             and "pass" in r and not (r.get("expects") or "")]),
 }

@@ -446,8 +446,8 @@ def validate_unit(file_path):
     # entries on the field run; acceptance never observed a failure). A
     # command-bearing `type: test` entry (or untyped) MUST name the substring the
     # output proves. Exempt: manual (never executed) and render (route-200 +
-    # display assertion — its command IS the proof). Gated PER UNIT at dispatch
-    # by the in-run aggregator (never at the run boundary — no retro-freeze).
+    # display assertion — its command IS the proof). An analyze advisory: no gate
+    # reads it (never at the run boundary — no retro-freeze).
     try:
         _ftext = open(file_path, encoding="utf-8", errors="replace").read()
     except OSError:
