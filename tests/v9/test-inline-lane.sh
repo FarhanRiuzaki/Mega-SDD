@@ -114,7 +114,7 @@ cp "$T/u4.bak" "$V/units/U-004.md"
 # ── b: no bind ran → the dispatch gate's freshness check quarantines every candidate ──
 OUT="$(dep)"; R=$?
 [ $R -eq 1 ] && [ "$(J "$OUT" 'sorted({(q["reason"], q.get("freshness")) for q in d["quarantined"] if "via" not in q})')" = "[('binding_stale', 'binding_absent')]" ] \
-  && [ "$(J "$OUT" 'd["plan"]')" = "None" ] && [ "$(plans)" = 0 ] && ok "b: no binding.json → binding_stale (binding_absent, the dispatch gate's own check), exit 1, no plan" || bad "b: rc=$R out=$OUT"
+  && [ "$(J "$OUT" 'd["plan"]')" = "None" ] && [ "$(plans)" = 0 ] && ok "b: no binding.json → binding_stale (binding_absent, the run-start freshness check), exit 1, no plan" || bad "b: rc=$R out=$OUT"
 [ "$(scan)" = 0 ] && [ "$(JF "$SST" 'd["status"]')" = "PASS" ] && ok "f0: units but no bolt commit → PASS" || bad "f0: $(head -c 300 "$SST" 2>/dev/null)"
 
 # ── c: the up-front bind, then the plan ──────────────────────────────────────
@@ -156,7 +156,7 @@ if [ -f "$PLAN" ]; then
   printf '%s' "$GC" | grep -F 'Final review and Finishing' | grep -qF '## After the last task' \
     && printf '%s' "$AF" | grep -qE "run-full-suite\.sh.*--base=$SEED.*$SEED\.\.HEAD.*Close: reviewed.*delivery-check\.sh.*run-full-suite\.sh.*--rebind-wip.*evidence run.*conflict-bypass-scan.*--retire" \
     && ok "d6: the close order is inline-run (d): suite, review, fixes, Close: reviewed, delivery-check, suite again, re-bind, evidence, gate, retire" || bad "d6: $AF"
-  ! grep -q 'bolt_introduces_locked_drift' "$PLAN" && ok "d16: the plan names no STOP no step can raise (the per-bolt drift check is --agents only)" || bad "d16: locked-drift STOP in the plan"
+  ! grep -q 'bolt_introduces_locked_drift' "$PLAN" && ok "d16: the plan names no STOP no step can raise (no task runs the per-bolt drift check)" || bad "d16: locked-drift STOP in the plan"
   printf '%s' "$BL" | grep -q '^## After the last task' && printf '%s' "$BL" | grep -qE '^mega-sdd-trace:execute-bolts$' && ! printf '%s' "$B1" | grep -q 'After the last' \
     && ok "d15: the last task's brief carries the close, so a compacted controller keeps the overrides (I4)" || bad "d15: $(printf '%s' "$BL" | tail -3)"
   printf '%s' "$RF" | grep -F 'Out of scope' | grep -q 'U-003' && ok "d7: Review Focus names the quarantined units out of scope" || bad "d7: $RF"
@@ -581,7 +581,7 @@ grep -qF 'The default path is unchanged by P2' "$ROOT/benchmarks/runbooks/p2-inl
 grep -qF -- '--inline' "$ROOT/tests/skill-triggering/execute-bolts.test.md" && grep -F 'execute-bolts --inline' "$ROOT/docs/gateway-contract.md" | grep -qF 'mega-sdd-trace:execute-bolts' \
   && ok "h13: the trigger fixtures and the gateway contract carry the inline reviewer" || bad "h13: trigger/gateway"
 ! grep -qE '^vault_source:' "$0" && ok "h14: the fixtures use context_source (layout 3)" || bad "h14: vault_source in the fixture"
-python3 - "$ROOT" <<'PYD' && ok "h15: every surface a default run or a new session reads scopes the per-dispatch path to --agents" || bad "h15: a surface still presents the per-dispatch path as the default"
+python3 - "$ROOT" <<'PYD' && ok "h15: no surface a default run or a new session reads presents the per-dispatch path as the default" || bad "h15: a surface still presents the per-dispatch path as the default"
 import re, sys
 R = sys.argv[1]; P = R + "/plugins/mega-sdd"
 rd = lambda f: open(f, encoding="utf-8").read()

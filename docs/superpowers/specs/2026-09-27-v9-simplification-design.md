@@ -366,7 +366,8 @@ The plan is `research/2026-09-28-p3-deletion-plan.md`. It was produced by the re
 `p3-caller-audit` (144 agents: inventory, 9 cluster audits, 135 adversarial refutation checks, a
 synthesis) at `4e1cf166`. The only basis for deleting anything is §8.5: inline was non-inferior to
 the per-unit agent path on one brownfield fixture, n=3. **P3 claims no speed, cost or quality
-gain.** An item the refutation checks refuted stays unchanged. An item that was not refuted but is
+gain.** An item the refutation checks refuted stays KEEP; only the single lockstep lines and forced
+test re-pins listed in plan §2b change in it. An item that was not refuted but is
 coupled to a refuted one moves to P3b as a unit, rather than being half-done.
 
 **`--agents` is retired.** The token is still recognized and still implies `--guarded`. A user who
@@ -377,7 +378,8 @@ left to record inline runs under an "agents" label. This follows the 9.0 `--clas
 `--inline` stays an accepted no-op alias. `--model-tier=<role>:<tier>` (extract-intelligence roles)
 is unchanged. `--max-retries=N` stays as a prose cap per task, and no hook counts it. The retired
 flags are: `--review-panel`, the bare `--model-tier=<tier>`, `--no-escalate`, execute-bolts
-`--resume` and `--rollback`. Each one gets its own one-line notice (plan §5). The fan-out flags
+`--resume` and `--rollback`. Each gets a one-line notice (plan §5; the bare `--model-tier` and
+`--no-escalate` share one). The fan-out flags
 (`--parallel`, `--sequential`, `--per-squad`, `--worktree`, `--sprint-checkpoint`) keep their text
 in P3. They are inert because they are scoped to `--agents`, and P3b retires them.
 
@@ -398,7 +400,8 @@ in P3. They are inert because they are scoped to `--agents`, and P3b retires the
   `.dispatch-prompt-state.json`. Legacy copies on disk stay readable.
 - **Tests:** 57 files that pin only deleted code are deleted (8,221 lines, measured at `4e1cf166`),
   after their surviving pins moved in C0.
-- **Measured totals:** complexity-budget values, lines and files deleted. *(Filled in by C9.)*
+- **Measured totals:** complexity-budget values, lines and files deleted: in the C9 commit message
+  (`git log --grep='P3 C9'`).
 
 **The moat after P3.** Invariant #2 has one form for every run. The CONFLICT block is the
 run-start quarantine in `derive-exec-plan.sh`, plus each task's re-bind, plus `conflict_bypassed` at

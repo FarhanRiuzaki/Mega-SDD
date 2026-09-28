@@ -2,7 +2,9 @@
 # 9.0 P1 exit criterion (docs/superpowers/specs/2026-09-27-v9-simplification-design.md §5):
 # no surviving file routes to, reads from, or dispatches a deleted classic skill
 # (generate-intent, bind-codebase, generate-units, scan-codebase), and every reference
-# path a surviving SKILL.md / command names resolves on disk.
+# path a surviving SKILL.md / command names resolves on disk. P3 (spec §8.6): the 7 retired
+# agents stay deleted, domain-extractor + claim-verifier stay, and no SKILL.md / command names
+# a deleted per-dispatch script.
 #
 # Allowed on purpose: "Relocated from skills/<removed>/..." provenance notes in relocated
 # files. P1b pruned the last removed-skill-id legs (hooks/pre-tool-use DEGENERATE-MAP gate
@@ -21,6 +23,13 @@ hits=$(grep -rnE "skills/($RM)/" "$P" --exclude-dir=tests 2>/dev/null | grep -v 
 
 ids=$(grep -rnE "mega-sdd:($RM)" "$P" --exclude-dir=tests 2>/dev/null || true)
 [ -z "$ids" ] && ok "no dispatch / proposal of a removed skill id anywhere in the plugin (tests excluded)" || { bad "removed skill ids still dispatched/proposed:"; echo "$ids" | head -20; }
+
+for a in bolt-implementer spec-reviewer code-quality-reviewer security-reviewer standards-reviewer design-reviewer resolution-verifier; do
+  [ -e "$P/agents/$a.md" ] && bad "agents/$a.md still exists" || ok "agents/$a.md is gone"
+done
+for a in domain-extractor claim-verifier; do [ -f "$P/agents/$a.md" ] && ok "agents/$a.md kept" || bad "agents/$a.md missing"; done
+dead=$(grep -nE 'build-dispatch-prompt|validate-dispatch-prompt|merge-panel-findings|resolve-review-tier|capture-views' "$P"/skills/*/SKILL.md "$P"/commands/*.md 2>/dev/null || true)
+[ -z "$dead" ] && ok "no SKILL.md / command names a deleted P3 script" || { bad "deleted P3 scripts still named:"; echo "$dead"; }
 
 # every `references/...md` / `<skill>/references/...md` / `plugins/mega-sdd/references/...md`
 # path named in a surviving SKILL.md or command resolves

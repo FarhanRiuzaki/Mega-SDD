@@ -80,7 +80,7 @@ grep -qF 'NEVER `verify`' "$TT" && ok "KEEPVAULT: no-code verify discharge expli
 grep -qF 'Mix of CONFIRMED + **unresolved** CONFLICT' "$TT" && ok "KEEPVAULT: halt scoped to UNRESOLVED conflicts" || fail "KEEPVAULT: halt still fires on resolved conflicts"
 # 9.0: the unit walk's halt index (ex generate-units SKILL.md) scopes the gate to UNRESOLVED
 # conflicts and closes it in execute-bolts (no binding exists at plan time; 9.x: the inline default
-# quarantines before the build, --agents at dispatch — wording re-pinned 2026-09-28).
+# quarantines before the build; the per-dispatch gate was removed in P3, spec §8.6).
 grep -qF '**Unresolved CONFLICT → the gate closes in execute-bolts**' "$UP" \
   && ok "KEEPVAULT: unit-procedure halt line scoped to unresolved" || fail "KEEPVAULT: unit-procedure halt line stale"
 # (retired 9.0: the bind-codebase hard-rules-and-packs.md carrier pointer — bind-codebase deleted.)

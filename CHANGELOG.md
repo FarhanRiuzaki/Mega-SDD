@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [Unreleased] — P3: jalur per-unit `--agents` dihapus (spec v9 §8.6; tanpa klaim gain)
+
+Dasarnya cuma hasil P2 di bawah (inline non-inferior, satu fixture brownfield, n=3). P3 nggak mengklaim lebih cepat, lebih murah, atau lebih bagus dari sebelumnya maupun dari vanilla.
+
+- **Dihapus:** 7 dari 9 agent (bolt-implementer, spec-/code-quality-/security-/standards-/design-reviewer, resolution-verifier; domain-extractor + claim-verifier tetap), 5 script (`merge-panel-findings`, `resolve-review-tier`, `capture-views`, `build-dispatch-prompt`, `validate-dispatch-prompt`), 5 reference execute-bolts (review-panel, context-enrichment, starterkit-enrichment, bolt-dispatch-prompt, partial-state-and-saga), leg hook per-dispatch (panel evidence, attempt cap, wave/probe rail, F-18, binding-freshness, D24a, F-09 Agent; matcher PreToolUse jadi `Skill|Bash|Edit|Write`), 58 file test yang cuma nge-pin kode itu, task benchmark T10.
+- **Flag pensiun (notice sekali, lalu run inline biasa):** `--agents` (tetap implies `--guarded`) → `--agents is retired: the per-unit agent path was removed (spec v9 §8.6); running the default inline run.` · `--review-panel` → `--review-panel is retired: the run closes with one blind review of the whole range.` · bare `--model-tier=<tier>` + `--no-escalate` → `--model-tier=<tier> and --no-escalate are retired (no implementer is dispatched); --model-tier=<role>:<tier> still sets extract-intelligence tiers.` · `execute-bolts --resume` → `execute-bolts --resume is retired: an open run resumes from its _exec-plan-*.md automatically.` · `--rollback` → `--rollback is retired: there is no saga state; revert the unit's commits with git.` `--inline` tetap alias no-op, `--panel-scan` diterima sebagai no-op.
+- **O1:** tag trace per-unit `mega-sdd-trace:execute-bolts:<unit-id>` dipensiunkan (dicatat di `docs/gateway-contract.md`); tag lain nggak berubah. Atribusi per unit sekarang cuma lewat trailer commit `Unit: U-XXX`.
+- **O2:** kewajiban panel + L0 atas unit yang di-commit run `--agents` lama nggak ditegakkan lagi (script remedinya sudah nggak ada).
+- Smoke inline C2 digabung dengan smoke C6b: satu run xs, n=1, delivery-check `VERDICT: PASS`. Itu smoke, bukan benchmark.
+- Ceiling complexity budget diturunkan ke nilai terukur. Fan-out, halt vocabulary, JIT capture dan done-rule ditunda ke P3b.
+
 ## [Unreleased] — `execute-bolts` default jadi inline (P2, TERUKUR: non-inferior terhadap jalur per-unit agent, biaya ±60%)
 
 Pilihan owner "P2 ramping" (spec §8), diukur dengan runbook terkunci `benchmarks/runbooks/p2-inline-vs-agents.md` di fixture brownfield: n=3 per arm, semua run bersih, vanilla sebagai kontrol (n=4). Analisis lengkap ada di `research/2026-09-28-p2-inline-results.md`.

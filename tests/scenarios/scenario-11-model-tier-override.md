@@ -56,7 +56,7 @@ model_tiers:
   bolt_implementer: auto
 ```
 
-GROUND emits the `[self-resolved] model_tier_unknown` notice on every run: "override role 'bolt_implementer' not in catalog; chain will use catalog default". It never halts; delete the key to silence it.
+GROUND emits the `[self-resolved] model_tier_unknown` notice on every run: `role 'bolt_implementer' unknown; chain uses catalog default`. It never halts; delete the key to silence it.
 
 ## When to escalate to opus
 

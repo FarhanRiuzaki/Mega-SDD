@@ -331,12 +331,12 @@ if os.path.isfile(starterkit_path):
             rel_corrupt = os.path.relpath(corrupt_path, cwd)
             emit_event(
                 "deep_scan_cache_corrupt",
-                f"starterkit-context.yaml unparseable; renamed → {os.path.basename(corrupt_path)}; the starterkit slice is skipped until a valid file is restored (e.g. git checkout) — no 9.0 phase regenerates it",
+                f"starterkit-context.yaml unparseable; renamed → {os.path.basename(corrupt_path)}; the run proceeds (restore a valid file with e.g. git checkout) — no 9.0 phase regenerates it",
                 original_path=rel_orig,
                 corrupt_path=rel_corrupt,
                 reason=str(e),
             )
-            notices.append(f"[self-resolved] deep_scan_cache_corrupt: starterkit-context.yaml renamed aside; starterkit slice skipped (no 9.0 producer)")
+            notices.append(f"[self-resolved] deep_scan_cache_corrupt: starterkit-context.yaml renamed aside; the run proceeds (no 9.0 producer)")
     except Exception:
         pass
 

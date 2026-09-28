@@ -1,13 +1,13 @@
 {
  "_doc": "Complexity budget \u2014 a RATCHET, not a target (plugins/mega-sdd/CLAUDE.md \u00a7Release evidence & complexity budget). tests/benchmarks/test-complexity-budget.sh fails when a measured value exceeds its ceiling. Shrinking is always allowed; lower the ceiling in the same change to lock the gain. Raising a ceiling requires a `raises` entry {change, metric, measured_benefit}: a feature / new stage / new lens / new gate / performance claim cites benchmarks/runbooks/vanilla-vs-megasdd.md results (n >= 3 per arm, vs vanilla); a defect fix cites the regression test that fails without it. No evidence, no raise. Units: bytes / chars / lines exactly as the test measures them.",
- "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only); raised 2026-09-27 (see raises[]); LOWERED 2026-09-27 at 9.0 P1: generate-intent / bind-codebase / generate-units / scan-codebase deleted, their surviving contracts relocated into skills/plan/references/ + references/. T01 lite = the guarded pipeline trace re-pointed to the relocated successors (benchmarks/tasks/T01-greenfield-chain/files.lite.txt header). T01 default = what a default run on a clear greenfield PRD commands since the lane router: the DIRECT lane (using-mega-sdd + the front door + references/direct-lane.md; files.optimized.txt) \u2014 a redefinition, not a like-for-like shrink: the pre-9.0 default traced the classic chain (484,930 B). LOWERED again 2026-09-27 at 9.0 P1b: 6 executor-less scripts (-1,531 lines) and the dead hook legs keyed on removed skill ids (-102 lines) deleted.",
+ "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only); raised 2026-09-27 (see raises[]); LOWERED 2026-09-27 at 9.0 P1: generate-intent / bind-codebase / generate-units / scan-codebase deleted, their surviving contracts relocated into skills/plan/references/ + references/. T01 lite = the guarded pipeline trace re-pointed to the relocated successors (benchmarks/tasks/T01-greenfield-chain/files.lite.txt header). T01 default = what a default run on a clear greenfield PRD commands since the lane router: the DIRECT lane (using-mega-sdd + the front door + references/direct-lane.md; files.optimized.txt) \u2014 a redefinition, not a like-for-like shrink: the pre-9.0 default traced the classic chain (484,930 B). LOWERED again 2026-09-27 at 9.0 P1b: 6 executor-less scripts (-1,531 lines) and the dead hook legs keyed on removed skill ids (-102 lines) deleted. LOWERED again 2026-09-28 at P3 C9 to the measured values: the per-unit --agents path deleted (spec v9 \u00a78.6).",
  "ceilings": {
-  "always_loaded_description_chars": 12485,
-  "t01_lite_commanded_bytes": 464611,
-  "t01_default_commanded_bytes": 40535,
-  "skill_md_total_bytes": 279748,
-  "scripts_total_lines": 45456,
-  "hooks_total_lines": 3232
+  "always_loaded_description_chars": 9804,
+  "t01_lite_commanded_bytes": 434812,
+  "t01_default_commanded_bytes": 39910,
+  "skill_md_total_bytes": 260540,
+  "scripts_total_lines": 40127,
+  "hooks_total_lines": 2840
  },
  "raises": [
   {

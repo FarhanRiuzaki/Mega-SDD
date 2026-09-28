@@ -61,7 +61,7 @@ tools:
 
   - id: ast-grep
     used_by: [plan, execute-bolts, detect-drift]
-    purpose: "GROUND symbol index (build-symbol-index.sh, one bounded ast-grep pass — plan brownfield task typing + dispatch symbol_slice) + Hard Rule v2 grammar (5-10x expressivity vs v1)"
+    purpose: "GROUND symbol index (build-symbol-index.sh, one bounded ast-grep pass — plan brownfield task typing + the JIT bind) + Hard Rule v2 grammar (5-10x expressivity vs v1)"
     fallback_behavior: "no symbol index (JIT symbol claims stay OQ); v1 rules run natively; units already carrying v2 rules HALT dep_missing until installed"
     matrix:
       - os: macos

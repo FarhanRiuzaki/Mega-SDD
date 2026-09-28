@@ -115,12 +115,12 @@ echo "── A: artefact hygiene (managed .mega-sdd/.gitignore) ──"
 A="$T/art"; mkrepo "$A"; mkdir -p "$A/.mega-sdd/vaults/v/html" "$A/.mega-sdd/vaults/v/lens-inputs/U-001" "$A/.mega-sdd/vaults/v/bolts/U-001"
 bash "$P/scripts/derive-state.sh" --cwd="$A" --json-only >/dev/null 2>&1
 [ -f "$A/.mega-sdd/.gitignore" ] && ok "A1 derive-state writes the managed .gitignore" || bad "A1 missing"
-for f in vaults/v/html/index.html vaults/v/lens-inputs/U-001/unit-slice-spec.md .bolt-panel-state.json state.json vaults/v/lens-inputs/U-001/l0-results.json vaults/v/bolts/U-001/bolt-report.md vaults/v/bolts/U-001/dispatch-prompt.md vaults/v/context.md; do
+for f in vaults/v/html/index.html vaults/v/lens-inputs/U-001/unit-slice-spec.md .bolt-conflict-bypass-state.json state.json vaults/v/lens-inputs/U-001/l0-results.json vaults/v/bolts/U-001/bolt-report.md vaults/v/bolts/U-001/binding.json vaults/v/context.md; do
   mkdir -p "$(dirname "$A/.mega-sdd/$f")"; echo x > "$A/.mega-sdd/$f"; done
 ign="$(cd "$A" && git status --porcelain --untracked-files=all --ignored .mega-sdd | grep '^!!' | sed 's/^!! //')"
-for f in vaults/v/html/index.html vaults/v/lens-inputs/U-001/unit-slice-spec.md .bolt-panel-state.json state.json; do
+for f in vaults/v/html/index.html vaults/v/lens-inputs/U-001/unit-slice-spec.md .bolt-conflict-bypass-state.json state.json; do
   echo "$ign" | grep -q "$f" && ok "A2 ignored (regenerable/transient): $f" || bad "A2 not ignored: $f"; done
-for f in vaults/v/lens-inputs/U-001/l0-results.json vaults/v/bolts/U-001/bolt-report.md vaults/v/bolts/U-001/dispatch-prompt.md vaults/v/context.md; do
+for f in vaults/v/lens-inputs/U-001/l0-results.json vaults/v/bolts/U-001/bolt-report.md vaults/v/bolts/U-001/binding.json vaults/v/context.md; do
   echo "$ign" | grep -q "$f" && bad "A3 evidence ignored: $f" || ok "A3 kept (evidence/spec): $f"; done
 printf 'mine\n' > "$A/.mega-sdd/.gitignore"; bash "$P/scripts/derive-state.sh" --cwd="$A" --json-only >/dev/null 2>&1
 [ "$(cat "$A/.mega-sdd/.gitignore")" = mine ] && ok "A4 a user-owned .gitignore is never overwritten" || bad "A4 overwritten"

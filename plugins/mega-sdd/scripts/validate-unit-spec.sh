@@ -154,9 +154,9 @@ VS_DOC_RE = r"(?:vault|model|flows|constraints|constitution|context|\d{2}-[A-Za-
 vs_adv = []   # filled per unit by validate_unit(); emitted top-level, never an issue
 
 # xs body diet (v8 P1, spec 2026-09-10 App. F1e) — ADVISORY, never an issue.
-# Keyed on the router's OWN size proxy (_lib/unit_tier.py, the `unit_tier: xs`
-# class: acceptance_test 1..2 AND work items 1..3) so the advisory and the
-# router can never disagree about "small". Budget for that class: Goal 1 line,
+# Keyed on the shared size proxy (_lib/unit_tier.py, the `unit_tier: xs`
+# class: acceptance_test 1..2 AND work items 1..3) so "small" has one
+# definition. Budget for that class: Goal 1 line,
 # Context <= 2 sentences, Implementation steps <= 3 (already implied by the
 # proxy), and `## Anti-patterns` / `## Out of scope` only when every item
 # cites a source (U-XXX, OQ-, C-, a doc anchor or file:line). Lines over the

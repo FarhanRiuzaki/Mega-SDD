@@ -13,13 +13,13 @@
 # open run   a plan whose Run base is HEAD or an ancestor of it: the default mode returns it ("resumed":
 #            true) and never regenerates it — a compaction, a re-run or a new session continues THIS run.
 # default    candidates = pending ∩ --units, topological. A candidate is QUARANTINED by the SAME
-#            predicates the per-dispatch gate applies (`via` = the depends_on unit that carried it):
+#            predicates the retired per-dispatch gate applied (`via` = the depends_on unit that carried it):
 #              binding_conflict     validate-handoff-binding-units.sh --units=<candidates> drops it, or its
 #                                   binding.json has an open CONFLICT or is unparseable. Not blocking: an
 #                                   fs_must_exist CONFLICT on a path an in-scope ancestor creates (`deferred`
 #                                   to the task's re-bind) and an `own_wip` one (the unit's own uncommitted work).
 #              quarantine_recorded  derive-ready-units.sh lists it (write-unit-quarantine.sh)
-#              binding_stale        _lib/freshness.gate_check, the dispatch gate's own function
+#              binding_stale        _lib/freshness.gate_check (the run-start freshness check)
 #              depends_on_quarantined  a depends_on unit is quarantined, or neither done nor a candidate
 #            halt {type: binding_conflict}: a validator drop with no unit_id, or nothing left in scope while a
 #            quarantine is a binding_conflict (otherwise exit 1 with halt null).
@@ -222,7 +222,7 @@ for u in cands:  # topological: an ancestor is decided before its dependents
     blocking = sorted(({str(c.get("id")) for c in opn or []} | dropped.get(u, set())) - set(dfr) - wip, key=natkey)
     try:
         why = None if (opn is None or blocking or u in recorded or via) else fr.gate_check(root, vault, u, None)[0]
-    except Exception:  # noqa: BLE001 — a git failure: fail closed, as the dispatch gate does
+    except Exception:  # noqa: BLE001 — a git failure or any exception: fail closed (not_evaluated)
         why = "not_evaluated"
     rec = ({"reason": "binding_conflict", "conflict_ids": blocking or ["binding.json unparseable"]} if opn is None or blocking
            else {"reason": "quarantine_recorded"} if u in recorded
