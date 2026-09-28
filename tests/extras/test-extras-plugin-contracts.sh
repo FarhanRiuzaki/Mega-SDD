@@ -91,7 +91,10 @@ n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
 # no longer names bind-codebase/binding.md/classic lane — it now states the surviving JIT-bind CONFLICT gate
 # (bolts/U-XXX/binding.json, pre-flight 3.9 → binding_conflict at execute-bolts dispatch, resolve-oq --binding).
 # That is the only in-anchor edit — −30 B (3982 → 3952), still under the 4030 cap; extras still adds nothing.
-[ "$n" -eq 3952 ] && ok "core anchor unchanged ($n B — extras adds nothing to it)" || fail "core anchor changed: $n B (baseline 3952)"
+# 9.0 §8.5 re-baseline (research/2026-09-28-p2-inline-results.md): execute-bolts runs inline by default, so the Hard-gate
+# line states the run-start quarantine (JIT bind up front + per task) and scopes the dispatch gate to `--agents` —
+# +36 B (3952 → 3988), under the 4000 cap of test-b3-anchor-and-panel.sh M-13a; extras still adds nothing.
+[ "$n" -eq 3988 ] && ok "core anchor unchanged ($n B — extras adds nothing to it)" || fail "core anchor changed: $n B (baseline 3988)"
 printf '%s' "$CORE" | grep -qi "extras\|slice" && fail "extras/slice leaked into the core anchor" || ok "no extras/slice mention in the core anchor"
 has "$P/references/paths.md" ".mega-sdd/slices/" && ok "core paths.md lists the slices/ artifact home" || fail "paths.md lacks the slices/ row"
 grep -q 'mega-sdd-extras.*built' "$P/CLAUDE.md" && ok "core CLAUDE.md clause records extras as built" || fail "CLAUDE.md clause still says demand-only"

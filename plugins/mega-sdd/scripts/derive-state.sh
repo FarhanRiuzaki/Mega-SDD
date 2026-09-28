@@ -96,7 +96,8 @@ if os.path.isdir(state_dir):
     # the unit body/pack and gate-state caches — all re-derived on disk). Stays tracked:
     # context/vault/constitution/units, bolt-report, binding.json, findings.json,
     # pre/postflight, acceptance, attempts, l0-results, dispatch-prompt (what the
-    # implementer was told). A .gitignore without the marker is the user's — never touched.
+    # implementer was told); the inline run's plan and ledger are local. A .gitignore without the
+    # marker is the user's — never touched.
     gi = os.path.join(state_dir, ".gitignore")
     marker = "# mega-sdd-managed v1"
     body = marker + """ — regenerable or transient; remove this line to take ownership
@@ -109,6 +110,8 @@ html/
 **/html/
 **/lens-inputs/*/*
 !**/lens-inputs/*/l0-results.json
+**/bolts/_exec-plan-*.md
+**/bolts/_inline-ledger-*.md
 """
     try:
         cur = open(gi).read() if os.path.isfile(gi) else None

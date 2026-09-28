@@ -88,8 +88,8 @@ what the router could not see up front:
 - the change spans modules someone else owns;
 - a business decision blocks most of the work and the human is unavailable.
 
-The user can also force any lane: `--direct`, `--assisted` or `--guarded`. `--lite` and
-`--classic` imply guarded.
+The user can also force any lane: `--direct`, `--assisted` or `--guarded`. `--lite`, `--inline` and
+`--agents` imply guarded; the retired `--classic` forces no lane.
 
 ## What these lanes never do
 

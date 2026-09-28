@@ -199,12 +199,12 @@ flowchart LR
     PRD["PRD / BRD"] --> PLAN
     BRIEF["brief (--guarded)"] -->|seed PRD| PLAN
     KB["extract-intelligence KB"] -->|plan --kb| PLAN
-    PLAN["plan<br/>context.md + constitution.md + units<br/>ONE batched ask"] --> BOLTS["execute-bolts --all<br/>JIT bind per unit · CONFLICT gate<br/>implementer + blind review panel"]
+    PLAN["plan<br/>context.md + constitution.md + units<br/>ONE batched ask"] --> BOLTS["execute-bolts --all<br/>one context · bind up front + per task<br/>CONFLICT gate at run start · one blind review"]
     BOLTS --> CHECK["delivery-check.sh<br/>VERDICT: PASS"] --> RESULT(["result contract"])
 ```
 
 - **`plan`** is ONE model phase. It writes the vault (`context.md` with flows, DBML, NFRs and OQs, plus `constitution.md` and `vault.json`) and the atomic units (`units/U-*.md`). Every unit cites the PRD section it covers, and a coverage check refuses the bolts hop while a PRD heading has no decision: a unit, an open OQ carrying `[covers: <prd>#<slug>]`, or a line in `context.md ## Coverage exclusions` saying why nothing is built for it. Business OQs go to you in ONE batched ask. Technical OQs are decided by the AI as labelled, cited, reversible choices.
-- **`execute-bolts`** works in dependency waves. Before a unit is dispatched it is bound to the code at HEAD: every claim about existing code gets CONFIRMED / CONFLICT / OQ with an anchor (`bolts/U-XXX/binding.json`). An unresolved CONFLICT blocks that unit (its dependents are skipped with the reason) until a human resolves it. The `bolt-implementer` agent builds it test-first, a risk-tiered blind review panel reads the diff, and hooks enforce the pre/post-flight Hard Rule scans and the evidence gates.
+- **`execute-bolts`** runs every unit in ONE context from a generated plan. Every pending unit is bound to the code at HEAD up front, and again at its own task: every claim about existing code gets CONFIRMED / CONFLICT / OQ with an anchor (`bolts/U-XXX/binding.json`). An unresolved CONFLICT quarantines that unit at run start (its dependents are skipped with the reason) until a human resolves it. Each unit is built test-first with the pre/post-flight Hard Rule scans and the evidence writers, ONE blind review reads the run's diff, and the evidence gates check it at the run boundary. `--agents` keeps the per-unit path: dependency waves, the `bolt-implementer` agent, a risk-tiered blind review panel and the CONFLICT gate at each dispatch.
 - **What the lane adds over the other two** is an audit trail. Each unit is traced to its PRD section. Each claim about existing code carries a verdict and an anchor. Each bolt keeps its dispatch prompt, acceptance evidence and review findings on disk. It also feeds the team documents (`/mega-sdd:emit`) and `/mega-sdd:sync`.
 - **What it does not add** is better code. See the next section.
 
@@ -292,8 +292,9 @@ flowchart TB
     end
 
     subgraph GUARD["Guarded — the spec pipeline (existing vault or --guarded)"]
-        PLAN["plan<br/>context.md + constitution.md + units (layout-3)"]:::phase --> BOLTS["execute-bolts<br/>JIT bind per unit · sprint waves<br/>pre/post-flight + L0 gates"]:::phase
-        BOLTS --> IMPL["bolt-implementer (TDD)"]:::agent --> PANEL["blind review panel — risk-tiered<br/>spec · quality · security · standards · design"]:::agent
+        PLAN["plan<br/>context.md + constitution.md + units (layout-3)"]:::phase --> BOLTS["execute-bolts<br/>one context · bind up front + per task<br/>pre/post-flight + L0 gates"]:::phase
+        BOLTS --> REVIEW["ONE blind review of the run"]:::agent
+        BOLTS -.->|--agents| IMPL["bolt-implementer (TDD)"]:::agent --> PANEL["blind review panel — risk-tiered<br/>spec · quality · security · standards · design"]:::agent
     end
 
     EXTRACT["extract-intelligence<br/>legacy → KB (PRD-kontrak per module)"]:::phase
@@ -389,7 +390,7 @@ Three maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`) 
 | **When** | Any build request from a PRD, a brief, or a legacy codebase. The router decides how much process it gets; you can override it. |
 | **Where** | Guarded outputs are consolidated under `<project>/.mega-sdd/`; direct and assisted write none. User defaults at `~/.mega-sdd/config.yaml`. |
 | **Why** | Measured against plain Claude Code, the pipeline did not produce better code, and it cost 6–22× more. What it does produce is an auditable trail from PRD section to unit to commit. So 9.0 routes ordinary work around the pipeline and keeps the pipeline for the teams that need that trail. |
-| **How** | Every lane: the result contract + `delivery-check.sh`. Guarded adds:<br>• JIT per-unit binding with a hook-enforced CONFLICT gate;<br>• execution through first-class bolt agents, with a risk-tiered blind review panel (spec / quality / security / standards, + design for UI units);<br>• the halt-on-blocker protocol;<br>• deterministic tech (ast-grep + jd). |
+| **How** | Every lane: the result contract + `delivery-check.sh`. Guarded adds:<br>• JIT per-unit binding with a CONFLICT gate (a run-start quarantine and the `conflict_bypassed` boundary gate; under `--agents`, a hook at each dispatch);<br>• execution in one context with ONE blind review, or with `--agents` through first-class bolt agents and a risk-tiered blind review panel (spec / quality / security / standards, + design for UI units);<br>• the halt-on-blocker protocol;<br>• deterministic tech (ast-grep + jd). |
 
 ### Folder layout (guarded lane)
 

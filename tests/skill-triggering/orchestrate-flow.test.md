@@ -37,7 +37,7 @@ orchestrate-flow runs the **guarded** lane — ONE pipeline, `plan` → `execute
 
 ### R6: Units exist, no bolts
 - **State:** units/U-001.md etc., no bolts/
-- **Expect:** Propose `execute-bolts --all --parallel` (chain dispatch is wave-parallel per `docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2a)
+- **Expect:** Propose `execute-bolts --all --lite` (the default inline run, spec v9 §8.5; with `--agents` the hop is `execute-bolts --all --lite --agents`, wave-parallel by default per `docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2a)
 
 ### R7: Blocking OQs present
 - **State:** any state, the vault has unresolved P1 business OQs, status != deferred (the grammar has no P0 — P1 is the blocking tier)
@@ -71,7 +71,7 @@ orchestrate-flow runs the **guarded** lane — ONE pipeline, `plan` → `execute
 - **State:** a phase at attempt 3 still `unresolved`
 - **Expect:** HALT `phase_stuck` + concrete human question; no 4th auto re-run
 
-### R-FACTORY-4: binding_conflict KEEP_VAULT/DEFER resolution continues the unit (no re-bind loop)
+### R-FACTORY-4: binding_conflict KEEP_VAULT/DEFER resolution continues the unit (no re-bind loop; `--agents`)
 - **State:** `--deep`/`--converge`; `execute-bolts` pre-flight 3.9 halted U-008 on `binding_conflict`; the auto-invoked `resolve-oq --binding` resolved every conflict via ONLY KEEP_VAULT/DEFER, written through `write-unit-binding.sh --resolve`
 - **Expect:** the resolution in `bolts/U-008/binding.json` already opens the gate, so the loop continues that unit's dispatch with NO re-bind (a re-bind would only spend the unit's one 3.9b at this HEAD → `rebind_exhausted`). KEEP_CODE/SPLIT edits the unit's `## Claims` → `rebind-units.sh --units=U-008` (3.9b) → re-dispatch. Per `references/convergence-loops.md` + `resolve-oq/references/binding-mode.md` Step 5
 
@@ -108,20 +108,20 @@ All routing rules per routing-rules.md fire deterministically from the state eng
 - **Prompt:** `/mega-sdd:orchestrate-flow`
 - **Expect:** state snapshot includes `squad_count: 3`
 
-### MS2: Multi-squad + pending units → suggest --per-squad
+### MS2: Multi-squad + pending units → --per-squad only with --agents
 - **Setup:** vault with 3 squads, units exist, no bolts yet
-- **Prompt:** `/mega-sdd:orchestrate-flow`
-- **Expect:** proposed chain contains `execute-bolts --per-squad`
+- **Prompt:** `/mega-sdd:orchestrate-flow` (and `/mega-sdd:orchestrate-flow --agents`)
+- **Expect:** proposed chain contains `execute-bolts --all --lite` (the inline run ignores squads); with `--agents`, `execute-bolts --per-squad --agents`
 
 ### MS3: Single-squad (squad_count=1) → existing behavior
 - **Setup:** vault has `_meta/squads.yaml` with exactly 1 squad declared
 - **Prompt:** `/mega-sdd:orchestrate-flow`
-- **Expect:** proposes `execute-bolts --all --parallel` (NOT `--per-squad`)
+- **Expect:** proposes `execute-bolts --all --lite` (NOT `--per-squad`, with or without `--agents`)
 
 ### MS4: No squads.yaml → existing behavior
 - **Setup:** vault has no `_meta/squads.yaml`
 - **Prompt:** `/mega-sdd:orchestrate-flow`
-- **Expect:** state snapshot `squad_count: 0`; proposes `execute-bolts --all --parallel`
+- **Expect:** state snapshot `squad_count: 0`; proposes `execute-bolts --all --lite`
 
 ## Deep-chain mode
 
@@ -152,7 +152,7 @@ All routing rules per routing-rules.md fire deterministically from the state eng
 - **Expect:** chain STOPS after plan; the blocker is surfaced verbatim; the orchestrator does NOT auto-invoke execute-bolts (and never invents a handoff for the halted hop); the user closes the gap, then `--resume`
 
 ### DC6: Halt on `status: halted`
-- **Setup:** `--deep --no-converge` chain; `execute-bolts` halts `binding_conflict` for a unit (pre-flight 3.9)
+- **Setup:** `--deep --no-converge` chain; `execute-bolts` halts `binding_conflict` for a unit (the up-front bind; `--agents`: pre-flight 3.9)
 - **Expect:** that unit STOPS (dependents skipped with the reason); blocker YAML surfaced verbatim; user resolves via `resolve-oq --binding`
 
 ### DC7: AI technical decisions never pause the chain and never route to resolve-oq

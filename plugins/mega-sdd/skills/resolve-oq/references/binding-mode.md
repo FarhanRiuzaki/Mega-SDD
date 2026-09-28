@@ -6,7 +6,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks the unresolved CONFL
 
 ## Procedure
 
-1. **Load.** Every `<vault>/bolts/U-*/binding.json` whose `claims[]` carry `verdict: CONFLICT` without a `resolution`: each such claim is a conflict to walk. The file is hook-guarded evidence (one writer); never Edit it. **Layout-2 leg:** parse `binding.md` instead. Expect sections:
+1. **Load.** Every `<vault>/bolts/U-*/binding.json` whose `claims[]` carry `verdict: CONFLICT` without a `resolution`: each such claim is a conflict to walk. So is every `conflict_history` episode without a `resolution` that the `conflict_bypassed` gate names (`.mega-sdd/.bolt-conflict-bypass-state.json`, reason `closed_conflict`): a unit was committed while it was open and a later re-bind closed it — show the claim, the commit and `closed_at`; the same `--resolve=<claim-id>=<ACTION>` records the decision on the episode. The file is hook-guarded evidence (one writer); never Edit it. **Layout-2 leg:** parse `binding.md` instead. Expect sections:
    - "## Confirmed Claims" (no action needed — informational)
    - "## Conflicts (N) — BLOCKING" carrying one `### CONFLICT-N` detail block per conflict (heading + `- **Vault claim**:` / `- **Codebase reality**:` / `- **Claim**:` lines — the only conflict carrier)
    - "## Open Questions (N)" — auto-propagated deferred OQs that couldn't be auto-resolved (Step 3)

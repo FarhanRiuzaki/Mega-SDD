@@ -1,0 +1,2 @@
+07b2f99 2026-09-28T02:28:26+07:00 feat: Harbor Clinic v2 — waitlist, doctor leave, cancellation window
+015ecf3 2026-09-27T08:25:21+07:00 fixture: Harbor Clinic v1 app (from vanilla clinic run) + PRD v2

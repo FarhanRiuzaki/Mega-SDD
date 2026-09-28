@@ -1138,12 +1138,12 @@ def _dag_shape_advisory(unit_paths):
         m = re.search(r"(?m)^id:\s*[\"']?(U-[A-Za-z0-9_-]+)", fm)
         uid = m.group(1) if m else (os.path.basename(up)[:-3] if os.path.basename(up).startswith("U-") else os.path.basename(os.path.dirname(up)))
         d = []
-        dm = re.search(r"(?m)^depends_on:[ \t]*(\[[^\]]*\])?[ \t]*\n((?:[ \t]+-[^\n]*\n?)*)", fm + "\n")
+        dm = re.search(r"(?m)^depends_on:[ \t]*(\[[^\]]*\])?[ \t]*(?:#[^\n]*)?\n((?:[ \t]+-[^\n]*\n?)*)", fm + "\n")
         if dm:
             if dm.group(1):
                 d = [x.strip().strip("'\"") for x in dm.group(1)[1:-1].split(",") if x.strip()]
             else:
-                d = [re.sub(r"^[ \t]+-[ \t]*", "", ln).strip().strip("'\"") for ln in dm.group(2).splitlines() if ln.strip()]
+                d = [re.sub(r"\s+#.*", "", re.sub(r"^[ \t]+-[ \t]*", "", ln)).strip().strip("'\"") for ln in dm.group(2).splitlines() if ln.strip()]
         deps[uid] = [x for x in d if x.startswith("U-")]
         sb = _section_body(r"Implementation steps", body) or ""
         steps[uid] = sum(1 for ln in sb.splitlines() if re.match(r"^\s*\d+[.)]\s", ln))

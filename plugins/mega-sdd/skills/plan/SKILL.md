@@ -12,7 +12,7 @@ description: The spec phase of the guarded (lite) pipeline — ONE model phase t
 
 ## What this phase is (and is not)
 
-`plan` is the one pre-code phase (spec `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md` §3 / App. C3): read the source once, write `context.md` (layout-3, one file), write the units from source + context, derive `vault.json`, run the validators, and ask the human ONCE. Binding does not happen here — **JIT bind runs at dispatch** (execute-bolts pre-flight 3.9 reads each unit's `## Claims`), so a brownfield unit carries claims (a contract), never verdicts.
+`plan` is the one pre-code phase (spec `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md` §3 / App. C3): read the source once, write `context.md` (layout-3, one file), write the units from source + context, derive `vault.json`, run the validators, and ask the human ONCE. Binding does not happen here — **JIT bind runs in `execute-bolts`** (at run start and again at each task; per dispatch under `--agents`; it reads each unit's `## Claims`), so a brownfield unit carries claims (a contract), never verdicts.
 
 - **Input:** a PRD / BRD file (positional), or `--kb=<kb-dir>` — an `extract-intelligence` knowledge base (`README.md` + `modules/*.prd.md`, one module per self-slice; resolved §6 OQs land pre-resolved; `references/kb-input.md`). A free-text brief is not a plan input: the front door takes it to the direct/assisted lanes, or under `--guarded` writes it to a seed-PRD file first (`references/brief-input.md`) and passes that file.
 - **Output:** `<vault>/context.md` + `constitution.md` + `_meta/ai-consumer-guide.md` + `vault.json` + `units/U-*.md` + `units/_index.md`. No handoff YAML in this lane — the front door re-derives state from disk (`derive-state.sh`) before the `execute-bolts` hop.
@@ -23,7 +23,7 @@ These rails are the reason this phase exists:
 
 - **Ground everything in the PRD (+ Figma via MCP; under `--kb`, the KB).** Not explicit in the source → NOT in the body → an Open Question. No best-practice insertions, no "probably they meant", no defaulted standards (WCAG, palettes, SLO targets), no invented UI when Figma is referenced but unreachable.
 - **Every claim cites its source.** Flows/DBML/NFR rows cite `PRD §<X.Y>`; every unit carries `prd_source:` (PRD heading slug or `:line`) AND `context_source: context.md#<anchor>`; a PRD anchor (a heading with text or no sub-heading; a text-less one's sub-headings stand in) with no unit, no OQ carrying `[covers: <ref>]` and no `## Coverage exclusions` line is a `plan_coverage_gap` halt, never silently dropped.
-- **Brownfield claims are contracts, not verdicts.** `## Claims` lines say what the unit EXPECTS of existing code (symbol-index query at PLAN); the verdict is written by the JIT bind script into `bolts/U-XXX/binding.json` at dispatch. Never write CONFIRMED/CONFLICT in a unit.
+- **Brownfield claims are contracts, not verdicts.** `## Claims` lines say what the unit EXPECTS of existing code (symbol-index query at PLAN); the verdict is written by the JIT bind script into `bolts/U-XXX/binding.json` in `execute-bolts`. Never write CONFIRMED/CONFLICT in a unit.
 - **`--auto` never bypasses the rails.** Autonomy skips logistics only; it never auto-answers a P1 business OQ, never invents field values, never skips the batched ask (an unanswered P1 business OQ stays `blocking` and the units that need it stay blocked at bolts).
 - **Units obey the unit contract verbatim** (`references/unit-schema.md`): closed Hard-rule grammar, `target_files` whitelist, ≥1 `acceptance_test`, Anchors when evidence exists, xs body diet.
 
@@ -89,4 +89,4 @@ Grounded (every non-trivial claim cites PRD §) · honest about gaps (OQs over g
 
 ## Related skills
 
-Upstream: `extract-intelligence` (legacy → KB → `plan --kb`). Downstream: `execute-bolts --all --lite` (JIT bind per wave, unit-level readiness). Side lanes: `resolve-oq` (walk the remaining business OQs; `single-oq <OQ-ID>` overrides an AI technical decision), `analyze`, `emit-*` (DOCS lane reads `context.md` + the PRD directly).
+Upstream: `extract-intelligence` (legacy → KB → `plan --kb`). Downstream: `execute-bolts --all --lite` (JIT bind per unit, one context by default). Side lanes: `resolve-oq` (walk the remaining business OQs; `single-oq <OQ-ID>` overrides an AI technical decision), `analyze`, `emit-*` (DOCS lane reads `context.md` + the PRD directly).

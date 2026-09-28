@@ -129,7 +129,7 @@ The user always holds control — they remove a dep only if they confirm it's un
 
 ### Step 3 — Hand-off (judgment, keyed on the script's numbers)
 
-- `parallelism_speedup` ≥ 2 → suggest `execute-bolts --per-squad` when the vault declares ≥2 squads, else `execute-bolts --all --parallel` (`--per-squad` HALTS on a single-squad vault by procedure — never suggest the halting form).
+- `parallelism_speedup` ≥ 2 → only for the `--agents` path (the default inline run is one context): suggest `execute-bolts --per-squad --agents` when the vault declares ≥2 squads, else `execute-bolts --all --agents` (waves by default) (`--per-squad` HALTS on a single-squad vault by procedure — never suggest the halting form).
 - `parallelism_speedup` < 1.5 → suggest reviewing the over-coupling candidates above before executing.
 - Bottlenecks present (high-fork keystone units on the critical path) → suggest scope-down OR explicitly accept the keystone.
 - Always link the lint-units diagnostic (above) for a quality pass before execution.

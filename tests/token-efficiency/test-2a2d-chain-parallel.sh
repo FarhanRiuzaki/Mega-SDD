@@ -2,13 +2,18 @@
 # test-2a2d-chain-parallel.sh — tranches 2a + 2d (spec 2026-07-30 §2a/§2d).
 # PROSE-CONTRACT PINS (the surfaces are routing/handoff prose — the same tier
 # as the behavior they drive):
-#   2a  the orchestrated chain dispatches execute-bolts --all --parallel on
-#       every routing surface; the wave plan channel is the in-context
+#   2a  the --agents dispatch path runs --all as waves (the chain proposes the
+#       default --all --lite, §8.5 below); the wave plan channel is the in-context
 #       analyze-parallelism JSON; the overlap rail + failure-halt semantics
 #       stay with the dispatcher (batch-and-fanout).
 #   2d  extract-intelligence --max-parallel default is 5 everywhere it is
 #       stated; the superseded "empirical optimum is 3" claim is gone; the
 #       soft-warn >5 + hard cap 8 rails are intact.
+#
+# 9.0 §8.5 (2026-09-28): execute-bolts runs inline by default (one context, plan order), so the
+# engine's units_pending_bolts proposal is `execute-bolts --all --lite` too; `--parallel` and
+# `--per-squad` shape only the `--agents` dispatch path, whose `--all` is wave-parallel by default.
+# The 2a rails below (waves, overlap, in-flight cap) are that path's and stay pinned.
 #
 # 9.0 (spec 2026-09-27 §2/§7): generate-units and the classic chain are gone;
 # the one pipeline is plan → execute-bolts --all --lite. The plan→bolts hop
@@ -48,10 +53,13 @@ note() { printf '%s\n' "$*"; }
 ok()   { printf '  \xe2\x9c\x93 %s\n' "$*"; }
 fail() { printf '  \xe2\x9c\x97 FAIL: %s\n' "$*"; FAILED=1; }
 
-note "== 2a: every chain routing surface dispatches --all --parallel =="
+note "== 2a: every chain routing surface proposes the default --all --lite; --parallel/--per-squad only with --agents =="
 n=$(grep -c -- 'execute-bolts --all --parallel' "$RR")
-[ "$n" -ge 3 ] && ok "routing-rules carries --all --parallel on $n rows (state row + decision matrix + 1-phase chain)" || fail "routing-rules rows missing --parallel (found $n, want >=3)"
-grep -q -- 'already parallel by procedure' "$RR" && ok "the --per-squad leg is documented as parallel by procedure (no flag needed)" || fail "per-squad parallel note missing"
+[ "$n" -eq 0 ] && ok "routing-rules proposes no --all --parallel (the default run is inline, one context)" || fail "routing-rules still proposes --all --parallel on $n rows"
+[ "$(grep -cE '^\| (`units_pending_bolts`|Units exist, some not in bolts) .*`execute-bolts --all --lite`' "$RR")" -ge 3 ] \
+  && ok "routing-rules: the state row, the decision matrix and the 1-phase chain propose execute-bolts --all --lite" || fail "routing-rules units-pending rows do not propose --all --lite"
+grep -q -- 'already parallel by procedure' "$RR" && grep -F 'already parallel by procedure' "$RR" | grep -qF -- '`--agents`' \
+  && ok "the --per-squad leg is documented as --agents only, parallel by procedure (no flag needed)" || fail "per-squad --agents note missing"
 # 9.0: the classic example row ('execute-bolts --all --parallel → bolts/') left
 # with the classic chain; the one pipeline's example is the wave-default --all
 # batch and must not opt out of waves.
@@ -72,8 +80,9 @@ grep -qF -- '(3) dispatch `execute-bolts --all --lite`' "$HN" \
 note "== 2a: the DETERMINISTIC proposer emits the flag (the engine, not just its docs) =="
 SP="${ROOT}/plugins/mega-sdd/scripts/_lib/state_probes.py"
 DT="${ROOT}/plugins/mega-sdd/tests/state/test-derive-state.sh"
-grep -qF 'execute-bolts --all --parallel' "$SP" && ok "state_probes.py units_pending_bolts proposes --all --parallel (routing-rules row units_pending_bolts documents THIS script's output)" || fail "state_probes.py still proposes sequential --all — the front-door path dispatches sequential while the docs claim parallel"
-grep -qF "execute-bolts --all --parallel']" "$DT" && ok "derive-state fixture f6 pins the parallel proposal" || fail "test-derive-state.sh f6 still pins the sequential form"
+! grep -qE '"execute-bolts (--all --parallel|--per-squad)"' "$SP" && grep -qF '"execute-bolts --all --lite"' "$SP" \
+  && ok "state_probes.py units_pending_bolts proposes --all --lite (routing-rules row units_pending_bolts documents THIS script's output)" || fail "state_probes.py still proposes an --agents-only dispatch flag"
+grep -qF "execute-bolts --all --lite']\" ] && ok \"f6l3" "$DT" && ok "derive-state fixture f6l3 pins the default proposal" || fail "test-derive-state.sh f6l3 still pins --parallel"
 
 note "== 2a: the wave-plan channel is named, not asserted =="
 grep -qF -- '--format=json' "$CE" && ok "chain auto-run names the JSON form" || fail "chain-execution row does not name --format=json"
@@ -122,7 +131,7 @@ grep -qF '`NEXT: /mega-sdd --resume` (the front door dispatches `execute-bolts -
   && ok "plan standalone NEXT hands off to the front door's plain execute-bolts --all --lite" || fail "plan standalone NEXT suggestion drifted"
 
 note "== 2a: trigger fixtures updated with the routing =="
-grep -q -- 'execute-bolts --all --parallel' "$TT" && ok "orchestrate-flow trigger fixtures expect --parallel" || fail "trigger fixtures not updated"
+! grep -q -- 'execute-bolts --all --parallel' "$TT" && grep -q -- 'Propose `execute-bolts --all --lite`' "$TT" && ok "orchestrate-flow trigger fixtures expect --all --lite" || fail "trigger fixtures not updated"
 
 note "== 2d: --max-parallel default is 5, supersession clean =="
 grep -qF 'default 5' "$EX" && ok "extract SKILL.md states default 5" || fail "SKILL.md default not 5"

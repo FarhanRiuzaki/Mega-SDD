@@ -93,7 +93,7 @@ flowchart LR
     EXT -->|"plan --kb"| PL
     PRD[PRD / BRD] --> PL
     BR["brief (--guarded)"] -->|seed PRD| PL
-    PL["plan<br/>context.md + constitution.md + units (layout-3)<br/>ONE batched ask"] --> EB["execute-bolts --all --lite<br/>JIT bind per wave · CONFLICT gate at dispatch"]
+    PL["plan<br/>context.md + constitution.md + units (layout-3)<br/>ONE batched ask"] --> EB["execute-bolts --all --lite<br/>one context · bind up front + per task · CONFLICT gate at run start"]
     EB --> DC[delivery-check.sh]
     EB -.-> EMIT["emit prd / fsd / sit / uat<br/>+ emit-agents-md"]
 ```
@@ -101,7 +101,7 @@ flowchart LR
 ONE spec pipeline. `--lite` survives only as its lane marker.
 
 - **`plan`** is ONE model phase. Its input is a PRD/BRD, a seed PRD that the front door writes from a brief under `--guarded`, or `--kb=<kb-dir>` for an extract-intelligence KB. It writes the layout-3 vault (`context.md` with flows, DBML, NFRs and OQs, plus `constitution.md` and `vault.json`) and the atomic units (`units/U-*.md` + `_index.md`), each carrying `prd_source` / `context_source` citations. P1 business OQs go out in ONE batched ask. `validate-plan-coverage.sh` must PASS before the bolts hop: every PRD heading needs a decision — a unit, an open OQ carrying `[covers: <prd>#<slug>]`, or a `context.md ## Coverage exclusions` line with a reason (the gate checks that a decision exists; it never guesses which headings are meta). It reads markdown only: a `.pdf`/`.docx`/`.txt` PRD gets a `.md` rendition first. Each plan-born vault needs its own fresh PASS: an edit to the PRD, the exclusions, an OQ or a unit's `prd_source`, a re-pinned PRD or an added KB module after the gate ran is refused until it re-runs.
-- **`execute-bolts --all --lite`** runs in dependency waves. Pre-flight 3.9 binds each unit just in time: `derive-unit-claims.sh` → `write-unit-binding.sh`, the sole writer of `bolts/U-XXX/binding.json` (CONFIRMED / CONFLICT / OQ per claim) → `validate-handoff-binding-units.sh`. An unresolved CONFLICT closes that unit's dispatch (`binding_conflict`) and skips its dependents, until `resolve-oq --binding` settles it. Then come the `bolt-implementer` agent (TDD), the risk-tiered blind review panel, the pre/post-flight Hard Rule scans and the hook-enforced evidence gates. The run ends with `delivery-check.sh` and the result contract.
+- **`execute-bolts --all --lite`** runs every unit in ONE context from a generated plan (spec v9 §8.5; `research/2026-09-28-p2-inline-results.md`: not WORSE than the per-unit agent path on AC, Critical, Important, traps and regressions, n=3). It binds every pending unit up front: `derive-unit-claims.sh` → `write-unit-binding.sh`, the sole writer of `bolts/U-XXX/binding.json` (CONFIRMED / CONFLICT / OQ per claim) → `validate-handoff-binding-units.sh`. `derive-exec-plan.sh` quarantines a unit with an unresolved CONFLICT (`binding_conflict`) and skips its dependents, until `resolve-oq --binding` settles it; each task re-binds its unit first. Each unit is built test-first with the pre/post-flight Hard Rule scans and the evidence writers; ONE blind review covers the run, and `conflict_bypassed` plus the evidence gates check it at the boundary. `--agents` keeps the per-unit path: dependency waves, the pre-flight 3.9 JIT bind, the `bolt-implementer` agent, the risk-tiered blind review panel and the CONFLICT gate at each dispatch. The run ends with `delivery-check.sh` and the result contract.
 - **Why it exists:** traceability and audit. It gives a PRD section → unit → binding verdict → commit trail, per-bolt evidence on disk, and the inputs for FSD/SIT/UAT. It is **not** a code-quality gain; see [Measured](#measured-against-plain-claude-code).
 
 **Removed in 9.0:** the classic chain (`generate-intent → scan-codebase → bind-codebase → generate-units`) and the scan-first spine. `--classic` and a config `lane: standard` select nothing: the front door says so in one line and carries on with the one pipeline. **Pre-9.0 (layout-2) vaults** are still READ (resolver: layout-3 → layout-2 → legacy), so emit-* and status keep working. To build or sync on one, run `/mega-sdd:migrate-paths --vault-layout=3` and then the mandatory full re-bind. The front door proposes this and never runs it silently.
@@ -109,7 +109,7 @@ ONE spec pipeline. `--lite` survives only as its lane marker.
 **And it loops.** Development never actually ends. After a guarded run "finishes", every out-of-pipeline change (a manual hotfix, an AI-prompted edit in any session, a `git pull`) goes through the same steps:
 1. It is captured ambiently: a PostToolUse journal, plus per-unit binding stamps checked against HEAD.
 2. It is surfaced in the session-start state block: HEAD, FRESH/STALE per vault, and the rule "code at HEAD decides what the code IS".
-3. It is blocked at dispatch when a unit's binding no longer describes HEAD.
+3. It is blocked when a unit's binding no longer describes HEAD (at run start; under `--agents`, at each dispatch).
 4. It is reconciled by `/mega-sdd:sync`:
 
 ```mermaid
@@ -180,7 +180,7 @@ The guarded pipeline is built so an agent does not act on what isn't grounded: i
 
 1. **Spec** — `plan` promotes uncertain claims to Open Questions
 2. **OQ classification** — business vs tech; tech is decided by the AI as a labelled, cited, reversible choice; business stays human
-3. **Binding gate** — an unresolved CONFLICT in a unit's `bolts/U-XXX/binding.json` (JIT bind at dispatch) blocks that unit until a human resolution is recorded (`resolve-oq --binding`, through the same sole writer)
+3. **Binding gate** — an unresolved CONFLICT in a unit's `bolts/U-XXX/binding.json` (JIT bind: up front and per task; under `--agents`, at dispatch) blocks that unit until a human resolution is recorded (`resolve-oq --binding`, through the same sole writer)
 4. **Implementation state** — IMPLEMENTED / PARTIAL_* / NEW / UNKNOWN per confirmed claim (JIT bind). `plan` types units `create` / `extend` / `verify` from the symbol index, and `plan --reconcile` re-types them from the per-unit binding evidence
 5. **Unit grounding** — `target_files` whitelist + acceptance_test + cited Anchors + `prd_source`
 6. **Hard Rules pre/post-flight** — ast-grep validates constraints at bolt time

@@ -37,7 +37,7 @@ pin() {  # pin <file> <required-pattern> <label>
 # gate unchanged in --paths mode (was: binding-contract.md "no `bound/` while
 # any conflict") — the scoped re-bind hop closes the gate exactly as dispatch does.
 pin "skills/orchestrate-flow/references/routing-rules.md" \
-    "a CONFLICT closes the gate for the affected units exactly as at dispatch" \
+    "a CONFLICT closes the gate for the affected units exactly as in execute-bolts" \
     "Mode D re-bind hop: gate unchanged in --paths mode"
 pin "commands/sync.md" \
     "The binding CONFLICT gate applies unchanged — sync never bypasses the moat" \

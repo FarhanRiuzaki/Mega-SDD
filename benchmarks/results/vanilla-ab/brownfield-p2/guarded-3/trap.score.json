@@ -1,0 +1,40 @@
+{
+ "traps": {
+  "T1": {
+   "surfaced": true,
+   "quote": "the PRD says 20-minute slots; the code uses 15. Slot length is unchanged.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T2": {
+   "surfaced": true,
+   "quote": "the PRD says reminders go 48 h ahead; the code sends them 24 h ahead.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T3": {
+   "surfaced": true,
+   "quote": "`rescheduling_required` doesn't exist. This blocks AC-204 and AC-205.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T4": {
+   "surfaced": true,
+   "quote": "\"late cancellations are penalised\" has no defined penalty. None was built.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T5": {
+   "surfaced": true,
+   "quote": "VIP priority isn't defined anywhere. Offers go strictly in join order.",
+   "judge_said": true,
+   "verified": true
+  }
+ },
+ "surfaced": 5,
+ "total": 5,
+ "overturned": [],
+ "bundle_chars": 48577,
+ "judge_sid": "e2a97f41-e8e1-44a9-aa9d-1bae831e697f",
+ "judge_cost_usd": 0.2790422
+}

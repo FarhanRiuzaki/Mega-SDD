@@ -1,0 +1,80 @@
+{
+ "min_clean_runs": 3,
+ "targets": {
+  "brownfield": {
+   "review_ready_min": 120
+  }
+ },
+ "runs": [
+  {
+   "scenario": "brownfield",
+   "arm": "vanilla",
+   "run": "brownfield/vanilla-2",
+   "metrics": "brownfield/vanilla-2/metrics.json",
+   "quality": "brownfield/vanilla-2/quality.score.json"
+  },
+  {
+   "scenario": "brownfield",
+   "arm": "vanilla",
+   "run": "brownfield/vanilla-3",
+   "metrics": "brownfield/vanilla-3/metrics.json",
+   "quality": "brownfield/vanilla-3/quality.score.json"
+  },
+  {
+   "scenario": "brownfield",
+   "arm": "vanilla",
+   "run": "brownfield/vanilla-4",
+   "metrics": "brownfield/vanilla-4/metrics.json",
+   "quality": "brownfield/vanilla-4/quality.score.json"
+  },
+  {
+   "scenario": "brownfield",
+   "arm": "vanilla",
+   "run": "brownfield-p2/vanilla-5",
+   "metrics": "brownfield-p2/vanilla-5/metrics.json",
+   "quality": "brownfield-p2/vanilla-5/quality.score.json"
+  },
+  {
+   "scenario": "brownfield",
+   "arm": "guarded",
+   "run": "brownfield-p2/guarded-1",
+   "metrics": "brownfield-p2/guarded-1/metrics.json",
+   "quality": "brownfield-p2/guarded-1/quality.score.json"
+  },
+  {
+   "scenario": "brownfield",
+   "arm": "guarded",
+   "run": "brownfield-p2/guarded-2",
+   "metrics": "brownfield-p2/guarded-2/metrics.json",
+   "quality": "brownfield-p2/guarded-2/quality.score.json"
+  },
+  {
+   "scenario": "brownfield",
+   "arm": "guarded",
+   "run": "brownfield-p2/guarded-3",
+   "metrics": "brownfield-p2/guarded-3/metrics.json",
+   "quality": "brownfield-p2/guarded-3/quality.score.json"
+  },
+  {
+   "scenario": "brownfield",
+   "arm": "guarded-inline",
+   "run": "brownfield-p2/guarded-inline-1",
+   "metrics": "brownfield-p2/guarded-inline-1/metrics.json",
+   "quality": "brownfield-p2/guarded-inline-1/quality.score.json"
+  },
+  {
+   "scenario": "brownfield",
+   "arm": "guarded-inline",
+   "run": "brownfield-p2/guarded-inline-2",
+   "metrics": "brownfield-p2/guarded-inline-2/metrics.json",
+   "quality": "brownfield-p2/guarded-inline-2/quality.score.json"
+  },
+  {
+   "scenario": "brownfield",
+   "arm": "guarded-inline",
+   "run": "brownfield-p2/guarded-inline-3",
+   "metrics": "brownfield-p2/guarded-inline-3/metrics.json",
+   "quality": "brownfield-p2/guarded-inline-3/quality.score.json"
+  }
+ ]
+}

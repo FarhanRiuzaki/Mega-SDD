@@ -44,7 +44,7 @@ thread with zero subagents.
 | Need | Skill | Why |
 |---|---|---|
 | Extract legacy logic into a rebuild contract | **this skill** | Tech-agnostic, module-organized, census-gated |
-| Validate a unit's claims against existing code | `mega-sdd:execute-bolts` (JIT bind, pre-flight 3.9) | CONFLICT gate at dispatch; the KB is rung 5 of its text-claim ladder (E3), consulted only when code evidence is silent |
+| Validate a unit's claims against existing code | `mega-sdd:execute-bolts` (JIT bind) | CONFLICT gate before the unit is built; the KB is rung 5 of its text-claim ladder (E3), consulted only when code evidence is silent |
 | Turn the PRD-kontrak KB into a buildable spec | `mega-sdd:plan` | `plan --kb=<kb>` writes the layout-3 vault (`context.md` + `constitution.md` + `vault.json`) + `units/` in one phase |
 
 **Typical chain (the revamp lane):**

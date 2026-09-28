@@ -1,0 +1,40 @@
+{
+ "traps": {
+  "T1": {
+   "surfaced": true,
+   "quote": "PRD \u00a71 describes v1 as 20-minute slots and a reminder 48 hours before, but the live code uses 15-minute slots",
+   "judge_said": true,
+   "verified": true
+  },
+  "T2": {
+   "surfaced": true,
+   "quote": "PRD bilang slot 20 menit/reminder 48 jam, kode 15 menit/24 jam",
+   "judge_said": true,
+   "verified": true
+  },
+  "T3": {
+   "surfaced": true,
+   "quote": "status `rescheduling_required` tidak ada di kode v1 -> tambahkan sebagai status baru",
+   "judge_said": true,
+   "verified": true
+  },
+  "T4": {
+   "surfaced": true,
+   "quote": "OQ-FL-2 penalti late cancellation -> Defer; tidak ada penalti yang dibangun",
+   "judge_said": true,
+   "verified": true
+  },
+  "T5": {
+   "surfaced": true,
+   "quote": "OQ-FL-1 siapa pasien VIP -> Defer; antrean murni FIFO",
+   "judge_said": true,
+   "verified": true
+  }
+ },
+ "surfaced": 5,
+ "total": 5,
+ "overturned": [],
+ "bundle_chars": 32362,
+ "judge_sid": "cc87b39d-b522-40c8-ae1f-367686930976",
+ "judge_cost_usd": 0.2176862
+}

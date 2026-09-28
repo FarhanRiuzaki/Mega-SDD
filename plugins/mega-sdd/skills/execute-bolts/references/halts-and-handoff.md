@@ -79,7 +79,7 @@ Language-appropriate comment style (e.g. `//` for JS/PHP/Java, `#` for Python/Ru
 
 ## Per-bolt drift check
 
-After post-flight Hard Rule validation passes (or a proposed-and-confirmed fix is applied), AND BEFORE the unit is accepted as done (the implementer's commit has already landed — detect-after topology per SKILL.md), run a quick scope-filtered drift scan vs the vault. This runs for EVERY implement unit — single run or batch, never batch-only:
+After post-flight Hard Rule validation passes (or a proposed-and-confirmed fix is applied), AND BEFORE the unit is accepted as done (the implementer's commit has already landed — detect-after topology per SKILL.md), run a quick scope-filtered drift scan vs the vault. This runs for EVERY implement unit of an `--agents` run — single run or batch, never batch-only (the default inline run gives it up; the chain-end detect-drift auto-gate is its backstop — `inline-run.md` (e)):
 
 a. Read `vault.json` scope (if a multi-scope vault) OR skip the scope filter.
 b. For each file in the unit's `target_files` modified this bolt:

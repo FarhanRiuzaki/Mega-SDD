@@ -32,7 +32,7 @@ Manual-run fixture for the `resolve-oq` skill.
 ### R7: Auto-route hidden when only deferred OQs
 - **Setup:** vault has 2 P1 OQs, all status=deferred; units exist, no bolts yet
 - **Prompt:** `/mega-sdd:orchestrate-flow`
-- **Expect:** Flow proposes `execute-bolts --all --parallel` next (deferred OQs do NOT gate the chain; they ride the units and resurface in the delivery report)
+- **Expect:** Flow proposes `execute-bolts --all --lite` next (deferred OQs do NOT gate the chain; they ride the units and resurface in the delivery report)
 
 ## Behavior — the ONE collapsed per-OQ prompt
 

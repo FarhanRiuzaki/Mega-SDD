@@ -199,7 +199,7 @@ if [ "$APPLY" -eq 1 ]; then
   echo "NEXT (MANDATORY): full JIT re-bind required — the whole-vault binding was archived,"
   echo "  bolts/U-XXX/binding.json is regenerated from ground truth, never patched:"
   echo "    bash <plugin-root>/scripts/rebind-units.sh --cwd=<root> --vault=$VAULT --units=all"
-  echo "  (or let execute-bolts --all --lite JIT-bind each unit at dispatch). Prior verdicts and"
+  echo "  (or let execute-bolts --all --lite JIT-bind each unit before building it). Prior verdicts and"
   echo "  human resolutions are preserved per unit in bolts/U-XXX/binding-migrated.json."
 else
   echo ""

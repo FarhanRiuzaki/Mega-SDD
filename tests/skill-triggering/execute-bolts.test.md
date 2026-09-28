@@ -18,7 +18,7 @@
 
 ### P1: No superpowers installed (v7.4.0 — no vendored fallback exists)
 - **Setup:** uninstall superpowers
-- **Expect:** dispatch proceeds on the first-class agents; NO halt, NO install demand
+- **Expect:** the default run uses the built-in inline loop (`references/inline-run.md` (c)); under `--agents` dispatch proceeds on the first-class agents; NO halt, NO install demand
 
 ### P2: Superpowers installed
 - **Setup:** real install present
@@ -26,7 +26,9 @@
 
 ## Behavior
 
-### BJ1: JIT bind at pre-flight 3.9 — the CONFLICT gate closes per unit
+Mode: the default run is inline (BI1, BI2, BI4); BI3, BJ1, BH0, BH4–BH8, AC1–AC4 and EB-SK* exercise the per-unit path and run with `--agents` (dispatch-shaping flags do nothing without it).
+
+### BJ1: JIT bind at pre-flight 3.9 (`--agents`) — the CONFLICT gate closes per unit
 - **Setup:** a wave of U-003 + U-004 (U-005 `depends_on: [U-004]`); U-004's `## Claims` expects `POST /api/orders` to use Bearer auth, the code uses session cookies
 - **Expect:**
   - `derive-unit-claims.sh --units=U-003,U-004` (ONE call per wave) → `write-unit-binding.sh` per unit (the sole writer) → `bolts/U-003/binding.json` + `bolts/U-004/binding.json`; a wave with zero symbol/text claims is reported as costing zero model tokens
@@ -34,6 +36,28 @@
   - U-003 proceeds; U-005 is skipped with the reason; no verdict is ever hand-written and `binding.json` is never edited (hook-guarded)
   - the PreToolUse gate re-runs the validator with `--units=U-004` on any `bolt-implementer` dispatch — a hand dispatch cannot bypass it
   - resolution via `resolve-oq --binding` (`write-unit-binding.sh --resolve=<claim-id>=<ACTION> --by=user`)
+
+### BI1: the default run executes every unit in this session from a generated plan
+- **Setup:** a layout-3 vault with U-001..U-004; U-003 has an open CONFLICT, U-004 `depends_on: [U-003]`
+- **Prompt:** `/mega-sdd --guarded` (forwarded as `execute-bolts --all --lite`); `/mega-sdd --guarded --inline` (forwarded as `execute-bolts --all --lite --inline`) behaves identically — `--inline` is a no-op alias
+- **Expect:**
+  - the announce line ends with `mega-sdd-trace:execute-bolts`
+  - `derive-exec-plan.sh --pending` → `rebind-units.sh --units=<pending>` → `derive-exec-plan.sh`: U-003 `binding_conflict`, U-004 `depends_on_quarantined` in ONE `Karantina:` chat line; the plan names U-001, U-002 only
+  - no `bolt-implementer` dispatch, no panel; each task re-binds (a CONFLICT there → `write-unit-quarantine.sh`, dependents skipped, the run continues), tests first, commits with the canonical trailers, then commits its evidence (`chore(sdd): evidence U-XXX`)
+  - ONE blind review of `run_base..HEAD` (no `.mega-sdd/` in its package, the trace line on its own line), `delivery-check.sh` `VERDICT: PASS`, the run-boundary gate with `--conflict-bypass-scan` exits 0 before the result contract
+
+### BI2: the inline run never launders a CONFLICT
+- **Setup:** as BI1, the model commits U-003 anyway, then re-binds it (the commit created the file the CONFLICT claimed)
+- **Expect:** the run-boundary gate FAILS `closed_conflict` for U-003 (and U-004 via U-003 if committed); the result is never reported done; the remedy offered is `resolve-oq --binding` (the human decides the closed episode) — never another re-bind
+
+### BI3: `--agents` keeps the per-unit path
+- **Prompt:** `/mega-sdd --guarded --agents` (forwarded as `execute-bolts --all --lite --agents`)
+- **Expect:** pre-flight 3.9 JIT bind per wave, one `bolt-implementer` dispatch per unit + the risk-tiered review panel (BJ1, BH0 apply); no `_exec-plan-*.md` is written. `--agents --inline` together → a one-line usage error, nothing runs
+
+### BI4: the close re-binds a leftover own_wip CONFLICT
+- **Setup:** a resumed run: U-011's own test file was untracked with its provenance header at the task's re-bind (CONFLICT `own_wip`); the unit then committed and finished its evidence
+- **Expect:** (d)6 `derive-exec-plan.sh --rebind-wip` (before the run evidence commit) prints `rebound: ["U-011"]`, U-011's binding re-reads CONFIRMED and the `chore(sdd): evidence run` commit carries it, so the (d)7 gate sees it; (d)8 `--retire` then re-binds nothing. Had that re-bind left another CONFLICT, `--rebind-wip` exits 1 (`scope: close`) naming it, a `Close: halt` ledger line keeps it named, `--retire` refuses too and nothing is retired — the human decides it via `resolve-oq --binding`; re-invoking `execute-bolts` resumes at (d)4 (`Close: reviewed`), never a second review
+- **`--dry-run`:** the plan is shown, then `--retire --dry-run` removes it and re-binds nothing
 
 ### BH0: BOLTS gate deny → 3.9b (state anchor, 8.8.0)
 - **Setup:** a lite wave already bound at 3.9; before the next dispatch a teammate commit lands in U-002's anchored file

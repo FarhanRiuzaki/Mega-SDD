@@ -181,7 +181,7 @@ binding_refs:                      # binding manifest IDs this unit honors
 - .mega-sdd/knowledge-base/modules/customer.prd.md §2 (if KB present; legacy numbered tree: docs/knowledge-base/10-domains/<domain>.md §5) — domain behavior to honor
 
 ## Claims  (brownfield units only; a CONTRACT about existing code, never a verdict)
-<One line per expectation about EXISTING code this unit relies on or changes. Verdicts are NEVER written here — the JIT bind at dispatch (execute-bolts pre-flight 3.9, spec App. F2–F4) verifies each line and records CONFIRMED/CONFLICT/OQ in the hook-guarded `bolts/U-XXX/binding.json`. Greenfield / create-only units omit the section (their claims derive from target_files: create ⇒ must-not-exist).>
+<One line per expectation about EXISTING code this unit relies on or changes. Verdicts are NEVER written here — the execute-bolts JIT bind (run start + each task; per dispatch under `--agents`; spec App. F2–F4) verifies each line and records CONFIRMED/CONFLICT/OQ in the hook-guarded `bolts/U-XXX/binding.json`. Greenfield / create-only units omit the section (their claims derive from target_files: create ⇒ must-not-exist).>
 
 - C-U005-01 "Nasabah model has field `nip` (unique)" — expect: app/Models/Nasabah.php:Nasabah
 - C-U005-02 "no login route exists yet" — expect: routes/web.php — must-not-exist
@@ -343,7 +343,7 @@ Unit IDs are stable across regenerations:
 ## Greenfield vs brownfield
 
 - **Greenfield:** units derived directly from the PRD + `context.md` (no symbol-index query; every unit `create`). `binding_refs` carries only the OQ ids the unit depends on.
-- **Brownfield:** units typed from the symbol index (`## Anchors` + `## Claims`; verdicts come from the JIT bind at dispatch, never from `plan`). `binding_refs` populated; OQs propagate to unit acceptance criteria as "TBD: <question>" items.
+- **Brownfield:** units typed from the symbol index (`## Anchors` + `## Claims`; verdicts come from the execute-bolts JIT bind, never from `plan`). `binding_refs` populated; OQs propagate to unit acceptance criteria as "TBD: <question>" items.
 
 ### Scope fields
 

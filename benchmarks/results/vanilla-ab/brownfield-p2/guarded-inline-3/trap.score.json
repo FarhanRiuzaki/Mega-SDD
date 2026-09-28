@@ -1,0 +1,40 @@
+{
+ "traps": {
+  "T1": {
+   "surfaced": true,
+   "quote": "The PRD says 20-minute slots and 48 h reminders, but v1 uses 15 minutes and 24 h.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T2": {
+   "surfaced": true,
+   "quote": "The PRD says 20-minute slots and 48 h reminders, but v1 uses 15 minutes and 24 h.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T3": {
+   "surfaced": true,
+   "quote": "`rescheduling_required` didn't exist in v1 \u2192 added as a new status.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T4": {
+   "surfaced": true,
+   "quote": "no penalty is defined (what, how much, applied by whom)",
+   "judge_said": true,
+   "verified": true
+  },
+  "T5": {
+   "surfaced": true,
+   "quote": "there is no VIP concept anywhere (patients have no account, PRD \u00a73;",
+   "judge_said": true,
+   "verified": true
+  }
+ },
+ "surfaced": 5,
+ "total": 5,
+ "overturned": [],
+ "bundle_chars": 31001,
+ "judge_sid": "37972412-4dc0-46ba-8541-9b3d952cb9d7",
+ "judge_cost_usd": 0.2281182
+}
