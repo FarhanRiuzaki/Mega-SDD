@@ -7,9 +7,9 @@
 >
 > **Stack-agnostic.** This file names NO framework, templating language, or CSS library. It
 > describes WHAT a production-grade view must achieve; the concrete HOW (layout extend,
-> component library, formatting helpers) comes from the injected starterkit slice (design
-> tokens + view/component exemplar) alongside this text. Pair the two: the exemplar shows
-> the project's idiom; these heuristics keep the bolt from shipping generic scaffold output.
+> component library, formatting helpers) comes from the ACTIVE framework pack and the repo's
+> existing components, which the slice procedure reads alongside this text. Pair the two: they
+> show the project's idiom; these heuristics keep the output from being generic scaffold.
 >
 > **Anti-hallucination.** Apply these to data and affordances that the unit + vault flows
 > already establish. Never invent fields, statuses, copy, or brand voice not grounded in the

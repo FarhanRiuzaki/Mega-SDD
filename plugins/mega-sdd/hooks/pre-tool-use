@@ -4,9 +4,9 @@
 # [HOOK-VALIDATE] enforcement layer. Blocks two classes of agent actions:
 #   1. mega-sdd:execute-bolts while a HARD-BLOCK gate is FAILing (the gate
 #      aggregator below — the binding->units moat gate + the kept code-delivery
-#      quality gates). The DEMOTED code-delivery checks (dispatch-prompt,
-#      operator-UX, fan-out-parity, ui-deferral, vault-flow-staging) are advisory
-#      only and surface via analyze — they do NOT block here.
+#      quality gates). The DEMOTED code-delivery checks (operator-UX,
+#      fan-out-parity, ui-deferral, vault-flow-staging) are advisory only and
+#      surface via analyze — they do NOT block here.
 #   2. Anti-self-bypass: agent attempts to delete/truncate/overwrite guard state
 #      files (.validation-blockers.json, .plan-pending, .replan-budget,
 #      .iter-classifier.json).
@@ -781,8 +781,8 @@ except Exception as e:
     # Multi-fail surfacing is built in: when >1 gate fails, all names are listed up
     # front so the agent fixes them together instead of one-at-a-time.
     #
-    # DEMOTED to analyze advisory (NOT blocking here): dispatch-prompt,
-    # operator-UX (vault-oqs), fan-out-parity, ui-deferral, vault-flow-staging.
+    # DEMOTED to analyze advisory (NOT blocking here): operator-UX (vault-oqs),
+    # fan-out-parity, ui-deferral, vault-flow-staging.
     if [ "${SKILL_NAME:-}" = "mega-sdd:execute-bolts" ]; then
       # ── S4 BC-GATE-1 self-heal: the moat-state writer used to fire on UNIT
       # writes only, so a re-bind/sync that wrote binding.md with fresh active

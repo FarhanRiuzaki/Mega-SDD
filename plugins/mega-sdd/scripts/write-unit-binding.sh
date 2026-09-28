@@ -29,7 +29,7 @@
 # `null_cause`), `scope`, `own_targets`, `unit_sha256`, a `dirty` snapshot (one
 # freshness.dirty_map()), `index_head`, per-claim `content_sha` / `absent_at`, the in-range
 # content ladder, `claims_path` + `claims_sha256`, and `rebind_head` when a per-unit re-bind wrote
-# it (--rebind). The BOLTS gate (hooks/pre-tool-use, binding-freshness leg) reads these.
+# it (--rebind). The run-start freshness check (derive-exec-plan.sh → _lib/freshness.gate_check) reads these.
 # CONFLICT episodes (conflict_bypassed): a CONFLICT claim carries `conflict_since` (kept across re-binds by
 # kind + expect) and `own_wip` when it is the unit's own uncommitted work (untracked, its provenance header);
 # one a re-bind closes moves to `conflict_history` (since, closed_at); --resolve also decides a closed episode.

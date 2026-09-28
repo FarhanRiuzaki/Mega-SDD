@@ -136,7 +136,7 @@ Canonical shape: `references/interactive-walk.md` Step 2b. Slots are a display d
 
 ### BM4: Hand-off after binding mode — ACTION-MIX (not a blanket re-bind)
 - **Setup:** at least one CONFLICT resolved via KEEP_CODE or SPLIT (the unit's `## Claims` was edited)
-- **Expect:** re-bind just the edited units — `scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=<edited U-ids>` (the edited claims bind cleanly) → `plan --reconcile` (task_type flips) → `/mega-sdd --resume` (`execute-bolts --all --lite`), per `references/binding-mode.md` Step 5. Skipped, the BOLTS gate backstops it: the edited unit trips `unit_changed_since_bind` and 3.9b re-binds it
+- **Expect:** re-bind just the edited units — `scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=<edited U-ids>` (the edited claims bind cleanly) → `plan --reconcile` (task_type flips) → `/mega-sdd --resume` (`execute-bolts --all --lite`), per `references/binding-mode.md` Step 5. Skipped, the run start backstops it: execute-bolts re-binds every pending unit up front (inline-run.md (b)2), and a unit still stale is quarantined `binding_stale` by derive-exec-plan.sh
 
 ### BM5: Hand-off KEEP_VAULT/DEFER-only → resume bolts (no re-bind loop)
 - **Setup:** all CONFLICTs resolved via ONLY KEEP_VAULT and/or DEFER (vault + code unchanged); zero KEEP_CODE/SPLIT
