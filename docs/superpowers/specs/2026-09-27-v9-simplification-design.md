@@ -359,7 +359,7 @@ metrics are OVERLAP (AC 13 vs 13, Critical 0 vs 0, Important 0 vs 0, traps 5/5 Ã
   chain-end `detect-drift` auto-gate is the backstop), the hook-counted attempt cap (`--max-retries`
   is a prose cap per task) and per-unit model routing (`--model-tier` / `--no-escalate` need `--agents`).
 
-### 8.6 P3 outcome (skeleton, 2026-09-28; the measured numbers land with the last P3 commit)
+### 8.6 P3 outcome (2026-09-28)
 
 **Decision.** On 2026-09-28 the owner decided to run the full P3 (commits C0â€“C9) and accepted O2.
 The plan is `research/2026-09-28-p3-deletion-plan.md`. It was produced by the read-only workflow
@@ -398,8 +398,8 @@ in P3. They are inert because they are scoped to `--agents`, and P3b retires the
 - **Artefacts that are no longer written:** `review-tier.json`, `attempts.json`, `findings.json`,
   `dispatch-prompt.md`, `design-slice.md`, `partial-state.json`, `.bolt-panel-state.json`,
   `.dispatch-prompt-state.json`. Legacy copies on disk stay readable.
-- **Tests:** 57 files that pin only deleted code are deleted (8,221 lines, measured at `4e1cf166`),
-  after their surviving pins moved in C0.
+- **Tests:** 58 files that pin only deleted code are deleted (22 test scripts plus fixtures, goldens
+  and run-all.sh; 8,361 lines at `4e1cf166`), after their surviving pins moved in C0.
 - **Measured totals:** complexity-budget values, lines and files deleted: in the C9 commit message
   (`git log --grep='P3 C9'`).
 

@@ -56,7 +56,7 @@ Each layer has a different audience, different anti-hallucination rails, and dif
 
 Bolt phase runs inline in one context and closes with one blind review of the whole range (`skills/execute-bolts/references/inline-run.md`; the per-unit agents were removed in P3). [superpowers](https://github.com/obra/superpowers) TDD skills are an optional technique when installed (`skills/execute-bolts/references/superpowers-bridge.md`).
 
-The pipeline is self-contained: the first-class agents in `plugins/mega-sdd/agents/` encode the execution discipline, so no superpowers install (and, since v7.4.0, no vendored copy) is required.
+The pipeline is self-contained: the execution discipline lives in `skills/execute-bolts/` (SKILL.md + `references/inline-run.md`), so no superpowers install (and, since v7.4.0, no vendored copy) is required.
 
 ## Anchor + hooks
 
