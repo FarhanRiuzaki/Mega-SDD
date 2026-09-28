@@ -1,6 +1,6 @@
 ---
 name: extract-intelligence
-version: 2.7.0
+version: 2.7.1
 description: Tech-agnostic legacy extractor for rebuild/revamp — census-contracted extraction composes the system's logic into one PRD-kontrak per module (inline file:line citations, [LOCKED]/[INTENT]/[ARTIFACT] mutability tiers), consumed by plan --kb (the rebuild spec) and execute-bolts (JIT bind, dispatch prompt). Cost scales with the census, not a fixed pipeline — a 1-file engine yields 1 PRD. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "revamp project ini ke stack baru", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
@@ -197,7 +197,7 @@ mutability-tier producer: `tier_distribution`, `locked_claims_touched`,
 - `references/handoff.md` — the `--auto` handoff record.
 - `plugins/mega-sdd/references/architecture-advisor.md` — the optional target-architecture consultation on top of the finished KB (offered at hand-off).
 - `mega-sdd:plan` — consumes the output via `--kb=<path>` (incl. `decisions/ADR-*.md` accepted by the advisor).
-- `mega-sdd:execute-bolts` — the JIT bind consults the output as rung 5 of its text-claim ladder (E3, secondary ground truth); `scripts/build-dispatch-prompt.sh` reads `data-mutation-policy.md` `[LOCKED]` entries into each bolt's DO-NOT-MODIFY context.
+- `mega-sdd:execute-bolts` — the JIT bind consults the output as rung 5 of its text-claim ladder (E3, secondary ground truth).
 - `scripts/derive-extract-census.sh` / `scripts/validate-extract-census.sh` — census + completeness gate.
 - `scripts/derive-site-census.sh` / `scripts/derive-prd-counts.sh` — WRITE/CALL site inventory + script-derived frontmatter counts.
 - `plugins/mega-sdd/references/legacy-idioms/rpg-as400.md` — extraction-side idiom sheet for the rpg/dds stacks (READ ALSO line in dispatches).

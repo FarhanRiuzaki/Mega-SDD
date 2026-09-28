@@ -74,11 +74,10 @@ scope: <scope-id>                  # OPTIONAL — written when source vault.json
 scope_name: "<scope-name>"         # OPTIONAL — written alongside `scope:`
                                    # e.g., "Backend API". Matches vault.json `scope_metadata.name`.
                                    # Omitted entirely for legacy single-scope vaults.
-reuse_candidates:                  # OPTIONAL — fast-path hints from reuse-index.yaml (NOT exhaustive; the bolt reads the full index)
+reuse_candidates:                  # OPTIONAL — fast-path hints from reuse-index.yaml (NOT exhaustive)
   - { name: <symbol>, path: <file>, signature: <sig>, purpose: <1-line> }
                                    # Absent when no candidate matched; never fabricated.
-                                   # These are hints — the bolt receives the full reuse-index.yaml path and scans it at write time.
-                                   # `plan` does not write it; readers (build-dispatch-prompt.sh) keep honouring it on legacy units that carry it.
+                                   # `plan` does not write it; no script reader — the inline implementer reads the unit in full.
 module: <module-id>                # — semantic grouping per _meta/modules.yaml
                                    # Format: M-<kebab-case>. Auto-derived from vault_source|context_source matching modules.yaml.
                                    # M-default for vaults without modules.yaml. M-unassigned for unit's vault_source|context_source not matching any module.
@@ -162,7 +161,7 @@ binding_refs:                      # binding manifest IDs this unit honors
 
 ## Required body sections (polished AI-coding-prompt shape)
 
-**xs body diet (spec 2026-09-10 App. F1e).** A unit with 1–2 `acceptance_test` entries AND 1–3 implementation steps is the router's `unit_tier: xs` class (`scripts/_lib/unit_tier.py` — the ONE size proxy shared by `resolve-review-tier.sh` and `validate-unit-spec.sh`). Its body is embedded verbatim in every dispatch prompt, so for that class: **Goal = 1 line · Context ≤ 2 sentences · Implementation steps ≤ 3 · `## Anti-patterns` and `## Out of scope` only when every item cites a source** (U-XXX, OQ-, C-, doc anchor, file:line). `validate-unit-spec.sh` records offenders in the state's `xs_body_advisory` list (advisory — never an issue, status or halt). Non-xs units keep the shape below.
+**xs body diet (spec 2026-09-10 App. F1e).** A unit with 1–2 `acceptance_test` entries AND 1–3 implementation steps is the `unit_tier: xs` class (`scripts/_lib/unit_tier.py` — the size proxy `validate-unit-spec.sh` reads). The implementer reads its body in full, so for that class: **Goal = 1 line · Context ≤ 2 sentences · Implementation steps ≤ 3 · `## Anti-patterns` and `## Out of scope` only when every item cites a source** (U-XXX, OQ-, C-, doc anchor, file:line). `validate-unit-spec.sh` records offenders in the state's `xs_body_advisory` list (advisory — never an issue, status or halt). Non-xs units keep the shape below.
 
 ```markdown
 ## Goal
@@ -303,7 +302,7 @@ A line matching neither a mechanical type nor the directive tier is unparseable 
 ## Atomicity rules
 
 - One unit = one PR-sized commit. If the body steps would produce >300 lines of code change, SPLIT into multiple sequential units (allocated U-00N at the unit walk's Step 6 topological numbering) with an explicit `depends_on` chain — never dotted sub-IDs (U-001.1 would break the content-hash ID-stability contract `--regenerate`/`--reconcile` depend on). The >300 LOC / ≤5 files threshold is an authoring judgment (advisory — no validator measures it). Under granularity `large` (`--max-complexity=large` / config `unit_granularity: coarse`) the threshold rises to >600 LOC / ≤8 files — same advisory class, "PR-sized" becomes "story-sized"; every other rail (whitelist, task_type, Hard rules, per-unit review) is granularity-independent.
-- `target_files` whitelist is enforced by `execute-bolts` at three layers: the dispatch prompt forbids out-of-whitelist writes (rules tier), the review panel checks scope (judgment tier), and the deterministic B3 whitelist observer (`validate-bolt-artifacts.sh --whitelist-scan`, Stop-hook + gate-time) diffs each bolted unit's COMMITTED paths against `target_files` ∪ sanctioned extras (vault/bolt artifacts, `.mega-sdd/`, test files) — escaped paths block the next `execute-bolts` with `whitelist_violation`.
+- `target_files` whitelist is enforced by `execute-bolts` at three layers: the plan Global Constraint (rules tier), the commit step's `git show --stat HEAD` check, and the deterministic B3 whitelist observer (`validate-bolt-artifacts.sh --whitelist-scan`, Stop-hook + gate-time) diffs each bolted unit's COMMITTED paths against `target_files` ∪ sanctioned extras (vault/bolt artifacts, `.mega-sdd/`, test files) — escaped paths block the next `execute-bolts` with `whitelist_violation`.
 - `existing_interfaces` is enforced by acceptance tests — any test against a listed interface must continue passing.
 - `task_type` is enforced by `execute-bolts` — `verify` units MUST NOT modify any file; violations are halt-conditions at bolt time.
 - `## Hard rules` body section is parsed at bolt time. Pre-flight snapshots state; post-flight validates against the implementer's landed commit (detect-after topology per execute-bolts SKILL.md). Violations halt with `hard_rule_violated` and gate further bolts until fixed.

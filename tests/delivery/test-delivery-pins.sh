@@ -28,15 +28,6 @@ grep -q "kb_module_graph" "$P/skills/plan/references/decomposition-rails.md" \
   && pass "D2: plan decomposition reads kb_module_graph seed" \
   || fail "D2: kb_module_graph seed missing from decomposition-rails"
 
-# D3 — codebase-map §6 delivered to bolts when starterkit-context absent (the
-# consumer leg; pre-9.0 maps on disk are still read). The former producer-side
-# half (codebase-map-schema.md "never write-only" note) is retired: that schema
-# lived in the scan-codebase skill, deleted in 9.0 P1 — no 9.0 producer writes §6.
-grep -q "^## Map §6 fallback (starterkit-context absent)" "$P/skills/execute-bolts/references/context-enrichment.md" \
-  && grep -q "Codebase patterns:" "$P/skills/execute-bolts/references/context-enrichment.md" \
-  && pass "D3: map §6 fallback wired into bolt dispatch" \
-  || fail "D3: map §6 fallback / Codebase patterns line missing"
-
 # D4 — missing_sources surfaced at chain end
 grep -q "missing_sources" "$P/skills/orchestrate-flow/references/chain-execution.md" \
   && pass "D4: FSD missing_sources surfaced in final summary" \

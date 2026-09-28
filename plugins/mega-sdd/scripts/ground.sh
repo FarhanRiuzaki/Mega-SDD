@@ -351,8 +351,8 @@ if missing_bins:
 # ─── Guard 7: deep_scan_cache_corrupt (B.9) ────────────────────────────────
 # Check <cwd>/.mega-sdd/codebase/starterkit-context.yaml — if exists, validate
 # it as parseable YAML (or at least structured key:value pairs). If corrupt,
-# rename it aside so readers (build-dispatch-prompt starterkit slice,
-# validate-starterkit-conformance, validate-unit-spec) see it absent; nothing
+# rename it aside so readers (validate-starterkit-conformance,
+# validate-unit-spec) see it absent; nothing
 # regenerates it in 9.0.
 import re as _re5
 starterkit_path = os.path.join(cwd, ".mega-sdd", "codebase", "starterkit-context.yaml")

@@ -512,10 +512,6 @@ hdr() { brief "$1" "$2" | awk '/^```$/ { if (f) exit; f = 1; next } f'; }
 runblk() { ( cd "$1" && GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t bash -c "$2" >/dev/null 2>&1 ); }
 if [ -f "$P13" ]; then
   printf '%s' "$(hdr "$P13" 1)" | grep -qF "provenance: .mega-sdd/vaults/demo/units/U-001.md" && ok "m9a: the provenance header points at the tracked unit file" || bad "m9a: $(hdr "$P13" 1)"
-  mkdir -p "$V13/bolts/U-002"; printf 'UNIT: U-002\n' > "$V13/bolts/U-002/dispatch-prompt.md"   # an earlier per-dispatch attempt
-  deny "$(printf '%s' "$(python3 -c 'import json,sys; print(json.dumps({"session_id":"sess-inline-0001","cwd":sys.argv[1],"tool_name":"Bash","tool_input":{"command":sys.argv[2]}}))' "$M13" "$(blk "$P13" 1 1)")" | ( cd "$M13" && bash "$P/hooks/pre-tool-use" 2>/dev/null ))" \
-    && bad "m9b: the plan's commit block is denied by the wave rail" || ok "m9b: the plan's literal commit block passes the wave rail with a leftover dispatch-prompt.md"
-  rm -f "$V13/bolts/U-002/dispatch-prompt.md"
   for n in 1 2; do
     u="U-00$n"; rb "$M13" "$u"; mkdir -p "$M13/src"
     if [ $n = 1 ]; then { hdr "$P13" 1 | sed 's|^|// |'; printf 'module.exports = function greet(n) { return "hi " + n; };\n'; } > "$M13/src/greet.js"; else printf '// shout option\n' >> "$M13/src/greet.js"; fi

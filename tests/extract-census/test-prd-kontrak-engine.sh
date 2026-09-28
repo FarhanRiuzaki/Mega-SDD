@@ -69,7 +69,7 @@ grep -qF '## Reengineering Opportunities' "$TPL" && grep -qF '## Mutability Tier
   && pass "README keeps the two plan --kb-read headings verbatim" \
   || fail "README heading contract broken"
 grep -qF '## Per-locked-field policy' "$TPL" && grep -qF '## Entity-level summary' "$TPL" \
-  && pass "data-mutation-policy consumer headings preserved (build-dispatch-prompt contract)" \
+  && pass "data-mutation-policy consumer headings preserved (plan --kb contract)" \
   || fail "data-mutation-policy headings broken"
 grep -qF '[LOCKED]' "$TPL" && grep -qF '[INTENT]' "$TPL" && grep -qF '[ARTIFACT]' "$TPL" \
   && pass "mutability axis (invariant #4) carried in the template" || fail "mutability axis lost"
@@ -95,9 +95,9 @@ grep -qF 'validate-extract-census.sh' "$P/scripts/certify-artifact.sh" \
 grep -qF 'census.json' "$P/scripts/build-prd-core.sh" \
   && pass "emit-prd reverse mode refuses a PRD-kontrak KB with a pointer" \
   || fail "build-prd-core reverse not guarded"
-grep -qF '"data-mutation-policy.md"' "$P/scripts/build-dispatch-prompt.sh" \
-  && grep -qF '99-rebuild-architecture' "$P/scripts/build-dispatch-prompt.sh" \
-  && pass "dispatch builder probes dmp at KB root AND legacy 99- path" \
+grep -qF '<kb>/data-mutation-policy.md' "$KBIN" \
+  && grep -qF '99-rebuild-architecture/data-mutation-policy.md' "$KBIN" \
+  && pass "plan --kb reads dmp at KB root AND legacy 99- path" \
   || fail "dmp dual-probe missing"
 grep -qF 'extract-intelligence-module' "$P/references/model-tiers.md" \
   && pass "model-tiers carries the extract-intelligence-module role" || fail "module role row missing"

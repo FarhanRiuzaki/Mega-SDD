@@ -83,12 +83,6 @@ fi
 if [ "$s6a_ok" -eq 1 ]; then
   pass "S6a: ✅ RESOLVED marker shape present at the writer (binding-mode) AND parsed by the grammar owner (binding_md.py)"
 else fail "S6a: marker-grammar pair broken (writer/parser drift or deletion)"; fi
-EB="$P/skills/execute-bolts/SKILL.md"
-BR="$P/skills/execute-bolts/references/superpowers-bridge.md"
-if grep -qF 'The EXIT CODE is the discriminator' "$EB" && grep -qF 'The EXIT CODE decides, not' "$BR" \
-   && grep -qF -- '--quiet' "$EB" && grep -qF -- '--quiet' "$BR"; then
-  pass "S6b: exit-code discriminator + --quiet ban present at BOTH operational surfaces"
-else fail "S6b: exit-code contract pair broken"; fi
 grep -qF 'step_type' "$P/agents/bolt-implementer.md" \
   && grep -qF 'canonical taxonomy' "$P/skills/execute-bolts/references/partial-state-and-saga.md" \
   && pass "S6d: step_type enum pair present (agent copy + canonical taxonomy home)" \

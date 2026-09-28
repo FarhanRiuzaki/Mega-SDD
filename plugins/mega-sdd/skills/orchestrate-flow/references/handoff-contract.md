@@ -210,7 +210,7 @@ Optional block carrying starterkit detection results forward through the chain.
 
 **Producer:** execute-bolts, as passthrough + metrics (`execute-bolts/references/halts-and-handoff.md` §Handoff emission), when `starterkit-context.yaml` exists on disk.
 
-**Propagation:** orchestrate-flow passes a present block through unchanged (handoff-consumption.md §Propagation); execute-bolts (`build-dispatch-prompt.sh`) reads `starterkit-context.yaml` from disk.
+**Propagation:** orchestrate-flow passes a present block through unchanged (handoff-consumption.md §Propagation); execute-bolts passes the block through from `starterkit-context.yaml` (no execution-time reader).
 
 **Schema:**
 

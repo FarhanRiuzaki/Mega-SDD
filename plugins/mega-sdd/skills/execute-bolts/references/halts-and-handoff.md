@@ -115,7 +115,7 @@ Intermediate stage detail (context load, pre-flight, TDD phases, post-flight ver
 > **"anchors N/N" honesty:** print that count ONLY after actually probing each
 > `## Anchors` path at prompt-assembly time — **path exists + the line is within the file,
 > and nothing more.** (There is no "when the binding recorded an excerpt/sha, the region still
-> matches" clause — per `context-enrichment.md §Re-decided amendments` row 4:
+> matches" clause — per `check-anchor-freshness.sh`:
 > no binding-schema field records an excerpt or a sha, and `check-anchor-freshness.sh` — the
 > deterministic owner of this question — probes path + line-range only, for the same reason.
 > The residual gap is real, which is why the emitted line must state what was probed:

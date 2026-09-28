@@ -23,7 +23,7 @@ CLAIM_RE = re.compile(r'^-\s+(C-U[\w-]+)\s+"(.+?)"\s+—\s+expect:\s+(.+?)\s*$')
 # — `(group)`, `[id]`, `@slot` — is a legal path segment; the old `[\w.\-]` grammar cut
 # `src/app/(blank-layout-pages)/register/page.tsx:1-22` down to `register/page.tsx:1-22`
 # and minted a FALSE fs_must_exist CONFLICT on 3/7 units. Same literal as the TOKEN regex
-# in check-anchor-freshness.sh / build-dispatch-prompt.sh (kept in step by hand).
+# in check-anchor-freshness.sh (kept in step by hand).
 ANCHOR_RE = re.compile(r'((?:(?:[\w.\-]+|\([\w.\-]+\)|\[[\w.\-]+\]|@[\w.\-]+)/)*[\w.\-]+\.[A-Za-z]\w{0,7}):(\d+)(?:-(\d+))?\b')
 
 

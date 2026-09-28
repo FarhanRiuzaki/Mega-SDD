@@ -70,10 +70,5 @@ grep -qF "symbol-graph.json caches from <5.29.0 are inert" "$P/references/paths.
   && ok "paths.md: stale caches declared inert (no migration needed)" \
   || fail "paths.md inert-cache note missing"
 
-# the replacement is real: the write-time symbol_slice ships (R2, v5.28.0)
-grep -qF 'add_section("symbol_slice"' "$P/scripts/build-dispatch-prompt.sh" \
-  && ok "the replacement (dispatch symbol_slice) is present — removal is not a regression to nothing" \
-  || fail "symbol_slice missing from the dispatch builder"
-
 [ "$FAILED" = "0" ] && echo "ALL PAGERANK-REMOVED PROOFS OK" || echo "pagerank-removed proofs FAILED"
 exit $FAILED

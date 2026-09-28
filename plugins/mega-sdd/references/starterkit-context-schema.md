@@ -4,7 +4,7 @@
 
 **Version:** 3.1 — supersedes 3.0, 2.0, 1.0 (schema lineage: 1.0 initial; 2.0 added per-slice cache; 3.0 added `patterns:`; 3.1 neutral auth/authz reshape — rbac→authz, auth.routes→entrypoints, auth.guard→mechanism)
 **Produced by:** none in 9.0 (pre-9.0 scan-codebase deep-scan files stay readable; every reader skips cleanly when the file is absent)
-**Consumed by:** `mega-sdd:execute-bolts` (Step 4.5.b-starterkit — `references/starterkit-enrichment.md`, via `build-dispatch-prompt.sh`), `validate-unit-spec.sh` (Check 3), `validate-starterkit-conformance.sh` (`patterns:` block consumer), `_lib/resolve-framework-pack.sh` (reads `framework_pack:` first), `ground.sh` (Guard 7)
+**Consumed by:** `validate-unit-spec.sh` (Check 3), `validate-starterkit-conformance.sh` (`patterns:` block consumer), `_lib/resolve-framework-pack.sh` (reads `framework_pack:` first), `ground.sh` (Guard 7)
 **Backward compat:** v1.0 readers skip the `cache_signatures:` block. v2.0 readers skip the `patterns:` block. v3.1 reshapes auth/authz. Consumers MAY read v1.0–v3.1.
 
 ---
@@ -414,4 +414,4 @@ Downstream consumers MUST handle `partial: true` gracefully: if a slice they nee
 
 ## See also
 
-- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` §Step 4.5.b-starterkit (`references/starterkit-enrichment.md`; consumer — T2 slice injection)
+- `plugins/mega-sdd/scripts/validate-starterkit-conformance.sh` (the `patterns:` consumer) and `plugins/mega-sdd/scripts/ground.sh` Guard 7 (the corrupt-file rename). No execute-bolts step reads this file since P3.

@@ -1,7 +1,7 @@
 # UI design quality heuristics (stack-agnostic)
 
-> **Purpose.** Injected as inline context into a `ui_ux`-relevance bolt dispatch prompt
-> (execute-bolts Step 4.5.b-starterkit.inject). It is the `frontend-design` bridge as
+> **Purpose.** Read on demand by the extras slice procedure (`mega-sdd-extras` slice-design
+> `references/slice-procedure.md` §0). It is the `frontend-design` bridge as
 > INJECTED TEXT — NOT a prose instruction to invoke the `frontend-design` skill (prose-only
 > Skill-invoke wire-ups historically no-op'd; see the enforcement doctrine in `plugins/mega-sdd/CLAUDE.md`).
 >

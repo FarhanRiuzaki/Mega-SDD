@@ -245,7 +245,7 @@ Rows below are the halt-type index — this index is the registry-existence surf
 - `framework_pack_missing` — `scripts/ground.sh` Guard 5 (pack-integrity scan): a pack `extends` a missing pack. **[C1 SELF-RESOLVE — reference dropped, notice logged]** → `halt-families/flow.md`
 - `framework_pack_cycle` — `scripts/ground.sh` Guard 5: pack inheritance cycle. **[C1 SELF-RESOLVE — cycle broken at the most-derived edge]** → `halt-families/flow.md`
 - `framework_pack_unparseable` — `scripts/ground.sh` Guard 5: pack file unreadable. **[C1 SELF-RESOLVE — pack skipped]** → `halt-families/flow.md`
-- `deep_scan_cache_corrupt` — `ground.sh` Guard 7 / execute-bolts `build-dispatch-prompt.sh` `soft_halts[]`: a legacy `starterkit-context.yaml` fails to parse. **[C1 SELF-RESOLVE — renamed aside, starterkit slice skipped, bolt proceeds]** → `halt-families/flow.md`
+- `deep_scan_cache_corrupt` — `ground.sh` Guard 7: a legacy `starterkit-context.yaml` fails to parse. **[C1 SELF-RESOLVE — renamed aside, run proceeds]** → `halt-families/flow.md`
 - `dep_missing` — execute-bolts (test runner absent, pre-flight 3.5; ast-grep absent under v2 grammar, `run-preflight-scan.sh` exit 6), `ground.sh` Guard 6 (C1 notice), the emit lane: a required binary is missing. Schema: §Type-specific schemas (`dep_missing`). → `halt-families/flow.md`
 
 **emit** (`halt-families/emit.md`):

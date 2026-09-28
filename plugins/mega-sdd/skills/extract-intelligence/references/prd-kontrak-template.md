@@ -338,10 +338,10 @@ PRD's own §3/§4 carry this — never duplicate.
 ## `data-mutation-policy.md` template
 
 Emitted at the KB ROOT, ONLY when ≥1 `[LOCKED]` claim exists across modules
-(omit otherwise — `build-dispatch-prompt.sh` records absence honestly).
-Consumed by `plan --kb` (ERD freedom) and `build-dispatch-prompt.sh`
-(DO-NOT-MODIFY anti-context) — the section headings + table columns below are
-that consumer contract; keep them verbatim:
+(omit otherwise — `plan --kb` then reads every claim as `[INTENT]`).
+Consumed by `plan --kb` (ERD freedom, `plan/references/kb-input.md`) — the
+section headings + table columns below are that consumer contract; keep them
+verbatim:
 
 ```markdown
 ---

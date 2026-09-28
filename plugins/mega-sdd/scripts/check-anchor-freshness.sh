@@ -2,7 +2,7 @@
 # check-anchor-freshness.sh — pre-flight anchor freshness probe (P4 v4.96.0).
 #
 # v5 spec P4 row / research §7: a unit's `## Anchors` entries are the codebase
-# evidence the bolt-implementer reads BEFORE writing code. A stale anchor
+# evidence the implementer reads BEFORE writing code. A stale anchor
 # (file deleted/renamed, or the cited line past the end of the file) sends the
 # implementer to fiction — caught only after the damage, if at all. This probe
 # resolves every `file:line` anchor against git-tracked ground truth BEFORE
@@ -188,7 +188,7 @@ for unit_id, lines in blocking:
         print("  - " + l, file=sys.stderr)
 print("Keterangan: anchor di unit menunjuk file/baris yang sudah tidak ada di "
       "codebase (file terhapus/berpindah, atau baris bergeser melewati akhir "
-      "file) — bolt-implementer akan membaca evidence yang salah. Perbaiki: "
+      "file) — implementer akan membaca evidence yang salah. Perbaiki: "
       "jalankan /mega-sdd:sync (atau re-bind JIT: scripts/rebind-units.sh "
       "--cwd=<root> --vault=<vault> --units=<U-XXX> — write-unit-binding.sh "
       "memperbaiki rentang baris yang bergeser) supaya "

@@ -108,7 +108,7 @@ Registry one-liner (absorbed, same type):
 
 ### deep_scan_cache_corrupt
 
-- `deep_scan_cache_corrupt` — `scripts/ground.sh` Guard 7 / execute-bolts `build-dispatch-prompt.sh` (`soft_halts[]`): a legacy `starterkit-context.yaml` exists but fails YAML parse. **C1 SELF-RESOLVE:** GROUND renames it aside (`.corrupt-<ts>`) with a notice; the dispatch prompt skips the starterkit slice and the bolt proceeds. Nothing rebuilds the file.
+- `deep_scan_cache_corrupt` — `scripts/ground.sh` Guard 7: a legacy `starterkit-context.yaml` exists but fails YAML parse. **C1 SELF-RESOLVE:** GROUND renames it aside (`.corrupt-<ts>`) with a notice, and the run proceeds. Nothing rebuilds the file.
 
 ### dep_missing
 

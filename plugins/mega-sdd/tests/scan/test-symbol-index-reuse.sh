@@ -1,19 +1,17 @@
 #!/usr/bin/env bash
-# test-symbol-index-reuse.sh — tranche R1+R2 (spec
+# test-symbol-index-reuse.sh — tranche R1 (spec
 # 2026-08-02-reuse-first-grounding-index.md).
 # R1: build-symbol-index.sh (script-owned, deterministic, bounded, honest rc 3)
 #     + query-symbol-index.sh (pure read; CI-safe via a hand-written index).
-# R2: build-dispatch-prompt.sh emits the priority-3b `symbol_slice` with the
-#     deterministic retrieval rule (target-file rows first, then same-dir),
-#     provenance stamp, and honest omission when the index is absent.
+# R2 (the dispatch builder's `symbol_slice`) was removed with the builder in P3;
+#     pre-flight item 5 (the index feeds the JIT bind) is pinned below.
 # Live ast-grep arms self-skip on runners without the binary.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"; ROOT="$(cd "$HERE/../../../.." && pwd)"
 PLUG="${ROOT}/plugins/mega-sdd"
 BUILD="${PLUG}/scripts/build-symbol-index.sh"
 QUERY="${PLUG}/scripts/query-symbol-index.sh"
-DISPATCH="${PLUG}/scripts/build-dispatch-prompt.sh"
-for f in "$BUILD" "$QUERY" "$DISPATCH"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+for f in "$BUILD" "$QUERY"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 FAILED=0
 ok()   { printf '  \342\234\223 %s\n' "$*"; }
 fail() { printf '  \342\234\227 FAIL: %s\n' "$*"; FAILED=1; }
@@ -120,112 +118,12 @@ else
   ok "(live arms skipped — ast-grep not on this runner; query arms above are the CI proof)"
 fi
 
-echo "== R2 dispatch: symbol_slice emits with the deterministic rule =="
-P="$W/proj"; V="$P/.mega-sdd/vaults/v1"; mkdir -p "$V/units" "$P/app/Support" "$P/app/Other" "$P/.mega-sdd/codebase"
-( cd "$P" && git init -q . && git config user.email t@t && git config user.name t ) >/dev/null 2>&1
-printf '<?php\nfunction formatCurrency(int $c): string { return ""; }\n' > "$P/app/Support/Money.php"
-cat > "$V/units/U-001.md" <<'EOF'
----
-id: U-001
-title: Add money helper usage
-task_type: modify
-module: billing
-risk: low
-status: pending
-target_files:
-  - path: app/Support/Money.php
-    operation: modify
-acceptance_test:
-  - type: command
-    command: ./vendor/bin/phpunit
-    expects: OK
-    desc: money helper keeps formatting
----
-
-## Description
-
-Use the existing money helper.
-EOF
-( cd "$P" && git add -A && git commit -qm i ) >/dev/null 2>&1
-cat > "$P/.mega-sdd/codebase/symbol-index.json" <<'EOF'
-{"generated_by":"mega-sdd:build-symbol-index","generated_at":"2026-08-02T00:00:00Z","head_commit":"abcdef1234567890","astgrep_version":"0.42.3","file_count":3,"symbol_count":3,"symbols":[{"name":"sibling","kind":"php-function","file":"app/Support/Cents.php","line":2,"signature":"function sibling()","lang":"php"},{"name":"formatCurrency","kind":"php-function","file":"app/Support/Money.php","line":2,"signature":"function formatCurrency(int $c): string","lang":"php"},{"name":"unrelated","kind":"php-function","file":"app/Other/Far.php","line":2,"signature":"function unrelated()","lang":"php"}]}
-EOF
-bash "$DISPATCH" --cwd="$P" --vault="$V" --unit=U-001 --plugin-root="$PLUG" </dev/null >/dev/null 2>&1 \
-  && ok "builder rc 0 with index present" || fail "builder failed with index"
-DP="$V/bolts/U-001/dispatch-prompt.md"
-grep -qF "### Existing symbols (REUSE — extend, don't recreate)" "$DP" \
-  && ok "symbol_slice header in the emitted prompt" || fail "section missing from prompt"
-grep -qF "index@abcdef12" "$DP" && grep -qF "built by scripts/build-symbol-index.sh" "$DP" \
-  && ok "provenance stamp (head8 + builder name)" || fail "provenance stamp missing"
-grep -qF 'app/Support/Money.php:2 php-function `formatCurrency`' "$DP" \
-  && ok "target-file symbol row present" || fail "target-file row missing"
-grep -qF "app/Support/Cents.php" "$DP" \
-  && ok "same-directory symbol included" || fail "same-dir row missing"
-if grep -qF "app/Other/Far.php" "$DP"; then
-  fail "unrelated-directory symbol leaked into the slice"
-else
-  ok "unrelated directory excluded (deterministic rule, not a dump)"
-fi
-TF_LINE=$(grep -n "Money.php:2" "$DP" | head -1 | cut -d: -f1)
-SIB_LINE=$(grep -n "Cents.php" "$DP" | head -1 | cut -d: -f1)
-[ -n "$TF_LINE" ] && [ -n "$SIB_LINE" ] && [ "$TF_LINE" -lt "$SIB_LINE" ] \
-  && ok "target-file rows ordered BEFORE same-dir rows" || fail "group order wrong ($TF_LINE vs $SIB_LINE)"
-# honest omission when the index is absent
-rm "$P/.mega-sdd/codebase/symbol-index.json"
-OUT=$(bash "$DISPATCH" --cwd="$P" --vault="$V" --unit=U-001 --plugin-root="$PLUG" --explain </dev/null 2>/dev/null)
-printf '%s' "$OUT" | grep -q "symbol-index.json absent" \
-  && ok "absent index -> recorded omission naming build-symbol-index.sh" \
-  || fail "absent-index omission not recorded"
-if grep -qF "Existing symbols" "$V/bolts/U-001/dispatch-prompt.md"; then
-  fail "section emitted despite absent index"
-else
-  ok "no index -> no section (omitted, never placeholder-filled)"
-fi
-
-echo "== round-2 dispatch arms (F1 cap, B5 sanitize) =="
-python3 - "$P/.mega-sdd/codebase/symbol-index.json" <<'PY'
-import json, sys
-rows = [{"name": "sym%02d" % i, "kind": "php-function", "file": "app/Support/Gen%02d.php" % i,
-         "line": 1, "signature": "function sym%02d()" % i} for i in range(45)]
-rows.append({"name": "evil`tick", "kind": "php-function", "file": "app/Support/Money.php",
-             "line": 9, "signature": "ok line\n# INJECTED HEADING\n```"})
-doc = {"generated_by": "mega-sdd:build-symbol-index", "generated_at": "2026-08-02T00:00:00Z",
-       "head_commit": "abcdef1234567890", "astgrep_version": "0.42.3",
-       "file_count": 46, "symbol_count": len(rows), "symbols": rows}
-json.dump(doc, open(sys.argv[1], "w"))
-PY
-bash "$DISPATCH" --cwd="$P" --vault="$V" --unit=U-001 --plugin-root="$PLUG" </dev/null >/dev/null 2>&1
-NROWS=$(grep -c "^- app/Support/" "$DP")
-[ "$NROWS" = "40" ] && ok "F1: level-0 cap = 40 rows even UNDER budget" || fail "F1: rows=$NROWS"
-grep -qF "+6 more — query via scripts/query-symbol-index.sh" "$DP" \
-  && ok "F1: overflow pointer counts the capped remainder" || fail "F1: pointer missing"
-if grep -q "^# INJECTED HEADING" "$DP"; then
-  fail "B5: hostile newline signature minted its own markdown line"
-else
-  ok "B5: index fields collapsed to one line (no injected heading)"
-fi
-if grep -qF 'evil`tick' "$DP"; then
-  fail "B5: backtick survived into the name cell"
-else
-  ok "B5: backticks stripped from interpolated fields"
-fi
-
 echo "== contract pins =="
-grep -qF '| 3b | `symbol_slice` |' "$PLUG/skills/execute-bolts/references/context-enrichment.md" \
-  && ok "context-enrichment table row 3b" || fail "spec table row missing"
-grep -qF "Symbol slice (3b" "$PLUG/skills/execute-bolts/references/context-enrichment.md" \
-  && ok "spec subsection present" || fail "spec subsection missing"
 grep -qF "Reuse symbol index — ONCE per run, batch setup, never per bolt." "$PLUG/skills/execute-bolts/SKILL.md" \
-  && ok "F6: SKILL batch-setup item 5 (outside every per-bolt block)" || fail "SKILL batch step missing"
-if grep -qF "build-symbol-index.sh" <(sed -n '/### Step 4.5/,/### Step 5/p' "$PLUG/skills/execute-bolts/SKILL.md"); then
-  fail "F6: index build leaked back into the per-bolt Step 4.5 block"
-else
-  ok "F6: per-bolt Step 4.5 block carries NO index build call"
-fi
+  && grep -qF 'so the JIT bind reads a fresh index (`rebind-units.sh` rebuilds a stale one)' "$PLUG/skills/execute-bolts/SKILL.md" \
+  && ok "F6: SKILL batch-setup item 5 feeds the JIT bind" || fail "SKILL batch step missing"
 grep -qF "symbol-index.json" "$PLUG/references/paths.md" \
   && ok "paths.md registration" || fail "paths.md missing"
-grep -qF '"symbol_slice": 3' "$PLUG/tests/moat/test-dispatch-prompt-cascade.sh" \
-  && ok "cascade transcription carries the 3b row" || fail "cascade PRI stale"
 
 [ "$FAILED" = "0" ] && echo "ALL SYMBOL-INDEX-REUSE PROOFS OK" || echo "symbol-index proofs FAILED"
 exit $FAILED

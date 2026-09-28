@@ -95,8 +95,8 @@ if os.path.isdir(state_dir):
     # 0.9k-10.6k lines of code; 78-88% was HTML render, the rest mostly per-lens copies of
     # the unit body/pack and gate-state caches — all re-derived on disk). Stays tracked:
     # context/vault/constitution/units, bolt-report, binding.json, findings.json,
-    # pre/postflight, acceptance, attempts, l0-results, dispatch-prompt (what the
-    # implementer was told); the inline run's plan and ledger are local. A .gitignore without the
+    # pre/postflight, acceptance, attempts, l0-results, dispatch-prompt (legacy, no
+    # writer since P3); the inline run's plan and ledger are local. A .gitignore without the
     # marker is the user's — never touched.
     gi = os.path.join(state_dir, ".gitignore")
     marker = "# mega-sdd-managed v1"

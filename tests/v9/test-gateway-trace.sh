@@ -29,5 +29,6 @@ grep -q "ada $n skill yang ber-announce" "$C" && ok "contract count of announcin
 for s in $announcers; do grep -q "$s" <(sed -n '/ada [0-9]* skill yang ber-announce/p' "$C") || bad "contract list misses announcing skill $s"; done
 grep -qF 'mega-sdd-trace:turn' "$P/hooks/user-prompt-submit" && ok "user-prompt-submit still emits mega-sdd-trace:turn" || bad "user-prompt-submit lost mega-sdd-trace:turn"
 grep -qF 'mega-sdd-note:' "$P/hooks/session-note" && grep -q 'session-note' "$P/hooks/hooks.json" && ok "session-note still emits mega-sdd-note: and is wired" || bad "mega-sdd-note emitter/wiring lost"
-grep -qF 'mega-sdd-trace' "$P/scripts/build-dispatch-prompt.sh" && ok "bolt dispatch prompts still carry the trace line" || bad "build-dispatch-prompt.sh lost the trace line"
+grep -qF 'A("mega-sdd-trace:execute-bolts")' "$P/scripts/derive-exec-plan.sh" && grep -qE '^[[:space:]]*mega-sdd-trace:execute-bolts$' "$P/skills/execute-bolts/references/inline-run.md" \
+  && ok "the inline plan header and close-review prompt carry the trace line" || bad "inline run lost the execute-bolts trace line"
 exit $rc
