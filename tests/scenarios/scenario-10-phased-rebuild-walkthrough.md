@@ -4,7 +4,7 @@
 **When to use:** legacy codebase rebuild you want to land module-by-module instead of all at once
 **Prerequisites:** mega-sdd 9.0+ (`extract-intelligence` → `plan --kb`); existing legacy codebase OR willingness to use sample
 
-The KB-born rebuild runs the one guarded pipeline: `extract-intelligence` → `plan --kb=<kb>` → `execute-bolts --all --lite` (each unit bound just in time at dispatch).
+The KB-born rebuild runs the one guarded pipeline: `extract-intelligence` → `plan --kb=<kb>` → `execute-bolts --all --lite` (each unit bound just in time: the up-front bind, then a re-bind per task).
 
 > Concept guide for the whole journey (including hand-off + sync after the last tranche): [`docs/mega-sdd/revamp-journey.md`](../../docs/mega-sdd/revamp-journey.md).
 
@@ -33,7 +33,7 @@ flowchart TD
     V2 -.->|"same pipeline"| DONE2{{"Tranche 2 …"}}
 ```
 
-(GROUND — a script, seconds — indexes the target scaffold; there is no scan phase and no bind phase: each unit is bound at dispatch.)
+(GROUND — a script, seconds — indexes the target scaffold; there is no scan phase and no bind phase: each unit is bound when `execute-bolts` runs.)
 
 ## Step 1 — Extract intelligence from legacy
 
@@ -86,7 +86,7 @@ Expected: vault at `.mega-sdd/vaults/<slug>/` (the slug comes from the census `l
 /mega-sdd
 ```
 
-The front door re-derives state (GROUND) and proposes `execute-bolts` for the new units — single confirmation; auto-continues. Open P1 business OQs that `plan`'s batched ask left unanswered route to `resolve-oq` first. Each unit is bound just in time at dispatch (execute-bolts pre-flight 3.9 → `bolts/U-XXX/binding.json`).
+The front door re-derives state (GROUND) and proposes `execute-bolts` for the new units — single confirmation; auto-continues. Open P1 business OQs that `plan`'s batched ask left unanswered route to `resolve-oq` first. Each unit is bound just in time (execute-bolts' up-front bind, then a re-bind per task → `bolts/U-XXX/binding.json`).
 
 Expected halt: maybe `binding_conflict` on some claims. The envelope shows `suggested_action: KEEP_VAULT | KEEP_CODE | DEFER | SPLIT` with its keterangan; the CONFLICT closes that unit only (dependents skip with the reason, the rest proceed). Choose per claim; pipeline continues.
 

@@ -191,8 +191,8 @@ cd ~/test-projects/order-be/
 
 **Expected**:
 - Scope filter applied first (universal sections + §Backend only)
-- Brownfield task typing from the symbol index (`query-symbol-index.sh`): a hit → `verify`/`extend` + `## Anchors` + `## Claims`; a miss → `create` + a `must-not-exist` claim — never a CONFIRMED/CONFLICT verdict (the JIT bind writes those at dispatch)
-- The framework pack's rules reach each bolt as the advisory T2 slice at dispatch, not as new machine-checked unit rules
+- Brownfield task typing from the symbol index (`query-symbol-index.sh`): a hit → `verify`/`extend` + `## Anchors` + `## Claims`; a miss → `create` + a `must-not-exist` claim — never a CONFIRMED/CONFLICT verdict (the JIT bind in `execute-bolts` writes those)
+- The framework pack's rules do not become machine-checked unit rules (the advisory T2 slice that carried them to each bolt was removed in P3)
 - `vault.json` has scope=BE + scope_metadata; there is no `--scan=<map>` input any more (scan-codebase was removed in 9.0; GROUND replaces it)
 
 **Pass criteria**: Scope filter + brownfield typing compose; vault carries the scope metadata; units carry contracts, not verdicts.

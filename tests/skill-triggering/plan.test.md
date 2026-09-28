@@ -135,7 +135,7 @@ Route check: these phrases are in `plan`'s description (and `spec out` / `pecah 
 
 ### B1: Output set is layout-3
 - After a clean run: `<vault>/context.md` (H2 anchors `## Flows` / `## Data model` / `## Constraints` / `## Open Questions`), `constitution.md`, `_meta/ai-consumer-guide.md`, `vault.json` (`vault_layout: 3`), `units/U-*.md` + `units/_index.md`
-- NO `binding.md`, NO `bound/`, NO `claims-ledger.json` — verdicts are written per unit at dispatch (`bolts/U-XXX/binding.json`)
+- NO `binding.md`, NO `bound/`, NO `claims-ledger.json` — verdicts are written per unit by the JIT bind in `execute-bolts` (`bolts/U-XXX/binding.json`)
 
 ### B2: Every unit cites both sources
 - Each unit carries `prd_source:` AND `context_source: context.md#<anchor>`; never `vault_source`
@@ -143,7 +143,7 @@ Route check: these phrases are in `plan`'s description (and `spec out` / `pecah 
 
 ### B3: Claims are contracts, not verdicts
 - Brownfield (`--mode=existing`): a unit whose symbol-index query hit carries `## Anchors` + `## Claims`; a miss carries a `must-not-exist` claim
-- No unit body contains `CONFIRMED` / `CONFLICT` (the JIT bind writes those at dispatch)
+- No unit body contains `CONFIRMED` / `CONFLICT` (the JIT bind in `execute-bolts` writes those)
 
 ### B4: Validators run project-wide with `--cwd`
 - Step 5 runs `validate-unit-spec.sh --cwd=<root>`, `validate-flow-coverage.sh --cwd=<root>`, `validate-sibling-consistency.sh --cwd=<root>`, `validate-plan-coverage.sh --cwd=<root> --prd=<prd> --vault=<vault>` (under `--kb`: `--kb=<kb-dir>` in place of `--prd`)

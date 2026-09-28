@@ -54,7 +54,7 @@ grep -l "starterkit_context_consumed\|starterkit_relevance" .mega-sdd/vaults/*/u
 
 **Assertions:**
 - ≥1 unit file exists in `units/`
-- A unit that touches an existing starterkit symbol (e.g. `app/Models/User.php`) is typed `extend` or `verify` from a symbol-index hit, with `## Anchors` (`file:line`) and `## Claims` — claims are contracts; the verdict is written at dispatch, never in the unit
+- A unit that touches an existing starterkit symbol (e.g. `app/Models/User.php`) is typed `extend` or `verify` from a symbol-index hit, with `## Anchors` (`file:line`) and `## Claims` — claims are contracts; the verdict is written by the JIT bind in `execute-bolts`, never in the unit
 - No unit carries `starterkit_context_consumed` / `starterkit_relevance`, and no Hard Rule cites `starterkit-context.yaml`
 - No pack rule is copied into a unit's `## Hard rules` (`plan/references/validation-passes.md` §12.4.5: no pack slice is injected, and a pack rule is never a B1 post-flight obligation of its own)
 

@@ -6,7 +6,7 @@ Since 9.0, `/mega-sdd <prd|brief>` runs `scripts/route-lane.sh` first and picks 
 
 - **direct** — a clear task: the main session builds it like plain Claude Code (no vault, no units, no subagents). Procedure: [`direct-lane.md`](../../plugins/mega-sdd/references/direct-lane.md).
 - **assisted** — open business items, a security surface, several flows, or an existing app: direct + ONE batched ask before coding + ONE blind review.
-- **guarded** — an existing vault, or `--guarded` (`--lite` implies it): the one spec pipeline, `plan` (PRD, a seed PRD from a brief, or `plan --kb=<kb>` after `extract-intelligence`) → `execute-bolts` (JIT bind per unit, CONFLICT gate at dispatch).
+- **guarded** — an existing vault, or `--guarded` (`--lite` implies it): the one spec pipeline, `plan` (PRD, a seed PRD from a brief, or `plan --kb=<kb>` after `extract-intelligence`) → `execute-bolts` (inline: JIT bind up front + per task, CONFLICT quarantine at run start, one blind review).
 
 Walkthroughs that show a vault, units and bolts are guarded-lane runs. The classic chain (`generate-intent` → `scan-codebase` → `bind-codebase` → `generate-units`) was removed in 9.0: where an older walkthrough names one of those skills, read `plan` (spec + units) or the per-unit bind inside `execute-bolts`.
 

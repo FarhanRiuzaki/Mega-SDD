@@ -511,6 +511,7 @@ Unchanged in P3: run-analyze.sh (V16 → SKIP), pre-tool-use L968-1007, the prot
   - paths.md :51, :52, :55-57, :80, :101-102, :146, :273, :301, :318.
   - halt rows for `dispatch_prompt_too_large`, `panel_evidence_missing`, `l0_evidence_missing`, `review_critical_unresolved` and `bolt_introduces_locked_drift` (now emitterless) in halt-protocol, bolts.md, halts-and-handoff:323 and halt-taxonomy:19/:21.
   - chain-execution.md:131-135.
+  - The wave commit rail (the PreToolUse hook denies `git add -A/--all/.`, `git commit -a/--amend`, `git stash`, `git reset --hard` while a unit's `dispatch-prompt.md` is newer than its `postflight.json`) is still described as live in batch-and-fanout.md:26 (KEEP), vault_layouts.py:83 (KEEP) and derive-ready-units.sh:27 (HOLD). C5 removed the rail, so those verbs now pass. Fan-out and done-rule clusters (P3b); the files stay untouched in P3.
 
 ### 3b. Tests to delete (57 files, measured)
 | commit | files | lines | precondition |
@@ -686,7 +687,7 @@ Each commit is small and reviewable. C2–C7 ship in one release, with **no tag 
 | **C6b** | F-09 mapping, Agent parse, fast path, matcher → `Skill\|Bash\|Edit\|Write`, header, **agents/bolt-implementer.md**; §3.9 rewrite + orchestrate-flow:120; convergence-loops; using-mega-sdd; commands :8/:50/:77; invariant #2; model-tiers rows 15/22; READMEs, CONTRIBUTING, root CLAUDE.md; spawn C8b; migrated a5; predictive §12; agent-dispatch-gate / p2d deletion; honesty h5; inline-lane g2/h9/h15. | O3, O4, re-audit §2b, inline smoke |
 | **C7** | Partial-state cluster, including the `ts_fname` carve-out, registry and lockstep tokens, and scenario-6. Separable: it may slip to P3b without harm. | none |
 | **C8** | Optional and isolated: remove the `--panel-scan` token from derive-exec-plan.sh:270, inline-run.md:104, pre-tool-use:950 and stop:182; delete the retire shim :246-252 + :63 import; h5/e8/m8b; 4abc wording. Keep the parser no-op arm. | inline smoke (touches the inline plan text) |
-| **C9** | Measure and lower the budget ceilings; spec §8.6 numbers; CHANGELOG (no gain claims); T10 deletion; test-no-removed-skill-refs extension; derive-state comment; runbook refs. | none |
+| **C9** | Measure and lower the budget ceilings; spec §8.6 numbers; CHANGELOG (no gain claims; note that the C2 inline smoke was combined with the C6b one, §6 check 5); T10 deletion; test-no-removed-skill-refs extension; derive-state comment; runbook refs. | none |
 
 ### Checks after every commit
 1. **Full local suite, mirroring CI:**
@@ -710,6 +711,7 @@ Each commit is small and reviewable. C2–C7 ship in one release, with **no tag 
    `git grep -nE 'bolt-implementer|spec-reviewer|code-quality-reviewer|security-reviewer|standards-reviewer|design-reviewer|resolution-verifier|merge-panel-findings|resolve-review-tier|capture-views|build-dispatch-prompt|validate-dispatch-prompt' -- plugins ':!**/tests/**'`
    Remaining hits may only be in the KEEP/HOLD files listed in §3a.
 5. **Inline smoke (C2, C6b, C8):** one `xs guarded-inline` run (the v9-smoke precedent), n=1. Report it as a smoke run, never as a benchmark.
+   **Recorded (C2 + C6b):** the C2 smoke was not run at C2; it is combined with the C6b smoke. One run of plugin 561e418d (C6b), fixture-xs @ ff006be, opus (`benchmarks/results/v9-smoke/plan-p3.txt`, `xs/guarded-inline-p3/`): 16.7 min, $7.93, 5 units, 1 subagent (the general-purpose blind review, trace line carried), no `dispatch-prompt.md` written, no hook deny, delivery-check `VERDICT: PASS` (5/5). A smoke run, not a benchmark: no claim.
 
 ### P3b backlog (deferred as units, each needing its own re-audit)
 - **Fan-out:** batch-and-fanout.md selection relocation (with the `exec_units.done` fix for `--module`), squad-subagent.md, hard-rule-scan L166-169, derive-ready-units `dispatch_plan`, test-l1, scenario-5, the fan-out flags, `parallel_max`, test-no-depth2 header, G3.

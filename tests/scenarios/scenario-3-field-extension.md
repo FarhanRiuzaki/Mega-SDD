@@ -257,7 +257,7 @@ The unit is complete and in context. The bolt knows:
 - what to preserve (token generation, response shape);
 - what NOT to do (change the error message, expose which field failed).
 
-The `## Claims` lines are a **contract**, not a verdict. `plan` never writes CONFIRMED or CONFLICT; the verdicts come at dispatch.
+The `## Claims` lines are a **contract**, not a verdict. `plan` never writes CONFIRMED or CONFLICT; the verdicts come from the JIT bind in `execute-bolts`.
 
 ### Step B2 — `execute-bolts`: JIT bind, then the bolt
 
@@ -376,7 +376,7 @@ Adding a new validation field can break tests that expected the old behaviour. T
 
 - A PRD on an existing app routes to assisted by default. Claude reads the code and extends it; the result contract reports every criterion with its test.
 - `--guarded` turns the gap into an explicit contract. `plan` types the unit `extend` from a symbol-index hit, and the Migration notes list ADD / KEEP / REMOVE.
-- `## Claims` are a contract. The JIT bind verdicts them against HEAD at dispatch, and a CONFLICT stops the unit.
+- `## Claims` are a contract. The JIT bind verdicts them against HEAD when `execute-bolts` runs, and a CONFLICT stops the unit (a run-start quarantine).
 - Hard rules preserve untouched logic (token generation, error response format).
 - delivery-check checks Node projects; on a Laravel app, quote the stack's own test run.
 

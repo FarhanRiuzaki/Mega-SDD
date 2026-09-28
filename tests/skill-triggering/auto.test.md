@@ -94,7 +94,7 @@ The one-shot autonomous pipeline entrypoint — since 5.0.0 the front door `/meg
 
 ## Pass criteria
 
-All input detection (A1-A5) correctly identifies the lane and starting phase — `route-lane.sh` runs first for every PRD/brief, and only the guarded lane reaches the pipeline. Halt cases (H1-H3) reject ambiguous inputs without silent guess. Flag behavior (F1-F7) honors each flag's semantics per `commands/mega-sdd.md` (the front door): pipeline-only flags imply `--guarded`, retired switches are named in one line and ignored. Halt-protocol invariants (HP1-HP3) preserved — autonomy does NOT relax any existing halt-condition; the CONFLICT gate now closes per unit at dispatch. Single upfront confirmation required for ALL chains per AUTONOMY-OQ-1.
+All input detection (A1-A5) correctly identifies the lane and starting phase — `route-lane.sh` runs first for every PRD/brief, and only the guarded lane reaches the pipeline. Halt cases (H1-H3) reject ambiguous inputs without silent guess. Flag behavior (F1-F7) honors each flag's semantics per `commands/mega-sdd.md` (the front door): pipeline-only flags imply `--guarded`, retired switches are named in one line and ignored. Halt-protocol invariants (HP1-HP3) preserved — autonomy does NOT relax any existing halt-condition; the CONFLICT gate now closes per unit at execute-bolts run start (the derive-exec-plan.sh quarantine). Single upfront confirmation required for ALL chains per AUTONOMY-OQ-1.
 
 ## Alias back-compat (5.x)
 
