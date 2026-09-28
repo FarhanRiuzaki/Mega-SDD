@@ -550,6 +550,9 @@ for s in 'derive-exec-plan.sh --cwd=<root> --vault=<vault> --pending' 'rebind-un
          '--retire' 'own_wip' 'rebind_skipped' '--rebind-wip' 'Close: reviewed' '--max-retries' 'detect-drift'; do
   grep -qF -- "$s" "$IR" && ok "h5: inline-run.md names: $s" || bad "h5: inline-run.md lacks: $s"
 done
+H5B="$T/h5b"; cp -R "$F" "$H5B"   # a copy: the gate writes state files, F stays as it is
+bash "$VBA" --cwd="$H5B" --orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --panel-scan --conflict-bypass-scan >/dev/null 2>&1; [ $? -ne 2 ] \
+  && ok "h5b: a plan written before --panel-scan left its callers still passes its gate (the no-op arm; drop this with the arm)" || bad "h5b: the legacy gate with --panel-scan exits 2 (unknown arg)"
 ld="$(grep -n 'delivery-check.sh' "$IR" | tail -1 | cut -d: -f1)"; lg="$(grep -n -- '--conflict-bypass-scan' "$IR" | tail -1 | cut -d: -f1)"
 [ -n "$ld" ] && [ -n "$lg" ] && [ "$ld" -lt "$lg" ] && ok "h6: delivery-check runs before the run-boundary gate" || bad "h6: delivery-check $ld, gate $lg"
 grep -q -- '--inline' <(sed -n 's/^argument-hint: //p' "$P/commands/mega-sdd.md") && grep -q 'execute-bolts --all --lite --inline' "$P/commands/mega-sdd.md" \
