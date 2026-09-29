@@ -1,7 +1,7 @@
 # Spec — hardening dari audit lapangan (tiga tranche)
 
 **Tanggal**: 2026-08-30
-**Riset**: `research/2026-08-30-field-audit-triage.md` (triage) atas `HOST-AS400/.mega-sdd/AUDIT-PIPELINE.md` (audit 36 unit / 117 commit).
+**Riset**: commit 9db83686 (triage) atas `HOST-AS400/.mega-sdd/AUDIT-PIPELINE.md` (audit 36 unit / 117 commit).
 **Goal user**: "skills … on point dan objektif, hemat token dan cepat" — akurasi dulu, lalu token, lalu mekanisme yang membuat yang akurat tidak bisa dilewati.
 **Doktrin**: gates > rules > hooks; "prose that says HALT enforces nothing". Setiap perubahan di bawah ini adalah **mekanisme**, bukan kalimat.
 

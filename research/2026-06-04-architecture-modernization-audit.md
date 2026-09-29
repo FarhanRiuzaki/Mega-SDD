@@ -26,7 +26,7 @@ So: **outdated in mechanism, sound in intent.** The rest of this document quanti
 
 ## 1. What I examined
 
-Full plugin tree at `plugins/mega-sdd/`: all 16 `SKILL.md` files + their `references/`, all 25 commands, all 4 hook scripts, all ~40 `scripts/validate-*.sh`, the `references/` pack, `CLAUDE.md`, `plugin.json`, `marketplace.json`, the `_vendored/` superpowers skills, and the prior internal audit (`research/2026-05-27-consistency-and-capability-audit.md`).
+Full plugin tree at `plugins/mega-sdd/`: all 16 `SKILL.md` files + their `references/`, all 25 commands, all 4 hook scripts, all ~40 `scripts/validate-*.sh`, the `references/` pack, `CLAUDE.md`, `plugin.json`, `marketplace.json`, the `_vendored/` superpowers skills, and the prior internal audit (commit 77d41e78).
 
 Primary sources for "current best practice":
 - Anthropic, *Skill authoring best practices* (platform.claude.com) — the canonical guidance.
@@ -209,4 +209,4 @@ The technical path is clear and is mine to drive; these are the judgment calls t
 - Anthropic, *Skill authoring best practices* — https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices ("≤ 500 lines"; "context window is a public good"; "avoid time-sensitive information"; description = what + when, third person, ≤ 1024 chars; references one level deep).
 - Claude Code, *Plugins reference* — https://code.claude.com/docs/en/plugins-reference (components: skills, agents, hooks, MCP, LSP, monitors; skills auto-discovered and Claude-invocable).
 - superpowers v5.1.0 — https://github.com/obra/superpowers ; design essays https://blog.fsck.com/2026/04/07/rules-and-gates/ , https://blog.fsck.com/2026/05/04/superpowers-5.1/ (one bootstrap hook; gates > rules > hooks; commands removed; subagent-driven default; description = when-not-what; TDD-for-skills).
-- Internal: `plugins/mega-sdd/CLAUDE.md` (Fork A/B reset), `references/3-tier-context-model.md` (lazy-load declared-not-enforced), `research/2026-05-27-consistency-and-capability-audit.md` (prior benchmark), line counts from the live tree (2026-06-04).
+- Internal: `plugins/mega-sdd/CLAUDE.md` (Fork A/B reset), `references/3-tier-context-model.md` (lazy-load declared-not-enforced), commit 77d41e78 (prior benchmark), line counts from the live tree (2026-06-04).

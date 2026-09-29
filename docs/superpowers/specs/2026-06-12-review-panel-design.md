@@ -1,6 +1,6 @@
 # Review Panel — parallel blind reviewer lenses for execute-bolts (Phase 1)
 
-**Date:** 2026-06-12 · **Research:** `research/2026-06-12-review-panel-quality-security-standards.md`
+**Date:** 2026-06-12 · **Research:** commit d9c43248
 **Scope:** Phase 1 of 3 — the parallel LLM lens panel. Phase 2 (deterministic toolchain floor: lint/format in-loop, semgrep, gitleaks, dep-audit) and Phase 3 (pack `## Security idioms`) are follow-ups.
 
 ## Problem

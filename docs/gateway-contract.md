@@ -1,6 +1,6 @@
 # Gateway contract — apa yang gateway kantor harapkan dari plugin mega-sdd
 
-**Status: KONTRAK (v7.3.1, keputusan pemilik plugin 2026-08-23 — `research/2026-08-23-v7-gate7b-trace-restore.md`).** Tim AI gateway memfilter sesi mega-sdd pada keluarga tag `mega-sdd-trace:*`. Keluarga tag ini plus **catatan sesi `mega-sdd-note:`** (8.7.0, §Catatan sesi di bawah) adalah **dua-duanya — dan cuma dua — artefak in-band yang plugin hasilkan; semua hitungan token / biaya / sesi ada di gateway.** Tidak ada telemetry.jsonl, marker hook, cost report, advisor, atau deteksi governance di sisi plugin (semuanya dihapus di v7.3.0 dan TIDAK kembali — catatan sesi cuma bawa fakta git, bukan hitungan apa pun).
+**Status: KONTRAK (v7.3.1, keputusan pemilik plugin 2026-08-23 — commit 844253c1).** Tim AI gateway memfilter sesi mega-sdd pada keluarga tag `mega-sdd-trace:*`. Keluarga tag ini plus **catatan sesi `mega-sdd-note:`** (8.7.0, §Catatan sesi di bawah) adalah **dua-duanya — dan cuma dua — artefak in-band yang plugin hasilkan; semua hitungan token / biaya / sesi ada di gateway.** Tidak ada telemetry.jsonl, marker hook, cost report, advisor, atau deteksi governance di sisi plugin (semuanya dihapus di v7.3.0 dan TIDAK kembali — catatan sesi cuma bawa fakta git, bukan hitungan apa pun).
 
 ## Daftar tag
 

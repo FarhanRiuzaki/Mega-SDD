@@ -176,7 +176,7 @@ def arm_report(name, d, classic):
     if q and classic:
         # (ii) "acceptance pass rate + P1 findings ≤ arm classic" — two readings reported side by
         # side, never collapsed: STRICT = the P2 precedent (Critical AND Important each ≤ classic,
-        # research/2026-09-11-v8-p2-report.md §5 verdict 1); CRITICAL = Critical only (the owner's
+        # v8 P2 report §5 verdict 1, commit 11973ee4); CRITICAL = Critical only (the owner's
         # (b) quality bar names "Critical 0"). The verdict line prints both; the report says which.
         r["ii"] = {"acceptance_ok": frac_ok(q["acceptance_units"]),
                    "critical_ok": q["critical"] <= classic["critical"],

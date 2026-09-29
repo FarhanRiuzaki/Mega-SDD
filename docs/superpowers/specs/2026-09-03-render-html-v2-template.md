@@ -1,6 +1,6 @@
 # Spec — render-html template v2 "developer platform" (7.23.0)
 
-**Riset:** `research/2026-09-03-render-html-v2-design.md` (4 ronde owner review + mockup
+**Riset:** commit 3d1e92b8 (4 ronde owner review + mockup
 fungsional `v3-mockup.html`, screenshot light+dark diverifikasi). Owner gas 2026-09-03:
 "gas spec + implement render-html v2" — termasuk rekomendasi font vendored + tokenizer mini.
 

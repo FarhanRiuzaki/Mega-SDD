@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # test-binding-recertify.sh — P0 v4.92.0: binding freshness RECERTIFY at the moat gate.
 #
-# The live hole (research/2026-07-19-v5-architecture-research.md §1): the moat
+# The live hole (v5 research §1, commit 7724ec12): the moat
 # validator read binding.md STRUCTURE only — a hand-authored/stale binding.md
 # with no active CONFLICT heading yielded PASS and opened execute-bolts. The
 # fix recertifies binding_metadata.head against git ground truth: commits in

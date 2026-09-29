@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # certify-artifact.sh — the adoption certifier (P2, spec
-# 2026-07-19-v5-execution-spec.md P2 row + decision 7; research
-# 2026-07-19-v5-architecture-research.md §3 entry matrix).
+# 2026-07-19-v5-execution-spec.md P2 row + decision 7; v5 research
+# §3 entry matrix, commit 7724ec12).
 #
 # Externally-authored artifacts get a first-class adoption story at every rung:
 # ONE deterministic verdict from the closed vocabulary

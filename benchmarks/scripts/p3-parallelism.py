@@ -12,7 +12,7 @@ p0-extract-arm.sh) and the vault `units/_index.md` (depends_on DAG), and prints:
   3. the wave clusters the controller actually used (dispatch bursts).
 
 Deterministic; same inputs → same output. Owner amendment P3 #1
-(research/2026-09-10-v8-autonomous-runbook.md §Amendemen P3).
+(autonomous runbook §Amendemen P3, commit 5d483c59).
 
 usage: p3-parallelism.py <results-dir> <units-index.md> [--outage START END] [--json OUT]
 """

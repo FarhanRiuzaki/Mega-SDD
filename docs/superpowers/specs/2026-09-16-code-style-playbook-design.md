@@ -1,7 +1,7 @@
 # Code style playbook per tech stack — design spec
 
 **Status:** APPROVED by owner 2026-09-16 ("gas spec + R1, OPEN-1 ya, OPEN-2 ikuti kode sekitar"). R1 ships as 8.1.0; R2 (24 packs + lint wajib) is a separate release.
-**Research:** `research/2026-09-16-code-style-playbook-research.md` (klausul→permukaan, sensus kanal, tabel toolchain). Team input verbatim: `research/2026-09-16-team-feedback-java-code-style.md`.
+**Research:** commit 2eb97630 (klausul→permukaan, sensus kanal, tabel toolchain). Team input verbatim: commit cb2afd4b.
 **Doctrine:** gates > rules > hooks — this whole spec is a **style rule, never a gate** (F.5: no comment-counting validator, no `HARD_RULE` on comments). Evidence-first: the generic rule already measured −54 % ex-provenance comment lines (8.0.1); the per-stack delta earns its bytes by preventing L0 lint-gate collisions, not by restating the rule.
 
 ## 1. Owner decisions (closed)

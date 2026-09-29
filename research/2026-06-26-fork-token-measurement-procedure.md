@@ -4,7 +4,7 @@
 **Gates:** `plugins/mega-sdd/CLAUDE.md` (Capability-adoption: *"Re-evaluate fork for scan-codebase / bind-codebase only after the live token before/after on detect-drift confirms the win"*) and the `moat-token-tradeoff` memory.
 **Guarded driver (recommended):** `plugins/mega-sdd/scripts/measure-fork-ab.sh` · contract test `tests/fork-measurement/test-measure-fork-ab.sh`
 **Raw comparator (underlying / escape hatch):** `plugins/mega-sdd/scripts/measure-fork-tokens.sh` · contract test `tests/fork-measurement/test-measure-fork-tokens.sh`
-**Design context:** `research/2026-06-26-context-reset-fork-feasibility.md`
+**Design context:** commit f2fdbd53
 
 ## Why this exists
 
@@ -141,7 +141,7 @@ A faithful A/B was attempted in-session on 2026-06-27 and was blocked by two rea
 2. ~~**SubagentStop did not fire.**~~ **RESOLVED 2026-06-29** (matcher fix `52c7fb4`, confirmed live — see the ✅ note in the Precondition section). The fork-cost-capture machinery is now proven end-to-end (`subagent_turns: 1`, marker emitted, comparator contract test green). The fork arm is capturable.
 
 What is settled without the number:
-- **Correctness gate: satisfied** — detect-drift is non-interactive, gates fire on the Skill call before the body forks, no `memory_context` dependence (`moat-token-tradeoff` memory; `research/2026-06-26-context-reset-fork-feasibility.md`).
+- **Correctness gate: satisfied** — detect-drift is non-interactive, gates fire on the Skill call before the body forks, no `memory_context` dependence (`moat-token-tradeoff` memory; commit f2fdbd53).
 - **Token sign: structurally ≥ 0** — saving = the inherited main-session context the inline run re-processes and the fork skips. Non-negative by construction for any non-trivial phase in a non-fresh session.
 - **Token magnitude: OPEN and session-dependent** — saving ≈ inherited-context size × fork-turn-count × cache-read weight (0.1×). A large mid-pipeline context over ~45 fork turns can clear 50%+; a light session is marginal. It is **not** a fixed percentage and is unknowable from here — which is exactly why the gate requires a representative-session run. Do not pin a number, and do not pre-decide the gate either way.
 

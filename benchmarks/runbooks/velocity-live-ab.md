@@ -6,7 +6,7 @@ velocity from data; the static context trace is a PROXY for part of it only.
 
 ## Why it was not run in-session
 
-Recorded evidence (`research/2026-07-20-fork-ab-headless-attempt.md` + memory):
+Recorded evidence (commit 19f9ea88 + memory):
 under headless `claude -p`, `context: fork` silently NO-OPs, Stop hooks do not
 fire (telemetry dark), and a prose-halt was bulldozed in 1 of 4 runs — headless
 arms are NOT representative of interactive behavior, and interactive arms need a

@@ -8,7 +8,7 @@ Channels (deterministic, never self-reported): transcript record timestamps,
 transcript `usage` fields (main lane), git commit timestamps passed in by the
 operator from `git log --format="%h %cI %s"`.
 
-Conventions (pinned in research/2026-08-04-p5-measurement-runbook.md):
+Conventions (pinned in the P5 measurement runbook, commit bd00b141):
 - clock start = first record timestamp of the session
 - human-wait  = AskUserQuestion open->result gap, plus any >30s gap preceding
   a human text input; reported separately, subtracted for the net number

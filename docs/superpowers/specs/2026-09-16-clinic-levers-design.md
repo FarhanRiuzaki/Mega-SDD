@@ -1,6 +1,6 @@
 # Clinic levers after 8.0.0 — design spec (PROPOSAL, needs paid measurement runs)
 
-**Status:** SPEC ONLY — nothing built. Source: `research/2026-09-15-v8-p3-report.md §2f` (rule-D dissection of the clean clinic lite 7.38.0 run) + `§5` (criterion (b) FAIL thin: mean implementer in-flight 2.38 of cap 4, idle-without-implementer 25 %, Critical 1 open). Owner rule (runbook §3-lanjutan D): *"kalau klinik masih <2,5 → bedah ulang dengan metode yang sama, TANPA lever baru di sesi itu"* → the dissection is done (§2f); the levers below are the next session's work and **every one is measured on xs (n ≥ 2) before the clinic is touched once**. No lever ships on prose alone (evidence-first rule).
+**Status:** SPEC ONLY — nothing built. Source: v8 P3 report §2f (commit 53926a8d) (rule-D dissection of the clean clinic lite 7.38.0 run) + `§5` (criterion (b) FAIL thin: mean implementer in-flight 2.38 of cap 4, idle-without-implementer 25 %, Critical 1 open). Owner rule (runbook §3-lanjutan D): *"kalau klinik masih <2,5 → bedah ulang dengan metode yang sama, TANPA lever baru di sesi itu"* → the dissection is done (§2f); the levers below are the next session's work and **every one is measured on xs (n ≥ 2) before the clinic is touched once**. No lever ships on prose alone (evidence-first rule).
 
 ## 1. What still serializes (MEASURED, §2f)
 

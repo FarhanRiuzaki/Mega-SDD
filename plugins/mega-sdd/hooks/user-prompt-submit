@@ -2,7 +2,7 @@
 # UserPromptSubmit hook for mega-sdd — GATEWAY CONTRACT ONLY (v7.3.1).
 #
 # Restored after the v7.3.0 observability removal by owner decision 2026-08-23
-# (research/2026-08-23-v7-gate7b-trace-restore.md): the office AI gateway filters
+# (gate 7b record, commit 844253c1): the office AI gateway filters
 # mega-sdd sessions on the `mega-sdd-trace:*` tag family. Line 1 of this hook's
 # output is the gateway tag `mega-sdd-trace:turn` (byte-verbatim, unconditional in
 # an adopted SDD project); the OPTIONAL line 2 is the v7.5.0 №G completion-census

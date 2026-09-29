@@ -483,7 +483,7 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 │   └── CLAUDE.md                           # AI-agent contributor guidelines
 ├── plugins/mega-sdd-extras/                # optional companion plugin (/mega-sdd-extras:slice)
 ├── benchmarks/                             # vanilla-vs-mega-sdd harness, runbooks, results, complexity budget
-├── research/                               # measured reports + decision records
+├── research/                               # the xs benchmark PRD + records a kept doc still links
 ├── docs/superpowers/specs/                 # design specs of live mechanisms
 ├── tests/
 │   ├── scenarios/                          # USER-FACING walkthroughs (scenario-0 … scenario-12, no 9 + sample PRDs)

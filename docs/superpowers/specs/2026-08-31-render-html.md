@@ -1,6 +1,6 @@
 # 7.16.0 — render-html: md → satu file HTML shareable, diagram-first
 
-**Tanggal:** 2026-08-31 · **Riset dasar:** `research/2026-08-31-render-html-standard.md` (Diátaxis lensa per jenis dokumen, arc42 kompartemen, C4 via flowchart, budget mermaid berangka, bahasa natural mix §6). **Mandat user:** team dev paham lewat artefak HTML yang standar-rapi-konsisten-sesuai-domain, share-able ke orang tanpa Claude, diagram-first narasi minimal. Mockup desain di-review + di-approve user (artifact 4dc9dffb).
+**Tanggal:** 2026-08-31 · **Riset dasar:** commit e12363d7 (Diátaxis lensa per jenis dokumen, arc42 kompartemen, C4 via flowchart, budget mermaid berangka, bahasa natural mix §6). **Mandat user:** team dev paham lewat artefak HTML yang standar-rapi-konsisten-sesuai-domain, share-able ke orang tanpa Claude, diagram-first narasi minimal. Mockup desain di-review + di-approve user (artifact 4dc9dffb).
 
 ## Prinsip yang tidak bisa ditawar
 

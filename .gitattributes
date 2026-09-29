@@ -22,7 +22,7 @@
 # Independently, `plugins/mega-sdd/scripts/_lib/resolve-project-root.sh` takes a
 # hard syntax error under CRLF, leaving `resolve_project_root` undefined for
 # every script that sources it.
-# Source: research/2026-07-29-windows-portability-audit.md, finding
+# Source: the Windows portability audit (commit 2bcec39d), finding
 # `crlf-no-gitattributes` (severity: hang, skills: ALL).
 #
 # WHY THE CATCH-ALL MUST STAY `*`

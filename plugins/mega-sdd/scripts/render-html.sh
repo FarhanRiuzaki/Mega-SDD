@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # render-html.sh — deterministic md → self-contained HTML renderer (template v2
 # 7.23.0, spec 2026-09-03-render-html-v2-template.md; lahir 7.16.0, research
-# 2026-08-31 + spec of the same date).
+# commit e12363d7 + spec 2026-08-31).
 #
 # The md stays the ONLY ground truth: this script wraps the RAW markdown into
 # assets/render-html/template.html (vendored marked.js + mermaid.js render it

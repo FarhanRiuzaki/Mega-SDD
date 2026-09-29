@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # test-sync-lane-vault-signal.sh — the Mode-D no-baseline fallback re-bind must carry <vault>.
 #
-# WHY (fork-safety audit 2026-07-30, research/2026-07-30-fork-safety-audit-scan-bind.md):
+# WHY (fork-safety audit 2026-07-30, commit 2b3f6574):
 # on the Mode-D sync lane, the changed-set fallback writes NO .sync-changed-paths.txt
 # and goes straight to a FULL re-bind. On that branch the vault path is the ONLY signal
 # the downstream re-bind receives — the chain is non-interactive there, so it cannot

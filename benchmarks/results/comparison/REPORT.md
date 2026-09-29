@@ -83,7 +83,7 @@ single-owner relocations were pointer-swaps, not duplicate-line deletions.
 
 No live A/B was run (headless arms are non-representative — `context: fork`
 NO-OPs and prose-halts were bulldozed 1/4 headless runs per
-`research/2026-07-20-fork-ab-headless-attempt.md`). The full interactive
+commit 19f9ea88). The full interactive
 protocol is ready in `benchmarks/runbooks/velocity-live-ab.md` (P5/A7-proven
 method; expect a multi-day human effort). The context trace above is a PROXY
 for the instruction-reading share of velocity only. The one adjacent MEASURED

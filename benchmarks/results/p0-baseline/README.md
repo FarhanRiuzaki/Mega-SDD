@@ -1,7 +1,7 @@
 # benchmarks/results/p0-baseline — v8 P0 per-phase baseline (MEASURED only)
 
 Home for the two P0 baseline arms mandated by the owner gate 2026-09-10
-(runbook: `research/2026-09-10-p0-baseline/README.md`; decision rule locked
+(runbook: commit b662e68b; decision rule locked
 there BEFORE any number exists — kill-criterion: pre-code share < 25 % of
 time-to-first-code ⇒ v8 stops at P1).
 

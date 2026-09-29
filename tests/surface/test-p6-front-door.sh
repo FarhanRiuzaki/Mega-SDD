@@ -73,7 +73,7 @@ else
   ok "zero DEPRECATED (5.x alias) files remain"
 fi
 # C2: the kept-6 enumerate exactly (slice.md removed v7.4.0 — the recorded
-# owner decision at the Fase 5 gate, research/2026-08-23-v7-gate7-accept-730.md;
+# owner decision at the Fase 5 gate, commit 844253c1;
 # memory removed v7.3.0; never change this count without a recorded decision)
 n_cmd=$(ls "$C"/*.md | wc -l | tr -d ' ')
 [ "$n_cmd" -eq 6 ] && ok "exactly 6 command files (3 verbs + 3 one-timers)" || fail "command count wrong: $n_cmd (expected 6)"

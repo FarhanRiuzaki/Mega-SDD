@@ -1,6 +1,6 @@
 # Spec — unit granularity coarsening + cohesion advisory (7.20.0)
 
-**Research:** `research/2026-09-01-sprint-subagent-granularity.md` (masukan tim 2026-09-01:
+**Research:** commit 22164c4b (masukan tim 2026-09-01:
 "1 subagent per sprint isi 5 unit yang relate"). Verdict riset: sprint-SUBAGENT = REJECT on
 the record (depth-1 runtime limit, preseden `squad-subagent.md`; context decay ~80 turn/unit;
 saving ≈ 0 karena dispatch sudah pointer-based) — lever yang benar ada di HULU: ukuran unit.

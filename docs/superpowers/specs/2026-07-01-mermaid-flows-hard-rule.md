@@ -3,7 +3,7 @@
 **Status:** accepted
 **Date:** 2026-07-01
 **Driver:** user hard rule — *"setiap proses flow apapun itu dari hasil generate harus berbentuk/format Mermaid"* (every process/flow mega-sdd generates, whatever it is, must be emitted as a Mermaid diagram — no raw ASCII arrows, no prose-only flow).
-**Supersedes / subsumes:** god-review finding **L7** (`research/2026-07-01-god-review-extract-intelligence.md` §L7 — `validate-kb-flows.sh` §8 State Machine accepts raw ASCII transitions).
+**Supersedes / subsumes:** god-review finding **L7** (god-review of extract-intelligence §L7, commit 360e40d1 — `validate-kb-flows.sh` §8 State Machine accepts raw ASCII transitions).
 
 ---
 
