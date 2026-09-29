@@ -9,6 +9,8 @@
 #   C  missing / unreadable / garbage files, or CLAUDE_PLUGIN_ROOT unset -> silent, exit 0
 #   D  no output line starts with mega-sdd-trace (gateway tag namespace, docs/gateway-contract.md)
 #   E  commands/update-plugin.md: both CLI commands, no auto-accept, the deterministic verify
+#   F  the Step 5 VERIFY command, run for real: clone == installed == 8.7.2 but its remote at 9.0.0
+#      (the observed case: the session-start notice is silent there) -> FAIL, never PASS
 # Hermetic: every run uses a scratch HOME and a scratch CLAUDE_PLUGIN_ROOT.
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -44,7 +46,7 @@ echo "── A: the three drift outcomes ──"
 drift 9.0.0 "9.1.0" 9.1.0; run
 [ "$(line)" = "$(RELOAD 9.0.0 9.1.0)" ] && [ "$RC" -eq 0 ] && ok "A1 installed > running -> reload line" || bad "A1 got [$(line)] rc=$RC"
 drift 8.7.2 "8.7.2" 9.0.0; run
-[ "$(line)" = "$(UPDATE 9.0.0 8.7.2)" ] && ok "A2 available > installed (the observed 8.7.2 vs 9.0.0) -> update line" || bad "A2 got [$(line)]"
+[ "$(line)" = "$(UPDATE 9.0.0 8.7.2)" ] && ok "A2 clone ahead of installed (after a marketplace refresh) -> update line" || bad "A2 got [$(line)]"
 drift 9.0.0 "9.0.0" 9.0.0; run
 [ -z "$(line)" ] && printf '%s' "$OUT" | grep -q EXTREMELY_IMPORTANT && ok "A3 all equal -> no drift line, anchor intact" || bad "A3 got [$(line)]"
 drift 9.0.0 "9.1.0" 9.2.0; run
@@ -81,5 +83,24 @@ grep -qE 'plugin update [^`]*(-y|--yes|--accept-command)' "$CMD" && bad "E3 an u
 grep -qF 'installed == available' "$CMD" && grep -qF 'installPath' "$CMD" && grep -qF 'VERIFY: FAIL' "$CMD" \
   && ok "E4 deterministic verify: installed == available + installPath exists, FAIL reported" || bad "E4 verify step missing"
 grep -qF '/reload-plugins' "$CMD" && ok "E5 closes with /reload-plugins" || bad "E5 reload instruction missing"
+grep -qF 'If it exits non-zero, do NOT continue' "$CMD" && ok "E6 a failed marketplace update stops with VERIFY: FAIL" || bad "E6 non-zero-exit stop rule missing"
+
+echo "── F: VERIFY checks the clone against its remote ──"
+V="$(grep -m1 '^C=~/.claude/plugins/marketplaces/mega-sdd; ' "$CMD")"
+G() { git -c user.name=t -c user.email=t@t -c init.defaultBranch=main "$@" >/dev/null 2>&1; }
+H="$T/hv"; PJ=plugins/mega-sdd/.claude-plugin/plugin.json; M="$H/.claude/plugins/marketplaces/mega-sdd"
+mkdir -p "$T/up/plugins/mega-sdd/.claude-plugin" "$H/.claude/plugins/cache/mega-sdd/mega-sdd/8.7.2" "$H/.claude/plugins/cache/mega-sdd/mega-sdd/9.0.0"
+printf '{"version":"8.7.2"}\n' > "$T/up/$PJ"; G -C "$T/up" init; G -C "$T/up" add -A; G -C "$T/up" commit -m 8.7.2
+G clone "$T/up" "$M"
+printf '{"version":"9.0.0"}\n' > "$T/up/$PJ"; G -C "$T/up" commit -am 9.0.0   # GitHub main moves on; the clone is never refreshed
+inst() { printf '{"plugins":{"mega-sdd@mega-sdd":[{"scope":"user","version":"%s","installPath":"%s"}]}}\n' "$1" "$H/.claude/plugins/cache/mega-sdd/mega-sdd/$1" > "$H/.claude/plugins/installed_plugins.json"; }
+verify() { (cd "$T" && HOME="$H" bash -c "$V" 2>&1); }
+inst 8.7.2
+[ -n "$V" ] && verify | grep -q '^VERIFY: FAIL remote=NOT-CURRENT installed=8.7.2 available=8.7.2' \
+  && ok "F1 stale clone (8.7.2, remote 9.0.0) -> VERIFY: FAIL remote=NOT-CURRENT" || bad "F1 got [$(verify)]"
+G -C "$M" pull --ff-only; inst 9.0.0
+verify | grep -q '^VERIFY: PASS remote=current installed=9.0.0 available=9.0.0' && ok "F2 refreshed clone + installed 9.0.0 -> VERIFY: PASS" || bad "F2 got [$(verify)]"
+inst 8.7.2
+verify | grep -q '^VERIFY: FAIL remote=current installed=8.7.2 available=9.0.0' && ok "F3 clone refreshed, plugin not updated -> FAIL" || bad "F3 got [$(verify)]"
 
 echo; [ $err -eq 0 ] && { echo "test-version-drift: ALL PASS"; exit 0; } || { echo "test-version-drift: FAILED"; exit 1; }

@@ -23,7 +23,7 @@ If the directory does not exist, tell the user the plugin isn't installed via ma
 claude plugin marketplace update mega-sdd
 ```
 
-If the `claude` CLI is not on PATH, fall back to the clone: `cd ~/.claude/plugins/marketplaces/mega-sdd && git fetch --all --prune && git pull --ff-only origin main`. If that fails (non-fast-forward, conflict, detached HEAD, dirty tree), do NOT force anything: show the error, give a short diagnosis, and stop.
+If it exits non-zero, do NOT continue: show its error, report `VERIFY: FAIL` with the manual command from Step 5, and stop. If the `claude` CLI is not on PATH, fall back to the clone: `cd ~/.claude/plugins/marketplaces/mega-sdd && git fetch --all --prune && git pull --ff-only origin main`. If that fails (non-fast-forward, conflict, detached HEAD, dirty tree), do NOT force anything: show the error, give a short diagnosis, and stop.
 
 **Step 4 — Update the installed plugin(s)** (non-interactive):
 
@@ -33,10 +33,10 @@ claude plugin update mega-sdd@mega-sdd -s user
 
 When `installed_plugins.json` also lists `mega-sdd-extras@mega-sdd`, run `claude plugin update mega-sdd-extras@mega-sdd -s user` too. If the CLI stops to confirm a marketplace-declared command (it shows the command and its sha256), show that command to the user verbatim and stop; never pass `-y` or `--accept-command` yourself. Without the CLI this step cannot run, and Step 5 reports FAIL.
 
-**Step 5 — VERIFY (deterministic; never claim success on a mismatch).** The rule: the user-scope `mega-sdd@mega-sdd` entry has installed == available (the clone's `plugin.json` version) AND its `installPath` exists.
+**Step 5 — VERIFY (deterministic; never claim success on a mismatch).** The rule: the clone equals its remote (after `git fetch`, `HEAD` == `@{u}`), the user-scope `mega-sdd@mega-sdd` entry has installed == available (the clone's `plugin.json` version), AND its `installPath` exists. `remote=NOT-CURRENT` (clone behind its remote, or the remote unreachable) is a FAIL, so a clone that was never refreshed cannot pass.
 
 ```
-python3 -c "import json,os; P=os.path.expanduser('~/.claude/plugins'); a=json.load(open(P+'/marketplaces/mega-sdd/plugins/mega-sdd/.claude-plugin/plugin.json'))['version']; e=[x for x in json.load(open(P+'/installed_plugins.json'))['plugins'].get('mega-sdd@mega-sdd',[]) if x.get('scope')=='user'][:1] or [{}]; i=e[0].get('version'); p=e[0].get('installPath',''); print('VERIFY:', 'PASS' if i==a and os.path.isdir(p) else 'FAIL', 'installed=%s available=%s installPath=%s exists=%s' % (i,a,p or '-',os.path.isdir(p)))"
+C=~/.claude/plugins/marketplaces/mega-sdd; git -C "$C" fetch -q 2>/dev/null && [ "$(git -C "$C" rev-parse HEAD)" = "$(git -C "$C" rev-parse '@{u}' 2>/dev/null)" ] && R=current || R=NOT-CURRENT; python3 -c "import json,os,sys; P=os.path.expanduser('~/.claude/plugins'); r=sys.argv[1]; a=json.load(open(P+'/marketplaces/mega-sdd/plugins/mega-sdd/.claude-plugin/plugin.json'))['version']; e=[x for x in json.load(open(P+'/installed_plugins.json'))['plugins'].get('mega-sdd@mega-sdd',[]) if x.get('scope')=='user'][:1] or [{}]; i=e[0].get('version'); p=e[0].get('installPath',''); print('VERIFY:', 'PASS' if r=='current' and i==a and os.path.isdir(p) else 'FAIL', 'remote=%s installed=%s available=%s installPath=%s exists=%s' % (r,i,a,p or '-',os.path.isdir(p)))" "$R"
 ```
 
 Report:
@@ -46,6 +46,7 @@ mega-sdd update (via mega-sdd marketplace)
 - before:    <BEFORE_INSTALLED> (clone <BEFORE_VERSION>)
 - available: <available>
 - installed: <installed>  (<installPath>)
+- remote:    current | NOT-CURRENT
 - VERIFY:    PASS | FAIL
 ```
 

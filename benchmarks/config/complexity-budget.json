@@ -159,7 +159,7 @@
      2822
     ]
    },
-   "measured_benefit": "Defect fix. Observed 2026-09-29 on the owner's machine: installed_plugins.json pointed at cache/mega-sdd/mega-sdd/8.7.2 and the marketplace clone sat at 8.7.2 while GitHub main was 9.0.0 - the manual `/plugin marketplace update` step was skipped and no session noticed the drift. Regression test: tests/update/test-version-drift.sh fails without it (8 FAIL: A1 A2 A4 B1 B3 on the hook, E1 E2 E4 on update-plugin.md); after it 18/18 PASS. No new spawn: session-start in an SDD cwd with a shimmed PATH runs 0 execs before and after; the S17/S18 fork ceilings in tests/weighted-routing/test-tier-s-hooks.sh stay green."
+   "measured_benefit": "Defect fix. Observed 2026-09-29 on the owner's machine: installed_plugins.json pointed at cache/mega-sdd/mega-sdd/8.7.2 and the marketplace clone sat at 8.7.2 while GitHub main was 9.0.0 - the manual `/plugin marketplace update` step was skipped and no session noticed the drift. Regression test: tests/update/test-version-drift.sh fails without it (8 FAIL: A1 A2 A4 B1 B3 on the hook, E1 E2 E4 on update-plugin.md); after it 18/18 PASS. No new spawn: session-start in an SDD cwd with a shimmed PATH runs 0 execs before and after; the S17/S18 fork ceilings in tests/weighted-routing/test-tier-s-hooks.sh stay green. Limit: the notice does not detect a clone never refreshed (no network; clone == installed == 8.7.2 is silent); that case is caught by update-plugin VERIFY, which checks the clone against its remote (tests/update/test-version-drift.sh F1: FAIL remote=NOT-CURRENT)."
   }
  ]
 }

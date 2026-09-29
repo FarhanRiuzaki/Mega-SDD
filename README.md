@@ -119,7 +119,7 @@ It detects your OS + package manager and installs `ast-grep` (the symbol index b
 /reload-plugins                                  # load the new version into this session (or restart Claude Code)
 ```
 
-`/mega-sdd:update-plugin` reports before→after and verifies that the installed version equals the marketplace version (`VERIFY: PASS`, else `FAIL` with the manual command); it never touches your project. Each session start also says when this session runs an older version than the one installed, or a newer one is available. Your installed version shows in the header above and in `/plugin`.
+`/mega-sdd:update-plugin` reports before→after and verifies that the marketplace copy matches GitHub and the installed version equals it (`VERIFY: PASS`, else `FAIL` with the manual command); it never touches your project. In SDD projects, each session start also says when this session runs an older version than the one installed, or when the marketplace copy on disk is newer than the installed one (a local check, no network). Your installed version shows in the header above and in `/plugin`.
 
 **CLI alternative (a terminal, a wrapper script or CI; the NEXT session loads the latest):**
 
