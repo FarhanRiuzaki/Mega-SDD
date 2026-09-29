@@ -94,7 +94,8 @@ n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
 # 9.0 §8.5 re-baseline (research/2026-09-28-p2-inline-results.md): execute-bolts runs inline by default, so the Hard-gate
 # line states the run-start quarantine (JIT bind up front + per task) and scopes the dispatch gate to `--agents` —
 # +36 B (3952 → 3988), under the 4000 cap of test-b3-anchor-and-panel.sh M-13a; extras still adds nothing.
-[ "$n" -eq 3988 ] && ok "core anchor unchanged ($n B — extras adds nothing to it)" || fail "core anchor changed: $n B (baseline 3988)"
+# P3 C6b re-baseline (RECORDED, spec v9 §8.6): the Hard-gate line drops its `--agents` aside, 3988 → 3963 (−25 B).
+[ "$n" -eq 3963 ] && ok "core anchor unchanged ($n B — extras adds nothing to it)" || fail "core anchor changed: $n B (baseline 3963)"
 printf '%s' "$CORE" | grep -qi "extras\|slice" && fail "extras/slice leaked into the core anchor" || ok "no extras/slice mention in the core anchor"
 has "$P/references/paths.md" ".mega-sdd/slices/" && ok "core paths.md lists the slices/ artifact home" || fail "paths.md lacks the slices/ row"
 grep -q 'mega-sdd-extras.*built' "$P/CLAUDE.md" && ok "core CLAUDE.md clause records extras as built" || fail "CLAUDE.md clause still says demand-only"

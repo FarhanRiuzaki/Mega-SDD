@@ -194,9 +194,10 @@ echo
 # convention as above; each script is exec'd the way execute-bolts pre-flight
 # 3.9 / 3.10 and generate-units 12.8 run it (bash <script> …). MEASURED at
 # ship (macOS, 2026-09-10): derive 4 · writer 4 · validator --units 6 ·
-# quarantine 2 · plan-coverage 2 · in-run Agent gate with a per-unit
-# binding.json 85 (bash 19, dirname 16, git 22, python3 28 — the JIT pass
-# rides the validator's existing python, 0 extra interpreter). Ceilings =
+# quarantine 2 · plan-coverage 2 · the Skill execute-bolts entry with a per-unit
+# binding.json 91 at 4e1cf166, 87 after P3 C6a (owner disclosure O3: the in-run Agent leg
+# that measured 85 was removed, spec v9 §8.6; the JIT pass rides the validator's existing
+# python, 0 extra interpreter). Ceilings =
 # measured + margin; Windows+Falcon projections are lower bounds (README).
 FIXJ="$WORK/jit"; mkfix "$FIXJ"
 JV="$FIXJ/.mega-sdd/vaults/v1"; mkdir -p "$JV/units" "$FIXJ/docs"
@@ -259,23 +260,16 @@ reset_counts; run_script "bash '$SCR'/derive-plan-pins.sh --cwd=$FIXJ --prd=docs
 [ "$(total)" -le 8 ] \
   && ok "C16 derive-plan-pins (plan Step 0 pins; wraps derive-project-scale + git config, sha in python): ≤8 spawns ($(total))" \
   || bad "C16 derive-plan-pins: spawns=$(total)"
-# C8b: the in-run F-09 gate (PreToolUse Agent bolt-implementer → AGENT_UNIT) with a
-# per-unit binding.json present — the JIT pass must add NO interpreter over C8.
-# 8.8.0 state anchor (spec 2026-09-25 §13 "C8b fixture"): the pin must measure the
-# binding-freshness leg's ALLOW path — an absolute pointer to a built prompt carrying the
-# binding's sha256 (what build-dispatch-prompt.sh stamps), a unit-binding/2 binding at HEAD.
-printf 'mega-sdd-trace:execute-bolts:U-001\n  binding_sha256: %s\n' \
-  "$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$JV/bolts/U-001/binding.json")" \
-  > "$JV/bolts/U-001/dispatch-prompt.md"
+# C8b: the execute-bolts Skill entry (P3 C6b: the F-09 Agent leg is gone, spec v9 §8.6) on
+# the JIT fixture with a per-unit binding.json present — the JIT pass must add NO
+# interpreter over C8. Measured 91 spawns at 4e1cf166 (above C8's 90 ceiling; O3), 87 after C6a.
 reset_counts
-C8B_OUT=$(run_ev PreToolUse "{\"session_id\":\"$SID\",\"cwd\":\"$FIXJ\",\"transcript_path\":\"$TRANS\",\"tool_name\":\"Agent\",\"tool_input\":{\"subagent_type\":\"mega-sdd:bolt-implementer\",\"prompt\":\"mega-sdd-trace:execute-bolts:U-001\\nREAD FIRST, IN FULL: $JV/bolts/U-001/dispatch-prompt.md\"}}" "$FIXJ")
+run_ev PreToolUse "{\"session_id\":\"$SID\",\"cwd\":\"$FIXJ\",\"transcript_path\":\"$TRANS\",\"tool_name\":\"Skill\",\"tool_input\":{\"skill\":\"mega-sdd:execute-bolts\",\"args\":\"--all --lite\"}}" "$FIXJ" >/dev/null
 sleep 1
 JITU=$(python3 -c "import json;d=json.load(open('$FIXJ/.mega-sdd/.validation-blockers.json'));print(len(d.get('jit_units') or []))" 2>/dev/null || echo 0)
-case "$C8B_OUT" in *binding-freshness*) bad "C8b: the fixture no longer reaches the leg's ALLOW path: ${C8B_OUT:0:300}" ;; esac
 [ "$(total)" -le 95 ] && [ "$JITU" = "1" ] \
-  && ok "C8b PRE Agent bolt-implementer in-run gate + JIT pass + binding-freshness ALLOW: ≤95 spawns ($(total), python $(count python3), git $(count git)), jit_units re-derived for U-001" \
-  || bad "C8b in-run JIT gate: spawns=$(total) python=$(count python3) git=$(count git) jit_units=$JITU"
-
+  && ok "C8b PRE Skill execute-bolts entry + JIT pass: ≤95 spawns ($(total), python $(count python3), git $(count git)), jit_units re-derived for U-001" \
+  || bad "C8b Skill-entry JIT gate: spawns=$(total) python=$(count python3) git=$(count git) jit_units=$JITU"
 
 # ── C17–C20: the 8.8.0 state anchor (spec 2026-09-25-state-anchor-design.md §10).
 # MEASURED at ship (macOS, vs 8.7.2 on the same fixture): SessionStart HIT 2 → 1,

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-inline-lane.sh — P2 lean inline execution (spec docs/superpowers/specs/2026-09-27-v9-simplification-design.md
-# §8): `execute-bolts` (inline by default since §8.5; `--agents` keeps the per-unit path) runs units in ONE context; the CONFLICT gate runs at run start (derive-exec-plan.sh,
+# §8): `execute-bolts` (inline since §8.5; `--agents` retired, §8.6) runs units in ONE context; the CONFLICT gate runs at run start (derive-exec-plan.sh,
 # which resumes an open run until --retire) plus a re-bind at each task; the run-boundary gate `conflict_bypassed`
 # (validate-bolt-artifacts.sh --conflict-bypass-scan) catches an honest controller's slip — a unit committed past an
 # open CONFLICT, a quarantine (its own or a depends_on ancestor's) or a skipped re-bind, judged by the state it landed
@@ -114,7 +114,7 @@ cp "$T/u4.bak" "$V/units/U-004.md"
 # ── b: no bind ran → the dispatch gate's freshness check quarantines every candidate ──
 OUT="$(dep)"; R=$?
 [ $R -eq 1 ] && [ "$(J "$OUT" 'sorted({(q["reason"], q.get("freshness")) for q in d["quarantined"] if "via" not in q})')" = "[('binding_stale', 'binding_absent')]" ] \
-  && [ "$(J "$OUT" 'd["plan"]')" = "None" ] && [ "$(plans)" = 0 ] && ok "b: no binding.json → binding_stale (binding_absent, the dispatch gate's own check), exit 1, no plan" || bad "b: rc=$R out=$OUT"
+  && [ "$(J "$OUT" 'd["plan"]')" = "None" ] && [ "$(plans)" = 0 ] && ok "b: no binding.json → binding_stale (binding_absent, the run-start freshness check), exit 1, no plan" || bad "b: rc=$R out=$OUT"
 [ "$(scan)" = 0 ] && [ "$(JF "$SST" 'd["status"]')" = "PASS" ] && ok "f0: units but no bolt commit → PASS" || bad "f0: $(head -c 300 "$SST" 2>/dev/null)"
 
 # ── c: the up-front bind, then the plan ──────────────────────────────────────
@@ -156,7 +156,7 @@ if [ -f "$PLAN" ]; then
   printf '%s' "$GC" | grep -F 'Final review and Finishing' | grep -qF '## After the last task' \
     && printf '%s' "$AF" | grep -qE "run-full-suite\.sh.*--base=$SEED.*$SEED\.\.HEAD.*Close: reviewed.*delivery-check\.sh.*run-full-suite\.sh.*--rebind-wip.*evidence run.*conflict-bypass-scan.*--retire" \
     && ok "d6: the close order is inline-run (d): suite, review, fixes, Close: reviewed, delivery-check, suite again, re-bind, evidence, gate, retire" || bad "d6: $AF"
-  ! grep -q 'bolt_introduces_locked_drift' "$PLAN" && ok "d16: the plan names no STOP no step can raise (the per-bolt drift check is --agents only)" || bad "d16: locked-drift STOP in the plan"
+  ! grep -q 'bolt_introduces_locked_drift' "$PLAN" && ok "d16: the plan names no STOP no step can raise (no task runs the per-bolt drift check)" || bad "d16: locked-drift STOP in the plan"
   printf '%s' "$BL" | grep -q '^## After the last task' && printf '%s' "$BL" | grep -qE '^mega-sdd-trace:execute-bolts$' && ! printf '%s' "$B1" | grep -q 'After the last' \
     && ok "d15: the last task's brief carries the close, so a compacted controller keeps the overrides (I4)" || bad "d15: $(printf '%s' "$BL" | tail -3)"
   printf '%s' "$RF" | grep -F 'Out of scope' | grep -q 'U-003' && ok "d7: Review Focus names the quarantined units out of scope" || bad "d7: $RF"
@@ -208,9 +208,6 @@ dep >/dev/null; R=$?; dep --pending >/dev/null; R2=$?
 cp "$T/u1.bak" "$V/units/U-001.md"; bash "$DEP" --cwd="$F" >/dev/null 2>&1; [ $? -eq 2 ] && ok "e6: usage (no --vault) → exit 2" || bad "e6: usage exit"
 clone cs; printf 'beta\n' > "$T/cs/docs/beta.md"; G "$T/cs" add docs/beta.md && G "$T/cs" commit -qm "chore: hand-written beta"
 [ "$(qr "$(depat "$T/cs")" | grep -c "('U-002', 'binding_stale', 'binding_stale')")" = 1 ] && ok "e7: a binding a later non-unit commit made stale → binding_stale (the dispatch gate's function)" || bad "e7: $(depat "$T/cs")"
-clone cr; printf '{"tier": "standard", "retry_budget": 3}\n' > "$T/cr/.mega-sdd/vaults/demo/bolts/U-006/review-tier.json"; depat "$T/cr" >/dev/null
-[ ! -e "$T/cr/.mega-sdd/vaults/demo/bolts/U-006/review-tier.json" ] && [ -e "$T/cr/.mega-sdd/vaults/demo/bolts/U-006/review-tier.retired.json" ] \
-  && ok "e8: a never-committed in-scope unit's review-tier.json (an earlier per-dispatch attempt) is retired" || bad "e8: $(ls "$T/cr/.mega-sdd/vaults/demo/bolts/U-006/")"
 clone cx; printf '{not json' > "$T/cx/.mega-sdd/vaults/demo/bolts/U-006/binding.json"
 [ "$(qr "$(depat "$T/cx")" | grep -c "('U-006', 'binding_conflict'")" = 1 ] && ok "e9: an unparseable binding at run start → binding_conflict (fail closed)" || bad "e9: $(depat "$T/cx")"
 dep >/dev/null
@@ -312,8 +309,6 @@ SKILL_P="$(pj Skill '{"skill":"mega-sdd:execute-bolts","args":"--all --lite --in
 O="$(hook "$SKILL_P")"
 case "$O" in *'"permissionDecision": "deny"'*conflict-bypass*'U-003 open_conflict'*'U-004 depends_on_blocked via U-003'*) ok "g1: Skill execute-bolts DENIED on a FAIL bypass state, naming each unit's reason" ;;
   *) bad "g1: $(printf '%s' "$O" | head -c 600)" ;; esac
-O="$(hook "$(pj Agent "$(python3 -c 'import json,sys; print(json.dumps({"subagent_type":"mega-sdd:bolt-implementer","description":"bolt","prompt":"mega-sdd-trace:execute-bolts:U-006\nUNIT: U-006\nREAD FIRST, IN FULL: "+sys.argv[1]+"/bolts/U-006/dispatch-prompt.md"}))' "$V")")")"
-deny "$O" && case "$O" in *conflict-bypass*) true ;; *) false ;; esac && ok "g2: the in-run bolt-implementer dispatch is denied by the same leg" || bad "g2: $(printf '%s' "$O" | head -c 400)"
 for tool in Write Edit; do
   deny "$(hook "$(pjf $tool "$SST")")" && ok "g3: $tool of the bypass state is denied" || bad "g3: $tool allowed"
 done
@@ -456,15 +451,15 @@ cpx "$M10" "$T/m10c"; sleep 1; bolt "$M10" U-006 docs/zeta.md "Zeta page"; bolt 
 python3 -c 'import json,sys; p=sys.argv[1]; d=json.load(open(p)); d["quarantined_at"]="garbage"; json.dump(d, open(p,"w"))' "$(MV "$T/m10c")/bolts/U-006/quarantine.json"
 sleep 1; bolt "$T/m10c" U-006 docs/zeta.md "Zeta page"
 [ "$(scanat "$T/m10c")" = 1 ] && ok "m7b: a quarantine with an unreadable time counts from forever (fail closed)" || bad "m7b: $(reasons "$T/m10c")"
-# m8: deferral needs an in-scope creator; a bolted unit's panel obligation is never retired
+# m8: deferral needs an in-scope creator
 M12="$T/m12"; MK "$M12"; mkunit "$(MV "$M12")" U-001 "Slug helper" src/x.js "depends_on: []"
 mkunit "$(MV "$M12")" U-002 "Extend slug" src/x.js "depends_on: [U-001]" "" modify modify; mkunit "$(MV "$M12")" U-006 "Zeta page" docs/zeta.md "depends_on: []"
 seed "$M12"; rb "$M12" U-001,U-002,U-006; bash "$S/write-unit-quarantine.sh" --cwd="$M12" --vault="$(MV "$M12")" --unit=U-001 --halt=spec_contradiction --reason="X vs Y" >/dev/null 2>&1
-sleep 1; bolt "$M12" U-006 docs/zeta.md "Zeta page" v5; rb "$M12" U-006; printf '{"tier": "standard", "retry_budget": 3}\n' > "$(MV "$M12")/bolts/U-006/review-tier.json"
+sleep 1; bolt "$M12" U-006 docs/zeta.md "Zeta page" v5; rb "$M12" U-006
 OUT="$(depat "$M12")"
 [ "$(qr "$OUT" | grep -c "('U-002', 'binding_conflict', 'U-001')")" = 1 ] && [ "$(J "$OUT" 'd["deferred"]')" = "{}" ] \
   && ok "m8a: a CONFLICT on a path only a quarantined ancestor would create is not deferred" || bad "m8a: $OUT"
-[ "$(J "$OUT" '"U-006" in d["in_scope"]')" = "True" ] && [ -f "$(MV "$M12")/bolts/U-006/review-tier.json" ] && ok "m8b: an in-scope bolted unit's review-tier.json is never retired" || bad "m8b: $OUT"
+[ "$(J "$OUT" '"U-006" in d["in_scope"]')" = "True" ] && ok "m8b: a bolted, re-bound unit stays in scope" || bad "m8b: $OUT"
 # m10: a skipped task re-bind — the unit landed on a tree where its bound claim no longer held, no bind saw that tree (I3)
 M14="$T/m14"; MK "$M14"; mkunit "$(MV "$M14")" U-006 "Drop config" lib/config.js "depends_on: []" "" create delete
 mkunit "$(MV "$M14")" U-007 "Use config" docs/u7.md "depends_on: []" "$(claim U-007 | sed 's|lib/legacy.js|lib/config.js|')"; seed "$M14"; rb "$M14" U-006,U-007
@@ -512,10 +507,6 @@ hdr() { brief "$1" "$2" | awk '/^```$/ { if (f) exit; f = 1; next } f'; }
 runblk() { ( cd "$1" && GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t bash -c "$2" >/dev/null 2>&1 ); }
 if [ -f "$P13" ]; then
   printf '%s' "$(hdr "$P13" 1)" | grep -qF "provenance: .mega-sdd/vaults/demo/units/U-001.md" && ok "m9a: the provenance header points at the tracked unit file" || bad "m9a: $(hdr "$P13" 1)"
-  mkdir -p "$V13/bolts/U-002"; printf 'UNIT: U-002\n' > "$V13/bolts/U-002/dispatch-prompt.md"   # an earlier per-dispatch attempt
-  deny "$(printf '%s' "$(python3 -c 'import json,sys; print(json.dumps({"session_id":"sess-inline-0001","cwd":sys.argv[1],"tool_name":"Bash","tool_input":{"command":sys.argv[2]}}))' "$M13" "$(blk "$P13" 1 1)")" | ( cd "$M13" && bash "$P/hooks/pre-tool-use" 2>/dev/null ))" \
-    && bad "m9b: the plan's commit block is denied by the wave rail" || ok "m9b: the plan's literal commit block passes the wave rail with a leftover dispatch-prompt.md"
-  rm -f "$V13/bolts/U-002/dispatch-prompt.md"
   for n in 1 2; do
     u="U-00$n"; rb "$M13" "$u"; mkdir -p "$M13/src"
     if [ $n = 1 ]; then { hdr "$P13" 1 | sed 's|^|// |'; printf 'module.exports = function greet(n) { return "hi " + n; };\n'; } > "$M13/src/greet.js"; else printf '// shout option\n' >> "$M13/src/greet.js"; fi
@@ -535,6 +526,7 @@ else
 fi
 
 # ── h: wiring + docs ─────────────────────────────────────────────────────────
+RETIRED='--agents is retired: the per-unit agent path was removed (spec v9 §8.6); running the default inline run.'
 SK="$P/skills/execute-bolts/SKILL.md"; IR="$P/skills/execute-bolts/references/inline-run.md"; SPEC="$ROOT/docs/superpowers/specs/2026-09-27-v9-simplification-design.md"
 grep -E -- '--orphan-scan --batch-suite-gate' "$P/hooks/stop" | grep -q -- '--conflict-bypass-scan' && grep -E 'validate-bolt-artifacts\.sh.*--orphan-scan' "$P/hooks/pre-tool-use" | grep -q -- '--conflict-bypass-scan' \
   && ok "h1: the Stop hook and the execute-bolts gate compose --conflict-bypass-scan" || bad "h1: not wired"
@@ -548,34 +540,38 @@ assert all(r"\.bolt-conflict-bypass-state\.json|" in s for s in lists) and all('
 assert "_run.json" not in t and "PROTECTED_DIR" not in t
 PY
 grep -q -- '--inline' "$SK" && grep -qF 'references/inline-run.md' "$SK" && [ "$(wc -l < "$SK")" -le 500 ] && grep -qE 'Announce at start.*`mega-sdd-trace:execute-bolts`' "$SK" \
-  && grep -E '^3\.9\. ' "$SK" | grep -qF 'this step under `--agents`' && grep -qE '^  - `--agents` — the per-unit path' "$SK" && grep -qE '^  - `--inline` — accepted no-op alias of the default' "$SK" \
-  && ok "h3: SKILL.md: inline by default (pointer), --agents keeps the per-unit path (3.9 is --agents only), --inline a no-op alias, <= 500 lines, the announce tag kept" || bad "h3: SKILL.md wiring"
+  && grep -E '^3\.9\. ' "$SK" | grep -qF 'runs on every run' && ! grep -E '^3\.9\. ' "$SK" | grep -qF -- '--agents' && grep -E '^  - `--agents` — retired' "$SK" | grep -qF -- "$RETIRED" \
+  && grep -qE '^  - `--inline` — accepted no-op alias of the default' "$SK" && ! grep -E '^  - `--inline`' "$SK" | grep -q 'usage error' \
+  && ok "h3: SKILL.md: inline (pointer), --agents retired in one line (3.9 runs on every run), --inline a no-op alias, <= 500 lines, the announce tag kept" || bad "h3: SKILL.md wiring"
 [ -f "$IR" ] && [ "$(wc -l < "$IR")" -le 130 ] && grep -qE '^[[:space:]]*mega-sdd-trace:execute-bolts[[:space:]]*$' "$IR" && ok "h4: inline-run.md <= 130 lines, the review template's trace line on its own line" || bad "h4: inline-run.md $(wc -l < "$IR" 2>/dev/null) lines"
 for s in 'derive-exec-plan.sh --cwd=<root> --vault=<vault> --pending' 'rebind-units.sh' '--conflict-bypass-scan' 'delivery-check.sh' '_inline-ledger' 'superpowers:executing-plans' \
-         'resolve-oq --binding' '--panel-scan' 'run-full-suite.sh --cwd=<root> --base=<run_base>' 'comma-join' 'hard_rule_violated' 'l0-results' 'acceptance_expects_missing' \
+         'resolve-oq --binding' 'run-full-suite.sh --cwd=<root> --base=<run_base>' 'comma-join' 'hard_rule_violated' 'l0-results' 'acceptance_expects_missing' \
          'write-unit-quarantine.sh' '`--dry-run`' '`--force`' '`--no-full-suite`' 'Resume' 'chore(sdd): evidence' 'empty commit range' 'Threat model' 'evasion' \
          '--retire' 'own_wip' 'rebind_skipped' '--rebind-wip' 'Close: reviewed' '--max-retries' 'detect-drift'; do
   grep -qF -- "$s" "$IR" && ok "h5: inline-run.md names: $s" || bad "h5: inline-run.md lacks: $s"
 done
+H5B="$T/h5b"; cp -R "$F" "$H5B"   # a copy: the gate writes state files, F stays as it is
+bash "$VBA" --cwd="$H5B" --orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --panel-scan --conflict-bypass-scan >/dev/null 2>&1; [ $? -ne 2 ] \
+  && ok "h5b: a plan written before --panel-scan left its callers still passes its gate (the no-op arm; drop this with the arm)" || bad "h5b: the legacy gate with --panel-scan exits 2 (unknown arg)"
 ld="$(grep -n 'delivery-check.sh' "$IR" | tail -1 | cut -d: -f1)"; lg="$(grep -n -- '--conflict-bypass-scan' "$IR" | tail -1 | cut -d: -f1)"
 [ -n "$ld" ] && [ -n "$lg" ] && [ "$ld" -lt "$lg" ] && ok "h6: delivery-check runs before the run-boundary gate" || bad "h6: delivery-check $ld, gate $lg"
 grep -q -- '--inline' <(sed -n 's/^argument-hint: //p' "$P/commands/mega-sdd.md") && grep -q 'execute-bolts --all --lite --inline' "$P/commands/mega-sdd.md" \
-  && grep -q -- '--inline' "$P/skills/orchestrate-flow/SKILL.md" && [ "$(sed -n 's/^version: //p' "$P/skills/orchestrate-flow/SKILL.md")" != "3.0.1" ] \
-  && grep -q -- '--agents' <(sed -n 's/^argument-hint: //p' "$P/commands/mega-sdd.md") && grep -q 'execute-bolts --all --lite --agents' "$P/commands/mega-sdd.md" \
-  && grep -q 'execute-bolts --all --lite --agents' "$P/skills/orchestrate-flow/SKILL.md" \
-  && ok "h7: the front door and orchestrate-flow forward --agents and the --inline alias (version bumped)" || bad "h7: --agents / --inline forwarding"
+  && grep -q -- '--inline' "$P/skills/orchestrate-flow/SKILL.md" && [ "$(sed -n 's/^version: //p' "$P/skills/orchestrate-flow/SKILL.md")" != "3.1.0" ] \
+  && ! grep -qE -- '--agents|--no-escalate|<tier>\|' <(sed -n 's/^argument-hint: //p' "$P/commands/mega-sdd.md") && ! grep -q 'execute-bolts --all --lite --agents' "$P/commands/mega-sdd.md" "$P/skills/orchestrate-flow/SKILL.md" \
+  && grep -qF -- "$RETIRED" "$P/commands/mega-sdd.md" && grep -qF -- "$RETIRED" "$P/skills/orchestrate-flow/SKILL.md" \
+  && ok "h7: the front door and orchestrate-flow retire --agents in one line and forward the --inline alias (version bumped)" || bad "h7: --agents retirement / --inline forwarding"
 grep -F '**Step 0 — pick the lane FIRST' "$P/commands/mega-sdd.md" | grep -qF -- '`--inline`, `--agents`) imply `--guarded`' && grep -qF -- '`--agents` imply guarded' "$P/references/direct-lane.md" \
-  && grep -F -- '`--model-tier=' "$P/commands/mega-sdd.md" | grep -qF 'only with `--agents`' \
-  && ok "h7b: Step 0 routes --agents to guarded (front door + direct-lane); --model-tier/--no-escalate are scoped to --agents" || bad "h7b: --agents lane/forwarding scope"
+  && grep -F -- '`--model-tier=<role>:<tier>`' "$P/commands/mega-sdd.md" | grep -qF -- '--model-tier=<tier> and --no-escalate are retired (no implementer is dispatched); --model-tier=<role>:<tier> still sets extract-intelligence tiers.' \
+  && ok "h7b: Step 0 routes --agents to guarded (front door + direct-lane); --model-tier=<role>:<tier> kept, bare <tier>/--no-escalate retired in one line" || bad "h7b: --agents lane / --model-tier scope"
 grep -qE 'guarded-inline\)[[:space:]]*KIND=megasdd; FLAGS="--guarded --inline"' "$ROOT/benchmarks/scripts/vanilla-ab-batch.sh" \
-  && grep -qE 'guarded-agents\)[[:space:]]*KIND=megasdd; FLAGS="--guarded --agents"' "$ROOT/benchmarks/scripts/vanilla-ab-batch.sh" && ok "h8: benchmark arms guarded-agents + the guarded-inline alias" || bad "h8: arms"
+  && ! grep -q 'guarded-agents' "$ROOT/benchmarks/scripts/vanilla-ab-batch.sh" && ok "h8: the guarded-inline alias arm; no guarded-agents arm" || bad "h8: arms"
 python3 - "$P/CLAUDE.md" "$SPEC" "$IR" <<'PYH' && ok "h9: CLAUDE.md (invariant #2 dated exception), spec §8.2 and inline-run (e) state the threat model" || bad "h9: contract/threat-model wording"
 import re, sys
 t, spec, ir = (open(p).read() for p in sys.argv[1:4])
 inv2 = re.search(r"\n2\. \*\*The CONFLICT gate blocks\*\*(.*?)\n3\. ", t, re.S).group(1)
 assert "conflict_bypassed" in inv2 and "--inline" in inv2 and "§8.4" in inv2 and "2026-09-27" in inv2 and "evasion" in inv2, "inv2"
-assert "derive-exec-plan.sh" in inv2 and "By default" in inv2 and "Under `--agents`" in inv2, "inv2 default/--agents"
-assert "--agents" in re.search(r"## What we will not accept(.*?)\n## ", t, re.S).group(1), "wna"
+assert "derive-exec-plan.sh" in inv2 and "By default" in inv2 and "§8.6" in inv2 and "Under `--agents`" not in inv2, "inv2 default, per-dispatch path removed (§8.6)"
+assert "§8.6" in re.search(r"## What we will not accept(.*?)\n## ", t, re.S).group(1), "wna"
 assert "### 8.5 Outcome" in spec and "2026-09-28-p2-inline-results.md" in spec.split("### 8.5 Outcome")[1], "spec 8.5"
 s82 = re.search(r"### 8\.2(.*?)### 8\.3", spec, re.S).group(1)
 assert "Threat model" in s82 and "evasion" in s82 and "out of scope" in s82, "spec"
@@ -588,34 +584,34 @@ grep -qF 'The default path is unchanged by P2' "$ROOT/benchmarks/runbooks/p2-inl
 grep -qF -- '--inline' "$ROOT/tests/skill-triggering/execute-bolts.test.md" && grep -F 'execute-bolts --inline' "$ROOT/docs/gateway-contract.md" | grep -qF 'mega-sdd-trace:execute-bolts' \
   && ok "h13: the trigger fixtures and the gateway contract carry the inline reviewer" || bad "h13: trigger/gateway"
 ! grep -qE '^vault_source:' "$0" && ok "h14: the fixtures use context_source (layout 3)" || bad "h14: vault_source in the fixture"
-python3 - "$ROOT" <<'PYD' && ok "h15: every surface a default run or a new session reads scopes the per-dispatch path to --agents" || bad "h15: a surface still presents the per-dispatch path as the default"
+python3 - "$ROOT" <<'PYD' && ok "h15: no surface a default run or a new session reads presents the per-dispatch path as the default" || bad "h15: a surface still presents the per-dispatch path as the default"
 import re, sys
 R = sys.argv[1]; P = R + "/plugins/mega-sdd"
 rd = lambda f: open(f, encoding="utf-8").read()
 core = rd(P + "/skills/using-mega-sdd/SKILL.md").split("ANCHOR-CORE ends")[0]
 hg = [l for l in core.splitlines() if l.startswith("**Hard gate:**")][0]
-assert "run start" in hg and "`--agents`" in hg and "binding_conflict" in hg and "resolve-oq --binding" in hg, "anchor hard gate"
+assert "run start" in hg and "--agents" not in hg and "binding_conflict" in hg and "resolve-oq --binding" in hg, "anchor hard gate"
 assert "| execute-bolts pre-flight 3.9 (" not in rd(P + "/skills/using-mega-sdd/SKILL.md"), "anchor table row"
 cl = rd(P + "/skills/orchestrate-flow/references/convergence-loops.md")
-assert "`scope: close`" in cl and "Close: reviewed" in cl and "`--agents`" in cl.split("## Cycle-eligible halt types")[1][:2500], "convergence rows"
+assert "`scope: close`" in cl and "Close: reviewed" in cl and "--agents" not in cl, "convergence rows"
 fd = rd(P + "/commands/mega-sdd.md")
 assert "quarantined and reported" in fd, "front door --deep binding_conflict"
 eb = rd(P + "/skills/execute-bolts/SKILL.md")
 mr = [l for l in eb.splitlines() if l.startswith("  - `--max-retries=N`")][0]
-assert "`--agents`" in mr and "prose" in mr, "--max-retries scope"
+assert "prose" in mr and "resolve-review-tier" not in mr, "--max-retries scope"
 for f in ("--parallel", "--per-squad"):
     assert "(`--agents` only)" in [l for l in eb.splitlines() if l.startswith("  - `%s`" % f)][0], f
 assert "(every run)" not in eb and "every run —" not in rd(P + "/skills/execute-bolts/references/jit-bind-and-quarantine.md")[:400], "3.9 every run"
 cond = eb.split("**Only when the condition holds")[1]
-assert "`references/review-panel.md` — `--agents`" in cond, "review-panel conditional"
+assert "review-panel.md" not in eb and cond, "review-panel.md retired (P3 C3)"
 br = rd(P + "/skills/execute-bolts/references/superpowers-bridge.md")
 assert "the ONLY dispatch path" not in br and "(default)" not in br.split("## Dispatch order")[1][:200] and "`--agents`" in br[:600], "bridge scope"
 assert "`--max-retries" in rd(P + "/skills/execute-bolts/references/inline-run.md").split("## (b)")[0], "inline-run flag table"
-assert "(JIT bind per unit, CONFLICT gate at dispatch)" not in rd(R + "/CLAUDE.md") and "`--agents` keeps" in rd(R + "/CLAUDE.md"), "root CLAUDE.md"
+assert "(JIT bind per unit, CONFLICT gate at dispatch)" not in rd(R + "/CLAUDE.md") and "`--agents` keeps" not in rd(R + "/CLAUDE.md"), "root CLAUDE.md"
 rm = rd(R + "/README.md")
-assert "`--agents`" in rm and "Before a unit is dispatched it is bound" not in rm, "root README"
+assert "`--agents`" in [l for l in rm.splitlines() if "Removed in P3" in l][0] and "Before a unit is dispatched it is bound" not in rm, "root README"
 ct = rd(R + "/CONTRIBUTING.md")
-assert "quarantined at run start" in ct and "`--agents`" in ct, "CONTRIBUTING rail 2"
+assert "quarantined at run start" in ct and "--agents" not in ct, "CONTRIBUTING rail 2"
 sp = rd(R + "/docs/superpowers/specs/2026-09-27-v9-simplification-design.md")
 assert "no flag = today's per-unit path" not in sp and re.search(r"A normal `--agents` run never trips\s+it", sp) and re.search(r"### 8\.1 .*\(adopted, §8\.5\)", sp), "spec"
 assert "--rebind-wip" in sp.split("### 8.5 Outcome")[1], "spec 8.5 residual fix"

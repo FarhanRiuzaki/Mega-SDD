@@ -64,8 +64,8 @@ if grep -lE "profile: *lean" "${ROOT}/plugins/mega-sdd/scripts/"validate-*.sh >/
   fail "a validator reads the profile"; else ok "no validator reads the profile"; fi
 grep -q 'Lean NEVER touches' "${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/SKILL.md" \
   && ok "never-touch list stated at the chain loop" || fail "never-touch list missing"
-grep -qF 'review-panel risk tiering' "${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/SKILL.md" \
-  && ok "panel tiering named in the never-touch list" || fail "tiering not named"
+grep -qF 'or the close-of-run blind review' "${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/SKILL.md" \
+  && ok "the close-of-run blind review named in the never-touch list" || fail "blind review not named"
 grep -qF 'hop transform died with the phase-advisor' "${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md" \
   && ok "routing-rules records the transform's death (one contract)" || fail "routing-rules death note missing"
 grep -qF 'ADVISORY rows below' "${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md" \

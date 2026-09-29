@@ -1,7 +1,7 @@
 # Modern UI Baseline — the floor every generated view stands on
 
-The injectable digest for UI-bearing bolts (execute-bolts design slice, per
-`context-enrichment.md §Design slice`). It is the GREENFIELD floor: when a
+The injectable digest for UI-bearing bolts (the execute-bolts design slice that
+carried it was removed in P3; no runtime reader). It is the GREENFIELD floor: when a
 starterkit's scanned template exists, the template is authoritative and this
 file is at most gap-fill. Distilled from `style-principles.md` + `ux-rules.md`
 (ui-ux-pro-max distillation, see ATTRIBUTION.md) and aligned with Anthropic's
@@ -109,4 +109,4 @@ THIS FILE                       → the structural floor when nothing above exis
 ```
 
 A UI bolt prompt missing ALL of the above produced the audited "kuno" output —
-the design slice in `context-enrichment.md` exists so that can no longer happen.
+the reason the (since removed) execute-bolts design slice carried this file.

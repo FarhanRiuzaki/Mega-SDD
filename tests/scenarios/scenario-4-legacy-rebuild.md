@@ -208,7 +208,7 @@ Pick. The answer lands in `context.md ## Open Questions`, and the customer-updat
 
 ## Step 5 — Phase 3: `execute-bolts --all --lite`
 
-For each wave, pre-flight 3.9 binds the units just in time. `derive-unit-claims.sh` collects the claims and `write-unit-binding.sh` writes one `bolts/U-XXX/binding.json` per unit:
+Before any task runs, the up-front bind binds every pending unit just in time (each task re-binds its unit again before it starts). `derive-unit-claims.sh` collects the claims and `write-unit-binding.sh` writes one `bolts/U-XXX/binding.json` per unit:
 
 - on a near-empty scaffold most claims are `create` targets that must not exist yet, checked on disk at zero model tokens;
 - symbol claims (the scaffold's `User` model) are checked against the symbol index;
@@ -218,18 +218,12 @@ A CONFLICT blocks that unit only. Its dependents are skipped with the reason, an
 
 ```
 ▶ Phase 3 of 3: invoking execute-bolts (--all --lite)
-  Wave 1 (7 parallel — `parallel_max: 7` in .mega-sdd/config.yaml; the default cap is 4): U-001 U-008 U-015 U-022 U-030 U-038 U-045
-  ✓ Wave 1 complete in 12 min
-  Wave 2 (7 parallel): U-002 U-009 U-016 U-023 U-031 U-039 U-046
-  ✓ Wave 2 complete in 14 min
   ...
-  Wave 9 (1 final): U-047
-  ✓ Wave 9 complete in 3 min
 
-✓ Phase 3 of 3: execute-bolts → 47/47 complete (3 halts resolved; total ~2 hr)
+✓ Phase 3 of 3: execute-bolts → 47/47 complete (3 halts resolved)
 ```
 
-(Independent units are topped up as soon as their dependencies land, so wave boundaries are approximate.) Each bolt went through the `bolt-implementer` agent, a risk-tiered review panel, the Hard-rule pre/post-flight scans and the whitelist check.
+Each unit ran as one task of the generated plan, in one context: the task's re-bind, test first, the L0 gates and the detect-after scans (Hard-rule post-flight, acceptance, whitelist), then its evidence commit. ONE blind review of the whole run range closed the run.
 
 The chain summary ends with the **result contract**, the same in every lane:
 

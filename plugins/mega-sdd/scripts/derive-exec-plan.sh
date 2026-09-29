@@ -13,21 +13,20 @@
 # open run   a plan whose Run base is HEAD or an ancestor of it: the default mode returns it ("resumed":
 #            true) and never regenerates it — a compaction, a re-run or a new session continues THIS run.
 # default    candidates = pending ∩ --units, topological. A candidate is QUARANTINED by the SAME
-#            predicates the per-dispatch gate applies (`via` = the depends_on unit that carried it):
+#            predicates the retired per-dispatch gate applied (`via` = the depends_on unit that carried it):
 #              binding_conflict     validate-handoff-binding-units.sh --units=<candidates> drops it, or its
 #                                   binding.json has an open CONFLICT or is unparseable. Not blocking: an
 #                                   fs_must_exist CONFLICT on a path an in-scope ancestor creates (`deferred`
 #                                   to the task's re-bind) and an `own_wip` one (the unit's own uncommitted work).
 #              quarantine_recorded  derive-ready-units.sh lists it (write-unit-quarantine.sh)
-#              binding_stale        _lib/freshness.gate_check, the dispatch gate's own function
+#              binding_stale        _lib/freshness.gate_check (the run-start freshness check)
 #              depends_on_quarantined  a depends_on unit is quarantined, or neither done nor a candidate
 #            halt {type: binding_conflict}: a validator drop with no unit_id, or nothing left in scope while a
 #            quarantine is a binding_conflict (otherwise exit 1 with halt null).
 # Writes     <vault>/bolts/_exec-plan-<head12>.md + its built-in ledger _inline-ledger-<head12>.md (identity
 #            line); a stale plan and its ledger are removed, all of them on exit 1. The plan: one `## Task N:
 #            U-XXX — <title>` per unit (superpowers writing-plans), pointing at the unit file, then `## After
-#            the last task` (the close, in the last task's brief). A never-committed in-scope unit's leftover
-#            review-tier.json is renamed review-tier.retired.json. The validator rewrites .validation-blockers.json.
+#            the last task` (the close, in the last task's brief). The validator rewrites .validation-blockers.json.
 # stdout     ONE JSON line: schema exec-plan/1, vault, plan, run_base, in_scope, quarantined, deferred, done, halt (+ resumed).
 # Exit 0 = plan written, resumed, re-bound or retired · 1 = nothing executable (no plan), or a CONFLICT left at the
 # close · 2 = usage / cycle / unreadable input / a failed re-bind.
@@ -60,7 +59,6 @@ try:
     import exec_units as xu
     import freshness as fr
     from plugin_meta import plugin_version
-    from postflight_rules import unit_of
     VERSION = plugin_version(os.path.join(scripts, "_lib"))
 except Exception as e:  # noqa: BLE001 — a missing library is unreadable input: fail closed
     die("cannot load the plugin libraries (%s)" % e)
@@ -224,7 +222,7 @@ for u in cands:  # topological: an ancestor is decided before its dependents
     blocking = sorted(({str(c.get("id")) for c in opn or []} | dropped.get(u, set())) - set(dfr) - wip, key=natkey)
     try:
         why = None if (opn is None or blocking or u in recorded or via) else fr.gate_check(root, vault, u, None)[0]
-    except Exception:  # noqa: BLE001 — a git failure: fail closed, as the dispatch gate does
+    except Exception:  # noqa: BLE001 — a git failure or any exception: fail closed (not_evaluated)
         why = "not_evaluated"
     rec = ({"reason": "binding_conflict", "conflict_ids": blocking or ["binding.json unparseable"]} if opn is None or blocking
            else {"reason": "quarantine_recorded"} if u in recorded
@@ -243,14 +241,6 @@ if not in_scope:
         res["halt"] = dict(HALT, scope="all_units", units=bc)
     finish(1)
 
-# an earlier per-dispatch attempt's panel obligation (review-tier.json) never binds a unit with no commit
-rts = [u for u in in_scope if os.path.isfile(os.path.join(BOLTS, u, "review-tier.json"))]
-lg = run(["git", "-C", root, "log", "--format=%x01%s%x02%(trailers:key=Unit,valueonly,separator=%x2C)", "-300", "--", "."], 60) if rts else None
-if lg and lg.returncode == 0:
-    bolted = {unit_of(*(c.split("\x02") + [""])[:2]) for c in lg.stdout.split("\x01")[1:]}
-    for u in set(rts) - bolted:
-        os.replace(os.path.join(BOLTS, u, "review-tier.json"), os.path.join(BOLTS, u, "review-tier.retired.json"))
-
 # ── the plan: paragraphs joined by a blank line ──
 q = shlex.quote
 
@@ -267,7 +257,7 @@ except (OSError, ValueError, KeyError, TypeError):
     pass
 suite = sh("run-full-suite.sh", "--cwd=" + q(root), "--base=" + base)
 gate = sh("validate-bolt-artifacts.sh", "--cwd=" + q(root), "--orphan-scan --batch-suite-gate --postflight-scan --recompute "
-          "--whitelist-scan --acceptance-scan --panel-scan --conflict-bypass-scan")
+          "--whitelist-scan --acceptance-scan --conflict-bypass-scan")
 retire, rewip = (sh("derive-exec-plan.sh", "--cwd=" + q(root), "--vault=" + q(vault), m) for m in ("--retire", "--rebind-wip"))
 out = []
 A = out.append

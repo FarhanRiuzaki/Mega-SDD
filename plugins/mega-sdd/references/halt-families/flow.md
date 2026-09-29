@@ -108,8 +108,8 @@ Registry one-liner (absorbed, same type):
 
 ### deep_scan_cache_corrupt
 
-- `deep_scan_cache_corrupt` — `scripts/ground.sh` Guard 7 / execute-bolts `build-dispatch-prompt.sh` (`soft_halts[]`): a legacy `starterkit-context.yaml` exists but fails YAML parse. **C1 SELF-RESOLVE:** GROUND renames it aside (`.corrupt-<ts>`) with a notice; the dispatch prompt skips the starterkit slice and the bolt proceeds. Nothing rebuilds the file.
+- `deep_scan_cache_corrupt` — `scripts/ground.sh` Guard 7: a legacy `starterkit-context.yaml` exists but fails YAML parse. **C1 SELF-RESOLVE:** GROUND renames it aside (`.corrupt-<ts>`) with a notice, and the run proceeds. Nothing rebuilds the file.
 
 ### dep_missing
 
-- `dep_missing` — a required binary is missing: execute-bolts pre-flight 3.5 (the project's test runner) or pre-flight 4 (`run-preflight-scan.sh` exit 6 — ast-grep absent under v2 Hard-rule grammar), the `bolt-implementer` agent, or the emit lane. ALWAYS STOP. Details per the registry §Type-specific schemas (`dep_missing`). Resolution: install it (`/mega-sdd:install-deps`), re-run. `scripts/ground.sh` Guard 6 only prints a C1 notice (non-interactive) and degrades gracefully.
+- `dep_missing` — a required binary is missing: execute-bolts pre-flight 3.5 (the project's test runner) or pre-flight 4 (`run-preflight-scan.sh` exit 6 — ast-grep absent under v2 Hard-rule grammar), the implementing session, or the emit lane. ALWAYS STOP. Details per the registry §Type-specific schemas (`dep_missing`). Resolution: install it (`/mega-sdd:install-deps`), re-run. `scripts/ground.sh` Guard 6 only prints a C1 notice (non-interactive) and degrades gracefully.

@@ -99,7 +99,7 @@ If any `target_files` path matches the active framework pack `## Test patterns` 
 
 ## UI contract for view-bearing units (Step 9.b — code-delivery slice F)
 
-A unit is **view-bearing** when any `target_files` path matches the active framework pack `## UI quality signatures` → `view_glob` (a renderable view; pack omits the section → no view convention → skip this step, no contract). For each view-bearing unit, attach a `## UI contract` section to the unit body so the bolt subagent renders a production-grade view, not raw scaffold. Every entry is GROUNDED in the vault (`context.md ## Flows` steps + states, `context.md ## Data model` entities/fields (legacy `02-architecture`), the design-system signals in `vault.json` `design_system` (legacy `01-context`)/`starterkit-context.yaml`) — **never invented**. If a needed source is absent (e.g. no design system for required colors/states), record it as an Open Question per `plugins/mega-sdd/references/vault-core.md`; do NOT default a value (anti-hallucination rail).
+A unit is **view-bearing** when any `target_files` path matches the active framework pack `## UI quality signatures` → `view_glob` (a renderable view; pack omits the section → no view convention → skip this step, no contract). For each view-bearing unit, attach a `## UI contract` section to the unit body so the implementing session renders a production-grade view, not raw scaffold. Every entry is GROUNDED in the vault (`context.md ## Flows` steps + states, `context.md ## Data model` entities/fields (legacy `02-architecture`), the design-system signals in `vault.json` `design_system` (legacy `01-context`)/`starterkit-context.yaml`) — **never invented**. If a needed source is absent (e.g. no design system for required colors/states), record it as an Open Question per `plugins/mega-sdd/references/vault-core.md`; do NOT default a value (anti-hallucination rail).
 
 ```yaml
 ## UI contract
@@ -122,7 +122,7 @@ grounded_in: ["context.md#F-U-003 step 2", "context.md#Data-model §Widget"]   #
 design_system_ref: "vault.design_system"   # present ONLY when the vault carries a design_system block (vault-core.md §design_system); propagates the resolved style/palette/a11y (+ its source) to the bolt so the view renders on-system, not generic. Omit when absent.
 ```
 
-- `required_states` is the load-bearing, flow-derived part: include only the states the flow actually produces (a read-only view with no async has no `loading`; a single-stage flow has no `pending`). The execute-bolts `ui_ux` slice injects the design tokens + a linter-clean view exemplar + `plugins/mega-sdd/references/ui-design-heuristics.md`, and `validate-dispatch-prompt.sh` asserts the emitted prompt carries them — this UI contract is the unit-spec-stage complement (what to render) to that execution-stage enrichment (how the project renders it).
+- `required_states` is the load-bearing, flow-derived part: include only the states the flow actually produces (a read-only view with no async has no `loading`; a single-stage flow has no `pending`). No execute-bolts slice injects design tokens or a view exemplar (removed in P3), so this UI contract is what the implementer gets: what to render, grounded in the vault.
 - Provenance: mark `_grounded: true` only when every entry cites a vault source; otherwise emit the gap as an OQ. Do NOT fabricate labels, statuses, formatting rules, or states the vault does not establish.
 
 ## Adversarial test review pass (Step 9.5)

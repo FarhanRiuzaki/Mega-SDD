@@ -63,7 +63,7 @@ fi
 if [ -e "$PLUG/skills/generate-units/references/pagerank-targeting.md" ]; then
   fail "pagerank-targeting.md resurrected (removed 5.29.0 §D1)"
 else
-  ok "D1: pagerank-targeting.md stays removed; reuse rides the dispatch symbol_slice"
+  ok "D1: pagerank-targeting.md stays removed (its dispatch symbol_slice successor went with the builder in P3)"
 fi
 grep -qF "ast-grep 0.42.3" "$PLUG/assets/astgrep-queries/VERSIONS.md" \
   && ok "VERSIONS.md pins the tested ast-grep" || fail "VERSIONS pin missing"

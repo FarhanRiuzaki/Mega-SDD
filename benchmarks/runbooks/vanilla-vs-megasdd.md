@@ -111,7 +111,7 @@ python3 benchmarks/scripts/compare-arms.py benchmarks/results/vanilla-ab/manifes
            "metrics": "xs/vanilla-1/metrics.json", "quality": "xs/vanilla-1/quality.score.json"}]}
 ```
 
-**(6c) Overhead hook.** Per arm mega-sdd, hitung tool call yang kena matcher PreToolUse (`Skill|Bash|Edit|Write|Agent`) dari `tool_calls_by_name`. Ukur latency hook di jalur dispatch `execute-bolts` terpisah (jalur ini menjalankan ulang validator gate; belum pernah diukur). Satu-satunya angka yang ada: ±50 ms per call untuk Bash di CWD tanpa state SDD (n=3, 2026-09-26). Angka itu bukan angka jalur dispatch.
+**(6c) Overhead hook.** Per arm mega-sdd, hitung tool call yang kena matcher PreToolUse (`Skill|Bash|Edit|Write`) dari `tool_calls_by_name`. Ukur latency hook di jalur dispatch `execute-bolts` terpisah (jalur ini menjalankan ulang validator gate; belum pernah diukur). Satu-satunya angka yang ada: ±50 ms per call untuk Bash di CWD tanpa state SDD (n=3, 2026-09-26). Angka itu bukan angka jalur dispatch.
 
 ## 7. Aturan keputusan (dikunci sebelum ada angka)
 
@@ -125,7 +125,7 @@ python3 benchmarks/scripts/compare-arms.py benchmarks/results/vanilla-ab/manifes
 | Rilis yang mengklaim perbaikan speed/token | arm rilis vs arm rilis sebelumnya **dan** vs vanilla, n ≥ 3. Kalau memburuk terhadap salah satunya, tulis apa adanya |
 
 **Hipotesis overhead yang diuji dengan harness ini (belum diterapkan di kode):**
-- **H1 — lens `standards` hanya ikut bila `quality` ikut. DITERAPKAN 2026-09-27 tanpa A/B** (mandat owner: buang proses tanpa manfaat sepadan). Dasarnya bukti lapangan di bawah; pin `tests/size-weighted/test-standards-lens-h1.sh`. Efek biaya/kualitas pada run belum diukur. Bukti saat ini: yield lapangan 0 Critical dan 1 fix unik dari 5 dispatch di satu project (`research/2026-08-30-lens-yield-field.md` §2). n kecil dan statusnya "owner memutuskan". Uji: arm `lite` vs `lite+H1`, n=3 xs + n=3 klinik. Diterapkan hanya bila Critical/Important tidak `WORSE` dan cost `BETTER`.
+- **H1 — lens `standards` hanya ikut bila `quality` ikut. DITERAPKAN 2026-09-27 tanpa A/B** (mandat owner: buang proses tanpa manfaat sepadan). Dasarnya bukti lapangan di bawah; pin `tests/size-weighted/test-standards-lens-h1.sh` (panel lens dan pin ini dihapus di P3, spec v9 §8.6). Efek biaya/kualitas pada run belum diukur. Bukti saat ini: yield lapangan 0 Critical dan 1 fix unik dari 5 dispatch di satu project (`research/2026-08-30-lens-yield-field.md` §2). n kecil dan statusnya "owner memutuskan". Uji: arm `lite` vs `lite+H1`, n=3 xs + n=3 klinik. Diterapkan hanya bila Critical/Important tidak `WORSE` dan cost `BETTER`.
 - **H2 — `plan` berhenti membaca `generate-units/SKILL.md` (31 KB) lintas-skill.** Diganti digest di `plan-procedure.md`. Statis: −31.184 B dari 470.979 B jejak T01 lite (−6,6 %, `measure-context.sh`). Efek runtime belum diukur.
 - **H3 — re-derive gate di PreToolUse di-cache per HEAD + hash evidence.** Belum ada angka latency jalur dispatch (lihat 6c). Ukur dulu, baru diputuskan.
 

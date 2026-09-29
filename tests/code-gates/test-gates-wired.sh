@@ -5,7 +5,6 @@ err=0
 cg="plugins/mega-sdd/skills/execute-bolts/references/code-gates.md"
 sk="plugins/mega-sdd/skills/execute-bolts/SKILL.md"
 sb="plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md"
-rp="plugins/mega-sdd/skills/execute-bolts/references/review-panel.md"
 pc="plugins/mega-sdd/references/project-config.md"
 tm="plugins/mega-sdd/skills/install-deps/references/tool-matrix.yaml"
 tpl="plugins/mega-sdd/references/framework-conventions/_template.md"
@@ -32,8 +31,6 @@ if [ -f "$sb" ]; then
   awk '/RUN L0 code gates/{if(!l0)l0=NR} /SELECT panel tier/{if(!p)p=NR} END{exit !(l0 && p && l0<p)}' "$sb" \
     || { echo "bridge: L0 must run before panel tier selection"; err=1; }
 fi
-# panel prompts carry the L0 results — as the lens-input FILE path (spec D5, 6.1.0)
-grep -q 'l0-results.json' "$rp" || { echo "review-panel.md missing L0 lens-input file"; err=1; }
 # config key + always-run carve-out documented
 grep -q 'code_gates' "$pc" || { echo "project-config.md missing code_gates key"; err=1; }
 # install-deps matrix carries the code-gate tools (secret + SAST). osv-scanner

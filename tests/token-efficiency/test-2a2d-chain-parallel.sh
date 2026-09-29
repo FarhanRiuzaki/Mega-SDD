@@ -2,8 +2,8 @@
 # test-2a2d-chain-parallel.sh — tranches 2a + 2d (spec 2026-07-30 §2a/§2d).
 # PROSE-CONTRACT PINS (the surfaces are routing/handoff prose — the same tier
 # as the behavior they drive):
-#   2a  the --agents dispatch path runs --all as waves (the chain proposes the
-#       default --all --lite, §8.5 below); the wave plan channel is the in-context
+#   2a  the chain proposes the default --all --lite (§8.5 below); the held fan-out
+#       text (batch-and-fanout, HOLD for P3b) keeps its wave rails: the in-context
 #       analyze-parallelism JSON; the overlap rail + failure-halt semantics
 #       stay with the dispatcher (batch-and-fanout).
 #   2d  extract-intelligence --max-parallel default is 5 everywhere it is
@@ -12,8 +12,8 @@
 #
 # 9.0 §8.5 (2026-09-28): execute-bolts runs inline by default (one context, plan order), so the
 # engine's units_pending_bolts proposal is `execute-bolts --all --lite` too; `--parallel` and
-# `--per-squad` shape only the `--agents` dispatch path, whose `--all` is wave-parallel by default.
-# The 2a rails below (waves, overlap, in-flight cap) are that path's and stay pinned.
+# `--per-squad` shaped only the per-unit path retired in P3 (spec §8.6); its fan-out text is held
+# for P3b, so the 2a rails below (waves, overlap, in-flight cap) stay pinned until then.
 #
 # 9.0 (spec 2026-09-27 §2/§7): generate-units and the classic chain are gone;
 # the one pipeline is plan → execute-bolts --all --lite. The plan→bolts hop
@@ -53,13 +53,11 @@ note() { printf '%s\n' "$*"; }
 ok()   { printf '  \xe2\x9c\x93 %s\n' "$*"; }
 fail() { printf '  \xe2\x9c\x97 FAIL: %s\n' "$*"; FAILED=1; }
 
-note "== 2a: every chain routing surface proposes the default --all --lite; --parallel/--per-squad only with --agents =="
+note "== 2a: every chain routing surface proposes the default --all --lite; none proposes --parallel/--per-squad =="
 n=$(grep -c -- 'execute-bolts --all --parallel' "$RR")
 [ "$n" -eq 0 ] && ok "routing-rules proposes no --all --parallel (the default run is inline, one context)" || fail "routing-rules still proposes --all --parallel on $n rows"
 [ "$(grep -cE '^\| (`units_pending_bolts`|Units exist, some not in bolts) .*`execute-bolts --all --lite`' "$RR")" -ge 3 ] \
   && ok "routing-rules: the state row, the decision matrix and the 1-phase chain propose execute-bolts --all --lite" || fail "routing-rules units-pending rows do not propose --all --lite"
-grep -q -- 'already parallel by procedure' "$RR" && grep -F 'already parallel by procedure' "$RR" | grep -qF -- '`--agents`' \
-  && ok "the --per-squad leg is documented as --agents only, parallel by procedure (no flag needed)" || fail "per-squad --agents note missing"
 # 9.0: the classic example row ('execute-bolts --all --parallel → bolts/') left
 # with the classic chain; the one pipeline's example is the wave-default --all
 # batch and must not opt out of waves.
@@ -81,7 +79,7 @@ note "== 2a: the DETERMINISTIC proposer emits the flag (the engine, not just its
 SP="${ROOT}/plugins/mega-sdd/scripts/_lib/state_probes.py"
 DT="${ROOT}/plugins/mega-sdd/tests/state/test-derive-state.sh"
 ! grep -qE '"execute-bolts (--all --parallel|--per-squad)"' "$SP" && grep -qF '"execute-bolts --all --lite"' "$SP" \
-  && ok "state_probes.py units_pending_bolts proposes --all --lite (routing-rules row units_pending_bolts documents THIS script's output)" || fail "state_probes.py still proposes an --agents-only dispatch flag"
+  && ok "state_probes.py units_pending_bolts proposes --all --lite (routing-rules row units_pending_bolts documents THIS script's output)" || fail "state_probes.py still proposes a retired fan-out dispatch flag"
 grep -qF "execute-bolts --all --lite']\" ] && ok \"f6l3" "$DT" && ok "derive-state fixture f6l3 pins the default proposal" || fail "test-derive-state.sh f6l3 still pins --parallel"
 
 note "== 2a: the wave-plan channel is named, not asserted =="
@@ -97,10 +95,10 @@ grep -qF 'bounded by an in-flight cap (`config.yaml parallel_max:`, default **4*
 grep -qF 'default **4** concurrent' "${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/squad-subagent.md" && ok "--per-squad cap made concrete (same bound, both procedures)" || fail "squad-subagent cap still 'sensible' (no number)"
 grep -qF -- '--base=<its-commit>^ --head=<its-commit>' "$BF" && ok "per-unit gate range under a wave = the unit's OWN commit (identity-anchored, never wave-base..wave-head)" || fail "per-unit gate range rule missing"
 grep -qF 'dispatch only units not yet completed' "$BF" && ok "consumed waves skip completed units (resume-safe)" || fail "completed-skip rule missing from wave consumption"
-grep -qF 'index.lock' "${ROOT}/plugins/mega-sdd/agents/bolt-implementer.md" && ok "implementer contract: transient index.lock is retried, never BLOCKED" || fail "index.lock retry contract missing from the implementer body"
 grep -qF 'run the batch with `--worktree`' "$BF" && ok "shared-test-state valve named (--worktree or drop the flag) — never a silent hazard" || fail "test-state valve missing"
 AP="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/diagnostics-procedures.md"
-grep -qF 'never suggest the halting form' "$AP" && ok "analyze-parallelism suggestion is squad-count-conditional (--per-squad halts on single-squad)" || fail "analyze-parallelism still suggests the halting --per-squad form unconditionally"
+grep -qF 'execute-bolts --sprint=<n>' "$AP" && ! grep -qF -- '--agents' "$AP" && ! grep -qF -- '--per-squad --agents' "$RR" \
+  && ok "analyze-parallelism suggests execute-bolts --sprint=<n>; no --agents in diagnostics-procedures or routing-rules" || fail "analyze-parallelism suggestion lost --sprint=<n>, or --agents survives"
 
 note "== 2a: failure semantics at the wave boundary =="
 # 9.0: 'Wave boundary = review boundary' (the default-lane barrier) is retired —

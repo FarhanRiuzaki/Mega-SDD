@@ -810,7 +810,7 @@ def _next_action(drops):
     if types & {"conflict_unresolved", "binding_missing"}:
         parts.append(
             "conflict/binding drops: resolve via resolve-oq --binding <bolts/U-XXX/binding.json> "
-            "(human-in-the-loop), then re-bind the unit (3.9b rebind-units.sh --units=<U>) "
+            "(human-in-the-loop), then re-bind the unit (rebind-units.sh --units=<U>) "
             "until conflicts=0; layout-2 binding.md: /mega-sdd:migrate-paths --vault-layout=3 "
             "first, then the mandatory full JIT re-bind (rebind-units.sh --units=all) — a "
             "migrated CONFLICT-ID clears only when a claim that names it gets a fresh verdict "
@@ -833,7 +833,7 @@ def _next_action(drops):
     return "; ".join(parts) + "."
 
 # ─── v8 P1.c — unit-scoped JIT verdicts (spec 2026-09-10 Appendix F4) ──────────
-# execute-bolts pre-flight 3.9 writes bolts/U-XXX/binding.json (sole writer
+# the execute-bolts JIT bind writes bolts/U-XXX/binding.json (sole writer
 # write-unit-binding.sh, hook-guarded). With --units=U-001,… every CONFLICT claim
 # without a `resolution` in a LISTED unit is a BLOCKING drop (same
 # conflict_unresolved type the hook already denies on). Without --units= the
@@ -860,7 +860,7 @@ for _bp in sorted(glob.glob(os.path.join(vault_dir, "*", "bolts", "U-*", "bindin
         row = {"type": "conflict_unresolved" if _uid in _want else "conflict_unit_unresolved",
                "conflict_id": c.get("id"), "unit_id": _uid, "source_binding": os.path.relpath(_bp, cwd),
                "heading": "%s — expect: %s" % (c.get("text") or c.get("kind"), c.get("expect")),
-               "expected": "resolve via resolve-oq --binding (write-unit-binding.sh --resolve %s=KEEP_VAULT|KEEP_CODE|SPLIT --by=user) or fix the code/unit and re-run execute-bolts pre-flight 3.9" % c.get("id")}
+               "expected": "resolve via resolve-oq --binding (write-unit-binding.sh --resolve %s=KEEP_VAULT|KEEP_CODE|SPLIT --by=user) or fix the code/unit and re-bind it: the per-unit re-bind (rebind-units.sh --units=)" % c.get("id")}
         (drops if _uid in _want else extras).append(row)
 
 status = "PASS" if not drops else "FAIL"

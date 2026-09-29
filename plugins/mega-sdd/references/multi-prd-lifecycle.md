@@ -16,7 +16,7 @@ When a doc arrives or the project moves, route by **what actually changed**, nev
 | Situation | Route | Why |
 |---|---|---|
 | The SAME source doc was **revised** (PRD v1 → v1.1; a BRD edit) | **`diff-vault`** | One vault evolves; resolved OQs + ADR history preserved; conflicts surfaced. |
-| A **new epic / feature-set** on top of shipped work (PRD 2, a genuinely new doc) | **new vault** via `plan <doc> --mode=existing` (guarded lane); units JIT-bound at dispatch (`bolts/U-XXX/binding.json`) | The per-unit CONFLICT gate catches any contradiction with the shipped code that now contains PRD 1; plan's project-constitution gate catches contradictions with locked rules. |
+| A **new epic / feature-set** on top of shipped work (PRD 2, a genuinely new doc) | **new vault** via `plan <doc> --mode=existing` (guarded lane); units JIT-bound at run start (`bolts/U-XXX/binding.json`) | The per-unit CONFLICT gate catches any contradiction with the shipped code that now contains PRD 1; plan's project-constitution gate catches contradictions with locked rules. |
 | **Code moved** outside the pipeline (manual edit, hotfix, git pull) | **`sync`** | Reconcile the changed set (`derive-changed-paths.sh`) → drift → `rebind-units.sh --paths=@<changed>` → `plan --reconcile` for the affected vault(s). |
 | A **ticket-scale chat requirement** against an existing vault ("tambah kolom npwp di form nasabah" — no doc at all) | **delta lane**: `diff-vault --from-prompt` | The brief IS the comparison input; scoped patch → `rebind-units.sh --paths=@<file>` (per-unit JIT re-bind) → `plan --reconcile` (an Added entity/flow needs a new unit → `plan --regenerate`; reconcile writes none); the `delta_too_large` cap forces an epic-in-disguise to the new-vault row. |
 

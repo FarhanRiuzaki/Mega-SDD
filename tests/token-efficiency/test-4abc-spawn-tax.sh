@@ -96,14 +96,14 @@ M_STATES=$(ls -A "$PV/.mega-sdd/" | grep -c 'state.json' || true)
 note "== 4a-ii. call sites collapsed =="
 N_PTU=$(grep -c 'validate-bolt-artifacts.sh' "$PTU")
 [ "$N_PTU" = "1" ] && ok "pre-tool-use: exactly ONE validate-bolt-artifacts invocation" || fail "pre-tool-use has $N_PTU invocations"
-grep -q -- '--orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --panel-scan --conflict-bypass-scan' "$PTU" \
-  && ok "gate call carries all seven scans + --recompute (B1 recompute-at-gate preserved)" || fail "gate flags wrong"
+grep -q -- '--orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --conflict-bypass-scan' "$PTU" \
+  && ok "gate call carries the six scans + --recompute (B1 recompute-at-gate preserved)" || fail "gate flags wrong"
 N_STP=$(grep -c 'bash "$VALIDATOR_OS"' "$STP")
 [ "$N_STP" = "1" ] && ok "stop: exactly ONE validator invocation" || fail "stop has $N_STP invocations"
-# 7.11.0: --panel-scan (F-07) joins both lanes — detection on Stop, gate at PreToolUse; so does
-# --conflict-bypass-scan (conflict_bypassed, spec 2026-09-27 v9 §8).
-grep -q -- '--orphan-scan --batch-suite-gate --postflight-scan --whitelist-scan --acceptance-scan --panel-scan --conflict-bypass-scan --quiet' "$STP" \
-  && ok "stop call carries the seven scans WITHOUT --recompute (read-only lane unchanged)" || fail "stop flags wrong"
+# --conflict-bypass-scan (conflict_bypassed, spec 2026-09-27 v9 §8) runs on both lanes — detection on Stop,
+# gate at PreToolUse. --panel-scan left both callers in P3 C8 (a validator no-op since C3).
+grep -q -- '--orphan-scan --batch-suite-gate --postflight-scan --whitelist-scan --acceptance-scan --conflict-bypass-scan --quiet' "$STP" \
+  && ok "stop call carries the six scans WITHOUT --recompute (read-only lane unchanged)" || fail "stop flags wrong"
 if grep -q -- '--postflight-scan --recompute' "$STP"; then fail "stop gained --recompute (forbidden lane)"; else ok "no recompute on the Stop lane"; fi
 
 note "== 4c. Stop turn-gate: skip/rescan semantics (state-mtime proof) =="

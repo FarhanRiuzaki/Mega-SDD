@@ -36,8 +36,6 @@ grep -qF 'Unit-level readiness replaces the wave barrier (v8 W2; execute-bolts r
   && grep -qF 'A dependency that is quarantined, red, stale, or missing evidence BLOCKS its dependents' "$BF" \
   && grep -qF 'never by cap-sized slices with a barrier' "$BF" && ! grep -qF 'Wave boundary = review boundary' "$BF" \
   && pass "c: readiness clause (unconditional — lite is the only lane) names the readiness script and the blocking rules; retired wave barrier gone" || fail "c: batch-and-fanout prose"
-grep -qF '**`unit_tier: xs` (v8 W2): the fix-round budget is 1 — one verifier round, then quarantine' "$EB/references/review-panel.md" && pass "d: xs fix-round budget 1, then quarantine" || fail "d: review-panel prose"
-grep -q 'w2_model_cell: xs→sonnet' "$EB/SKILL.md" && grep -q 'Lane lite (v8 W2 measured cell)' "$EB/SKILL.md" && pass "e: xs→sonnet cell under lite recorded in the bolt-report, override chain intact" || fail "e: SKILL model routing prose"
 # v8 P3 (research/2026-09-15-v8-p3-report.md §2): per-unit pipelining rules + the cap doc drift (5 → parallel_max 4)
 grep -q 'P3 pipelining rules' "$EB/references/batch-and-fanout.md" && grep -q 'panel_pending_units' "$EB/references/batch-and-fanout.md" \
   && grep -q 'never batch the panels of a slice' "$EB/references/batch-and-fanout.md" && grep -q 'top up dispatch to the cap' "$EB/references/batch-and-fanout.md" \

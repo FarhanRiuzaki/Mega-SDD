@@ -3,7 +3,7 @@
 # (v8 P3, spec 2026-09-10 §4 row "re-bind": `bind --paths=@` → `bolts --rebind=@paths`).
 #
 # A plan-born (layout-3) vault has no whole-vault binding.md/binding.json — its
-# verdicts live per unit in <vault>/bolts/U-XXX/binding.json (JIT bind at dispatch).
+# verdicts live per unit in <vault>/bolts/U-XXX/binding.json (JIT bind up front + per task).
 # When the code moved (sync) or the vault moved (delta), the units that TOUCH the
 # changed paths must be re-verdicted; nothing else. This script is the deterministic
 # scope + the same sanctioned writers the JIT step uses — never a second grammar:
@@ -12,7 +12,7 @@
 #              existing_interfaces[].file ∪ bolts/U-XXX/binding.json claims[].anchor
 #              intersect the changed paths (exact or ancestor-dir, both directions —
 #              the sync-intersect.sh rule)             [--units=all = every unit]
-#   then:      derive-unit-claims.sh --units=<affected>   (wave claim set)
+#   then:      derive-unit-claims.sh --units=<affected>   (per-unit claim set)
 #              write-unit-binding.sh per affected unit     (fs/symbol verdicts by script;
 #                                                           `text` claims stay OQ until the
 #                                                           controller runs ladder E3 and
@@ -22,8 +22,8 @@
 #
 #   rebind-units.sh --cwd=<root> --vault=<vault> (--paths=@<file>|<p1,p2,…> | --units=all | --units=U-001,…) [--quiet]
 #
-# State anchor (spec docs/superpowers/specs/2026-09-25-state-anchor-design.md §3, §8 step 3.9b, §9):
-#   --units=<list>  the BOLTS-gate remedy (3.9b): exactly these units, and each binding records
+# State anchor (spec docs/superpowers/specs/2026-09-25-state-anchor-design.md §3, §9):
+#   --units=<list>  the per-unit re-bind: exactly these units, and each binding records
 #                   `rebind_head` (write-unit-binding --rebind) so a deny at the same HEAD becomes
 #                   `rebind_exhausted` — the one-re-bind bound is a mechanism, not a count.
 #   index first     build-symbol-index.sh runs BEFORE the re-bind when the index head_commit ≠ HEAD
@@ -154,7 +154,7 @@ try:
         sc = vs.unit_scope(cwd, vault, u)
         scope |= {fr.to_top(g, p) for p in sc["paths"] | sc["globs"]} - {None}
     now = {fr.to_proj(g, q): h for q, h in fr.dirty_map(g, scope).items()}
-    # the SAME rule the writer nulls on (freshness.index_mismatch), or the 3.9b dead-ends
+    # the SAME rule the writer nulls on (freshness.index_mismatch), or the re-bind dead-ends
     print("1" if fr.index_mismatch(g, d, now, scope) else "0")
 except Exception:
     print("1")

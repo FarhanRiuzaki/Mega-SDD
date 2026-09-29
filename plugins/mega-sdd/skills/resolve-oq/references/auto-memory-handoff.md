@@ -56,7 +56,7 @@ For each OQ/CONFLICT during the walk:
 
 ### Use case — convergence loops
 
-When `orchestrate-flow --converge` halts on `binding_conflict` (execute-bolts pre-flight 3.9):
+When `orchestrate-flow --converge` halts on `binding_conflict` (execute-bolts run start, `derive-exec-plan.sh`):
 
 ```
 🔁 Cycle 1/3: invoking resolve-oq --binding <vault> --auto-accept --confidence-min=0.80
@@ -66,7 +66,7 @@ resolve-oq walking 3 conflicts:
   ✓ U-009 · C-U009-02 (Sanctum) → KEEP_VAULT (constitution §B-001; conf 1.00) → AUTO-ACCEPTED
   ⏸ U-011 · C-U011-01 (audit schema) → recommendation conf 0.65 < 0.80 → DEFERRED for manual
 
-2 conflicts resolved auto; 1 deferred. Convergence loop re-binds the edited unit (U-007), reconciles, and resumes execute-bolts.
+2 conflicts resolved auto; 1 deferred. Convergence loop re-invokes execute-bolts: its run start re-binds and re-plans.
 ```
 
 ### Anti-halu rails

@@ -17,7 +17,7 @@ Every lane ends with the same result contract: an acceptance-criterion → test 
 These are the non-negotiable rails of the guarded lane. Any PR violating them will be closed:
 
 1. **Anti-hallucination at the spec layer (`plan`):** uncertain claims → Open Question, never guess.
-2. **Binding gate is BLOCKING:** `execute-bolts` binds each unit just in time (`scripts/write-unit-binding.sh` → `bolts/U-XXX/binding.json`); a unit with an unresolved CONFLICT MUST NOT be built — by default it is quarantined at run start with its dependents (every unit blocked → halt `binding_conflict`), and under `--agents` its dispatch is denied (`binding_conflict`), until `resolve-oq --binding` resolves it. A migrated layout-2 vault with an unresolved CONFLICT stays blocked until the mandatory JIT re-bind re-verdicts it.
+2. **Binding gate is BLOCKING:** `execute-bolts` binds each unit just in time (`scripts/write-unit-binding.sh` → `bolts/U-XXX/binding.json`); a unit with an unresolved CONFLICT MUST NOT be built — it is quarantined at run start with its dependents until `resolve-oq --binding` resolves it (every unit blocked → halt `binding_conflict`). A migrated layout-2 vault with an unresolved CONFLICT stays blocked until the mandatory JIT re-bind re-verdicts it.
 3. **Unit grounding:** every unit has `target_files` whitelist + ≥1 acceptance test.
 4. **Bolt isolation:** every bolt produces exactly one PR's worth of commits; no skipping pre-commit hooks.
 5. **Drift surfaces, never silently:** detect-drift writes a report, even when clean.

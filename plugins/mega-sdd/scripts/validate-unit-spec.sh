@@ -154,9 +154,9 @@ VS_DOC_RE = r"(?:vault|model|flows|constraints|constitution|context|\d{2}-[A-Za-
 vs_adv = []   # filled per unit by validate_unit(); emitted top-level, never an issue
 
 # xs body diet (v8 P1, spec 2026-09-10 App. F1e) — ADVISORY, never an issue.
-# Keyed on the router's OWN size proxy (_lib/unit_tier.py, the `unit_tier: xs`
-# class: acceptance_test 1..2 AND work items 1..3) so the advisory and the
-# router can never disagree about "small". Budget for that class: Goal 1 line,
+# Keyed on the shared size proxy (_lib/unit_tier.py, the `unit_tier: xs`
+# class: acceptance_test 1..2 AND work items 1..3) so "small" has one
+# definition. Budget for that class: Goal 1 line,
 # Context <= 2 sentences, Implementation steps <= 3 (already implied by the
 # proxy), and `## Anti-patterns` / `## Out of scope` only when every item
 # cites a source (U-XXX, OQ-, C-, a doc anchor or file:line). Lines over the
@@ -446,8 +446,8 @@ def validate_unit(file_path):
     # entries on the field run; acceptance never observed a failure). A
     # command-bearing `type: test` entry (or untyped) MUST name the substring the
     # output proves. Exempt: manual (never executed) and render (route-200 +
-    # display assertion — its command IS the proof). Gated PER UNIT at dispatch
-    # by the in-run aggregator (never at the run boundary — no retro-freeze).
+    # display assertion — its command IS the proof). An analyze advisory: no gate
+    # reads it (never at the run boundary — no retro-freeze).
     try:
         _ftext = open(file_path, encoding="utf-8", errors="replace").read()
     except OSError:
@@ -1057,7 +1057,7 @@ def discover_units():
 
 def _tf_paths(fm_text):
     """target_files paths from one unit's frontmatter — block-mapping, scalar-list,
-    and inline-flow shapes (same three shapes resolve-review-tier.sh parses)."""
+    and inline-flow shapes."""
     out = []
     m = re.search(r"(?ms)^target_files:\s*\n((?:[ \t]+.*\n?)*)", fm_text)
     blk = m.group(1) if m else ""

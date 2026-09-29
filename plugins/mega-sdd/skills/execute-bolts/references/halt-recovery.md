@@ -108,7 +108,7 @@ Beyond the existing halts, this skill adds:
 | Halt type | Fires when | Eligible for propose? |
 |---|---|---|
 | `dispatch_prompt_too_large` | Step 4.5 tiered prompt exceeds the hard cap | NO (config/spec issue) |
-| `bolt_repeated_partial_failure` | 3+ partial-state attempts on the same bolt OR propose-and-confirm cycled with different fixes | NO (structural) |
+| `bolt_repeated_partial_failure` | propose-and-confirm cycled with different fixes | NO (structural) |
 | `provenance_missing` | Post-flight detects a missing provenance trailer in a modified file | NO (user adds the trailer) |
 | `bolt_introduces_locked_drift` | The per-bolt drift check detects drift on a LOCKED entity | NO (override-only — LOCKED behavior is a human decision; the fix-proposer template refuses LOCKED files) |
 | `self_assessment_missing` | `bolt-report.md` lacks the `bolt_self_report` YAML block | NO (bolt must self-report) |

@@ -103,7 +103,7 @@ resolution-verifier) and `bolt-implementer` dispatch with a measurement. `domain
 
 KEEP in P1, byte-for-byte except path strings.
 - The gates read per-unit lite evidence. Their layout-2 legs stay because existing layout-2
-  vaults remain readable.
+  vaults remain readable; the in-run layout-2 leg went with the per-dispatch path (P3, §8.6).
 - Measured cost on a repo with no vault: ±6 ms per tool call (fast path). Not a user-visible cost.
 
 ### Scripts
@@ -139,7 +139,7 @@ Script pruning is **P1b**:
 | **P1** ✅ done 2026-09-27 (commit 6727b30f) | Relocate contracts → delete the 4 classic skills → state engine + orchestrate-flow + front door on one pipeline → `plan --kb` → tests pruned/updated → docs, contract, CHANGELOG, 9.0.0 | full suite green; `claude plugin validate` passes; complexity budget lowered to measured values; no surviving file references a removed skill path (grep check, pinned by a test); **extract-intelligence → `plan --kb` path pinned by a test**; the result contract (AC→test table, delivery-check PASS, assumptions) is stated identically in every lane's procedure |
 | **P1b** ✅ done 2026-09-27 (−1,531 script lines, −102 hook lines, −11 reference files) | Script / reference pruning audit (executed-by-a-survivor rule) | the same checks. `scripts_total_lines` lowered |
 | **P2** ✅ adopted 2026-09-28 (§8.5) | Inline execution for guarded: `execute-bolts` runs units in the main session with the script gates (acceptance, postflight, whitelist, delivery-check) and NO per-unit implementer/panel subagents (the default since §8.5; `--agents` = the per-unit path; `--inline` a no-op alias) | brownfield block, n=3: inline vs current guarded vs vanilla. Adopt as default only if the five quality metrics of §8.4 are not WORSE than current guarded |
-| **P3** | Remove what P2 made dead (review agents, panel scripts, dispatch gates) only if P2 was adopted | the same checks + a lower budget |
+| **P3** in progress 2026-09-28 (§8.6; P2 adopted in §8.5) | Remove what P2 made dead (review agents, panel scripts, dispatch gates) only if P2 was adopted | the same checks + a lower budget |
 
 **Rollback:** each phase is a separate commit on the branch. A phase is reverted with `git revert`;
 there is no data migration that `git revert` cannot undo, because vault layout-2 reading is kept.
@@ -174,6 +174,12 @@ deleted.
 | 11 | lib-patterns/, starterkit-context-schema producer sections, shared-snapshot-schema | P1b prune candidates | they lost their producer or consumer; pruning them needs its own audit |
 | 12 | Migrated layout-2 vaults and the lite plan-coverage FATAL | Exempt when `_meta/archive/layout2/` exists. `plan --regenerate` is allowed on them | classic-born units carry no `prd_source` |
 | 13 | How the plan-coverage gate decides that a PRD heading needs no unit (decided after the 9.0 verification) | **Declared coverage.** Every anchor of the PRD — an H1-H3 with text of its own or no sub-heading; the sub-headings (H4 too) of a text-less heading that has them; the text before the first heading (parsed as CommonMark does; unique slugs `x`, `x-1` …) — must be one of: named by a unit's `prd_source`; bound by an open, deferred or out-of-scope OQ through `[covers: <prd>#<slug>]` (the only OQ route — round 5 showed quotes and `§` citations covering whole features by accident; a resolved OQ covers nothing); or listed in `context.md ## Coverage exclusions` with a real reason (not a placeholder, not a pending decision), one line per anchor. The gate no longer guesses whether a heading is "meta" or "out of scope". `--kb` keeps only the plugin's own KB-template sections. The gate reads markdown only (a non-`.md` PRD gets a rendition first). The state holds one entry per vault, bound by a digest to its sources, exclusions, OQs and units and to the sources the vault pins; the execute-bolts preflight and analyze refuse a missing, FAIL or stale entry | the heuristic classifier did not converge. Three adversarial rounds each found 2–3 new HIGH findings in both directions (a requirement dropped silently / a non-requirement blocking the plan), every fix produced the opposite error, and the script grew from 182 to 588 lines. Declared coverage turns a silent omission into a visible, reviewable decision, and lets a false block be cleared in one line |
+| 1a | P3 amendment to 1: the execute-bolts starterkit slice | Deleted with the dispatch-prompt builder (`starterkit-enrichment.md`). The other legacy-cache readers stay: validate-unit-spec Check 3, conformance, GROUND Guard 7, emit-agents-md and the resolver. execute-bolts passes the `starterkit_context` hand-off block through without reading it at execution time | the slice was injected only into the per-unit dispatch prompt, and P3 removes that prompt (§8.6) |
+| 2a | P3 amendment to 2: framework-pack rules at bolt time | No slice is injected any more, so pack rules no longer reach the bolt. They reach execution only as plan-authored Hard rules and the pack-driven gates. Still no new machine-checked B1 rules | the advisory T2 slice was built by the per-unit builder, which P3 deletes. This is a recorded loss (§8.6 G4, G6), not a measured one |
+| 3a | P3 amendment to 3: `--per-squad` | Retired as a proposal: orchestrate-flow no longer offers `execute-bolts --per-squad --agents`. The flag text stays in execute-bolts, inert because it is scoped to `--agents`, until P3b retires the fan-out flags. The unit-side squad rules and `--squad=` validation stay | per-squad dispatch existed only on the per-unit agent path |
+
+Rows 1a–3a were added by P3 (2026-09-28, §8.6). Each one replaces the part of row 1, 2 or 3 that
+it names.
 
 ## 8. P2: lean inline execution for guarded, built on superpowers (owner choice 2026-09-27: "P2 ramping")
 
@@ -352,3 +358,109 @@ metrics are OVERLAP (AC 13 vs 13, Critical 0 vs 0, Important 0 vs 0, traps 5/5 �
 - **Given up on the default path, stated:** the per-bolt LOCKED drift check (`--agents` only; the
   chain-end `detect-drift` auto-gate is the backstop), the hook-counted attempt cap (`--max-retries`
   is a prose cap per task) and per-unit model routing (`--model-tier` / `--no-escalate` need `--agents`).
+
+### 8.6 P3 outcome (2026-09-28)
+
+**Decision.** On 2026-09-28 the owner decided to run the full P3 (commits C0–C9) and accepted O2.
+The plan is `research/2026-09-28-p3-deletion-plan.md`. It was produced by the read-only workflow
+`p3-caller-audit` (144 agents: inventory, 9 cluster audits, 135 adversarial refutation checks, a
+synthesis) at `4e1cf166`. The only basis for deleting anything is §8.5: inline was non-inferior to
+the per-unit agent path on one brownfield fixture, n=3. **P3 claims no speed, cost or quality
+gain.** An item the refutation checks refuted stays KEEP; only the single lockstep lines and forced
+test re-pins listed in plan §2b change in it. An item that was not refuted but is
+coupled to a refuted one moves to P3b as a unit, rather than being half-done.
+
+**`--agents` is retired.** The token is still recognized and still implies `--guarded`. A user who
+types it gets the guarded lane they asked for, plus this one line, said once:
+`--agents is retired: the per-unit agent path was removed (spec v9 §8.6); running the default inline run.`
+It is dropped from the argument-hint, and the `guarded-agents` benchmark arm is deleted rather than
+left to record inline runs under an "agents" label. This follows the 9.0 `--classic` pattern.
+`--inline` stays an accepted no-op alias. `--model-tier=<role>:<tier>` (extract-intelligence roles)
+is unchanged. `--max-retries=N` stays as a prose cap per task, and no hook counts it. The retired
+flags are: `--review-panel`, the bare `--model-tier=<tier>`, `--no-escalate`, execute-bolts
+`--resume` and `--rollback`. Each gets a one-line notice (plan §5; the bare `--model-tier` and
+`--no-escalate` share one). The fan-out flags
+(`--parallel`, `--sequential`, `--per-squad`, `--worktree`, `--sprint-checkpoint`) keep their text
+in P3. They are inert because they are scoped to `--agents`, and P3b retires them.
+
+**Deletion list (planned; the last commit records what landed).**
+- **Agents, 7 of 9:** bolt-implementer, spec-, code-quality-, security-, standards- and
+  design-reviewer, resolution-verifier. domain-extractor and claim-verifier stay.
+- **Scripts:** `merge-panel-findings.sh`, `resolve-review-tier.sh`, `capture-views.sh`,
+  `build-dispatch-prompt.sh`, `validate-dispatch-prompt.sh`. The panel scan in
+  `validate-bolt-artifacts.sh` goes, but `--panel-scan` stays an accepted no-op for at least one
+  release because open plans on disk still pass it.
+- **execute-bolts references:** `review-panel.md`, `context-enrichment.md`,
+  `starterkit-enrichment.md`, `bolt-dispatch-prompt.md`, `partial-state-and-saga.md`.
+- **Hook legs (`hooks/pre-tool-use`):** the panel-evidence reader, the attempt cap, the wave and
+  probe rails, the in-run F-18 and binding-freshness legs, the D24a crash-deny, and the F-09 Agent
+  dispatch mapping. The PreToolUse matcher becomes `Skill|Bash|Edit|Write`.
+- **Artefacts that are no longer written:** `review-tier.json`, `attempts.json`, `findings.json`,
+  `dispatch-prompt.md`, `design-slice.md`, `partial-state.json`, `.bolt-panel-state.json`,
+  `.dispatch-prompt-state.json`. Legacy copies on disk stay readable.
+- **Tests:** 58 files that pin only deleted code are deleted (22 test scripts plus fixtures, goldens
+  and run-all.sh; 8,361 lines at `4e1cf166`), after their surviving pins moved in C0.
+- **Measured totals:** complexity-budget values, lines and files deleted: in the C9 commit message
+  (`git log --grep='P3 C9'`).
+
+**The moat after P3.** Invariant #2 has one form for every run. The CONFLICT block is the
+run-start quarantine in `derive-exec-plan.sh`, plus each task's re-bind, plus `conflict_bypassed` at
+the run boundary and on Stop. The per-dispatch gate is removed together with the per-dispatch path.
+The §8.2 threat model is unchanged. The moat pins are re-pointed in C6b, never dropped:
+`test-bind-codebase-fork` will name the run-start quarantine, and `test-migrated-conflict-blocks` a5
+moves to the execute-bolts Skill entry, which still denies `binding_missing`.
+
+**Owner decisions and disclosures.**
+- **O1, per-unit trace tag retired.** `mega-sdd-trace:execute-bolts:<unit-id>` loses its only
+  emitter (the dispatch-prompt builder), and `docs/gateway-contract.md` records the retirement.
+  Every other tag is unchanged: `mega-sdd-trace:execute-bolts` (the inline run's one blind
+  reviewer), `:turn`, `:plan`, the skill and lane announce tags, `:assisted-review`, and the
+  `mega-sdd-note:` session note.
+  *Note for the gateway team:* the `contains "mega-sdd-trace"` filter still catches every mega-sdd
+  session, and the per-phase prefix breakdown is unchanged. A breakdown or alert keyed on the
+  `:<unit-id>` suffix stops receiving rows, because an inline run dispatches nothing per unit.
+  Per-unit attribution is now available only in git (the `Unit: U-XXX` commit trailer), not in-band.
+- **O2, accepted.** The panel and L0 obligations on units committed by a legacy `--agents` run stop
+  being enforced. Before P3 they could block an inline run through `--panel-scan`, and after P3 no
+  remedy script would exist. The CHANGELOG carries this as a release note.
+- **O3, disclosed.** The spawn-ceiling pin C8b moves from the Agent payload to the
+  `mega-sdd:execute-bolts` Skill entry on the bound fixture. It measured 91 spawns there, above C8's
+  90 on the unbound fixture, and stays under the ≤95 ceiling. The ceiling is not raised. (C6b
+  re-measured 87 after the C6a leg deletions, on macOS.)
+- **O4, disclosed.** A stale `model_tiers.bolt_implementer` or `*-reviewer` key in
+  `.mega-sdd/config.yaml` triggers GROUND's existing `[self-resolved] model_tier_unknown` notice on
+  every run. The notice never halts, and users will see it until they remove the key.
+- **O5, P3b, non-blocking.** The packs cluster decides the fate of the pack sections
+  `## Code style`, `## Hard Rules emitted` and `## Security idioms`.
+
+**Honest losses.** The inline arm that §8.5 measured had none of the items below, so its
+non-inferiority result already reflects their absence on that fixture. None of them was measured on
+its own.
+- **G1.** Iron Rules 5/6 and the Context7 consult guidance no longer reach implement time. The
+  Context7 guidance survives in the extras `slice-procedure.md` and in `plan`. The rest of the
+  implementer body goes too: the transient `index.lock` retry and "never park a written test
+  outside the repo" have no inline carrier (the inline commit step does commit the test files a
+  task wrote).
+- **G2.** Gone: the per-unit trace tag (O1); the per-dispatch freshness, F-18 and attempt-cap legs;
+  the `acceptance_test_concern` writer (the FSD label is fixed); and the per-bolt LOCKED drift check
+  (`bolt_introduces_locked_drift`) in every mode. The chain-end `detect-drift` auto-gate stays the
+  backstop.
+- **G3.** `cross_squad_interface_draft` and `module_blocked_by` are still promised (execute-bolts
+  SKILL.md, unit-schema, modules-schema) but have no inline implementation. This gap exists since
+  P2 and is not caused by P3. P3b fixes it.
+- **G4.** Pack rules and the reuse, design and starterkit slices no longer reach any bolt (§7 rows
+  1a, 2a). `[LOCKED]` still reaches units through `plan --kb` Hard rules and GateGuard.
+- **G5.** No gate reads `l0-results.json`, and SAST WARN findings have no reader.
+- **G6.** `modern-baseline.md` and the pack `## Code style` / `## Security idioms` sections have no
+  runtime reader.
+- **G7.** The T01 lite trace does not trace the inline reference set (about 74 KB). Re-pointing it
+  raises the ceiling and needs a `raises` entry, so it is deferred to P3b.
+- **G8.** The inline controller has no bounded-probe rule. This is an existing gap.
+- **G9.** The fix-proposer prompt carries no `mega-sdd-trace` line. This is an existing gap, and
+  propose-and-confirm stays unchanged in P3.
+
+**Deferred to P3b** (each as a unit, each with its own re-audit): the fan-out cluster
+(`batch-and-fanout.md`, `squad-subagent.md`, the fan-out flags, `parallel_max`, G3); the halt
+vocabulary (emitterless registry rows and their mirrors, the fix-proposer trace); JIT capture
+(`derive-unit-claims.sh` wave mode and the `_wave-claims` guard); and the done-rule
+(`unit_binding.py` and the dead `vault_layouts` functions).

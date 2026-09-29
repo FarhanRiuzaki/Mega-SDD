@@ -322,10 +322,9 @@ case "${TOOL_NAME:-}" in
   #    recomputation (orchestrate-flow handoff-consumption.md); its only
   #    producer, the classic units handoff, is retired in 9.0 (plan emits no
   #    handoff). Validator deleted with it.
-  #  · Bash → the build-dispatch-prompt.sh parity leg: advisory-only state
-  #    (.dispatch-prompt-state.json — nothing in PreToolUse reads it), now
-  #    written fresh by run-analyze FULL (№C twin change), so the per-Bash-call
-  #    hook firing bought nothing the analyze lane does not already cover.
+  #  · Bash → the dispatch-prompt parity leg: advisory state (.dispatch-prompt-state.json,
+  #    no PreToolUse reader). Its validator and the builder were removed in P3; run-analyze
+  #    FULL reads V16 as SKIP, so nothing is left for a per-Bash-call firing to cover.
   Write|Edit)
     # №D: this authoritative leg is the JOURNAL fallback for payloads the
     # pure-shell fast path declined (escaped Windows paths, oversized stdin,
@@ -376,9 +375,9 @@ case "${TOOL_NAME:-}" in
     #    (5 scans, B1 --recompute), ui-quality, factory-ledger before reading
     #    a single state (S4 BC-GATE-1 / S5 GU-HOOK-1 / S6 EB-GATE-1);
     #  · the Stop hook still runs the bolt-artifact detection scans per turn;
-    #  · run-analyze FULL re-runs the whole validator set — including the four
-    #    advisories whose only writer used to be this fan-out (№C, V13–V16) —
-    #    so the analyze lane stays loss-free;
+    #  · run-analyze FULL re-runs the whole validator set — including the
+    #    advisories whose only writer used to be this fan-out (№C, V13–V15; V16's
+    #    validator was removed in P3 and reads SKIP) — so the analyze lane stays loss-free;
     #  · the KB/vault-flows surfaces (incl. the Mermaid mandate) are re-run by
     #    analyze FULL per file — the hook-time firing was early-warning only.
     # What changed, honestly: per-write early warning is gone — a bad unit

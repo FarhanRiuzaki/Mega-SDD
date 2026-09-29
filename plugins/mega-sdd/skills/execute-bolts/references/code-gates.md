@@ -1,6 +1,6 @@
-# L0 Code Gates — the deterministic floor under the review panel
+# L0 Code Gates — the deterministic floor
 
-Machine checks the controller runs on a bolt's `<base>..<head>` diff BEFORE dispatching the review panel. Commit topology (detect-after, per SKILL.md): the implementer's commit has already landed when these gates run — a BLOCKING finding halts the run and gates further bolts; it does not (cannot) prevent the commit that carries it. Deterministic first, LLM second: an LLM lens must never burn context on what a linter, SAST rule, or registry lookup decides for free. Design: `docs/superpowers/specs/2026-06-12-review-panel-design.md` (Phase 2).
+Machine checks the controller runs on a bolt's `<base>..<head>` diff. Commit topology (detect-after, per SKILL.md): the implementer's commit has already landed when these gates run — a BLOCKING finding halts the run and gates further bolts; it does not (cannot) prevent the commit that carries it. Deterministic first, LLM second: an LLM review must never burn context on what a linter, SAST rule, or registry lookup decides for free. Design: `docs/superpowers/specs/2026-06-12-review-panel-design.md` (Phase 2).
 
 ## Contents
 
@@ -8,12 +8,11 @@ Machine checks the controller runs on a bolt's `<base>..<head>` diff BEFORE disp
 - Toolchain detection (detect, never impose)
 - Blocking vs advisory
 - Halt YAMLs
-- Feeding results into the panel
 - Config + opt-out
 
 ## The gates and their order
 
-Run after the implementer reports DONE, in this order (cheap → expensive), each scoped to the bolt's `<base>..<head>` diff. `<base>` is the bolt's ORIGINAL base on EVERY pass — a panel re-dispatch re-enters here (review-panel.md §Merge) and the gates re-scan `original-base..new-head`, never fix-commit-only. **Under `--parallel` the same rule is expressed per commit** (wave commits interleave, so a contiguous range would sweep siblings): the re-entry scan covers the unit's own commit SET — the original bolt commit AND each fix commit (`<sha>^..<sha>` per commit, results merged) — which keeps attempt-1's findings in the record (this rule's purpose) without attributing sibling commits to this unit (`batch-and-fanout.md §--all`):
+Run after the implementer reports DONE, in this order (cheap → expensive), each scoped to the bolt's `<base>..<head>` diff. Range = the unit's own `<BASE>..HEAD`:
 
 | # | Gate | Script | Tool | Absent tool → |
 |---|---|---|---|---|
@@ -24,7 +23,7 @@ Run after the implementer reports DONE, in this order (cheap → expensive), eac
 | 5 | New-dep existence | `scripts/validate-new-deps.sh --base= --head=` | python3 urllib → official registry | offline → `unverified` WARNING |
 | 6 | Dep authorization (ADVISORY) | `scripts/validate-new-deps.sh --unit= --base= --head=` (rides gate 5 — one manifest-diff pass, `authorization` JSON section) | shared `_lib/dep_manifest.py` diff | unit lacks `allowed_new_deps:` → `enforced:false` no-op |
 
-**Run the floor as ONE call — `scripts/run-code-gates.sh` (`docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2c).** The controller never runs the table row-by-row across 9–13 Bash turns: the wrapper sequences toolchain detection + gates 1–6 in the order above, **short-circuits at the first BLOCKING result** (later gates land in `not_run[]` and their subprocesses are never spawned), and emits ONE merged JSON on stdout — the payload the controller Writes to `<vault>/lens-inputs/U-XXX/l0-results.json` for the panel (spec D5). It resolves the gate scripts as siblings of its own path, so no plugin-root resolution happens here (the runnable form lives in SKILL.md Procedure step 3 — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted in reference files):
+**Run the floor as ONE call — `scripts/run-code-gates.sh` (`docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2c).** The controller never runs the table row-by-row across 9–13 Bash turns: the wrapper sequences toolchain detection + gates 1–6 in the order above, **short-circuits at the first BLOCKING result** (later gates land in `not_run[]` and their subprocesses are never spawned), and emits ONE merged JSON on stdout — the payload recorded in `<vault>/lens-inputs/U-XXX/l0-results.json`. It resolves the gate scripts as siblings of its own path, so no plugin-root resolution happens here (the runnable form lives in the plan's "Record the evidence" task step written by `derive-exec-plan.sh` — `${CLAUDE_PLUGIN_ROOT}` is NOT substituted in reference files):
 
 ```
 bash <plugin-root>/scripts/run-code-gates.sh \
@@ -32,14 +31,14 @@ bash <plugin-root>/scripts/run-code-gates.sh \
   --unit=<vault>/units/U-XXX.md --write [--pack=<active-pack.md>] [--no-code-gates]
 ```
 
-- **`--write`** — the wrapper itself persists the merged JSON as `<vault>/lens-inputs/U-XXX/l0-results.json` (`written_by: run-code-gates.sh`, `plugin_version`). The controller never hand-writes that file (it is hook-guarded like the other evidence); the panel-evidence gate halts `l0_evidence_missing` when a bolt dispatched with `review-tier.json` lacks it.
+- **`--write`** — the wrapper itself persists the merged JSON as `<vault>/lens-inputs/U-XXX/l0-results.json` (`written_by: run-code-gates.sh`, `plugin_version`). The controller never hand-writes that file (it is hook-guarded like the other evidence).
 
-- **Exit 0** — gates ran, no blocking finding; non-blocking findings + SKIPs ride in the JSON for the panel.
+- **Exit 0** — gates ran, no blocking finding; non-blocking findings + SKIPs ride in `l0-results.json`.
 - **Exit 1** — a BLOCKING finding; the JSON `halt` object carries the type (`secret_in_code` / `sast_critical_finding` / `dep_not_found`) and IS the blocker payload.
 - **Exit 2** — usage/environment error (bad args, unresolvable base/head, an always-run gate could not complete): NOTHING was certified — never treat as clean; fix and re-run.
 - `--unit=` feeds gate 6 (absent → a visible SKIP, never silent). `--pack=` applies a pack `## Toolchain` override to gates 1–2 (pack override > detection, per the section below). `--no-code-gates` and the `code_gates: false` config key (read by the wrapper itself) skip gates 1–2, 4 and 6 — **gates 3 and 5 always run**.
 - Timeouts are bounded per command (120s toolchain / 300s gate script): a toolchain timeout is a per-tool failure note, a SAST timeout is a visible SKIP ("scan NOT performed"), a secrets/dep-existence timeout is exit 2 — the always-run pair is never silently skipped.
-- The individual scripts stay invocable directly for debugging; the wrapper is the shipped path, and a panel re-dispatch re-enters at the same one call over `original-base..new-head`.
+- The individual scripts stay invocable directly for debugging; the wrapper is the shipped path.
 
 All emit JSON; a tool failure is a visible SKIP with a reason, never silently reported as "clean". For the secret gate specifically (the always-on gate), a gitleaks RUNTIME failure (exit ≥ 2 — crash, incompatible CLI, bad log-opts) does not merely SKIP: it WARNs to stderr and falls back to the plugin's regex scan, and the emitted JSON `note` discloses the fallback — same degradation path as gitleaks-absent. gitleaks exit 1 with an unreadable report is a BLOCKING `report-unreadable` finding (leaks were detected; never reported clean).
 
@@ -49,20 +48,20 @@ All emit JSON; a tool failure is a visible SKIP with a reason, never silently re
 
 Formatting failures are auto-fixed (`fix_cmd`) and re-checked — formatting is machine territory, not a finding. Lint/typecheck failures are findings. **A fix lands AFTER the bolt commit and dirties the working tree** — the JSON discloses it (`format.fix_applied: true`, per-tool `fix_rc`): the controller commits the formatting fix under the unit's canonical identity (a follow-up commit in the unit's commit set, `bolt-contract.md §Commit message format`) before proceeding — pre-flight 3 (clean tree) makes silently carrying the dirt into the next unit impossible.
 
-**L0 syntax floor (the zero-config rung UNDER gate 2).** Even with no repo-own lint/typecheck config, a committed file must at least parse: `scripts/run-acceptance-tests.sh` (the B4 evidence writer, run at post-flight per SKILL.md Procedure step 5) executes `php -l` / `python3 -m py_compile` / `node --check` / `ruby -c` over the bolt's changed files as a pre-rung — only when the interpreter already exists on PATH (detect-never-impose; absent interpreters are recorded in `acceptance.json.syntax_skipped`, never installed). A syntax failure is recorded with NO retry (syntax is deterministic) and halts **`build_broken`**. Deterministic home (documented choice): the rung lives INSIDE the B4 writer — one writer, one hook-guarded artifact — so the syntax evidence is auditable in `acceptance.json` next to the acceptance verdicts instead of a second unguarded artifact.
+**L0 syntax floor (the zero-config rung UNDER gate 2).** Even with no repo-own lint/typecheck config, a committed file must at least parse: `scripts/run-acceptance-tests.sh` (the B4 evidence writer, run at post-flight per the plan's task step) executes `php -l` / `python3 -m py_compile` / `node --check` / `ruby -c` over the bolt's changed files as a pre-rung — only when the interpreter already exists on PATH (detect-never-impose; absent interpreters are recorded in `acceptance.json.syntax_skipped`, never installed). A syntax failure is recorded with NO retry (syntax is deterministic) and halts **`build_broken`**. Deterministic home (documented choice): the rung lives INSIDE the B4 writer — one writer, one hook-guarded artifact — so the syntax evidence is auditable in `acceptance.json` next to the acceptance verdicts instead of a second unguarded artifact.
 
 ## Blocking vs advisory
 
 Per the gates-doctrine (blocking only for critical + un-promptable):
 
-- **BLOCKING (halt before the panel dispatches — the bolt commit already landed):**
+- **BLOCKING (halt — the bolt commit already landed):**
   - a secret in the diff (`secret-scan.sh --code` exit 1) → halt `secret_in_code`
   - an ERROR-severity SAST finding (`run-code-scan.sh` exit 2) → halt `sast_critical_finding`
   - a new dependency the registry definitively 404s (`validate-new-deps.sh` exit 2) → halt `dep_not_found` (hallucinated/slopsquat package — never install)
-- **FINDINGS (non-blocking, fed to the panel + bolt-report):** lint/typecheck failures, WARNING/INFO SAST findings, `unverified` new deps (offline), **`dep_unauthorized`** (gate 6 — the bolt added a dependency the unit's `allowed_new_deps` did not sanction; anti-over-engineering per the WAJIB bar). Gate 6 is **advisory-first by design** (always exit 0): the future blocking escalation is deferred and, when it lands, is commit-keyed like B4 so legacy bolts never retro-block. A unit with no `allowed_new_deps:` key is `enforced:false` — never a finding.
-- **SKIPs** are recorded in the bolt-report `## Review panel` section so a "clean" run that scanned nothing is never mistaken for a clean scan.
+- **FINDINGS (non-blocking, recorded in `l0-results.json`):** lint/typecheck failures, WARNING/INFO SAST findings, `unverified` new deps (offline), **`dep_unauthorized`** (gate 6 — the bolt added a dependency the unit's `allowed_new_deps` did not sanction; anti-over-engineering per the WAJIB bar). Gate 6 is **advisory-first by design** (always exit 0): the future blocking escalation is deferred and, when it lands, is commit-keyed like B4 so legacy bolts never retro-block. A unit with no `allowed_new_deps:` key is `enforced:false` — never a finding.
+- **SKIPs** ride in `l0-results.json`, committed with the unit's evidence, so a "clean" run that scanned nothing is never mistaken for a clean scan.
 
-These halts follow the same shape and discipline as `hard_rule_violated` (detect-after): blocker YAML + `bolt-report.md` with the findings; the flagged code sits in an already-landed commit, and the remediation acts on that commit. There is no `--force` path around the secret gate; `--no-code-gates` (below) skips gates 1–2, 4, and 6 (the advisory/non-critical set) — secrets and dep-existence always run.
+These halts follow the same shape and discipline as `hard_rule_violated` (detect-after): blocker YAML + `bolt-report.md` with the findings; the flagged code sits in an already-landed commit, and the remediation acts on that commit. There is no `--force` path around the secret gate; `--no-code-gates` (§Config + opt-out) skips gates 1–2, 4, and 6 (the advisory/non-critical set) — secrets and dep-existence always run.
 
 ## Halt YAMLs
 
@@ -89,10 +88,6 @@ halt:
   details: {new_deps: [{package, registry, status: NOT_FOUND}]}
   next_action: "The package does not exist on its official registry — likely a hallucinated name (slopsquat risk). Find the canonical package or drop the dependency. Never install around this halt."
 ```
-
-## Feeding results into the panel
-
-The wrapper's stdout JSON — gate results, skips, `not_run[]` — is the merged L0 JSON. The controller Writes it ONCE, verbatim, to `<vault>/lens-inputs/U-XXX/l0-results.json` and puts that PATH in each review-panel lens/verifier prompt (it never re-assembles, summarizes, or pastes the per-gate results per lens; a re-round OVERWRITES the file with the fresh run — `review-panel.md §Blind dispatch`). Lenses do NOT re-report machine-caught findings; the security lens verifies blockers were addressed and hunts what scanners can't see (authz semantics, architectural drift). This keeps the blind protocol intact — L0 output is machine fact, not another lens's opinion.
 
 ## Config + opt-out
 

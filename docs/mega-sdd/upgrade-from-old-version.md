@@ -47,7 +47,7 @@ Procedure for direct/assisted: `plugins/mega-sdd/references/direct-lane.md`. Eve
 |---|---|
 | `generate-intent` | `plan <prd>` (PRD/BRD) · `plan --kb=<kb-dir>` (extract-intelligence KB). A brief goes to direct/assisted; under `--guarded` the front door writes it to a seed PRD first (`skills/plan/references/brief-input.md`) and `plan` asks once |
 | `generate-units` | `plan` — units are written in the same phase (since 8.0); `plan --regenerate` rebuilds them, `plan --reconcile` flips task_type/status after code moved |
-| `bind-codebase` | the JIT bind per unit inside `execute-bolts` (pre-flight 3.9: `derive-unit-claims.sh` → `write-unit-binding.sh` → `validate-handoff-binding-units.sh`) → `bolts/U-XXX/binding.json`. Whole-vault audit: `/mega-sdd:sync --full-bind` (= `scripts/rebind-units.sh --units=all`). A CONFLICT still blocks at dispatch |
+| `bind-codebase` | the JIT bind per unit inside `execute-bolts` (pre-flight 3.9: `derive-unit-claims.sh` → `write-unit-binding.sh` → `validate-handoff-binding-units.sh`) → `bolts/U-XXX/binding.json`. Whole-vault audit: `/mega-sdd:sync --full-bind` (= `scripts/rebind-units.sh --units=all`). A CONFLICT still blocks (the unit is quarantined at run start) |
 | `scan-codebase` | GROUND — `scripts/ground.sh` + the symbol index (`.mega-sdd/codebase/symbol-index.json`). No `codebase-map.md` writer is left; an existing map is still read |
 | The classic chain + the scan-first classic spine | the one pipeline above |
 | `scripts/compute-lock-digests.sh` | nothing — its only callers were the removed skills |
@@ -124,8 +124,8 @@ The old phrases still route: "pecah PRD ini" / "spec out this feature" / "genera
 
 **What changed (user-visible, in order):**
 - **7.7–7.8 — sprint/wave scheduling + contract-scoped review routing.** execute-bolts schedules waves by default; the review-tier router scopes its risk signals to the unit's contract (the field misroutes were fixed here).
-- **7.9.0 — Agent-tool dispatch is gated.** A hand-dispatched `bolt-implementer` Agent call now hits the execute-bolts PreToolUse gate (F-09), and the wave rail DENIES `git add -A` / `stash` / `reset --hard` while a bolt is in flight (F-16). Expect a block where an older version silently let a hand dispatch through.
-- **7.10–7.11 — evidence obligations.** Directive-typed Hard rules are ADVISORY (never fail B1); a bolt dispatched with `review-tier.json` MUST carry a panel `findings.json` + `l0-results.json` (`panel_evidence_missing` / `l0_evidence_missing`); a `type: test` acceptance entry needs `expects` (`acceptance_expects_missing`, per unit at its own dispatch).
+- **7.9.0 — Agent-tool dispatch is gated.** A hand-dispatched `bolt-implementer` Agent call now hits the execute-bolts PreToolUse gate (F-09), and the wave rail DENIES `git add -A` / `stash` / `reset --hard` while a bolt is in flight (F-16). Expect a block where an older version silently let a hand dispatch through. (Both removed in P3 with the per-unit path.)
+- **7.10–7.11 — evidence obligations.** Directive-typed Hard rules are ADVISORY (never fail B1); a bolt dispatched with `review-tier.json` MUST carry a panel `findings.json` + `l0-results.json` (`panel_evidence_missing` / `l0_evidence_missing`); a `type: test` acceptance entry needs `expects` (`acceptance_expects_missing`, per unit at its own dispatch). (The panel and per-dispatch parts were removed in P3.)
 - **7.12–7.13 — project packs + L0 advisory.** `.mega-sdd/packs/<framework>.md` resolves (beats a same-named plugin pack); a repo with zero linter/formatter gets a ONE-TIME `l0_toolchain_vacuous` advisory (decision file `.mega-sdd/l0-toolchain-decision.json`).
 - **7.16 — `/mega-sdd:emit html <file|dir>`** renders any mega-sdd md into one self-contained offline HTML.
 - **7.20–7.23 — team-feedback round.** `--max-complexity=large` / config `unit_granularity: coarse`; resolve-oq walks the extraction KB (§6); every OQ prompt opens with Konteks + Maksudnya; the natural-register writing contract applies to every emitted doc.
@@ -196,7 +196,7 @@ Run migrations (paths, then the vault layout rungs to layout-3, then the mandato
 | Paused 8.x chain naming a removed skill | FATAL `skill_removed_in_9` (one line naming the replacement) | Re-run `/mega-sdd` (no argument) — the chain is re-derived from disk |
 | `docs/mega-sdd/vaults/<slug>/` legacy path | Read OK (back-compat probe) | Optional: `/mega-sdd:migrate-paths` |
 | `.mega-sdd-memory/` legacy path | Read OK (back-compat probe) | Same |
-| `codebase-map.md` (any pre-9.0 version, canonical or `<repo-root>/` location) | Read when present (emit-*, detect-drift, build-dispatch-prompt); no 9.0 writer — GROUND's `symbol-index.json` is the codebase context | None; optional `/mega-sdd:migrate-paths` moves a root-level map to `.mega-sdd/codebase/` |
+| `codebase-map.md` (any pre-9.0 version, canonical or `<repo-root>/` location) | Read when present (emit-*, detect-drift); no 9.0 writer — GROUND's `symbol-index.json` is the codebase context | None; optional `/mega-sdd:migrate-paths` moves a root-level map to `.mega-sdd/codebase/` |
 | Pre-v1.4 KB without `[LOCKED]/[INTENT]/[ARTIFACT]` markers | Yes — all claims default to `[INTENT]` (safe middle-ground) | None (auto-fallback) |
 | Vault without `scope_metadata` (legacy single-scope) | Yes — treated as legacy single-vault; `scope:` blocks omitted | None |
 | Vault without `phase`/`phase_total` fields (pre-Iter-35) | Yes — defaults to `phase: 1, phase_total: 1` | None |

@@ -115,7 +115,7 @@ Intermediate stage detail (context load, pre-flight, TDD phases, post-flight ver
 > **"anchors N/N" honesty:** print that count ONLY after actually probing each
 > `## Anchors` path at prompt-assembly time — **path exists + the line is within the file,
 > and nothing more.** (There is no "when the binding recorded an excerpt/sha, the region still
-> matches" clause — per `context-enrichment.md §Re-decided amendments` row 4:
+> matches" clause — per `check-anchor-freshness.sh`:
 > no binding-schema field records an excerpt or a sha, and `check-anchor-freshness.sh` — the
 > deterministic owner of this question — probes path + line-range only, for the same reason.
 > The residual gap is real, which is why the emitted line must state what was probed:
@@ -320,7 +320,7 @@ handoff:
 
 Status `halted` on any entry of the CANONICAL bolt-halt enum (single owner — `handoff-contract.md`'s routing index carries NO copy, only a pointer here, and `halt-taxonomy.md` classifies every entry into always-stop / cycle-eligible / soft; on conflict this list wins):
 
-`test_fail` · `hard_rule_violated` · `hard_rule_unparseable` · `hard_rule_unanchored` · `hard_rule_mixed_grammar` · `verify_unit_writable` · `cross_squad_interface_draft` · `module_blocked_by` · `sprint_blocked_by` · `acceptance_path_unowned` · `dep_missing` · `secret_in_code` · `sast_critical_finding` · `dep_not_found` · `review_critical_unresolved` · `pbt_citation_invalid` · `pbt_property_violated` · `batch_suite_red` · `batch_suite_gate_missing` · `postflight_evidence_missing` · `acceptance_evidence_missing` · `acceptance_red` · `build_broken` · `anchor_missing` · `whitelist_violation` · `commit_rejected_by_hook` · `bolt_repeated_partial_failure` · `partial_state_corrupt` · `dispatch_prompt_too_large` · `bolt_introduces_locked_drift` · `scope_creep_detected` · `provenance_missing` · `self_assessment_missing` · `bolt_artifacts_missing` · `memory_in_use` · `panel_evidence_missing` · `l0_evidence_missing` · `acceptance_expects_missing` · `binding_conflict` · `ambiguous_spec` · `verify_grounding_untrusted`
+`test_fail` · `hard_rule_violated` · `hard_rule_unparseable` · `hard_rule_unanchored` · `hard_rule_mixed_grammar` · `verify_unit_writable` · `cross_squad_interface_draft` · `module_blocked_by` · `sprint_blocked_by` · `acceptance_path_unowned` · `dep_missing` · `secret_in_code` · `sast_critical_finding` · `dep_not_found` · `review_critical_unresolved` · `pbt_citation_invalid` · `pbt_property_violated` · `batch_suite_red` · `batch_suite_gate_missing` · `postflight_evidence_missing` · `acceptance_evidence_missing` · `acceptance_red` · `build_broken` · `anchor_missing` · `whitelist_violation` · `commit_rejected_by_hook` · `bolt_repeated_partial_failure` · `dispatch_prompt_too_large` · `bolt_introduces_locked_drift` · `scope_creep_detected` · `provenance_missing` · `self_assessment_missing` · `bolt_artifacts_missing` · `memory_in_use` · `panel_evidence_missing` · `l0_evidence_missing` · `acceptance_expects_missing` · `binding_conflict` · `ambiguous_spec` · `verify_grounding_untrusted`
 
 Required ONLY under `--auto`.
 

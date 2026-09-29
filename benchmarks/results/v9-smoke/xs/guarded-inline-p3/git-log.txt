@@ -1,0 +1,22 @@
+7f6eba4 2026-09-28T16:07:29+07:00 chore(sdd): post-bolt drift report (7 findings queued in PENDING-SYNC)
+c4b301e 2026-09-28T16:04:50+07:00 chore(sdd): vault.json bolt_completed (U-001..U-005)
+fc26e05 2026-09-28T16:04:39+07:00 chore(sdd): evidence recompute (run-boundary gate)
+e4e5285 2026-09-28T16:04:30+07:00 chore(sdd): evidence run 3a4607b
+e57afc3 2026-09-28T16:03:54+07:00 fix(review): take page title/description from the site config and set lang=id
+0cc24d9 2026-09-28T16:03:33+07:00 fix(U-005): show a form-level error on save failure and link Kontak back to Beranda
+5310691 2026-09-28T16:03:31+07:00 fix(U-003): link Beranda to Tentang Kami so the page is reachable
+d1d725e 2026-09-28T16:03:04+07:00 fix(U-002): keep form values and report an error when saving the message fails
+e37f6f5 2026-09-28T16:00:50+07:00 fix(delivery): add npm test script running the unit and page tests
+40645a2 2026-09-28T16:00:29+07:00 chore(sdd): evidence U-005 — Halaman Kontak + form + server action
+52da2d5 2026-09-28T16:00:21+07:00 feat(U-005): Halaman Kontak + form + server action
+449a0db 2026-09-28T15:59:17+07:00 chore(sdd): evidence U-004 — Halaman Tentang Kami
+bfcbcfd 2026-09-28T15:59:12+07:00 feat(U-004): Halaman Tentang Kami
+75fc80c 2026-09-28T15:58:43+07:00 chore(sdd): evidence U-003 — Konfigurasi konten statis + Halaman Beranda
+863ce57 2026-09-28T15:58:37+07:00 feat(U-003): Konfigurasi konten statis + Halaman Beranda
+96b43af 2026-09-28T15:57:48+07:00 chore(sdd): evidence U-002 — Validasi server form kontak + handler submit
+dfcd5cb 2026-09-28T15:57:45+07:00 feat(U-002): Validasi server form kontak + handler submit
+7078d9d 2026-09-28T15:57:04+07:00 chore(sdd): evidence U-001 — Simpan pesan kontak ke tabel contact_messages (SQLite)
+7817dea 2026-09-28T15:56:39+07:00 feat(U-001): Simpan pesan kontak ke tabel contact_messages (SQLite)
+3a4607b 2026-09-28T15:55:34+07:00 chore(sdd): plan vault company-profile (context + 5 units)
+ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
+da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

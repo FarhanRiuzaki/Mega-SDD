@@ -94,10 +94,10 @@ if os.path.isdir(state_dir):
     # user's diff (2026-09 benchmark: 40k-124k committed .mega-sdd/ lines per run next to
     # 0.9k-10.6k lines of code; 78-88% was HTML render, the rest mostly per-lens copies of
     # the unit body/pack and gate-state caches — all re-derived on disk). Stays tracked:
-    # context/vault/constitution/units, bolt-report, binding.json, findings.json,
-    # pre/postflight, acceptance, attempts, l0-results, dispatch-prompt (what the
-    # implementer was told); the inline run's plan and ledger are local. A .gitignore without the
-    # marker is the user's — never touched.
+    # context/vault/constitution/units, bolt-report, binding.json, pre/postflight,
+    # acceptance, l0-results, and legacy --agents evidence (findings, attempts,
+    # dispatch-prompt: no writer since P3); the inline run's plan and ledger are local.
+    # A .gitignore without the marker is the user's — never touched.
     gi = os.path.join(state_dir, ".gitignore")
     marker = "# mega-sdd-managed v1"
     body = marker + """ — regenerable or transient; remove this line to take ownership

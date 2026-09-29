@@ -130,7 +130,7 @@ printf '{"status": "PASS", "gaps": []}\n' > "$TMP/proj/.mega-sdd/.plan-coverage-
 out=$(bash "$S" $SFLAGS --cwd="$TMP/proj" --chain=execute-bolts </dev/null); src=$?
 [ "$src" -eq 0 ] && pass "well-formed units + PASS coverage census -> execute-bolts chain exits 0" \
   || fail "clean fixture exited $src: $out"
-for c in units_directory_present units_depends_on_dag_acyclic units_have_acceptance_tests verify_units_have_no_target_files partial_state_loads_cleanly lite_plan_coverage_pass; do
+for c in units_directory_present units_depends_on_dag_acyclic units_have_acceptance_tests verify_units_have_no_target_files lite_plan_coverage_pass; do
   printf '%s\n' "$out" | grep -q "\"check\": \"$c\"" \
     && pass "cold-halt/membership check $c ran under execute-bolts" \
     || fail "check $c missing from execute-bolts chain"
@@ -340,8 +340,8 @@ printf '%s' "$R" | grep -q '^0 PASS - ' && pass "11c layout-2 vault (no context.
 
 # 11d. mixed project: every plan-born vault CARRYING UNITS counts (a unit-less one
 # never blocks). A dispatch arg never narrows the rail: execute-bolts has no --vault
-# flag and the in-run bolt-implementer gate carries no args, so a `--vault=<x>` the
-# skill ignores would exempt the Skill entry only (review 2026-09-27: `--vault=src`,
+# flag, so a `--vault=<x>` the skill ignores must not exempt the Skill entry
+# (review 2026-09-27: `--vault=src`,
 # `--vault=/tmp`, or a vault named like a project dir such as app/, passed a FAIL census).
 X="$TMP/mixed"; mk_l2 "$X/.mega-sdd/vaults/old"; mk_l3 "$X/.mega-sdd/vaults/new"; mkdir -p "$X/src" "$X/new"
 R="$(dpf "$X" execute-bolts '--all')"
@@ -377,14 +377,12 @@ R="$(dpf "$NU" execute-bolts)"
 printf '%s' "$R" | grep -q '^1 FATAL bolts_units_missing | ' && pass "11e no units -> bolts_units_missing stays the fatal" \
   || fail "11e: $R"
 
-# ══ 12. the REAL PreToolUse hook: Skill entry AND the in-run bolt-implementer dispatch ══
+# ══ 12. the REAL PreToolUse hook: the Skill entry (the Agent leg was removed in P3, spec v9 §8.6) ══
 HOOK="plugins/mega-sdd/hooks/pre-tool-use"
 H="$TMP/hookproj"; HV="$H/.mega-sdd/vaults/app"; mk_l3 "$HV"; printf '# Constitution\n' > "$HV/constitution.md"; cov_prd "$H"; cov_decl "$HV"
 ( cd "$H" && git init -q . && git -c user.email=t@t -c user.name=t add -A \
   && git -c user.email=t@t -c user.name=t commit -q -m seed ) >/dev/null 2>&1
 hook_skill() { printf '{"session_id":"cov-rail","cwd":"%s","tool_name":"Skill","tool_input":{"skill":"mega-sdd:execute-bolts","args":"--all --lite"}}' "$H" \
-  | bash "$HOOK" 2>/dev/null; }
-hook_agent() { printf '{"session_id":"cov-rail","cwd":"%s","tool_name":"Agent","tool_input":{"subagent_type":"mega-sdd:bolt-implementer","description":"bolt","prompt":"mega-sdd-trace:execute-bolts:U-001\\nREAD FIRST, IN FULL: %s/bolts/U-001/dispatch-prompt.md"}}' "$H" "$HV" \
   | bash "$HOOK" 2>/dev/null; }
 cp "$HV/context.md" "$TMP/hctx.bak"; grep -v 'Contact Form' "$TMP/hctx.bak" > "$HV/context.md"
 cov_run "$H" "$HV"; cp "$TMP/hctx.bak" "$HV/context.md"  # a FAIL entry (the tree is back to the committed context.md)
@@ -392,10 +390,6 @@ OUT=$(hook_skill)
 printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' && printf '%s' "$OUT" | grep -q 'plan_coverage_gap' \
   && pass "12 real hook: Skill mega-sdd:execute-bolts on a FAIL census is DENIED (plan_coverage_gap)" \
   || fail "12 real hook allowed execute-bolts on a FAIL census: ${OUT:0:300}"
-OUT=$(hook_agent)
-printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' && printf '%s' "$OUT" | grep -q 'plan_coverage_gap' \
-  && pass "12 real hook: a hand bolt-implementer Agent dispatch on a FAIL census is DENIED (plan_coverage_gap)" \
-  || fail "12 real hook allowed a bolt-implementer dispatch on a FAIL census: ${OUT:0:300}"
 mkdir -p "$H/src"
 OUT=$(printf '{"session_id":"cov-rail","cwd":"%s","tool_name":"Skill","tool_input":{"skill":"mega-sdd:execute-bolts","args":"--all --vault=src"}}' "$H" \
   | bash "$HOOK" 2>/dev/null)

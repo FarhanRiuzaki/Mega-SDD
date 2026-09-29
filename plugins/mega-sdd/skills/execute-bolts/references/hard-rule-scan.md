@@ -1,6 +1,6 @@
 # execute-bolts — Hard Rule pre/post-flight scan
 
-The anti-hallucination gate. Each unit's `## Hard rules` are validated against real codebase state **before** the bolt (pre-flight snapshot) and **after** the bolt (post-flight scan); any post-flight violation **HALTS the run**. Commit topology (detect-after — one truth, per SKILL.md): the `bolt-implementer` commits after its tests pass, so the post-flight scan runs against an already-committed bolt; a violation gates every further `execute-bolts` (B1) and the remediation is fix-forward or revert of the flagged commit — never a claim that the code is uncommitted. The skill body owns the gate's existence + trigger; this file owns the grammar, snapshot formats, and per-rule mechanics.
+The anti-hallucination gate. Each unit's `## Hard rules` are validated against real codebase state **before** the bolt (pre-flight snapshot) and **after** the bolt (post-flight scan); any post-flight violation **HALTS the run**. Commit topology (detect-after — one truth, per SKILL.md): the unit's bolt commits after its tests pass, so the post-flight scan runs against an already-committed bolt; a violation gates every further `execute-bolts` (B1) and the remediation is fix-forward or revert of the flagged commit — never a claim that the code is uncommitted. The skill body owns the gate's existence + trigger; this file owns the grammar, snapshot formats, and per-rule mechanics.
 
 ## Contents
 - Pre-flight: grammar detection
@@ -155,7 +155,7 @@ Post-flight results are written to `<vault>/bolts/U-XXX/postflight.json` (per-ru
 
 ## Framework-pack rule provenance
 
-`plan` promotes no framework-pack rule into a unit's Hard Rules — pack rules reach the bolt as the advisory T2 `framework_pack_rules` slice (`context-enrichment.md`), never a B1 obligation. A unit that already carries pack-derived Hard Rules (a migrated layout-2 vault) has them validated identically to other Hard Rules — they sit **in an executable production** (packs ship `rule_type` inventories, not ready-made ast-grep blocks; the pack→bolt table in `plan/references/validation-passes.md §12.4.5` — v1 production, verbatim v2 YAML when the pack carries a real `rule:` body, or the honest `directive`/Anti-pattern tier). The violation surface includes a `framework_pack_source` field in the halt YAML so the user knows WHICH framework rule fired.
+`plan` promotes no framework-pack rule into a unit's Hard Rules — no pack slice reaches the bolt, and a pack rule is never a B1 obligation of its own. A unit that already carries pack-derived Hard Rules (a migrated layout-2 vault) has them validated identically to other Hard Rules — they sit **in an executable production** (packs ship `rule_type` inventories, not ready-made ast-grep blocks; the pack→bolt table in `plan/references/validation-passes.md §12.4.5` — v1 production, verbatim v2 YAML when the pack carries a real `rule:` body, or the honest `directive`/Anti-pattern tier). The violation surface includes a `framework_pack_source` field in the halt YAML so the user knows WHICH framework rule fired.
 
 ## Per-sibling cross-cutting registration scan (defense-in-depth)
 

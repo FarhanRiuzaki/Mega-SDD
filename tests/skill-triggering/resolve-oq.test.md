@@ -14,7 +14,7 @@ Manual-run fixture for the `resolve-oq` skill.
 
 ### R3: Binding mode
 - **Prompt:** `/mega-sdd:resolve-oq --binding .mega-sdd/vaults/my-app`
-- **Expect:** Walks every open CONFLICT claim in the vault's per-unit `bolts/U-*/binding.json` (the JIT bind at execute-bolts pre-flight 3.9); a `bolts/U-XXX/binding.json` argument walks that unit only. A pre-9.0 layout-2 vault (or a `<path-to-binding.md>` argument) takes the layout-2 leg: CONFLICT + Open Questions entries from `binding.md`
+- **Expect:** Walks every open CONFLICT claim in the vault's per-unit `bolts/U-*/binding.json` (the execute-bolts JIT bind, up front + per task); a `bolts/U-XXX/binding.json` argument walks that unit only. A pre-9.0 layout-2 vault (or a `<path-to-binding.md>` argument) takes the layout-2 leg: CONFLICT + Open Questions entries from `binding.md`
 
 ### R4: Natural English
 - **Prompt:** `resolve open questions`
@@ -136,7 +136,7 @@ Canonical shape: `references/interactive-walk.md` Step 2b. Slots are a display d
 
 ### BM4: Hand-off after binding mode — ACTION-MIX (not a blanket re-bind)
 - **Setup:** at least one CONFLICT resolved via KEEP_CODE or SPLIT (the unit's `## Claims` was edited)
-- **Expect:** re-bind just the edited units — `scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=<edited U-ids>` (the edited claims bind cleanly) → `plan --reconcile` (task_type flips) → `/mega-sdd --resume` (`execute-bolts --all --lite`), per `references/binding-mode.md` Step 5. Skipped, the BOLTS gate backstops it: the edited unit trips `unit_changed_since_bind` and 3.9b re-binds it
+- **Expect:** re-bind just the edited units — `scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=<edited U-ids>` (the edited claims bind cleanly) → `plan --reconcile` (task_type flips) → `/mega-sdd --resume` (`execute-bolts --all --lite`), per `references/binding-mode.md` Step 5. Skipped, the run start backstops it: execute-bolts re-binds every pending unit up front (inline-run.md (b)2), and a unit still stale is quarantined `binding_stale` by derive-exec-plan.sh
 
 ### BM5: Hand-off KEEP_VAULT/DEFER-only → resume bolts (no re-bind loop)
 - **Setup:** all CONFLICTs resolved via ONLY KEEP_VAULT and/or DEFER (vault + code unchanged); zero KEEP_CODE/SPLIT

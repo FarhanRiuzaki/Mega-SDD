@@ -165,12 +165,6 @@ mkstdin_stop "$PE" | bash "$STP" >/dev/null 2>&1
 S3=$(mt "$SSTAMP")
 [ "$S3" != "$S2" ] && ok "HEAD move -> Stop re-scanned (stamp rewritten)" || fail "Stop missed the HEAD move"
 
-note "== 4d/anchor-regex parity: builder copy pinned byte-identical =="
-RE1=$(python3 -c 'import re,sys; s=open(sys.argv[1]).read(); m=re.search(r"TOKEN = re\.compile\(r\"([^\"]+)\"\)", s); print(m.group(1) if m else "MISS1")' "$ANC")
-RE2=$(python3 -c 'import re,sys; s=open(sys.argv[1]).read(); m=re.search(r"ANCHOR_TOKEN_RE = re\.compile\(\s*r\"([^\"]+)\"", s); print(m.group(1) if m else "MISS2")' "${ROOT}/plugins/mega-sdd/scripts/build-dispatch-prompt.sh")
-[ "$RE1" = "$RE2" ] && [ "$RE1" != "MISS1" ] \
-  && ok "check-anchor-freshness TOKEN regex == build-dispatch-prompt ANCHOR_TOKEN_RE (the 'can never disagree' claim is now pinned, not prose)" || fail "anchor regex literals diverged (RE1=$RE1 RE2=$RE2)"
-
 note "== 4e. non-adopted project: nothing minted =="
 PN="$WORK/pn"; mkdir -p "$PN/src"
 ( cd "$PN" && git init -q . && git config user.email t@t && git config user.name t \

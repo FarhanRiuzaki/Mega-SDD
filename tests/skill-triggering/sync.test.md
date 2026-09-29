@@ -33,7 +33,7 @@ How to run: for each prompt, start a FRESH session in a repo matching the CWD st
 - [ ] `derive-changed-paths.sh` wrote `<vault>/.sync-changed-paths.txt` (git diff from the index stamp ∪ working tree ∪ journal); the journal was rotated ONLY after that write succeeded
 - [ ] `sync-intersect.sh` ran before any re-verdict: exit 0 → one-line SYNC-REPORT.md + END; exit 4 → proceed; any other exit → full chain (fail-closed)
 - [ ] detect-drift scoped to the changed paths (`--scope=@<vault>/.sync-changed-paths.txt`); findings direction-neutral, queued to PENDING-SYNC.md
-- [ ] Binding CONFLICT gate behavior unchanged (an open CONFLICT still closes its unit at dispatch)
+- [ ] Binding CONFLICT gate behavior unchanged (an open CONFLICT still closes its unit at execute-bolts run start, the derive-exec-plan.sh quarantine)
 - [ ] Re-bind used `rebind-units.sh --paths=@<vault>/.sync-changed-paths.txt`: only units whose `target_files` ∪ `## Anchors` ∪ binding anchors meet the changed set were re-verdicted; untouched units kept their `binding.json`
 - [ ] `plan --reconcile` changed ONLY task_type/status of existing unit IDs; vanished claims marked `superseded` (file kept); no unit added (a new requirement goes `diff-vault` → `plan --regenerate`)
 - [ ] `compute-unit-staleness.sh` output drove `status:`; legacy units (no target_hashes) left without status — never guessed

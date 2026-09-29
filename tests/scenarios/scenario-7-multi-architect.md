@@ -71,7 +71,7 @@ User picks `[1] BE`.
   - vault.json: scope=BE, scope_metadata declared, prd_sha256 recorded
   - units/U-*.md: only the BE sections' requirements
 
-▶ Phase 2: execute-bolts --all --lite (JIT bind per unit; halts on CONFLICT at dispatch)
+▶ Phase 2: execute-bolts --all --lite (JIT bind per unit; a CONFLICT quarantines its unit at run start)
 ```
 
 BE architect's vault is at `.mega-sdd/vaults/<slug>/`. `context.md ## Overview` carries the sibling-scope note:

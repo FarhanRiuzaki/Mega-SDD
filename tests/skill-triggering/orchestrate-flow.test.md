@@ -37,7 +37,7 @@ orchestrate-flow runs the **guarded** lane — ONE pipeline, `plan` → `execute
 
 ### R6: Units exist, no bolts
 - **State:** units/U-001.md etc., no bolts/
-- **Expect:** Propose `execute-bolts --all --lite` (the default inline run, spec v9 §8.5; with `--agents` the hop is `execute-bolts --all --lite --agents`, wave-parallel by default per `docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md` §2a)
+- **Expect:** Propose `execute-bolts --all --lite` (the inline run, spec v9 §8.5; a typed `--agents` is retired in one line and changes nothing)
 
 ### R7: Blocking OQs present
 - **State:** any state, the vault has unresolved P1 business OQs, status != deferred (the grammar has no P0 — P1 is the blocking tier)
@@ -71,9 +71,9 @@ orchestrate-flow runs the **guarded** lane — ONE pipeline, `plan` → `execute
 - **State:** a phase at attempt 3 still `unresolved`
 - **Expect:** HALT `phase_stuck` + concrete human question; no 4th auto re-run
 
-### R-FACTORY-4: binding_conflict KEEP_VAULT/DEFER resolution continues the unit (no re-bind loop; `--agents`)
-- **State:** `--deep`/`--converge`; `execute-bolts` pre-flight 3.9 halted U-008 on `binding_conflict`; the auto-invoked `resolve-oq --binding` resolved every conflict via ONLY KEEP_VAULT/DEFER, written through `write-unit-binding.sh --resolve`
-- **Expect:** the resolution in `bolts/U-008/binding.json` already opens the gate, so the loop continues that unit's dispatch with NO re-bind (a re-bind would only spend the unit's one 3.9b at this HEAD → `rebind_exhausted`). KEEP_CODE/SPLIT edits the unit's `## Claims` → `rebind-units.sh --units=U-008` (3.9b) → re-dispatch. Per `references/convergence-loops.md` + `resolve-oq/references/binding-mode.md` Step 5
+### R-FACTORY-4: binding_conflict resolved → the scope run re-binds and re-plans
+- **State:** `--deep`/`--converge`; the `execute-bolts` run start (`derive-exec-plan.sh`) halted on `binding_conflict` (U-008 blocked every pending unit); the auto-invoked `resolve-oq --binding` resolved every conflict, written through `write-unit-binding.sh --resolve`
+- **Expect:** the loop re-invokes `execute-bolts`, whose run start re-binds and re-plans (`inline-run.md` (b)); U-008 is in the plan once its gate is open. Per `references/convergence-loops.md` + `resolve-oq/references/binding-mode.md` Step 5
 
 ### R-SYNC-1: Mode D maintenance/sync chain (per-unit, script hops)
 - **State:** layout-3 vault with units, bolts and per-unit `bolts/U-*/binding.json`; the symbol index exists; a change signal is present (`.mega-sdd/codebase/.dirty-paths.jsonl` non-empty OR git HEAD ≠ the index `head_commit`). Invoked `/mega-sdd:sync` (or `orchestrate-flow --sync`).
@@ -108,15 +108,15 @@ All routing rules per routing-rules.md fire deterministically from the state eng
 - **Prompt:** `/mega-sdd:orchestrate-flow`
 - **Expect:** state snapshot includes `squad_count: 3`
 
-### MS2: Multi-squad + pending units → --per-squad only with --agents
+### MS2: Multi-squad + pending units → --all (the inline run ignores squads)
 - **Setup:** vault with 3 squads, units exist, no bolts yet
-- **Prompt:** `/mega-sdd:orchestrate-flow` (and `/mega-sdd:orchestrate-flow --agents`)
-- **Expect:** proposed chain contains `execute-bolts --all --lite` (the inline run ignores squads); with `--agents`, `execute-bolts --per-squad --agents`
+- **Prompt:** `/mega-sdd:orchestrate-flow`
+- **Expect:** proposed chain contains `execute-bolts --all --lite` (NOT `--per-squad`)
 
 ### MS3: Single-squad (squad_count=1) → existing behavior
 - **Setup:** vault has `_meta/squads.yaml` with exactly 1 squad declared
 - **Prompt:** `/mega-sdd:orchestrate-flow`
-- **Expect:** proposes `execute-bolts --all --lite` (NOT `--per-squad`, with or without `--agents`)
+- **Expect:** proposes `execute-bolts --all --lite` (NOT `--per-squad`)
 
 ### MS4: No squads.yaml → existing behavior
 - **Setup:** vault has no `_meta/squads.yaml`
@@ -152,7 +152,7 @@ All routing rules per routing-rules.md fire deterministically from the state eng
 - **Expect:** chain STOPS after plan; the blocker is surfaced verbatim; the orchestrator does NOT auto-invoke execute-bolts (and never invents a handoff for the halted hop); the user closes the gap, then `--resume`
 
 ### DC6: Halt on `status: halted`
-- **Setup:** `--deep --no-converge` chain; `execute-bolts` halts `binding_conflict` for a unit (the up-front bind; `--agents`: pre-flight 3.9)
+- **Setup:** `--deep --no-converge` chain; `execute-bolts` halts `binding_conflict` for a unit (the up-front bind)
 - **Expect:** that unit STOPS (dependents skipped with the reason); blocker YAML surfaced verbatim; user resolves via `resolve-oq --binding`
 
 ### DC7: AI technical decisions never pause the chain and never route to resolve-oq
@@ -183,7 +183,7 @@ All routing rules per routing-rules.md fire deterministically from the state eng
 ### RES5: --resume after a KEEP_CODE/SPLIT resolution re-binds that unit
 - **Setup:** previous run halted on `binding_conflict` for U-004; user resolved via `/mega-sdd:resolve-oq --binding` with at least one KEEP_CODE or SPLIT (the unit's `## Claims` WAS edited)
 - **Prompt:** `/mega-sdd:orchestrate-flow --deep --resume`
-- **Expect:** U-004 is re-bound before dispatch (`rebind-units.sh --units=U-004`, then `plan --reconcile` per resolve-oq's hand-off); skipped, the BOLTS gate backstops it — the edited unit trips `unit_changed_since_bind` and 3.9b re-binds it. Routing keys on the resolution action mix, never on a whole-vault re-bind
+- **Expect:** U-004 is re-bound before its task (`rebind-units.sh --units=U-004`, then `plan --reconcile` per resolve-oq's hand-off); skipped, the run start backstops it — the edited unit trips `unit_changed_since_bind` and the up-front bind re-binds it. Routing keys on the resolution action mix, never on a whole-vault re-bind
 
 ### RES3: --from override skips earlier completed phases
 - **Setup:** all phases completed; user wants to re-run only `execute-bolts`
@@ -303,7 +303,7 @@ All deep-chain rules (DC1-DC7) follow `references/routing-rules.md` §Deep-chain
 ### OF-MT2 — CLI flag overrides project config
 
 **Setup:**
-- CLI flag: `--model-tier=extract-intelligence-module:opus` (a non-panel role — panel `*-reviewer` lenses are frontmatter-pinned and NOT overridable via `model_tiers:`, per review-panel.md/model-tiers.md §Override syntax)
+- CLI flag: `--model-tier=extract-intelligence-module:opus` (a catalog role, per model-tiers.md §Override syntax)
 - `<project>/.mega-sdd/config.yaml` has `model_tiers: { extract-intelligence-module: haiku }`
 
 **Trigger:** `/mega-sdd --model-tier=extract-intelligence-module:opus ./legacy-php/ --out=./rebuild/`

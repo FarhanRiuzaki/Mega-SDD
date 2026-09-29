@@ -145,7 +145,7 @@ reviews). Otherwise runs end-to-end silently with progress indicators.
 [Run] [Edit] [Cancel]
 ```
 
-There is no scan phase and no bind phase. Binding happens per unit, at dispatch.
+There is no scan phase and no bind phase. Binding happens per unit, when `execute-bolts` starts (the up-front bind) and again before each unit's task.
 
 ### Step B2 — Phase 1: `plan` reads the PRD and your code
 
@@ -201,7 +201,7 @@ target_files:
 acceptance_test:
   - type: test
     command: ./vendor/bin/phpunit --filter=PatientUserTest
-    expects: "OK ("                       # a literal substring phpunit prints on success; an empty expects halts acceptance_expects_missing at dispatch
+    expects: "OK ("                       # a literal substring phpunit prints on success; an empty expects is flagged acceptance_expects_missing (an analyze advisory)
 ---
 
 ## Anchors
@@ -225,12 +225,12 @@ The unit states which fields to ADD (phone, role) and which to KEEP (email, pass
 
 ### Step B3 — Phase 2: `execute-bolts` (JIT bind, then bolts)
 
-Before each wave, pre-flight 3.9 binds the wave's units just in time:
+Before any task runs, the up-front bind binds every pending unit just in time (each task re-binds its unit again):
 
 - `derive-unit-claims.sh` collects the claims;
 - `write-unit-binding.sh`, the only writer, records a verdict per claim in `bolts/U-XXX/binding.json`. The script verdicts filesystem claims on disk and symbol claims against the symbol index. Free-text claims go through a fixed evidence ladder that never confirms by absence.
 
-A CONFLICT, meaning the code contradicts the unit's claim, blocks **that unit** at dispatch. The others proceed, and its dependents are skipped with the reason.
+A CONFLICT, meaning the code contradicts the unit's claim, blocks **that unit**: `derive-exec-plan.sh` quarantines it at run start. The others proceed, and its dependents are skipped with the reason.
 
 ```
 ▶ Phase 2 of 2: invoking execute-bolts (--all --lite)
@@ -245,7 +245,7 @@ Each bolt is one atomic commit that:
 
 - implements ONE unit and has passing tests;
 - touches nothing outside its `target_files` whitelist (the B3 whitelist observer checks the commit);
-- passed its Hard-rule pre/post-flight scans and a risk-tiered review panel.
+- passed the L0 gates and the detect-after scans (Hard-rule post-flight, acceptance); ONE blind review of the whole run range closes the run.
 
 The chain ends with `delivery-check.sh` and the same result contract as Part A: criterion → test table, the `VERDICT:` line of the last commit, and the assumptions and decisions (the AI's tech decisions and your OQ answers).
 

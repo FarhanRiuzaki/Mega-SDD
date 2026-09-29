@@ -1,110 +1,62 @@
 # Scenario 11 — Model Tier Override
 
 **Time:** ~5 minutes
-**When to use:** override default model tiers per subagent role (cost control OR quality boost)
-**Prerequisites:** plugin v7.6+
+**When to use:** override the default model tier of an extract-intelligence role (cost control OR quality boost)
+**Prerequisites:** plugin v9 with P3 (spec v9 §8.6 — the per-unit implementer and the review-panel roles are gone)
 
 ## What you'll learn
 
-- mega-sdd uses a curated catalog (15 rows: role × tier) for subagent dispatches
-- 2 ways to override: CLI flag, project config
+- mega-sdd uses a curated catalog (role × tier) for its subagent dispatches: the two extract-intelligence roles
+- 2 ways to override: project config, CLI flag
 - When to escalate (opus) vs. when to drop (haiku)
 
 ## The catalog
 
 By default mega-sdd picks tier per role per `plugins/mega-sdd/references/model-tiers.md`:
 
-- 2 roles default **opus**: `code-quality-reviewer`, `security-reviewer` (reviewer lenses stay frontmatter-pinned — see the Scope note under Example 1)
-- 12 roles default **sonnet**: deep-scan extractors, `extract-intelligence-module` (per-module PRD-kontrak extraction; synthesis runs on the MAIN thread — no dispatched role), `implementer`, `spec-reviewer`, `resolution-verifier`, `extract-intelligence-verify`, the remaining panel lenses, etc.
-- 0 roles default **haiku** — the haiku rung lives in per-unit routing (`bolt-implementer` on a verify-only unit), not in the catalog (the 7.13.0 cull removed the dead haiku rows)
-- 1 role is **inherit**: `bolt-implementer` (operator-tiered — see Example 5)
+- `extract-intelligence-module` — **sonnet** (per-module PRD-kontrak extraction; synthesis runs on the MAIN thread — no dispatched role)
+- `extract-intelligence-verify` — **sonnet** (claim-verify lane: adversarial per-module citation grading)
 
-Distribution is sonnet-dominant by design (rubric in catalog file).
+`execute-bolts` dispatches no plugin agent (one blind `general-purpose` reviewer at the close), so it has no catalog row.
 
 ## Override mechanism — 3 levels (highest precedence first)
 
 1. **CLI flag** (per-run): `--model-tier=<role>:<tier>`
-2. **Per-project config**: `<project>/.mega-sdd/config.yaml` `model_tiers:` section (the single persistent override surface — the user-scope rung was removed in v7.3.0)
+2. **Per-project config**: `<project>/.mega-sdd/config.yaml` `model_tiers:` section (the single persistent override surface)
 3. **Catalog default**: `references/model-tiers.md §Catalog`
 
-## Example 1 — Cost-sensitive run (one-off)
+## Example 1 — Project config (persistent)
 
-You're testing a feature; don't need opus reviews. Override code-quality-reviewer to sonnet for THIS run:
-
-```bash
-/mega-sdd --model-tier=code-quality-reviewer:sonnet ./prd.md
-```
-
-Multiple overrides allowed:
-
-```bash
-/mega-sdd \
-  --model-tier=implementer:opus \
-  --model-tier=libs-extractor:haiku \
-  ./prd.md
-```
-
-> **Scope:** `model_tiers:` covers SKILL-LEVEL roles only. The execute-bolts review-panel
-> lenses (`*-reviewer`) are pinned in each agent's frontmatter and silently ignore this
-> config — see `review-panel.md` / `model-tiers.md §Override syntax`.
-
-## Example 2 — Project always wants cheaper extraction
-
-You manage a project where the team standardizes on cheaper extraction/audit passes:
+A gnarly legacy dialect needs a stronger claim verifier; extraction stays on the default:
 
 ```yaml
 # <project>/.mega-sdd/config.yaml
 model_tiers:
   extract-intelligence-module: sonnet   # pin extraction to sonnet on this project
-  libs-extractor: haiku                 # manifest-only pass — cheap is fine here
+  extract-intelligence-verify: opus     # the row-23 rationale names this override
 ```
 
-Applies to every mega-sdd run in this project. Doesn't affect other projects.
+Applies to every mega-sdd run in this project. Doesn't affect other projects. An underscored key (`extract_intelligence_module`) is read the same way.
 
-## Example 3 — Persistent quality boost
+## Example 2 — CLI flag (one-off)
 
-The user-scope model-tier rung was removed in v7.3.0 — the override surface is the per-project `.mega-sdd/config.yaml` (single source) + the CLI flag. A persistent boost therefore lives in the project config.
-
-The real use case: bumping `implementer` from sonnet to opus on a complex rebuild — the catalog's own row-15 rationale names exactly this override:
-
-```yaml
-# <project>/.mega-sdd/config.yaml
-model_tiers:
-  implementer: opus  # complex rebuild — default sonnet is for typical tasks
+```bash
+/mega-sdd --model-tier=extract-intelligence-module:opus --model-tier=extract-intelligence-verify:opus ./legacy/
 ```
 
-## Example 4 — Unknown role tolerance
+The bare `--model-tier=<tier>` form and `--no-escalate` are retired (no implementer is dispatched); the front door says so in one line and carries on.
 
-What if you reference a role not in catalog?
+## Example 3 — Unknown or retired role
+
+What if you reference a role not in the catalog — a future role, or a key from before P3 (`bolt_implementer`, a `*-reviewer` lens)?
 
 ```yaml
 # .mega-sdd/config.yaml
 model_tiers:
-  future-unreleased-role: opus
+  bolt_implementer: auto
 ```
 
-The chain emits SOFT halt `model_tier_unknown` + log: "Role 'future-unreleased-role' not in catalog; override ignored. Chain proceeds." 
-
-Forward-compat: when a future iter adds `future-unreleased-role` to catalog, this override auto-applies on next run.
-
-## Example 5 — per-unit implementer routing (v7.1)
-
-The bolt implementer gets its own routing knob:
-
-```yaml
-# <project>/.mega-sdd/config.yaml
-model_tiers:
-  bolt_implementer: inherit   # or: auto
-```
-
-- `inherit` (default): the implementer tracks the operator's session tier.
-- `auto`: the router picks the `implementer_model` per unit from resolve-review-tier's six risk signals; haiku is verify-only.
-
-Front-door flags: `--model-tier=inherit|auto|haiku|sonnet|opus` + `--no-escalate`.
-
-Cascade: 2 consecutive failed attempts → the next attempt runs ONE tier higher, at most once per unit; never auto-de-escalate.
-
-Audit fields in `bolt-report.md`: `model_used`, `escalated_from`, `signals_fired`.
+GROUND emits the `[self-resolved] model_tier_unknown` notice on every run: `role 'bolt_implementer' unknown; chain uses catalog default`. It never halts; delete the key to silence it.
 
 ## When to escalate to opus
 
@@ -127,19 +79,17 @@ Per the catalog rubric:
 - No architectural reasoning
 - Speed/cost dominates quality
 
-If your override is for a manifest-only pass with an enum-like output (e.g. `libs-extractor` on a small repo) → haiku is correct.
-
 ## Verify override applied
 
 After running with overrides, check chain output. orchestrate-flow logs final tier resolution:
 
 ```
-Model tier overrides applied: implementer=opus (cli-flag); libs-extractor=haiku (cli-flag)
+Model tier overrides applied: extract-intelligence-verify=opus (project); extract-intelligence-module=opus (cli-flag)
 ```
 
 handoff metadata.model_tiers + model_tier_sources blocks have the provenance trail (source: catalog | project | cli per role).
 
 ## See also
 
-- `plugins/mega-sdd/references/model-tiers.md` — full catalog (15 rows × tier + rationale; numbering gaps are retired rows)
+- `plugins/mega-sdd/references/model-tiers.md` — full catalog (role × tier + rationale; numbering gaps are retired rows)
 - `docs/mega-sdd/reading-map.md` — Stage 7 cross-cutting (where overrides live)

@@ -193,14 +193,14 @@ Before the next hop, the validators must pass: unit spec, flow coverage, and pla
 
 ### Step B4 — Phase 2: `execute-bolts --all --lite`
 
-For each wave, pre-flight 3.9 binds the units **just in time**:
+Before any task runs, the up-front bind binds every pending unit **just in time** (each task re-binds its unit again before it starts):
 
 - `derive-unit-claims.sh` collects each unit's claims;
 - `write-unit-binding.sh` writes the verdicts to `bolts/U-XXX/binding.json`. It is the only writer of that file.
 
-On a fresh scaffold almost every claim is a filesystem check (a `create` target must not exist yet; a modified file must exist), verdicted by the script. A wave with no symbol or free-text claims costs zero model tokens. A CONFLICT would stop only the unit it belongs to (and skip the units that depend on it).
+On a fresh scaffold almost every claim is a filesystem check (a `create` target must not exist yet; a modified file must exist), verdicted by the script. A bind with no symbol or free-text claims costs zero model tokens. A CONFLICT would stop only the unit it belongs to: `derive-exec-plan.sh` quarantines it at run start (and skips the units that depend on it).
 
-Independent units then run in parallel waves (at most `parallel_max`, 4 by default). Each unit goes through the `bolt-implementer` agent and a risk-tiered review panel, with Hard-rule pre/post-flight scans. Per bolt you see two lines:
+The units then run in ONE context, one task per unit in the generated plan's order: the task's re-bind, test first, the L0 gates and the detect-after scans (Hard-rule post-flight, acceptance), then its evidence commit. ONE blind review of the whole run range closes the run. Per unit you see two lines:
 
 ```
 ▶ Bolt 1/14: U-001 "Create appointment schema + migration"

@@ -101,7 +101,7 @@ flowchart LR
 ONE spec pipeline. `--lite` survives only as its lane marker.
 
 - **`plan`** is ONE model phase. Its input is a PRD/BRD, a seed PRD that the front door writes from a brief under `--guarded`, or `--kb=<kb-dir>` for an extract-intelligence KB. It writes the layout-3 vault (`context.md` with flows, DBML, NFRs and OQs, plus `constitution.md` and `vault.json`) and the atomic units (`units/U-*.md` + `_index.md`), each carrying `prd_source` / `context_source` citations. P1 business OQs go out in ONE batched ask. `validate-plan-coverage.sh` must PASS before the bolts hop: every PRD heading needs a decision — a unit, an open OQ carrying `[covers: <prd>#<slug>]`, or a `context.md ## Coverage exclusions` line with a reason (the gate checks that a decision exists; it never guesses which headings are meta). It reads markdown only: a `.pdf`/`.docx`/`.txt` PRD gets a `.md` rendition first. Each plan-born vault needs its own fresh PASS: an edit to the PRD, the exclusions, an OQ or a unit's `prd_source`, a re-pinned PRD or an added KB module after the gate ran is refused until it re-runs.
-- **`execute-bolts --all --lite`** runs every unit in ONE context from a generated plan (spec v9 §8.5; `research/2026-09-28-p2-inline-results.md`: not WORSE than the per-unit agent path on AC, Critical, Important, traps and regressions, n=3). It binds every pending unit up front: `derive-unit-claims.sh` → `write-unit-binding.sh`, the sole writer of `bolts/U-XXX/binding.json` (CONFIRMED / CONFLICT / OQ per claim) → `validate-handoff-binding-units.sh`. `derive-exec-plan.sh` quarantines a unit with an unresolved CONFLICT (`binding_conflict`) and skips its dependents, until `resolve-oq --binding` settles it; each task re-binds its unit first. Each unit is built test-first with the pre/post-flight Hard Rule scans and the evidence writers; ONE blind review covers the run, and `conflict_bypassed` plus the evidence gates check it at the boundary. `--agents` keeps the per-unit path: dependency waves, the pre-flight 3.9 JIT bind, the `bolt-implementer` agent, the risk-tiered blind review panel and the CONFLICT gate at each dispatch. The run ends with `delivery-check.sh` and the result contract.
+- **`execute-bolts --all --lite`** runs every unit in ONE context from a generated plan (spec v9 §8.5; `research/2026-09-28-p2-inline-results.md`: not WORSE than the per-unit agent path on AC, Critical, Important, traps and regressions, n=3). It binds every pending unit up front: `derive-unit-claims.sh` → `write-unit-binding.sh`, the sole writer of `bolts/U-XXX/binding.json` (CONFIRMED / CONFLICT / OQ per claim) → `validate-handoff-binding-units.sh`. `derive-exec-plan.sh` quarantines a unit with an unresolved CONFLICT (`binding_conflict`) and skips its dependents, until `resolve-oq --binding` settles it; each task re-binds its unit first. Each unit is built test-first with the pre/post-flight Hard Rule scans and the evidence writers; ONE blind review covers the run, and `conflict_bypassed` plus the evidence gates check it at the boundary. The per-unit `--agents` path was removed in P3 (spec v9 §8.6). The run ends with `delivery-check.sh` and the result contract.
 - **Why it exists:** traceability and audit. It gives a PRD section → unit → binding verdict → commit trail, per-bolt evidence on disk, and the inputs for FSD/SIT/UAT. It is **not** a code-quality gain; see [Measured](#measured-against-plain-claude-code).
 
 **Removed in 9.0:** the classic chain (`generate-intent → scan-codebase → bind-codebase → generate-units`) and the scan-first spine. `--classic` and a config `lane: standard` select nothing: the front door says so in one line and carries on with the one pipeline. **Pre-9.0 (layout-2) vaults** are still READ (resolver: layout-3 → layout-2 → legacy), so emit-* and status keep working. To build or sync on one, run `/mega-sdd:migrate-paths --vault-layout=3` and then the mandatory full re-bind. The front door proposes this and never runs it silently.
@@ -109,7 +109,7 @@ ONE spec pipeline. `--lite` survives only as its lane marker.
 **And it loops.** Development never actually ends. After a guarded run "finishes", every out-of-pipeline change (a manual hotfix, an AI-prompted edit in any session, a `git pull`) goes through the same steps:
 1. It is captured ambiently: a PostToolUse journal, plus per-unit binding stamps checked against HEAD.
 2. It is surfaced in the session-start state block: HEAD, FRESH/STALE per vault, and the rule "code at HEAD decides what the code IS".
-3. It is blocked when a unit's binding no longer describes HEAD (at run start; under `--agents`, at each dispatch).
+3. It is blocked when a unit's binding no longer describes HEAD (at run start).
 4. It is reconciled by `/mega-sdd:sync`:
 
 ```mermaid
@@ -132,10 +132,10 @@ Setup: n=3 clean runs per arm, opus, vanilla Claude Code (mega-sdd disabled) as 
 |---|---|---|---|
 | greenfield xs (routed → direct) | 3.2 min · $1.03 · AC 12/12 | 2.7 min · $1.16 · AC 12/12 | OVERLAP: cost 1.13×, tokens 1.30× (the xs speed gap is not claimed) |
 | greenfield clinic (routed → assisted) | 30.0 min · $7.68 · AC 10/10 | 26.6 min · $9.30 · AC 10/10 | OVERLAP: cost 1.21×, tokens 1.38× |
-| brownfield, 7 seeded traps (guarded) | 19.1 min · $6.46 · traps 5/5 | 60.8 min · $38.93 · traps 5/5 | same traps at ~6× the cost |
+| brownfield, 7 seeded traps (guarded, per-unit path — removed in P3) | 19.1 min · $6.46 · traps 5/5 | 60.8 min · $38.93 · traps 5/5 | same traps at ~6× the cost |
 | old default pipeline, greenfield (lite/classic) | — | 2.4–12× slower, 8.8–22× costlier | equal or lower quality |
 
-- The guarded CONFLICT gate fired 3× in 3 runs, all false positives on the pipeline's own anchors. None of the seeded contradictions reached it.
+- The guarded CONFLICT gate (per-unit path, history) fired 3× in 3 runs, all false positives on the pipeline's own anchors. None of the seeded contradictions reached it.
 - The runs were headless, so the interactive value of a CONFLICT halt is unmeasured.
 - No hook runs `delivery-check.sh`. On direct/assisted it is a prose rule: the routed runs ran it 3/3 while it was a procedure step and 6/6 once "done = `VERDICT: PASS`" was written into the lane instructions.
 - mega-sdd makes **no** claim to be faster, cheaper, lighter or stronger than plain Claude Code (rule: [`CLAUDE.md` §Release evidence](./CLAUDE.md#release-evidence--complexity-budget)).
@@ -154,11 +154,7 @@ plugins/mega-sdd/
 │   ├── orchestrate-flow/  resolve-oq/  detect-drift/  diff-vault/  analyze/  graph/
 │   ├── extract-intelligence/     # legacy → KB (hands off to plan --kb)
 │   ├── emit-agents-md/  emit-prd/  emit-fsd/  emit-sit/  emit-uat/  install-deps/
-├── agents/                       # 9 first-class subagents
-│   ├── bolt-implementer.md       # execute-bolts implementer
-│   ├── spec-reviewer.md, code-quality-reviewer.md, security-reviewer.md, standards-reviewer.md, design-reviewer.md
-│   │                             #   ↳ the execute-bolts review panel (parallel blind lenses, risk-tiered; design joins for UI-bearing units)
-│   ├── resolution-verifier.md    # execute-bolts fix-round reviewer (verifies open findings at the new head instead of a full re-panel)
+├── agents/                       # 2 first-class subagents (the execute-bolts agents were removed in P3, spec v9 §8.6)
 │   ├── domain-extractor.md       # extract-intelligence per-module PRD-kontrak extractor
 │   ├── claim-verifier.md         # extract-intelligence adversarial per-module verify lane (grades citations EXACT/IMPRECISE/WRONG; 100% of [LOCKED] + money-class rules)
 ├── commands/                     # exactly 6: 3 public verbs (mega-sdd · sync · emit) + 3 maintenance one-timers (migrate-paths · install-deps · update-plugin)
@@ -180,17 +176,17 @@ The guarded pipeline is built so an agent does not act on what isn't grounded: i
 
 1. **Spec** — `plan` promotes uncertain claims to Open Questions
 2. **OQ classification** — business vs tech; tech is decided by the AI as a labelled, cited, reversible choice; business stays human
-3. **Binding gate** — an unresolved CONFLICT in a unit's `bolts/U-XXX/binding.json` (JIT bind: up front and per task; under `--agents`, at dispatch) blocks that unit until a human resolution is recorded (`resolve-oq --binding`, through the same sole writer)
+3. **Binding gate** — an unresolved CONFLICT in a unit's `bolts/U-XXX/binding.json` (JIT bind: up front and per task) blocks that unit until a human resolution is recorded (`resolve-oq --binding`, through the same sole writer)
 4. **Implementation state** — IMPLEMENTED / PARTIAL_* / NEW / UNKNOWN per confirmed claim (JIT bind). `plan` types units `create` / `extend` / `verify` from the symbol index, and `plan --reconcile` re-types them from the per-unit binding evidence
 5. **Unit grounding** — `target_files` whitelist + acceptance_test + cited Anchors + `prd_source`
 6. **Hard Rules pre/post-flight** — ast-grep validates constraints at bolt time
 7. **AST-precise lookup** — ast-grep builds the GROUND symbol index (zero-compilation, one bounded pass — no regex guessing of structure); without it, symbol claims are verdicted OQ with the reason, never CONFIRMED
-8. **Reuse-first write loop** — the script-built symbol index feeds every bolt dispatch an "Existing symbols — REUSE, don't recreate" slice at write time, and a post-write duplication sweep (exact / camel-snake / same-suffix-root / verb-synonym matching) hands mechanical evidence rows to the code-quality review lens
+8. **Reuse evidence** — the script-built symbol index feeds the JIT bind's symbol claims, and the duplication sweep (exact / camel-snake / same-suffix-root / verb-synonym matching) stays an `analyze` advisory
 9. **Drift detection** — committed code reconciled against the vault
 10. **Interface lock** — on a vault that carries cross-squad interfaces, consumed interfaces must be locked
 11. **Mutability tiers** — `[LOCKED]/[INTENT]/[ARTIFACT]`, orthogonal to confidence
 12. **Constitution layer** — project invariants enforced as Hard Rules at bolt time
-13. **Framework convention packs** — stack conventions reach the implementer as an advisory slice and the standards lens as its contract
+13. **Framework convention packs** — stack conventions reach units through plan-authored Hard rules and the pack-driven gates
 14. **Predictive preflight** — upcoming halts surfaced *before* a skill runs
 15. **Handoff schema validation** — handoff YAML type-checked at emission
 16. **Code-delivery quality gates** — tech-agnostic validators (flow-coverage, sibling-consistency incl. render-test + cross-cutting registration, unit-spec incl. verify-grounding, ui-quality) hard-block `execute-bolts`, all re-derived at the gate itself; signatures from the framework pack, SKIP off-stack
@@ -200,16 +196,11 @@ The guarded pipeline is built so an agent does not act on what isn't grounded: i
     - postflight-evidence (B1, recomputed at the gate from git/fs ground truth);
     - the whitelist observer (B3);
     - acceptance-evidence (B4, commit-keyed);
-    - panel-evidence: a dispatched bolt must carry the script-written `findings.json` + `l0-results.json`;
-    - the in-run acceptance-expects gate;
-    - binding-freshness: a unit whose binding no longer describes HEAD is denied, fail-closed;
-    - the attempt cap;
+    - conflict-bypass: a unit commit that landed past an open CONFLICT, a quarantine or a skipped re-bind (`conflict_bypassed`);
     - the Factory Line ledger gate, in both directions.
-
-    A `bolt-implementer` **Agent** dispatch is gated the same as the Skill route, so hand-dispatch cannot slip past.
 18. **Pipeline-intelligence advisories** (non-blocking, surfaced by `analyze`) — fan-out parity, UI-deferral, a typed `next_action.confidence`
 19. **Semantic-depth fidelity** — a multi-step workflow's staged inputs must survive the KB→vault handoff — `vault_flow_staging_drop` is surfaced by `analyze` (advisory)
-20. **Living-vault sync invariants** — the incremental re-bind (`rebind-units.sh`) NEVER clears an active CONFLICT silently: an affected unit is re-verdicted by the same JIT writers, and an unaffected unit keeps its `binding.json`, so its unresolved CONFLICT still closes the gate at dispatch (`sync --full-bind` re-verdicts every unit); autonomous sync defers human decisions to a queue instead of deciding them; drift write-back requires git provenance + explicit ACCEPT, and `[LOCKED]` claims are never patched from code
+20. **Living-vault sync invariants** — the incremental re-bind (`rebind-units.sh`) NEVER clears an active CONFLICT silently: an affected unit is re-verdicted by the same JIT writers, and an unaffected unit keeps its `binding.json`, so its unresolved CONFLICT still closes the gate at run start (`sync --full-bind` re-verdicts every unit); autonomous sync defers human decisions to a queue instead of deciding them; drift write-back requires git provenance + explicit ACCEPT, and `[LOCKED]` claims are never patched from code
 21. **Extraction claim-verify lane** — after each module's quality gate, a blind `claim-verifier` subagent adversarially re-checks the PRD-kontrak against the legacy source (sampled citations graded EXACT/IMPRECISE/WRONG; 100% of `[LOCKED]` + money-class rules), with coverage recomputed at the census gate — the writer never checks itself
 
 On every lane, including direct and assisted, the delivery check and the result contract apply.
@@ -245,7 +236,7 @@ parallel_max: 4           # execute-bolts wave width
 # render_html: on         # ABSENT = off for pipeline hand-offs (the emit lanes always render)
 knowledge_base: ""        # KB dir OUTSIDE the tree (monorepo submodule shared by FE + BE apps); empty → in-project paths
 model_tiers:
-  bolt_implementer: inherit # auto → per-unit routing via resolve-review-tier (haiku/sonnet/opus + cascade)
+  extract-intelligence-module: sonnet # catalog roles only (references/model-tiers.md)
 # spine / lane            # retired selectors: express + lite are the only spine and pipeline; `spine: classic` / `lane: standard` select nothing (one-line note)
 ```
 
@@ -257,7 +248,7 @@ Mega-sdd adopts stable native binaries instead of reinventing them — all optio
 
 | Tool | Used by | Fallback |
 |---|---|---|
-| `ast-grep` | the GROUND symbol index (`build-symbol-index.sh` — plan's brownfield task typing, the JIT bind's symbol claims, the reuse slice + duplication sweep) / execute-bolts + detect-drift (Hard Rules v2) | no symbol index: JIT symbol claims stay OQ with the reason; rules fall to the v1 grammar |
+| `ast-grep` | the GROUND symbol index (`build-symbol-index.sh` — plan's brownfield task typing, the JIT bind's symbol claims, the duplication sweep) / execute-bolts + detect-drift (Hard Rules v2) | no symbol index: JIT symbol claims stay OQ with the reason; rules fall to the v1 grammar |
 | `jd` | diff-vault (canonical JSON/YAML patches) | manual Read+compare |
 | `pandoc` | emit-fsd / emit-prd / emit-sit / emit-uat (PDF rendering) | Markdown-only output |
 | `mmdc` | emit lanes — mermaid→SVG for the md2pdf PDF (Chrome-print, GitHub style) | mermaid stays code |

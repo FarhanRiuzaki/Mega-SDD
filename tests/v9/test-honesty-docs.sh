@@ -7,7 +7,7 @@
 #   h2  routed result scoped: no "on par" / "at vanilla cost"; ratios + OVERLAP match compare.json
 #   h3  old-default ranges (time, cost) and the delivery-check 9-clean-FAIL count match the raw data
 #   h4  revamp-journey.md opens with the pre-9.0 history banner
-#   h5  invariant #2 names the per-unit bolt-implementer dispatch as the hard block
+#   h5  invariant #2 no longer names the per-unit bolt-implementer dispatch (removed in P3, spec §8.6)
 #   h6  direct-lane.md's assisted trigger list = route-lane.sh's assisted signals
 #   h7  install-deps description lists only tool-matrix tools
 #   h8  plan Step 9.5 adversarial dispatch carries mega-sdd-trace:plan (+ listed in the contract)
@@ -86,7 +86,7 @@ head -5 "$ROOT/docs/mega-sdd/revamp-journey.md" | grep -q 'Sejarah (pra-9.0)' &&
 
 # h5
 grep -E '^2\. \*\*The CONFLICT gate blocks\*\*' "$P/CLAUDE.md" | grep -q 'bolt-implementer' \
-  && ok "h5: invariant #2 names the bolt-implementer dispatch as the hard block" || bad "h5: invariant #2 does not name the per-unit bolt-implementer dispatch"
+  && bad "h5: invariant #2 still names the removed bolt-implementer dispatch (P3, spec §8.6)" || ok "h5: invariant #2 no longer names the removed per-unit bolt-implementer dispatch"
 
 # h6
 sig=$(grep -E "elif any\(s in fired for s in \(" "$P/scripts/route-lane.sh" | grep -oE "'[a-z_]+'" | tr -d "'")

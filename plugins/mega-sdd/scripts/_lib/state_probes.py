@@ -1233,8 +1233,8 @@ def derive(probes):
 
     # ── No vault: input-shape ladder ─────────────────────────────────────
     # The one pipeline (spec §2): ONE model phase (plan: context.md + units +
-    # ONE batched ask) then bolts. No bind hop (JIT bind at dispatch,
-    # pre-flight 3.9), no handoff YAML between the hops — the orchestrator
+    # ONE batched ask) then bolts. No bind hop (JIT bind per unit,
+    # up front + per task), no handoff YAML between the hops — the orchestrator
     # re-derives state from disk + runs the predictive preflight before the
     # bolts hop. Mode pin: a repo that already carries code = `existing`
     # (brownfield claims), a bare scaffold = `new`; never asked.
@@ -1346,10 +1346,7 @@ def derive(probes):
                      "run `plan <prd> --lite --regenerate` with the PRD path")
         return finish("lite_context_no_units", [])
     if bolts < units:
-        # The default run is inline (v9 spec §8.5): one context, plan order,
-        # so --parallel / --per-squad shape nothing there — they belong to the
-        # --agents path, whose --all is wave-parallel by default; the front
-        # door appends a carried --agents (squads: routing-rules §Multi-squad).
+        # The default run is inline (one context, plan order).
         return finish("units_pending_bolts", ["execute-bolts --all --lite"])
 
     # All units executed → drift check recency.

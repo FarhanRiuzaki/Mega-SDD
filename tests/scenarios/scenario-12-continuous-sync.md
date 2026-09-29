@@ -5,7 +5,7 @@
 
 ## Setup (the "after" state)
 
-A project that already completed the pipeline: a plan-born vault (`context.md` + `units/`), per-unit bindings written by the JIT bind at dispatch (`bolts/U-XXX/binding.json`), committed bolts (bolt-reports carry `target_hashes`), and the symbol index `.mega-sdd/codebase/symbol-index.json` whose `head_commit` is the freshness stamp. There is no `codebase-map.md` and no whole-vault `binding.md` — neither has a producer since 9.0.
+A project that already completed the pipeline: a plan-born vault (`context.md` + `units/`), per-unit bindings written by the JIT bind in `execute-bolts` (`bolts/U-XXX/binding.json`), committed bolts (bolt-reports carry `target_hashes`), and the symbol index `.mega-sdd/codebase/symbol-index.json` whose `head_commit` is the freshness stamp. There is no `codebase-map.md` and no whole-vault `binding.md` — neither has a producer since 9.0.
 
 A pre-9.0 layout-2 vault (no `context.md`) does not sync as it is: the front door proposes `/mega-sdd:migrate-paths --vault-layout=3` first (then the mandatory full JIT re-bind), never silently.
 
@@ -45,7 +45,7 @@ Expected chain (Mode D):
 | `scripts/derive-changed-paths.sh --vault <vault>` | changed set = git delta since the index stamp ∪ working tree ∪ journal rows → `<vault>/.sync-changed-paths.txt` (a script, zero model tokens); the journal is rotated (`.consumed-<ts>`) after the write and deleted on the next successful run |
 | `scripts/sync-intersect.sh --cwd=. --vault=<vault> --paths=@<vault>/.sync-changed-paths.txt` | the short-circuit gate: changed set ∩ (binding anchors ∪ unit `target_files`) empty → one-line `SYNC-REPORT.md` "in sync", chain ENDS; exit 4 → continue; any other exit → the full chain (fail-closed) |
 | `detect-drift --scope=@<vault>/.sync-changed-paths.txt` (scoped to the changed set — the forked skill can't re-resolve the now-consumed journal) | finds the rename as `name drift [HIGH]` from the `## Data model` / `## Flows` sections; under `--auto` it does NOT ask — queues the direction call. Architecture-prose drift is not detectable on a plan-born vault (named in the report as n/a, never "no drift") |
-| `scripts/rebind-units.sh --cwd=. --vault=<vault> --paths=@<vault>/.sync-changed-paths.txt` | ONLY the units whose `target_files` ∪ `## Anchors` ∪ per-unit binding anchors intersect the changed set are re-verdicted by the SAME JIT writers (`derive-unit-claims` → `write-unit-binding` → `validate-handoff-binding-units --units=`); exit 0 = nothing affected, 4 = re-bound (read `gate`); a CONFLICT closes the gate for the affected units exactly as at dispatch — never auto-resolved |
+| `scripts/rebind-units.sh --cwd=. --vault=<vault> --paths=@<vault>/.sync-changed-paths.txt` | ONLY the units whose `target_files` ∪ `## Anchors` ∪ per-unit binding anchors intersect the changed set are re-verdicted by the SAME JIT writers (`derive-unit-claims` → `write-unit-binding` → `validate-handoff-binding-units --units=`); exit 0 = nothing affected, 4 = re-bound (read `gate`); a CONFLICT closes the gate for the affected units exactly as at execute-bolts run start — never auto-resolved |
 | `plan --reconcile` | existing unit IDs updated in place: `task_type` flips only from the unit's refreshed `bolts/U-XXX/binding.json` claims (e.g. a `create` unit whose file landed out of band, its claim resolved `KEEP_CODE` → `extend`, or `verify` when every target is present; an unresolved CONFLICT → no flip); `status:` recomputed from `compute-unit-staleness.sh`; a unit whose `context.md` home is gone → `superseded`. It adds no unit and never rewrites `context.md` |
 | `execute-bolts --all --lite` | only stale units re-run; `superseded` skipped with a warning; the run ends with `delivery-check.sh` |
 
@@ -69,7 +69,7 @@ Open `PENDING-SYNC.md`: the rename drift asks *vault stale (code is right) vs co
 - [ ] The session-start state block named the moved path under the vault (miss form: "changed since: …"); GROUND then named it STALE (file + commit); after a clean sync + GROUND it no longer does
 - [ ] No mid-chain questions under `--auto`; human decisions queued, chain completed
 - [ ] Units outside the changed set keep their `bolts/U-XXX/binding.json` byte-identical (the scoped re-bind never touches them)
-- [ ] No open CONFLICT silently cleared: one outside the changed set still closes its unit's gate at dispatch (`--full-bind` re-verdicts every unit)
+- [ ] No open CONFLICT silently cleared: one outside the changed set still closes its unit's gate at execute-bolts run start, the `derive-exec-plan.sh` quarantine (`--full-bind` re-verdicts every unit)
 - [ ] `plan --reconcile` added no unit; every flip names its claim id
 - [ ] `SYNC-REPORT.md` closing verification: `stale=0` or explained
 - [ ] When bolts re-ran: the run ends with the result contract — the acceptance-criterion → test table, `delivery-check.sh` `VERDICT: PASS` on the final commit, the assumptions and decisions made

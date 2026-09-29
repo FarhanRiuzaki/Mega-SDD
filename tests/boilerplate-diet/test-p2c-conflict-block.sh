@@ -17,7 +17,7 @@
 # binding-md-template.md / binding-contract.md / SKILL.md are NOT relocated (the
 # layout-2 grammar is owned by scripts/_lib/binding_md.py). The layout-2 binding.md
 # READ path survives (resolve-oq's layout-2 leg until P1b; build-dispatch-prompt.sh
-# still reads the `- **Vault claim**:` line), so pins 1 and 3 are repointed from the
+# read the `- **Vault claim**:` line until P3), so pins 1 and 3 are repointed from the
 # deleted producer docs to the surviving reader contract, resolve-oq binding-mode.md
 # (its "Expect sections" entry + conflict prompt carry the same grammar strings).
 #

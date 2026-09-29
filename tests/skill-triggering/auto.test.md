@@ -17,7 +17,7 @@ The one-shot autonomous pipeline entrypoint — since 5.0.0 the front door `/meg
 ### A3: Directory path with vault.json → existing vault
 - **Setup:** `./my-vault/vault.json` exists
 - **Prompt:** `/mega-sdd ./my-vault/`
-- **Expect:** input detected as existing vault; `derived.proposed_next`: layout-3 with units → `execute-bolts --all --lite` (JIT bind per unit: up front + each task's re-bind by default, pre-flight 3.9 under `--agents`); layout-3 without units → `plan <prd> --lite --regenerate`; layout-2 (classic-born, no `context.md`) → propose `/mega-sdd:migrate-paths --vault-layout=3` first (then the mandatory full JIT re-bind), never run silently
+- **Expect:** input detected as existing vault; `derived.proposed_next`: layout-3 with units → `execute-bolts --all --lite` (JIT bind per unit: up front + each task's re-bind); layout-3 without units → `plan <prd> --lite --regenerate`; layout-2 (classic-born, no `context.md`) → propose `/mega-sdd:migrate-paths --vault-layout=3` first (then the mandatory full JIT re-bind), never run silently
 
 ### A4: File path with .md → PRD
 - **Setup:** `./prd-feature-x.md` exists
@@ -79,9 +79,9 @@ The one-shot autonomous pipeline entrypoint — since 5.0.0 the front door `/meg
 
 ## Halt-protocol preservation (Iter 4 invariant)
 
-### HP1: binding_conflict still blocks (per unit: at run start by default, at dispatch under `--agents`)
+### HP1: binding_conflict still blocks (per unit, at run start)
 - **Setup:** PRD whose U-004 claim conflicts with existing code; run `/mega-sdd ./prd.md --guarded --no-converge`
-- **Expect:** chain runs `plan` → `execute-bolts`; the up-front bind (`--agents`: pre-flight 3.9) writes `bolts/U-004/binding.json` with a CONFLICT → U-004 quarantined `binding_conflict` in the Karantina table (its dependents skipped with the reason; the other units proceed; every unit blocked → halt `binding_conflict`); U-004 waits for `resolve-oq --binding`; then `/mega-sdd --resume`. (Under `--deep` with convergence on — the default — `binding_conflict` is cycle-eligible: `resolve-oq --binding` is auto-invoked with grounded recommendations; reviewing CONFLICTs yourself requires `--no-converge`)
+- **Expect:** chain runs `plan` → `execute-bolts`; the up-front bind writes `bolts/U-004/binding.json` with a CONFLICT → U-004 quarantined `binding_conflict` in the Karantina table (its dependents skipped with the reason; the other units proceed; every unit blocked → halt `binding_conflict`); U-004 waits for `resolve-oq --binding`; then `/mega-sdd --resume`. (Under `--deep` with convergence on — the default — `binding_conflict` is cycle-eligible: `resolve-oq --binding` is auto-invoked with grounded recommendations; reviewing CONFLICTs yourself requires `--no-converge`)
 
 ### HP2: hard_rule_violated halts the chain (detect-after)
 - **Setup:** unit U-002 has `DO NOT modify src/Models/User.php`; bolt's code modifies it
@@ -94,7 +94,7 @@ The one-shot autonomous pipeline entrypoint — since 5.0.0 the front door `/meg
 
 ## Pass criteria
 
-All input detection (A1-A5) correctly identifies the lane and starting phase — `route-lane.sh` runs first for every PRD/brief, and only the guarded lane reaches the pipeline. Halt cases (H1-H3) reject ambiguous inputs without silent guess. Flag behavior (F1-F7) honors each flag's semantics per `commands/mega-sdd.md` (the front door): pipeline-only flags imply `--guarded`, retired switches are named in one line and ignored. Halt-protocol invariants (HP1-HP3) preserved — autonomy does NOT relax any existing halt-condition; the CONFLICT gate now closes per unit at dispatch. Single upfront confirmation required for ALL chains per AUTONOMY-OQ-1.
+All input detection (A1-A5) correctly identifies the lane and starting phase — `route-lane.sh` runs first for every PRD/brief, and only the guarded lane reaches the pipeline. Halt cases (H1-H3) reject ambiguous inputs without silent guess. Flag behavior (F1-F7) honors each flag's semantics per `commands/mega-sdd.md` (the front door): pipeline-only flags imply `--guarded`, retired switches are named in one line and ignored. Halt-protocol invariants (HP1-HP3) preserved — autonomy does NOT relax any existing halt-condition; the CONFLICT gate now closes per unit at execute-bolts run start (the derive-exec-plan.sh quarantine). Single upfront confirmation required for ALL chains per AUTONOMY-OQ-1.
 
 ## Alias back-compat (5.x)
 

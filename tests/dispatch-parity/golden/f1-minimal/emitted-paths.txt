@@ -1,2 +1,0 @@
-./.mega-sdd/.cache/pack-resolver/_chain.out
-./.mega-sdd/vaults/v1/bolts/U-001/dispatch-prompt.md

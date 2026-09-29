@@ -101,7 +101,7 @@ loop runs them here. Both then run 4–9 in order.
    again): halt `binding_conflict`, the human decides it (`resolve-oq --binding`), then this step again. Then
    `git add -- <vault>/bolts` and commit `chore(sdd): evidence run <run_base7>` (skip when `.mega-sdd/` is not versioned).
 7. **Run-boundary gate** — after the last commit; must exit 0:
-   `bash <plugin-root>/scripts/validate-bolt-artifacts.sh --cwd=<root> --orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --panel-scan --conflict-bypass-scan`.
+   `bash <plugin-root>/scripts/validate-bolt-artifacts.sh --cwd=<root> --orphan-scan --batch-suite-gate --postflight-scan --recompute --whitelist-scan --acceptance-scan --conflict-bypass-scan`.
    A FAIL is fixed per each state's `next_action`, never reported as done. `conflict_bypassed` = a unit
    committed past an open CONFLICT or a quarantine (a re-bind never clears it: `resolve-oq --binding`, or the
    human releases it), or on a tree its bound claim did not hold (`rebind_skipped`: re-bind, a human decides).

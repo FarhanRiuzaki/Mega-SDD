@@ -6,11 +6,11 @@ This repository **is** the `mega-sdd` Claude Code plugin (plus its marketplace m
 
 **[`plugins/mega-sdd/CLAUDE.md`](plugins/mega-sdd/CLAUDE.md)** is the contributor + AI-agent contract. It carries:
 
-- The **5 non-negotiable invariants** (the spec↔code grounding moat — binding verdicts + the CONFLICT gate, citation discipline, halt taxonomy, no fabrication). They bind the guarded lane, and they are an audit mechanism, not a measured quality gain.
+- The **5 non-negotiable invariants** (the spec↔code grounding moat — binding verdicts + the CONFLICT gate, citation discipline, halt taxonomy, no fabrication). They bind the guarded lane; their artefacts keep the AI grounded (human audit = commit history), not a measured quality gain.
 - The **enforcement doctrine** — *gates > rules > hooks*; "prose that says HALT enforces nothing."
 - The **v4 architecture** (lean skills + progressive disclosure, Hybrid hook enforcement, first-class `agents/`, commands as CLI entry points). On top of it sits the **9.0 shape**:
   - the **lane router** (`route-lane.sh`): direct / assisted / guarded;
-  - **ONE spec pipeline** inside guarded: `plan` (a PRD, a seed PRD from a brief, or `plan --kb` from extract-intelligence) → `execute-bolts` (inline by default: one context, JIT bind up front + per task, CONFLICT quarantine at run start, one blind review; `--agents` keeps the per-unit implementer + panel and the CONFLICT gate at dispatch);
+  - **ONE spec pipeline** inside guarded: `plan` (a PRD, a seed PRD from a brief, or `plan --kb` from extract-intelligence) → `execute-bolts` (inline: one context, JIT bind up front + per task, CONFLICT quarantine at run start, one blind review; the per-unit `--agents` path was removed in P3);
   - the **result contract** every lane ends with: AC → test table, `delivery-check.sh` `VERDICT: PASS`, and the assumptions list.
 
   The classic chain (`generate-intent` / `scan-codebase` / `bind-codebase` / `generate-units`) was removed in 9.0. Don't re-introduce it.

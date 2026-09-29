@@ -16,8 +16,7 @@
 # Usage:
 #   validate-reuse-duplication.sh [<cwd>] [--cwd=<dir>] [--range=<a>..<b>] [--json]
 #     default range: HEAD~1..HEAD (the pre-R3 behavior)
-#     --json: machine rows for the code-quality lens prompt (review-panel.md —
-#             machine fact like the L0 block; empty rows → "rows": [])
+#     --json: machine rows (empty rows → "rows": [])
 # Human mode keeps the pre-R3 "[reuse-dup]" line contract for analyze.
 #
 # Honest bounds: the ADDED-side regex catches keyword-led definitions
@@ -25,7 +24,7 @@
 # (C#/Java/Kotlin members) are NOT detected on the added side even though the
 # index sees them — an accepted asymmetry, disclosed in spec R3. On a merge
 # commit the default HEAD~1..HEAD is the first-parent diff (the whole merged
-# branch re-reports); the review panel always passes an explicit --range.
+# branch re-reports); pass an explicit --range to scope it.
 # Match classes gained same-suffix-root at round fold (bare root <-> verb-
 # prefixed, both directions); rows are class-sorted and capped at 40.
 

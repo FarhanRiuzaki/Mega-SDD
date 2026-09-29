@@ -55,13 +55,13 @@ The probes (10 core + the P2 foreign-SDD adoption probe) and where each lands:
 | `maintenance_sync` | Mode D row (freshness substrate + binding + a change signal) | the sync chain (§Mode D — maintenance/sync detail) |
 | `lite_context_no_units` | plan-born vault (`context.md`), no units | `plan <prd> --lite --regenerate` → `execute-bolts --all --lite` |
 | `layout2_needs_migration` | layout-2 vault (no `context.md`; built by the pre-9.0 classic chain) that needs building or syncing | `[]` + note: propose `/mega-sdd:migrate-paths --vault-layout=3` (never run silently; a mandatory full JIT re-bind follows it) |
-| `units_pending_bolts` | units exist, some not in bolts | `execute-bolts --all --lite` (the default inline run: one context, plan order; a carried `--agents` is appended — its `--all` is wave-parallel by default, and `--per-squad` when `squad_count ≥ 2` is `--agents` only, already parallel by procedure) |
+| `units_pending_bolts` | units exist, some not in bolts | `execute-bolts --all --lite` (the default inline run: one context, plan order) |
 | `all_units_executed` | all units executed, no recent drift check | `detect-drift` |
 | `pipeline_complete` | all executed + recent drift check | `[]` |
 
 ## Decision matrix
 
-**One pipeline.** GROUND (`scripts/ground.sh`: `derive-state.sh` + `build-symbol-index.sh` + pack resolve) runs at the front door, and no chain has a scan or bind hop: binding is the per-unit JIT bind in `execute-bolts` (`write-unit-binding.sh` → `bolts/U-XXX/binding.json`; run start + each task, or per dispatch under `--agents`), and the CONFLICT gate closes before the unit is built. `--classic`, `spine: classic` and `lane: standard` are retired: say so in one line, then ignore them.
+**One pipeline.** GROUND (`scripts/ground.sh`: `derive-state.sh` + `build-symbol-index.sh` + pack resolve) runs at the front door, and no chain has a scan or bind hop: binding is the per-unit JIT bind in `execute-bolts` (`write-unit-binding.sh` → `bolts/U-XXX/binding.json`; run start + each task), and the CONFLICT gate closes before the unit is built. `--classic`, `spine: classic` and `lane: standard` are retired: say so in one line, then ignore them.
 
 ### Starterkit-first ordering
 
@@ -82,7 +82,6 @@ The original directive "scan code base harusnya di atur di depan ... starterkit 
 | `knowledge_base: present` + no vault | `plan --kb=<kb> --lite --mode=<existing\|new>` (skip extract-intelligence — already done). **+ MENTION the `emit-prd` reverse lane** (one line, never auto-chained): a team-readable PRD draft from the KB with `[VERIFIED]/[INFERRED]/[OPEN]` markers carried verbatim (`/mega-sdd:emit prd`, reverse mode). Docs are OUTPUTS — `plan --kb` stays the pipeline continuation. |
 | **Layout-2 vault** (no `context.md` — built by the pre-9.0 classic chain) that needs building or syncing | PROPOSE `/mega-sdd:migrate-paths --vault-layout=3` (layout-2 → `context.md`, then a mandatory full JIT re-bind; never run silently). Afterwards the rows below apply. Reading stays: emit-* and the status view work on layout-2 as they are |
 | Units exist, some not in bolts | `execute-bolts --all --lite` |
-| Vault has `squad_count: ≥2`, units exist, some not in bolts | `execute-bolts --all --lite` (with `--agents`: `execute-bolts --per-squad --agents`) |
 | Vault has `squad_count: ≥2`, units exist, user invokes from a single-squad context (e.g., on a dev's laptop with a specific role) | Ask: "Run for which squad?" then propose `execute-bolts --squad=<answer>` |
 | Vault has `squad_count: ≥2` but `interfaces_count: 0` and ≥1 unit has cross-squad coupling hint in `context_source` | `plan <prd> --lite --regenerate` (plan carries the `interface_ref_missing` halt) — proposed only with explicit consent, because it rewrites `context.md` and the units of a vault that has bolts |
 | All units executed, no recent drift check | `detect-drift` |
@@ -132,14 +131,13 @@ When CWD inspection finds `<vault>/_meta/squads.yaml` with ≥2 squads (only mig
 
 - Set `squad_count` in state snapshot to the count
 - Read declared squad IDs to validate any `--squad=<id>` user input
-- Adjust execute-bolts proposal (`--agents` only — the default inline run takes every unit in one context, so squads change nothing there):
-  - Default to `--per-squad` (main-thread squad loop; concurrent depth-1 bolt-agent dispatch — see `execute-bolts/references/squad-subagent.md`)
-  - If user is running in a context that suggests single-squad focus
-    (e.g., explicit `--squad=<id>` arg passed to orchestrate-flow, or
-    a hint like "I'm on the FE team"), use `--squad=<id>` instead
+- If user is running in a context that suggests single-squad focus
+  (e.g., explicit `--squad=<id>` arg passed to orchestrate-flow, or
+  a hint like "I'm on the FE team"), propose `--squad=<id>`; otherwise
+  `--all` — the inline run takes every unit in one context
 
-If the count is exactly 1 (or file absent): treat as single-squad mode,
-do NOT propose `--per-squad` (it would halt). Use `--all` or unit-by-unit.
+If the count is exactly 1 (or file absent): treat as single-squad mode.
+Use `--all` or unit-by-unit.
 
 If interface files exist (`<vault>/interfaces/*.md`):
 - Report `interfaces_count` in state snapshot

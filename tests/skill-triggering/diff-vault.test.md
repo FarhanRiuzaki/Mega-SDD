@@ -34,7 +34,7 @@ Manual-run fixture for `diff-vault` skill.
 ### DV7: Delta lane — unbound vault falls through (exit 3)
 - **Setup:** vault exists but no unit was ever bound (no `bolts/U-*/binding.json`, no layout-2 `binding.json`)
 - **Prompt:** `/mega-sdd "tambah kolom npwp di form nasabah"` → user picks the delta option
-- **Expect:** diff-vault applies the patch; `derive-delta-paths.sh` exits 3; NO scoped re-bind hop — the JIT bind at dispatch covers it and the router proposes the normal chain rows (no fabricated `--paths`)
+- **Expect:** diff-vault applies the patch; `derive-delta-paths.sh` exits 3; NO scoped re-bind hop — the JIT bind in `execute-bolts` covers it and the router proposes the normal chain rows (no fabricated `--paths`)
 
 ### DV8: Greenfield brief (guard)
 - **Setup:** NO vault in CWD

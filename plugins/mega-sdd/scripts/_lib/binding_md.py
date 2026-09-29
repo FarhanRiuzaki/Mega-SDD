@@ -2,7 +2,7 @@
 
 Shared by `derive-binding-json.sh` (the single binding.json generator),
 `validate-handoff-binding-units.sh` (binding freshness + CONFLICT gate),
-`_lib/state_probes.py` and `build-dispatch-prompt.sh` via the MEGA_SDD_LIB_DIR
+`_lib/state_probes.py` via the MEGA_SDD_LIB_DIR
 sys.path pattern — the B1 shared-engine precedent (`postflight_rules.py`)
 applied to the binding surface: md-parsing can never fork between its
 readers.

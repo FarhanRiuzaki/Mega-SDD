@@ -8,11 +8,10 @@ err=0
 #     deleted with the skill (no deep-scan remains) -> retired.
 #   - generate-units/references/auto-and-memory.md was relocated into
 #     plan/references/unit-procedure.md -> the OLD-ontology guard is repointed there.
+# P3 C5: execute-bolts bolt-dispatch-prompt.md + context-enrichment.md were deleted with the builder -> retired.
 # 9.0 (P1b): references/lib-patterns/ was deleted (no surviving consumer) -> its rbac-libs.md entry is retired.
 files=(
   "plugins/mega-sdd/skills/plan/references/unit-procedure.md"
-  "plugins/mega-sdd/skills/execute-bolts/references/bolt-dispatch-prompt.md"
-  "plugins/mega-sdd/skills/execute-bolts/references/context-enrichment.md"
   "plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md"
   "plugins/mega-sdd/skills/execute-bolts/references/halts-and-handoff.md"
   "plugins/mega-sdd/references/model-tiers.md"
@@ -24,6 +23,4 @@ for f in "${files[@]}"; do
     echo "OLD ontology read in $f"; err=1
   fi
 done
-grep -q 'authz\.mechanism\|authz\.declarations\|Authz:' plugins/mega-sdd/skills/execute-bolts/references/bolt-dispatch-prompt.md || { echo "bolt-dispatch missing Authz line"; err=1; }
-grep -q 'authz\.mechanism\|authz\.declarations\|Authz:' plugins/mega-sdd/skills/execute-bolts/references/context-enrichment.md || { echo "context-enrichment missing Authz line"; err=1; }
 exit $err

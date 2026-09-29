@@ -318,7 +318,7 @@ for br in glob.glob(os.path.join(vault, "bolts", "U-*", "bolt-report.md")):
     bolts[uid] = {"status": st.group(1) if st else "unknown",  # absent evidence is NEVER success (ADV-004)
                   "commit": (ci.group(1)[:8] if ci else ""),
                   "concern": cc.group(1).strip() if cc else "",
-                  "agent": ag.group(1) if ag else "bolt-implementer"}
+                  "agent": ag.group(1) if ag else "execute-bolts"}
 
 cites = {n: [] for n in range(1, 11)}
 def cite(n, path, lr=None):

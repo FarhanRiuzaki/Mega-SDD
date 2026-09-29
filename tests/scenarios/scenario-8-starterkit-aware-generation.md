@@ -1,9 +1,9 @@
 # Scenario 8 — Starterkit-Aware Generation (framework pack)
 
 **Time**: ~30 min
-**When to use**: Validate that the guarded pipeline recognises a Laravel starterkit and carries its conventions to every bolt: GROUND matches the framework pack from the manifest, `plan` types units against the existing code, `execute-bolts` puts the pack slices into each dispatch prompt, and the pack-driven gates hold the generated code to the pack.
+**When to use**: Validate that the guarded pipeline recognises a Laravel starterkit and holds the generated code to its conventions: GROUND matches the framework pack from the manifest, `plan` types units against the existing code, and the pack-driven gates hold the generated code to the pack.
 
-> **What changed in 9.0.** The deep-scan starterkit derivation is gone (spec `docs/superpowers/specs/2026-09-27-v9-simplification-design.md` §7 decision #1): nothing writes `.mega-sdd/codebase/starterkit-context.yaml` or `reuse-index.yaml` any more, and `plan` writes no `starterkit_context_consumed` / `starterkit_relevance` fields and no starterkit-cited Hard Rules. What reaches the bolt is the framework-pack chain, matched from the manifest by GROUND (a script, seconds — no scan phase). A pre-9.0 `starterkit-context.yaml` left on disk is still read by the dispatch builder (`plugins/mega-sdd/skills/execute-bolts/references/starterkit-enrichment.md`): its `patterns` slice reaches any unit whose `target_files` match a pattern location, while the auth / authz / UI / libs slices need `starterkit_relevance`, which `plan` never writes.
+> **What changed in 9.0 and P3.** The deep-scan starterkit derivation is gone (spec `docs/superpowers/specs/2026-09-27-v9-simplification-design.md` §7 decision #1): nothing writes `.mega-sdd/codebase/starterkit-context.yaml` or `reuse-index.yaml` any more, and `plan` writes no `starterkit_context_consumed` / `starterkit_relevance` fields and no starterkit-cited Hard Rules. The framework-pack chain is matched from the manifest by GROUND (a script, seconds — no scan phase). Since P3 (spec §8.6) no dispatch prompt is built, so no pack slice reaches the bolt: a pack shapes the code through the unit content `plan` writes (e.g. a view-bearing unit's UI contract and render test) and through the pack-driven gates. A pre-9.0 `starterkit-context.yaml` left on disk is still read by `_lib/resolve-framework-pack.sh`, `validate-unit-spec.sh` (Check 3), `validate-starterkit-conformance.sh`, `ground.sh` Guard 7 and `emit-agents-md`.
 >
 > This scenario checks plumbing — what reaches the bolt and which gate reads the pack — not a quality edge. No benchmark showed the guarded pipeline writing better code than the direct/assisted lanes, which build in the main session from the repo's own conventions (spec §1).
 
@@ -54,28 +54,11 @@ grep -l "starterkit_context_consumed\|starterkit_relevance" .mega-sdd/vaults/*/u
 
 **Assertions:**
 - ≥1 unit file exists in `units/`
-- A unit that touches an existing starterkit symbol (e.g. `app/Models/User.php`) is typed `extend` or `verify` from a symbol-index hit, with `## Anchors` (`file:line`) and `## Claims` — claims are contracts; the verdict is written at dispatch, never in the unit
+- A unit that touches an existing starterkit symbol (e.g. `app/Models/User.php`) is typed `extend` or `verify` from a symbol-index hit, with `## Anchors` (`file:line`) and `## Claims` — claims are contracts; the verdict is written by the JIT bind in `execute-bolts`, never in the unit
 - No unit carries `starterkit_context_consumed` / `starterkit_relevance`, and no Hard Rule cites `starterkit-context.yaml`
-- No pack rule is copied into a unit's `## Hard rules` (`plan/references/validation-passes.md` §12.4.5: pack rules reach the bolt as the advisory dispatch slice, never a B1 post-flight obligation)
+- No pack rule is copied into a unit's `## Hard rules` (`plan/references/validation-passes.md` §12.4.5: no pack slice is injected, and a pack rule is never a B1 post-flight obligation of its own)
 
-### Step 4: Verify execute-bolts injected the pack slices
-
-```bash
-grep -l "^FRAMEWORK: laravel-base-26" .mega-sdd/vaults/*/bolts/U-*/dispatch-prompt.md
-grep -l "## Framework pack rules (filtered by your target_files glob match)" .mega-sdd/vaults/*/bolts/U-*/dispatch-prompt.md
-grep -l "## Code style (from laravel-base-26" .mega-sdd/vaults/*/bolts/U-*/dispatch-prompt.md
-grep -A4 "DO NOT WRITE:" .mega-sdd/vaults/*/bolts/U-*/dispatch-prompt.md | head
-```
-
-**Assertions:**
-- Every dispatch prompt names the active pack (`FRAMEWORK: laravel-base-26`, or `SCOPE: … — framework: …` on a scoped vault)
-- A controller unit's prompt carries `## Framework pack rules` with the `## Hard Rules emitted` entries whose `path_glob` matches its `target_files` — e.g. "Controllers MUST extend BaseController" (`laravel-base-26.md`) and the `Controller` suffix rule (`laravel.md`), each citing its pack and the matched glob
-- `## Code style` comes from the most specific pack that has one (`laravel-base-26.md`)
-- `DO NOT WRITE:` lists the chain's `## Forbidden patterns`, each with its source pack — e.g. `$(document).ready(...)` and native `alert(...)` / `confirm(...)` (`laravel-base-26.md`)
-
-A section with no matching input is omitted, never padded: a unit whose `target_files` match no pack `path_glob` has no `## Framework pack rules` section.
-
-### Step 5: Verify generated code matches starterkit patterns
+### Step 4: Verify generated code matches starterkit patterns
 
 For a UI-CRUD bolt (e.g., user-management feature):
 
@@ -92,7 +75,7 @@ grep "document.addEventListener('DOMContentLoaded'" resources/js/users.js
 - Generated management routes use Spatie permission middleware (e.g., `middleware('permission:users.view')` — the `laravel-base-26.md` route rule; inline role checks are a pack forbidden pattern)
 - Generated JS uses `document.addEventListener('DOMContentLoaded', ...)` (pack forbidden pattern: `$(document).ready`)
 
-### Step 6: Verify the pack-driven gates read the same chain
+### Step 5: Verify the pack-driven gates read the same chain
 
 ```bash
 cat .mega-sdd/.ui-quality-blockers.json
@@ -109,16 +92,15 @@ ALL of:
 - GROUND matches `laravel-base-26` (or `laravel`) from `composer.json`; the resolver chain is printed most-specific first
 - No `starterkit-context.yaml` is written; no unit carries starterkit fields
 - Brownfield units carry symbol-index `## Anchors` / `## Claims`
-- Dispatch prompts carry `FRAMEWORK:`, the glob-matched `## Framework pack rules`, `## Code style`, and `DO NOT WRITE:` from the chain
 - Executed bolts produce code using layouts.app + SweetAlert2 + Spatie `permission:` middleware, and the UI-quality gate records no violation
 - The run ends with the result contract every lane delivers: the acceptance-criterion → test table, `delivery-check.sh` `VERDICT: PASS` on the final commit, and the assumptions and decisions made
 
 ## Failure modes to watch
 
 - Pack resolves to `_universal` despite a Laravel manifest → read `probes.framework_pack.candidates` in the `derive-state.sh --json-only` output: an empty list means no pack's `dependency_marker` matched the manifest
-- Dispatch prompt header reads `FRAMEWORK: (pack chain UNRESOLVED — resolver exit <N>; NOT a packless project)` → the resolver failed (e.g. the Windows App-Execution-Alias `python3` stub); the pack slices are missing for that reason, not because the pack is silent (`execute-bolts/references/context-enrichment.md` §Pack-resolver exit codes)
+- The pack-driven gates stay silent on a Laravel repo → the resolver may have failed (e.g. the Windows App-Execution-Alias `python3` stub), and the gates read that as a packless project (`research/2026-09-28-p3-backlog.md` §1)
 - A generated Blade view uses native `alert(...)` despite the pack → the UI-quality gate blocks the next `execute-bolts` (`native-alert` tell); fix the view, not the gate
-- A pre-9.0 `starterkit-context.yaml` that fails to parse → `deep_scan_cache_corrupt` (C1): GROUND renames it aside, the bolt proceeds without that slice
+- A pre-9.0 `starterkit-context.yaml` that fails to parse → `deep_scan_cache_corrupt` (C1): GROUND renames it aside and the run proceeds
 
 ## Field test (real starterkit verification)
 
@@ -133,14 +115,12 @@ bash <plugin>/scripts/_lib/resolve-framework-pack.sh --cwd=. --section="UI quali
 Expected outcomes for `laravel-base-26`:
 - `framework_pack` == `laravel-base-26`
 - The `UI quality signatures` bodies of `laravel-base-26.md` and `laravel.md` print, most specific first (the gate merges their lists)
-- A subsequent `/mega-sdd <feature-prd> --guarded` run produces dispatch prompts carrying the base-26 rules (BaseController, UUID migrations, SweetAlert2, DOMContentLoaded) and code that follows them
+- A subsequent `/mega-sdd <feature-prd> --guarded` run produces code that follows the base-26 conventions (BaseController, UUID migrations, SweetAlert2, DOMContentLoaded); the pack-driven gates check the ones they cover
 
 A starterkit without a plugin pack gets one by authoring a project pack at `<root>/.mega-sdd/packs/<framework>.md` (`extends: laravel` + a `detection_signature`); it beats a same-named plugin pack and is linted by `scripts/validate-pack.sh <pack.md>`.
 
 ## Related artifacts
 
-- `docs/superpowers/specs/2026-09-27-v9-simplification-design.md` §7 decisions #1–#2 (why the deep-scan derivation was dropped; pack rules stay an advisory slice)
+- `docs/superpowers/specs/2026-09-27-v9-simplification-design.md` §7 decisions #1–#2 (why the deep-scan derivation was dropped) and §8.6 (P3 removed the pack slices with the dispatch builder)
 - `plugins/mega-sdd/references/framework-conventions/laravel-base-26.md` + `laravel.md` (the packs this scenario exercises)
-- `plugins/mega-sdd/skills/execute-bolts/references/context-enrichment.md` (the dispatch prompt's pack sections: `FRAMEWORK:` header, `DO NOT WRITE:`, priorities 7a/7b)
-- `plugins/mega-sdd/skills/execute-bolts/references/starterkit-enrichment.md` (the legacy `starterkit-context.yaml` reader)
 - `docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design.md` + `docs/superpowers/plans/2026-05-24-iter-32-starterkit-aware-deep-scan.md` (the original, pre-9.0 deep-scan design and plan — historical)

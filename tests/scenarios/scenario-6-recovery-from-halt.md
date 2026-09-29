@@ -13,7 +13,7 @@ Halts belong to the guarded pipeline (`plan` → `execute-bolts`) and to the ext
 
 | Halt | What it means | When |
 |---|---|---|
-| `binding_conflict` | A unit's claim contradicts existing code | execute-bolts pre-flight 3.9 (JIT bind, per unit) |
+| `binding_conflict` | A unit's claim contradicts existing code | execute-bolts up-front bind + each task's re-bind (per unit) |
 | `plan_coverage_gap` | A PRD/KB heading has no unit, no open OQ carrying `[covers: …]` and no `## Coverage exclusions` line | plan Step 5 |
 | `oq_recommend_underspecified` | Recommendation missing citation/rationale | plan Step 5 (`validate-vault-oqs.sh`) |
 | `dedup_ambiguous` | `create` unit targets existing files | plan Step 4 (and `plan --reconcile`) |
@@ -72,7 +72,7 @@ execute-bolts U-001
 ### The halt fires
 
 ```
-▶ Dispatching bolt-implementer for U-001…
+▶ Running U-001 inline…
   Pre-flight: 2 Hard Rules parsed, snapshots taken
   Bolt: implementing nama field validation...
   Acceptance test: passing
@@ -160,14 +160,14 @@ If unit isn't critical:
 ```bash
 git revert <bolt-commit>
 bash <plugin>/scripts/run-postflight-scan.sh --cwd=. --unit=U-001
-/mega-sdd --resume    # the unit is re-dispatched
+/mega-sdd --resume    # the unit runs again
 ```
 
-After the revert + a passing post-flight scan, `/mega-sdd --resume` re-dispatches the unit.
+After the revert + a passing post-flight scan, `/mega-sdd --resume` re-runs the unit.
 
 ## Scenario walkthrough — `binding_conflict`
 
-Equally common. Different recovery pattern. Binding is per unit: `execute-bolts` binds each unit just in time at dispatch (pre-flight 3.9 → `bolts/U-XXX/binding.json`), so the CONFLICT closes that unit only — the other units proceed and its dependents are skipped with the reason.
+Equally common. Different recovery pattern. Binding is per unit: `execute-bolts` binds each unit up front and re-binds it at each task (→ `bolts/U-XXX/binding.json`), so the CONFLICT closes that unit only — the other units proceed and its dependents are skipped with the reason.
 
 ### The halt
 
@@ -380,26 +380,6 @@ next_action:
 
 **Recovery:** re-run the producer skill standalone; inspect chat for mid-write crash signals. If reproducible → file bug. If transient → re-run + retry chain.
 
-## Scenario walkthrough — `partial_state_corrupt` + saga rollback
-
-**When you'll see it.** `<vault>/bolts/U-XXX/partial-state.json` (a crashed bolt's resume record) fails JSON parse. At GROUND (`scripts/ground.sh`, which the front door and sync run at entry) this is a C1 self-resolve: the file is renamed aside to `partial-state.json.corrupt-<ISO8601>` (forensics kept), a `[self-resolved]` line is printed, and the next `--resume` restarts the unit fresh from its spec. You only meet a halt when a standalone `execute-bolts --resume` loads the corrupt file before GROUND ran.
-
-**Recovery option 1 (forensics + restart — the same rename by hand):**
-
-```bash
-mv <vault>/bolts/U-007/partial-state.json <vault>/bolts/U-007/partial-state.json.corrupt-$(date -u +%Y-%m-%dT%H:%M:%SZ)
-execute-bolts U-007 --resume   # starts fresh now that corrupt file is moved aside
-```
-
-**Recovery option 2 (saga rollback — v2.0 partial-state):** if the corrupt file is actually v2.0 with intact `rollback_hints[]` despite parse failure (rare — JSON header valid but `rollback_hints` array malformed), use `--rollback` to undo prior non-idempotent steps before re-attempting:
-
-```bash
-execute-bolts U-007 --rollback   # applies rollback_hints[] in reverse order
-execute-bolts U-007              # fresh re-run from clean slate
-```
-
-Cross-refs: `plugins/mega-sdd/references/halt-protocol.md §halt-protocol` (bolts family: `halt-families/bolts.md §partial_state_corrupt`); `execute-bolts/SKILL.md §Partial-state, resume + saga rollback` (+ `references/partial-state-and-saga.md`).
-
 ## Scenario walkthrough — `oq_blocker`
 
 **When you'll see it.** An AI consumer reading the vault non-interactively (per `<vault>/_meta/ai-consumer-guide.md`) meets an unresolved P1 Open Question that blocks its work. `plan` never emits it: a P1 business OQ its batched ask left open stays `blocking`, and the units that need it surface at bolts as `oq_business_p1_unresolved`.
@@ -433,20 +413,9 @@ options: ["supersede", "keep_vault", "capture_both"]
 
 **Recovery:** review the conflict context, pick one of the 3 options, then edit the vault markdown directly and re-run `diff-vault`.
 
-## Scenario walkthrough — `dispatch_prompt_too_large`
-
-**When you'll see it.** Current semantics: fires ONLY when all three hold — every disposable T2 section is already truncated to its drop floor, the prompt still exceeds the hard cap (`cap_hard`, 12 KB), and a non-empty constitution-clause section (never truncated) is what remains. Real config issue, not bolt-fixable.
-
-**Recovery:** the halt envelope shows `warnings: [{section, rule_applied, bytes_saved}, ...]` — review which sections truncated. If constitution_clauses is the bulk, consider:
-1. Splitting the unit (smaller scope = fewer constitution clauses referenced)
-2. Citing fewer constitution clause ids in the unit (the builder injects the ids the unit names in prose, frontmatter, `binding_refs` or `## Hard rules`)
-3. (Last resort) editing the constitution to merge or shorten clauses
-
-Cross-refs: `execute-bolts/references/context-enrichment.md §T2 section priority + truncation cascade` + §Halt path.
-
 ## Scenario walkthrough — `provenance_missing`
 
-**When you'll see it.** Bolt subagent committed code without the provenance trailer (two lines: `Generated by mega-sdd execute-bolts <version>` / `Unit: U-XXX · provenance: <bolts/U-XXX/dispatch-prompt.md>`). Post-flight scan catches this.
+**When you'll see it.** The implementing session committed code without the provenance trailer (two lines: `Generated by mega-sdd execute-bolts <version>` / `Unit: U-XXX · provenance: <vault>/units/U-XXX.md`). Post-flight scan catches this.
 
 **Recovery:** edit each modified file to add the trailer; amend the bolt commit:
 
@@ -454,10 +423,10 @@ Cross-refs: `execute-bolts/references/context-enrichment.md §T2 section priorit
 # In your editor, add trailer to top of each modified file
 git add <modified-files>
 git commit --amend --no-edit
-execute-bolts U-007 --resume   # post-flight will pass now
+/mega-sdd --resume   # post-flight will pass now
 ```
 
-Cross-refs: `agents/bolt-implementer.md §Provenance trailer`.
+Cross-refs: `execute-bolts/references/halts-and-handoff.md §Provenance trailer enforcement`.
 
 ## Scenario walkthrough — `cross_squad_dep_invalid`
 
@@ -713,7 +682,7 @@ Three more execute-bolts halts:
 
 ### `bolt_repeated_partial_failure`
 
-A bolt failed 3 partial-state recovery cycles.
+The same halt fired twice on one unit with different proposed fixes (the propose-and-confirm cycle).
 
 ```yaml
 blocker:
@@ -721,16 +690,15 @@ blocker:
   source_skill: execute-bolts
   details:
     unit_id: U-012
-    cycle_count: 3
-    last_failure: "test: assertion 'user.id present' failed; retry budget exhausted"
+    halt_type: test_fail   # fired twice; two different proposed fixes
+    last_failure: "test: assertion 'user.id present' failed"
 ```
 
 Recovery (unit spec is likely wrong):
 
 ```bash
-# Step 1: inspect bolt-report + partial-state across cycles
+# Step 1: inspect the bolt-report (both proposed fixes failed)
 cat <vault>/bolts/U-012/bolt-report.md
-cat <vault>/bolts/U-012/partial-state.json
 
 # Step 2: review unit spec — is acceptance_test under-specified? target_files wrong scope?
 cat <vault>/units/U-012.md
@@ -782,7 +750,7 @@ blocker:
     expected_block: "bolt_self_report"
 ```
 
-Recovery (bolt subagent skipped mandatory output):
+Recovery (the implementing session skipped mandatory output):
 
 ```bash
 # Inspect what bolt-report.md actually contains
@@ -791,7 +759,7 @@ cat <vault>/bolts/U-009/bolt-report.md
 # Re-run the bolt:
 execute-bolts U-009
 
-# If repeat failure: likely bolt subagent prompt drift; file plugin bug
+# If repeat failure: likely inline plan drift; file plugin bug
 ```
 
 ---

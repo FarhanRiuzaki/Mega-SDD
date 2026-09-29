@@ -1,6 +1,6 @@
 # resolve-oq — binding mode (`--binding`)
 
-Loaded when `resolve-oq` is invoked with `--binding`. Walks the unresolved CONFLICT claims in `<vault>/bolts/U-*/binding.json` (the JIT bind, execute-bolts 3.9) and writes back ONLY via `write-unit-binding.sh --resolve=<C-id>=<ACTION> --by=user` + a `vault.json` event. An older layout-2 vault that has not been migrated still carries the whole-vault `binding.md` its classic bind wrote; the **layout-2 leg** below walks it. The standard OQ walk (Steps 0–5) is covered by the interactive-walk reference the SKILL.md router lists.
+Loaded when `resolve-oq` is invoked with `--binding`. Walks the unresolved CONFLICT claims in `<vault>/bolts/U-*/binding.json` (the JIT bind, execute-bolts up front + per task) and writes back ONLY via `write-unit-binding.sh --resolve=<C-id>=<ACTION> --by=user` + a `vault.json` event. An older layout-2 vault that has not been migrated still carries the whole-vault `binding.md` its classic bind wrote; the **layout-2 leg** below walks it. The standard OQ walk (Steps 0–5) is covered by the interactive-walk reference the SKILL.md router lists.
 
 **Invocation:** `resolve-oq --binding <vault-dir>` — every `bolts/U-*/binding.json` is walked (a `<vault>/bolts/U-XXX/binding.json` argument walks that unit only). A layout-2 vault (or a `<path-to-binding.md>` argument) takes the layout-2 leg.
 
@@ -77,7 +77,7 @@ Loaded when `resolve-oq` is invoked with `--binding`. Walks the unresolved CONFL
    - `vault.json` changelog (`--event` append per outcome) — each resolution recorded durably (survives re-binds)
 
 5. **Hand-off (differs per action mix).**
-   - **Any KEEP_CODE or SPLIT** (a unit was edited) → re-bind just the edited units, `scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=<edited U-ids>` (the edited claims bind cleanly), then `plan --reconcile` (task_type flips), then resume `/mega-sdd --resume` (`execute-bolts --all --lite`). Skipped, the BOLTS gate backstops it: the edited unit trips `unit_changed_since_bind` and 3.9b re-binds it.
+   - **Any KEEP_CODE or SPLIT** (a unit was edited) → re-bind just the edited units, `scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=<edited U-ids>` (the edited claims bind cleanly), then `plan --reconcile` (task_type flips), then resume `/mega-sdd --resume` (`execute-bolts --all --lite`). Skipped, the run start backstops it: execute-bolts re-binds every pending unit up front (inline-run.md (b)2), and a unit still stale is quarantined `binding_stale` by derive-exec-plan.sh.
    - **Only KEEP_VAULT / DEFER** → do NOT suggest a re-bind: resume `execute-bolts --all --lite` directly. The resolved claims already pass `validate-handoff-binding-units.sh --units=`, and a later re-bind keeps them (`_lib/unit_binding.py` carries a resolution forward while the claim and its code paths are unchanged). KEEP_VAULT's code change lands in that unit's bolt.
    - **Layout-2 leg:** propose `/mega-sdd:migrate-paths --vault-layout=3` (never run it silently) — it carries these resolutions into `bolts/U-XXX/binding-migrated.json` and ends with the mandatory full JIT re-bind; a CONFLICT that re-bind raises again is walked here on the per-unit path.
 

@@ -36,7 +36,7 @@ bug in the implementation. For each case:
 - Identify which existing test assertion would miss it (e.g., "test only
   checks HTTP status code; never inspects response body shape")
 - Propose the additional test assertion that would catch it (test code OR
-  natural-language assertion the bolt subagent can translate)
+  natural-language assertion the implementing session can translate)
 
 Be ADVERSARIAL: assume the original test author had blind spots. The goal is
 to find what they missed, NOT to validate what they wrote. If the test looks

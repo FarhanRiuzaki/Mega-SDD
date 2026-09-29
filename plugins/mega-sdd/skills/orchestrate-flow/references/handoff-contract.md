@@ -76,11 +76,11 @@ handoff:
   metadata:                             # optional; carries resolved model tiers when present
     model_tiers:                        # resolved model tier per named subagent role
       extract-intelligence-module: sonnet  # example; actual entries depend on chain roles
-      code-quality-reviewer: opus       # catalog default; may be overridden by CLI/project/user
+      extract-intelligence-verify: sonnet  # catalog default; may be overridden by CLI/project/user
       # ... (all roles relevant to chain)
     model_tier_sources:                 # catalog | user | project | cli
       extract-intelligence-module: catalog
-      code-quality-reviewer: catalog
+      extract-intelligence-verify: catalog
 ```
 
 ---
@@ -210,7 +210,7 @@ Optional block carrying starterkit detection results forward through the chain.
 
 **Producer:** execute-bolts, as passthrough + metrics (`execute-bolts/references/halts-and-handoff.md` §Handoff emission), when `starterkit-context.yaml` exists on disk.
 
-**Propagation:** orchestrate-flow passes a present block through unchanged (handoff-consumption.md §Propagation); execute-bolts (`build-dispatch-prompt.sh`) reads `starterkit-context.yaml` from disk.
+**Propagation:** orchestrate-flow passes a present block through unchanged (handoff-consumption.md §Propagation); execute-bolts passes the block through from `starterkit-context.yaml` (no execution-time reader).
 
 **Schema:**
 
@@ -252,7 +252,7 @@ A compact consumer-side ROUTING INDEX — one row per producer. Per §Precedence
 | Producer | Statuses (halt enum) | `next_action` routing — conditional branches | Operative emission spec |
 |---|---|---|---|
 | `extract-intelligence` | completed \| halted (a module's quality gate fails twice per `prd-kontrak-template.md` §Per-module quality gate) | → `mega-sdd:plan --kb=<kb> --auto` (KB `README.md` + `modules/*.prd.md`, one module at a time) | `extract-intelligence/references/handoff.md` |
-| `plan` | no handoff YAML — state lives on disk (handoff-consumption.md §Lite lane exemption); a halt prints a `blocker:` envelope (`emitted_by: plan`) and the chain stops | → `mega-sdd:execute-bolts --all --lite` (the orchestrator re-derives state from disk; each unit is bound at dispatch) | `plan/SKILL.md` §Halt conditions |
+| `plan` | no handoff YAML — state lives on disk (handoff-consumption.md §Lite lane exemption); a halt prints a `blocker:` envelope (`emitted_by: plan`) and the chain stops | → `mega-sdd:execute-bolts --all --lite` (the orchestrator re-derives state from disk; each unit is bound up front and again at its task) | `plan/SKILL.md` §Halt conditions |
 | `execute-bolts` | completed \| halted (any entry of the canonical bolt-halt enum — single owner, see pointer below) | → `mega-sdd:detect-drift` (never terminal — the DEFAULT-ON drift auto-gate); `suggested_args: ["--scope=<id>"]` when the batch ran scope-filtered so detect-drift inherits it, else `[]`; phase advance is an informational `next_action.hint`, never a `suggested_skill`; `metrics.acceptance_test_concerns` (array of `{unit, concern}`; empty when none) is consumed by the chain-end summary diagnostics (`chain-execution.md`) | `execute-bolts/references/halts-and-handoff.md` |
 | `diff-vault` | completed \| paused \| halted (`diff_conflict` / `memory_in_use` / `delta_too_large`) | clean apply → `mega-sdd:orchestrate-flow` (re-inspects CWD + re-plans; subsumes the brownfield re-bind hop and is the only valid hop for a greenfield vault; a from-prompt apply's `.delta-changed-paths.txt` is picked up by the router's §Delta lane row there); halted `delta_too_large` → `mega-sdd:orchestrate-flow` re-plan after the user's full_lane/split_ticket/cancel choice; completed + new `[ ]` OQ rows materialized (`OQ-{CODE}-{N+1}`) → `mega-sdd:resolve-oq` (its `[ ]`-walk can consume them); halted `diff_conflict` → re-invoke `mega-sdd:diff-vault` WITHOUT `--auto` (interactive Step 5) — NEVER resolve-oq, which cannot read a `VAULT-DIFF.md` conflict (its OQ is `[x]` resolved and lives only in `VAULT-DIFF.md`; per §Anti-halu invariants a halted `next_action` must point at the true resolution path) | `diff-vault/references/auto-and-chain.md` |
 | `resolve-oq` | completed \| paused \| halted (malformed vault / cycle protection in `--binding` mode / `memory_in_use`) | `--binding` action-mix (binding-mode.md Step 5): any KEEP_CODE or SPLIT → the engine runs `scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=<affected U-ids>`, then `mega-sdd:plan` `["--reconcile", "--auto"]` (task_type flips) → execute-bolts; ONLY KEEP_VAULT/DEFER → `mega-sdd:execute-bolts --all --lite` (the resolution `write-unit-binding.sh --resolve` recorded opens the per-unit gate — no re-bind); intent mode → `mega-sdd:orchestrate-flow` (resume chain) | `resolve-oq/references/auto-memory-handoff.md` |

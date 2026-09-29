@@ -69,7 +69,7 @@ grep -qF '## Reengineering Opportunities' "$TPL" && grep -qF '## Mutability Tier
   && pass "README keeps the two plan --kb-read headings verbatim" \
   || fail "README heading contract broken"
 grep -qF '## Per-locked-field policy' "$TPL" && grep -qF '## Entity-level summary' "$TPL" \
-  && pass "data-mutation-policy consumer headings preserved (build-dispatch-prompt contract)" \
+  && pass "data-mutation-policy consumer headings preserved (plan --kb contract)" \
   || fail "data-mutation-policy headings broken"
 grep -qF '[LOCKED]' "$TPL" && grep -qF '[INTENT]' "$TPL" && grep -qF '[ARTIFACT]' "$TPL" \
   && pass "mutability axis (invariant #4) carried in the template" || fail "mutability axis lost"
@@ -95,9 +95,9 @@ grep -qF 'validate-extract-census.sh' "$P/scripts/certify-artifact.sh" \
 grep -qF 'census.json' "$P/scripts/build-prd-core.sh" \
   && pass "emit-prd reverse mode refuses a PRD-kontrak KB with a pointer" \
   || fail "build-prd-core reverse not guarded"
-grep -qF '"data-mutation-policy.md"' "$P/scripts/build-dispatch-prompt.sh" \
-  && grep -qF '99-rebuild-architecture' "$P/scripts/build-dispatch-prompt.sh" \
-  && pass "dispatch builder probes dmp at KB root AND legacy 99- path" \
+grep -qF '<kb>/data-mutation-policy.md' "$KBIN" \
+  && grep -qF '99-rebuild-architecture/data-mutation-policy.md' "$KBIN" \
+  && pass "plan --kb reads dmp at KB root AND legacy 99- path" \
   || fail "dmp dual-probe missing"
 grep -qF 'extract-intelligence-module' "$P/references/model-tiers.md" \
   && pass "model-tiers carries the extract-intelligence-module role" || fail "module role row missing"
@@ -106,13 +106,15 @@ grep -qF 'extract-intelligence-module' "$P/references/model-tiers.md" \
 roles=$(python3 - <<'PY'
 import re
 content = open("plugins/mega-sdd/references/model-tiers.md").read()
+content += "\n| 21b | `foo-bar` | sonnet | synthetic fixture row: the catalog has no [a-z]? row since P3 C6b |\n"
 roles = set(re.findall(r"^\|\s*\d+[a-z]?\s*\|\s*`?([\w-]+)`?\s*\|", content, re.MULTILINE))
 print(",".join(sorted(roles)))
 PY
 )
 echo "$roles" | grep -q "extract-intelligence-module" \
-  && echo "$roles" | grep -q "bolt-implementer" \
-  && pass "catalog regex (as fixed in ground.sh) captures role names incl. 21b row" \
+  && echo "$roles" | grep -q "extract-intelligence-verify" \
+  && echo "$roles" | grep -q "foo-bar" \
+  && pass "catalog regex (as fixed in ground.sh) captures role names incl. a 21b row (synthetic)" \
   || fail "catalog regex capture wrong: $roles"
 grep -qF 'catalog_roles = set(_re_mt.findall(' plugins/mega-sdd/scripts/ground.sh \
   && grep -qF 'd+[a-z]?' plugins/mega-sdd/scripts/ground.sh \

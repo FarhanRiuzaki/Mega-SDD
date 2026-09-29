@@ -54,15 +54,15 @@ Each layer has a different audience, different anti-hallucination rails, and dif
 
 ## Superpowers integration
 
-Bolt phase is executed by the first-class `bolt-implementer` agent plus the blind review panel (`plugins/mega-sdd/agents/`). [superpowers](https://github.com/obra/superpowers) TDD skills are an optional technique when installed (`skills/execute-bolts/references/superpowers-bridge.md`).
+Bolt phase runs inline in one context and closes with one blind review of the whole range (`skills/execute-bolts/references/inline-run.md`; the per-unit agents were removed in P3). [superpowers](https://github.com/obra/superpowers) TDD skills are an optional technique when installed (`skills/execute-bolts/references/superpowers-bridge.md`).
 
-The pipeline is self-contained: the first-class agents in `plugins/mega-sdd/agents/` encode the execution discipline, so no superpowers install (and, since v7.4.0, no vendored copy) is required.
+The pipeline is self-contained: the execution discipline lives in `skills/execute-bolts/` (SKILL.md + `references/inline-run.md`), so no superpowers install (and, since v7.4.0, no vendored copy) is required.
 
 ## Anchor + hooks
 
 The `SessionStart` hook detects SDD signals in CWD and injects `using-mega-sdd` anchor skill content, weighted S/M/L (slim anchor for small contexts). The anchor is scoped — it only mandates skill invocation when SDD keywords or signals are present.
 
-Six hook events total, each dispatched DIRECTLY from `hooks/hooks.json` (`bash "${CLAUDE_PLUGIN_ROOT}/hooks/<name>"` — the run-hook.sh dispatcher was deleted in v7.5.0): `SessionStart` (anchor + state notice, plus the `mega-sdd-note:` session line on gateway-routed sessions), `PreToolUse` (the gate aggregator — CONFLICT gate, anti-self-bypass, bolt evidence gates; matcher `Skill|Bash|Edit|Write|Agent` — the Agent arm gates only a `bolt-implementer` dispatch, in-run semantics; plus the wave commit rail), `PostToolUse` (dirty-paths journal + advisory notices; matcher `Write|Edit`), `Stop` (bolt-artifact detection + analyze aggregate + gateway publisher), `UserPromptExpansion` (front-door routing), `UserPromptSubmit` (the `mega-sdd-trace:turn` gateway tag + completion-census sync offer). Everything observability-shaped beyond the gateway tag and session line was removed in v7.3.0; the memory/phase-advisor/slice lanes died in v7.3.0–v7.4.0.
+Six hook events total, each dispatched DIRECTLY from `hooks/hooks.json` (`bash "${CLAUDE_PLUGIN_ROOT}/hooks/<name>"` — the run-hook.sh dispatcher was deleted in v7.5.0): `SessionStart` (anchor + state notice, plus the `mega-sdd-note:` session line on gateway-routed sessions), `PreToolUse` (the gate aggregator — CONFLICT gate, anti-self-bypass, bolt evidence gates; matcher `Skill|Bash|Edit|Write`), `PostToolUse` (dirty-paths journal + advisory notices; matcher `Write|Edit`), `Stop` (bolt-artifact detection + analyze aggregate + gateway publisher), `UserPromptExpansion` (front-door routing), `UserPromptSubmit` (the `mega-sdd-trace:turn` gateway tag + completion-census sync offer). Everything observability-shaped beyond the gateway tag and session line was removed in v7.3.0; the memory/phase-advisor/slice lanes died in v7.3.0–v7.4.0.
 
 ## Pipeline diagram
 

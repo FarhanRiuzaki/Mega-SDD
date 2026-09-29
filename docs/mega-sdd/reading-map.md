@@ -93,7 +93,7 @@ Path root: `<project>/.mega-sdd/vaults/<slug>/bolts/`
 | Per-unit binding | `U-XXX/binding.json` (`summary` verdict counts + `claims[]`, each with its verdict, anchor and any `resolution`; written by the JIT bind at dispatch — the gate itself reads `.mega-sdd/.validation-blockers.json`) | Why THIS unit was blocked/cleared |
 | Per-unit outcome | `U-XXX/bolt-report.md` | Specific bolt's tests + commits + drift |
 | Acceptance evidence | `U-XXX/acceptance.json` (criterion → test → verdict) | Which test covers which criterion |
-| Dispatch context (debugging) | `U-XXX/dispatch-prompt.md` | What the AI executor saw |
+| Dispatch context (debugging) | `U-XXX/dispatch-prompt.md` | What the AI executor saw (legacy: written only by pre-P3 `--agents` runs) |
 | Pre/post snapshots | `U-XXX/preflight.json` + `postflight.json` | Hard-rule / drift detection input |
 | Quarantine | `U-XXX/quarantine.json` | A unit parked on a deferred decision |
 

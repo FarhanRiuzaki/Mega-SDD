@@ -174,12 +174,12 @@ if [ -d "${PROJECT_ROOT}/.mega-sdd" ]; then
     fi
     if [ "$NEED_ARTIFACT_SCAN" = "1" ]; then
       # ONE composable invocation (spec §4a-ii) — orphan + B2 batch-suite + B1
-      # postflight + B3 whitelist + B4 acceptance + panel + conflict_bypassed. Detection-only here (Stop never
+      # postflight + B3 whitelist + B4 acceptance + conflict_bypassed. Detection-only here (Stop never
       # blocks); the PreToolUse execute-bolts aggregator blocks the NEXT run on
       # FAIL. NOTE: no --recompute on this lane (unchanged) — recompute-at-gate
       # belongs to the blocking PreToolUse path; the artifacts are READ here,
       # never re-executed (no test runs inside a hook).
-      bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --orphan-scan --batch-suite-gate --postflight-scan --whitelist-scan --acceptance-scan --panel-scan --conflict-bypass-scan --quiet >/dev/null 2>&1
+      bash "$VALIDATOR_OS" --cwd="$PROJECT_ROOT" --orphan-scan --batch-suite-gate --postflight-scan --whitelist-scan --acceptance-scan --conflict-bypass-scan --quiet >/dev/null 2>&1
       SCAN_RC_SS=$?
       # Stamp ONLY when the composed scan actually evaluated (rc 0 = clean,
       # 1 = findings recorded). An errored scan (rc 2 — e.g. a git timeout's

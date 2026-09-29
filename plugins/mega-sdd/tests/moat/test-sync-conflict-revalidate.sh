@@ -49,9 +49,9 @@ pin "commands/sync.md" \
 # 9.0: the re-bind hop re-verdicts only the AFFECTED units (rebind-units.sh processes the
 # intersecting set). The classic wording "active CONFLICTs always re-validated" was never
 # true of that script; the invariant that matters is that an unresolved CONFLICT outside
-# the changed set is never carried silently: it still closes that unit's gate at dispatch.
+# the changed set is never carried silently: it still closes that unit's gate at execute-bolts run start.
 pin "commands/sync.md" \
-    "an unresolved CONFLICT there still closes that unit's gate at dispatch \(invariant #2\)" \
+    "an unresolved CONFLICT there still closes that unit's gate at execute-bolts run start \(derive-exec-plan.sh quarantine; invariant #2\)" \
     "sync flag text carries the invariant (unaffected CONFLICTs stay gated)"
 # Mode D chain keeps the claim-scoped re-bind hop (was: bind-codebase --paths=@)
 pin "skills/orchestrate-flow/references/routing-rules.md" \

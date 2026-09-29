@@ -27,16 +27,12 @@ knowledge_base: ""         # ABSENT = probe the in-project KB paths (.mega-sdd/k
 spine: express      # express (GROUND) is the only spine; `classic` no longer selects a chain (the front door names the
                            #   removal in one line). The Stop hook still reads `spine: classic` as a `profile: full` alias.
 lane: lite          # lite is the only pipeline; `standard` is retired (the front door says so in one line and proceeds
-                           #   lite). Lite = execute-bolts pre-flight 3.9 JIT bind on EVERY wave + W1 zero-idle + `validate-preflight.sh
+                           #   lite). Lite = execute-bolts JIT bind up front + per task + W1 zero-idle + `validate-preflight.sh
                            #   --predictive` refuses the execute-bolts hop while .plan-coverage-state.json is missing/FAIL/stale.
 # profile:          # ABSENT is the default: diagnostics lean-by-default on the express spine (Stop-hook analyze aggregate OFF). Set `full` to re-enable the aggregate; `lean` additionally cuts the advisory chain diagnostics (opt-in)
-review_panel: auto         # execute-bolts review-panel tier: auto (risk-based) | minimal | standard | full
-                           #   (see execute-bolts references/review-panel.md; CLI --review-panel= overrides this key)
 model_tiers:
-  bolt_implementer: inherit  # per-unit model routing: inherit (DEFAULT — today's behavior,
-                             # session model, no model param passed) | auto (router: the same
-                             # resolve-review-tier signals pick haiku/sonnet/opus per unit +
-                             # one-step failure cascade) | haiku | sonnet | opus (hard pin)
+  extract-intelligence-module: sonnet  # catalog roles only (references/model-tiers.md): the extract
+                             # roles; a stale bolt_implementer key gets GROUND's model_tier_unknown notice
 parallel_max: 4              # execute-bolts in-flight implementer cap (Claude Code's own default is 20
                              # concurrent subagents — one bolt-implementer is ~80 turns; 4 keeps
                              # a fleet Windows laptop responsive). SCRIPT-READ, not
@@ -46,18 +42,14 @@ parallel_max: 4              # execute-bolts in-flight implementer cap (Claude C
                              # acceptance passed but whose panel has not merged yet is "panel-pending",
                              # and the gate lets the next dispatch through only while ≤ parallel_max
                              # such units exist (execute-bolts references/batch-and-fanout.md).
-max_retries: 3             # execute-bolts re-dispatch budget per unit (an explicit `--max-retries=N` wins;
-                           # lane lite + unit_tier xs is always 1). SCRIPT-READ + HOOK-ENFORCED:
-                           # `_lib/vault_layouts.retry_budget()` → `review-tier.json` `retry_budget`; the
-                           # PreToolUse gate denies the bolt-implementer dispatch past 1 + retry_budget.
+max_retries: 3             # default for the inline run's per-task fix cap (prose, execute-bolts
+                           # `references/inline-run.md` (a); `--max-retries=N` wins); nothing counts it.
 code_gates: true           # false → skip the L0 toolchain + SAST gates (execute-bolts references/code-gates.md).
                            #   The secret scan and new-dep existence check ALWAYS run — no key disables them.
 gateguard: true            # false → disable the LOCKED-file deny-once investigation gate (PreToolUse
                            #   Edit/Write; inert anyway when no [LOCKED] anchors exist in any vault)
 preview_url: ""            # dev-server base URL (e.g. http://localhost:5173) — read by
-                           #   `scripts/uat-run.sh` (UAT e2e); the execute-bolts controller passes
-                           #   the URL into the capture ladder as an argument — `capture-views.sh`
-                           #   never reads config. Empty → design lens is code-only.
+                           #   `scripts/uat-run.sh` (UAT e2e).
 # render_html: on          # ABSENT = off for the PIPELINE hand-offs (plan / execute-bolts /
                            #   extract-intelligence): no HTML beside the md — the render is
                            #   regenerable via `/mega-sdd:emit html` and was 78–88% of committed .mega-sdd/

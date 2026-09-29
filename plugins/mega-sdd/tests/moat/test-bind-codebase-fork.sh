@@ -74,14 +74,14 @@ EOF
 [ "$MOAT_OK" -eq 1 ] && pass "JIT bind §E3 carries the CONFLICT/OQ verdict rails (contradiction → CONFLICT; KB only when code is silent; KB never overrides a code CONFLICT)"
 
 # ── 2. The decision gate (was "**5. Decision gate — non-negotiable:**" + `type: bind_conflict`) ──
-# The CONFLICT gate stays at dispatch (spec §3): an unresolved CONFLICT halts
-# `binding_conflict`, ALWAYS STOPs that unit, and the PreToolUse hook re-runs the validator
-# on every bolt-implementer dispatch so a hand dispatch cannot bypass it.
+# The CONFLICT gate (spec v9 §8.5; the per-dispatch hook leg was removed in P3, §8.6): an unresolved
+# CONFLICT halts `binding_conflict`, ALWAYS STOPs that unit, and is enforced by the run-start
+# quarantine, each task's re-bind and the `conflict_bypassed` run-boundary gate.
 if hasn "$JIT" 'FAIL with `conflict_unresolved` drops ⇒ **halt `binding_conflict`** — ALWAYS STOP for those units' \
-   && hasn "$JIT" '`--units=<unit>` on every `bolt-implementer` dispatch — a hand dispatch cannot bypass it.'; then
-  pass "JIT bind §3.9 decision gate: conflict_unresolved ⇒ halt binding_conflict, ALWAYS STOP, enforced at every dispatch"
+   && hasn "$JIT" 'The gate is the run-start quarantine (`derive-exec-plan.sh`), each task'"'"'s re-bind, and `conflict_bypassed` at the run boundary and on Stop.'; then
+  pass "JIT bind §3.9 decision gate: conflict_unresolved ⇒ halt binding_conflict, ALWAYS STOP, enforced at run start + each re-bind + conflict_bypassed"
 else
-  fail "JIT bind §3.9 lost the non-negotiable CONFLICT decision gate (halt binding_conflict / hook-enforced at dispatch)"
+  fail "JIT bind §3.9 lost the non-negotiable CONFLICT decision gate (halt binding_conflict / run-start quarantine + conflict_bypassed)"
 fi
 # The legacy halt name still blocks on a not-yet-migrated layout-2 vault (spec §7 #9).
 has "$HF" '`bind_conflict` — the legacy name (a layout-2 `binding.md`) of `binding_conflict`. An existing layout-2 vault with an unresolved CONFLICT still blocks `execute-bolts` (moat invariant #2). ALWAYS STOP.' \

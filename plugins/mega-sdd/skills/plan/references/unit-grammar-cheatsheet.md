@@ -17,7 +17,7 @@
 | `acceptance_test:` | `scripts/validate-unit-spec.sh`, `scripts/run-acceptance-tests.sh` | `^acceptance_test\s*:\s*(.*?)(?=^\S\|\Z)` | ≥ 1 entry; `type: test` MUST carry `command:` + `expects:` (substring); `type: render` for detail views; `type: manual` = `desc:` only |
 | `depends_on:` | `scripts/derive-ready-units.sh`, `scripts/validate-unit-spec.sh` (L2) | `^depends_on:[ \t]*(\[[^\]]*\])?[ \t]*(?:#[^\n]*)?\n((?:[ \t]+-[^\n]*\n?)*)` | block list of `- U-XXX` or inline `[U-001, U-002]`; cycles halt `cycle_detected` in plan Step 4; depth ≤ 4 hops advisory |
 
-## `## Hard rules` productions (v1 — the ONLY lines B1 can verify; anything else is a prose directive the panel reads)
+## `## Hard rules` productions (v1 — the ONLY lines B1 can verify; anything else is a prose directive the implementer and the closing review read)
 
 | Production | Reader | Regex (verbatim) |
 |---|---|---|
