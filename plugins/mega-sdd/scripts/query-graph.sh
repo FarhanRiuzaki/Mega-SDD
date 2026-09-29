@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # Impact/blast-radius query over .mega-sdd/graph.json. Lazy-rebuild when stale.
-# v7 Fase 2 merge group 6: also hosts the per-module status rollup as the
-# --modules mode (merged verbatim from the former list-modules.sh — reads
-# modules.yaml + unit frontmatter + _lib/exec_units.done, then bolt-outcomes.json, read-only, no graph
-# involvement; exit 0 rollup / 1 vault not found / 2 usage).
+# --modules: the per-module status rollup (the former list-modules.sh) — modules.yaml + unit frontmatter +
+# _lib/exec_units.done, then bolt-outcomes.json; read-only, no graph; exit 0 rollup / 1 vault not found / 2 usage.
 #   query-graph.sh --modules [vault-path] [--cwd=<p>] [--module=<id>] [--format=table|json]
 set -u
 
@@ -324,8 +322,8 @@ for m in modules:
         "units": {"completed": completed, "in_progress": in_prog,
                   "pending": pending, "total": total},
         "dod": {"done": dod_done_n, "total": dod_total},
-        "blocked_by": m["blocked_by"], "pending_units": [u for u in sorted(mem)
-                     if status_of.get(u) != "completed"],
+        "blocked_by": m["blocked_by"], "unit_ids": sorted(mem),  # membership (derive-exec-plan --module)
+        "pending_units": [u for u in sorted(mem) if status_of.get(u) != "completed"],
     }
 
 # blocked_by resolution (a blocker is satisfied iff its module status == completed)

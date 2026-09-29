@@ -28,7 +28,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### module_blocked_by
 
-- `module_blocked_by` — execute-bolts: bolt invocation blocked because prerequisite module hasn't completed yet (module-graph dependency). ALWAYS STOP. Details `{unit_id, blocking_module_id, blocked_status}`. Resolution: user runs prerequisite module first OR adjusts module dependency graph in `vault/_meta/modules.yaml`. Source skill: `execute-bolts`.
+- `module_blocked_by` — execute-bolts: bolt invocation blocked because prerequisite module hasn't completed yet (module-graph dependency). ALWAYS STOP. Details `{unit_id, blocking_module_id, blocked_status, pending_units}` (`pending_units`: its units not yet done; superseded counts as done). Resolution: user runs prerequisite module first OR adjusts module dependency graph in `vault/_meta/modules.yaml`. Source skill: `execute-bolts`.
 
 ### acceptance_path_unowned
 

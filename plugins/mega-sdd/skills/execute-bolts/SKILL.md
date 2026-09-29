@@ -37,7 +37,7 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
   - `--no-code-gates` — skip the L0 toolchain + SAST gates for this run (forwarded verbatim to `scripts/run-code-gates.sh`; logged in the bolt-report). The secret scan and new-dep existence check ALWAYS run — no flag disables them (per `references/code-gates.md`).
   - `--no-full-suite` — **DISCOURAGED** escape hatch that skips the batch-completion full-suite gate for THIS run (broken/absent project test command only). Logged in `_summary.md` + handoff `notes.full_suite_skipped: true`; the PreToolUse gate still blocks the next run until a green `_batch-suite.json` covers the newest code commit — never silent.
   - `--squad=<id>` — one squad of a migrated vault's `_meta/squads.yaml`; its units become `--units`.
-  - `--module=<id>` — one module's pending units (`derive-exec-plan.sh --module=`, `plugins/mega-sdd/references/modules-schema.md`); a prerequisite module not `completed` → **halt `module_blocked_by`**.
+  - `--module=<id>` — one module's pending units (`derive-exec-plan.sh --module=`, `plugins/mega-sdd/references/modules-schema.md`); a prerequisite module not done → **halt `module_blocked_by`**.
   - `--hard-rule-grammar=v1|v2` — force the Hard-rule grammar; default `auto` (detect from YAML presence under `## Hard rules`).
   - `--no-pbt` — skip Property-Based Testing validation (example-test-only behaviour).
   - `--no-empty-commits` — skip the bolt-report-only commit for `task_type: verify` units with no changes (per the verify-unit special path).

@@ -7,8 +7,8 @@
 # done       derive-ready-units.sh `done`, or _lib/exec_units.done (the rule the run-boundary scan uses).
 # --pending  ONE JSON line {"pending":[…]}: not done, not `status: superseded`, topological — the list the
 #            controller re-binds up front. Writes nothing.
-# --module   the module's pending units (query-graph.sh --modules) instead of --units; a blocked_by module not `completed` →
-#            exit 1 + halt {type: module_blocked_by} (--pending too: before any re-bind). Only _meta/modules.yaml.auto → exit 2.
+# --module   the module's pending units (members: query-graph.sh --modules) instead of --units; a blocked_by module undeclared, with
+#            a pending unit or unmarked DoD → exit 1 + halt module_blocked_by (--pending too: before any re-bind). Only modules.yaml.auto → exit 2.
 # --rebind-wip  the close, before its evidence commit: re-binds each unit with an open own_wip CONFLICT (a resume's own work,
 #            done since: CONFIRMED) → {"rebound":[…]}; a CONFLICT left, or named by a `Close: halt` ledger line → exit 1 + halt
 #            {scope: close} + that line. --retire: the same (--dry-run: no re-bind), then removes plans, ledgers, workspaces.
@@ -153,22 +153,24 @@ while heap:
                 heapq.heappush(heap, (natkey(c), c))
 if len(order) != len(pending):
     die("depends_on cycle among %s — fix the units' depends_on" % ", ".join(sorted(pending - set(order), key=natkey)))
-mod_halt = None
-if E["V_MODULE"]:  # the module's pending units; an unmet blocked_by halts here, before (b)2 re-binds anything
+mod_halt, mods = None, {}
+if E["V_MODULE"]:  # the rollup gives membership + DoD, never "done" (it also reads bolt-outcomes); halts before (b)2 re-binds anything
     meta = os.path.join(vault, "_meta", "modules.yaml")
     if os.path.isfile(meta + ".auto") and not os.path.isfile(meta):
         die("only _meta/modules.yaml.auto exists — review it, then promote it: mv _meta/modules.yaml.auto _meta/modules.yaml")
-    r = run(["bash", os.path.join(scripts, "query-graph.sh"), "--modules", vault, "--cwd=" + root, "--module=" + E["V_MODULE"], "--format=json"])
+    r = run(["bash", os.path.join(scripts, "query-graph.sh"), "--modules", vault, "--cwd=" + root, "--format=json"])
     try:
-        mod = json.loads(r.stdout)["modules"][0]
-    except (AttributeError, ValueError, KeyError, IndexError, TypeError):
-        die("unknown module %s (%s)" % (E["V_MODULE"], (r.stderr.strip() if r else "") or "query-graph.sh --modules gave no rollup"))
-    order = [u for u in order if u in mod["pending_units"]]
-    unmet = [b for b in mod["blocked_by_resolved"] if not b["satisfied"]]
+        mods = {m["id"]: m for m in json.loads(r.stdout)["modules"]}
+        mod = mods[E["V_MODULE"]]
+    except (AttributeError, ValueError, KeyError, TypeError):
+        die("unknown module %s (%s)" % (E["V_MODULE"], "valid: " + ", ".join(sorted(mods)) if mods else (r.stderr.strip() if r else "") or "query-graph.sh --modules gave no rollup"))
+    order = [u for u in order if u in mod["unit_ids"]]
+    unmet = [b for b in mod["blocked_by"] if b not in mods or pending & set(mods[b]["unit_ids"]) or mods[b]["dod"]["done"] < mods[b]["dod"]["total"]]
     if unmet and order:
-        mod_halt = {"type": "module_blocked_by", "scope": "run", "unit_id": order[0], "blocking_module_id": unmet[0]["id"],
-                    "blocked_status": unmet[0].get("status"), "next_action": "execute-bolts --module=%s first (DoD items: list-modules "
-                    "--mark-dod)" % unmet[0]["id"], "keterangan": "modul prasyarat %s belum selesai — jalankan dulu, lalu ulangi" % unmet[0]["id"]}
+        blk = mods.get(unmet[0]) or {"status": "undeclared", "unit_ids": []}
+        mod_halt = {"type": "module_blocked_by", "scope": "run", "unit_id": order[0], "blocking_module_id": unmet[0], "blocked_status": blk["status"],
+                    "pending_units": sorted(pending & set(blk["unit_ids"]), key=natkey), "next_action": "execute-bolts --module=%s first (DoD items: "
+                    "list-modules --mark-dod)" % unmet[0], "keterangan": "modul prasyarat %s belum selesai — jalankan dulu, lalu ulangi" % unmet[0]}
 if E["V_MODE"] == "pending":
     print(json.dumps(dict({"pending": order}, **({"halt": mod_halt} if mod_halt else {}))))
     sys.exit(1 if mod_halt else 0)

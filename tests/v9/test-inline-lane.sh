@@ -8,7 +8,7 @@
 # Fixture F: U-001 claims lib/config.js (exists); U-002 → U-001; U-003 claims a missing path (a real CONFLICT); U-004
 # → U-003 (commented inline list); U-005 → U-004 (commented block list); U-006 independent. F2 create→modify→verify;
 # F3 two vaults, colliding ids; F4 a docs/mega-sdd vault, nested unit. Sections: a --pending · b no bind · c run-start
-# gate, open run · d the plan · e retire, quarantine paths (e10–e16: --module via the query-graph.sh --modules rollup, a
+# gate, open run · d the plan · e retire, quarantine paths (e10–e18: --module via the query-graph.sh --modules rollup, a
 # draft consumed interface) · k F2 · f the scan · g the hook · m episodes, own_wip,
 # rebind_skipped, own_wip at the close, done rule, a literal run · h wiring + docs.   Run: bash tests/v9/test-inline-lane.sh </dev/null
 set -u
@@ -225,6 +225,16 @@ OUT="$(dep --module=M-default)"; R=$?
 rm -rf "$T/cm2"; cp -R "$T/cm" "$T/cm2"; rm -rf "$T/cm2/.mega-sdd/vaults/demo/bolts"; OUT="$(bash "$DEP" --cwd="$T/cm2" --vault="$T/cm2/.mega-sdd/vaults/demo" --pending --module=M-b 2>&1)"; R=$?
 [ $R -eq 1 ] && [ "$(J "$OUT" '(d["pending"], d["halt"]["type"])')" = "(['U-006'], 'module_blocked_by')" ] && [ ! -e "$T/cm2/.mega-sdd/vaults/demo/bolts" ] \
   && ok "e14: --pending --module=M-b → exit 1 with the halt before (b)2 re-binds anything; nothing written" || bad "e14: rc=$R $OUT"
+pm() { bash "$DEP" --cwd="$1" --vault="$1/.mega-sdd/vaults/demo" --pending --module="$2" 2>&1; }
+rm -rf "$T/cm3"; cp -R "$T/cm2" "$T/cm3"; sleep 1; bolt "$T/cm3" U-001 docs/alpha.md "Alpha page" v5; evid "$T/cm3" U-001; report "$T/cm3/.mega-sdd/vaults/demo" U-001 "$T/cm3" docs/alpha.md
+ins "$T/cm3/.mega-sdd/vaults/demo/units/U-002.md" "task_type: create" "status: superseded"; OUT="$(pm "$T/cm3" M-b)"; R=$?
+[ "$(J "$(pm "$T/cm3" M-a)" 'd["pending"]')" = "[]" ] && [ $R -eq 0 ] && [ "$(J "$OUT" '(d["pending"], d.get("halt"))')" = "(['U-006'], None)" ] \
+  && ok "e17: prerequisite M-a = one done unit + one superseded (plan --reconcile keeps the file) → nothing left in M-a, M-b runs (superseded counts as done)" || bad "e17: rc=$R $OUT"
+rm -rf "$T/cm4"; cp -R "$T/cm2" "$T/cm4"; mkdir -p "$T/cm4/.mega-sdd/vaults/demo/.memory"
+printf '{"bolts": [{"unit_id": "U-001", "status": "completed"}, {"unit_id": "U-002", "status": "completed"}]}\n' > "$T/cm4/.mega-sdd/vaults/demo/.memory/bolt-outcomes.json"
+OUT="$(pm "$T/cm4" M-b)"; R=$?
+[ "$(J "$(pm "$T/cm4" M-a)" 'd["pending"]')" = "['U-001', 'U-002']" ] && [ $R -eq 1 ] && [ "$(J "$OUT" '(d["halt"]["type"], d["halt"]["pending_units"])')" = "('module_blocked_by', ['U-001', 'U-002'])" ] \
+  && ok "e18: a stale bolt-outcomes 'completed' (no done evidence) neither drops a unit from --module=M-a nor satisfies M-b's blocked_by (halt names pending_units)" || bad "e18: rc=$R $OUT"
 clone ci; CI="$T/ci/.mega-sdd/vaults/demo"; mkdir -p "$CI/interfaces"; ins "$CI/units/U-001.md" "task_type: create" "squad: squad-fe
 consumes_interfaces: [api-x]   # the backend's endpoint"
 printf -- '---\nid: api-x\nproducer: squad-be\nconsumers: [squad-fe]\nstatus: draft\n---\n# api-x\n' > "$CI/interfaces/api-x.md"
