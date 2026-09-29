@@ -1,6 +1,6 @@
 # Halt guidance — bolts family
 
-Per-type guidance for halts emitted by: execute-bolts (L0 + B1–B4 evidence gates, review panel, verify units).
+Per-type guidance for halts emitted by: execute-bolts (L0 + B1–B4 evidence gates, verify units).
 Split from the canonical registry `plugins/mega-sdd/references/halt-protocol.md`
 (spec 2026-08-17-halt-registry-family-split.md) — the registry keeps the envelope
 schema, escalation discipline, subtype enums, and the per-type index that routes
@@ -52,7 +52,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### sast_critical_finding
 
-- `sast_critical_finding` — execute-bolts (L0 gate): a Critical SAST finding; user fixes before the panel. ALWAYS STOP.
+- `sast_critical_finding` — execute-bolts (L0 gate): a Critical SAST finding; user fixes it before the next task. ALWAYS STOP.
 
 ### dep_not_found
 
@@ -72,7 +72,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### acceptance_expects_missing
 
-- `acceptance_expects_missing` — execute-bolts IN-RUN gate (F-18, spec §3.3): the dispatched unit has a `type: test` acceptance entry with a command and no `expects` (B4 would pass on rc==0 alone). Per unit at its own dispatch, never the run boundary. ALWAYS STOP for that dispatch. Resolution: add `expects: "<output substring>"`, re-dispatch. Detector `validate-unit-spec.sh`.
+- `acceptance_expects_missing` — plan Step 5 / analyze (F-18, spec §3.3): a unit has a `type: test` acceptance entry with a command and no `expects` (B4 would pass on rc==0 alone). ALWAYS STOP at plan Step 5 (the validator exits 1); no execute-bolts gate reads it, so a running project is never retro-blocked. Resolution: add `expects: "<output substring>"`, re-run plan Step 5. Detector `validate-unit-spec.sh`.
 
 ### acceptance_evidence_missing
 

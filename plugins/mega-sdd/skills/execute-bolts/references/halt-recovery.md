@@ -24,7 +24,7 @@ blocker:
       <verbatim output of last failing test invocation>
     files_touched:
       - <list of files touched during the attempts>
-  next_action: "Review bolt-report.md; edit unit acceptance criteria, fix code manually, or skip via --force"
+  next_action: "Review bolt-report.md; edit the unit acceptance criteria or fix the code, then re-run"
 ```
 
 ## Propose-and-confirm halt UX
@@ -43,10 +43,10 @@ Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt ha
 - `constitution_drift_detected` — audit-significant.
 - `bolt_repeated_partial_failure` — structural problem; a fix won't help.
 - `provenance_missing` — user must add the trailer.
-- `dep_missing` — environment setup needed. (The agent-carried halt vocabulary — `agents/bolt-implementer.md` §Halt vocabulary — emits this same type; the legacy alias `missing_dependency` is retired.)
+- `dep_missing` — environment setup needed (the legacy alias `missing_dependency` is retired).
 - `hard_rule_unparseable` — config issue.
 - `hard_rule_unanchored` — config issue.
-- `ambiguous_spec` — human interpretation call (subagent-emitted; pure-pause).
+- `ambiguous_spec` — human interpretation call (the implementing session will not guess; pure-pause).
 - `verify_unit_writable` — config issue.
 
 **Dispatch contract:**

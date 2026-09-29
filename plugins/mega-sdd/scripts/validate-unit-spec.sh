@@ -446,8 +446,8 @@ def validate_unit(file_path):
     # entries on the field run; acceptance never observed a failure). A
     # command-bearing `type: test` entry (or untyped) MUST name the substring the
     # output proves. Exempt: manual (never executed) and render (route-200 +
-    # display assertion — its command IS the proof). An analyze advisory: no gate
-    # reads it (never at the run boundary — no retro-freeze).
+    # display assertion — its command IS the proof). A FAIL (exit 1) at plan Step 5
+    # and analyze; no execute-bolts gate reads it (a running project never freezes).
     try:
         _ftext = open(file_path, encoding="utf-8", errors="replace").read()
     except OSError:
@@ -478,7 +478,7 @@ def validate_unit(file_path):
                        f"entr{'y' if len(_vacuous)==1 else 'ies'} with a command but NO `expects` — "
                        f"the B4 gate then measures only rc==0 of a test the implementer wrote "
                        f"(vacuous). Add `expects: \"<substring the output must contain>\"` "
-                       f"(e.g. the runner's pass line) to each entry, then re-dispatch."),
+                       f"(e.g. the runner's pass line) to each entry, then re-run plan Step 5."),
             "unit_id": unit_id,
             "task_type": task_type,
             "commands": _vacuous,

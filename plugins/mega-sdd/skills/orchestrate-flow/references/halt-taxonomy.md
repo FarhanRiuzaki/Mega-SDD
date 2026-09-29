@@ -25,7 +25,7 @@ Auto-resolved in `--deep` when the safety condition holds; otherwise escalate. F
 Per the canonical registry these never stop the chain (retry+skip, hook-enforced repair, or detection-only); `invalid_handoff` escalates to C2 user_review on the 2nd consecutive failure of the same skill+halt, and `mode_migrate`'s self-redetect is overridable by an explicit `--mode=<value>` flag on the next chain invocation (halt-families/flow.md §mode_migrate (routed from halt-protocol.md's registry index)):
 
 - `memory_in_use` · `mode_migrate` · `invalid_handoff` · `verify_unit_writable` · `vault_json_corrupt` (ground.sh Guard 1 detection — the file is skipped and named, the chain continues)
-- `framework_pack_missing` · `framework_pack_cycle` · `framework_pack_unparseable` (ground.sh Guard 5 — the bad reference or pack is dropped with a notice) · `deep_scan_cache_corrupt` (ground.sh Guard 7 — a legacy `starterkit-context.yaml` is renamed aside and the starterkit slice skipped)
+- `framework_pack_missing` · `framework_pack_cycle` · `framework_pack_unparseable` (ground.sh Guard 5 — the bad reference or pack is dropped with a notice) · `deep_scan_cache_corrupt` (ground.sh Guard 7 — a legacy `starterkit-context.yaml` is renamed aside and the run proceeds)
 - `adoption_demote_confirm` — C2 confirm-then-proceed (never an always-stop re-run; `halt-families/flow.md`)
 
 ## Soft (warn-only, chain continues)
