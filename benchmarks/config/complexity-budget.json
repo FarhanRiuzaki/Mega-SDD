@@ -6,7 +6,7 @@
   "t01_lite_commanded_bytes": 419020,
   "t01_default_commanded_bytes": 39910,
   "skill_md_total_bytes": 257342,
-  "scripts_total_lines": 39946,
+  "scripts_total_lines": 39943,
   "hooks_total_lines": 2802
  },
  "raises": [
