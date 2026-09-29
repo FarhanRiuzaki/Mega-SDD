@@ -68,7 +68,7 @@ Relocated from `skills/bind-codebase/references/express-bind.md`, `skills/bind-c
 
 ### The per-claim retrieval ladder
 
-Per `text` claim (`kind: "text"` in `_wave-claims.json`, or in the unit's `_claims.json`), in order, stopping at the first rung that yields decisive evidence:
+Per `text` claim (`kind: "text"` in the unit's `_claims.json`), in order, stopping at the first rung that yields decisive evidence:
 
 1. **Index query** — **Run** `bash <plugin-root>/scripts/query-symbol-index.sh --cwd=<root>
    --name=<variant>` for each symbol the claim's `text` / `expect` names (entities) or its
@@ -162,7 +162,7 @@ For each CONFIRMED claim, additionally classify implementation readiness (conden
 
 ### Context discipline (anti-rot)
 
-The A1 rail, applied to this pass: keep the wave's CLAIM SET and the RUNNING VERDICT TABLE
+The A1 rail, applied to this pass: keep the CLAIM SET and the RUNNING VERDICT TABLE
 (claim id → verdict/state/anchor/confidence) live; **shed raw file-read content
 after each claim's verdict lands** — the verdict row + its anchor is the durable
 residue, the read bytes are not. Never accumulate whole-file reads across claims.

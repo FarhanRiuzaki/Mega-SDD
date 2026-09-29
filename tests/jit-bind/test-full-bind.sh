@@ -15,9 +15,9 @@ unit U-001 src/new1.ts > "$V/units/U-001.md"
 unit U-002 src/exists.ts > "$V/units/U-002.md"          # create on an EXISTING file → fs CONFLICT
 unit U-003 src/new3.ts > "$V/units/U-003/unit.md"       # directory layout
 OUT="$(bash "$S/derive-unit-claims.sh" --cwd="$T" --vault="$V" --units=all 2>&1)"; RC=$?
-[ $RC -eq 0 ] && echo "$OUT" | grep -q '"units": 3' && python3 -c "import json;d=json.load(open('$V/bolts/_wave-claims.json'));assert d['units']==['U-001','U-002','U-003'],d['units']" \
-  && pass "a: --units=all → every unit, both layouts, sorted (3)" || fail "a: expansion wrong rc=$RC: $OUT"
-for u in U-001 U-002 U-003; do bash "$S/write-unit-binding.sh" --cwd="$T" --vault="$V" --unit=$u --claims="$V/bolts/_wave-claims.json" >/dev/null 2>&1 || fail "b: writer failed for $u"; done
+[ $RC -eq 0 ] && echo "$OUT" | grep -q '"units": 3' && python3 -c "import json,sys;u=['U-001','U-002','U-003'];o=json.loads(sys.argv[1].strip().splitlines()[-1])['jit_bind']['out'].split(',');assert o==['.mega-sdd/vaults/demo/bolts/%s/_claims.json'%x for x in u],o;assert all(json.load(open('$V/bolts/%s/_claims.json'%x))['units']==[x] for x in u)" "$OUT" \
+  && pass "a: --units=all → every unit, both layouts, sorted (3; one _claims.json per unit, out in that order)" || fail "a: expansion wrong rc=$RC: $OUT"
+for u in U-001 U-002 U-003; do bash "$S/write-unit-binding.sh" --cwd="$T" --vault="$V" --unit=$u --claims="$V/bolts/$u/_claims.json" >/dev/null 2>&1 || fail "b: writer failed for $u"; done
 python3 -c "import json;d=json.load(open('$V/bolts/U-002/binding.json'));assert d['summary']['CONFLICT']==1,d['summary']" && pass "b: U-002 create-on-existing → CONFLICT recorded by script (0 model tokens)" || fail "b: CONFLICT not recorded"
 bash "$S/validate-handoff-binding-units.sh" --cwd="$T" --units=all --quiet >/dev/null 2>&1; RC=$?
 python3 - "$T/.mega-sdd/.validation-blockers.json" "$RC" <<'EOF2' && pass "c: --units=all → all 3 LISTED, U-002's open CONFLICT is a BLOCKING drop (FAIL, exit 1)" || fail "c: full-bind gate wrong"

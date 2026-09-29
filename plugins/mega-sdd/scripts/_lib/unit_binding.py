@@ -134,7 +134,7 @@ mine = [c for c in wave.get("claims", []) if c.get("unit") == unit]
 supplied = json.load(open(E["V_VERDICTS"], encoding="utf-8")) if E.get("V_VERDICTS") else {}
 
 # an E3 (--verdicts) pass must read the capture its first pass recorded (§3): a
-# sibling's re-bind rewrote the shared wave file in between → refuse by name
+# re-bind rewrote the unit's capture in between → refuse by name
 if supplied and prior and prior.get("claims_sha256") and prior.get("claims_sha256") != claims_sha:
     refuse("--verdicts pass reads %s, but %s was bound from %s (sha differs) — pass --claims=%s"
            % (claims_path, unit, prior.get("claims_path"), prior.get("claims_path")))
@@ -156,7 +156,7 @@ def _claim_key(c):
 
 
 if not mine and now_claims:
-    refuse("%s is not in the capture %s (a sibling's re-bind may have rewritten a shared wave file) — re-run derive-unit-claims for %s"
+    refuse("%s is not in the capture %s (wrong --claims file?) — re-run derive-unit-claims for %s"
            % (unit, claims_path, unit))
 if mine:
     a = {_claim_key(c): c.get("expect") for c in mine}

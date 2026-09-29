@@ -24,7 +24,7 @@ import re
 
 import vault_layouts
 
-# Same token literal as sync-intersect.sh / rebind-units.sh / derive-unit-claims.sh
+# Same token literal as sync-intersect.sh / rebind-units.sh
 # (Next.js `(group)`, `[id]`, `@slot` segments are legal path segments).
 ANCHOR_TOKEN_RE = re.compile(
     r"(?<![\w:/])((?:(?:[\w.\-]+|\([\w.\-]+\)|\[[\w.\-]+\]|@[\w.\-]+)/)*[\w.\-]+\.[A-Za-z]\w{0,7})(?::\d+(?:-\d+)?)?\b")

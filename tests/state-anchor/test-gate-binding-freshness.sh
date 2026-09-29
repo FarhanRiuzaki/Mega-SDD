@@ -53,7 +53,7 @@ U
 bind() { # <dir> [extra writer flag]
   local F="$1" V="$1/.mega-sdd/vaults/web"
   bash "$S/derive-unit-claims.sh" --cwd="$F" --vault="$V" --units=U-001 >/dev/null 2>&1
-  bash "$S/write-unit-binding.sh" --cwd="$F" --vault="$V" --unit=U-001 --claims="$V/bolts/_wave-claims.json" ${2:-} >/dev/null 2>&1
+  bash "$S/write-unit-binding.sh" --cwd="$F" --vault="$V" --unit=U-001 --claims="$V/bolts/U-001/_claims.json" ${2:-} >/dev/null 2>&1
 }
 gate() { # <dir> [unit] — gate_check's verdict: "" = fresh, else "<reason> <detail json>" (any raise → not_evaluated)
   python3 - "$PLUGIN/scripts/_lib" "$1" "${2:-U-001}" <<'PY'
@@ -174,11 +174,11 @@ O=$(PATH="$SH2:$PATH"; gate "$D"); has "$O" "not_evaluated" && ok "git rc 128 on
 
 # 18. the D27 guard: Write/Edit of the capture or the built prompt is denied
 D=$(fresh r)
-for f in ".mega-sdd/vaults/web/bolts/_wave-claims.json" ".mega-sdd/vaults/web/bolts/U-001/dispatch-prompt.md" ".mega-sdd/vaults/web/bolts/U-001/_claims.json"; do
+for f in ".mega-sdd/vaults/web/bolts/U-001/dispatch-prompt.md" ".mega-sdd/vaults/web/bolts/U-001/_claims.json"; do
   O=$(printf '{"session_id":"s","cwd":"%s","tool_name":"Write","tool_input":{"file_path":"%s/%s","content":"x"}}' "$D" "$D" "$f" | ( cd "$D" && bash "$HOOK" 2>/dev/null ))
   deny_of "$O" || bad "Write $f was allowed"
 done
-[ "$fail" -eq 0 ] && ok "Write/Edit of _wave-claims.json / _claims.json / dispatch-prompt.md: denied (script-written, gate-read)"
+[ "$fail" -eq 0 ] && ok "Write/Edit of _claims.json / dispatch-prompt.md: denied (script-written, gate-read)"
 
 # 20. binding_absent / binding_unparseable / diverged / per-unit stamp_unreachable
 D=$(fresh s); rm -f "$D/.mega-sdd/vaults/web/bolts/U-001/binding.json"
@@ -304,7 +304,7 @@ bind "$D"                                                                    # w
   && G add -A && G commit -q -F <(FIELD_MSG U-001 "feat(U-001): client header") )
 bind2() { # wave 2: derive + write for U-002
   bash "$S/derive-unit-claims.sh" --cwd="$1" --vault="$1/.mega-sdd/vaults/web" --units=U-002 >/dev/null 2>&1
-  bash "$S/write-unit-binding.sh" --cwd="$1" --vault="$1/.mega-sdd/vaults/web" --unit=U-002 --claims="$1/.mega-sdd/vaults/web/bolts/_wave-claims.json" >/dev/null 2>&1
+  bash "$S/write-unit-binding.sh" --cwd="$1" --vault="$1/.mega-sdd/vaults/web" --unit=U-002 --claims="$1/.mega-sdd/vaults/web/bolts/U-002/_claims.json" >/dev/null 2>&1
 }
 if [ "$AG" -eq 0 ]; then
   rm -rf "$WORK/z5c"; cp -a "$D" "$WORK/z5c"; bind2 "$WORK/z5c"

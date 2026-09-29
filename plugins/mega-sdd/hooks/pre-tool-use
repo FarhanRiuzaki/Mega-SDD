@@ -325,7 +325,7 @@ elif tool_name in ("Edit", "Write"):
                 verdict = "evidence"
             elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance|attempts|findings|review-tier|binding)\.json|_batch-suite\.json)$", rel):
                 verdict = "evidence"
-            elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:_wave-claims\.json|[^/]+/_claims\.json|[^/]+/dispatch-prompt\.md)$", rel):
+            elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/[^/]+/(?:_claims\.json|dispatch-prompt\.md)$", rel):
                 # state anchor D27 (spec 2026-09-25 §8): the JIT capture and the built dispatch
                 # prompt are script-written and gate-read — never agent-written
                 verdict = "evidence"
@@ -1119,11 +1119,11 @@ elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^
     # top-level or unrelated bolts/…/postflight.json is no longer false-blocked;
     # a forged mega-sdd artifact always lives under <vault>/bolts/ so it still matches.
     print("evidence")
-elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:_wave-claims\.json|[^/]+/_claims\.json|[^/]+/dispatch-prompt\.md)$", rel):
-    # State anchor D27 (spec 2026-09-25 §8): the JIT capture and the built dispatch
-    # prompt are script-written (derive-unit-claims.sh / build-dispatch-prompt.sh) and
-    # gate-read (the binding_sha256 header, the dirty capture) — a Write/Edit of either
-    # would forge what the BOLTS gate compares against.
+elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/[^/]+/(?:_claims\.json|dispatch-prompt\.md)$", rel):
+    # State anchor D27 (spec 2026-09-25 §8): the per-unit JIT capture is script-written
+    # (derive-unit-claims.sh) and gate-read (the binding records its sha256, the dirty
+    # capture); a legacy dispatch-prompt.md is read by the done rule. A Write/Edit of
+    # either would forge what the gate compares against.
     print("evidence")
 elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/lens-inputs/[^/]+/l0-results\.json$", rel):
     # F-08 7.11.0: the L0 record is script-written (run-code-gates.sh --write) and gate-read — guarded like the bolt evidence.
