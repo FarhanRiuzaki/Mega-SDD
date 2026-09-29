@@ -43,9 +43,9 @@ grep -q 'P3 pipelining rules' "$EB/references/batch-and-fanout.md" && grep -q 'p
 grep -q 'default \*\*4\*\* concurrent' "$EB/references/batch-and-fanout.md" && grep -q 'default \*\*4\*\* concurrent' "$EB/references/squad-subagent.md" \
   && ! grep -q 'default \*\*5\*\* concurrent' "$EB/references/batch-and-fanout.md" "$EB/references/squad-subagent.md" \
   && pass "g: in-flight cap documented as parallel_max default 4 in both references (no 5 left)" || fail "g: cap doc drift"
-python3 - "$S/_lib" <<'EOF3' && pass "h: vault_layouts.panel_pending_units + parallel_max are importable with the documented defaults" || fail "h: vault_layouts P3 predicates"
+python3 - "$S/_lib" <<'EOF3' && pass "h: vault_layouts.parallel_max is importable with the documented default" || fail "h: vault_layouts.parallel_max"
 import sys, os, tempfile; sys.path.insert(0, sys.argv[1]); import vault_layouts
-d = tempfile.mkdtemp(); assert vault_layouts.parallel_max(d) == 4 and vault_layouts.panel_pending_units(d) == []
+d = tempfile.mkdtemp(); assert vault_layouts.parallel_max(d) == 4
 os.makedirs(os.path.join(d, ".mega-sdd")); open(os.path.join(d, ".mega-sdd", "config.yaml"), "w").write("lane: lite\nparallel_max: 2   # cap\n")
 assert vault_layouts.parallel_max(d) == 2
 EOF3

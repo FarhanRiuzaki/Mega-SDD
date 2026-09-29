@@ -464,8 +464,7 @@ EOF
 }
 
 # ─── BRANCH 1: Skill invocation gate ─────────────────────────────────────────
-# Reset, never inherit: an exported GATE_MODE/GATE_SUBJECT must not reach the aggregator.
-GATE_MODE="run"
+# Reset, never inherit: an exported GATE_SUBJECT must not reach the aggregator.
 GATE_SUBJECT="mega-sdd:execute-bolts"
 
 case "${TOOL_NAME:-}" in
@@ -840,8 +839,8 @@ except Exception as e:
         wait  # settle all nine state files before the aggregator reads
       fi
       # D24a (state anchor §8): utf-8 stdout — a cp1252 console must not crash the gate into an ALLOW.
-      GATE_REASON=$(PYTHONIOENCODING=utf-8 PROJECT_ROOT="$PROJECT_ROOT" GATE_MODE="${GATE_MODE:-run}" GATE_SUBJECT="${GATE_SUBJECT:-mega-sdd:execute-bolts}" AGENT_UNIT="${AGENT_UNIT:-}" AGENT_UNITS_ALL="${AGENT_UNITS_ALL:-}" AGENT_POINTER="${AGENT_POINTER:-}" MEGA_SDD_LIB_DIR="${SCRIPT_DIR_RPR}/../scripts/_lib" python3 -c '
-import json, os, sys
+      GATE_REASON=$(PYTHONIOENCODING=utf-8 PROJECT_ROOT="$PROJECT_ROOT" GATE_SUBJECT="${GATE_SUBJECT:-mega-sdd:execute-bolts}" AGENT_UNIT="${AGENT_UNIT:-}" AGENT_UNITS_ALL="${AGENT_UNITS_ALL:-}" AGENT_POINTER="${AGENT_POINTER:-}" python3 -c '
+import json, os
 md = os.path.join(os.environ["PROJECT_ROOT"], ".mega-sdd")
 def L(fn):
     try:
@@ -849,45 +848,8 @@ def L(fn):
     except Exception:
         return None
 fails = []
-# F-09 in-run semantics (spec 2026-08-30 §1.1): on a bolt-implementer dispatch,
-# units whose pipeline is legitimately in flight have their B1/B4/orphan
-# evidence PENDING, not missing — drop those issues before the verdict. B2 is
-# a run-boundary gate and is skipped here. Fail-CLOSED on a helper failure:
-# an unreadable helper leaves inflight empty, i.e. the full run-gate verdict.
-IN_RUN = os.environ.get("GATE_MODE", "run") == "in-run"
-inflight = set()
-if IN_RUN:
-    try:
-        sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
-        import vault_layouts
-        inflight = set(vault_layouts.inflight_units(os.environ["PROJECT_ROOT"]))
-    except Exception:
-        inflight = set()
-# v8 P3 (research/2026-09-15-v8-p3-report.md §2): a unit whose detect-after
-# already PASSED (postflight + acceptance newer than its dispatch-prompt, L0
-# record script-written) but whose blind panel has not merged yet is
-# PANEL-PENDING, not evidence-missing — under lane lite the dependent / sibling
-# dispatch must not wait for that ledger (the measured serializer: 45 % of the
-# clinic bolt-stage with zero implementers running). Dropped for the in-run
-# verdict ONLY, ONLY the panel_evidence_missing class, and ONLY while at most
-# parallel_max units are pending (pipeline depth ≤ cap — more than the cap
-# means the controller is outrunning its review obligation, so the full F-07
-# verdict applies again). The run boundary (Skill entry, Stop hook) still
-# enforces every ledger. Fail-CLOSED on a helper failure (empty set).
-panel_pending = set()
-if IN_RUN:
-    try:
-        _pp = vault_layouts.panel_pending_units(os.environ["PROJECT_ROOT"])
-        if 0 < len(_pp) <= vault_layouts.parallel_max(os.environ["PROJECT_ROOT"]):
-            panel_pending = set(_pp)
-    except Exception:
-        panel_pending = set()
 def live_issues(d):
-    """The issues that still gate under the current mode."""
-    iss = (d or {}).get("issues", []) or []
-    if not inflight:
-        return iss
-    return [i for i in iss if i.get("unit_id") not in inflight]
+    return (d or {}).get("issues", []) or []
 
 # MOAT GATE — binding->units: unresolved drops/CONFLICT block unit->bolt.
 # Fail-CLOSED on a corrupt moat state (AUDIT L4): a present-but-unparseable
@@ -918,8 +880,8 @@ if os.path.exists(moat_path):
         fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) (binding->units; types: %s). Run bash scripts/validate-handoff-binding-units.sh --cwd=<root> for the drop list. %s. State: %s/.validation-blockers.json" % (n, ", ".join(types), "; ".join(rem) or "see the expected field on each drop", md)))
 
 # conflict-bypass (invariant #2, spec 2026-09-27 v9 §8): a unit committed past an open CONFLICT, a quarantine
-# (its own, or that of a depends_on ancestor) or a skipped re-bind. At the Skill entry AND an in-run dispatch; never
-# dropped for in-flight units — a violation, not pending evidence.
+# (its own, or that of a depends_on ancestor) or a skipped re-bind. At the Skill entry; never dropped — a violation,
+# not pending evidence.
 d = L(".bolt-conflict-bypass-state.json")
 if d and d.get("status") == "FAIL" and d.get("issues"):
     lab = sorted({"%s %s%s" % (i.get("unit_id"), i.get("reason"), " via %s" % i["via"] if i.get("via") else "") for i in d["issues"]})
@@ -942,7 +904,7 @@ if d and d.get("status") == "FAIL" and live_issues(d):
 # per-bolt tests cannot catch a later bolt or an out-of-band edit breaking an earlier
 # bolt contract — the freshness anchor is the newest code commit, not the newest bolt).
 d = L(".batch-suite-gate-state.json")
-if d and d.get("status") == "FAIL" and not IN_RUN:
+if d and d.get("status") == "FAIL":
     ht = d.get("halt_type", "batch_suite_gate_missing")
     if ht == "batch_suite_red":
         fails.append(("batch-suite-gate", "recorded full-suite result is RED (%s). Fix the failing tests, then run `bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root>` — it re-runs the FULL suite and records <vault>/bolts/_batch-suite.json itself (the artifact is hook-guarded; direct writes are denied). State: %s/.batch-suite-gate-state.json" % (d.get("detail", ""), md)))

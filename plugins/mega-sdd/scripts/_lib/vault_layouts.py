@@ -10,7 +10,6 @@ parity against validate-unit-spec.sh so the two can never drift apart again.
 Consumers import via:  sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
 """
 import glob
-import json
 import os
 import re
 
@@ -117,112 +116,6 @@ def parallel_max(cwd, default=4):
     except OSError:
         pass
     return default
-
-
-def _config_scalar(cwd, key):
-    """Top-level `<key>: <value>` from .mega-sdd/config.yaml (same line grammar
-    as parallel_max) — None when absent / unreadable."""
-    try:
-        with open(os.path.join(cwd, ".mega-sdd", "config.yaml"),
-                  encoding="utf-8", errors="replace") as f:
-            for ln in f:
-                m = re.match(r"^%s:\s*([^#\s]+)\s*(?:#.*)?$" % re.escape(key), ln)
-                if m:
-                    return m.group(1)
-    except OSError:
-        pass
-    return None
-
-
-def retry_budget(cwd, vault_root, unit_tier, flag=None, lite_flag=False):
-    """(budget, source) — how many RE-dispatches of bolt-implementer a unit may
-    get after its first one (spec 2026-09-20-hook-enforced-attempt-cap-design.md
-    D2). Resolved once at dispatch by resolve-review-tier.sh and persisted in
-    review-tier.json; the PreToolUse gate only ever READS that record.
-      flag     — an explicit `--max-retries=N` on this run (the user's call wins)
-      xs-lite  — lane lite + unit_tier xs → 1 (the measured W2 rule: fix rounds
-                 were 25 % of the clinic bolt-stage wall)
-      config   — top-level `max_retries:` in .mega-sdd/config.yaml
-      default  — 3
-    A non-integer / negative value is ignored, never trusted."""
-    def _int(v):
-        try:
-            v = int(str(v).strip())
-            return v if v >= 0 else None
-        except (TypeError, ValueError):
-            return None
-    f = _int(flag)
-    if f is not None:
-        return f, "flag"
-    lite = bool(lite_flag) or _config_scalar(cwd, "lane") == "lite" \
-        or os.path.isfile(os.path.join(vault_root, "context.md"))
-    if lite and unit_tier == "xs":
-        return 1, "xs-lite"
-    c = _int(_config_scalar(cwd, "max_retries"))
-    if c is not None:
-        return c, "config"
-    return 3, "default"
-
-
-def _json_status_pass(path):
-    try:
-        with open(path, encoding="utf-8") as f:
-            return str(json.load(f).get("status") or "").lower() == "pass"
-    except (OSError, ValueError, AttributeError):
-        return False
-
-
-def panel_pending_units(cwd):
-    """Units whose blind panel is legitimately PENDING, oldest dispatch first
-    (v8 P3, research/2026-09-15-v8-p3-report.md §2 — the measured serializer).
-
-    MEASURED on the clinic lite arm: the controller ran cap-sized slices with a
-    full barrier (45 % of the net bolt-stage with ZERO implementers running,
-    mean in-flight 1.46 of cap 4) because `inflight_units` ends at
-    postflight.json — under lite the detect-after pipeline runs the moment the
-    implementer returns, so a unit left "in flight" BEFORE its panel merged and
-    the F-07 panel-evidence gate then read its not-yet-merged ledger as MISSING
-    and denied every next bolt-implementer dispatch. Panel-pending ⇔ ALL of:
-      * `<vault>/bolts/U-XXX/dispatch-prompt.md` exists (a real dispatch);
-      * `postflight.json` AND `acceptance.json` are status pass AND newer than
-        the dispatch-prompt (the detect-after pipeline ran for THIS dispatch);
-      * `<vault>/lens-inputs/U-XXX/l0-results.json` is script-written
-        (`written_by: run-code-gates.sh`) — L0 is synchronous, never pending;
-      * NO `findings.json` ledger yet (the panel is running / about to merge).
-    The in-run gate drops `panel_evidence_missing` for these units ONLY, and
-    only while at most `parallel_max` units are pending (pipeline depth ≤ cap);
-    `l0_evidence_missing` is never dropped; the run boundary (Skill entry, Stop
-    hook) still enforces every ledger. A hand-dispatched unit (no
-    dispatch-prompt) is never pending — it is evaluated in full."""
-    got = []
-    for pre in vault_prefixes(cwd):
-        for dp in glob.glob(os.path.join(pre, "bolts", "U-*", "dispatch-prompt.md")):
-            bd = os.path.dirname(dp)
-            uid = os.path.basename(bd)
-            vault = os.path.dirname(os.path.dirname(bd))
-            if os.path.isfile(os.path.join(bd, "findings.json")):
-                continue
-            pf = os.path.join(bd, "postflight.json")
-            ac = os.path.join(bd, "acceptance.json")
-            if not (os.path.isfile(pf) and os.path.isfile(ac)):
-                continue
-            try:
-                dp_m = os.path.getmtime(dp)
-                if os.path.getmtime(pf) < dp_m or os.path.getmtime(ac) < dp_m:
-                    continue
-            except OSError:
-                continue
-            if not (_json_status_pass(pf) and _json_status_pass(ac)):
-                continue
-            l0 = os.path.join(vault, "lens-inputs", uid, "l0-results.json")
-            try:
-                with open(l0, encoding="utf-8") as f:
-                    if json.load(f).get("written_by") != "run-code-gates.sh":
-                        continue
-            except (OSError, ValueError, AttributeError):
-                continue
-            got.append((dp_m, uid))
-    return [uid for _, uid in sorted(got)]
 
 
 def decision_dirs(cwd):
