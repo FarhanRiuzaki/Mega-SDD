@@ -204,7 +204,7 @@ In `--deep` mode, append to the final summary:
 - Total phases proposed, total phases completed, total artifacts produced (flat path list).
 - **Auto-integrated diagnostics summary**:
   - Quality metrics from auto lint-units (units HIGH/MEDIUM/LOW counts)
-  - Parallelism speedup from auto analyze-parallelism (X.Yx vs sequential)
+  - DAG depth / sprints from auto analyze-parallelism (inline, plan order)
   - Per-module status from auto list-modules (X/Y modules completed)
   - AGENTS.md emission confirmation (file path + section count)
   - Acceptance-test concerns from execute-bolts handoff: IF `metrics.acceptance_test_concerns: []` is non-empty (bolt subagent flagged implementation passes acceptance test but feels under-validated), surface as: `"⚠ N/M bolts flagged acceptance_test_concern — review for under-validation: <unit_id list>. Harden the affected units' acceptance_test (re-run plan's Step 9.5 adversarial review on those units only — plan/references/adversarial-test-prompt.md §Opt-in subagent mode — and merge the gaps in place; never plan --regenerate, it rewrites every unit), then execute-bolts <unit_id> --force."` — mirrors `execute-bolts/references/halts-and-handoff.md §Post-flight acceptance-test concern harvest`.
