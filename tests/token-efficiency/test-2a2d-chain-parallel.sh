@@ -27,12 +27,11 @@ HC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract
 HN="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md"
 OF="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/SKILL.md"
 PL="${ROOT}/plugins/mega-sdd/skills/plan/SKILL.md"
-EB="${ROOT}/plugins/mega-sdd/skills/execute-bolts/SKILL.md"
 EX="${ROOT}/plugins/mega-sdd/skills/extract-intelligence/SKILL.md"
 XC="${ROOT}/plugins/mega-sdd/skills/extract-intelligence/SKILL.md"
 PC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/predictive-checks.md"
 TT="${ROOT}/tests/skill-triggering/orchestrate-flow.test.md"
-for f in "$RR" "$CE" "$HC" "$HN" "$OF" "$PL" "$EB" "$EX" "$XC" "$PC" "$TT"; do
+for f in "$RR" "$CE" "$HC" "$HN" "$OF" "$PL" "$EX" "$XC" "$PC" "$TT"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -79,8 +78,6 @@ AP="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/diagnostics-proc
 grep -qF 'execute-bolts --sprint=<n>' "$AP" && ! grep -qF -- '--agents' "$AP" && ! grep -qF -- '--per-squad --agents' "$RR" \
   && ok "analyze-parallelism suggests execute-bolts --sprint=<n>; no --agents in diagnostics-procedures or routing-rules" || fail "analyze-parallelism suggestion lost --sprint=<n>, or --agents survives"
 
-note "== 2a: --all defaults to waves (v7.7); standalone non---all default stays off =="
-grep -qF 'the flag DEFAULT stays off for standalone non-`--all` invocations' "$EB" && ok "execute-bolts SKILL: chain passes the flag; standalone non---all default unchanged" || fail "standalone-default line missing"
 # 9.0: generate-units (and its standalone 'Suggested next') is deleted; the
 # surviving units producer is plan, whose standalone NEXT hands to the front
 # door, which dispatches the plain wave-default --all form (no --parallel flag).

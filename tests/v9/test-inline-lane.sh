@@ -625,8 +625,8 @@ assert "quarantined and reported" in fd, "front door --deep binding_conflict"
 eb = rd(P + "/skills/execute-bolts/SKILL.md")
 mr = [l for l in eb.splitlines() if l.startswith("  - `--max-retries=N`")][0]
 assert "prose" in mr and "resolve-review-tier" not in mr, "--max-retries scope"
-for f in ("--parallel", "--per-squad"):
-    assert "(`--agents` only)" in [l for l in eb.splitlines() if l.startswith("  - `%s`" % f)][0], f
+rl = [l for l in eb.splitlines() if l.startswith("  - `--parallel`, `--sequential`")][0]
+assert "retired" in rl and "`--per-squad`" in rl, "fan-out flags retired (P3b)"
 assert "(every run)" not in eb and "every run —" not in rd(P + "/skills/execute-bolts/references/jit-bind-and-quarantine.md")[:400], "3.9 every run"
 cond = eb.split("**Only when the condition holds")[1]
 assert "review-panel.md" not in eb and cond, "review-panel.md retired (P3 C3)"

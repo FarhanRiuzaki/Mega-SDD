@@ -187,7 +187,7 @@ Written immediately after the batch loop completes (whether all bolts succeeded,
 
 The per-bolt acceptance command is **scoped** to that unit; nothing re-runs the *whole* project suite. A later bolt — or an out-of-band edit that bypassed the bolt flow — can silently break an earlier bolt's contract and the batch still reports `completed`. The batch-completion gate closes that hole. It applies to EVERY invocation that committed code — a single bolt too, not only batches. Design: `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md`.
 
-**When:** once, after the **last committed code-bearing bolt** of the invocation (single bolt or `--all`/`--parallel`/`--per-squad`/`--module` batch). Skipped only for `--dry-run`, a zero-code-commit run (verify-only / all-skipped), or `--no-full-suite` (logged, never silent).
+**When:** once, after the **last committed code-bearing bolt** of the invocation (single bolt or `--all`/`--module` batch). Skipped only for `--dry-run`, a zero-code-commit run (verify-only / all-skipped), or `--no-full-suite` (logged, never silent).
 
 **Run the FULL suite, unscoped.** Use the test runner detected at pre-flight check 3.5 with **no per-unit filter** — e.g. `yarn test` / `pytest` / `go test ./...` / `cargo test`, NOT `yarn test <one-file>`. Capture pass/fail/todo counts.
 

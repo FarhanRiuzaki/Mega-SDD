@@ -5,7 +5,7 @@
 # removed in P3b, and with it the wave-default / Mermaid-plan pins.
 #
 # What this pins:
-#   a) execute-bolts documents --sprint=<n> as a live flag; --sequential / --sprint-checkpoint stay documented
+#   a) execute-bolts documents --sprint=<n> as a live flag; --sequential / --sprint-checkpoint only as retired
 #   c) the --sprint rule: 1-indexed, out of range = usage error, the sprint_blocked_by payload fields
 #   d) NO second sprint-plan producer exists — analyze-parallelism.sh is the
 #      single producer (a derive-sprint-plan.sh was specced then REJECTED)
@@ -29,8 +29,10 @@ done
 
 echo "── a: the flags are documented in the skill's Inputs ──"
 grep -qE '^  - `--sprint=<n>` — ' "$SKILL" && ok "a: --sprint=<n> is a live Inputs bullet" || bad "a: --sprint=<n> is not a live bullet in SKILL.md"
+RETIRED='^  - `--parallel`, `--sequential`, .* — retired; '
 for flag in '--sequential' '--sprint-checkpoint'; do
-  grep -qF -- "\`$flag\`" "$SKILL" && ok "a: $flag documented" || bad "a: $flag not documented in SKILL.md"
+  [ "$(grep -F -- "\`$flag\`" "$SKILL" | grep -cvE "$RETIRED")" -eq 0 ] && grep -E "$RETIRED" "$SKILL" | grep -qF -- "\`$flag\`" \
+    && ok "a: $flag documented only on the retired line" || bad "a: $flag not on (or not only on) the retired line"
 done
 
 echo "── c: the --sprint rule + sprint_blocked_by payload ──"
