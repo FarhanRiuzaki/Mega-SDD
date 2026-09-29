@@ -115,20 +115,19 @@ It detects your OS + package manager and installs `ast-grep` (the symbol index b
 ### 2. Keep it updated
 
 ```bash
-/mega-sdd:update-plugin                          # pull the latest plugin from the marketplace repo (fast-forward only)
-/plugin marketplace update mega-sdd              # rebuild the plugin cache to the new version
+/mega-sdd:update-plugin                          # forced update: refresh the marketplace, update the plugin, verify
+/reload-plugins                                  # load the new version into this session (or restart Claude Code)
 ```
 
-Then run `/reload-plugins` (or restart Claude Code) so new commands + skills register. `/mega-sdd:update-plugin` reports the before→after version, never touches your project, and tells you if you're already current. Your installed version shows in the header above and in `/plugin`.
+`/mega-sdd:update-plugin` reports before→after and verifies that the marketplace copy matches GitHub and the installed version equals it (`VERIFY: PASS`, else `FAIL` with the manual command); it never touches your project. In SDD projects, each session start also says when this session runs an older version than the one installed, or when the marketplace copy on disk is newer than the installed one (a local check, no network). Your installed version shows in the header above and in `/plugin`.
 
-**Headless (for wrapper scripts / CI — guarantees the NEXT session loads the latest, no session needed):**
+**CLI alternative (a terminal, a wrapper script or CI; the NEXT session loads the latest):**
 
 ```bash
-claude plugin marketplace update mega-sdd          # pull the marketplace clone
-claude plugin update mega-sdd@mega-sdd -s user -y  # rebuild the cache + repoint the active version
+claude plugin marketplace update mega-sdd && claude plugin update mega-sdd@mega-sdd -s user
 ```
 
-`git pull` on the clone alone is NOT enough — Claude Code loads plugins from its cache, and only the second command rebuilds it. The built-in background auto-updater is OFF by default for third-party marketplaces, so don't rely on it.
+`git pull` on the clone alone is NOT enough — Claude Code loads plugins from its cache, and only `claude plugin update` rebuilds it. The built-in background auto-updater is OFF by default for third-party marketplaces, so don't rely on it.
 
 **Upgrading to 9.0 with an existing vault:** a vault built before 9.0 (layout-2) is still read, so the status view and the `emit` documents keep working on it. To build or sync on it, the front door proposes `/mega-sdd:migrate-paths --vault-layout=3` (dry-run first, `--apply` executes), followed by a mandatory full re-bind. It never runs the migration silently. Full guide: [upgrade from an older version](docs/mega-sdd/upgrade-from-old-version.md).
 
@@ -365,7 +364,7 @@ Three maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`) 
 | Jawab OQ hasil extract (KB mode, tanpa vault) | say "resolve oq kb" / "jawab OQ hasil extract" |
 | Unit kekecilan / kebanyakan | set `.mega-sdd/config.yaml` `unit_granularity: coarse` (or `--max-complexity=large`) |
 | Install missing native deps (pandoc, mmdc, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr) |
-| Update mega-sdd to the latest version | `/mega-sdd:update-plugin` then `/plugin marketplace update mega-sdd` |
+| Update mega-sdd to the latest version | `/mega-sdd:update-plugin` (forced, verified) then `/reload-plugins` |
 | Migrate legacy paths → `.mega-sdd/` (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |
 | Build or sync on a pre-9.0 vault (one-time) | `/mega-sdd:migrate-paths --vault-layout=3 --vault=<vault>` (dry-run default, `--apply` executes; a full JIT re-bind follows: `scripts/rebind-units.sh --units=all`). A legacy 7-file vault takes `--vault-layout` (→ layout-2) first |
 | Migrate Hard Rules grammar (one-time) | say "migrate hard rules ./vault" |

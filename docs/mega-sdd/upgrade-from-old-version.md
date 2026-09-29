@@ -144,7 +144,7 @@ The old phrases still route: "pecah PRD ini" / "spec out this feature" / "genera
 
 **Where the alias content went (nothing was deleted blind):** `lint-units`/`analyze-parallelism`/`list-modules`/`enrich-semantics` procedures → `skills/orchestrate-flow/references/diagnostics-procedures.md`; `validate-handoff` → `skills/bind-codebase/references/handoff-validation.md` (deleted with bind-codebase in 9.0; the validator itself, `scripts/validate-handoff-binding-units.sh`, is the CONFLICT gate at dispatch); `migrate-rules` → `skills/execute-bolts/references/` (the relocated `replay` lane was later removed entirely in v7 — git history); `analyze` modes → `skills/analyze/SKILL.md`.
 
-**Office-floor path (v5.9.0 laptops):** `/mega-sdd:update-plugin` → `/plugin marketplace update mega-sdd` → restart/`/reload-plugins`. No project migration needed — 6.0.0 changes the COMMAND surface only; a 5.x vault/binding/units tree is consumed unchanged, and the express spine has been the default since 5.35.0.
+**Office-floor path (v5.9.0 laptops):** `/mega-sdd:update-plugin` (forced + verified) → restart/`/reload-plugins`. No project migration needed — 6.0.0 changes the COMMAND surface only; a 5.x vault/binding/units tree is consumed unchanged, and the express spine has been the default since 5.35.0.
 
 **Also in 6.0.0:** the on-demand doc pack now derives fully from the modern vault generation (FSD §5 from `04-flows.md` when `02-functional.md` is absent, §6 from `06-constraints.md`, §10/PRD §6 accept the `tag`/`text` vault.json OQ shape) — older vaults keep their legacy sources via first-hit-wins.
 
@@ -335,7 +335,7 @@ For full per-iter detail, see `CHANGELOG.md`. Highlights of iters that introduce
 2. ✅ Note current plugin version (compare against the latest in `CHANGELOG.md` after)
 3. ✅ Decide: Path A (regenerate) OR Path B (preserve)
 4. ✅ If Path B: nothing to back up for memory — the lane was removed in v7.3.0; old `.mega-sdd/memory/` dirs are inert and deletable
-5. ✅ Update plugin: `/mega-sdd:update-plugin` → `/plugin marketplace update mega-sdd` → restart / `/reload-plugins`
+5. ✅ Update plugin: `/mega-sdd:update-plugin` (forced + verified) → restart / `/reload-plugins`
 6. ✅ Run the migration sequence per above
 
 ## See also

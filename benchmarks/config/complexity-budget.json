@@ -1,13 +1,13 @@
 {
  "_doc": "Complexity budget \u2014 a RATCHET, not a target (plugins/mega-sdd/CLAUDE.md \u00a7Release evidence & complexity budget). tests/benchmarks/test-complexity-budget.sh fails when a measured value exceeds its ceiling. Shrinking is always allowed; lower the ceiling in the same change to lock the gain. Raising a ceiling requires a `raises` entry {change, metric, measured_benefit}: a feature / new stage / new lens / new gate / performance claim cites benchmarks/runbooks/vanilla-vs-megasdd.md results (n >= 3 per arm, vs vanilla); a defect fix cites the regression test that fails without it. No evidence, no raise. Units: bytes / chars / lines exactly as the test measures them.",
- "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only); raised 2026-09-27 (see raises[]); LOWERED 2026-09-27 at 9.0 P1: generate-intent / bind-codebase / generate-units / scan-codebase deleted, their surviving contracts relocated into skills/plan/references/ + references/. T01 lite = the guarded pipeline trace re-pointed to the relocated successors (benchmarks/tasks/T01-greenfield-chain/files.lite.txt header). T01 default = what a default run on a clear greenfield PRD commands since the lane router: the DIRECT lane (using-mega-sdd + the front door + references/direct-lane.md; files.optimized.txt) \u2014 a redefinition, not a like-for-like shrink: the pre-9.0 default traced the classic chain (484,930 B). LOWERED again 2026-09-27 at 9.0 P1b: 6 executor-less scripts (-1,531 lines) and the dead hook legs keyed on removed skill ids (-102 lines) deleted. LOWERED again 2026-09-28 at P3 C9 to the measured values: the per-unit --agents path deleted (spec v9 \u00a78.6). LOWERED again 2026-09-29 at P3b (fan-out flags, emitterless halt names, JIT wave mode, dead in-run hook leg, pack consumer text); T01 again 2026-09-29 (process .md citations repointed to commits); T01 lite + SKILL.md bytes again 2026-09-29 (unread shared-snapshot-schema + checkpoint-protocol refs deleted); T01 lite again 2026-09-29 (deleted research-record citations repointed to commits); T01 lite + T01 default + SKILL.md bytes + scripts lines again 2026-09-29 (owner-decision cleanup: the retired --agents text trimmed from superpowers-bridge.md, history-spec pointers shortened to commits, scripts/_lib/distill-ui-ux.py deleted).",
+ "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only); raised 2026-09-27 (see raises[]); LOWERED 2026-09-27 at 9.0 P1: generate-intent / bind-codebase / generate-units / scan-codebase deleted, their surviving contracts relocated into skills/plan/references/ + references/. T01 lite = the guarded pipeline trace re-pointed to the relocated successors (benchmarks/tasks/T01-greenfield-chain/files.lite.txt header). T01 default = what a default run on a clear greenfield PRD commands since the lane router: the DIRECT lane (using-mega-sdd + the front door + references/direct-lane.md; files.optimized.txt) \u2014 a redefinition, not a like-for-like shrink: the pre-9.0 default traced the classic chain (484,930 B). LOWERED again 2026-09-27 at 9.0 P1b: 6 executor-less scripts (-1,531 lines) and the dead hook legs keyed on removed skill ids (-102 lines) deleted. LOWERED again 2026-09-28 at P3 C9 to the measured values: the per-unit --agents path deleted (spec v9 \u00a78.6). LOWERED again 2026-09-29 at P3b (fan-out flags, emitterless halt names, JIT wave mode, dead in-run hook leg, pack consumer text); T01 again 2026-09-29 (process .md citations repointed to commits); T01 lite + SKILL.md bytes again 2026-09-29 (unread shared-snapshot-schema + checkpoint-protocol refs deleted); T01 lite again 2026-09-29 (deleted research-record citations repointed to commits); T01 lite + T01 default + SKILL.md bytes + scripts lines again 2026-09-29 (owner-decision cleanup: the retired --agents text trimmed from superpowers-bridge.md, history-spec pointers shortened to commits, scripts/_lib/distill-ui-ux.py deleted). always_loaded_description_chars LOWERED 2026-09-29 (update-plugin description, -1 char).",
  "ceilings": {
-  "always_loaded_description_chars": 9804,
+  "always_loaded_description_chars": 9803,
   "t01_lite_commanded_bytes": 400160,
   "t01_default_commanded_bytes": 39848,
   "skill_md_total_bytes": 256402,
   "scripts_total_lines": 39850,
-  "hooks_total_lines": 2802
+  "hooks_total_lines": 2822
  },
  "raises": [
   {
@@ -149,6 +149,17 @@
     ]
    },
    "measured_benefit": "Adoption per the locked rule (same evidence as the entry above, REPORT-p2.md + commit dbd3d7d4). The --rebind-wip part is a defect fix: guarded-inline-2 ended with an open own_wip CONFLICT; regression tests tests/v9/test-inline-lane.sh m11a-h fail without it."
+  },
+  {
+   "date": "2026-09-29",
+   "change": "hooks/session-start version-drift notice: running (this session's plugin.json) vs installed (highest mega-sdd@mega-sdd in installed_plugins.json) vs available (the marketplace clone), numeric dotted compare, builtins only, fail-silent; commands/update-plugin.md becomes a forced update (claude plugin marketplace update + claude plugin update -s user) with a deterministic VERIFY",
+   "metric": {
+    "hooks_total_lines": [
+     2802,
+     2822
+    ]
+   },
+   "measured_benefit": "Defect fix. Observed 2026-09-29 on the owner's machine: installed_plugins.json pointed at cache/mega-sdd/mega-sdd/8.7.2 and the marketplace clone sat at 8.7.2 while GitHub main was 9.0.0 - the manual `/plugin marketplace update` step was skipped and no session noticed the drift. Regression test: tests/update/test-version-drift.sh fails without it (8 FAIL: A1 A2 A4 B1 B3 on the hook, E1 E2 E4 on update-plugin.md); after it 18/18 PASS. No new spawn: session-start in an SDD cwd with a shimmed PATH runs 0 execs before and after; the S17/S18 fork ceilings in tests/weighted-routing/test-tier-s-hooks.sh stay green. Limit: the notice does not detect a clone never refreshed (no network; clone == installed == 8.7.2 is silent); that case is caught by update-plugin VERIFY, which checks the clone against its remote (tests/update/test-version-drift.sh F1: FAIL remote=NOT-CURRENT)."
   }
  ]
 }
