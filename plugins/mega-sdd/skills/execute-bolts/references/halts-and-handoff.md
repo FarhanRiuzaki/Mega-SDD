@@ -5,7 +5,6 @@ Everything downstream of the per-unit gates: the halt protocol (blocker envelope
 ## Contents
 - Halt protocol
 - Self-assessment requirement
-- Post-flight acceptance-test concern harvest
 - Provenance trailer enforcement
 - Compact streaming progress
 - Aggregate `_summary.md`
@@ -49,19 +48,6 @@ bolt_self_report:
 ```
 
 If `bolt-report.md` lacks this block → halt `self_assessment_missing` (post-flight verification fails). The aggregate `_summary.md` rolls up `uncertain_decisions` across the batch for post-execution human review.
-
-## Post-flight acceptance-test concern harvest
-
-After `bolt-report.md` is written, scan the `bolt_self_report` block (and adjacent self-assessment text) for an `acceptance_test_concern: <non-empty string>` field (written by the bolt subagent per the dispatch-prompt template, listed in SKILL.md, when the implementation passes the acceptance test but feels under-validated):
-
-1. Parse the bottom-of-file YAML blocks.
-2. IF `acceptance_test_concern:` is present AND non-empty:
-   - Append to the in-memory aggregate: `{unit_id, concern, source: <bolt-report.md path>}`.
-   - Log a one-line chat warning: `"⚠ U-XXX flagged acceptance_test_concern: <truncated 100 chars>"`.
-3. After all bolts complete (`--all`), assemble the aggregate into handoff `metrics.acceptance_test_concerns: [{unit, concern}]`.
-4. Also surfaced via `_summary.md` (a new "## Acceptance-test concerns" sub-section).
-
-No new halt type — concerns are warnings, not blockers. The re-validation path: re-run plan's Step 9.5 adversarial review on the affected units only (`plan/references/adversarial-test-prompt.md` §Opt-in subagent mode), merge the gaps into each `acceptance_test` in place (update `_authored_by`), then `execute-bolts U-XXX --force`. Never `plan --regenerate` (it rewrites every unit). orchestrate-flow Step 7's final summary surfaces the count + unit list when non-empty.
 
 ## Provenance trailer enforcement
 
@@ -274,10 +260,6 @@ handoff:
   metrics:
     items_processed: <N units ACTUALLY executed/committed — MUST be 0 for a --dry-run/preview or an "all units already done" no-op re-run; never the would-process count. The bolt_artifacts_missing gate keys off this field.>
     items_blocked: <N halts encountered>
-    acceptance_test_concerns:            # harvested from bolt-report.md self-assessment per §Post-flight acceptance-test concern harvest
-      - unit: U-007
-        concern: "Test asserts user.id present but doesn't validate id is unique across concurrent requests; implementation may regress under load."
-      # ... one entry per bolt that flagged a concern; empty array if none
   scope:                                 # when the vault has scope_metadata
     id: <scope id, e.g., "BE">
     name: <scope name>
