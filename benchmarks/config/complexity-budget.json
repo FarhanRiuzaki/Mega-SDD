@@ -1,10 +1,10 @@
 {
  "_doc": "Complexity budget \u2014 a RATCHET, not a target (plugins/mega-sdd/CLAUDE.md \u00a7Release evidence & complexity budget). tests/benchmarks/test-complexity-budget.sh fails when a measured value exceeds its ceiling. Shrinking is always allowed; lower the ceiling in the same change to lock the gain. Raising a ceiling requires a `raises` entry {change, metric, measured_benefit}: a feature / new stage / new lens / new gate / performance claim cites benchmarks/runbooks/vanilla-vs-megasdd.md results (n >= 3 per arm, vs vanilla); a defect fix cites the regression test that fails without it. No evidence, no raise. Units: bytes / chars / lines exactly as the test measures them.",
- "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only); raised 2026-09-27 (see raises[]); LOWERED 2026-09-27 at 9.0 P1: generate-intent / bind-codebase / generate-units / scan-codebase deleted, their surviving contracts relocated into skills/plan/references/ + references/. T01 lite = the guarded pipeline trace re-pointed to the relocated successors (benchmarks/tasks/T01-greenfield-chain/files.lite.txt header). T01 default = what a default run on a clear greenfield PRD commands since the lane router: the DIRECT lane (using-mega-sdd + the front door + references/direct-lane.md; files.optimized.txt) \u2014 a redefinition, not a like-for-like shrink: the pre-9.0 default traced the classic chain (484,930 B). LOWERED again 2026-09-27 at 9.0 P1b: 6 executor-less scripts (-1,531 lines) and the dead hook legs keyed on removed skill ids (-102 lines) deleted. LOWERED again 2026-09-28 at P3 C9 to the measured values: the per-unit --agents path deleted (spec v9 \u00a78.6). LOWERED again 2026-09-29 at P3b (fan-out flags, emitterless halt names, JIT wave mode, dead in-run hook leg, pack consumer text).",
+ "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only); raised 2026-09-27 (see raises[]); LOWERED 2026-09-27 at 9.0 P1: generate-intent / bind-codebase / generate-units / scan-codebase deleted, their surviving contracts relocated into skills/plan/references/ + references/. T01 lite = the guarded pipeline trace re-pointed to the relocated successors (benchmarks/tasks/T01-greenfield-chain/files.lite.txt header). T01 default = what a default run on a clear greenfield PRD commands since the lane router: the DIRECT lane (using-mega-sdd + the front door + references/direct-lane.md; files.optimized.txt) \u2014 a redefinition, not a like-for-like shrink: the pre-9.0 default traced the classic chain (484,930 B). LOWERED again 2026-09-27 at 9.0 P1b: 6 executor-less scripts (-1,531 lines) and the dead hook legs keyed on removed skill ids (-102 lines) deleted. LOWERED again 2026-09-28 at P3 C9 to the measured values: the per-unit --agents path deleted (spec v9 \u00a78.6). LOWERED again 2026-09-29 at P3b (fan-out flags, emitterless halt names, JIT wave mode, dead in-run hook leg, pack consumer text); T01 again 2026-09-29 (process .md citations repointed to commits).",
  "ceilings": {
   "always_loaded_description_chars": 9804,
-  "t01_lite_commanded_bytes": 419020,
-  "t01_default_commanded_bytes": 39910,
+  "t01_lite_commanded_bytes": 418995,
+  "t01_default_commanded_bytes": 39850,
   "skill_md_total_bytes": 257342,
   "scripts_total_lines": 39943,
   "hooks_total_lines": 2802
@@ -98,7 +98,7 @@
      44618
     ]
    },
-   "measured_benefit": "Defect fix. The heuristic gate was fail-open (9.0 verification: a PRD with 4 uncovered MUST requirements passed) and did not converge under attack: 3 adversarial rounds each found 2-3 new HIGH findings in both directions (research/2026-09-27-v9-verification.md \u00a74). Regression tests that fail on the pre-redesign gate: tests/v9/test-plan-coverage-prd.sh (287 checks, 72 RED on the old script), tests/v9/test-kb-to-plan.sh C3/M5/F4. Cost disclosed: coverage machinery 182 -> 804 lines; plan-skill text +8.4 KB commanded bytes."
+   "measured_benefit": "Defect fix. The heuristic gate was fail-open (9.0 verification: a PRD with 4 uncovered MUST requirements passed) and did not converge under attack: 3 adversarial rounds each found 2-3 new HIGH findings in both directions (commit 90ea250f). Regression tests that fail on the pre-redesign gate: tests/v9/test-plan-coverage-prd.sh (287 checks, 72 RED on the old script), tests/v9/test-kb-to-plan.sh C3/M5/F4. Cost disclosed: coverage machinery 182 -> 804 lines; plan-skill text +8.4 KB commanded bytes."
   },
   {
    "date": "2026-09-28",
@@ -125,7 +125,7 @@
      3232
     ]
    },
-   "measured_benefit": "benchmarks/runbooks/p2-inline-vs-agents.md \u00a77 / research/2026-09-28-p2-inline-results.md, brownfield fixture n=3 per arm, all runs clean, vanilla control n=4: vs the per-unit agent path \u2014 AC 13 [13-13] vs 13 [12-13], Critical 0 vs 0, Important 0 vs 0 [0-1], traps 5/5 x3 both, v1 suite 73/73 x3 both (all OVERLAP = not WORSE, the locked rule), cost $25.08 [20.88-25.38] vs $42.45 [33.96-43.60] (BETTER, disjoint), subagents 3 vs 70, tool calls 252 vs 1,040, .mega-sdd lines 8.3k vs 13.6k (BETTER). Against vanilla the guarded lane stays WORSE on time/cost/tokens with quality OVERLAP, so guarded remains opt-in (router unchanged). The growth is temporary: P3 deletes the per-dispatch machinery this replaces."
+   "measured_benefit": "benchmarks/results/vanilla-ab/REPORT-p2.md + commit dbd3d7d4 (locked rule spec v9 \u00a78.4), brownfield fixture n=3 per arm, all runs clean, vanilla control n=4: vs the per-unit agent path \u2014 AC 13 [13-13] vs 13 [12-13], Critical 0 vs 0, Important 0 vs 0 [0-1], traps 5/5 x3 both, v1 suite 73/73 x3 both (all OVERLAP = not WORSE, the locked rule), cost $25.08 [20.88-25.38] vs $42.45 [33.96-43.60] (BETTER, disjoint), subagents 3 vs 70, tool calls 252 vs 1,040, .mega-sdd lines 8.3k vs 13.6k (BETTER). Against vanilla the guarded lane stays WORSE on time/cost/tokens with quality OVERLAP, so guarded remains opt-in (router unchanged). The growth is temporary: P3 deletes the per-dispatch machinery this replaces."
   },
   {
    "date": "2026-09-28",
@@ -148,7 +148,7 @@
      45456
     ]
    },
-   "measured_benefit": "Adoption per the locked rule (same evidence as the entry above, research/2026-09-28-p2-inline-results.md \u00a74). The --rebind-wip part is a defect fix: guarded-inline-2 ended with an open own_wip CONFLICT; regression tests tests/v9/test-inline-lane.sh m11a-h fail without it."
+   "measured_benefit": "Adoption per the locked rule (same evidence as the entry above, REPORT-p2.md + commit dbd3d7d4). The --rebind-wip part is a defect fix: guarded-inline-2 ended with an open own_wip CONFLICT; regression tests tests/v9/test-inline-lane.sh m11a-h fail without it."
   }
  ]
 }

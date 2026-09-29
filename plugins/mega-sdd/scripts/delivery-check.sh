@@ -2,8 +2,8 @@
 # delivery-check.sh — the reviewer's-eye check at the END of a run, every lane
 # (direct / assisted / guarded). Deterministic, zero model tokens, one call.
 #
-# Why it exists (benchmarks/results/vanilla-ab, research/2026-09-27-vanilla-vs-
-# megasdd-results.md §4 — defects found by hand in the delivered repos, never
+# Why it exists (benchmarks/results/vanilla-ab, commits cf8d3df3 + d447a6d2 —
+# defects found by hand in the delivered repos, never
 # by the pipeline's own gates, because every gate ran inside the working tree
 # with the agent's local state):
 #   - all 6 xs mega-sdd runs: tests existed and passed via `node --test`, but

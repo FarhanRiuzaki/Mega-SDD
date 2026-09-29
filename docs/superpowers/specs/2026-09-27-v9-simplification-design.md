@@ -4,13 +4,13 @@
 2026-09-27). Phases P1–P3 are below. Each phase lands as its own commit(s), green on the full
 suite, with the complexity budget lowered to the measured values.
 
-**Evidence base (all measured, n=3 clean runs per arm, vanilla Claude Code as control):**
+**Evidence base (all measured, n=3 clean runs per arm, vanilla Claude Code as control; tables in `benchmarks/results/vanilla-ab/REPORT.md`):**
 
 | Block | Result |
 |---|---|
-| greenfield xs + clinic (`research/2026-09-27-vanilla-vs-megasdd-results.md`) | The pipeline (lite and classic) was 2.3–12× slower and 9–22× costlier than vanilla, with equal or lower quality |
-| lane router (`research/2026-09-27-lane-router-results.md`) | The direct/assisted lanes are on par with vanilla. Delivery-check passes 9/9 of their runs and fails 9/9 of the old pipeline's |
-| brownfield + seeded traps (`research/2026-09-27-brownfield-results.md`) | The guarded pipeline surfaced the same 5/5 traps as vanilla at 6.0× the cost. Its CONFLICT gate fired 3× in 3 runs, all false positives on its own anchors |
+| greenfield xs + clinic (commit `cf8d3df3`) | The pipeline (lite and classic) was 2.3–12× slower and 9–22× costlier than vanilla, with equal or lower quality |
+| lane router (commit `d447a6d2`) | The direct/assisted lanes are on par with vanilla. Delivery-check passes 9/9 of their runs and fails 9/9 of the old pipeline's |
+| brownfield + seeded traps (commit `5d880e8b`) | The guarded pipeline surfaced the same 5/5 traps as vanilla at 6.0× the cost. Its CONFLICT gate fired 3× in 3 runs, all false positives on its own anchors |
 | lite vs classic, xs (`benchmarks/results/vanilla-ab/REPORT.md`) | Lite was faster and cheaper with no range overlap. Quality overlapped |
 
 ## 0. Owner principles (2026-09-27)
@@ -333,8 +333,8 @@ positives, and caught none of the seeded contradictions.
 
 ### 8.5 Outcome (2026-09-28)
 
-The §8.4 block ran as locked (`benchmarks/runbooks/p2-inline-vs-agents.md`; results
-`research/2026-09-28-p2-inline-results.md`, brownfield, n=3 clean per guarded arm). All five quality
+The §8.4 block ran as locked (commit `dbd3d7d4`; tables
+`benchmarks/results/vanilla-ab/REPORT-p2.md`, brownfield, n=3 clean per guarded arm). All five quality
 metrics are OVERLAP (AC 13 vs 13, Critical 0 vs 0, Important 0 vs 0, traps 5/5 ×3 in both, v1 suite
 73/73 ×3 in both) and `conflict_bypassed` PASS in every run, so the decision rule adopts inline:
 
@@ -362,12 +362,12 @@ metrics are OVERLAP (AC 13 vs 13, Critical 0 vs 0, Important 0 vs 0, traps 5/5 �
 ### 8.6 P3 outcome (2026-09-28)
 
 **Decision.** On 2026-09-28 the owner decided to run the full P3 (commits C0–C9) and accepted O2.
-The plan is `research/2026-09-28-p3-deletion-plan.md`. It was produced by the read-only workflow
+The plan was committed in `2d02ae3b`; merge `037ca18f` records what landed. It was produced by the read-only workflow
 `p3-caller-audit` (144 agents: inventory, 9 cluster audits, 135 adversarial refutation checks, a
 synthesis) at `4e1cf166`. The only basis for deleting anything is §8.5: inline was non-inferior to
 the per-unit agent path on one brownfield fixture, n=3. **P3 claims no speed, cost or quality
 gain.** An item the refutation checks refuted stays KEEP; only the single lockstep lines and forced
-test re-pins listed in plan §2b change in it. An item that was not refuted but is
+test re-pins listed in the plan (`2d02ae3b`) §2b change in it. An item that was not refuted but is
 coupled to a refuted one moves to P3b as a unit, rather than being half-done.
 
 **`--agents` is retired.** The token is still recognized and still implies `--guarded`. A user who
@@ -378,7 +378,7 @@ left to record inline runs under an "agents" label. This follows the 9.0 `--clas
 `--inline` stays an accepted no-op alias. `--model-tier=<role>:<tier>` (extract-intelligence roles)
 is unchanged. `--max-retries=N` stays as a prose cap per task, and no hook counts it. The retired
 flags are: `--review-panel`, the bare `--model-tier=<tier>`, `--no-escalate`, execute-bolts
-`--resume` and `--rollback`. Each gets a one-line notice (plan §5; the bare `--model-tier` and
+`--resume` and `--rollback`. Each gets a one-line notice (`2d02ae3b` plan §5; the bare `--model-tier` and
 `--no-escalate` share one). The fan-out flags
 (`--parallel`, `--sequential`, `--per-squad`, `--worktree`, `--sprint-checkpoint`) keep their text
 in P3. They are inert because they are scoped to `--agents`, and P3b retires them.

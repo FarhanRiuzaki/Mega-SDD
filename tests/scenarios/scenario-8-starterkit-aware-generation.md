@@ -98,7 +98,7 @@ ALL of:
 ## Failure modes to watch
 
 - Pack resolves to `_universal` despite a Laravel manifest → read `probes.framework_pack.candidates` in the `derive-state.sh --json-only` output: an empty list means no pack's `dependency_marker` matched the manifest
-- The pack-driven gates stay silent on a Laravel repo → the resolver may have failed (e.g. the Windows App-Execution-Alias `python3` stub), and the gates read that as a packless project (`research/2026-09-28-p3-backlog.md` §1)
+- The pack-driven gates stay silent on a Laravel repo → the resolver may have failed (e.g. the Windows App-Execution-Alias `python3` stub), and the gates read that as a packless project (the known-open note in `scripts/_lib/resolve-framework-pack.sh`)
 - A generated Blade view uses native `alert(...)` despite the pack → the UI-quality gate blocks the next `execute-bolts` (`native-alert` tell); fix the view, not the gate
 - A pre-9.0 `starterkit-context.yaml` that fails to parse → `deep_scan_cache_corrupt` (C1): GROUND renames it aside and the run proceeds
 

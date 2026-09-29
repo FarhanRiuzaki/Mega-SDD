@@ -10,7 +10,7 @@ Since 9.0, `/mega-sdd <prd|brief>` runs `scripts/route-lane.sh` first and picks 
 
 Walkthroughs that show a vault, units and bolts are guarded-lane runs. The classic chain (`generate-intent` → `scan-codebase` → `bind-codebase` → `generate-units`) was removed in 9.0: where an older walkthrough names one of those skills, read `plan` (spec + units) or the per-unit bind inside `execute-bolts`.
 
-Every lane ends with the same result: an acceptance-criterion → test table, `scripts/delivery-check.sh` `VERDICT: PASS` on the final commit, and the list of assumptions and decisions made. Measured on greenfield PRDs, the routed lanes are on par with plain Claude Code; on a brownfield PRD the guarded pipeline surfaced the same seeded spec traps as plain Claude Code at ~6× the cost. Its value is traceability and audit artefacts, not better code (`research/2026-09-27-lane-router-results.md`, `research/2026-09-27-brownfield-results.md`).
+Every lane ends with the same result: an acceptance-criterion → test table, `scripts/delivery-check.sh` `VERDICT: PASS` on the final commit, and the list of assumptions and decisions made. Measured on greenfield PRDs, the routed lanes are on par with plain Claude Code; on a brownfield PRD the guarded pipeline surfaced the same seeded spec traps as plain Claude Code at ~6× the cost. Its value is traceability and audit artefacts, not better code (commits `d447a6d2`, `5d880e8b`).
 
 Each scenario:
 - Takes 5–60 minutes wall-clock (legacy rebuilds vary with the census)

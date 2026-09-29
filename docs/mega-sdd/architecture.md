@@ -12,7 +12,7 @@ This document is the durable architecture record. For implementation details, se
 
 Procedure for the first two: `plugins/mega-sdd/references/direct-lane.md`. Every lane ends with the same **result contract**: an acceptance-criterion → test table, `scripts/delivery-check.sh` `VERDICT: PASS` on the final commit, and the list of assumptions and decisions made.
 
-Measured, not claimed: the routed lanes are on par with vanilla Claude Code on greenfield (`research/2026-09-27-lane-router-results.md`); the guarded pipeline surfaced the same seeded spec traps as vanilla at ~6× the cost (`research/2026-09-27-brownfield-results.md`). The pipeline's value is traceability and audit artefacts, not code quality.
+Measured, not claimed: the routed lanes are on par with vanilla Claude Code on greenfield (commit `d447a6d2`); the guarded pipeline surfaced the same seeded spec traps as vanilla at ~6× the cost (commit `5d880e8b`; tables in `benchmarks/results/vanilla-ab/REPORT.md`). The pipeline's value is traceability and audit artefacts, not code quality.
 
 ## The 4-layer model (guarded lane)
 

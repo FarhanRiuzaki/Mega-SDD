@@ -235,7 +235,7 @@ These lanes are opt-in and sit outside the build path:
 
 ## Measured against plain Claude Code
 
-Setup for every block: n=3 clean runs per arm, opus, and vanilla Claude Code (mega-sdd disabled) as the control. Figures are medians, with [min–max] where shown. The protocol and the decision rules were locked before the first run: [`benchmarks/runbooks/vanilla-vs-megasdd.md`](benchmarks/runbooks/vanilla-vs-megasdd.md) (greenfield) and [`benchmarks/runbooks/brownfield-ambiguous-prd.md`](benchmarks/runbooks/brownfield-ambiguous-prd.md) (brownfield).
+Setup for every block: n=3 clean runs per arm, opus, and vanilla Claude Code (mega-sdd disabled) as the control. Figures are medians, with [min–max] where shown. The protocol and the decision rules were locked before the first run: [`benchmarks/runbooks/vanilla-vs-megasdd.md`](benchmarks/runbooks/vanilla-vs-megasdd.md) (greenfield) and commit `d447a6d2` + [`trap-judge.py`](benchmarks/scripts/trap-judge.py) (brownfield).
 
 **Greenfield** (xs = a three-screen company-profile site; clinic = a multi-flow clinic app whose PRD carries open questions):
 
@@ -270,7 +270,7 @@ What the numbers say:
 
   Opt-in, it adds the spec and audit artefacts of the guarded lane. Their value is traceability, not code quality.
 
-Reports: [greenfield](research/2026-09-27-vanilla-vs-megasdd-results.md) · [lane router](research/2026-09-27-lane-router-results.md) · [brownfield](research/2026-09-27-brownfield-results.md) · per-run data in [`benchmarks/results/vanilla-ab/`](benchmarks/results/vanilla-ab/). The rule these claims follow: [`plugins/mega-sdd/CLAUDE.md` §Release evidence](plugins/mega-sdd/CLAUDE.md#release-evidence--complexity-budget).
+Tables: [`REPORT.md`](benchmarks/results/vanilla-ab/REPORT.md) · decisions: commits `cf8d3df3`, `d447a6d2`, `5d880e8b` · per-run data in [`benchmarks/results/vanilla-ab/`](benchmarks/results/vanilla-ab/). The rule these claims follow: [`plugins/mega-sdd/CLAUDE.md` §Release evidence](plugins/mega-sdd/CLAUDE.md#release-evidence--complexity-budget).
 
 ---
 

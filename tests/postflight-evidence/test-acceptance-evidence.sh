@@ -242,7 +242,7 @@ d = json.load(open(sys.argv[1])); cmds = [e["command"] for e in d["entries"]]
 assert 'printf \'[%s]\' "hello world"' in cmds and "printf '[%s]' 'a b'" in cmds, cmds
 PYC
 
-# ── bounded runner: the 120 s default (carried from tests/wave-rail/, P3 plan §3d) ──
+# ── bounded runner: the 120 s default (carried from tests/wave-rail/, P3 plan §3d, 2d02ae3b) ──
 grep -q '^TIMEOUT=120$' "$RAT" && ok "acceptance runner stays bounded: TIMEOUT=120 default" \
   || fail "run-acceptance-tests.sh default timeout moved off TIMEOUT=120"
 

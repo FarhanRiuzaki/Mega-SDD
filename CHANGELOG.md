@@ -20,7 +20,7 @@ Dasarnya cuma hasil P2 di bawah (inline non-inferior, satu fixture brownfield, n
 
 ## [Unreleased] — `execute-bolts` default jadi inline (P2, TERUKUR: non-inferior terhadap jalur per-unit agent, biaya ±60%)
 
-Pilihan owner "P2 ramping" (spec §8), diukur dengan runbook terkunci `benchmarks/runbooks/p2-inline-vs-agents.md` di fixture brownfield: n=3 per arm, semua run bersih, vanilla sebagai kontrol (n=4). Analisis lengkap ada di `research/2026-09-28-p2-inline-results.md`.
+Pilihan owner "P2 ramping" (spec §8), diukur dengan aturan terkunci spec §8.4 di fixture brownfield: n=3 per arm, semua run bersih, vanilla sebagai kontrol (n=4). Tabel: `benchmarks/results/vanilla-ab/REPORT-p2.md`; analisis: commit `dbd3d7d4`.
 
 | | per-unit agents | inline | verdict |
 |---|---|---|---|
@@ -185,7 +185,7 @@ Audit: 29 agen mengklasifikasi setiap script, lib, referensi plugin, dan cabang 
 
 ## 9.0.0 (bagian 2) — lane router: tugas yang jelas dikerjakan seperti Claude Code biasa, pipeline hanya untuk yang butuh
 
-Sumber: `research/2026-09-27-vanilla-vs-megasdd-results.md`. Pada PRD greenfield, pipeline (lite/classic) 2,4–12× lebih lama dan 8,8–22× lebih mahal daripada vanilla Claude Code, sementara kualitasnya setara atau lebih rendah. Perubahan ini memindahkan default, bukan menghapus moat. Pipeline (binding CONFLICT, OQ, panel) tetap utuh di lane `guarded`.
+Sumber: commit `cf8d3df3`. Pada PRD greenfield, pipeline (lite/classic) 2,4–12× lebih lama dan 8,8–22× lebih mahal daripada vanilla Claude Code, sementara kualitasnya setara atau lebih rendah. Perubahan ini memindahkan default, bukan menghapus moat. Pipeline (binding CONFLICT, OQ, panel) tetap utuh di lane `guarded`.
 
 ### Changed
 - **Front door merutekan dulu, baru menjalankan pipeline.**
@@ -212,7 +212,7 @@ Sumber: `research/2026-09-27-vanilla-vs-megasdd-results.md`. Pada PRD greenfield
   - Pin: `tests/size-weighted/test-standards-lens-h1.sh`.
 
 - **App yang sudah ada tidak lagi otomatis masuk pipeline** (`existing_code` → assisted, sesuai aturan yang dikunci di runbook brownfield).
-  - Diukur pada PRD brownfield dengan 7 jebakan yang ditanam, n=3 run bersih per arm (`research/2026-09-27-brownfield-results.md`).
+  - Diukur pada PRD brownfield dengan 7 jebakan yang ditanam, n=3 run bersih per arm (commit `5d880e8b`).
   - Jebakan tersuarakan 5/5 di semua run pada kedua arm. AC 13/13, Critical 0, dan tanpa regresi suite v1 di kedua arm.
   - Pipeline guarded 3,2× lebih lambat (60,8 vs 19,1 menit) dan 6,0× lebih mahal ($38,93 vs $6,46), dengan 78 subagent.
   - Gate CONFLICT menyala 3× dan semuanya false positive (anchor buatan pipeline sendiri). Tidak ada jebakan yang ditangkap gate ini.
@@ -228,10 +228,10 @@ Sumber: `research/2026-09-27-vanilla-vs-megasdd-results.md`. Pada PRD greenfield
 - `bolt-implementer` step 5b: zona waktu dipin, secret divalidasi saat request (bukan saat import/prerender), dan test tanpa `scripts.test` dilaporkan.
 - `tests/lanes/test-lanes.sh`: 32 cek untuk router, delivery-check, `.gitignore`, dan wiring.
 - Harness: arm `routed` (`P0_ENTRY=frontdoor`, prompt `/mega-sdd:mega-sdd <PRD>`).
-- `benchmarks/runbooks/brownfield-ambiguous-prd.md`: eksperimen berikutnya setelah blok router. Dijalankan 2026-09-27; hasilnya di bullet `existing_code` di atas (`research/2026-09-27-brownfield-results.md`).
+- Runbook brownfield (commit `d447a6d2`): eksperimen berikutnya setelah blok router. Dijalankan 2026-09-27; hasilnya di bullet `existing_code` di atas.
 
 ### Notes — hasil arm `routed` vs vanilla (MEASURED 2026-09-27, n=3 run bersih per arm, opus)
-Laporan: `research/2026-09-27-lane-router-results.md`. Router memilih `direct` untuk xs dan `assisted` untuk klinik.
+Laporan: commit `d447a6d2`. Router memilih `direct` untuk xs dan `assisted` untuk klinik.
 
 | | vanilla | routed | lite (pipeline lama) |
 |---|---|---|---|
@@ -275,7 +275,7 @@ Sumber: audit 2026-09-26. Semua benchmark di repo ini membandingkan mega-sdd den
 - `plugins/mega-sdd/CLAUDE.md` §Release evidence & complexity budget. `tests/benchmarks/test-vanilla-arm-harness.sh` (fixture, tanpa proses claude).
 
 ### Notes — vanilla vs mega-sdd, MEASURED (2026-09-26/27, n=3 run bersih per arm, opus, plugin 8.8.1)
-Laporan: `research/2026-09-27-vanilla-vs-megasdd-results.md`. Data per run: `benchmarks/results/vanilla-ab/`.
+Laporan: commit `cf8d3df3`. Data per run: `benchmarks/results/vanilla-ab/`.
 
 | | vanilla | lite | classic |
 |---|---|---|---|

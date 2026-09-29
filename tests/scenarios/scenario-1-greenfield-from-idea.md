@@ -101,7 +101,7 @@ npm test          # or: bun test — whatever scripts.test runs
 npm run dev       # open the app, walk the booking flow
 ```
 
-**Measured, so you know what to expect:** on the benchmark's greenfield PRDs the routed lanes were **on par with plain Claude Code** in time, cost and quality. They were not better. The one thing they add is the delivery check, which plain Claude Code does not run (`research/2026-09-27-lane-router-results.md`).
+**Measured, so you know what to expect:** on the benchmark's greenfield PRDs the routed lanes were **on par with plain Claude Code** in time, cost and quality. They were not better. The one thing they add is the delivery check, which plain Claude Code does not run (commit `d447a6d2`).
 
 ## Part B — the same idea on the guarded lane (spec + audit trail)
 
@@ -113,7 +113,7 @@ Use this when the team wants the spec and audit artefacts:
 - bolt evidence per commit;
 - later, FSD / SIT / UAT documents via `/mega-sdd:emit`.
 
-Be clear about what you are buying. On the greenfield benchmark the pipeline cost 9–22× plain Claude Code and did not produce better code (`research/2026-09-27-vanilla-vs-megasdd-results.md`). What it adds is traceability, not quality.
+Be clear about what you are buying. On the greenfield benchmark the pipeline cost 9–22× plain Claude Code and did not produce better code (commit `cf8d3df3`). What it adds is traceability, not quality.
 
 ### Step B1 — Scaffold first
 

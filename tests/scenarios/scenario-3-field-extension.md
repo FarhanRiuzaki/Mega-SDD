@@ -321,7 +321,7 @@ What the guarded lane does with the gap, compared with the two wrong readings:
 | Treat as new | `task_type: create`, rebuild the whole login, duplicate code | a `create` unit listing an existing file fails its `must-not-exist` claim at the JIT bind: CONFLICT `ALREADY_EXISTS`, and the unit doesn't run |
 | Manual prompting | You write the detailed prompt yourself | the unit's Migration notes spell out ADD / KEEP / REMOVE |
 
-Part A gets to the same code without the artefacts: Claude reads the controller directly. On this PRD the pipeline adds traceability (a unit, a binding verdict, bolt evidence), not a better diff. The brownfield benchmark found the same: guarded surfaced the same seeded traps as plain Claude Code, at about 6× the cost (`research/2026-09-27-brownfield-results.md`).
+Part A gets to the same code without the artefacts: Claude reads the controller directly. On this PRD the pipeline adds traceability (a unit, a binding verdict, bolt evidence), not a better diff. The brownfield benchmark found the same: guarded surfaced the same seeded traps as plain Claude Code, at about 6× the cost (commit `5d880e8b`).
 
 ## Common pitfalls
 

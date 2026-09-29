@@ -125,5 +125,5 @@ loop runs them here. Both then run 4–9 in order.
   re-plans, or a later run re-binds a unit it already committed. They do not defend against deliberate evasion — backdated author
   dates, deleted or moved evidence, mislabelled commits, a blocked unit's change hidden in another unit's commit on a shared file.
   The `--agents` path has the same limit (a controller can write code without dispatching); evasion is out of scope for both.
-- **Why the default.** The §8.4 block (`research/2026-09-28-p2-inline-results.md`, brownfield, n=3 per arm): AC, Critical,
+- **Why the default.** The §8.4 block (commit `dbd3d7d4`, brownfield, n=3 per arm): AC, Critical,
   Important, traps and regressions all not WORSE than `--agents`, `conflict_bypassed` PASS every run, cost BETTER. No claim vs vanilla.

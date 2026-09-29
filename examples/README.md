@@ -55,7 +55,7 @@ After running `plan`, the vault should illustrate:
 2. **Gap surfacing**: TBDs in the PRD become OQs with priority labels — including ones the PRD doesn't list explicitly.
 3. **Project-shape-driven structure**: `project_shape: web-app` in the `context.md` frontmatter; flows are typed by prefix (`F-U-` user · `F-S-` system · `F-C-` cross-cutting).
 
-What it does not demonstrate is better code. Measured against plain Claude Code, the guarded pipeline's value is the traceability and audit artefacts (vault, units, per-unit binding and evidence), not code quality (`research/2026-09-27-vanilla-vs-megasdd-results.md`, `research/2026-09-27-brownfield-results.md`).
+What it does not demonstrate is better code. Measured against plain Claude Code, the guarded pipeline's value is the traceability and audit artefacts (vault, units, per-unit binding and evidence), not code quality (commits `cf8d3df3`, `5d880e8b`).
 
 ## Continuing the lifecycle on this example
 

@@ -3,8 +3,8 @@
 # delivery-check.sh (a fresh checkout of HEAD: test script, TZ, empty-env build,
 # route reachability), the managed .mega-sdd/.gitignore, and the wiring that makes
 # the front door route before any pipeline step. Fixtures are synthetic git repos;
-# no network, no model. Evidence the checks target: research/2026-09-27-vanilla-vs-
-# megasdd-results.md §4 (every defect below was found by hand in a benchmark run).
+# no network, no model. Evidence the checks target: commits cf8d3df3 + d447a6d2
+# (every defect below was found by hand in a benchmark run).
 set -u
 here="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$here/../.." && pwd)"

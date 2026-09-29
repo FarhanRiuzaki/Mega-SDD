@@ -1,4 +1,4 @@
-# P2 block (benchmarks/runbooks/p2-inline-vs-agents.md), seed 20260927:
+# P2 block (spec v9 §8.4, commit dbd3d7d4), seed 20260927:
 # python3 -c "import random; a=['guarded']*3+['guarded-inline']*3+['vanilla']; random.seed(20260927); random.shuffle(a); print(a)"
 # -> ['vanilla', 'guarded-inline', 'guarded-inline', 'guarded', 'guarded', 'guarded-inline', 'guarded']
 # fixture: fixture-brown @ 015ecf3; plugin = git archive of the P2 commit (both guarded arms, same snapshot)

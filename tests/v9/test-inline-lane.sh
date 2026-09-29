@@ -608,13 +608,15 @@ inv2 = re.search(r"\n2\. \*\*The CONFLICT gate blocks\*\*(.*?)\n3\. ", t, re.S).
 assert "conflict_bypassed" in inv2 and "--inline" in inv2 and "§8.4" in inv2 and "2026-09-27" in inv2 and "evasion" in inv2, "inv2"
 assert "derive-exec-plan.sh" in inv2 and "By default" in inv2 and "§8.6" in inv2 and "Under `--agents`" not in inv2, "inv2 default, per-dispatch path removed (§8.6)"
 assert "§8.6" in re.search(r"## What we will not accept(.*?)\n## ", t, re.S).group(1), "wna"
-assert "### 8.5 Outcome" in spec and "2026-09-28-p2-inline-results.md" in spec.split("### 8.5 Outcome")[1], "spec 8.5"
+s85 = spec.split("### 8.5 Outcome")[1].split("### 8.6")[0]
+assert "REPORT-p2.md" in s85 and "dbd3d7d4" in s85, "spec 8.5 cites the P2 tables and the commit"
 s82 = re.search(r"### 8\.2(.*?)### 8\.3", spec, re.S).group(1)
 assert "Threat model" in s82 and "evasion" in s82 and "out of scope" in s82, "spec"
 assert "_run.json" not in t + spec + ir and "bound_since" not in t + spec + ir, "a deleted leg is still documented"
 PYH
 ! grep -rqE '_run\.json|bound_since|unattributed_commit|patch-id' "$P/scripts" "$P/hooks" "$P/skills" && ok "h10: no deleted leg survives in scripts, hooks or skills" || bad "h10: $(grep -rlE '_run\.json|bound_since|unattributed_commit|patch-id' "$P/scripts" "$P/hooks" "$P/skills")"
-grep -qF 'The default path is unchanged by P2' "$ROOT/benchmarks/runbooks/p2-inline-vs-agents.md" && bad "h11: the runbook claims an unchanged default path" || ok "h11: the runbook does not claim an unchanged default path"
+! grep -qF 'The default path is unchanged by P2' "$SPEC" && sed -n '/^### 8.5 Outcome/,/^### 8.6/p' "$SPEC" | grep -qF 'runs `references/inline-run.md` by default' \
+  && ok "h11: spec §8.5 records the default flip, not an unchanged default path" || bad "h11: spec §8.5 claims an unchanged default path"
 ! grep -qE 'the seven execute-bolts artifact gates|ALL SEVEN bolt-stage' "$P/CLAUDE.md" && ! grep -q 'all six scans' "$ROOT/tests/token-efficiency/test-4abc-spawn-tax.sh" \
   && ok "h12: gate counts match the implementation" || bad "h12: count drift"
 grep -qF -- '--inline' "$ROOT/tests/skill-triggering/execute-bolts.test.md" && grep -F 'execute-bolts --inline' "$ROOT/docs/gateway-contract.md" | grep -qF 'mega-sdd-trace:execute-bolts' \
