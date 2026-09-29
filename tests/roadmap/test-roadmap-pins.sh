@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Adopt-now roadmap pins — worktree-proofing, interop pair, CI recipe, EARS tier,
-# recorded capability decisions (spec: 2026-06-10-fmea-and-future-roadmap.md).
+# recorded capability decisions (FMEA + roadmap spec: commit 361657ec).
 set -u
 here="$(cd "$(dirname "$0")" && pwd)"
 cd "$here/../.." || exit 2

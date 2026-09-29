@@ -3,7 +3,7 @@
 Loaded by `execute-bolts` SKILL.md pre-flight 3.9 (the binding contract behind `inline-run.md` (b)'s
 up-front bind and each task's re-bind) and 3.10 (a DEFER-class halt fires on a unit). Spec: `docs/superpowers/specs/2026-09-10-v8-fused-pipeline-design.md`
 Appendix F2–F4 (JIT bind) and F6c (quarantine); audit
-`research/2026-09-10-p0-interaction-audit.md` §C (which halts wait for a human).
+commit 7c30bf5b §C (which halts wait for a human).
 
 ## Contents
 
@@ -26,7 +26,7 @@ script; the model's only judgment is the ladder E3 verdict on `text` claims.
      claims from `.mega-sdd/codebase/symbol-index.json` (in the expected file →
      CONFIRMED; only elsewhere → CONFLICT collision; nowhere → OQ; index absent
      → OQ with the reason). Nothing for the model to do.
-   - **Stale line-range anchors are repaired by the writer, never by hand (`research/2026-09-15-v8-p3-report.md §5`).** A `## Anchors` range that no longer fits the file is re-verdicted against the anchor's *authoring snapshot* (the commit that introduced that token into the unit file): **R1-shift** when the authored lines exist verbatim, uniquely, at another offset; **R2-clamp** when the file is byte-identical to the snapshot and EITHER the range overshoots EOF by exactly one line (the trailing-newline miscount — the live class: clinic U-008 / xs U-006) OR the range is a whole-file anchor (`<file>:1-N`, any overshoot — lines past EOF never existed, so lines 1..n ARE what the author read; e.g. `login/page.tsx:1-25` on an unchanged 22-line file). Both record `repair: {from, to, rule, reference, content_sha256}` on the claim (+ `repairs[]` in `binding.json`) and rewrite the unit's `## Anchors` token, so the next bind sees it fit. Changed content, a non-unique match, a PARTIAL range (start > 1) overshooting by more than one line, or no snapshot ⇒ **CONFLICT** — resolve via `resolve-oq --binding` (KEEP_CODE + a hand-corrected anchor is still the human path for those). Never pre-empt the writer by editing an anchor to make a claim pass.
+   - **Stale line-range anchors are repaired by the writer, never by hand (v8 P3 report §5, commit 53926a8d).** A `## Anchors` range that no longer fits the file is re-verdicted against the anchor's *authoring snapshot* (the commit that introduced that token into the unit file): **R1-shift** when the authored lines exist verbatim, uniquely, at another offset; **R2-clamp** when the file is byte-identical to the snapshot and EITHER the range overshoots EOF by exactly one line (the trailing-newline miscount — the live class: clinic U-008 / xs U-006) OR the range is a whole-file anchor (`<file>:1-N`, any overshoot — lines past EOF never existed, so lines 1..n ARE what the author read; e.g. `login/page.tsx:1-25` on an unchanged 22-line file). Both record `repair: {from, to, rule, reference, content_sha256}` on the claim (+ `repairs[]` in `binding.json`) and rewrite the unit's `## Anchors` token, so the next bind sees it fit. Changed content, a non-unique match, a PARTIAL range (start > 1) overshooting by more than one line, or no snapshot ⇒ **CONFLICT** — resolve via `resolve-oq --binding` (KEEP_CODE + a hand-corrected anchor is still the human path for those). Never pre-empt the writer by editing an anchor to make a claim pass.
    - For each `text` claim run the text-claim ladder E3 VERBATIM
      (§E3 below: index → targeted
      Read → collision sweep two legs → bounded grep → KB → ungrounded ⇒

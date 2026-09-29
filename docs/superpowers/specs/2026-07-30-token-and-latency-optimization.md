@@ -2,7 +2,7 @@
 
 # Spec — token + latency optimization
 
-**Date:** 2026-07-30 · **Research:** `research/2026-07-30-token-audit-end-to-end.md`
+**Date:** 2026-07-30 · **Research:** commit ac84edd7
 **Trigger:** operator asked for an end-to-end token audit (target "up to 90%") and, mid-audit, for
 **3–4× faster** wall-clock. Both targets are answered with arithmetic in the research doc; this
 spec is the execution plan for the findings that survived adversarial verification.
@@ -550,7 +550,7 @@ Correction to the published figure — one, not three:
 
 The `25–42 interactive` pair is published without its N and does not reproduce at N = 8 in either
 direction (42 needs N ≈ 13 with every OQ answered and cross-cutting). Superseded by the interactive
-row above. This supersedes `research/2026-07-30-token-audit-end-to-end.md` §6.1 / §6.2 row 4 for
+row above. This supersedes the token audit (commit ac84edd7) §6.1 / §6.2 row 4 for
 this lever; the audit's other rows are untouched.
 
 Pinned by `tests/interaction-keterangan/test-oq-single-prompt.sh`; behavior fixture
@@ -851,7 +851,7 @@ Payback rule (§2 of the research doc):
 
 ### 5a amendment — findings of the fork-safety audit
 
-Full report + evidence: [`research/2026-07-30-fork-safety-audit-scan-bind.md`](../../../research/2026-07-30-fork-safety-audit-scan-bind.md)
+Full report + evidence: commit 2b3f6574
 (13 agents, 6 dimensions each adversarially refuted). **Three things in the line above were wrong.**
 
 **Wrong #1 — the scoping.** "One missing `--auto-policy` paragraph another skill already ships
@@ -885,7 +885,7 @@ pilot cannot settle it, because detect-drift dispatches no subagent at all.
 **Precondition 0 (the project's own contract, `plugins/mega-sdd/CLAUDE.md:69`):** fork may be
 extended to scan/bind *only after* the live token before/after on `detect-drift` confirms the win.
 It has never produced a verdict — the only attempt failed because `context: fork` silently no-ops
-under `claude -p` (`research/2026-07-20-fork-ab-headless-attempt.md`). **Two interactive runs are
+under `claude -p` (commit 19f9ea88). **Two interactive runs are
 required, and RUN 1 does not clear RUN 2's question:**
 - **RUN 1 (pilot):** one `/mega-sdd:sync` on a Mode-D brownfield repo, invoked **from a
   sub-directory**. Measures (a) the token win per the scaffolded procedure, (b) whether a forked

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S1 (spec 2026-08-11-audit-phase2b-scripts-and-owners.md) —
+# S1 (audit Phase-2b spec, commit 83e0b624) —
 # validate-preflight.sh --predictive contract (former predictive-preflight.sh): JSON line per catalog check + PREFLIGHT
 # summary; exit 0 when fatal==0, exit 3 when fatal>0; unknown skills skipped
 # silently; cold-halt checks ride execute-bolts membership; fail-open per

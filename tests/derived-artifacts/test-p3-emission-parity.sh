@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-p3-emission-parity.sh — P3 emission engine (v5 spec
-# docs/superpowers/specs/2026-07-19-v5-execution-spec.md P3 row; research §4):
+# commit 45c6039b, P3 row; research §4):
 # THE BYTE-PARITY PHASE GATE. The --doc parameterization of
 # build-citation-map.sh / build-citation-map.sh --check-drift is a PURE parameterization —
 # the FSD lane is byte-identical with the flag absent and with --doc=fsd

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# v8 P1.e W1 zero-idle (spec 2026-09-10 App. F6; audit research/2026-09-10-p0-interaction-audit.md §A/§E):
+# v8 P1.e W1 zero-idle (spec 2026-09-10 App. F6; audit commit 7c30bf5b §A/§E):
 # the happy-path 3-screen express run may stop for a human at EXACTLY two points —
 # the front-door chain confirmation and ONE batched ask (OQ P1 business + the L0
 # toolchain item + Defer/OOS sub-fields). This suite is a STATIC pin over the prose

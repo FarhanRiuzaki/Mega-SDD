@@ -2,7 +2,7 @@
 # test-p3-unit-diet.sh — Batch 2 P3: the unit-spec diet (units are re-sent per-bolt
 # AND per-review-lens; every frontmatter byte multiplies ~5-6x per full-tier attempt).
 #
-# Pins the diet contract (spec 2026-07-19-batch2-derive-and-diet.md, item P3):
+# Pins the diet contract (batch2 spec, commit a950422c, item P3):
 #   (a) the unit writer (`plan` since 9.0; generate-units before) stops WRITING the gate-inert frontmatter surfaces —
 #       grounding_evidence block, superpowers_skills, estimated_complexity, the
 #       nested mutability map (source + rebuild_freedom) — mutability collapses to
@@ -11,7 +11,7 @@
 #       structured authority; verify keeps expanded (marker-bearing when HIGH) body
 #       criteria (the A1 substrate); create/extend get the pointer line; ears: only
 #       where it adds precision beyond expects: (roadmap pins intact).
-#   (c) per-lens slice trim — the bridge diagram's wording (review-panel.md went in P3 C3).
+#   (c) retired: the per-lens slice wording left with the --agents review panel (last text: commit bb38ba0a).
 # Plus the tolerance pair: validate-unit-spec.sh passes a unit WITHOUT the diet
 # keys AND one WITH them (writer-side diet, reader-side tolerance); A1 unaffected
 # in both directions.
@@ -87,12 +87,9 @@ grep -qF 'verify_grounding_untrusted' "$US" && ok "A1 enforcement pointer intact
 grep -qF 'Acceptance criteria are the frontmatter' "$TU" && ok "template Acceptance-criteria placeholder is the pointer-line form" || fail "template still scaffolds expanded placeholder bullets"
 grep -qF 'TBD OQ items / prose-only constraints' "$TU" && ok "template names the only non-restating additions (TBD OQs, prose-only constraints)" || fail "template non-restating guidance missing"
 
-# ── (c) bridge per-lens slice wording (review-panel.md itself was deleted in P3 C3) ──
-# bridge diagram stays in sync
-grep -qF 'Anchors/Anti-patterns + Migration notes' "$BR" && ok "pin survives: bridge slice includes Anchors/Anti-patterns + Migration notes" || fail "pin lost: bridge slice list"
-grep -qiF 'sized to the lens' "$BR" && ok "pin survives: bridge sized-to-the-lens contract" || fail "pin lost: sized to the lens"
-grep -qF 'NOT Goal/Context/Out-of-scope' "$BR" && grep -qF 'security/standards' "$BR" && ok "bridge diagram carries the per-lens trim" || fail "bridge diagram missing the trim"
-grep -qF 'Goal/Out-of-scope for the quality lens' "$BR" && ok "bridge diagram carries the quality-lens exception" || fail "bridge quality exception missing"
+# ── (c) retired: the per-lens slices went with the --agents review panel (review-panel.md in P3 C3,
+# the bridge's per-unit diagram after it; last text: commit bb38ba0a) ──
+grep -qiF 'sized to the lens' "$BR" && fail "retired per-lens slice wording is back in the bridge" || ok "bridge carries no retired per-lens slice wording"
 if grep -qF 'superpowers_skills' "$BR"; then
   grep -qF 'no longer written' "$BR" && ok "bridge speaks superpowers_skills as legacy (no longer written)" || fail "bridge superpowers_skills wording stale"
 fi

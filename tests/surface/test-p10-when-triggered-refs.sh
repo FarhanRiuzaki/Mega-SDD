@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Audit Phase 2a — WHEN-triggered reference loading (spec 2026-08-10-audit-phase2-when-triggered-refs.md).
+# Audit Phase 2a — WHEN-triggered reference loading (spec: commit de412367).
 # Pins: every targeted pointer carries its deterministic load condition; the inline
 # skeletons are declared authoritative; moat-commanded reads stay UNCONDITIONAL.
 # 9.0 (P1): generate-intent / generate-units / scan-codebase / bind-codebase were removed

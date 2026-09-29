@@ -1,3 +1,0 @@
-# mega-sdd per-project config — see plugins/mega-sdd/references/project-config.md
-# Durable form of the front-door `--lite` flag (v8 lite lane) so every hop and --resume stay lite.
-lane: lite

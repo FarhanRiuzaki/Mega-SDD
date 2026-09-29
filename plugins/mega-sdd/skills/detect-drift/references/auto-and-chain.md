@@ -8,7 +8,6 @@ Loaded when detect-drift runs under `--auto` or as an orchestrate-flow chain pha
 - `drift_framework_mismatch` blocker
 - Handoff YAML
 - Auto-trigger as a chain phase
-- Snapshot reuse
 
 ## `--auto` behavior
 
@@ -105,21 +104,9 @@ Status `halted` on `drift_framework_mismatch`. Standalone invocation emits an in
 
 ## Auto-trigger as a chain phase
 
-When orchestrate-flow runs detect-drift as an auto-gate after an execute-bolts batch (presence of `<vault>/bolts/` with recent postflight snapshots — the hybrid auto-gate, DEFAULT-ON):
+When orchestrate-flow runs detect-drift as an auto-gate after an execute-bolts batch (presence of `<vault>/bolts/` with recent `postflight.json` files — the hybrid auto-gate, DEFAULT-ON):
 
-1. Switch to incremental mode (snapshot reuse, below).
+1. Scan fresh, filtered to the vault scope (detect-drift reads no bolt snapshot).
 2. Map severity → chain action: CRITICAL drift on a LOCKED entity → emit a halt blocker (orchestrate-flow halts the chain); HIGH → emit a pause signal (surface to user); MEDIUM/LOW → log only, chain continues.
 
-Standalone invocation (no chain context) behaves as a fresh full scan, ignoring bolt snapshots.
-
-## Snapshot reuse
-
-Per `plugins/mega-sdd/references/shared-snapshot-schema.md`. When run as the post-bolts auto-gate (incremental mode):
-
-1. For each unit in `vault.json`, read `<vault>/bolts/U-XXX/postflight.json` if present and fresher than `vault.json`.
-2. Aggregate file-level sha256 + ast_signatures across valid snapshots.
-3. Compare the aggregate vs vault expectations (Steps 1–4).
-4. For files not in any postflight, fall back to a fresh scan (usually a small remainder).
-5. Performance: ~5s on a 20-bolt batch vs ~28s for a full re-scan.
-
-Stale detection: if `postflight.json.vault_sha256` ≠ the current `vault.json` sha256, fresh-scan that unit's files.
+Standalone invocation (no chain context) behaves as a fresh full scan.

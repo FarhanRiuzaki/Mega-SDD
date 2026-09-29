@@ -55,9 +55,8 @@ grep -q 'startup|resume|clear|compact' "$P/hooks/hooks.json" \
 ! grep -r 'CLAUDE_PLUGIN_ROOT' "$P"/skills/*/references/*.md | grep -v 'is NOT substituted' | grep -q . \
   && pass "P6: no runnable PLUGIN_ROOT in reference files (explanatory notes exempt)" || fail "P6: runnable PLUGIN_ROOT still in refs"
 
-# P7 — prose corrections hold
-grep -q 'permissionDecision: "deny"' "docs/mega-sdd/fork-a-recovery-map.md" \
-  && pass "P7: fork-map block format corrected" || fail "P7: fork-map stale"
+# P7 — prose corrections hold (the Fork-A map block-format pin left with that map; it is in
+# git history from commit b5c2a6bc)
 grep -q '4 options — the platform caps options at 4' "$P/skills/execute-bolts/references/halt-recovery.md" \
   && pass "P7b: AskUserQuestion ≤4 options" || fail "P7b: 5-option dispatch remains"
 # P7b2 — the propose-and-confirm menu template ALSO respects the 4-option cap

@@ -5,7 +5,7 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
+> **Pre-v5.2.3 history lives in git history.** `CHANGELOG-ARCHIVE.md` (v3.0.0…v5.2.2, rotated 2026-05-26, 2026-06-24 and 2026-09-06) left the tree on 2026-09-29: read it at commit be944b07 (`git show be944b07:CHANGELOG-ARCHIVE.md`). Rotation no longer writes an archive file; git history keeps every entry.
 
 ## [Unreleased] — P3: jalur per-unit `--agents` dihapus (spec v9 §8.6; tanpa klaim gain)
 
@@ -410,7 +410,7 @@ Sumber: feedback tim dari monorepo. Di sesi tim FE, Claude baca memory dan artef
 - **Byte:** blok di playground Fase 0 terukur **+559 sampai +759 B** per startup/clear/compact. Ini di atas estimasi DERIVED spec (+440…+720), karena teks tier "hint" lebih panjang. Tetap di bawah cap 1.200 B. Vault dengan stamp `/2` collapse jadi `- FRESH: <v>`.
 - **Belum terbukti (jujur) — dan dua di antaranya GATE RILIS di spec:**
   - **Acceptance run Slice 1 (D33)** belum jalan: 30 run tier-S, blok vs tanpa blok, di tiga permukaan yang ditanam (MEMORY.md, CLAUDE.md, dokumen vault). Spec sendiri bilang **belum boleh ada yang klaim "drift FE sudah beres" sebelum run ini lulus**. Yang udah terbukti baru mekanismenya: blok muncul, isinya benar, dan gate nolak.
-  - **Verifikasi Windows di laptop kantor (D32)** belum jalan. Skrip sekali-jalan udah disiapin: `research/2026-09-26-state-anchor-fase2/windows-check.sh`.
+  - **Verifikasi Windows di laptop kantor (D32)** belum jalan. Skrip sekali-jalannya, `windows-check.sh` (commit 51ed784d), dihapus 2026-09-29: owner menyatakan D32 di-waive permanen (langkah 5 skrip itu menguji jalur Agent yang udah dipensiunin di P3).
   - Arm benchmark lite D33 buat Slice 2 (tingkat override CONFLICT D22, biaya serialisasi D10) juga belum. Butuh sesi interaktif dan keputusan budget owner.
   - **Artinya:** push 8.8.0 sebelum D32 + D33 jalan = owner sengaja nge-waive gate rilis yang ditulis spec ini sendiri. Itu keputusan owner, dan dicatat di sini supaya kelihatan.
 - **Dua ronde review adversarial sebelum rilis:**
@@ -2259,7 +2259,7 @@ First tranche of [`docs/superpowers/specs/2026-08-02-reuse-first-grounding-index
 
 ## [5.27.0] - 2026-08-02 — T1: the OOM-safe AST engine ladder (tree-sitter → ast-grep → regex)
 
-New spec [`docs/superpowers/specs/2026-08-02-oom-safe-ast-engine-ladder.md`](docs/superpowers/specs/2026-08-02-oom-safe-ast-engine-ladder.md). Motivation is a REAL incident, live-reproduced during implementation: `tree-sitter query` compiles grammars locally with clang on first use, and on a memory-tight Mac the compile is OOM-killed — surfacing as `rc=1` + `clang: … Killed: 9` on stderr, so classification must read stderr, not just the return code. On that machine class tier 2 is not a fallback; it is the only working AST path.
+New spec `2026-08-02-oom-safe-ast-engine-ladder.md` (commit 20965b7f). Motivation is a REAL incident, live-reproduced during implementation: `tree-sitter query` compiles grammars locally with clang on first use, and on a memory-tight Mac the compile is OOM-killed — surfacing as `rc=1` + `clang: … Killed: 9` on stderr, so classification must read stderr, not just the return code. On that machine class tier 2 is not a fallback; it is the only working AST path.
 
 - **`scripts/probe-scan-engine.sh` (NEW):** Step-0 engine detection is now ONE deterministic spawn — probes both tree-sitter binary names, runs the per-language grammar smoke tests **serially with a hard per-probe timeout** (the parallel-compile OOM is prevented by construction, not by prose), probes ast-grep, and emits one JSON digest. The OOM class is first-class: `grammar_compile_killed` (both spellings — SIGKILLed probe AND `Killed: 9` on stderr), distinct from `grammar_missing`/`grammar_compile_failed`/`probe_timeout`/`binary_unrunnable`. A forced `--engine=` whose binary is absent halts `dep_missing` — never a silent fall-through.
 - **Tier 2 — `queries/astgrep/<lang>.yml` (NEW, 9 packs):** kind-based ast-grep definition rules mirroring the `.scm` coverage, every kind verified against ast-grep 0.42.3 (never assumed). Grammars are EMBEDDED in the static binary — zero compilation ever — and the whole non-REUSE set across ALL tier-2 languages extracts in **ONE process** (rules are language-tagged), vs one-per-FILE under tree-sitter: on `OS=windows-bash` (~220 ms/spawn) that turns a 2,000-file ~7.3-minute extraction into one spawn, and ast-grep installs via scoop/winget on the locked-down office laptops. `precision_tier` stays `ast` at tier 2, so bind-codebase field-level diff is untouched; PageRank self-skips with its loud record (no reference captures) — re-keyed on `engine: tree-sitter` so an ast-grep map can never re-open the per-file clang path.
@@ -2422,7 +2422,7 @@ Three levers from [`docs/superpowers/specs/2026-07-30-token-and-latency-optimiza
 
 feat(fork-readiness): `scan-codebase` and `bind-codebase` are now non-interactive on every path — and the spawn-cost gate stopped being a chain-killer on the way.
 
-Groups B and C of the fork-safety audit's edit list ([`research/2026-07-30-fork-safety-audit-scan-bind.md`](research/2026-07-30-fork-safety-audit-scan-bind.md)). **No `context: fork` frontmatter was flipped** — that step stays gated on the two interactive runs the spec specifies. Everything that makes the flip *safe* ships here. Skill versions: `scan-codebase` 2.21.0, `bind-codebase` 2.13.0.
+Groups B and C of the fork-safety audit's edit list (`research/2026-07-30-fork-safety-audit-scan-bind.md` (commit 2b3f6574)). **No `context: fork` frontmatter was flipped** — that step stays gated on the two interactive runs the spec specifies. Everything that makes the flip *safe* ships here. Skill versions: `scan-codebase` 2.21.0, `bind-codebase` 2.13.0.
 
 **The spawn-cost gate needed a third lane, and finding that out took two tries.** Converting the `>60s` `AskUserQuestion` into a hard blocker made the skill fork-safe and simultaneously introduced a live regression: the old `--auto` *proceeded*, the new behaviour was a hard STOP at phase 1 of nearly every brownfield chain, with **zero** orchestrate-flow routing rows able to pre-resolve it. On Windows (~0.22 s/spawn) that fires at ~272 files. Restoring "proceed" was not the answer either — that re-opens the unattended multi-hour stall the gate exists to close (100k files ≈ 6.1 h). The gate now resolves by lane, first match wins:
 
@@ -2448,7 +2448,7 @@ Lane 3 stamps `precision_tier: regex` plus a new `precision_downgrade_reason` in
 
 fix(sync-lane): the Mode-D fallback handed a non-interactive `bind-codebase` no vault at all — found while auditing whether scan/bind can be forked.
 
-Phase 5a of [`docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md`](docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md) asked a narrow question: can `scan-codebase` and `bind-codebase` take `context: fork`? A 13-agent audit (6 dimensions, each adversarially refuted) answered it — and found a live defect on the way. Full report with `file:line` evidence: [`research/2026-07-30-fork-safety-audit-scan-bind.md`](research/2026-07-30-fork-safety-audit-scan-bind.md).
+Phase 5a of [`docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md`](docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md) asked a narrow question: can `scan-codebase` and `bind-codebase` take `context: fork`? A 13-agent audit (6 dimensions, each adversarially refuted) answered it — and found a live defect on the way. Full report with `file:line` evidence: `research/2026-07-30-fork-safety-audit-scan-bind.md` (commit 2b3f6574).
 
 **The live defect — five surfaces, one missing word.** On the Mode-D sync lane, `scan-codebase --changed-only`'s full-scan fallback writes **no** `.sync-changed-paths.txt` and hands straight to a FULL re-bind. On that branch the vault path is the **only** signal the downstream bind receives — and bind is non-interactive there, so it cannot ask for it. The authoritative handoff schema always rendered it as `bind-codebase <vault> --auto`; the design spec's shorthand rendered it bare, and three operative surfaces had copied the shorthand. Fixed in all five, including the spec that was the drift source. Pinned by the new `tests/scan/test-sync-lane-vault-signal.sh`, which caught two of the five sites the first time it ran — one of them a site this change had already missed.
 
@@ -2468,7 +2468,7 @@ No frontmatter was flipped. That step is gated on two interactive runs (a token/
 
 fix(telemetry): the token instrument was wrong by ~11.6x in one direction and ~2.5x in the other — every prior optimization round was aimed with it.
 
-This ships **Phase 0** of [`docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md`](docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md) (research: [`research/2026-07-30-token-audit-end-to-end.md`](research/2026-07-30-token-audit-end-to-end.md)). It saves **zero tokens by itself** — it is the ruler the rest of the work is measured with, and it was mis-calibrated three separate ways.
+This ships **Phase 0** of [`docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md`](docs/superpowers/specs/2026-07-30-token-and-latency-optimization.md) (research: `research/2026-07-30-token-audit-end-to-end.md` (commit ac84edd7)). It saves **zero tokens by itself** — it is the ruler the rest of the work is measured with, and it was mis-calibrated three separate ways.
 
 **⚠️ Expect the numbers to MOVE. That is the correction landing, not a regression.** Main-thread cost jumps ~11x, subagent cost drops ~2.5x, and cache-creation cost rises ~60% on the main lane. Nothing got more expensive; the instrument stopped lying.
 
@@ -2490,7 +2490,7 @@ The planned fix was a per-lane constant. Measurement made that unnecessary: **th
 
 fix(windows): five findings from a full-plugin Windows portability audit — including a missing `.gitattributes` that makes a default Git-for-Windows clone unable to execute a single script.
 
-A six-finder sweep over the whole transitive closure (`SKILL.md` → `references/` → `scripts/` → `_lib/` → `hooks/`, ~300 files) produced **27 findings that survived adversarial refutation** — 4 `hang`, 7 `silent-wrong`, 13 `degraded`, 3 `cosmetic`. Full report and the per-skill verdict table: [`research/2026-07-29-windows-portability-audit.md`](research/2026-07-29-windows-portability-audit.md). Spec: [`docs/superpowers/specs/2026-07-30-windows-portability-audit-fixes.md`](docs/superpowers/specs/2026-07-30-windows-portability-audit-fixes.md). This release ships the five that were safely verifiable without a Windows machine.
+A six-finder sweep over the whole transitive closure (`SKILL.md` → `references/` → `scripts/` → `_lib/` → `hooks/`, ~300 files) produced **27 findings that survived adversarial refutation** — 4 `hang`, 7 `silent-wrong`, 13 `degraded`, 3 `cosmetic`. Full report and the per-skill verdict table: `research/2026-07-29-windows-portability-audit.md` (commit 2bcec39d). Spec: `2026-07-30-windows-portability-audit-fixes.md` (commit 2bcec39d). This release ships the five that were safely verifiable without a Windows machine.
 
 **1. `.gitattributes` — the whole plugin, not one skill.** The install path is a `git clone` (`~/.claude/plugins/marketplaces/mega-sdd/.git`), `core.autocrlf` is unset there so it inherits the machine's global config, and no `.gitattributes` existed anywhere. Git for Windows' *default* installer option is `core.autocrlf=true`. Measured effect: `set -u\r` → `set: -: invalid option`, `case "$1" in\r` → syntax error, and a heredoc terminator `PYEOF\r` never matching `<<'PYEOF'` — the plugin has **124 heredocs across 87 files**. Under real bash 5.3, `hooks/run-hook.sh` exits RC=2 dispatching nothing. The rule is `* text=auto eol=lf`, **not** `*.sh`: the eight hook entry points are extensionless. Two office laptops work today only because their global git happens to be `false`/`input` — luck, not design. **Note: this does not renormalize an existing clone; an affected machine must re-clone the plugin cache.**
 
@@ -2607,7 +2607,7 @@ Also recorded, and explicitly **not** a plugin defect: `EUNKNOWN: uv_spawn` on `
 
 **Not verified here:** no Windows machine was available. The `winreg` write path, `py -3`, the scoop `python3` shim and `tree-sitter-cli --version` are exercised against fakes, upstream docs and source — not the real platform. The nine `--version` exit codes were measured locally.
 
-Design: [`docs/superpowers/specs/2026-07-30-install-deps-windows-path-and-verify.md`](docs/superpowers/specs/2026-07-30-install-deps-windows-path-and-verify.md).
+Design: `2026-07-30-install-deps-windows-path-and-verify.md` (commit b5dd1e8e).
 
 ## [5.7.1] - 2026-07-29
 
@@ -2646,7 +2646,7 @@ Fixed with one normalization immediately after the `eval`, before any consumer �
 
 This un-parks `write-fanout-no-megasdd-precondition` (~120 spawns), whose premise was that these globs work.
 
-Design + measurements: [`docs/superpowers/specs/2026-07-29-post-tool-use-native-path-dispatch.md`](docs/superpowers/specs/2026-07-29-post-tool-use-native-path-dispatch.md).
+Design + measurements: `2026-07-29-post-tool-use-native-path-dispatch.md` (commit 12917d82).
 
 ## [5.6.0] - 2026-07-29
 
@@ -2673,7 +2673,7 @@ Fixed by normalizing to `/` at all three sites (both guards plus `build-locked-i
 
 Tests pin the class with `ntpath`, Python's Windows path module, which imports on any platform and reproduces exact Windows semantics from macOS — no Windows machine required. Includes an anti-drift check, since the test transcribes the guard logic and a transcription that drifts from its source stops testing anything silently.
 
-Design: [`docs/superpowers/specs/2026-07-29-windows-path-separator-guards.md`](docs/superpowers/specs/2026-07-29-windows-path-separator-guards.md). **D2 remains open** — `post-tool-use`'s 12 `case "$FILE_PATH"` globs still match no native Windows path.
+Design: `2026-07-29-windows-path-separator-guards.md` (commit 58db5758). **D2 remains open** — `post-tool-use`'s 12 `case "$FILE_PATH"` globs still match no native Windows path.
 
 ## [5.5.0] - 2026-07-29
 
@@ -2697,7 +2697,7 @@ Fixed at the producer with `shlex.quote()`, routed through a single `emit()` hel
 
 Also hardens v5.4.1's own short-circuit against the same class: it read the first `"cwd"` in the raw JSON and would have silently `exit 0`'d on a real mega-sdd project if that scan ever picked up the wrong value. It now short-circuits only when the extracted cwd is a real directory — fail-safe instead of fail-open, still zero forks.
 
-Design, measurements, and the two Windows separator defects deliberately left for a follow-up (D2: 12 `case "$FILE_PATH"` globs that match no native Windows path; D3: the anti-self-bypass guard proven inert under Windows path semantics via `ntpath`): [`docs/superpowers/specs/2026-07-29-hook-stdin-eval-quoting.md`](docs/superpowers/specs/2026-07-29-hook-stdin-eval-quoting.md).
+Design, measurements, and the two Windows separator defects deliberately left for a follow-up (D2: 12 `case "$FILE_PATH"` globs that match no native Windows path; D3: the anti-self-bypass guard proven inert under Windows path semantics via `ntpath`): `2026-07-29-hook-stdin-eval-quoting.md` (commit d15d0947).
 
 ## [5.4.1] - 2026-07-29
 
@@ -2709,13 +2709,13 @@ It now resolves the project root in pure shell first and exits immediately when 
 
 Moat-neutral by construction: the short-circuit fires only when no `.mega-sdd` exists anywhere up the chain, which is mutually exclusive with every branch below it — all of them already gated on `.mega-sdd`. It costs zero forks itself (cwd extraction is parameter expansion, not `sed`), and falls through to the authoritative path whenever the cwd cannot be extracted or the resolver helper is absent.
 
-Second item struck from the spawn-reduction backlog in [`docs/superpowers/specs/2026-07-29-windows-hook-hang-and-python-guard.md`](docs/superpowers/specs/2026-07-29-windows-hook-hang-and-python-guard.md) §8.
+Second item struck from the spawn-reduction backlog in `2026-07-29-windows-hook-hang-and-python-guard.md` (commit 1ac07805) §8.
 
 ## [5.4.0] - 2026-07-29
 
 fix(windows): two independent P0 defects found by field-diagnosing a Windows 11 + CrowdStrike laptop where Claude Code sat "red" for tens of minutes at 100% CPU — an unbounded process-spawning loop in the shared project-root resolver, and a `command -v python3` guard that is a false positive against the Windows App Execution Alias stub, which had been letting every enforcement gate pass unevaluated and silently.
 
-Design + measurements: [`docs/superpowers/specs/2026-07-29-windows-hook-hang-and-python-guard.md`](docs/superpowers/specs/2026-07-29-windows-hook-hang-and-python-guard.md).
+Design + measurements: `2026-07-29-windows-hook-hang-and-python-guard.md` (commit 1ac07805).
 
 ### Fixed
 - **`scripts/_lib/resolve-project-root.sh` no longer spins forever on a Windows path.** The walk-up loop used `d=$(dirname "$d")` and terminated only on `[ "$d" != "/" ]`; on Git Bash `dirname C:` returns `C:`, a fixed point the condition can never satisfy. Reached from the `pre-tool-use` fast short-circuit — which runs *before* the python parse — on every `Bash`/`Edit`/`Write`/`Skill` call, inside an `async: false` hook Claude Code blocks on. Measured 220 ms/iteration on the reporting machine (`sys` 4.637s vs `user` 2.083s — 69% kernel time, the EDR scanning each spawn), so a single stuck hook spawned ~5,400 processes against the 600 s default timeout. This helper is sourced by **9 hooks and 43 scripts**. The same defect was reproducible on macOS for relative inputs (`dirname a` → `.` → `.`), just never reached there.

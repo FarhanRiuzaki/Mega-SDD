@@ -1,8 +1,8 @@
 # Spec — `mega-sdd-extras`: slice-design per-page (revive di plugin terpisah)
 
 **Status:** **APPROVED P0 — owner 2026-09-06** ("APPROVE P0", AskUserQuestion). P0 dibangun di commit yang sama dengan amandemen status ini; P1 = bukti lapangan (§6).
-**Sumber keputusan:** `research/2026-08-23-team-feedback-triage.md` §Item 2 (owner, 2026-08-23) — "buat `mega-sdd-extras` berisi slice-design di marketplace yang sama, revive dari commit sebelum d4f82c7, per-page (bukan batch 4 page), pakai koneksi Figma MCP langsung (bukan PNG)". Urutan di triage: setelah №A (size-weighted) — №A SPEC COMPLETE 7.29.0.
-**Rambu:** Evidence-First rule (2026-09-05) — bukti permintaan = kolega tim adalah pemakai nyata workflow design→code (triage §Item 2; balasan tim `docs/mega-sdd/feedback-response-2026-08-23.md` baris "Figma slicing"). `plugins/mega-sdd/CLAUDE.md §Commands`: "`mega-sdd-extras` gets built only if demand appears" — syaratnya terpenuhi, klausulnya diamandemen di P0.
+**Sumber keputusan:** triage masukan tim §Item 2 (commit 844253c1) (owner, 2026-08-23) — "buat `mega-sdd-extras` berisi slice-design di marketplace yang sama, revive dari commit sebelum d4f82c7, per-page (bukan batch 4 page), pakai koneksi Figma MCP langsung (bukan PNG)". Urutan di triage: setelah №A (size-weighted) — №A SPEC COMPLETE 7.29.0.
+**Rambu:** Evidence-First rule (2026-09-05) — bukti permintaan = kolega tim adalah pemakai nyata workflow design→code (triage §Item 2; balasan tim di commit e13737f7, baris "Figma slicing"). `plugins/mega-sdd/CLAUDE.md §Commands`: "`mega-sdd-extras` gets built only if demand appears" — syaratnya terpenuhi, klausulnya diamandemen di P0.
 **Bahan:** skill lama `skills/slice-design/` @ `d4f82c7^` (44 + 39 baris + `commands/slice.md`), spec asal `2026-08-12-playwright-embed-design.md` D1, catatan penghapusan CHANGELOG 7.4.0 №2, kontrak tool Figma MCP (`get_metadata` / `get_design_context` / `get_variable_defs` / `get_screenshot`), tata letak cache plugin terpasang.
 
 ## 1. Masalah yang dijawab (dari bukti, bukan tebakan)

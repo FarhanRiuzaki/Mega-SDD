@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # L2 — `validate-unit-spec.sh` dag_shape_advisory (spec docs/superpowers/specs/2026-09-16-clinic-levers-design.md
-# §2, 8.3.0, MEASUREMENT PENDING). MEASURED on clinic lite 7.38.0 (research §2f): the plan DAG bound the
+# §2, 8.3.0, MEASUREMENT PENDING). MEASURED on clinic lite 7.38.0 (v8 P3 report §2f, commit 53926a8d): the plan DAG bound the
 # wall once the panel barrier was gone — critical path 5 hops ≈ the whole bolt-stage, hub units, fat
 # units. The validator now NAMES the critical path (depth > 4), hubs (>= 3 direct dependents) and split
 # candidates (> 6 steps or > 4 target files) as an ADVISORY — never an issue / status / exit code; a

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-p2-ground-express-default.sh — v6 P2 proof suite (spec
-# 2026-08-03-v6-express-spine-design.md §P2.7):
+# §P2.7, commit 1be513ef):
 #
 #   1. Chain renders: the default chain has no scan hop — since 9.0 it is the
 #      one pipeline (plan -> execute-bolts); a leftover `spine: classic` is

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # vault_source grammar (v8 P0, 2026-09-10 — spec 2026-09-10-v8-fused-pipeline-design.md
-# Appendix B.3 + census research/2026-09-10-v8-consumer-census.md "Koreksi"):
+# Appendix B.3 + census commit 9a3ae657 "Koreksi"):
 # ONE canonical unit form `<doc>.md#<anchor>` documented in unit-schema.md and
 # reported — ADVISORY ONLY — by validate-unit-spec.sh as the top-level state key
 # `vault_source_advisory`. Field + fixture units carry four shapes today, so the

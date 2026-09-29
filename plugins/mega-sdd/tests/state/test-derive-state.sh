@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# test-derive-state.sh — P1 state engine (v4.93.0, spec 2026-07-19-v5-execution-spec.md
-# decision 8; research/2026-07-19-v5-architecture-research.md §3).
+# test-derive-state.sh — P1 state engine (v4.93.0, v5 execution spec, commit 45c6039b,
+# decision 8; v5 research §3, commit 7724ec12).
 #
 # Pins the ONE-probe-library contract:
 #   1. derive-state.sh produces the right `derived.position` + `proposed_next`

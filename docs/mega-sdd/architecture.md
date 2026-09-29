@@ -1,6 +1,6 @@
 # Mega-SDD Architecture Overview
 
-This document is the durable architecture record. For implementation details, see `plugins/mega-sdd/` directly. For design rationale, see `docs/superpowers/specs/2026-05-13-mega-sdd-revamp-design.md`; for the current (9.0) shape and why it is this small, see `docs/superpowers/specs/2026-09-27-v9-simplification-design.md`.
+This document is the durable architecture record. For implementation details, see `plugins/mega-sdd/` directly. For the original (1.0) design rationale, see commit b882ff85; for the current (9.0) shape and why it is this small, see `docs/superpowers/specs/2026-09-27-v9-simplification-design.md`.
 
 ## The router in front
 
@@ -54,7 +54,7 @@ Each layer has a different audience, different anti-hallucination rails, and dif
 
 ## Superpowers integration
 
-Bolt phase runs inline in one context and closes with one blind review of the whole range (`skills/execute-bolts/references/inline-run.md`; the per-unit agents were removed in P3). [superpowers](https://github.com/obra/superpowers) TDD skills are an optional technique when installed (`skills/execute-bolts/references/superpowers-bridge.md`).
+Bolt phase runs inline in one context and closes with one blind review of the whole range (`skills/execute-bolts/references/inline-run.md`; the per-unit agents were removed in P3). [superpowers](https://github.com/obra/superpowers) TDD skills are an optional technique when installed (`skills/execute-bolts/references/inline-run.md` §(c)).
 
 The pipeline is self-contained: the execution discipline lives in `skills/execute-bolts/` (SKILL.md + `references/inline-run.md`), so no superpowers install (and, since v7.4.0, no vendored copy) is required.
 

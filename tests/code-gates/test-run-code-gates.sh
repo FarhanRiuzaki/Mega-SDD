@@ -21,7 +21,6 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 RCG="${ROOT}/plugins/mega-sdd/scripts/run-code-gates.sh"
 SK="${ROOT}/plugins/mega-sdd/skills/execute-bolts/SKILL.md"
 CG="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/code-gates.md"
-SB="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md"
 [ -f "$RCG" ] || { echo "missing run-code-gates.sh"; exit 1; }
 
 FAILED=0
@@ -275,7 +274,7 @@ grep -qF '${CLAUDE_PLUGIN_ROOT}/scripts/run-code-gates.sh' "$SK" && ok "SKILL.md
 grep -q 'run-code-gates.sh' "$CG" && ok "code-gates.md documents the wrapper" || fail "code-gates.md missing wrapper"
 grep -qF 'not_run' "$CG" && ok "code-gates.md documents the short-circuit record" || fail "not_run contract missing"
 if grep -q 'resolve-plugin-root.sh' "$CG"; then fail "the retired per-bolt resolver block survives in code-gates.md"; else ok "per-bolt resolver block retired from code-gates.md"; fi
-grep -q 'ONE call: run-code-gates.sh' "$SB" && ok "bridge diagram: L0 is one call" || fail "bridge diagram not updated"
+grep -qF 'as ONE call — `scripts/run-code-gates.sh`' "$CG" && ok "code-gates.md: L0 is one call" || fail "code-gates.md lost the one-call rule"
 grep -qF 'gates 3 and 5 always run' "$CG" && ok "always-run pair pinned in the wrapper contract" || fail "always-run pair not in wrapper contract"
 
 note "== 9. v8 P2 D3: a DETECTED prettier pair is scoped to the bolt's touched files =="

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# W4 (spec 2026-07-19-w-batch-script-derive.md): the B1 pre-flight BASELINE
+# W4 (W-batch spec, commit dc2f9486): the B1 pre-flight BASELINE
 # preflight.json is hook-guarded like postflight.json. scan_unit gives a present
 # sha/signature snapshot PRECEDENCE over commit evidence, so a forged baseline
 # laundered a DO_NOT_MODIFY/SIGNATURE violation past B1 — the write guard is the

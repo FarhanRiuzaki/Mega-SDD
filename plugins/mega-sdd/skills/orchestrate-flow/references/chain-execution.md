@@ -129,9 +129,9 @@ next_action: "Pass the PRD path or --kb=<kb-dir> (run extract-intelligence first
 
 ## First-run pre-flight (execute-bolts)
 
-The first-class agents ship in the plugin tree, so there is no
-superpowers/vendored dependency to probe — nothing halts here. A broken Agent
-tool surfaces at dispatch time (superpowers-bridge.md §Dispatch order).
+The default inline run dispatches no implementer agent, so there is no
+superpowers/vendored dependency to probe — nothing halts here (superpowers is an
+optional technique: execute-bolts `references/inline-run.md` §(c)).
 
 ## Auto-integrated diagnostics
 
@@ -172,8 +172,7 @@ After `execute-bolts --all` batch completes (or with retried halts), orchestrate
 ✓ execute-bolts: 20/20 done (or 18/20 + 2 halts resolved via propose-and-confirm)
 ▶ Phase 5.5/6: detect-drift (auto-gate, hybrid mode — DEFAULT-ON)
   Scope: <scope_id> — scope-filtered scan
-  Comparing: bolt postflight snapshots vs vault (shared snapshot machinery per plugins/mega-sdd/references/shared-snapshot-schema.md)
-  Speed: 4s (vs 28s full re-scan; snapshot reuse saves 6x)
+  Comparing: live code vs vault (fresh scan; no snapshot reuse)
 
 ⚠️ Drift findings: N (X CRITICAL, Y HIGH, Z MEDIUM, W LOW)
 ```
@@ -195,7 +194,7 @@ After `execute-bolts --all` batch completes (or with retried halts), orchestrate
 
 ### On-demand drift (separate from auto-gate)
 
-`detect-drift` standalone (no chain context) → fresh full scan; ignores bolt snapshots. The auto-gate path uses snapshot reuse per `plugins/mega-sdd/references/shared-snapshot-schema.md`.
+`detect-drift` standalone (no chain context) → fresh full scan. The auto-gate scans fresh too, filtered to the vault scope.
 
 ## Final summary appendix (--deep)
 

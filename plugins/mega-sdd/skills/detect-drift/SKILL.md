@@ -97,7 +97,7 @@ Heuristic detection, not static analysis — it greps and reads, no AST or type-
 
 - **`references/report-format.md`** — the full `DRIFT-REPORT.md` template, section ordering, per-finding examples, the non-interactive vault write-back protocol, and the `vault.json` reconciliation boundary.
 - **`references/constitution-drift.md`** — when `<vault>/constitution.md` exists, validate code against constitution clauses (§A–§F), the `constitution_drift_detected` halt, and the report's `## Constitution Findings` section.
-- **`references/auto-and-chain.md`** — `--auto` behavior table, `drift_framework_mismatch` blocker YAML, handoff YAML emission, snapshot reuse, suggested-next-actions block, and scope-aware scanning.
+- **`references/auto-and-chain.md`** — `--auto` behavior table, `drift_framework_mismatch` blocker YAML, handoff YAML emission, suggested-next-actions block, and scope-aware scanning.
 
 ## Related skills
 

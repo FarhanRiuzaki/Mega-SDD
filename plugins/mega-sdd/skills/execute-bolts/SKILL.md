@@ -125,7 +125,7 @@ Sources: each unit's `acceptance.json` (criterion → test → verdict); the del
 
 **Every implement unit:**
 - `references/inline-run.md` — the default run (no `--agents`): up-front bind, one-context execution, the one-review close.
-- `references/superpowers-bridge.md` — `--agents`: dispatch order, the review-panel per-unit flow, whitelist enforcement; every run: §bolt-report.md schema.
+- `references/superpowers-bridge.md` — whitelist enforcement and the canonical §bolt-report.md schema.
 - `references/code-gates.md` — L0 deterministic floor: gate order, halt YAMLs, blocking-vs-advisory split, `code_gates:` config.
 - `references/hard-rule-scan.md` — Hard Rule pre/post-flight: grammars, snapshot formats, per-rule checks, B1 evidence contract, `hard_rule_*` / `verify_unit_writable` halt YAMLs. (Skippable when NO batched unit has `## Hard rules`.)
 - `references/bolt-contract.md` — bolt failure modes, commit trailers + the canonical blocker YAML envelope.

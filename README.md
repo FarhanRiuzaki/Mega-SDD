@@ -323,7 +323,7 @@ flowchart TB
 **Legend**:
 - 🟦 **surface, router & phases** · 🟨 **the blind review** (one reviewer per run; guarded) · 🟩 **artefacts & result** · 🟥 **checks & enforcement** (delivery check on every lane; hooks + validators on guarded)
 - **Solid arrows** = flow · **Dotted arrows** = cross-cutting (gate blocks, the sync loop)
-- Detail per phase: [plugin README](plugins/mega-sdd/README.md) + [architecture deep dive](#architecture-deep-dive) below.
+- Detail per phase: [plugin README](plugins/mega-sdd/README.md) + [architecture overview](docs/mega-sdd/architecture.md) + [architecture deep dive](#architecture-deep-dive) below.
 
 On the guarded lane every phase is dispatched through the Skill tool, so the PreToolUse gates fire. The chain is derived from probed repo state by zero-token scripts, and predictive preflight runs before each skill. The chain halts only on real issues: a CONFLICT, a P1 business OQ, a Hard Rule violation, or an invalid handoff. Otherwise it auto-continues.
 
@@ -483,15 +483,14 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 │   └── CLAUDE.md                           # AI-agent contributor guidelines
 ├── plugins/mega-sdd-extras/                # optional companion plugin (/mega-sdd-extras:slice)
 ├── benchmarks/                             # vanilla-vs-mega-sdd harness, runbooks, results, complexity budget
-├── research/                               # measured reports + decision records
-├── docs/superpowers/{specs,audits}/        # design specs + honest audits
+├── research/                               # the xs benchmark PRD
+├── docs/superpowers/specs/                 # design specs of live mechanisms
 ├── tests/
 │   ├── scenarios/                          # USER-FACING walkthroughs (scenario-0 … scenario-12, no 9 + sample PRDs)
 │   ├── lanes/  delivery/  v9/              # router, delivery-check, 9.0 exit criteria
 │   ├── skill-triggering/                   # per-skill trigger fixtures
-│   ├── integration/                        # E2E pipeline tests
 │   └── pack-kit/  per-stack-packs/         # framework-pack linter + coverage gates
-├── CHANGELOG.md                            # full version history
+├── CHANGELOG.md                            # version history (pre-v5.2.3: git history)
 ├── CONTRIBUTING.md
 └── LICENSE
 ```

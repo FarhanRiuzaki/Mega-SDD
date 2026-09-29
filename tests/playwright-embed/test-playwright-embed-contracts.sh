@@ -76,7 +76,7 @@ n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
 # 7.29.1 re-baseline (RECORDED — leftover sweep): the dead "memory review" side lane
 # (lane removed v7.3.0) left the anchor and the emit verb gained its |html|summary
 # args: 3846 → 3844. Still a shrink; the 4030 cap stands.
-# 8.4.0 re-baseline (spec 2026-09-16-doc-audit-debt-gate-design.md §3): the Hard-gate line now carries the lite-lane
+# 8.4.0 re-baseline (debt-gate spec §3, commit 840488d5): the Hard-gate line now carries the lite-lane
 # qualifier (binding_conflict at execute-bolts dispatch) — +125 B, still under the 4030 cap.
 # 2026-09-27 re-baseline (commit d447a6d2): the tier-L row names the lane router
 # (route-lane.sh → direct / assisted / guarded) — +13 B, still under the 4030 cap.

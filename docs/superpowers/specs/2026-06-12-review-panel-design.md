@@ -1,6 +1,6 @@
 # Review Panel — parallel blind reviewer lenses for execute-bolts (Phase 1)
 
-**Date:** 2026-06-12 · **Research:** `research/2026-06-12-review-panel-quality-security-standards.md`
+**Date:** 2026-06-12 · **Research:** commit d9c43248
 **Scope:** Phase 1 of 3 — the parallel LLM lens panel. Phase 2 (deterministic toolchain floor: lint/format in-loop, semgrep, gitleaks, dep-audit) and Phase 3 (pack `## Security idioms`) are follow-ups.
 
 ## Problem
@@ -67,7 +67,7 @@ Edit: `superpowers-bridge.md` (flow), `execute-bolts/SKILL.md` (flag + routing, 
 - Panel agents exist, read-only, no forbidden frontmatter keys, adversarial + evidence-disciplined (pin tests).
 - superpowers-bridge describes parallel blind dispatch + controller merge; depth-1 rationale intact.
 - Risk tiers + override chain documented in review-panel.md and project-config.md.
-- `claude plugin validate .` passes; `tests/review-panel/run-all.sh` green.
+- `claude plugin validate .` passes; `tests/review-panel/*` green.
 
 ## Phase 2 addendum — L0 deterministic floor (implemented same day)
 

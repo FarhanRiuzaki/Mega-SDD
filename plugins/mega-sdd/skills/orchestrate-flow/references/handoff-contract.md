@@ -42,10 +42,10 @@ handoff:
     duration_ms: <int>
     items_processed: <int>              # OQs / claims / units / etc — context-dependent
     items_blocked: <int>                # number that require human input
-  checkpoints:                          # checkpoint protocol; optional
-    latest_step_id: <string>            # e.g., "U-003" for execute-bolts (per bolt), "module-2" for extract-intelligence (per module PRD)
-    checkpoint_file: <absolute-path>    # <vault>/.internal/checkpoints/<timestamp>-<skill>-<step>.jsonl (canonical per paths.md)
-    resume_command: <string>            # e.g., "execute-bolts --resume-from=U-004"
+  checkpoints:                          # optional, reserved — no skill emits it (type-checked when present)
+    latest_step_id: <string>
+    checkpoint_file: <absolute-path>
+    resume_command: <string>
   constitution:                         # when constitution.md exists
     constitution_hash: <sha256>         # of <vault>/constitution.md at handoff emission time
     clauses_referenced: []              # clause IDs cited in this skill's output (e.g., ["A-001", "B-002"])
@@ -154,9 +154,9 @@ TYPE: array\<object\> — **each entry is the body of ONE `blocker:` envelope** 
 
 TYPE: object — skill-specific metric fields (e.g., `duration_ms`, `items_processed`, `items_blocked`). Consult per-skill section for declared metric field names.
 
-### `checkpoints:` (CONDITIONAL — if skill emits resume-capable checkpoints)
+### `checkpoints:` (OPTIONAL — reserved)
 
-TYPE: object — `{ latest_step_id: string, checkpoint_file: string (absolute path), resume_command: string }`. Required when skill ran to a checkpoint boundary and supports `--resume-from` (declared — no skill emits checkpoints at HEAD).
+TYPE: object — `{ latest_step_id: string, checkpoint_file: string (absolute path), resume_command: string }`. No skill emits it and none accepts `--resume-from`; the validator type-checks it only when present.
 
 ### `constitution:` (CONDITIONAL — if vault has constitution.md)
 
@@ -290,16 +290,7 @@ This gives the user real-time visibility without polluting chat with verbose per
 - If the cursor lands on a previously-halted phase → user must have resolved the blocker manually (else the same halt fires again, which is correct safety behavior)
 - If user wants to RE-RUN a previously-completed phase → use `orchestrate-flow --from=<phase>` explicit override
 
-This keeps orchestrator stateless (per the spec's "no state file" decision).
-
-**Two-level resume — no contradiction with per-skill checkpoints.** "No state file" applies to the **chain level** only. There are two distinct, non-conflicting mechanisms at two granularities:
-
-| Level | Granularity | Mechanism | Owner |
-|---|---|---|---|
-| Chain | *which phase* to resume | CWD / artifact inspection (`routing-rules.md`) — reads NO persisted chain-state file | orchestrate-flow |
-| Within a phase | *which sub-step* to resume | the phase skill's own checkpoint cursor (`checkpoint-protocol.md`, `<vault>/.internal/checkpoints/`) via `--resume-from=<step-id>` (declared — no skill emits checkpoints at HEAD) | the phase skill (e.g. extract-intelligence) |
-
-Precedence is unambiguous because the levels never overlap: CWD inspection first selects the phase. If that phase's artifacts already exist (completed), the orchestrator **skips it entirely** and its stale checkpoints are irrelevant. If the phase is incomplete, the orchestrator **re-enters it** and the skill's checkpoint resumes mid-execution from its cursor. A checkpoint never overrides phase selection, and phase selection never reaches into a skill's sub-steps.
+This keeps orchestrator stateless (per the spec's "no state file" decision). Resume is phase-level only: no skill writes a sub-step checkpoint or accepts `--resume-from`.
 
 ---
 

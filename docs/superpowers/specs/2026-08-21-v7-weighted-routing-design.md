@@ -1,7 +1,7 @@
 # v7 Fase 1 — Weighted Routing (S/M/L) Design
 
 **Tanggal:** 2026-08-21 · **Status:** DESIGN — menunggu approval gate Fase 1
-**Basis:** `research/2026-08-21-v7-diet-audit.md` (baseline §4) + `research/2026-08-21-v7-gate0-decision.md` (arahan §3–§4)
+**Basis:** v7 diet audit (baseline §4) + gate-0 decision (arahan §3–§4), keduanya commit 8c30dc2e
 **Prinsip:** tier gate = **mekanisme** (marker + short-circuit shell), bukan kalimat prose. Default saat ragu = **S** (kebalikan sekarang). Moat tidak disentuh: semua gate tetap utuh saat chain aktif.
 
 ---

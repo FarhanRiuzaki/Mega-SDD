@@ -1,6 +1,6 @@
 # Emission Engine — the shared spine behind every emitted doc
 
-> **The shared emission contract** (spec `docs/superpowers/specs/2026-07-19-v5-execution-spec.md` P3 row; research §4). Extracted from `emit-fsd`'s proven spine so that `emit-prd` / `emit-sit` consume the SAME machinery instead of reinventing it. This doc is **doc-agnostic**: everything FSD-specific stays in the FSD doc-pack (`skills/emit-fsd/SKILL.md` + its `references/`), which BINDS this spine to concrete FSD rules. The engine describes the invariant steps; a doc-pack supplies the variables.
+> **The shared emission contract** (v5 execution spec P3 row, commit 45c6039b; research §4). Extracted from `emit-fsd`'s proven spine so that `emit-prd` / `emit-sit` consume the SAME machinery instead of reinventing it. This doc is **doc-agnostic**: everything FSD-specific stays in the FSD doc-pack (`skills/emit-fsd/SKILL.md` + its `references/`), which BINDS this spine to concrete FSD rules. The engine describes the invariant steps; a doc-pack supplies the variables.
 >
 > **Invariant-3 guard (binding):** factoring this engine out changed FSD emission behavior by ZERO bytes — pinned permanently by `tests/derived-artifacts/test-p3-emission-parity.sh` (output byte-identical with and without `--doc=fsd`, against the pre-engine baseline flow).
 

@@ -202,4 +202,4 @@ mutability-tier producer: `tier_distribution`, `locked_claims_touched`,
 - `scripts/derive-site-census.sh` / `scripts/derive-prd-counts.sh` — WRITE/CALL site inventory + script-derived frontmatter counts.
 - `plugins/mega-sdd/references/legacy-idioms/rpg-as400.md` — extraction-side idiom sheet for the rpg/dds stacks (READ ALSO line in dispatches).
 - `scripts/kb-leak-scan.sh` — tech-agnostic vocabulary advisory.
-- Design specs: `docs/superpowers/specs/2026-08-26-extract-revamp-contract-design.md` (current), `docs/superpowers/specs/2026-06-15-extract-intelligence-tech-agnostic.md` (historical, wave era).
+- Design specs: `docs/superpowers/specs/2026-08-26-extract-revamp-contract-design.md` (current), the tech-agnostic spec at commit 73fb4601 (historical, wave era).

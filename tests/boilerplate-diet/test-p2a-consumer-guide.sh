@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-p2a-consumer-guide.sh — batch2 P2a (spec 2026-07-19-batch2-derive-and-diet.md):
+# test-p2a-consumer-guide.sh — batch2 P2a (batch2 spec, commit a950422c):
 # the 00-index generic consumer spine ships as a STATIC guide installed by script —
 # zero model output tokens, byte-identical across vaults.
 #

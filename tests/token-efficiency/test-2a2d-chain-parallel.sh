@@ -95,8 +95,8 @@ if grep -qF '(the default).0+' "$PC"; then fail "garbled '.0+ per audit' fragmen
 grep -qF 'max-parallel ≤ 5' "$PC" && ok "soft-warn threshold 5 intact" || fail "soft-warn threshold drifted"
 grep -qF -- '`--max-parallel` > 8 → halt' "$EX" && ok "hard cap 8 halt intact" || fail "hard cap halt lost"
 # Sweep the RUNTIME-LOADED surfaces (skills/ + commands/ + top-level references/).
-# The dated audit RECORD (now archived at
-# docs/superpowers/audits/2026-06-05-audit-md-rounds-1-3-ARCHIVED.md) is point-in-time
+# The dated audit RECORD (archived by commit e253d7cd, since removed from the
+# tree; git history keeps it) is point-in-time
 # by design, never retro-edited when behavior changes (specs get amendments; records stand).
 if grep -rn 'max-parallel' "${ROOT}/plugins/mega-sdd/skills" "${ROOT}/plugins/mega-sdd/commands" "${ROOT}/plugins/mega-sdd/references" --include='*.md' 2>/dev/null | grep -q 'default 3'; then
   fail "a 'default 3' max-parallel mention survives on a runtime surface"

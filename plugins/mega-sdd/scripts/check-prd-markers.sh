@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # check-prd-markers.sh — deterministic marker-preservation check for emit-prd
-# (P5, spec docs/superpowers/specs/2026-07-19-v5-execution-spec.md P5 row;
+# (P5, v5 execution spec P5 row, commit 45c6039b;
 # research §4 "emit-prd": [VERIFIED]/[INFERRED]/[OPEN] markers carried VERBATIM
 # from KB claims into the PRD — an [INFERRED] claim may NOT be presented as
 # fact).

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # build-citation-map.sh — W3: the citation map + every in-document sha256 stamp
-# is SCRIPT-COMPUTED from file bytes (spec 2026-07-19-w-batch-script-derive.md).
+# is SCRIPT-COMPUTED from file bytes (W-batch spec, commit dc2f9486).
 #
 # The model emits FSD.md with the LITERAL placeholder `(sha256: pending)` wherever
 # a stamp belongs and never writes a hash character. This script then:

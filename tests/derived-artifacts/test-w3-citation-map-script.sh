@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-w3-citation-map-script.sh — W-batch W3 (spec 2026-07-19-w-batch-script-derive.md):
+# test-w3-citation-map-script.sh — W-batch W3 (W-batch spec, commit dc2f9486):
 # the citation map + every in-document sha256 stamp is SCRIPT-COMPUTED.
 #
 #   1  build-citation-map.sh exit 1 + UNRESOLVED line for a fabricated path; map

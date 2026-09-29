@@ -2,7 +2,7 @@
 # test-unit-granularity.sh — 7.20.0 (spec 2026-09-01-unit-granularity-coarsening.md).
 #
 # Team ask "1 subagent per sprint (5 related units)" was REJECTED on the record
-# (depth-1 runtime limit — research/2026-09-01-sprint-subagent-granularity.md);
+# (depth-1 runtime limit — research commit 22164c4b);
 # the shipped lever is UPSTREAM: coarser units + a cohesion merge advisory.
 # Execution stays per-unit forever. Pins:
 #   A  --max-complexity gains `large` (story-sized, 600 LOC / 8 files)
@@ -52,6 +52,6 @@ for c in "same \`module:\`" "task_type: create|extend" "target_files\` ≤ 2" "n
 done
 grep -q "never a halt, never an auto-merge" "$DP" && ok "E3 advisory-forever clause" || bad "E3 never-halt/never-auto-merge missing"
 grep -q "merge_candidate: U-00X..U-00Z" "$DP" && ok "E4 emission format pinned" || bad "E4 emission format missing"
-grep -q "2026-09-01-sprint-subagent-granularity" "$DP" && ok "E5 research provenance cited" || bad "E5 research citation missing"
+grep -q "commit 22164c4b" "$DP" && ok "E5 research provenance cited (commit pointer)" || bad "E5 research citation missing"
 
 echo; [ $err -eq 0 ] && { echo "test-unit-granularity: ALL PASS"; exit 0; } || { echo "test-unit-granularity: FAILED"; exit 1; }

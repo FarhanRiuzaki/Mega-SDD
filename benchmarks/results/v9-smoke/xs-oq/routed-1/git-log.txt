@@ -1,5 +1,0 @@
-f0b2a92 2026-09-27T18:42:19+07:00 fix: normalize CRLF in contact input so server length limit matches browser maxLength
-b4777ed 2026-09-27T18:40:58+07:00 feat: company profile — Beranda, Tentang Kami, Kontak form (F-U-001)
-f20f856 2026-09-27T18:37:53+07:00 fixture: xs PRD with one open business question (assisted-lane smoke)
-ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
-da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

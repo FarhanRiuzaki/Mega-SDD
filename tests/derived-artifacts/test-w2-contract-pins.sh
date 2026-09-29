@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-w2-contract-pins.sh — W-batch W2 (spec 2026-07-19-w-batch-script-derive.md):
+# test-w2-contract-pins.sh — W-batch W2 (W-batch spec, commit dc2f9486):
 # binding.json is script-derived from binding.md — doc/skill contract pins.
 #
 # 9.0 P1 (spec 2026-09-27-v9-simplification-design.md): bind-codebase is gone.

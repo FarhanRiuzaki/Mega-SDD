@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # probe-tool.sh — owns install-deps' bounded execution-probe ladder (audit
-# Phase-2b spec 2026-08-11-audit-phase2b-scripts-and-owners.md §S2).
+# Phase-2b spec §S2, commit 83e0b624).
 #
 # Source of truth for the ladder's WHY: skills/install-deps/SKILL.md Steps 2/6
 # + rails 12-13, and references/os-detection.md. This script makes the

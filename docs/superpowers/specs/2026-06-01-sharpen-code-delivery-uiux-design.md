@@ -1,6 +1,6 @@
 # Spec — Sharpen Code Delivery: Decomposition Reasoning + UI/UX Quality (tech-agnostic)
 
-> **Amendment (2026-07-02, god-review stage 5 — grounding: `research/2026-07-02-god-review-generate-units.md`):** the unit-stage gate mechanics are hardened so the blocking claims hold deterministically:
+> **Amendment (2026-07-02, god-review stage 5 — grounding: commit ab76a035):** the unit-stage gate mechanics are hardened so the blocking claims hold deterministically:
 > (1) **Project-wide unit-spec state** — `.unit-spec-state.json` was a single slot overwritten per unit write (last-writer-wins: only the LAST-written unit was ever gated; a verify+HIGH false-green unit sailed through whenever a clean sibling saved after it). `validate-unit-spec.sh` now merges EVERY unit into the state on every run; `--file-path` selects the focal unit for stdout/exit only.
 > (2) **Gate-time re-derivation** — the execute-bolts PreToolUse gate re-runs validate-unit-spec (project mode) + validate-flow-coverage + validate-sibling-consistency before reading their states, closing the Bash-written-unit stale-PASS hole and the async-PostToolUse TOCTOU.
 > (3) **State protection** — all quality-gate state files join the anti-self-bypass PROTECTED list (Bash) and the Write/Edit deny (a single `rm`/forged-PASS Write used to clear any gate except the moat).
@@ -11,7 +11,7 @@
 
 **Date:** 2026-06-01
 **Status:** Approved (design); implementation in progress on `feat/sharpen-code-delivery-uiux`
-**Traces to:** `docs/superpowers/audits/2026-06-01-code-delivery-uiux-deep-audit.md` (structural audit) + the `new-tradefinance-import` Phase-2 real-run evidence (fixture).
+**Traces to:** the code-delivery UI/UX deep audit (structural audit, commit dd416ce2) + the `new-tradefinance-import` Phase-2 real-run evidence (fixture).
 **Author partner:** Farhan Riuzaki
 
 ---

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-render-html.sh — 7.16.0 (research + spec 2026-08-31 render-html standard).
+# test-render-html.sh — 7.16.0 (research commit e12363d7 + spec 2026-08-31 render-html standard).
 #
 # The renderer is DETERMINISTIC md→HTML wrapping: md stays the only ground
 # truth, the HTML re-renders it client-side (vendored marked+mermaid). Pins:

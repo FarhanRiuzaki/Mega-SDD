@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# v7 Fase 7 — PRODUCTION-PATH spawn ceilings (spec: research/2026-08-23-v7-fase7-spawn-audit.md §0-§1).
+# v7 Fase 7 — PRODUCTION-PATH spawn ceilings (spec: Fase 7 spawn audit §0-§1, commit 2325d0eb).
 #
 # THE LESSON THIS FILE ENCODES (Fase-7 audit, user-mandated): a spawn pin must
 # measure the PRODUCTION dispatch path, not the hook body called directly.

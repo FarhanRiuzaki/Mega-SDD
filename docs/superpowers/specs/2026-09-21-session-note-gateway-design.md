@@ -155,7 +155,7 @@ Any gateway endpoint, storage or query/summary layer (their build, on data they 
 
 ## 9. Implementation notes (8.7.0)
 
-Plan: `docs/superpowers/plans/2026-09-21-session-note-gateway.md`. Deltas from the text above, all deliberate:
+Plan: commit 8bf977ae. Deltas from the text above, all deliberate:
 
 - **Wiring (§3.2):** the note is the second HOOK of the single SessionStart matcher group (`SessionStart[0].hooks[1]`), not a second group — one matcher, and `tests/weighted-routing/test-spawn-ceilings.sh` reads `SessionStart[0].hooks[0]`, which must stay `session-start`. It carries a `statusMessage` like every sync hook (`tests/delta-hygiene/test-a1-a4.sh` A3).
 - **Vanilla = unset OR empty** `ANTHROPIC_BASE_URL` (arm a1c).

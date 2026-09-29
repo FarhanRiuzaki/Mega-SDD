@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-install-deps-diet.sh — pins spec 2026-08-17-token-lard-cuts-p1 D3:
+# test-install-deps-diet.sh — pins token-lard-cuts P1 D3 (commit bed0e23a):
 # install-deps SKILL.md dieted to a router; probe/verify contract relocated to
 # references/audit-and-verify.md WITHOUT content loss, and the sharpest verdict
 # carve-outs stay inline in the body. Run </dev/null.

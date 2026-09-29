@@ -70,7 +70,6 @@ Every writer skill resolves output paths via this protocol:
 │   │   ├── .memory/                               # Vault-scope PIPELINE state (name is historical)
 │   │   │   └── bolt-outcomes.json                 # per-unit completion — read by query-graph --modules
 │   │   └── .internal/                             # Vault-internal state
-│   │       ├── checkpoints/<timestamp>-<skill>-<step>.jsonl   # resumable checkpoints
 │   ├── knowledge-base/                            # Legacy extraction (extract-intelligence): census.json + modules/*.prd.md + README (PRD-kontrak; the legacy numbered tree is still readable)
 │   │   ├── README.md
 │   │   ├── 00-overview/, 10-domains/, etc.
@@ -149,7 +148,6 @@ ONE file `context.md` (marker `vault_layout: 3` in its frontmatter + vault.json)
 | `plan` | units/ | `<vault>/units/` | `<vault>-bound/units/` (or `<vault>/units/`) |
 | `execute-bolts` | bolts/ | `<vault>/bolts/U-*/` | `<vault>/bolts/U-*/` |
 | `execute-bolts` | lens-inputs/ | `<vault>/lens-inputs/U-*/` | n/a |
-| `execute-bolts` | checkpoints | `<vault>/.internal/checkpoints/` | `<vault>/.mega-sdd/checkpoints/` |
 | `orchestrate-flow` | model-tiers config | `.mega-sdd/config.yaml` (per-project `model_tiers:` section) | (no legacy back-compat) |
 | `emit-agents-md` | AGENTS.md | `<repo-root>/AGENTS.md` (UNCHANGED — interop file) | same |
 | `slice-design` (plugin `mega-sdd-extras`, separate install — writes NOTHING else under `.mega-sdd/`) | slice-report.md | `.mega-sdd/slices/<slug>/slice-report.md` | same path the former core skill used |
@@ -267,7 +265,7 @@ For project repo `.gitignore`. Two groups with different standing — the first 
 .mega-sdd/codebase/.dirty-paths.jsonl
 
 # --- per-project decision (uncomment what you want untracked) ---
-# .mega-sdd/vaults/*/.internal/          # checkpoints (stale symbol-graph.json caches from <5.29.0 are inert — safe to delete)
+# .mega-sdd/vaults/*/.internal/          # vault-internal state (stale symbol-graph.json caches from <5.29.0 are inert — safe to delete)
 # .mega-sdd/vaults/*/.memory/            # per-vault ephemeral memory
 # .mega-sdd/vaults/*/lens-inputs/        # review-lens inputs (derived per bolt; regenerable)
 ```

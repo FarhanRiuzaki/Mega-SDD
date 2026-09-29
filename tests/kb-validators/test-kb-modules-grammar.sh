@@ -7,7 +7,7 @@
 # kb_* validators + run-analyze discovery stayed on the legacy tree — every
 # post-7.6 KB SKIP'd "no applicable files" while the aggregate reported PASS
 # (field-proven on the Host-AS400 KB: real marker-count drift + 8 wrong claims
-# behind a green report; research/2026-09-05-megasdd-skillgap-analysis.md §G).
+# behind a green report; skill-gap analysis §G, commit 8b3de03c).
 # These pins hold the migration: module grammar validated, legacy grammar
 # untouched, discovery sees BOTH layouts.
 

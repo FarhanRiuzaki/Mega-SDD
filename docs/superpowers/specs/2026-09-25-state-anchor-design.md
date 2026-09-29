@@ -3,7 +3,7 @@
 **Status:** DESIGN v3 (three adversarial review rounds) — **Slices 1 and 2 IMPLEMENTED in 8.8.0** (local commit, not pushed). The owner answered the Fase-1 gate with "gas lanjut fase 2" without resolving §0, so every **[ASSUMED]** default below was built; §18 and §19 record where the build differs from this text and why. Still open before the drift can be called fixed: the D33 acceptance run and the D32 Windows check (release gates of this spec).
 
 This is Fase 1 of the owner's three-phase program: Fase 0 audit → Fase 1 design → Fase 2 implementation + proof.
-- Evidence base: `research/2026-09-25-state-anchor-audit.md` (Fase 0).
+- Evidence base: the Fase 0 state-anchor audit, commit 51ed784d.
 - The Fase-0 gate questions Q1–Q10 are still unanswered. The owner said "gas lanjut fase 1", so every decision that depends on them is taken conservatively, marked **[ASSUMED — owner confirm]**, and collected in §0.
 - The cost numbers in §10 were measured on a scratch prototype of Slice 1 plus the cost-relevant part of the Slice-2 gate leg. That prototype predates the two review rounds, so cells that changed since carry a DERIVED label, and §10 lists which decision flips force a re-measure in Fase 2.
 
@@ -149,7 +149,7 @@ Fase 1 adds for classic units only an unreachable-SHA DENY at in-run dispatch. A
 
 The brief permits the check at 0 added process. Two standing owner records point toward waiting for data:
 - `docs/gateway-contract.md:78` defers a per-prompt delta line until gateway data shows the gap;
-- the 2026-08-23 decision that restored UPS said it should hold "HANYA echo tag" (`research/2026-08-23-v7-gate7b-trace-restore.md`; `hooks/user-prompt-submit:12-14`).
+- the 2026-08-23 decision that restored UPS said it should hold "HANYA echo tag" (commit 844253c1; `hooks/user-prompt-submit:12-14`).
 
 Building the line supersedes both for one optional line. **[ASSUMED: build]**
 
@@ -270,7 +270,7 @@ The lenient variant replaces the last rung with OQ + the `ANCHOR STALE` label. T
 
 **D31. Sequencing.** Default: ship Slice 1 directly. Alternative: ship Slice 1a first (header + rule line, 0 exec), run the acceptance measurement (D33), and build the engine only if the rule line changes behaviour. The old notice drew 0 model reactions in 11 appearances, so this is the cheaper evidence-first path. **[ASSUMED: Slice 1]**
 
-**D32. Windows office verification is a release gate for Slices 1–2.** Measure on an office laptop:
+**D32. Windows office verification is a release gate for Slices 1–2.** (Permanently waived by the owner on 2026-09-29; the one-shot script is in commit 51ed784d.) Measure on an office laptop:
 - real process counts and wall time;
 - `$(exec git …)` = 1 process on MSYS;
 - MSYS conversion of `:(glob)` pathspecs and `a..b`;
@@ -1106,7 +1106,7 @@ H4 (the `vaults[0]` digest) and H5 (a stale `state.json` read after a python fai
 
 **Acceptance and release gates:**
 - **Slice-1 acceptance:** per D33. The playground's FE per-unit stamp must be honest; it must not be a ctl-C2-green state, which Slice 1 renders as a hint.
-- **Windows office verification:** D32, a release gate for Slices 1–2.
+- **Windows office verification:** D32, a release gate for Slices 1–2 (permanently waived 2026-09-29).
 
 ## 14. Risks
 

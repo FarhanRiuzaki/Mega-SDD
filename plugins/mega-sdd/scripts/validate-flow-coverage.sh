@@ -2,7 +2,7 @@
 # validate-flow-coverage.sh — code-delivery sharpening, Task A (decomposition).
 #
 # Per docs/superpowers/specs/2026-06-01-sharpen-code-delivery-uiux-design.md §3 Slice A
-# and plan docs/superpowers/plans/2026-06-01-sharpen-code-delivery-uiux.md §Task A.
+# and its implementation plan §Task A (commit 6ce2ec74).
 #
 # Flow-step -> artifact derivation + scaffold-filter gate.
 #

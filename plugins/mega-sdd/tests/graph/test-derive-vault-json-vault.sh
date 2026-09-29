@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-derive-vault-json-vault.sh — batch2 W5 (spec 2026-07-19-batch2-derive-and-diet.md):
+# test-derive-vault-json-vault.sh — batch2 W5 (batch2 spec, commit a950422c):
 # vault.json is DERIVED from the 7 vault markdown files by
 # scripts/derive-vault-json.sh — never re-typed by the model. Cases:
 #

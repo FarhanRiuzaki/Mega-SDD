@@ -643,7 +643,7 @@ assert "(every run)" not in eb and "every run —" not in rd(P + "/skills/execut
 cond = eb.split("**Only when the condition holds")[1]
 assert "review-panel.md" not in eb and cond, "review-panel.md retired (P3 C3)"
 br = rd(P + "/skills/execute-bolts/references/superpowers-bridge.md")
-assert "the ONLY dispatch path" not in br and "(default)" not in br.split("## Dispatch order")[1][:200] and "`--agents`" in br[:600], "bridge scope"
+assert "the ONLY dispatch path" not in br and "## Dispatch order" not in br and "`--agents`" in br[:600], "bridge scope (retired --agents flow trimmed)"
 assert "`--max-retries" in rd(P + "/skills/execute-bolts/references/inline-run.md").split("## (b)")[0], "inline-run flag table"
 assert "(JIT bind per unit, CONFLICT gate at dispatch)" not in rd(R + "/CLAUDE.md") and "`--agents` keeps" not in rd(R + "/CLAUDE.md"), "root CLAUDE.md"
 rm = rd(R + "/README.md")

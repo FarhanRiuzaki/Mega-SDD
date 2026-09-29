@@ -9,7 +9,7 @@
 
 ## §halt-escalation-discipline (anti-erosion gate)
 
-Halts are classified into THREE operational categories. Categorization is per-halt and authoritative (lives in this doc + per-halt description below). See `docs/superpowers/audits/2026-05-27-halt-escalation-classification.md` and `docs/superpowers/audits/2026-05-27-c1-collapse-attestation.md` for full classification + per-halt reasoning + reviewer attestation.
+Halts are classified into THREE operational categories. Categorization is per-halt and authoritative (lives in this doc + per-halt description below). The original classification audit, per-halt reasoning and reviewer attestation landed in commit 417ffe91 (git history keeps them).
 
 ### Three categories
 
@@ -56,7 +56,7 @@ This discipline is LIVE: the auto-propose flow and its `halt_auto_propose` confi
 
 ### C3 enforcement via [HOOK-VALIDATE]
 
-C3 halts are enforced by `plugins/mega-sdd/scripts/validate-handoff-*.sh` validators + `PreToolUse` hooks per `docs/mega-sdd/fork-a-recovery-map.md` (repo docs, maintainer-facing since v7.4.0). Skill bodies declaring C3 halts can mention them as design vocabulary, but the actual enforcement is the hook layer. The CONFLICT slice is enforced by `derive-exec-plan.sh` (run-start quarantine, halt `binding_conflict`) and, after the fact, by the hook-wired `conflict_bypassed` scan (`validate-bolt-artifacts.sh --conflict-bypass-scan`); the OQ-ID propagation slice runs only on a layout-2 `binding.md`.
+C3 halts are enforced by `plugins/mega-sdd/scripts/validate-handoff-*.sh` validators + `PreToolUse` hooks. Skill bodies declaring C3 halts can mention them as design vocabulary, but the actual enforcement is the hook layer. The CONFLICT slice is enforced by `derive-exec-plan.sh` (run-start quarantine, halt `binding_conflict`) and, after the fact, by the hook-wired `conflict_bypassed` scan (`validate-bolt-artifacts.sh --conflict-bypass-scan`); the OQ-ID propagation slice runs only on a layout-2 `binding.md`.
 
 ### Backward compatibility
 

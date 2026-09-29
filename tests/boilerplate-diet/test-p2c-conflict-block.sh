@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-p2c-conflict-block.sh — batch2 P2c (spec 2026-07-19-batch2-derive-and-diet.md):
+# test-p2c-conflict-block.sh — batch2 P2c (batch2 spec, commit a950422c):
 # the Conflicts summary table is DROPPED — the claim/reality pair lives in the
 # `### CONFLICT-N` detail block (the machine-read form is the sole carrier).
 #

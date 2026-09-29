@@ -1,4 +1,0 @@
-# P3 --inline live smoke (NOT a benchmark: n=1; P3 plan §6 check 5, commit 2d02ae3b). Run once at
-# C6b (561e418d) and covering C2 too: the C2 smoke was not run at C2 and is combined with this one. plugin = git archive
-# of 561e418d; fixture-xs @ ff006be; model opus.
-xs guarded-inline p3 PRD/prd-company-profile.md

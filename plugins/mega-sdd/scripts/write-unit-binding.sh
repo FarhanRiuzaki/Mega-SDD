@@ -9,7 +9,7 @@
 #
 # Verdicts (fail-closed, never CONFIRMED-by-absence):
 #   fs_must_exist      path exists (and line range fits when `:N[-M]`) → CONFIRMED/IMPLEMENTED · else CONFLICT
-#                      stale line-range (v8 P3, owner amendment #4 — research/2026-09-15-v8-p3-report.md §5): a range that
+#                      stale line-range (v8 P3, owner amendment #4 — v8 P3 report §5, commit 53926a8d): a range that
 #                      no longer fits is REPAIRED only against the anchor's authoring snapshot (the commit that
 #                      introduced that anchor token into the unit file) and only when the content is byte-identical:
 #                        R1-shift  the authored lines are found verbatim (uniquely) at another offset → range moved

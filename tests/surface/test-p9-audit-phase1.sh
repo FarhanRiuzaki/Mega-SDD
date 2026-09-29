@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Audit Phase-1 quick wins (spec 2026-08-10-audit-phase1-quick-wins.md) —
+# Audit Phase-1 quick wins (spec: commit 54e019e7) —
 # pins the 11 contradiction fixes (batch A), the front-door diet (B),
 # trace-tag completion (C), and the infra batch (D).
 # Run: bash tests/surface/test-p9-audit-phase1.sh </dev/null

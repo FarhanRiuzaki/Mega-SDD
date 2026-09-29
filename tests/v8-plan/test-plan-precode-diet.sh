@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # L3 — plan PRE-CODE diet (spec docs/superpowers/specs/2026-09-16-clinic-levers-design.md §2, 8.3.0,
-# MEASUREMENT PENDING). MEASURED cause (research §2f): the clinic `plan` took 56 m — ±10 m reading
+# MEASUREMENT PENDING). MEASURED cause (v8 P3 report §2f, commit 53926a8d): the clinic `plan` took 56 m — ±10 m reading
 # validator SOURCE for grammar, 13 m writing 22 units one per turn, ±20 m serial adversarial review.
 #   a  the grammar cheatsheet exists, is routed from plan SKILL.md + plan-procedure.md, and every regex
 #      it cites appears VERBATIM in the file(s) it names (parity — the sheet cannot drift silently)

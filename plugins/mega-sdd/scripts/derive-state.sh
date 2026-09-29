@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# derive-state.sh — the ONE CWD state digest (P1, spec 2026-07-19-v5-execution-spec.md
-# decision 8; research/2026-07-19-v5-architecture-research.md §3).
+# derive-state.sh — the ONE CWD state digest (P1, v5 execution spec, commit 45c6039b,
+# decision 8; v5 research §3, commit 7724ec12).
 #
 # Replaces the 10-probe PROSE inspection routing-rules.md used to prescribe: every
 # probe now runs in scripts/_lib/state_probes.py (shared with validate-preflight.sh

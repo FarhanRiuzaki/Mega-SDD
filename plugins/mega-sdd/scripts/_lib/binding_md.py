@@ -1,4 +1,4 @@
-"""binding_md.py — the ONE binding.md parsing grammar (W2, spec 2026-07-19-w-batch-script-derive.md).
+"""binding_md.py — the ONE binding.md parsing grammar (W2, W-batch spec, commit dc2f9486).
 
 Shared by `derive-binding-json.sh` (the single binding.json generator),
 `validate-handoff-binding-units.sh` (binding freshness + CONFLICT gate),

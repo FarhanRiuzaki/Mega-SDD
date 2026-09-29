@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # build-sit-evidence.sh — deterministic builder of the SIT evidence fragment (P5,
-# spec docs/superpowers/specs/2026-07-19-v5-execution-spec.md P5 row + decisions
+# v5 execution spec (commit 45c6039b) P5 row + decisions
 # 5/9/10; research §4 "emit-sit").
 #
 # THE UNFAKEABLE COLUMN: SIT §4 (Bukti eksekusi) must never be model-authored —

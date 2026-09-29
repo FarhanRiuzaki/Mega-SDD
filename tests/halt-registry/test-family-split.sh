@@ -72,7 +72,7 @@ B=$(wc -c < "$HP" | tr -d ' ')
 # ONE emitted halt (prd_source_unresolvable: enum token + a bare index row) cannot fit
 # without trimming unrelated rows. Same class as the two earlier raises above — the
 # registry grew by exactly one legitimately emitted halt, nothing else.
-# 34000 -> 38000 (8.4.0 debt gate, spec 2026-09-16-doc-audit-debt-gate-design.md §3): 13 live
+# 34000 -> 38000 (8.4.0 debt gate, spec §3, commit 840488d5): 13 live
 # skill/script-emitted types registered (scan ×5, flow ×3, emit-agents-md ×4, subtype claim_verify_failed)
 # — terse rows only; the next_action.type enum shrank 12 -> 5 in the same edit.
 [ "$B" -le 38000 ] && ok "b1 registry $B <= 38000" || fail "b1 registry regrew to $B"

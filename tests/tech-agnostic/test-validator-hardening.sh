@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-validator-hardening.sh — Batch 1 tech-agnostic validator hardening from the
-# god-review of extract-intelligence (research/2026-07-01-god-review-extract-intelligence.md).
+# god-review of extract-intelligence (commit 360e40d1).
 # Pins H1, M4, M5, M6, M7, L4, L5 against recurrence with a MULTI-STACK fixture matrix
 # (C#/Go/Java/Rust/Python × GDPR/HIPAA/PCI + a non-regulatory clean domain), because
 # each defect is one-codebase-tuning that fails-open / no-ops on every other stack.

@@ -19,7 +19,7 @@
 #     scripts add a same-session `--resume` guard keyed on .mega-sdd/CONSISTENCY-REPORT.md.
 # Everything else is the plain runbook: no --classic / --lean / --lite, the front
 # door decides. Transcript lands in ~/.claude/projects/<encoded-cwd>/<sid>.jsonl —
-# that file + `git log` in the arm are the ONLY inputs to research/2026-08-04-p5-extract.py.
+# that file + `git log` in the arm are the ONLY inputs to research/2026-08-04-p5-extract.py (commit 04d2e0ab).
 #
 # Vanilla control arm (P0_ARM=vanilla, 2026-09-26): the SAME launcher, model, tool allowlist,
 #   permission mode and headless rules, but the mega-sdd plugins are disabled for the session

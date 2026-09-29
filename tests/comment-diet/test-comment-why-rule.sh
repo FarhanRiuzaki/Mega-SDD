@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Team feedback #4 (runbook §5 masukan tim #4, 2026-09-15): generated code carried over-verbose
-# comments. Diagnosis (research/2026-09-15-v8-p3-report.md §6): the panel never rewarded comments
+# comments. Diagnosis (v8 P3 report §6, commit 53926a8d): the panel never rewarded comments
 # (0 mentions), the laravel-base-26 pack REWARDED docblocks ("prefer PHPDoc blocks"), the rest was
 # model default with no rule. This pins the STYLE rule (never a gate — F.5: no comment-counting
 # validator) at every surface that could ask for or reward comments:

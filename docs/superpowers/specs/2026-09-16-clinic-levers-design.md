@@ -1,6 +1,6 @@
 # Clinic levers after 8.0.0 — design spec (PROPOSAL, needs paid measurement runs)
 
-**Status:** SPEC ONLY — nothing built. Source: `research/2026-09-15-v8-p3-report.md §2f` (rule-D dissection of the clean clinic lite 7.38.0 run) + `§5` (criterion (b) FAIL thin: mean implementer in-flight 2.38 of cap 4, idle-without-implementer 25 %, Critical 1 open). Owner rule (runbook §3-lanjutan D): *"kalau klinik masih <2,5 → bedah ulang dengan metode yang sama, TANPA lever baru di sesi itu"* → the dissection is done (§2f); the levers below are the next session's work and **every one is measured on xs (n ≥ 2) before the clinic is touched once**. No lever ships on prose alone (evidence-first rule).
+**Status:** SPEC ONLY — nothing built. Source: v8 P3 report §2f (commit 53926a8d) (rule-D dissection of the clean clinic lite 7.38.0 run) + `§5` (criterion (b) FAIL thin: mean implementer in-flight 2.38 of cap 4, idle-without-implementer 25 %, Critical 1 open). Owner rule (runbook §3-lanjutan D): *"kalau klinik masih <2,5 → bedah ulang dengan metode yang sama, TANPA lever baru di sesi itu"* → the dissection is done (§2f); the levers below are the next session's work and **every one is measured on xs (n ≥ 2) before the clinic is touched once**. No lever ships on prose alone (evidence-first rule).
 
 ## 1. What still serializes (MEASURED, §2f)
 
@@ -19,6 +19,8 @@
 **L3 — `plan` PRE-CODE diet (S3).** (a) a compact grammar reference `skills/plan/references/unit-grammar-cheatsheet.md` (≤ 120 lines: the fields each validator parses, with the regex it uses — generated FROM the validators by a script + parity pin so it cannot drift) so the model stops reading validator source; (b) unit writing in ONE batched Write per module (procedure text; the validators re-check the batch); (c) the adversarial risk:high review dispatched as ONE parallel fan-out (one message, N Explore agents) instead of serially. Measured target on xs: `plan` wall −30 % (xs plan today ≈ 20 m; clinic 56 m → EST ≤ 35 m).
 
 ## 3. Measurement protocol (runbook amendment #5 applies)
+
+> The `benchmarks/results/p3/` runs and the `p3-*` extractors cited below were removed from the tree on 2026-09-29; they live in git history (commits 2cbbd3d4, b1b9adeb and later).
 
 1. Cache the tree at the lever's commit; xs scenario = the same 3-screen fixture/prd/lane/model as run #2 (`benchmarks/results/p3/xs-lite-7.38.0-run2`); chain `p3-chain-xs.sh` (net-aware, rule C: pre-dispatch death → fresh attempt ≤ 3; post-dispatch → same-session resume labelled TERCEMAR).
 2. Per lever, **n = 2 clean xs runs**; extract with `p3-done-endpoints.py` + `p3-parallelism.py` + `p3-ship-verdict.py`; compare to run #2 (DONE 1h11m02s; F.4 trailer run DONE 59m18s n=1).

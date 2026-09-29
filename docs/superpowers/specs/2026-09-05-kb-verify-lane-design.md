@@ -1,7 +1,7 @@
 # Spec — KB trustworthiness: validator migration + verify lane (+ cost tranche)
 
-**Riset:** `research/2026-09-05-hostas400-kb-audit.md` (audit lapangan, 88 sitasi spot-check) +
-`research/2026-09-05-megasdd-skillgap-analysis.md` (issue→skill-gap matrix). Owner "gass"
+**Riset:** audit lapangan HOST-AS400 (88 sitasi spot-check) +
+analisis skill-gap (issue→skill-gap matrix), keduanya commit 8b3de03c. Owner "gass"
 2026-09-05 atas rencana dua tranche: (a) akurasi, (b) cost measured-first.
 
 **Pemicu:** KB Host-AS400 drift (marker counts, roll-up, 8 klaim WRONG) sementara
@@ -145,7 +145,7 @@ section kontrak operasional; rail klaim-negatif; flow-br-lint advisory.
 
 - **C1 DIBATALKAN** — investigasi menemukan `TOKEN-COST-REPORT.md` 0-byte bukan bug:
   writer token-cost DIHAPUS SADAR di v7.3.0 (`bfdf996`, amandemen
-  `research/2026-08-22-v7-amend-no-observability.md` + `-no-telemetry.md`, final +
+  no-observability + no-telemetry, commit 844253c1, final +
   retroaktif: "mega-sdd tidak membangun telemetry/monitoring apa pun — domain AI
   gateway"). Artefak di Host = sisa cache plugin versi lama (obat pencegahnya =
   resep headless update yang sudah dipegang tim mega-code). Membangun ulang = 

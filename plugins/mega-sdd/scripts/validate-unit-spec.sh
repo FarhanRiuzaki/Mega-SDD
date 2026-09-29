@@ -1114,7 +1114,7 @@ for up in sorted(all_units):
 
 # ─── L2 (8.3.0, spec 2026-09-16-clinic-levers-design.md §2) — dag_shape_advisory ──
 # ADVISORY, never an issue / status / exit code. MEASURED on clinic lite 7.38.0
-# (research/2026-09-15-v8-p3-report.md §2f): once the panel barrier was gone the
+# (v8 P3 report §2f, commit 53926a8d): once the panel barrier was gone the
 # plan DAG bound the wall — critical path U-001→U-002→U-013→U-020→U-021 (5 hops)
 # ≈ 120 m ≈ the whole bolt-stage; hub units (U-001/U-002/U-013) and fat units
 # (U-008 74.9 m impl, 2 fix rounds) decided DONE. The owner's amendment #1
@@ -1194,7 +1194,7 @@ def _dag_shape_advisory(unit_paths):
         "rule": ("advisory (never a halt): depth > 4 hops → shorten the critical path (merge or reorder); "
                  "hub >= 3 direct dependents → split unless it is a true foundation (schema/migration); "
                  "> 6 steps or > 4 target_files → split the unit; the DAG bounds the bolt-stage wall "
-                 "once the panel barrier is gone (research 2026-09-15 §2f)"),
+                 "once the panel barrier is gone (v8 P3 report §2f, commit 53926a8d)"),
     }
 
 

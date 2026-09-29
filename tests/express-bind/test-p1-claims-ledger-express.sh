@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-p1-claims-ledger-express.sh — v6 P1 proof suite (spec
-# 2026-08-03-v6-express-spine-design.md §P1.4), trimmed to what survives 9.0:
+# §P1.4, commit 1be513ef), trimmed to what survives 9.0:
 #
 #   2. Grammar byte-compat — an express-shaped binding.md (no-snapshot provenance
 #      + the additive binding_metadata.retrieval key) through the REAL layout-2

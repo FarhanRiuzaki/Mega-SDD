@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-sync-intersect.sh — pins the S4 sync claim-intersection short-circuit
-# (spec 2026-08-11-audit-phase2b-scripts-and-owners.md §S4): empty intersection
+# (audit Phase-2b spec §S4, commit 83e0b624): empty intersection
 # -> exit 0 in_sync; anchor/unit-target hit -> exit 4 reconcile_needed;
 # unreadable binding.json / missing vault -> exit 2 FAIL-CLOSED (full chain);
 # ancestor-dir containment counts as intersecting.

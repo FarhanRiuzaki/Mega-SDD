@@ -61,11 +61,6 @@ jobs:
         # plugin tree was scanned, leaving ~50 enforcement-pinning suites un-run (R3-13).
         # Each suite's stdin is /dev/null so a suite that reads stdin (e.g. the hook
         # tests that pipe JSON) cannot consume this while-read loop's input.
-        #
-        # Quarantined (intentionally excluded, NOT a coverage gap): three pack suites
-        # that merely re-wrap `validate-pack.sh --all` / `--check-registry` — already
-        # enforced by the two dedicated pack steps below. They are heavy/redundant in
-        # the shell loop; excluding them keeps this gate fast without losing coverage.
         run: |
           rc=0
           while IFS= read -r t; do
@@ -73,7 +68,6 @@ jobs:
             bash "$t" </dev/null || { echo "FAILED: $t"; rc=1; }
           done < <(
             find plugins/mega-sdd/tests tests \( -name 'test-*.sh' -o -name '*.test.sh' \) \
-              | grep -vE 'tests/(pack-kit/test-registry-fresh|per-stack-packs/test-all-full-ready|per-stack-packs/test-all-green)\.sh$' \
               | sort
           )
           exit $rc
@@ -97,7 +91,7 @@ jobs:
           fi
 
       - name: Validate plugin manifests (claude plugin validate)
-        # A1 (spec 2026-08-17-delta-hygiene-a1-a4): blocks on manifest field/schema
+        # A1 (delta-hygiene spec, commit 34931ccb): blocks on manifest field/schema
         # ERRORS (the misspelled-plugin.json class). Plain mode, NOT --strict: the
         # root-CLAUDE.md warning flags our DELIBERATE contributor contract. CLI pin
         # 2.1.233 joins the registry-rot review checklist (CLAUDE.md §Versioning).

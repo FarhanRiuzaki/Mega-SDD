@@ -1,5 +1,5 @@
 """state_probes.py — the ONE CWD probe library (P1, spec
-2026-07-19-v5-execution-spec.md decision 8; research §3).
+v5-execution decision 8, commit 45c6039b; research §3).
 
 Shared by `derive-state.sh` (the routing state digest), `validate-preflight.sh`
 (the FATAL preflight gate), and `ground.sh` (the M/L-entry GROUND step) via the
@@ -108,7 +108,7 @@ _CODE_SKIP_DIRS = {
 # `.dirty-paths.jsonl` journal (Mode D change signal).
 DIRTY_JOURNAL_REL = os.path.join(".mega-sdd", "codebase", ".dirty-paths.jsonl")
 
-# Foreign-SDD tool signals (P2 adoption gates, spec 2026-07-19-v5-execution-spec.md
+# Foreign-SDD tool signals (P2 adoption gates, v5 execution spec, commit 45c6039b,
 # P2 row; research §3 entry matrix): spec-kit / Kiro / OpenSpec conventions plus a
 # generic `specs/*.md` frontmatter sniff. Recognition only — the adoption verdict
 # itself is certify-artifact.sh's job (routing proposes the DEMOTE lane; decision 7:
@@ -137,7 +137,7 @@ def _iso(ts):
 # IDENTICAL semantics to the inline functions validate-preflight.sh carried
 # pre-P1 (Iter-79 O-1 + S4 BC-PREFLIGHT-LEGACY). Vault predicates probe the
 # CANONICAL root only — preflight's historical FATAL contract. Pinned by
-# tests/fixtures/code-delivery/preflight/verify.sh + god-review-s4 4C +
+# the manual preflight fixture (removed 2026-09-29) + god-review-s4 4C +
 # tests/state/test-derive-state.sh parity assertions.
 
 

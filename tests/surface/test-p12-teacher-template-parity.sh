@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Audit Phase 4 (spec 2026-08-11-audit-phase4-platform-hygiene.md §E3) —
+# Audit Phase 4 (spec §E3, commit e253d7cd) —
 # STANDING teacher↔template parity harness: the permanent answer to the
 # teacher/template drift class (the 6.1.1 field-defect lineage — "the template
 # still stamped the poison"). Pins the KNOWN teacher↔template pairs so

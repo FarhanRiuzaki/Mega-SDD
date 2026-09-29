@@ -1,7 +1,0 @@
-delivery-check @ a7837a7 (/private/tmp/claude-501/mega-sdd-bench/work-p3f/xs-guarded-p3final)
-  D1 PASS scripts.test = next build && node --test tests/*.test.ts
-  D2 PASS npm test (TZ=UTC) exit 0
-  D3 PASS npm test (TZ=Pacific/Kiritimati) exit 0
-  D4 PASS npm run build on a fresh checkout, empty env: exit 0
-  D5 PASS every static page route (2) is linked from another source file
-VERDICT: PASS

@@ -4,7 +4,7 @@
 
 ## Repository layout
 
-This is a Claude Code plugin marketplace + the plugin itself. Plugin code lives under `plugins/mega-sdd/`. Specs/plans live under `docs/superpowers/`. Benchmarks (the vanilla-vs-mega-sdd harness, runbooks, results, and the complexity budget) live under `benchmarks/`, and the measured reports under `research/`.
+This is a Claude Code plugin marketplace + the plugin itself. Plugin code lives under `plugins/mega-sdd/`. Design specs live under `docs/superpowers/specs/`; plans, audits and batch logs are not kept in the tree (the commit body carries them). Benchmarks (the vanilla-vs-mega-sdd harness, runbooks, results, and the complexity budget) live under `benchmarks/`, and the measured reports under `benchmarks/results/`; `research/` keeps only the xs benchmark PRD.
 
 The shape to keep in mind (9.0, spec `docs/superpowers/specs/2026-09-27-v9-simplification-design.md`): the `/mega-sdd` front door runs `scripts/route-lane.sh` first and picks a lane.
 - **direct** and **assisted** build in the main session with no vault. Their procedure is `plugins/mega-sdd/references/direct-lane.md`.
@@ -43,6 +43,10 @@ Before submitting:
 - Update relevant `tests/skill-triggering/<skill>.test.md` if behavior changes
 - Add CHANGELOG.md entry
 
+## Framework packs
+
+A pack is one file under `plugins/mega-sdd/references/framework-conventions/` (readiness table: `_registry.md`). How to author one, as a plugin pack or as a project-local pack at `<root>/.mega-sdd/packs/<framework>.md`, and how to lint it: [`framework-conventions/README.md`](plugins/mega-sdd/references/framework-conventions/README.md).
+
 ## Testing
 
 Shell suites live in TWO trees — `plugins/mega-sdd/tests/` (plugin-local) and `<repo-root>/tests/` (repo-wide). CI discovers every `test-*.sh` / `*.test.sh` at any depth in BOTH trees (`.github/workflows/tests.yml`), so run both locally before claiming green. One suite at a time:
@@ -61,7 +65,7 @@ The complexity budget is a ratchet (`benchmarks/config/complexity-budget.json`, 
 
 None of these may grow past its ceiling without a `raises` entry that carries the evidence. When you shrink something, lower the ceiling in the same change.
 
-The markdown fixtures under `tests/skill-triggering/` and `tests/integration/` are manual walkthroughs: read them and step through each case in a fresh Claude Code session.
+The markdown fixtures under `tests/skill-triggering/` are manual walkthroughs: read them and step through each case in a fresh Claude Code session.
 
 ## Versioning rules
 
@@ -141,7 +145,7 @@ When adding a new skill to the plugin:
 For non-trivial work, follow the spec → plan → implementation pipeline used in this repo:
 
 1. **Audit** existing state, write to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
-2. **Plan** the implementation, write to `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`.
+2. **Plan** the implementation. The plan is working material: do not commit it (not under `docs/superpowers/plans/` either); its tasks and decisions go into the commit body.
 3. **Execute** via the `superpowers:subagent-driven-development` or `superpowers:executing-plans` skill.
 
-Each phase commits independently — the spec and plan stay as durable artifacts.
+Each phase commits independently. The spec stays as a durable artifact while it designs a live mechanism; the plan, audit notes and batch logs live on in commit bodies, cited as `commit <hash>`.

@@ -22,7 +22,7 @@
 # Independently, `plugins/mega-sdd/scripts/_lib/resolve-project-root.sh` takes a
 # hard syntax error under CRLF, leaving `resolve_project_root` undefined for
 # every script that sources it.
-# Source: research/2026-07-29-windows-portability-audit.md, finding
+# Source: the Windows portability audit (commit 2bcec39d), finding
 # `crlf-no-gitattributes` (severity: hang, skills: ALL).
 #
 # WHY THE CATCH-ALL MUST STAY `*`
@@ -44,12 +44,12 @@
 * text=auto eol=lf
 
 # ── Binary / byte-exact exceptions ────────────────────────────────────────────
-# Derived from `git ls-files`, not guessed: the only tracked files Git's own
-# content heuristic classifies as binary today are three PDFs
-# (docs/prd-reference/*.pdf, examples/timeoff/PRD-Examples.pdf). `text=auto`
-# would already spare them via the NUL-byte heuristic; pinning them explicitly
-# means no future heuristic miss can rewrite their bytes.
-# If you ever track a new binary type (png/jpg/ico/woff/xlsx/zip/…), add it here.
+# Derived from `git ls-files --eol`, not guessed: no PDF is tracked today (the
+# docs/prd-reference and examples/timeoff PDFs left the tree on 2026-09-29). The
+# binaries Git's content heuristic does see (docs/mega-sdd/mega-sdd.png and the two
+# render-html .woff2 fonts) are spared by `text=auto` via the NUL-byte heuristic;
+# the `*.pdf binary` pin stays so no future heuristic miss can rewrite a PDF.
+# If you track a new binary type (jpg/ico/xlsx/zip/…), pin it here the same way.
 *.pdf binary
 
 # Byte-exact fixture: deliberately invalid UTF-8 (0xC3 0x28) with NO NUL byte, so

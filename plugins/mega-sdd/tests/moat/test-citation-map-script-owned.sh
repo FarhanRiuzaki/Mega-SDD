@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Moat regression (invariant #3 — citation discipline): the citation map + every
-# sha256 stamp is SCRIPT-OWNED (W3, spec 2026-07-19-w-batch-script-derive.md).
+# sha256 stamp is SCRIPT-OWNED (W3, W-batch spec, commit dc2f9486).
 #
 #   1  both scripts exist under plugins/mega-sdd/scripts/ and run under bash </dev/null
 #   2  tamper — a hand-forged source_sha256 in a script-written map is OVERWRITTEN

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-emit-ladder-parity.sh — maturity-ladder drift guard (audit Phase-3 spec
-# 2026-08-11-audit-phase3-reference-diet.md §D4): the four maturity ladders
+# §D4, commit c9468712): the four maturity ladders
 # hardcoded in commands/emit.md's no-arg listing must stay in lockstep with
 # their doc-pack OWNER files. The check extracts each owner's OWN ladder
 # declaration and SET-COMPARES rungs in BOTH directions — a rung renamed at
