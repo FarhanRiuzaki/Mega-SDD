@@ -128,7 +128,7 @@ HARD_RULE: The handle hook MUST be exported from src/hooks.server.ts
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: TSDoc/JSDoc — **read by**: `svelte-check`/TypeScript — in a JavaScript project the JSDoc types in the component script block and in `.js` files ARE the type system (`/** @type {import('./$types').PageLoad} */` is the idiom SvelteKit's own docs use); `eslint-plugin-jsdoc` when configured; nothing else in SvelteKit reads a comment. A full block only where one of these reads it, or on a module consumed outside this app (a library).
 - **Skip**: `+page`/`+layout`/`+server` files whose path + export say it; components whose props type + name say it; form actions named in `actions`; `@param`/`@returns` repeating TypeScript types; a comment that repeats the export name.
@@ -137,8 +137,7 @@ HARD_RULE: The handle hook MUST be exported from src/hooks.server.ts
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — form actions and `+server.ts` handlers validate `await request.formData()` / `request.json()` with `zod` (or `sveltekit-superforms`); the bypass is reading form fields and trusting them — actions and endpoints are plain HTTP surfaces anyone can POST to directly.

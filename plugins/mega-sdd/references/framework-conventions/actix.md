@@ -127,7 +127,7 @@ HARD_RULE: Domain error types MUST implement actix_web::ResponseError to produce
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: rustdoc `///` (item) and `//!` (module/crate) — **read by**: `cargo doc`; the `missing_docs` lint ONLY when the crate root sets `#![warn(missing_docs)]`/`deny` (it is allow-by-default) — then every `pub` item needs a doc line; clippy's `missing_docs_in_private_items` is pedantic and off. A binary crate (this web service) usually has NO reader: a `///` block only on a `pub` item of a library crate consumers use, or where the name hides the contract. Doc-tests inside `///` are code — keep them only when they run.
 - **Skip**: handlers whose extractor signature says it (`async fn create_order(body: web::Json<CreateOrder>) -> HttpResponse`); private items with self-explanatory names; a trivial `new()`; derived trait impls; `# Arguments`/`# Returns` sections that repeat the signature and types.
@@ -136,8 +136,7 @@ HARD_RULE: Domain error types MUST implement actix_web::ResponseError to produce
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — `web::Json<T>` / `web::Query<T>` extractors deserialize via serde, but type-checking is not validation: pair with the `validator` crate (`#[derive(Validate)]` + `#[validate(...)]` fields, calling `.validate()` or using `actix-web-validator` wrappers); the bypass is treating a successful deserialize as "validated", or reading raw `web::Payload` bytes that skip extractors entirely.

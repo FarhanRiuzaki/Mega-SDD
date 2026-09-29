@@ -148,7 +148,7 @@ HARD_RULE: Business logic MUST NOT live in controllers; delegate to services in 
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: PHPDoc — **read by**: PHPStan/Psalm for generics and shapes native types cannot express (`Collection<int, Product>`, `array{id: int, name: string}`, `@template`); API Platform, when installed, lifts class/property PHPDoc summaries into the OpenAPI schema; PHP 8 attributes (`#[Route]`, `#[ORM\Entity]`) replaced annotation docblocks — in 6.4+ a docblock is never configuration. A full block only where one of these reads it, or on public API consumed outside this bundle/module.
 - **Skip**: services and controllers whose native signature carries the types; getters/setters/constructors; `@param`/`@return` repeating a native type; `@var` on a typed property; Doctrine annotation blocks (use attributes).
@@ -157,8 +157,7 @@ HARD_RULE: Business logic MUST NOT live in controllers; delegate to services in 
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Validator component with `#[Assert\...]` constraints on DTOs, enforced via `#[MapRequestPayload]` or an explicit `$validator->validate()`; reading `$request->request->all()` into entities without constraints is the defect.
