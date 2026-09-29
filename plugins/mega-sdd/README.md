@@ -186,7 +186,7 @@ The guarded pipeline is built so an agent does not act on what isn't grounded: i
 10. **Interface lock** — on a vault that carries cross-squad interfaces, consumed interfaces must be locked
 11. **Mutability tiers** — `[LOCKED]/[INTENT]/[ARTIFACT]`, orthogonal to confidence
 12. **Constitution layer** — project invariants enforced as Hard Rules at bolt time
-13. **Framework convention packs** — stack conventions reach units through plan-authored Hard rules and the pack-driven gates
+13. **Framework convention packs** — stack conventions reach units through plan-authored pack content (render tests, UI contracts, cross-cutting obligations) and the pack-driven gates; no pack section is injected into the execute-bolts context
 14. **Predictive preflight** — upcoming halts surfaced *before* a skill runs
 15. **Handoff schema validation** — handoff YAML type-checked at emission
 16. **Code-delivery quality gates** — tech-agnostic validators (flow-coverage, sibling-consistency incl. render-test + cross-cutting registration, unit-spec incl. verify-grounding, ui-quality) hard-block `execute-bolts`, all re-derived at the gate itself; signatures from the framework pack, SKIP off-stack

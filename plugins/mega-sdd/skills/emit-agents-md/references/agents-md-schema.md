@@ -31,8 +31,8 @@ Per [agents.md spec](https://agents.md/) (Linux Foundation AAIF). Mega-sdd emits
 <!-- scope_name: <scope_metadata.name> --> (omit line when vault has no scope)
 <!-- generated_at: <ISO8601> -->
 <!-- vault_version: <vault.json version field> -->
-<!-- framework: <detected from codebase-map.md §7 — e.g., laravel-base-26, laravel, django, _universal> -->
-<!-- framework_pack_path: <relative path to plugins/mega-sdd/references/framework-conventions/<framework>.md> -->
+<!-- framework: <.mega-sdd/state.json derived.framework_pack (GROUND) — e.g., laravel-base-26, laravel, django, _universal> -->
+<!-- framework_pack_path: <relative path: .mega-sdd/packs/<framework>.md if present, else plugins/mega-sdd/references/framework-conventions/<framework>.md> -->
 <!-- mutability_summary: locked=<N> intent=<N> artifact=<N> (counts from data-mutation-policy.md when KB-derived vault) -->
 <!-- constitution_hash: <sha256 of constitution.md content, if present; from binding.md frontmatter> -->
 <!-- DO NOT EDIT BELOW THIS LINE — regenerate via emit-agents-md -->
