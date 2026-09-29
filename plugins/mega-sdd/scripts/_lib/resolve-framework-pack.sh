@@ -193,8 +193,8 @@ fi
 
 # Interpreter. Bare `python3` is a documented FALSE POSITIVE on Windows: the
 # WindowsApps App Execution Alias stub sits on the default PATH, prints to
-# stderr and exits 49. Known open (72d617a6): 11 call sites run `X=$(resolver) || X=""`,
-# ignoring its exit code, so a failed resolve reads as packless and the gate exits 0.
+# stderr and exits 49. Known open (commit 72d617a6): 11 call sites run `X=$(resolver) || X=""`,
+# ignoring its exit code: a failed resolve reads as packless and the gate exits 0.
 # So this resolver must not be the weak link: a CALLER-resolved interpreter wins
 # (exported as MEGA_SDD_PY); otherwise resolve it here via the shared helper.
 # $MEGA_SDD_PY MUST be expanded UNQUOTED — `py -3` is two words.

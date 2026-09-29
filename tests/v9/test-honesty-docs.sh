@@ -15,6 +15,8 @@
 #   h10 migrate-paths layout-2 rung: following its printed NEXT step reaches the layout-3 rung
 #   h11 no execute-bolts / orchestrate-flow text promises the acceptance_test_concern harvest (its writer went in P3,
 #       spec §8.6 G2); build-fsd-core.sh keeps reading the field from legacy bolt-reports
+#   h12 every `commit <8-hex>` a tracked file cites is in HEAD's history (the deleted process docs
+#       live on as these pointers; a squash/rebase landing would dangle them). SKIP on a shallow clone.
 # Run: bash tests/v9/test-honesty-docs.sh </dev/null
 set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"; P="$ROOT/plugins/mega-sdd"
@@ -135,4 +137,26 @@ fi
 hits=$(grep -rlF 'acceptance_test_concern' "$P/skills/execute-bolts" "$P/skills/orchestrate-flow" | sed "s|$P/||" | tr '\n' ' ')
 [ -z "$hits" ] && ok "h11: no execute-bolts / orchestrate-flow text promises the writerless acceptance_test_concern harvest" || bad "h11: the harvest is still promised in: $hits"
 grep -qF 'acceptance_test_concern:' "$P/scripts/build-fsd-core.sh" && ok "h11: build-fsd-core.sh still reads the field from legacy bolt-reports" || bad "h11: build-fsd-core.sh lost its legacy reader"
+
+# h12 (per-run data dirs under benchmarks/results/<block>/<run>/ cite fixture-repo commits: skipped)
+if [ "$(git -C "$ROOT" rev-parse --is-shallow-repository 2>/dev/null)" != false ]; then echo "SKIP: h12 needs a full-history git clone"
+else PYTHONIOENCODING=utf-8 "$PY" - "$ROOT" <<'EOF' || rc=1
+import os, re, subprocess, sys
+root = sys.argv[1]; git = lambda *a: subprocess.run(["git", "-C", root] + list(a), capture_output=True)
+H = r"`?[0-9a-f]{8}`?(?![0-9A-Za-z])"
+rx = re.compile(r"(?<![A-Za-z])(?:[Cc]ommits?|[Mm]erge) +(%s(?: *(?:,|\+|/|and) *%s)*)" % (H, H))
+cited = {}
+for f in git("ls-files", "-z").stdout.decode().split("\0"):
+    if not f or re.match(r"benchmarks/results/[^/]+/[^/]+/", f): continue
+    try: s = open(os.path.join(root, f), encoding="utf-8").read()
+    except (OSError, UnicodeDecodeError): continue
+    for m in rx.finditer(s):
+        for h in re.findall(r"[0-9a-f]{8}", m.group(1)): cited.setdefault(h, f)
+gone = ["%s (%s)" % (h, f) for h, f in sorted(cited.items()) if git("merge-base", "--is-ancestor", h, "HEAD").returncode]
+if gone or not cited:
+    print("FAIL: h12 cited commit(s) not in HEAD's history (land with a merge or fast-forward, never squash/rebase): %s" % (", ".join(gone) or "none found; the scan is broken"))
+    sys.exit(1)
+print("PASS: h12 all %d cited commits are in HEAD's history" % len(cited))
+EOF
+fi
 exit $rc
