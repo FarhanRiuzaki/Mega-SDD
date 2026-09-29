@@ -678,7 +678,7 @@ Editing `constitution.md` moves its hash away from the `constitution_hash` pinne
 
 ## Scenario walkthrough — execute-bolts halts
 
-Three more execute-bolts halts:
+Two more execute-bolts halts:
 
 ### `bolt_repeated_partial_failure`
 
@@ -708,33 +708,6 @@ cat <vault>/units/U-012.md
 # If target_files too broad: tighten scope; re-run
 # If genuinely blocked: author the OQ into `context.md ## Open Questions`
 # for human review (e.g. "U-012 cannot pass acceptance test as specified")
-```
-
-### `bolt_introduces_locked_drift`
-
-Bolt drift hit a LOCKED entity (constitution/security-protected).
-
-```yaml
-blocker:
-  type: bolt_introduces_locked_drift
-  source_skill: execute-bolts
-  details:
-    unit_id: U-007
-    locked_entity: "src/auth/User.php"
-    drift_evidence: "added field `last_login_ip` without locking constitution amendment"
-```
-
-Recovery (override-only):
-
-```bash
-# Option 1: revert bolt changes (locked entity protected by design)
-git diff HEAD <vault>/bolts/U-007/preflight.json   # see what bolt wrote
-git checkout <pre-bolt-state>
-
-# Option 2: amend constitution to allow drift (requires explicit user approval)
-# Edit <vault>/constitution.md — explicitly mark src/auth/User.php as UNLOCKED for this field
-# Re-run bolt:
-execute-bolts U-007 --force   # re-executes the completed unit
 ```
 
 ### `self_assessment_missing`

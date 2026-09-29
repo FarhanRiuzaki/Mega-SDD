@@ -117,8 +117,7 @@ loop runs them here. Both then run 4–9 in order.
   gate, binding freshness, the F-18 gate (`acceptance_expects_missing`) and the attempt cap. Inline
   runs the CONFLICT gate and freshness once at run start, the re-bind per task as a plan step, and no F-18
   check; a commit past a CONFLICT, or past a skipped re-bind whose claim did not hold, is caught at the boundary.
-- **The per-bolt drift check** (`halts-and-handoff.md`): no task runs it, so `bolt_introduces_locked_drift` cannot fire;
-  the chain-end `detect-drift` auto-gate (standalone: the hand-off suggests it) is the backstop.
+- **The per-bolt drift check** (removed in P3): the chain-end `detect-drift` auto-gate (standalone: the hand-off suggests it) is the backstop.
 - **The per-unit panel and L0 enforcement.** One blind review replaces the panel; `run-code-gates.sh --write` runs per task,
   but no gate checks its `l0-results.json`. No gate checks a `fix(review)` / `fix(delivery)` commit against the touched units'
   `## Hard rules` (B1 judges a unit's own commits) — the same exposure as the `--agents` path's delivery fix; (d)3's rule is prose.

@@ -411,7 +411,7 @@ def validate_unit(file_path):
     # stricter than the observer it gates on, it blocks the normal convention.
     # That divergence is exactly the 2026-08-29 field defect, from the other
     # side: the implementer contract omitted these extras and a bolt halted
-    # with scope_creep_detected over a test file B3 would never have flagged.
+    # with an out-of-scope halt over a test file B3 would never have flagged.
     # Pinned by tests/acceptance-path/ (drift tripwire).
     at_cmds = re.findall(r"(?m)^\s*(?:-\s*)?command:\s*(?:\"([^\"]*)\"|'([^']*)'|(.+?))\s*$", body)
     unowned = []

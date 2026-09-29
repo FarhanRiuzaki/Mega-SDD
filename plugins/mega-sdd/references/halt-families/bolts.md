@@ -6,10 +6,6 @@ Split from the canonical registry `plugins/mega-sdd/references/halt-protocol.md`
 schema, escalation discipline, subtype enums, and the per-type index that routes
 here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
-### dispatch_prompt_too_large
-
-- `dispatch_prompt_too_large` — execute-bolts: assembled bolt dispatch prompt exceeds 10KB hard cap. ALWAYS STOP. Resolution: re-tier context.
-
 ### bolt_repeated_partial_failure
 
 - `bolt_repeated_partial_failure` — the same halt fired twice on one unit with different proposed fixes (propose-and-confirm cycle). ALWAYS STOP. Resolution: review unit spec.
@@ -17,10 +13,6 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### provenance_missing
 
 - `provenance_missing` — execute-bolts: bolt modified file lacks provenance trailer. ALWAYS STOP.
-
-### bolt_introduces_locked_drift
-
-- `bolt_introduces_locked_drift` — execute-bolts: bolt drift hits a LOCKED entity. ALWAYS STOP (CONFLICT-like; override-only, never propose-and-confirm).
 
 ### self_assessment_missing
 
@@ -40,7 +32,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### acceptance_path_unowned
 
-- `acceptance_path_unowned` — plan/execute-bolts gate: a unit whose `acceptance_test` command runs a path that NO unit declares in `target_files` and that does not exist on disk. ALWAYS STOP. The unit is unfinishable by construction: committing the file trips the B3 whitelist observer (`whitelist_violation`), skipping it fails the acceptance command — the implementer can only discover this after a full dispatch has burned (field case: HOST-AS400 U-001, `scope_creep_detected` after ~70k tokens). Details `{unit_id, unowned_paths[]}`. Resolution: add the path to that unit `target_files` (`operation: create`), or point the command at a path a unit already owns. Source skill: `plan` (Step 5 `validate-unit-spec.sh`; re-gated at the execute-bolts PreToolUse re-derive).
+- `acceptance_path_unowned` — plan/execute-bolts gate: a unit whose `acceptance_test` command runs a path that NO unit declares in `target_files` and that does not exist on disk. ALWAYS STOP. The unit is unfinishable by construction: committing the file trips the B3 whitelist observer (`whitelist_violation`), skipping it fails the acceptance command — the implementer can only discover this after a full dispatch has burned (field case: HOST-AS400 U-001, an out-of-scope halt after ~70k tokens). Details `{unit_id, unowned_paths[]}`. Resolution: add the path to that unit `target_files` (`operation: create`), or point the command at a path a unit already owns. Source skill: `plan` (Step 5 `validate-unit-spec.sh`; re-gated at the execute-bolts PreToolUse re-derive).
 
 ### sprint_blocked_by
 
@@ -66,10 +58,6 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 - `dep_not_found` — execute-bolts (L0 gate): a newly-added dependency does not resolve in its registry; user corrects the manifest. ALWAYS STOP.
 
-### review_critical_unresolved
-
-- `review_critical_unresolved` — execute-bolts: the review panel's Critical findings (or a still-❌ spec lens — an unmet requirement carries no severity grade) survived the retry cap; user resolves them. W1: DEFER via quarantine (3.10), final report.
-
 ### batch_suite_red
 
 - `batch_suite_red` — execute-bolts: the batch-completion FULL suite ended RED; user fixes the failing test(s) then re-runs the suite. ALWAYS STOP.
@@ -81,14 +69,6 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### postflight_evidence_missing
 
 - `postflight_evidence_missing` — execute-bolts: a committed Hard-rule bolt has no passing `postflight.json`; user runs the post-flight scan via `run-postflight-scan.sh`. ALWAYS STOP.
-
-### panel_evidence_missing
-
-- `panel_evidence_missing` — execute-bolts gate (F-07, spec 2026-08-30 §3.1): a bolt dispatched WITH `bolts/U-XXX/review-tier.json` (`resolve-review-tier.sh --write`, the obligation key; earlier bolts advisory) at tier ≠ minimal has no `findings.json` with `written_by: merge-panel-findings.sh`. ALWAYS STOP. Resolution: run the blind panel, merge with the script. Detector `validate-bolt-artifacts.sh --panel-scan`.
-
-### l0_evidence_missing
-
-- `l0_evidence_missing` — execute-bolts gate (F-07): a keyed bolt has no `lens-inputs/U-XXX/l0-results.json` with `written_by: run-code-gates.sh`. ALWAYS STOP. Resolution: `run-code-gates.sh … --unit=<unit.md> --write` over the bolt's range.
 
 ### acceptance_expects_missing
 
@@ -117,10 +97,6 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### commit_rejected_by_hook
 
 - `commit_rejected_by_hook` — execute-bolts: the repo's own commit hook (pre-commit/husky/lefthook) or required GPG signing rejected the bolt commit; user fixes the hook finding (never `--no-verify`). ALWAYS STOP.
-
-### scope_creep_detected
-
-- `scope_creep_detected` — execute-bolts: a bolt exceeded its declared scope; user reviews the deviation. ALWAYS STOP.
 
 ### bolt_artifacts_missing
 

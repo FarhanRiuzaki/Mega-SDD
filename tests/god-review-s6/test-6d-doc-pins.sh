@@ -4,11 +4,12 @@
 #               scan halts BEFORE commit / leaves the violation uncommitted.
 #   EB-GATE-2   the canonical commit identity + trailers appear on every producer surface.
 #   EB-DOC-5    the canonical bolt-halt enum has ONE home (halts-and-handoff.md);
-#               handoff-contract points at it and carries NO inline copy (M-02).
+#               handoff-contract points at it and carries NO inline copy (M-02);
+#               the six names retired in P3b (no emitter after P3) stay out of it.
 #   PHANTOMS    --strict-provenance gone; `ast-grep test --validate` only ever mentioned
 #               as NOT existing; missing_dependency retired from the dispatch vocabulary.
 #   EB-DOC-7    stale create/extend/modify enum phrase eliminated.
-#   LOCKED-DRIFT one eligibility (override-only) — no surface still says propose-eligible.
+#   LOCKED-DRIFT no surface still says propose-eligible (the halt itself is retired, P3b).
 #   (P3 C3: the panel lens agents and review-panel.md are deleted; their pins went with them.)
 # Run: bash tests/god-review-s6/test-6d-doc-pins.sh
 set -uo pipefail
@@ -83,10 +84,13 @@ hh, hc, ht = open(sys.argv[1]).read(), open(sys.argv[2]).read(), open(sys.argv[3
 m = re.search(r"CANONICAL bolt-halt enum.*?\n\n(`.*?`)\n", hh, re.DOTALL)
 assert m, "canonical enum block missing from halts-and-handoff"
 canon = set(re.findall(r"`([a-z_]+)`", m.group(1)))
-for required in ("whitelist_violation", "review_critical_unresolved", "batch_suite_red",
+for required in ("whitelist_violation", "acceptance_red", "batch_suite_red",
                  "postflight_evidence_missing", "hard_rule_mixed_grammar", "commit_rejected_by_hook",
                  "memory_in_use"):
     assert required in canon, "canonical enum missing %s" % required
+for gone in ("dispatch_prompt_too_large", "panel_evidence_missing", "l0_evidence_missing",
+             "review_critical_unresolved", "scope_creep_detected", "bolt_introduces_locked_drift"):
+    assert gone not in canon, "retired halt %s back in the canonical enum" % gone
 # M-02 ownership flip: handoff-contract carries NO inline copy of the enum any more —
 # a single pointer names the canonical owner (halts-and-handoff.md), so copy-drift is
 # impossible by construction. Assert BOTH directions: the pointer exists AND no inline
@@ -122,7 +126,7 @@ done < <(grep -rn "ast-grep test --validate" "$P/skills" "$P/commands" 2>/dev/nu
 
 echo "── enum + eligibility coherence ──"
 grep -rqE "create/extend/modify" "$EB" && fail "stale create/extend/modify enum phrase survives" || ok "task_type enum phrases honest ({create,verify,extend})"
-grep -rq "propose-and-confirm OR override" "$EB" && fail "locked-drift dual-eligibility survives" || ok "bolt_introduces_locked_drift is override-only everywhere"
+grep -rq "propose-and-confirm OR override" "$EB" && fail "locked-drift dual-eligibility survives" || ok "no locked-drift dual-eligibility phrase survives"
 
 echo "── whitelist observer documented where it exists ──"
 grep -q "whitelist-scan" "$EB/SKILL.md" && grep -q "whitelist_violation" "$EB/SKILL.md" \

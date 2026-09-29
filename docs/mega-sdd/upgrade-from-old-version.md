@@ -132,7 +132,7 @@ The old phrases still route: "pecah PRD ini" / "spec out this feature" / "genera
 - **7.24–7.27 — KB accuracy pack.** KB validators recognise the `modules/*.prd.md` grammar (a post-7.6 KB no longer SKIPs silently — `kb_discovery` MISCONFIGURED backstops it); the claim-verify lane (`claim-verifier` per module) runs after extraction; counts are script-derived; `rebuild_after` DAG + AC golden-master for `[LOCKED]` rules.
 - **7.28–7.29 — size-weighted.** `unit_tier: xs` shrinks the dispatch payload of small units (−65% measured); `project_scale: xs` (derived from PRD structure) omits the vault Glossary (its tech-OQ auto-defer was superseded in 8.5: technical OQs are decided by the AI at every scale).
 
-**What did NOT break:** every artifact, every gate/hook contract, both vault layouts, both KB grammars. **No migration commands** for 7.6 → 7.29 — update the plugin (`claude plugin marketplace update` + `claude plugin update`, or `/mega-sdd:update-plugin`) and reload. If a previously-green bolt now blocks on `panel_evidence_missing` / `l0_evidence_missing`, it was dispatched under the new obligation key — run the panel / L0 writers named in the halt envelope.
+**What did NOT break:** every artifact, every gate/hook contract, both vault layouts, both KB grammars. **No migration commands** for 7.6 → 7.29 — update the plugin (`claude plugin marketplace update` + `claude plugin update`, or `/mega-sdd:update-plugin`) and reload. Neither 7.11 evidence halt fires after P3: the panel, its writer and the gate that checked both were removed.
 
 ## Upgrading to 6.0.0 (the alias-removal major)
 

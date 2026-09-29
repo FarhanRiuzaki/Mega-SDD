@@ -1,13 +1,12 @@
 # execute-bolts — Halts, streaming + handoff
 
-Everything downstream of the per-unit gates: the halt protocol (blocker envelope), compact streaming + the aggregate `_summary.md`, outputs detail, and the handoff YAML + the canonical bolt-halt enum + end-of-chain phasing. The full halt YAML bodies, propose-and-confirm UX, the new-halt-types table, and the PBT violation flow live in `halt-recovery.md` (routed from SKILL.md; loaded only when a halt fires or a `properties:` unit is batched).
+Everything downstream of the per-unit gates: the halt protocol (blocker envelope), compact streaming + the aggregate `_summary.md`, outputs detail, and the handoff YAML + the canonical bolt-halt enum + end-of-chain phasing. The full halt YAML bodies, propose-and-confirm UX, and the PBT violation flow live in `halt-recovery.md` (routed from SKILL.md; loaded only when a halt fires or a `properties:` unit is batched).
 
 ## Contents
 - Halt protocol
 - Self-assessment requirement
 - Post-flight acceptance-test concern harvest
 - Provenance trailer enforcement
-- Per-bolt drift check
 - Compact streaming progress
 - Aggregate `_summary.md`
 - Batch completion — full-suite gate (B2)
@@ -28,7 +27,7 @@ blocker:
   next_action: <retry | edit unit | manual fix>
 ```
 
-The full structured halt YAML bodies (`test_fail`, `review_critical_unresolved`), the propose-and-confirm eligibility table + dispatch contract + config override, the new-halt-types table, and the Property-Based Testing violation flow are in `halt-recovery.md` (routed from SKILL.md) — load it only when a halt actually fires or a batched unit carries a non-empty `properties:` field.
+The full structured halt YAML bodies (`test_fail`), the propose-and-confirm eligibility table + dispatch contract + config override, and the Property-Based Testing violation flow are in `halt-recovery.md` (routed from SKILL.md) — load it only when a halt actually fires or a batched unit carries a non-empty `properties:` field.
 
 ## Self-assessment requirement
 
@@ -76,30 +75,6 @@ Unit: U-XXX · provenance: <repo-relative path of bolts/U-XXX/dispatch-prompt.md
 > No `Implements claim:` / `Anchors consulted:` / `Hard Rules active:` / `vault sha256` lines (line 2 points at the persisted dispatch file, `references/paths.md`, where every value lives): MEASURED on four arm trees such lines were 33–70 % of all comment lines the bolts produced, and nothing read them — `validate-bolt-artifacts.sh` keys `provenance_missing` on the marker line only; claim ids live in the bolt-report `claims:` (validated), anchors in the unit spec, Hard-rule compliance is recomputed by the B1 engine (`_lib/postflight_rules.py`) from git/fs ground truth. The dispatch's `Provenance values` block still hands the implementer the version, unit id and vault sha (its only sanctioned source). This scan verifies trailer PRESENCE only.
 
 Language-appropriate comment style (e.g. `//` for JS/PHP/Java, `#` for Python/Ruby, `--` for SQL). Missing trailer → halt `provenance_missing`.
-
-## Per-bolt drift check
-
-After post-flight Hard Rule validation passes (or a proposed-and-confirmed fix is applied), AND BEFORE the unit is accepted as done (the implementer's commit has already landed — detect-after topology per SKILL.md), run a quick scope-filtered drift scan vs the vault. This runs for EVERY implement unit of an `--agents` run — single run or batch, never batch-only (the default inline run gives it up; the chain-end detect-drift auto-gate is its backstop — `inline-run.md` (e)):
-
-a. Read `vault.json` scope (if a multi-scope vault) OR skip the scope filter.
-b. For each file in the unit's `target_files` modified this bolt:
-   - Compare current state vs the vault's expected state (the unit's `bolts/U-XXX/binding.json` on layout-3, or `binding.md` anchors on a pre-9.0 layout-2 vault, when present).
-   - Detect name drift, type drift, behavior drift (per detect-drift categories).
-c. If drift is detected on a LOCKED entity (per `data-mutation-policy.md`) → halt `bolt_introduces_locked_drift` (pure-pause; override-only — never propose-and-confirm).
-d. If drift is detected on an INTENT/ARTIFACT entity → log to `bolt-report.md` `## Drift introduced` + continue (will surface at the batch-end detect-drift gate).
-e. If no drift → log "✓ Drift check: clean" to `bolt-report.md`.
-
-Compact streaming reflects this:
-
-```
-└─ Post-flight: Hard Rules ✓ | PBT ✓ | Drift check: clean ✓
-```
-
-OR (drift detected):
-
-```
-└─ Post-flight: Hard Rules ✓ | PBT ✓ | ⚠️ Drift: order.amount type changed (LOCKED — will halt at gate)
-```
 
 ## Compact streaming progress
 
@@ -320,7 +295,7 @@ handoff:
 
 Status `halted` on any entry of the CANONICAL bolt-halt enum (single owner — `handoff-contract.md`'s routing index carries NO copy, only a pointer here, and `halt-taxonomy.md` classifies every entry into always-stop / cycle-eligible / soft; on conflict this list wins):
 
-`test_fail` · `hard_rule_violated` · `hard_rule_unparseable` · `hard_rule_unanchored` · `hard_rule_mixed_grammar` · `verify_unit_writable` · `cross_squad_interface_draft` · `module_blocked_by` · `sprint_blocked_by` · `acceptance_path_unowned` · `dep_missing` · `secret_in_code` · `sast_critical_finding` · `dep_not_found` · `review_critical_unresolved` · `pbt_citation_invalid` · `pbt_property_violated` · `batch_suite_red` · `batch_suite_gate_missing` · `postflight_evidence_missing` · `acceptance_evidence_missing` · `acceptance_red` · `build_broken` · `anchor_missing` · `whitelist_violation` · `commit_rejected_by_hook` · `bolt_repeated_partial_failure` · `dispatch_prompt_too_large` · `bolt_introduces_locked_drift` · `scope_creep_detected` · `provenance_missing` · `self_assessment_missing` · `bolt_artifacts_missing` · `memory_in_use` · `panel_evidence_missing` · `l0_evidence_missing` · `acceptance_expects_missing` · `binding_conflict` · `ambiguous_spec` · `verify_grounding_untrusted`
+`test_fail` · `hard_rule_violated` · `hard_rule_unparseable` · `hard_rule_unanchored` · `hard_rule_mixed_grammar` · `verify_unit_writable` · `cross_squad_interface_draft` · `module_blocked_by` · `sprint_blocked_by` · `acceptance_path_unowned` · `dep_missing` · `secret_in_code` · `sast_critical_finding` · `dep_not_found` · `pbt_citation_invalid` · `pbt_property_violated` · `batch_suite_red` · `batch_suite_gate_missing` · `postflight_evidence_missing` · `acceptance_evidence_missing` · `acceptance_red` · `build_broken` · `anchor_missing` · `whitelist_violation` · `commit_rejected_by_hook` · `bolt_repeated_partial_failure` · `provenance_missing` · `self_assessment_missing` · `bolt_artifacts_missing` · `memory_in_use` · `acceptance_expects_missing` · `binding_conflict` · `ambiguous_spec` · `verify_grounding_untrusted`
 
 Required ONLY under `--auto`.
 

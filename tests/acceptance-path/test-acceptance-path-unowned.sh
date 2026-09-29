@@ -159,7 +159,7 @@ echo "── F: the inline plan's commit step commits the unlisted test files (t
 # "never park a written test outside the repo" had no inline carrier and is recorded as lost.
 grep -qF 'plus the test files this task wrote' "$IMP" \
   && ok "F2 the inline commit step commits the test files the task wrote (unlisted in target_files)" \
-  || bad "F2 the instruction that prevents the false scope_creep_detected is missing"
+  || bad "F2 the instruction that prevents a false out-of-scope halt is missing"
 
 rm -rf "$A" "$A2" "$B" "$C" "$D" "$D2"
 echo "──────────────────────────────"

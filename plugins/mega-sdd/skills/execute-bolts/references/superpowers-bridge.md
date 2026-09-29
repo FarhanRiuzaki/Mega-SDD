@@ -165,19 +165,6 @@ scope: <scope-id>              # only when vault.json carries scope_metadata
 - [ ] / [x] criterion 1
 - [ ] / [x] criterion 2
 
-## Review panel
-<MANDATORY when a panel ran: tier used + the router's `signals_fired[]`
-(the deterministic evidence behind the tier), lens list, finding table
-(severity, file:line, lens), dropped-no-evidence count, and — when the run
-HALTED review_critical_unresolved (an open Critical or a still-❌ spec lens at
-cap exhaustion; the halt is terminal, the bolt never "proceeds" over it) — the
-halt ref.
-Also records design-lens skip reason for non-UI units, and L0 gate SKIPs.
-Derived from the finding ledger (`findings.json`, review-panel.md §Attempt
-rounds) at unit completion AND on any halt; carries per-round outcomes:
-advisory findings, resolution-verifier verdicts per round, and any
-escape-hatch full re-panel with its stated cause.>
-
 ## Failures (if any)
 <test output, error messages, hypothesis>
 ```

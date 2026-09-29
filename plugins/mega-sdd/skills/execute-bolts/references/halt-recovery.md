@@ -4,9 +4,7 @@ Cold companion to `halts-and-handoff.md` (which keeps the always-hot halt protoc
 
 ## Contents
 - `test_fail` halt YAML
-- `review_critical_unresolved` halt YAML
 - Propose-and-confirm halt UX
-- New halt types table
 - Property-Based Testing validation
 
 ## `test_fail` halt YAML
@@ -29,29 +27,6 @@ blocker:
   next_action: "Review bolt-report.md; edit unit acceptance criteria, fix code manually, or skip via --force"
 ```
 
-## `review_critical_unresolved` halt YAML
-
-When the review panel's retry budget exhausts with a **Critical** finding still open OR the spec lens still ❌ (per `review-panel.md §Merge + severity gate` — a missing/misread requirement carries no severity grade, so spec ❌ is its own terminal condition), emit the terminal halt — the run STOPS; never proceed to the next bolt over an open Critical or an unmet requirement:
-
-```yaml
-blocker:
-  type: review_critical_unresolved
-  emitted_at: <ISO8601 timestamp>
-  emitted_by: execute-bolts
-  details:
-    unit_id: U-XXX
-    retries_attempted: <N>          # = attempts.json `dispatches` − 1 (hook-written; never your own count)
-    retry_budget: <N>               # review-tier.json `retry_budget` (+ `retry_budget_source`)
-    tier: <minimal|standard|full>
-    open_criticals:
-      - lens: <spec|quality|security|standards|design>
-        finding: <one-line>   # a still-❌ spec lens rides this list as lens: spec —
-        anchor: <file:line>   # the unmet requirement IS the open finding
-  next_action: "Review the open finding(s) in bolt-report.md ## Review panel — open Critical(s) and/or the spec lens's unmet requirement; fix the committed code (or revert the bolt commit) and re-run the unit. The finding survived the shared --max-retries budget — do not raise the cap to outlast it."
-```
-
-**The budget is hook-enforced.** The same halt fires when the PreToolUse `attempt-cap` gate DENIES a `bolt-implementer` dispatch (the unit already used `1 + retry_budget` dispatches) — write this YAML + the bolt-report `## Review panel` section and stop the unit; never retry the dispatch. **Reset is the human's:** after fixing the root cause, delete `<vault>/bolts/U-XXX/attempts.json` (or raise `max_retries:` in `.mega-sdd/config.yaml`) and re-run — the file is in the anti-self-bypass set, so the controller cannot do it.
-
 ## Propose-and-confirm halt UX
 
 Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt halts with an eligible halt type, dispatch an AI fix-proposer subagent → render the proposal via `AskUserQuestion` → on accept, apply the fix + re-execute → on reject, the chain pauses.
@@ -68,14 +43,10 @@ Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt ha
 - `constitution_drift_detected` — audit-significant.
 - `bolt_repeated_partial_failure` — structural problem; a fix won't help.
 - `provenance_missing` — user must add the trailer.
-- `dispatch_prompt_too_large` — config issue, not bolt-fixable.
 - `dep_missing` — environment setup needed. (The agent-carried halt vocabulary — `agents/bolt-implementer.md` §Halt vocabulary — emits this same type; the legacy alias `missing_dependency` is retired.)
 - `hard_rule_unparseable` — config issue.
 - `hard_rule_unanchored` — config issue.
 - `ambiguous_spec` — human interpretation call (subagent-emitted; pure-pause).
-- `scope_creep_detected` — the unit's scope is wrong or the plan drifted; human restructures.
-- `review_critical_unresolved` — a Critical (or a still-❌ spec lens) survived the retry budget; human reviews the code (the unit is QUARANTINED and the question rides the final report — not a mid-run pause).
-- `bolt_introduces_locked_drift` — LOCKED behavior is a human decision by definition; override-only (the fix-proposer template refuses LOCKED files).
 - `verify_unit_writable` — config issue.
 
 **Dispatch contract:**
@@ -100,22 +71,6 @@ halt_auto_propose:
   dedup_ambiguous: pause             # always
   # ... rest pause by default
 ```
-
-## New halt types table
-
-Beyond the existing halts, this skill adds:
-
-| Halt type | Fires when | Eligible for propose? |
-|---|---|---|
-| `dispatch_prompt_too_large` | Step 4.5 tiered prompt exceeds the hard cap | NO (config/spec issue) |
-| `bolt_repeated_partial_failure` | propose-and-confirm cycled with different fixes | NO (structural) |
-| `provenance_missing` | Post-flight detects a missing provenance trailer in a modified file | NO (user adds the trailer) |
-| `bolt_introduces_locked_drift` | The per-bolt drift check detects drift on a LOCKED entity | NO (override-only — LOCKED behavior is a human decision; the fix-proposer template refuses LOCKED files) |
-| `self_assessment_missing` | `bolt-report.md` lacks the `bolt_self_report` YAML block | NO (bolt must self-report) |
-| `commit_rejected_by_hook` | The repo's own commit hook (pre-commit/husky/lefthook) or required GPG signing rejected the bolt's commit. Hook output verbatim in details. NEVER retried with `--no-verify` (forbidden plugin-wide). | NO (user fixes the hook finding or environment) |
-| `bolt_artifacts_missing` | An `emitted_by: execute-bolts` `status: completed` handoff that executed units (`metrics.items_processed > 0`) lists no `<vault>/bolts/U-XXX/` artifact — the bolt folder was never generated. Detected by the gate-time handoff validator (PreToolUse Branch 1a → `validate-handoff-yaml.sh`); exempts dry-run/no-op (`items_processed == 0`). | NO (controller must create the dir at Procedure Step 0 + write `bolt-report.md`, then re-emit) |
-
-Halt YAML envelopes for each are documented in the propose-and-confirm-prompt template (listed in SKILL.md).
 
 ## Property-Based Testing validation
 
