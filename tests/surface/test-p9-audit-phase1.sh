@@ -170,6 +170,8 @@ grep -qF 'mega-sdd-trace:extract-intelligence' "$P/skills/extract-intelligence/r
 # C3 (deep-scan dispatch tag) RETIRED in 9.0 P1 — deep-scan dispatch deleted with scan-codebase.
 grep -qE '^[[:space:]]*mega-sdd-trace:execute-bolts$' "$P/skills/execute-bolts/references/inline-run.md" \
   && pass "C4: the inline close-review prompt carries the tag on its own line" || fail "C4: inline-run reviewer tag missing"
+grep -qE '^mega-sdd-trace:execute-bolts$' "$P/skills/execute-bolts/references/propose-and-confirm-prompt.md" \
+  && pass "C5: the fix-proposer prompt carries the tag on its own line" || fail "C5: propose-and-confirm fix-proposer tag missing"
 
 # ── D — infra batch ──
 # D1 (v7.3.1): user-prompt-submit is RESTORED as the pure-shell gateway-marker

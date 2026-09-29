@@ -37,6 +37,7 @@ execute-bolts post-flight detects halt → if halt type eligible → dispatch fi
 ## Prompt template
 
 ```
+mega-sdd-trace:execute-bolts
 ROLE: AI fix proposer for mega-sdd bolt halt.
 
 CONTEXT:
