@@ -44,7 +44,7 @@ BAD=0
 # moved to references/halt-protocol.md, which the net scans.
 TOPO_BAD='halts?[[:space:]]+pre-commit|pre-commit[[:space:]]+halts?|halts? before commit|re-validate[^.]*before commit|code[^.]{0,20}working tree|preserved in (the )?working tree|remains? in[^.]{0,20}\(not committed\)'
 for f in "$EB/SKILL.md" "$EB/references/hard-rule-scan.md" "$EB/references/hard-rule-grammar-v2.md" \
-         "$EB/references/code-gates.md" "$EB/references/batch-and-fanout.md" \
+         "$EB/references/code-gates.md" "$EB/references/inline-run.md" \
          "$EB/references/halts-and-handoff.md" "${ROOT}/tests/skill-triggering/execute-bolts.test.md" \
          "${ROOT}/tests/skill-triggering/auto.test.md" "${ROOT}/tests/scenarios/scenario-2-prd-driven-feature.md" \
          "${ROOT}/tests/scenarios/scenario-6-recovery-from-halt.md" \

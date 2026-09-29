@@ -326,9 +326,4 @@ Required ONLY under `--auto`.
 
 ## Bolt-outcomes state (pipeline)
 
-`<vault>/.memory/bolt-outcomes.json` is PIPELINE STATE, not a learning lane: `query-graph.sh --modules` derives per-unit completion for the module/DoD rollup from it (latest entry per unit wins), and the analyze cross-unit checks read it for context. The controller appends one entry per bolt outcome:
-
-- After a bolt completes: `{unit_id, run_at, task_type, status: "completed", duration_ms}`.
-- After a bolt halts: `{unit_id, run_at, task_type, status: "halted_<type>", halt_reason}`.
-
-Append-only JSON (`{"bolts": [...]}`); a later successful re-run simply appends — consumers take the latest entry per unit. Write it directly (small python/Bash append at the Step-0 artifact layer — there is no memory-write helper; SCRIPTS read this file). Learning fields (`failure_reflection`, concern thresholds, Reflexion reads) do not exist; do not write them.
+`<vault>/.memory/bolt-outcomes.json` is PIPELINE STATE, not a learning lane. Pre-P3 runs appended one entry per bolt outcome (`{unit_id, run_at, task_type, status: "completed" | "halted_<type>", …}`, append-only, the latest entry per unit wins); the inline run writes none — `query-graph.sh --modules` reads the evidence done rule (`_lib/exec_units.done`) first and this file of older runs as the fallback, and the analyze cross-unit checks read it for context. Learning fields (`failure_reflection`, concern thresholds, Reflexion reads) do not exist; do not write them.

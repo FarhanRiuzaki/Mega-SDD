@@ -254,7 +254,7 @@ reset_counts; run_script "bash '$SCR'/validate-plan-coverage.sh --cwd=$FIXJ --pr
   || bad "C14 validate-plan-coverage: spawns=$(total)"
 reset_counts; run_script "bash '$SCR'/derive-ready-units.sh --cwd=$FIXJ --vault=$JV"
 [ "$(total)" -le 8 ] \
-  && ok "C15 derive-ready-units (W2 lite readiness; wraps compute-unit-staleness): ≤8 spawns ($(total))" \
+  && ok "C15 derive-ready-units (the done/quarantined source of derive-exec-plan; wraps compute-unit-staleness): ≤8 spawns ($(total))" \
   || bad "C15 derive-ready-units: spawns=$(total)"
 reset_counts; run_script "bash '$SCR'/derive-plan-pins.sh --cwd=$FIXJ --prd=docs/PRD.md"
 [ "$(total)" -le 8 ] \

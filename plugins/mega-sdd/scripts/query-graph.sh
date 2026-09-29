@@ -2,7 +2,7 @@
 # Impact/blast-radius query over .mega-sdd/graph.json. Lazy-rebuild when stale.
 # v7 Fase 2 merge group 6: also hosts the per-module status rollup as the
 # --modules mode (merged verbatim from the former list-modules.sh — reads
-# modules.yaml + unit frontmatter + bolt-outcomes.json, read-only, no graph
+# modules.yaml + unit frontmatter + _lib/exec_units.done, then bolt-outcomes.json, read-only, no graph
 # involvement; exit 0 rollup / 1 vault not found / 2 usage).
 #   query-graph.sh --modules [vault-path] [--cwd=<p>] [--module=<id>] [--format=table|json]
 set -u
@@ -33,7 +33,7 @@ case "$FORMAT" in table|json) : ;; *) echo "list-modules: --format must be table
 # Deterministic compute + render in python3. YAML parsing mirrors build-graph.sh:
 # PyYAML-preferred with a hand-rolled fallback (PyYAML is frequently absent on a
 # system python3). MEGA_SDD_FORCE_YAML_FALLBACK=1 forces the fallback for tests.
-CWD="$CWD" VAULT_ARG="$VAULT_ARG" ONLY_MODULE="$ONLY_MODULE" FORMAT="$FORMAT" \
+CWD="$CWD" VAULT_ARG="$VAULT_ARG" ONLY_MODULE="$ONLY_MODULE" FORMAT="$FORMAT" QG_LIB="$(cd "$(dirname "$0")" && pwd)/_lib" \
 python3 <<'PYEOF'
 import glob
 import json
@@ -270,7 +270,7 @@ if only_module:
         die("unknown module: %s (valid: %s)" %
             (only_module, ", ".join(sorted(defined_ids)) or "none"), 2)
 
-# --- Per-unit status from bolt-outcomes.json (latest entry wins) --------------
+# --- Per-unit status: bolt-outcomes.json (latest entry wins), then evidence ---
 status_of = {}          # unit_id -> "completed" | "halted_*" | None
 bo_path = os.path.join(vault_dir, ".memory", "bolt-outcomes.json")
 if os.path.isfile(bo_path):
@@ -283,6 +283,12 @@ if os.path.isfile(bo_path):
                 status_of[uid] = st     # append-only → last wins = current
     except Exception:
         pass                            # tolerate a malformed/absent memory file
+try:  # the evidence done rule (execute-bolts writes no bolt-outcomes since P3) beats a stale entry — advisory
+    sys.path.insert(0, os.environ["QG_LIB"]); import exec_units as xu
+    parsed = {u: xu.parse(p) for u, p in xu.unit_files(vault_dir).items()}
+    status_of.update({u: "completed" for u in parsed if xu.done(os.path.abspath(cwd), vault_dir, u, parsed)})
+except Exception:
+    pass
 
 
 def dod_done(item):
@@ -328,7 +334,7 @@ def satisfied(mid):
     return r is not None and r["status"] == "completed"
 
 for r in rollup.values():
-    r["blocked_by_resolved"] = [{"id": b, "satisfied": satisfied(b)} for b in r["blocked_by"]]
+    r["blocked_by_resolved"] = [{"id": b, "satisfied": satisfied(b), "status": (rollup.get(b) or {}).get("status", "undeclared")} for b in r["blocked_by"]]
 
 # actionable = a started-or-startable module that is NOT itself complete and whose
 # blockers are all satisfied (deterministic; the command phrases the suggestion)

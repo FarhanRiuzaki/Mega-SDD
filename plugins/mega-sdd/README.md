@@ -231,7 +231,6 @@ staleness_notice: true    # false → session-start state block keeps only heade
 layout: new               # legacy → pre-migration scattered output paths
 auto_verify_on_edit: false # true → inline edit of a unit's target_file offers its acceptance run
 # unit_granularity:       # ABSENT is the default (medium); fine|coarse resize the units plan writes (--max-complexity flag wins)
-parallel_max: 4           # execute-bolts wave width
 # profile: lean           # trims advisory diagnostics (never a gate); `full` re-enables the Stop-hook analyze aggregate
 # render_html: on         # ABSENT = off for pipeline hand-offs (the emit lanes always render)
 knowledge_base: ""        # KB dir OUTSIDE the tree (monorepo submodule shared by FE + BE apps); empty → in-project paths

@@ -19,8 +19,8 @@ Halts belong to the guarded pipeline (`plan` → `execute-bolts`) and to the ext
 | `dedup_ambiguous` | `create` unit targets existing files | plan Step 4 (and `plan --reconcile`) |
 | `hard_rule_violated` | Bolt modified locked code | execute-bolts post-flight |
 | `hard_rule_unparseable` | Unit's Hard Rule has bad syntax | plan Step 5 / execute-bolts pre-flight |
-| `cross_squad_interface_draft` | Consumer waiting for producer to lock interface | execute-bolts --per-squad (migrated multi-squad vaults) |
-| `module_blocked_by` | Prerequisite module not complete | execute-bolts --module=X |
+| `cross_squad_interface_draft` | Consumer waiting for producer to lock interface | execute-bolts run start — quarantined (migrated multi-squad vaults) |
+| `module_blocked_by` | Prerequisite module not complete | execute-bolts --module=X run start (`derive-exec-plan.sh`) — halt module_blocked_by |
 | `oq_business_p1_unresolved` | P1 business OQ blocking downstream | orchestrate-flow oq_gate (a P1 business OQ plan's batched ask left open) |
 | `quality_gate_failed` | a module's per-module quality gate failed twice | extract-intelligence |
 

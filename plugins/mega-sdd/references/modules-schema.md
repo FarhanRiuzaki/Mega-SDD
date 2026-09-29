@@ -156,7 +156,7 @@ Modules can have `blocks` / `blocked_by` for inter-module ordering. Example:
 
 ## Module-level DoD validation
 
-The list-modules diagnostic (`orchestrate-flow/references/diagnostics-procedures.md §list-modules`, or the `execute-bolts --module=<id>` completion check) probes each DoD item:
+The list-modules diagnostic (`orchestrate-flow/references/diagnostics-procedures.md §list-modules`) probes each DoD item:
 
 - Checklist items (Markdown `- [ ] / [x]`) → toggleable; user marks done
 - Test commands → can be auto-run: detect command string; invoke via Bash; the exit code is pass/fail, a pass is marked `[x]` in `modules.yaml`

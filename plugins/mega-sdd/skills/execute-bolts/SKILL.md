@@ -23,7 +23,7 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
 
 - Unit path OR unit ID OR `--all` (positional).
 - **Flags:**
-  - `--parallel` (`--agents` only) — the main-thread controller dispatches independent units concurrently, each still running the review panel; **wave width is capped at `config.yaml parallel_max:` (default 4)** (CC's 20-subagent default × an ~80-turn implementer is a token/fleet hazard). **On `--all --agents` this is the DEFAULT** (spec 2026-08-29 Fase 2 — a 30-unit vault whose DAG is 10 deep costs 30 bolt-times sequentially and 10 wave-times in sprints; measured `parallelism_speedup: 3.0`); the flag DEFAULT stays off for standalone non-`--all` invocations, where it is what forces waves on a multi-unit filter. The **Overlap rail** (intersecting `target_files` serialize), depth-1 discipline, wave-plan consumption, and per-unit gate ranges are owned by `references/batch-and-fanout.md §--all` — load it before any parallel dispatch.
+  - `--parallel` (`--agents` only) — the main-thread controller dispatches independent units concurrently, each still running the review panel; **wave width is capped at `config.yaml parallel_max:` (default 4)** (CC's 20-subagent default × an ~80-turn implementer is a token/fleet hazard). **On `--all --agents` this is the DEFAULT** (spec 2026-08-29 Fase 2 — a 30-unit vault whose DAG is 10 deep costs 30 bolt-times sequentially and 10 wave-times in sprints; measured `parallelism_speedup: 3.0`); the flag DEFAULT stays off for standalone non-`--all` invocations, where it is what forces waves on a multi-unit filter. The **Overlap rail** (intersecting `target_files` serialize), depth-1 discipline, wave-plan consumption, and per-unit gate ranges went with that path.
   - `--sequential` — opt OUT of wave execution on `--all --agents`: one unit at a time in topological order. Use when the project's test suite is not concurrency-safe (shared test DB / fixtures / caches) and `--worktree` is not an option. Mutually exclusive with `--parallel`; passing both is a usage error.
   - `--agents` — retired; say once `--agents is retired: the per-unit agent path was removed (spec v9 §8.6); running the default inline run.` and run inline (the dispatch-shaping flags here do nothing; `references/inline-run.md` (a) maps each flag).
   - `--inline` — accepted no-op alias of the default (the front door, orchestrate-flow and older docs pass it).
@@ -35,13 +35,13 @@ The terminal phase of the SDD pipeline — turns units into code. It is also an 
   - `--rebind=@<paths-file>` (layout-3) — re-verdict, without dispatching anything, every unit whose `target_files` ∪ `## Anchors` ∪ per-unit binding anchors intersect the listed changed paths: **Run** `bash <plugin-root>/scripts/rebind-units.sh --cwd=<root> --vault=<vault> --paths=@<file>` (exit 0 = nothing affected · 4 = re-bound, read `gate` · 2/3 = fail-closed → `--units=all`). It is the sync/delta lane's re-bind hop (the state engine renders it); the CONFLICT gate it writes is the same `.validation-blockers.json` every dispatch meets.
   - `--force` — re-execute completed units / proceed on a dirty tree.
   - `--auto` — non-interactive (emit handoff YAML).
-  - `--per-squad` (`--agents` only) — fan out across all squads in `_meta/squads.yaml` (main-thread loop, depth-1, NO squad subagent) — procedure in `references/batch-and-fanout.md` + `references/squad-subagent.md`.
+  - `--per-squad` (`--agents` only) — fan out across all squads in `_meta/squads.yaml` (main-thread loop, depth-1, NO squad subagent).
   - `--review-panel=…` — retired; say once `--review-panel is retired: the run closes with one blind review of the whole range.` and carry on.
   - `--model-tier=<tier>`, `--no-escalate` — retired; say once `--model-tier=<tier> and --no-escalate are retired (no implementer is dispatched); --model-tier=<role>:<tier> still sets extract-intelligence tiers.` and carry on.
   - `--no-code-gates` — skip the L0 toolchain + SAST gates for this run (forwarded verbatim to `scripts/run-code-gates.sh`; logged in the bolt-report). The secret scan and new-dep existence check ALWAYS run — no flag disables them (per `references/code-gates.md`).
   - `--no-full-suite` — **DISCOURAGED** escape hatch that skips the batch-completion full-suite gate for THIS run (broken/absent project test command only). Logged in `_summary.md` + handoff `notes.full_suite_skipped: true`; the PreToolUse gate still blocks the next run until a green `_batch-suite.json` covers the newest code commit — never silent.
-  - `--squad=<id>` — filter units to one squad (human-team handoff). Halts on `cross_squad_interface_draft` if a consumed interface is still draft.
-  - `--module=<id>` — filter units to one module (per `plugins/mega-sdd/references/modules-schema.md`); topo-sort within module. Halts on `module_blocked_by` if a prerequisite module is incomplete.
+  - `--squad=<id>` — one squad of a migrated vault's `_meta/squads.yaml`; its units become `--units`.
+  - `--module=<id>` — one module's pending units (`derive-exec-plan.sh --module=`, `plugins/mega-sdd/references/modules-schema.md`); a prerequisite module not `completed` → **halt `module_blocked_by`**.
   - `--hard-rule-grammar=v1|v2` — force the Hard-rule grammar; default `auto` (detect from YAML presence under `## Hard rules`).
   - `--no-pbt` — skip Property-Based Testing validation (example-test-only behaviour).
   - `--no-empty-commits` — skip the bolt-report-only commit for `task_type: verify` units with no changes (per the verify-unit special path).
@@ -87,13 +87,9 @@ Every `bolt-report.md` MUST carry a `bolt_self_report` YAML block (numeric `conf
 
 ### verify-unit special path (the plan's verify task)
 
-`task_type: verify` units run the plan's verify task: pre-flight asserts `target_files` is empty / all `operation: none` (else **halt `verify_unit_writable`**); no L0 gate call (no code diff — the report-only commit touches sanctioned vault artifacts only); run acceptance tests; skip the post-flight Hard-rule scan (no changes to validate); commit only the bolt-report (or skip the commit on `--no-empty-commits`). Reference loads for this lane are pinned in §Specialist references (never squad/parallel/code-gate material).
+`task_type: verify` units run the plan's verify task: pre-flight asserts `target_files` is empty / all `operation: none` (else **halt `verify_unit_writable`**); no L0 gate call (no code diff — the report-only commit touches sanctioned vault artifacts only); run acceptance tests; skip the post-flight Hard-rule scan (no changes to validate); commit only the bolt-report (or skip the commit on `--no-empty-commits`). Reference loads for this lane are pinned in §Specialist references (never code-gate material).
 
-## Batch + fan-out execution (`--agents`)
-
-The default inline run takes the selected units in plan order in one context. Under `--agents`: `--all` (topo-sort by `depends_on` into SPRINTS — wave execution is the default, `--sequential` opts out; **any failure halts the whole run, no skip-ahead**), `--sprint=<n>`, `--per-squad`, `--squad=<id>`, and `--module=<id>` each have a procedure: squad fan-out, module gating, the `cross_squad_interface_draft` / `module_blocked_by` halts, and the parallel parent-thread post-flight re-scan → `references/batch-and-fanout.md` — **load it ONLY for a multi-unit `--agents` invocation** (single-unit runs never need it; the per-bolt drift check + B2 live in `references/halts-and-handoff.md`).
-
-### Batch completion — final full-suite gate (the safety net for cross-bolt regressions)
+## Batch completion — final full-suite gate (the safety net for cross-bolt regressions)
 
 **After the last committed code-bearing bolt of the invocation** (single OR batch — a lone bolt can break a sibling), run the project's **FULL** test suite exactly once via the sanctioned writer **`scripts/run-full-suite.sh --cwd=<root>`** (it runs the suite itself, pins HEAD, and records the hook-guarded `<vault>/bolts/_batch-suite.json`). **RED → halt `batch_suite_red`** (do not auto-revert; no `status: completed` handoff). Skipped only for `--dry-run`, a zero-code-commit run, or `--no-full-suite` (logged, never silent). **Enforcement (not prose):** the Stop hook + the execute-bolts gate run `validate-bolt-artifacts.sh --batch-suite-gate`; the PreToolUse aggregator **blocks the next `execute-bolts`** when no green `_batch-suite.json` covers the newest code commit (`batch_suite_gate_missing`) or the covering suite is RED (`batch_suite_red`) — the hook VERIFIES the artifact, it never runs the suite. Out-of-band bypass guard, freshness-anchor mechanics + the sync lane → `references/halts-and-handoff.md §Batch completion — full-suite gate (B2)` — single owner; design → `docs/superpowers/specs/2026-06-26-batch-suite-gate-and-bypass-guard.md`.
 
@@ -103,7 +99,7 @@ An open run resumes from its `_exec-plan-*.md` (`references/inline-run.md` (b)).
 
 ## Halt protocol + propose-and-confirm
 
-Always emit a blocker YAML on halt (per `references/bolt-contract.md`). Exhausted acceptance-test retries → `test_fail`; a stale consumed interface → `cross_squad_interface_draft`; the batch-completion full suite ends RED → `batch_suite_red` (and the PreToolUse gate blocks the next run with `batch_suite_red` / `batch_suite_gate_missing` until a green `_batch-suite.json` covers the newest code commit). Eligible halts (`test_fail`, `hard_rule_violated`, `pbt_property_violated`) may dispatch an AI fix-proposer (propose-and-confirm UX) per `references/propose-and-confirm-prompt.md`; structural / business / config halts always pure-pause. Full halt YAMLs, the eligibility table, the propose-and-confirm dispatch contract + config override, the new-halt-types table, and the Property-Based Testing flow → `references/halt-recovery.md` — load it ONLY when a halt actually fires (or a `properties:` unit is in the batch); the blocker envelope + the canonical bolt-halt enum stay in `references/halts-and-handoff.md`.
+Always emit a blocker YAML on halt (per `references/bolt-contract.md`). Exhausted acceptance-test retries → `test_fail`; a consumed interface still `draft` → run-start quarantine `cross_squad_interface_draft`; the batch-completion full suite ends RED → `batch_suite_red` (and the PreToolUse gate blocks the next run with `batch_suite_red` / `batch_suite_gate_missing` until a green `_batch-suite.json` covers the newest code commit). Eligible halts (`test_fail`, `hard_rule_violated`, `pbt_property_violated`) may dispatch an AI fix-proposer (propose-and-confirm UX) per `references/propose-and-confirm-prompt.md`; structural / business / config halts always pure-pause. Full halt YAMLs, the eligibility table, the propose-and-confirm dispatch contract + config override, the new-halt-types table, and the Property-Based Testing flow → `references/halt-recovery.md` — load it ONLY when a halt actually fires (or a `properties:` unit is in the batch); the blocker envelope + the canonical bolt-halt enum stay in `references/halts-and-handoff.md`.
 
 ## Anti-hallucination rails
 
@@ -132,7 +128,7 @@ Sources: each unit's `acceptance.json` (criterion → test → verdict); the del
 ## Specialist references (load on the stated condition)
 
 **Every implement unit:**
-- `references/inline-run.md` — the default run (no `--agents`): up-front bind, one-context execution, the one-review close; it replaces `batch-and-fanout.md`.
+- `references/inline-run.md` — the default run (no `--agents`): up-front bind, one-context execution, the one-review close.
 - `references/superpowers-bridge.md` — `--agents`: dispatch order, the review-panel per-unit flow, whitelist enforcement; every run: §bolt-report.md schema.
 - `references/code-gates.md` — L0 deterministic floor: gate order, halt YAMLs, blocking-vs-advisory split, `code_gates:` config.
 - `references/hard-rule-scan.md` — Hard Rule pre/post-flight: grammars, snapshot formats, per-rule checks, B1 evidence contract, `hard_rule_*` / `verify_unit_writable` halt YAMLs. (Skippable when NO batched unit has `## Hard rules`.)
@@ -141,14 +137,12 @@ Sources: each unit's `acceptance.json` (criterion → test → verdict); the del
 - `references/jit-bind-and-quarantine.md` — pre-flight 3.9 (the binding contract, §E3) and any DEFER-class halt that quarantines a unit: the three JIT bind calls, the ladder-E3 verdict contract, the Karantina table shape.
 
 **Only when the condition holds (do NOT load otherwise):**
-- `references/batch-and-fanout.md` — multi-unit `--agents` invocations only (`--all`/`--parallel`/`--per-squad`/`--squad=`/`--module=`): the batch procedures + wave/overlap rails.
-- `references/squad-subagent.md` — `--per-squad` only: filter + consolidation protocol (depth-1, no squad subagent).
 - `references/halt-recovery.md` — ONLY when a halt fires or a `properties:` unit is batched: full halt YAMLs, propose-and-confirm UX + config, new-halt-types table, PBT flow.
 - `references/propose-and-confirm-prompt.md` — only when dispatching the AI fix-proposer (eligible halts).
 - `references/hard-rule-grammar-v2.md` — only when authoring/debugging v2 (ast-grep) rules or on grammar halts.
 - `references/migrate-rules.md` — only for the Hard Rule v1→v2 migration procedure.
 
-**`task_type: verify` lane:** load ONLY the always-set above MINUS `code-gates.md` and `hard-rule-scan.md` — a verify unit commits no code (no L0 diff to gate; pre-flight self-skips units without Hard rules, post-flight is skipped by contract) and is never a batch driver on its own. Never load squad/parallel/code-gate material for a verify unit.
+**`task_type: verify` lane:** load ONLY the always-set above MINUS `code-gates.md` and `hard-rule-scan.md` — a verify unit commits no code (no L0 diff to gate; pre-flight self-skips units without Hard rules, post-flight is skipped by contract) and is never a batch driver on its own. Never load code-gate material for a verify unit.
 
 ## Related skills
 

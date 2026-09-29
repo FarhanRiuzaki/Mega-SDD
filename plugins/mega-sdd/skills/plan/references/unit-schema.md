@@ -98,8 +98,8 @@ produces_interfaces: []            # OPTIONAL — list of vault interface IDs th
                                    # Refs the kebab-id from interfaces/<id>.md frontmatter.
                                    # Only meaningful in multi-squad mode.
 consumes_interfaces: []            # OPTIONAL — list of vault interface IDs this unit depends on
-                                   # `execute-bolts` halts (cross_squad_interface_draft) if any referenced
-                                   # interface has status: draft.
+                                   # `execute-bolts` quarantines it at run start
+                                   # (cross_squad_interface_draft) if one is draft.
 allowed_new_deps: []               # OPTIONAL — the ALLOWLIST of new third-party
                                    # dependencies this unit sanctions. execute-bolts code gate 6
                                    # (the `validate-new-deps.sh --unit=` authorization concern) flags any dep the bolt ADDED that is
@@ -318,7 +318,7 @@ Applies only when `_meta/squads.yaml` exists with ≥2 squads (a migrated vault 
   - Producer side: declare `produces_interfaces: [<id>, ...]` listing every interface this unit creates/implements.
   - Consumer side: declare `consumes_interfaces: [<id>, ...]` listing every interface this unit reads/calls.
 - Every entry in `produces_interfaces` and `consumes_interfaces` MUST exist as an `interfaces/<id>.md` file in the vault. Dangling references fail validation.
-- A unit that `consumes_interfaces` a `status: draft` interface CAN be generated but CANNOT be executed: `execute-bolts` halts with `cross_squad_interface_draft` until the producer squad locks the interface.
+- A unit that `consumes_interfaces` a `status: draft` interface CAN be generated but CANNOT be executed: `execute-bolts` quarantines it at run start (`cross_squad_interface_draft`) until the producer squad locks it.
 
 ## Interface reference resolution
 

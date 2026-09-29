@@ -20,7 +20,6 @@ import subprocess
 
 from postflight_rules import unit_of
 
-DEPS_RX = re.compile(r"(?m)^depends_on:[ \t]*(\[[^\]]*\])?[ \t]*(?:#[^\n]*)?\n((?:[ \t]+-[^\n]*\n?)*)")
 REVIEW_FIX = re.compile(r"^fix\((?:review|delivery)\)!?:")
 
 
@@ -40,6 +39,13 @@ def unit_files(vault):
     return out
 
 
+def _list(fm, key):
+    """A frontmatter list, flow `[a, b]` or block `- a` form, `#` comments stripped."""
+    m = re.search(r"(?m)^%s:[ \t]*(\[[^\]]*\])?[ \t]*(?:#[^\n]*)?\n((?:[ \t]+-[^\n]*\n?)*)" % key, fm)
+    raw = (m.group(1)[1:-1].split(",") if m.group(1) else [re.sub(r"^[ \t]+-", "", ln) for ln in m.group(2).splitlines()]) if m else []
+    return [x for x in (re.sub(r"\s*#.*$", "", d).strip().strip("'\"") for d in raw) if x]
+
+
 def parse(path):
     """The frontmatter facts the inline gates read. Raises OSError when unreadable."""
     txt = open(path, encoding="utf-8", errors="replace").read()
@@ -49,10 +55,6 @@ def parse(path):
     def field(k):
         f = re.search(r"(?m)^%s:[ \t]*(.+?)[ \t]*$" % k, fm)
         return f.group(1).strip("'\"") if f else ""
-    dm, raw = DEPS_RX.search(fm), []
-    if dm:
-        raw = dm.group(1)[1:-1].split(",") if dm.group(1) else [re.sub(r"^[ \t]+-", "", ln) for ln in dm.group(2).splitlines()]
-    deps = [re.sub(r"\s*#.*$", "", d).strip().strip("'\"") for d in raw]
     targets = []
     tb = re.search(r"(?m)^target_files:[ \t]*\n((?:[ \t]+.*\n?)*)", fm)
     for ln in (tb.group(1).splitlines() if tb else []):
@@ -62,9 +64,10 @@ def parse(path):
         elif om and targets:
             targets[-1]["operation"] = om.group(1).lower()
     b = os.path.basename(path)
-    return {"file": path, "deps": [d for d in deps if d.startswith("U-")], "targets": targets,
+    return {"file": path, "deps": [d for d in _list(fm, "depends_on") if d.startswith("U-")], "targets": targets,
             "title": field("title") or (b[:-3] if b.startswith("U-") else os.path.basename(os.path.dirname(path))),
-            "status": field("status").lower(), "task_type": field("task_type").lower()}
+            "status": field("status").lower(), "task_type": field("task_type").lower(),
+            "consumes": _list(fm, "consumes_interfaces"), "squad": field("squad")}
 
 
 def _git(root, *a):

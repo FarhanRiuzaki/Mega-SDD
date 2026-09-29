@@ -116,7 +116,7 @@ blocker:
 
 ### cross_squad_interface_draft
 
-- `cross_squad_interface_draft` — plan / execute-bolts: a consumed cross-squad interface is still `status: draft` — the consumer squad is waiting for the producer to lock it. ALWAYS STOP for the consuming unit. Details `{unit_id, interface_id, producer_squad, consumer_squad}` (registry §Type-specific schemas). Resolution: the producer squad locks the interface (`status: locked` in `<vault>/interfaces/`), then the consumer re-runs; predictive preflight surfaces this before dispatch when possible.
+- `cross_squad_interface_draft` — plan / execute-bolts: a consumed cross-squad interface is still `status: draft` — the consumer squad is waiting for the producer to lock it. ALWAYS STOP for the consuming unit. Details `{unit_id, interface_id, producer_squad, consumer_squad}` (registry §Type-specific schemas). Resolution: the producer squad locks the interface (`status: locked` in `<vault>/interfaces/`), then the consumer re-runs; `derive-exec-plan.sh` quarantines the unit at run start.
 
 ### cross_module_dep_invalid
 

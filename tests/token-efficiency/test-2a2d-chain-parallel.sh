@@ -2,30 +2,19 @@
 # test-2a2d-chain-parallel.sh — tranches 2a + 2d (spec 2026-07-30 §2a/§2d).
 # PROSE-CONTRACT PINS (the surfaces are routing/handoff prose — the same tier
 # as the behavior they drive):
-#   2a  the chain proposes the default --all --lite (§8.5 below); the held fan-out
-#       text (batch-and-fanout, HOLD for P3b) keeps its wave rails: the in-context
-#       analyze-parallelism JSON; the overlap rail + failure-halt semantics
-#       stay with the dispatcher (batch-and-fanout).
+#   2a  every chain routing surface proposes the default --all --lite; none proposes
+#       a fan-out flag (retired P3b: the run is inline, one context, plan order).
+#       The analyze-parallelism JSON is named as the chain's DAG facts and the
+#       `execute-bolts --sprint=<n>` numbering, never as a dispatch plan.
 #   2d  extract-intelligence --max-parallel default is 5 everywhere it is
 #       stated; the superseded "empirical optimum is 3" claim is gone; the
 #       soft-warn >5 + hard cap 8 rails are intact.
 #
-# 9.0 §8.5 (2026-09-28): execute-bolts runs inline by default (one context, plan order), so the
-# engine's units_pending_bolts proposal is `execute-bolts --all --lite` too; `--parallel` and
-# `--per-squad` shaped only the per-unit path retired in P3 (spec §8.6); its fan-out text is held
-# for P3b, so the 2a rails below (waves, overlap, in-flight cap) stay pinned until then.
-#
 # 9.0 (spec 2026-09-27 §2/§7): generate-units and the classic chain are gone;
-# the one pipeline is plan → execute-bolts --all --lite. The plan→bolts hop
-# carries `--all --lite`, not `--parallel`: wave execution is the DEFAULT on
-# `--all` (pinned below from batch-and-fanout), so `--all` alone is the
-# wave-parallel form and `--parallel` stays on the units_pending_bolts rows the
-# engine proposes. The generate-units pins (its handoff suggested_args, its
-# standalone suggestion) moved to the surviving units producer `plan` and to the
-# orchestrator's lite-lane exemption (plan emits no handoff YAML by contract).
-# The default-lane "Wave boundary = review boundary" barrier is retired — the
-# lite-only execute-bolts replaced it with unit-level readiness; that rail is
-# pinned in its place.
+# the one pipeline is plan → execute-bolts --all --lite. The generate-units pins
+# (its handoff suggested_args, its standalone suggestion) moved to the surviving
+# units producer `plan` and to the orchestrator's lite-lane exemption (plan
+# emits no handoff YAML by contract).
 #
 # Run: bash tests/token-efficiency/test-2a2d-chain-parallel.sh
 set -uo pipefail
@@ -38,13 +27,12 @@ HC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract
 HN="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md"
 OF="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/SKILL.md"
 PL="${ROOT}/plugins/mega-sdd/skills/plan/SKILL.md"
-BF="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/batch-and-fanout.md"
 EB="${ROOT}/plugins/mega-sdd/skills/execute-bolts/SKILL.md"
 EX="${ROOT}/plugins/mega-sdd/skills/extract-intelligence/SKILL.md"
 XC="${ROOT}/plugins/mega-sdd/skills/extract-intelligence/SKILL.md"
 PC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/predictive-checks.md"
 TT="${ROOT}/tests/skill-triggering/orchestrate-flow.test.md"
-for f in "$RR" "$CE" "$HC" "$HN" "$OF" "$PL" "$BF" "$EB" "$EX" "$XC" "$PC" "$TT"; do
+for f in "$RR" "$CE" "$HC" "$HN" "$OF" "$PL" "$EB" "$EX" "$XC" "$PC" "$TT"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -86,42 +74,13 @@ note "== 2a: the wave-plan channel is named, not asserted =="
 grep -qF -- '--format=json' "$CE" && ok "chain auto-run names the JSON form" || fail "chain-execution row does not name --format=json"
 grep -qF -- '`waves` array' "$CE" && ok "chain-execution names the waves array as the layering (anchored phrase, not a loose keyword)" || fail "waves channel unnamed in the diagnostics row"
 if grep -qF 'passed to execute-bolts to drive `--parallel` batch dispatch' "$CE"; then fail "the old unspecified 'passed to execute-bolts' claim survives"; else ok "the old unspecified 'passed' claim is gone (channel now explicit)"; fi
-grep -q 'Wave plan consumption' "$BF" && ok "batch-and-fanout: wave-plan consumption is part of the --all procedure" || fail "wave-plan consumption missing from batch-and-fanout"
-grep -qF 'overlap rail above is applied HERE regardless' "$BF" && ok "overlap rail applied by the dispatcher, never carried by the plan" || fail "overlap-rail-stays-here rail missing"
-grep -q 'STALE — discard it and re-derive' "$BF" && ok "a plan disagreeing with units/ is discarded, never dispatched from" || fail "stale-plan discard rail missing"
 
-note "== 2a: same-tree wave concurrency is SPECIFIED, not hand-waved (review-round rails) =="
-grep -qF 'bounded by an in-flight cap (`config.yaml parallel_max:`, default **4**' "$BF" && ok "--all wave dispatch carries a concrete in-flight cap (parallel_max, default 4 — v8 P3 re-pin: the old 'default 5' was doc drift vs SKILL.md/project-config.md)" || fail "in-flight cap missing from --all"
-grep -qF 'default **4** concurrent' "${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/squad-subagent.md" && ok "--per-squad cap made concrete (same bound, both procedures)" || fail "squad-subagent cap still 'sensible' (no number)"
-grep -qF -- '--base=<its-commit>^ --head=<its-commit>' "$BF" && ok "per-unit gate range under a wave = the unit's OWN commit (identity-anchored, never wave-base..wave-head)" || fail "per-unit gate range rule missing"
-grep -qF 'dispatch only units not yet completed' "$BF" && ok "consumed waves skip completed units (resume-safe)" || fail "completed-skip rule missing from wave consumption"
-grep -qF 'run the batch with `--worktree`' "$BF" && ok "shared-test-state valve named (--worktree or drop the flag) — never a silent hazard" || fail "test-state valve missing"
 AP="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/diagnostics-procedures.md"
 grep -qF 'execute-bolts --sprint=<n>' "$AP" && ! grep -qF -- '--agents' "$AP" && ! grep -qF -- '--per-squad --agents' "$RR" \
   && ok "analyze-parallelism suggests execute-bolts --sprint=<n>; no --agents in diagnostics-procedures or routing-rules" || fail "analyze-parallelism suggestion lost --sprint=<n>, or --agents survives"
 
-note "== 2a: failure semantics at the wave boundary =="
-# 9.0: 'Wave boundary = review boundary' (the default-lane barrier) is retired —
-# execute-bolts runs the lite lane only, where unit-level readiness replaces the
-# barrier. The rail that survives at that boundary: a dependent dispatches only
-# on its upstream's written green evidence, never on missing/red evidence.
-grep -qF 'Unit-level readiness replaces the wave barrier' "$BF" \
-  && grep -qF 'never pipeline against missing/red evidence' "$BF" \
-  && ok "dependents wait for upstream acceptance+postflight evidence (never pipelined against missing/red evidence)" \
-  || fail "unit-level readiness rail (the barrier's replacement) missing"
-grep -qF 'complete the detect-after pipeline for every unit already dispatched in that wave' "$BF" && ok "in-flight units complete their verdict trail on failure (commits already landed)" || fail "in-flight completion semantics missing"
-grep -qF 'remediation of started work, not new work' "$BF" && ok "a sibling's fix re-dispatch is remediation within its cap, unambiguous" || fail "sibling re-dispatch ambiguity unresolved"
-grep -qF 'dispatch no further unit and no further wave' "$BF" && ok "no skip-ahead preserved: never START new work past a failure" || fail "no-further-wave rule missing"
-grep -qF 'On any failure: halt the entire `--all` run (no skip-ahead)' "$BF" && ok "the original halt-entire-run sentence intact" || fail "original halt sentence lost"
-
 note "== 2a: --all defaults to waves (v7.7); standalone non---all default stays off =="
 grep -qF 'the flag DEFAULT stays off for standalone non-`--all` invocations' "$EB" && ok "execute-bolts SKILL: chain passes the flag; standalone non---all default unchanged" || fail "standalone-default line missing"
-# v7.7 (spec 2026-08-29 Fase 2): --all now defaults to SPRINT/wave execution and
-# --sequential is the explicit opt-out. The old pin asserted the inverse sentence
-# ('Execute in order (default sequential)'); it is updated, not dropped — the
-# contract still has to be stated somewhere deterministic.
-grep -qF 'wave execution is the DEFAULT' "$BF" && ok "batch-and-fanout: --all wave-default sentence present" || fail "wave-default sentence lost"
-grep -qF -- '--sequential' "$BF" && ok "batch-and-fanout: --sequential opt-out documented" || fail "--sequential opt-out missing"
 # 9.0: generate-units (and its standalone 'Suggested next') is deleted; the
 # surviving units producer is plan, whose standalone NEXT hands to the front
 # door, which dispatches the plain wave-default --all form (no --parallel flag).

@@ -142,7 +142,7 @@ Use `--all` or unit-by-unit.
 If interface files exist (`<vault>/interfaces/*.md`):
 - Report `interfaces_count` in state snapshot
 - Don't read content (cheap inspection); just count files
-- Trust execute-bolts pre-flight to validate interface lock states at run time
+- `derive-exec-plan.sh` quarantines a unit whose consumed interface is still draft at run start
 
 ## Chain depth limit
 

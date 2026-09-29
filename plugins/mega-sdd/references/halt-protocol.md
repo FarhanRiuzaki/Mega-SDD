@@ -177,7 +177,7 @@ Rows below are the halt-type index — this index is the registry-existence surf
 - `unit_oq_trace_missing` — plan Step 4 render pass 12.5 g (prose rail; MOAT-CRITICAL): an implementation-relevant OQ-ID is absent from a unit's `binding_refs:`. ALWAYS STOP. Schema + guidance: `halt-families/units.md`.
 - `cross_squad_dep_invalid` — plan Step 4 (multi-squad): a unit's `depends_on` references a unit in a different squad. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
 - `cross_squad_ambiguous` — plan Step 4 (multi-squad): two or more squads claim the same artifact at the same precedence. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
-- `cross_squad_interface_draft` — execute-bolts (`--per-squad`/`--squad=`): a consumed interface is still `status: draft`. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
+- `cross_squad_interface_draft` — execute-bolts (run start: `derive-exec-plan.sh` quarantines the consuming unit): a consumed interface is still `status: draft`. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
 - `interface_ref_missing` — plan Step 4: `produces_interfaces`/`consumes_interfaces` names an ID with no `<vault>/interfaces/` file. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
 
 **bolts** (`halt-families/bolts.md`):
@@ -374,8 +374,8 @@ details:
   claimed_by_squads: [<id-1>, <id-2>, ...]
   matched_via: owns_layers | owns_components | owns_flow_prefixes | owns_feature_tags
 
-# cross_squad_interface_draft — emitted by execute-bolts (specifically
-# --per-squad or --squad=<id> modes) when a unit consumes an interface
+# cross_squad_interface_draft — emitted by execute-bolts (run start:
+# derive-exec-plan.sh quarantines the consuming unit) when a unit consumes an interface
 # whose status is draft, blocking consumer execution until producer locks
 details:
   unit_id: U-XXX

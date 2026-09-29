@@ -11,8 +11,8 @@
 |---|---|---|
 | Declaring squads (`_meta/squads.yaml`) + interface notes (`interfaces/<id>.md`) | authored with the vault | **retired**: nothing writes them; no template |
 | `squad:` / `produces_interfaces` / `consumes_interfaces` on units | assigned when units were generated | **kept** on a vault that has `squads.yaml` (≥2 squads): `plan --regenerate` assigns and validates them |
-| `execute-bolts --per-squad` / `--squad=<id>` | yes | **kept**: same main-thread loop, same interface lock gate |
-| Halts `cross_squad_dep_invalid` / `cross_squad_ambiguous` / `interface_ref_missing` / `cross_squad_interface_draft` | yes | **kept** for those vaults |
+| `execute-bolts --per-squad` / `--squad=<id>` | yes | `--per-squad` **retired** (inert since P3); `--squad=<id>` / `--all` run inline |
+| Halts `cross_squad_dep_invalid` / `cross_squad_ambiguous` / `interface_ref_missing` / `cross_squad_interface_draft` | yes | **kept** for those vaults (`cross_squad_interface_draft`: a run-start quarantine) |
 
 ## Starting a new multi-team project
 
@@ -50,36 +50,27 @@ It ends by printing the mandatory next step: a **full JIT re-bind**. Either run 
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/rebind-units.sh" --cwd=. --vault=<vault> --units=all
 ```
 
-or let `execute-bolts` bind each unit at dispatch (Step 2). Until a unit is re-bound, a CONFLICT it cites from the old `binding.md` still blocks it, unless its `binding-migrated.json` carries a recorded human resolution for that CONFLICT.
+or let `execute-bolts` bind each unit at run start (Step 2). Until a unit is re-bound, a CONFLICT it cites from the old `binding.md` still blocks it, unless its `binding-migrated.json` carries a recorded human resolution for that CONFLICT.
 
-### Step 2 — Execute per squad
+### Step 2 — Execute
 
 ```
 /mega-sdd
 ```
 
-The state engine sees `squad_count ≥ 2` and units still to run, and proposes:
+The state engine sees units still to run and proposes:
 
 ```
 Proposed pipeline (--deep):
-  1. execute-bolts --per-squad
+  1. execute-bolts --all --lite
 ```
 
-Invoked from one team's context (a dev's laptop, one role), the chain instead asks "Run for which squad?" and proposes `execute-bolts --squad=<answer>`.
+Invoked from one team's context (a dev's laptop, one role), run only that squad's units instead: `execute-bolts --squad=<answer>` (its units become the run's `--units`).
 
-`--per-squad` is a **main-thread loop**. The controller:
-
-- iterates the squads and selects each squad's units by their `squad:` field;
-- JIT-binds each wave (pre-flight 3.9);
-- dispatches independent units' `bolt-implementer` agents concurrently, across squads, up to `parallel_max` (default 4).
-
-There is no squad subagent: subagents cannot dispatch subagents, and a squad controller would lose the per-unit review panel. Units that intersect on `target_files` serialize.
-
-Before dispatch, every `consumes_interfaces` entry is checked:
+The run is inline: one context, plan order, an up-front bind and a re-bind at each task (pre-flight 3.9). At run start, `derive-exec-plan.sh` checks every `consumes_interfaces` entry. A unit whose interface is still `draft` is quarantined together with its dependents, the Karantina table names the producer squad, and the rest of the run goes on:
 
 ```
-  Pre-flight: consumed interfaces
-    api-patient-booking: status: draft → squad-fe-web HALTS on cross_squad_interface_draft
+  Karantina: U-FE-002 cross_squad_interface_draft (api-patient-booking, producer squad-be) · U-FE-003 via U-FE-002
 ```
 
 ### Step 3 — The producer locks the interface
@@ -142,9 +133,9 @@ A unit names an interface ID with no `<vault>/interfaces/<id>.md` file. Fix the 
 
 Two squads in `_meta/squads.yaml` claim the same artifact at the same precedence level. The precedence order is `owns_components` > `owns_flow_prefixes` > `owns_layers` > `owns_feature_tags`. Fix: make one squad's match more specific.
 
-### cross_squad_interface_draft halt
+### cross_squad_interface_draft quarantine
 
-The consumer squad's units wait because the producer hasn't locked the interface. Under `--deep` (the default) the chain first retries with backoff (30/60/120 s × 3) before stopping. Fix: the producer sets `status: locked`, then `/mega-sdd --resume`.
+The producer hasn't locked the interface, so `derive-exec-plan.sh` quarantines the consuming unit and its dependents at run start. The rest of the run continues, and the Karantina table names the interface and the producer squad. Fix: the producer sets `status: locked`, then run `execute-bolts` again.
 
 ### Unrouted units (`squad: default`)
 
@@ -153,7 +144,7 @@ A unit that matches no ownership rule gets `squad: default`. That is a warning, 
 ## What you learned
 
 - Multi-squad **authoring** is retired in 9.0: nothing writes `squads.yaml` or `interfaces/` for a new vault.
-- A pre-9.0 multi-squad vault still runs once migrated: `migrate-paths --vault-layout=3`, the mandatory re-bind, then `execute-bolts --per-squad` or `--squad=<id>` with the interface lock gate intact.
+- A pre-9.0 multi-squad vault still runs once migrated: `migrate-paths --vault-layout=3`, the mandatory re-bind, then `execute-bolts --all` or `--squad=<id>`, with the draft-interface quarantine at run start.
 - For a new multi-team project, use one vault per PRD scope (Scenario 7) or modules with `execute-bolts --module=<id>`.
 
 ## Next scenario

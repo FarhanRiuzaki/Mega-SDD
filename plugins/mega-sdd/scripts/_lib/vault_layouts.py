@@ -11,7 +11,6 @@ Consumers import via:  sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
 """
 import glob
 import os
-import re
 
 # One prefix per vault-root layout; `<prefix>/units/...` and `<prefix>/bolts/...`
 # hang off each. Mirrors validate-unit-spec.sh discover_units() (the *-bound
@@ -70,20 +69,12 @@ def inflight_units(cwd):
 
     In-flight ⇔ `<vault>/bolts/U-XXX/dispatch-prompt.md` exists AND
     `postflight.json` is absent or OLDER than it. dispatch-prompt is the FIRST
-    artifact of a bolt run (build-dispatch-prompt.sh writes it at dispatch);
+    artifact of a bolt run (the retired per-unit dispatch wrote it);
     postflight.json is the LAST (the per-unit pipeline ends on the post-flight
     scan). The window between them is a unit that is running — its commit may
     exist while its panel / fix round / evidence writers have not run yet.
 
-    Two consumers, ONE definition (spec 2026-08-30 §1.1 + §1.3):
-      * the in-run execute-bolts gate (a bolt-implementer Agent dispatch) drops
-        B1/B4/orphan issues for these units — their evidence is pending by
-        construction, not missing;
-      * the wave commit rail denies sweeping git verbs (`add -A`, `commit -a`,
-        `--amend`, `stash`, `reset --hard`) while any unit is in flight — a
-        sibling's half-written files must never ride an unrelated commit.
-    A unit dispatched by hand (no dispatch-prompt.md) is NEVER in flight: it is
-    evaluated in full, which is exactly the class the field gate caught."""
+    Read by unit_binding.py's done rule; legacy bolts/U-*/dispatch-prompt.md only (no writer since P3)."""
     got = set()
     for pre in vault_prefixes(cwd):
         for dp in glob.glob(os.path.join(pre, "bolts", "U-*", "dispatch-prompt.md")):
@@ -98,24 +89,6 @@ def inflight_units(cwd):
             if pf_m is None or pf_m < dp_m:
                 got.add(uid)
     return sorted(got)
-
-
-def parallel_max(cwd, default=4):
-    """`parallel_max:` from .mega-sdd/config.yaml — the execute-bolts in-flight
-    cap (references/project-config.md). Top-level key only, first match wins,
-    absent / unreadable / non-integer → default 4 (the value every controller
-    run has used; the "default 5" the fan-out prose once carried was a doc
-    drift, research/2026-09-15-v8-p3-report.md §2c.5)."""
-    try:
-        with open(os.path.join(cwd, ".mega-sdd", "config.yaml"),
-                  encoding="utf-8", errors="replace") as f:
-            for ln in f:
-                m = re.match(r"^parallel_max:\s*(\d+)\s*(?:#.*)?$", ln)
-                if m:
-                    return max(1, int(m.group(1)))
-    except OSError:
-        pass
-    return default
 
 
 def decision_dirs(cwd):

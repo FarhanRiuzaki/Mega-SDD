@@ -12,7 +12,6 @@ How `execute-bolts --agents` dispatches each unit — **first-class mega-sdd age
 - [Summary](#summary)
 - [Acceptance criteria status](#acceptance-criteria-status)
 - [Failures (if any)](#failures-if-any)
-- [Squad-level fan-out](#squad-level-fan-out)
 
 ## Dispatch order
 
@@ -187,7 +186,3 @@ Statuses `halted_postflight` (post-flight Hard-rule violation recorded — see
 hard-rule-scan.md) and `forced_pass` (`--force-skip-postflight` used — anti-bypass
 policy applies) are first-class: consumers (compute-unit-staleness, the sync lane,
 `_summary.md`) must not treat them as schema errors.
-
-## Squad-level fan-out
-
-When `execute-bolts --per-squad` is invoked, the **main-thread controller** loops over the declared squads and runs each squad's units through the per-unit flow above — dispatching the first-class agents at **depth-1**. There is **NO squad subagent**: a forked squad controller could not dispatch the bolt agents (that would be depth-2, which the runtime forbids), and would silently lose the review panel. Parallelism comes from the controller dispatching independent units (across squads) **concurrently**, not from nesting. See `references/squad-subagent.md` for the filter + consolidation protocol.
