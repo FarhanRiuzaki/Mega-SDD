@@ -270,7 +270,7 @@ The lenient variant replaces the last rung with OQ + the `ANCHOR STALE` label. T
 
 **D31. Sequencing.** Default: ship Slice 1 directly. Alternative: ship Slice 1a first (header + rule line, 0 exec), run the acceptance measurement (D33), and build the engine only if the rule line changes behaviour. The old notice drew 0 model reactions in 11 appearances, so this is the cheaper evidence-first path. **[ASSUMED: Slice 1]**
 
-**D32. Windows office verification is a release gate for Slices 1–2.** Measure on an office laptop:
+**D32. Windows office verification is a release gate for Slices 1–2.** (Permanently waived by the owner on 2026-09-29; the one-shot script is in commit 51ed784d.) Measure on an office laptop:
 - real process counts and wall time;
 - `$(exec git …)` = 1 process on MSYS;
 - MSYS conversion of `:(glob)` pathspecs and `a..b`;
@@ -1106,7 +1106,7 @@ H4 (the `vaults[0]` digest) and H5 (a stale `state.json` read after a python fai
 
 **Acceptance and release gates:**
 - **Slice-1 acceptance:** per D33. The playground's FE per-unit stamp must be honest; it must not be a ctl-C2-green state, which Slice 1 renders as a hint.
-- **Windows office verification:** D32, a release gate for Slices 1–2.
+- **Windows office verification:** D32, a release gate for Slices 1–2 (permanently waived 2026-09-29).
 
 ## 14. Risks
 

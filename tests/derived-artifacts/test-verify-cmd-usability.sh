@@ -97,7 +97,7 @@ fi
 #     Because `-k` makes 137 reachable, 137 must share 124's verdict, and 127 must
 #     be excluded from the `missing` catch-all for BOTH reasons above.
 SKILL="$HERE/../../plugins/mega-sdd/skills/install-deps/SKILL.md"
-# 6.13.0 (spec 2026-08-17-token-lard-cuts-p1 D3): the probe contract was RELOCATED
+# 6.13.0 (token-lard-cuts P1 D3, commit bed0e23a): the probe contract was RELOCATED
 # verbatim to references/audit-and-verify.md; SKILL.md keeps routers + the inline
 # carve-outs. The invariant now holds over the UNION of the two files — a fact
 # deleted from BOTH is still a failure, and the mutation controls mutate the union.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-p5-prd-markers.sh — P5 (v5 spec 2026-07-19-v5-execution-spec.md P5 row;
+# test-p5-prd-markers.sh — P5 (v5 spec, commit 45c6039b, P5 row;
 # research §4 "emit-prd"): marker preservation is a DETERMINISTIC check
 # (scripts/check-prd-markers.sh), not a prose-trusted rule — [VERIFIED]/
 # [INFERRED]/[OPEN] markers ride verbatim from KB claims into the PRD; an

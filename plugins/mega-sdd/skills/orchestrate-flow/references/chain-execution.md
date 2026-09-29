@@ -129,9 +129,9 @@ next_action: "Pass the PRD path or --kb=<kb-dir> (run extract-intelligence first
 
 ## First-run pre-flight (execute-bolts)
 
-The first-class agents ship in the plugin tree, so there is no
-superpowers/vendored dependency to probe — nothing halts here. A broken Agent
-tool surfaces at dispatch time (superpowers-bridge.md §Dispatch order).
+The default inline run dispatches no implementer agent, so there is no
+superpowers/vendored dependency to probe — nothing halts here (superpowers is an
+optional technique: execute-bolts `references/inline-run.md` §(c)).
 
 ## Auto-integrated diagnostics
 

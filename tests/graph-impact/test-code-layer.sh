@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-code-layer.sh — pins the v6.20.0 graph code layer (spec
-# docs/superpowers/specs/2026-08-21-graph-code-layer.md): reuse-index.yaml
+# commit f8f41344): reuse-index.yaml
 # symbols become queryable nodes, purpose_confidence is non-strippable,
 # truncation is visible, and the cross-layer join (symbol -> code_anchor <- unit
 # / claim) actually lands on ONE node id. Run </dev/null.

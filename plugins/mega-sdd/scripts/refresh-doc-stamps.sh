@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# refresh-doc-stamps.sh — P3 (spec 2026-07-19-v5-execution-spec.md P3 row;
+# refresh-doc-stamps.sh — P3 (v5 execution spec P3 row, commit 45c6039b;
 # research §4 "Maturity + freshness"): the doc-control state-stamp refresher
 # for emitted docs (<vault>/<doc>/<DOC>.md — fsd today; prd/sit in P5).
 #

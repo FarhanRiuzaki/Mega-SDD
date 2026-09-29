@@ -39,7 +39,7 @@ The description's trigger phrases name an intent, not an input: route them by th
 - `direct` / `assisted` → follow `plugins/mega-sdd/references/direct-lane.md` and STOP here: no GROUND, no orchestrate-flow, no confirmation prompt, no `.mega-sdd/` writes. The run is done only when `scripts/delivery-check.sh` prints `VERDICT: PASS` on the last commit. (Measured on greenfield PRDs: the pipeline cost 9–22× vanilla Claude Code with equal or lower quality — the pipeline is kept for what it can check.)
 - `guarded` (vault exists, or forced) → the input-shape rules below (the one spec pipeline: `plan` → `execute-bolts --all --lite` → `delivery-check.sh`).
 
-Argument parsing (input detection rules, per spec `2026-05-20-autonomy-layer-design.md` §4 Pillar 4):
+Argument parsing (input detection rules; design: autonomy-layer spec §4 Pillar 4, commit 396b3474):
 
 1. **Is `<input>` a path to a directory?**
    - Is it an `extract-intelligence` knowledge base (`README.md` + `census.json` / `modules/*.prd.md`, or the legacy numbered tree `00-overview/` … — `skills/plan/references/kb-input.md` §Grammar detection)?

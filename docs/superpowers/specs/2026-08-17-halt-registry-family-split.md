@@ -2,7 +2,7 @@
 
 **Status:** SHIPPED v6.14.0 (2026-08-17, dfe1cef, CI green, both-tree suite 274/274). Round: 1 BLOCKER (subtype-taxonomy dismemberment — restored canonically) + 6 MAJOR folded; the round-hardened mirror guard immediately caught the pre-existing `pbt_property_violated` registry gap. Companion verdict: P2b (hot-SKILL diet) EVALUATED → REJECTED, commit d2ba9a3c.
 **Evidence:** telemetry 2026-08-17 — `halt-protocol.md` loaded **165× across 27 sessions** (~6/session; 46,346 B ≈ 11.6k tok upper bound per full load, ~1.22M cumulative). The 2026-08-11 proposals doc (d) gated this split on exactly that measurement ("instrument → ukur → baru potong") — the bar is now met. P1 (v6.13.0) added read-range telemetry, so the win is verifiable after shipping.
-**Depends on:** spec `2026-08-17-token-lard-cuts-p1.md` (SHIPPED v6.13.0).
+**Depends on:** the token-lard-cuts P1 spec, commit bed0e23a (SHIPPED v6.13.0).
 
 ## Design
 

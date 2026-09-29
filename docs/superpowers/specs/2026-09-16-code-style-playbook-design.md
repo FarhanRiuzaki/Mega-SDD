@@ -71,7 +71,7 @@ Pins: `tests/comment-diet/test-comment-why-rule.sh` n–u.
 ## 6. Release + measurement
 
 - **8.1.0** = commits 1–3 + CHANGELOG/bump; suite both trees + CI green; push GitHub (scm PENDING — office VPN).
-- **No new measurement run here** (our xs/clinic scenarios are Laravel/TS). Evidence gate for "done": the team's next Java run on ≥ 8.1.0 (`claude plugin marketplace update` + `claude plugin update` first) → `benchmarks/scripts/p3-comment-ratio.py` per class (docblock / provenance / rest) + count of L0 lint reds caused by a missing doc comment (target 0) + 3-file spot check. Ask the team for the plugin version of the original run and 3 old bolt files for the before column.
+- **No new measurement run here** (our xs/clinic scenarios are Laravel/TS). Evidence gate for "done": the team's next Java run on ≥ 8.1.0 (`claude plugin marketplace update` + `claude plugin update` first) → `p3-comment-ratio.py` (commit a1071de6) per class (docblock / provenance / rest) + count of L0 lint reds caused by a missing doc comment (target 0) + 3-file spot check. Ask the team for the plugin version of the original run and 3 old bolt files for the before column.
 - **R2 (8.2.0)**: 24 packs filled from research §4 (each `read by` web-verified), `_lint.md` Check 2 required + new label check, registry regen, `test-code-style-section.sh` extends to every `pack_tier: full` pack.
 - **R3 (optional)**: `emit-agents-md` §Section 4 rows *Comment rule* + *Code style* (from the active pack) for non-mega-sdd sessions.
 

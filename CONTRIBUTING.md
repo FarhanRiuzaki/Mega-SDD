@@ -4,7 +4,7 @@
 
 ## Repository layout
 
-This is a Claude Code plugin marketplace + the plugin itself. Plugin code lives under `plugins/mega-sdd/`. Design specs live under `docs/superpowers/specs/`; plans, audits and batch logs are not kept in the tree (the commit body carries them). Benchmarks (the vanilla-vs-mega-sdd harness, runbooks, results, and the complexity budget) live under `benchmarks/`, and the measured reports under `benchmarks/results/`; `research/` keeps only the xs benchmark PRD and the few records a kept doc still links.
+This is a Claude Code plugin marketplace + the plugin itself. Plugin code lives under `plugins/mega-sdd/`. Design specs live under `docs/superpowers/specs/`; plans, audits and batch logs are not kept in the tree (the commit body carries them). Benchmarks (the vanilla-vs-mega-sdd harness, runbooks, results, and the complexity budget) live under `benchmarks/`, and the measured reports under `benchmarks/results/`; `research/` keeps only the xs benchmark PRD and the extractor `benchmarks/scripts/p0-extract-arm.sh` still calls.
 
 The shape to keep in mind (9.0, spec `docs/superpowers/specs/2026-09-27-v9-simplification-design.md`): the `/mega-sdd` front door runs `scripts/route-lane.sh` first and picks a lane.
 - **direct** and **assisted** build in the main session with no vault. Their procedure is `plugins/mega-sdd/references/direct-lane.md`.
@@ -42,6 +42,10 @@ Before submitting:
 - Bump skill `version:` in frontmatter
 - Update relevant `tests/skill-triggering/<skill>.test.md` if behavior changes
 - Add CHANGELOG.md entry
+
+## Framework packs
+
+A pack is one file under `plugins/mega-sdd/references/framework-conventions/` (readiness table: `_registry.md`). How to author one, as a plugin pack or as a project-local pack at `<root>/.mega-sdd/packs/<framework>.md`, and how to lint it: [`framework-conventions/README.md`](plugins/mega-sdd/references/framework-conventions/README.md).
 
 ## Testing
 

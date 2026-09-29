@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-p5-sit-evidence.sh — P5 (v5 spec 2026-07-19-v5-execution-spec.md P5 row +
+# test-p5-sit-evidence.sh — P5 (v5 spec, commit 45c6039b, P5 row +
 # decisions 5/9/10; research §4 "emit-sit"): build-sit-evidence.sh over a
 # blackbox-style fixture with REAL evidence artifacts (acceptance.json written by
 # the shipped run-acceptance-tests.sh B4 writer; postflight.json by the shipped

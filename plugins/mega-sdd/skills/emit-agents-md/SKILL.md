@@ -122,4 +122,4 @@ When vault has `scope` field, handoff YAML MUST include scope: block per `orches
 - AGENTS.md spec: https://agents.md/
 - Agentic AI Foundation (AAIF): https://aaif.io
 - `references/agents-md-schema.md` — full per-section template
-- Design spec: `docs/superpowers/specs/2026-05-21-tech-upgrades-iter6-design.md` §4.4
+- Design spec: tech-upgrades-iter6 §4.4, commit bfda51fe

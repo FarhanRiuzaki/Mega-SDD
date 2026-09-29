@@ -5,7 +5,7 @@ All notable changes to this skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
+> **Pre-v5.2.3 history lives in git history.** `CHANGELOG-ARCHIVE.md` (v3.0.0…v5.2.2, rotated 2026-05-26, 2026-06-24 and 2026-09-06) left the tree on 2026-09-29: read it at commit be944b07 (`git show be944b07:CHANGELOG-ARCHIVE.md`). Rotation no longer writes an archive file; git history keeps every entry.
 
 ## [Unreleased] — P3: jalur per-unit `--agents` dihapus (spec v9 §8.6; tanpa klaim gain)
 
@@ -410,7 +410,7 @@ Sumber: feedback tim dari monorepo. Di sesi tim FE, Claude baca memory dan artef
 - **Byte:** blok di playground Fase 0 terukur **+559 sampai +759 B** per startup/clear/compact. Ini di atas estimasi DERIVED spec (+440…+720), karena teks tier "hint" lebih panjang. Tetap di bawah cap 1.200 B. Vault dengan stamp `/2` collapse jadi `- FRESH: <v>`.
 - **Belum terbukti (jujur) — dan dua di antaranya GATE RILIS di spec:**
   - **Acceptance run Slice 1 (D33)** belum jalan: 30 run tier-S, blok vs tanpa blok, di tiga permukaan yang ditanam (MEMORY.md, CLAUDE.md, dokumen vault). Spec sendiri bilang **belum boleh ada yang klaim "drift FE sudah beres" sebelum run ini lulus**. Yang udah terbukti baru mekanismenya: blok muncul, isinya benar, dan gate nolak.
-  - **Verifikasi Windows di laptop kantor (D32)** belum jalan. Skrip sekali-jalan udah disiapin: `research/2026-09-26-state-anchor-fase2/windows-check.sh`.
+  - **Verifikasi Windows di laptop kantor (D32)** belum jalan. Skrip sekali-jalannya, `windows-check.sh` (commit 51ed784d), dihapus 2026-09-29: owner menyatakan D32 di-waive permanen (langkah 5 skrip itu menguji jalur Agent yang udah dipensiunin di P3).
   - Arm benchmark lite D33 buat Slice 2 (tingkat override CONFLICT D22, biaya serialisasi D10) juga belum. Butuh sesi interaktif dan keputusan budget owner.
   - **Artinya:** push 8.8.0 sebelum D32 + D33 jalan = owner sengaja nge-waive gate rilis yang ditulis spec ini sendiri. Itu keputusan owner, dan dicatat di sini supaya kelihatan.
 - **Dua ronde review adversarial sebelum rilis:**

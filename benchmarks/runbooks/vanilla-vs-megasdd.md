@@ -44,7 +44,7 @@ Semua angka di kolom target adalah **usulan**. Owner mengubah atau mengesahkanny
 ## 4. Urutan dan aturan berhenti
 
 1. Per skenario, buat blok acak: `python3 -c "import random; a=['vanilla','lite','classic']*3; random.seed(<seed>); random.shuffle(a); print(a)"`. Catat seed di §9. Blok xs dulu, lalu klinik.
-2. Run bersih = 1 proses (tanpa `--resume`), 0 key `resume_*`/`outage_*`, `purity=PASS`. Run yang tidak bersih tetap dicatat di tabel dengan alasannya, tapi tidak masuk median.
+2. Run bersih = 1 proses (tanpa `--resume`), 0 key `resume_*`/`outage_*`, `purity=PASS`. Key `outage_sleep=` ditulis `python3 benchmarks/scripts/sleep-check.py <results-dir> --mark` (macOS, `pmset`; jalankan setelah tiap run: `caffeinate -i` tidak mencegah sleep karena lid ditutup). Run yang tidak bersih tetap dicatat di tabel dengan alasannya, tapi tidak masuk median.
 3. Maksimal 5 percobaan per arm per skenario untuk mendapat 3 run bersih. Kalau gagal, arm itu dilaporkan `INSUFFICIENT` ("lingkungan ukur tidak layak"), bukan diisi dengan run tercemar.
 
 ## 5. Kualitas — skor buta, rubrik sama

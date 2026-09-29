@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-certify-artifact.sh — P2 adoption gates (v4.94.0, spec
-# 2026-07-19-v5-execution-spec.md P2 row + decision 7; research §3).
+# v5-execution, commit 45c6039b, P2 row + decision 7; research §3).
 #
 # Pins the adoption-certifier contract:
 #   1. Per-rung fixture matrix — every rung answers with ONE verdict from the

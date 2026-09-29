@@ -1,7 +1,7 @@
 # Mega-SDD P1–P4 optimization — benchmark comparison report
 
 **Compared states:** BASELINE `91a944a` (v6.1.1, last pre-audit commit) vs OPTIMIZED `a09e430` (v6.6.0).
-**Date:** 2026-08-11 · **Reproduce:** `benchmarks/README.md` (~20 min, any engineer).
+**Date:** 2026-08-11 · **Reproduce:** `benchmarks/README.md` at commit d26a1293 (~20 min, any engineer).
 **Every token figure is ESTIMATED (chars÷4); every byte/char/file/suite figure is MEASURED.**
 
 ## Executive summary
@@ -194,4 +194,4 @@ Question 10(c) of the verdict ("ship the free-text delta lane") was acted on: v6
 Evidence: MEASURED sizes over the PROXY trace, upper-bound conservative — 4 `[SECTION:]` reads counted whole-file, two of them plugin-largest (`routing-rules.md`, `binding-contract.md`), so the true per-run figure is lower; the spec's ~60–80k estimate is plausible at section granularity but NOT CONFIRMED by this method. Measured at `a6b8c45` (outside the frozen commit pair — labeled addendum, no baseline arm). The negative control is now a fixed control: T07's gap was the benchmark's largest remaining per-run cost, and the trace shows the generate-intent full-generation segment (14 files) replaced by a 4-file diff segment.
 
 ---
-*Raw data: `results/{baseline,optimized}/*.json`, tracer reports in `results/*/context-trace-raw.md`, machine-readable summary in `results.json`. Benchmark harness: `benchmarks/scripts/` — reproducible per `benchmarks/README.md`.*
+*Raw data: `results/{baseline,optimized}/*.json`, tracer reports in `results/*/context-trace-raw.md`, machine-readable summary in `results.json`. Benchmark harness: `benchmarks/scripts/` — reproducible per `benchmarks/README.md` at commit d26a1293.*
