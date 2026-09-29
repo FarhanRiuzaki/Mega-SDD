@@ -9,7 +9,8 @@
 #   B  a linter/formatter config appears → silent, probe {advisory:false}
 #   C  a recorded decision (.mega-sdd/l0-toolchain-decision.json) → fully silent,
 #      no probe minted
-#   D  a project pack carrying `## Toolchain` → silent (the F-14 override path)
+#   D  a project pack carrying `## Toolchain` → silent (the F-14 override path);
+#      D2 one holding only the _template placeholders → still advises
 #   E  no .mega-sdd/ → nothing minted (phantom-root doctrine)
 # And §2c — the C1 battery reads EVERY vault layout via vault_layouts, not just
 # the legacy `*-bound/` sibling:
@@ -57,6 +58,14 @@ printf '{"compilerOptions":{}}' > "$F3/tsconfig.json"
 printf -- '---\nframework: x\n---\n## Toolchain\n```yaml\nlint_cmd: bunx biome check .\n```\n' > "$F3/.mega-sdd/packs/x.md"
 OUT=$(bash "$G" --cwd="$F3" 2>/dev/null)
 echo "$OUT" | grep -q "l0_toolchain_vacuous" && bad "D1 advisory fired though the pack carries Toolchain commands" || ok "D1 silent"
+# P3b OD-4: the block copied from _template and never filled engages no gate (run-code-gates.sh,
+# tests/code-gates 6c2), so it must not silence the advisory either — one test, _lib/pack_toolchain.py.
+F3B="$WORK/d2"; mkdir -p "$F3B/.mega-sdd/packs"
+printf '{"compilerOptions":{}}' > "$F3B/tsconfig.json"
+{ printf -- '---\nframework: x\n---\n'; awk '/^## /{p=/^## Toolchain/} p' "$ROOT/plugins/mega-sdd/references/framework-conventions/_template.md"; } > "$F3B/.mega-sdd/packs/x.md"
+OUT=$(bash "$G" --cwd="$F3B" 2>/dev/null)
+grep -q '^  lint_cmd: *<' "$F3B/.mega-sdd/packs/x.md" && echo "$OUT" | grep -q "l0_toolchain_vacuous" \
+  && ok "D2 a placeholder-only ## Toolchain does not silence the advisory" || bad "D2 placeholder-only Toolchain silenced GROUND"
 
 echo "── E: no .mega-sdd → nothing minted ──"
 F4="$WORK/e"; mkdir -p "$F4"

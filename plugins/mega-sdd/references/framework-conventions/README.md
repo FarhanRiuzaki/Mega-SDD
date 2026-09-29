@@ -1,6 +1,6 @@
 # Framework Convention Packs
 
-Pluggable convention packs for common backend/frontend frameworks. Each pack declares file-location standards, naming standards, idioms, and Hard Rules. The matching framework is detected by the GROUND matcher (`scripts/ground.sh` → `state_probes.probe_framework_pack` → `state.json` `derived.framework_pack`). The pack-driven validators read their sections through `scripts/_lib/resolve-framework-pack.sh`, and plan's AI technical decisions may cite the pack (`references/vault-core.md §AI technical decisions`); no pack section is injected into the inline run's context.
+Pluggable convention packs for common backend/frontend frameworks. Each pack declares file-location standards, naming standards, idioms, and Hard Rules. The matching framework is detected by the GROUND matcher (`scripts/ground.sh` → `state_probes.probe_framework_pack` → `state.json` `derived.framework_pack`). The pack-driven validators read their sections through `scripts/_lib/resolve-framework-pack.sh`, `scripts/run-code-gates.sh` runs a project pack's `## Toolchain` commands as L0 gates 1–2, and plan's AI technical decisions may cite the pack (`references/vault-core.md §AI technical decisions`); no pack section is injected into the inline run's context.
 
 ## Pluggable, not opinionated-by-default
 

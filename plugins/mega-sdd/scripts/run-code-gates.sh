@@ -51,11 +51,14 @@
 # 1–2, 4 and 6. Gates 3 (secrets) and 5 (dep-existence) ALWAYS run — the
 # critical + un-promptable pair; no flag or config disables them.
 #
-# PACK OVERRIDE: `--pack=<pack.md>` — when the pack carries a `## Toolchain`
-# section (framework-conventions/_template.md: fenced yaml under the heading),
-# its commands REPLACE detection for gates 1–2 (pack override > detection).
-# A --pack that does not resolve or carries no parseable section is a VISIBLE
-# note (never a silent fallback to detection).
+# PACK OVERRIDE: a pack's `## Toolchain` section (fenced yaml under the heading,
+# framework-conventions/_template.md) REPLACES detection for gates 1–2 (pack
+# override > detection). `--pack=<pack.md>` names the pack; without it the first
+# `.mega-sdd/packs/*.md` whose section engages is used. One test decides that —
+# _lib/pack_toolchain.py, which ground.sh's advisory silencer reads too — so a
+# block holding only `<…>` placeholders neither engages nor silences. A --pack
+# that does not resolve or carries no parseable section is a VISIBLE note
+# (never a silent fallback to detection).
 #
 # Usage:
 #   run-code-gates.sh --cwd=<project-root> --base=<sha> --head=<sha>
@@ -240,43 +243,6 @@ def main():
         print(json.dumps(result, indent=2))
         sys.exit(1)
 
-    # --- pack `## Toolchain` override (pack override > detection) -------------
-    def pack_toolchain(path):
-        """Parse the OPTIONAL `## Toolchain` yaml block from a framework pack.
-        Returns a detect-toolchain-shaped dict, or None when absent/unparseable."""
-        try:
-            text = open(path, encoding="utf-8", errors="replace").read()
-        except OSError:
-            return None
-        in_sec = False; in_fence = False; keys = {}
-        for line in text.splitlines():
-            if re.match(r"^##\s+Toolchain\b", line):
-                in_sec = True; continue
-            if in_sec and re.match(r"^##\s+", line):
-                break
-            if not in_sec:
-                continue
-            if line.strip().startswith("```"):
-                in_fence = not in_fence; continue
-            if in_fence:
-                m = re.match(r"^\s*(format_check_cmd|format_fix_cmd|lint_cmd|typecheck_cmd):\s*(.+?)\s*$", line)
-                if m and not m.group(2).startswith("<"):
-                    keys[m.group(1)] = m.group(2)
-        if not keys:
-            return None
-        tc = {"formatters": [], "linters": [], "typecheckers": []}
-        ev = os.path.basename(path) + " ## Toolchain"
-        if "format_check_cmd" in keys:
-            e = {"tool": "pack-override", "check_cmd": keys["format_check_cmd"], "evidence": ev}
-            if "format_fix_cmd" in keys:
-                e["fix_cmd"] = keys["format_fix_cmd"]
-            tc["formatters"].append(e)
-        if "lint_cmd" in keys:
-            tc["linters"].append({"tool": "pack-override", "check_cmd": keys["lint_cmd"], "evidence": ev})
-        if "typecheck_cmd" in keys:
-            tc["typecheckers"].append({"tool": "pack-override", "check_cmd": keys["typecheck_cmd"], "evidence": ev})
-        return tc
-
     # --- upfront skips (accounting invariant) ---------------------------------
     if not toolchain_on:
         reason = "--no-code-gates" if no_flag else "config code_gates: false"
@@ -292,15 +258,19 @@ def main():
     # --- toolchain detection + gates 1–2 --------------------------------------
     if toolchain_on:
         tc = None; tc_source = "detect"; pack_note = None
+        sys.path.insert(0, os.path.join(sdir, "_lib"))
+        import pack_toolchain   # pack `## Toolchain` override (pack override > detection)
         if pack:
-            tc = pack_toolchain(pack)
-            if tc is not None:
-                tc_source = "pack"
-            else:
+            tc = pack_toolchain.toolchain(pack)
+            if tc is None:
                 pack_note = ("--pack requested but NOT engaged (file missing or no parseable fenced `## Toolchain` section) — "
                              "fell back to detection; fix the pack path/section if the override was intended")
                 result["skips"].append({"gate": "toolchain", "reason": pack_note})
-        if tc is None:
+        else:   # no --pack: the first project pack whose section engages (the same test silences ground.sh's advisory)
+            pack, tc = pack_toolchain.project_pack(cwd)
+        if tc is not None:
+            tc_source = "pack"
+        else:
             rc, out, err, to = gate_script("detect-toolchain.sh", ["--cwd=" + cwd])
             tc = parse_json(out) if (rc == 0 and not to) else None
         if tc is None:
@@ -315,6 +285,8 @@ def main():
                 "linters": len(tc.get("linters", [])),
                 "typecheckers": len(tc.get("typecheckers", [])),
             }
+            if tc_source == "pack":
+                result["gates"]["toolchain"]["pack"] = pack
             if pack_note:
                 result["gates"]["toolchain"]["pack_requested_not_engaged"] = True
             # Gate 1 — format (auto-fix + re-check; formatting is machine territory)
