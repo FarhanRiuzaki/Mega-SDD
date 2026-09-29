@@ -1,11 +1,11 @@
 # plan — post-write validation passes (Step 12.x)
 
-> Relocated from `skills/generate-units/references/validation-passes.md` in 9.0 (P1), with the §12.4.5 pack overlay sentence + pack→bolt translation table from `skills/bind-codebase/references/hard-rules-and-packs.md` §2.8 / §2.9a; tuned text kept verbatim.
+> Relocated from `skills/generate-units/references/validation-passes.md` in 9.0 (P1); tuned text kept verbatim.
 
 ## Contents
 - 12.3 — Per-anchor verification
 - 12.4 — Inject constitution clauses
-- 12.4.5 — Framework pack provenance citation (+ the pack→bolt translation table)
+- 12.4.5 — Framework pack provenance citation
 - 12.5 — Polished-prompt render pass (a–e, g, h)
 - 12.6 — Deduplication check
 - 12.7 — Sibling-consistency sweep
@@ -65,56 +65,9 @@ Format:
 
 ## 12.4.5 — Framework pack provenance citation
 
-**plan promotes no framework-pack rule into a unit's `## Hard rules`.** No pack slice is injected into the bolt: pack rules reach execution only through the unit content `plan` authors (a carried Hard rule, below) and the pack-driven gates, never as a B1 obligation of their own. The rest of this pass governs a unit that DOES carry pack-derived Hard rules (a unit from a migrated layout-2 vault, whose `binding.md` §Suggested Unit Hard Rules pulled them in): each pack-derived Hard Rule sits in the unit's `## Hard rules` section WITH explicit provenance citation. Tools consuming the unit must see WHICH framework pack rule applies (audit trail, debugging, override decisions).
+**plan promotes no framework-pack rule into a unit's `## Hard rules`.** No pack slice is injected into the execute-bolts context: a pack shapes code only through the unit content `plan` authors and the pack-driven gates, never as a B1 obligation of its own. This pass governs only a unit from a migrated layout-2 vault that already carries pack-derived Hard rules: each keeps its explicit `source:` citation naming the specific pack file the rule lives in (not the `extends:` chain head), so the user can audit and override it; a rule whose `path_glob` does not match the unit's `target_files` is skipped.
 
-**One grammar per unit.** A unit's `## Hard rules` carries EITHER v1 dash productions OR v2 fenced ast-grep YAML — never both (`hard_rule_mixed_grammar` halts at bolt time). Pack rules translate per the pack→bolt table below: when the unit's other rules are v1 (e.g. `DO NOT modify …`), emit the pack rule as its v1 production (or Anti-pattern) — do NOT drop a fenced YAML block into a v1 unit; when the pack carries a real ast-grep `rule:` body and the unit has no v1 rules, emit v2 fenced YAML (the shape below) for ALL of the unit's rules — v2 rules require `ast-grep` at bolt pre-flight (HALTs `dep_missing` if absent); run `/mega-sdd:install-deps --tools=ast-grep` ahead of execute-bolts if it isn't installed yet.
-
-**Pack chain overlay** (the chain protocol a carried pack rule's citation follows). Read the pack file completely; extract its `## Hard Rules emitted` section into structured records; if the pack has `extends: <parent>` frontmatter, load the parent first then overlay (child rules override parent on `path_glob` conflict).
-
-**Pack→bolt translation table (packs ship `rule_type` inventories, NOT ready-made ast-grep blocks; a pack rule reaches a unit's `## Hard rules` ONLY through one of these productions, so the bolt-stage scan can always execute what the unit carries):**
-
-| Pack `rule_type` | Emitted into the unit as | Bolt-time check |
-|---|---|---|
-| `NAMING_RULE` (has `path_glob` + case style) | v1 `<path-glob> MUST follow <case-style> naming` | deterministic (filename regex) |
-| `LOCATION_RULE` (files-belong-here) | v1 `<path-glob> MUST follow …` when expressible; else Anti-pattern | deterministic / advisory |
-| `DEP_RULE` (no new deps / pinned manifest) | v1 `DO NOT add new <manifest> dependencies` | deterministic (manifest diff) |
-| `LOCK_RULE` (do-not-touch file) | v1 `DO NOT modify <path>` | deterministic (commit-touch / sha) |
-| `SIGNATURE_RULE` | v1 `function <name> MUST preserve signature: <sig>` | deterministic (decl compare) |
-| rule carrying a real ast-grep `rule:` body | v2 fenced YAML block (verbatim) | deterministic (`ast-grep scan`) |
-| `CUSTOM` / `SECURITY` / `PERFORMANCE` prose | `## Anti-patterns` (informational) by default; a generic `MUST/DO NOT` directive line ONLY when the obligation is genuinely load-bearing (honest tier — post-flight records it `directive_unverified` unless attested) | advisory / attested |
-
-A pack rule that fits NO row is an Anti-pattern, never a Hard rule — emitting prose the scan cannot execute breaks the chain of custody (`unit-spec` counts it, the bolt scan can't check it, B1 then demands a verdict nothing can produce).
-
-Format inside unit's `## Hard rules` section:
-
-```yaml
-- id: framework-pack-naming-001
-  source: "framework-conventions/laravel-base-26.md §Hard Rules — UUID PK enforcement"
-  framework: laravel-base-26
-  framework_pack_version: 1.0  # framework_version_range when last_verified_against passed
-  message: "Domain entity migrations MUST use UUID primary key per starterkit convention"
-  severity: error
-  rule:
-    pattern: |
-      $table->id()
-    inside:
-      pattern: |
-        Schema::create($_, function (Blueprint $table) { $$$ })
-```
-
-Aggregate in unit body:
-
-```markdown
-## Framework pack source
-
-Conventions enforced from: `plugins/mega-sdd/references/framework-conventions/laravel-base-26.md` (v1.0, extends `laravel.md` extends `_universal.md`)
-Rules pulled into this unit's Hard Rules: N (see §Hard rules for line-level enforcement)
-```
-
-**Anti-halu rails**:
-- Framework pack rules NEVER silently apply — citation mandatory so user can audit + override
-- Rules whose `path_glob` doesn't match this unit's `target_files` are SKIPPED (not all pack rules apply to every unit)
-- When pack `extends:` chain → cite the SPECIFIC pack file the rule lives in (not the chain head), so override edits are traceable
+**One grammar per unit.** A unit's `## Hard rules` carries EITHER v1 dash productions OR v2 fenced ast-grep YAML — never both (`hard_rule_mixed_grammar` halts at bolt pre-flight). v2 rules require `ast-grep` at bolt pre-flight (HALTs `dep_missing` if absent); run `/mega-sdd:install-deps --tools=ast-grep` ahead of execute-bolts if it isn't installed yet.
 
 ## 12.5 — Polished-prompt render pass
 

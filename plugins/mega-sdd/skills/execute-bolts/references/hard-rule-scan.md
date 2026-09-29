@@ -154,7 +154,7 @@ Post-flight results are written to `<vault>/bolts/U-XXX/postflight.json` (per-ru
 
 ## Framework-pack rule provenance
 
-`plan` promotes no framework-pack rule into a unit's Hard Rules — no pack slice reaches the bolt, and a pack rule is never a B1 obligation of its own. A unit that already carries pack-derived Hard Rules (a migrated layout-2 vault) has them validated identically to other Hard Rules — they sit **in an executable production** (packs ship `rule_type` inventories, not ready-made ast-grep blocks; the pack→bolt table in `plan/references/validation-passes.md §12.4.5` — v1 production, verbatim v2 YAML when the pack carries a real `rule:` body, or the honest `directive`/Anti-pattern tier). The violation surface includes a `framework_pack_source` field in the halt YAML so the user knows WHICH framework rule fired.
+`plan` promotes no framework-pack rule into a unit's Hard Rules. A migrated unit that carries one has it scanned like any other Hard Rule; its `source:` line names the pack rule.
 
 ## Per-sibling cross-cutting registration scan (defense-in-depth)
 

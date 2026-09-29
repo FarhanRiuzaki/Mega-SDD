@@ -33,7 +33,7 @@ Per the propose-and-confirm-prompt template (listed in SKILL.md). When a bolt ha
 
 **Eligible halt types** (default propose-and-confirm; configurable per `~/.mega-sdd/config.yaml` `halt_auto_propose` (user-scope)):
 - `test_fail` (after the default 3 retries via `--max-retries`).
-- `hard_rule_violated` (with framework-pack provenance evidence).
+- `hard_rule_violated`.
 - `pbt_property_violated` (counterexample preserved in postflight).
 
 **NOT eligible** (always pure pause):

@@ -7,7 +7,7 @@
 # ai-consumer-guide and generate-units' grammar references (unit-schema, task-typing, decomposition rails,
 # validation passes, adversarial prompt) as its Tier-3 pointers. The execute-bolts hop is inline-run.md + superpowers-bridge
 # §bolt-report schema + jit-bind-and-quarantine.md (the --agents-only fan-out reference it replaces was removed in P3b).
-# NOT traced: code-gates / hard-rule-scan / bolt-contract / halts-and-handoff (57,330 B), always-load in execute-bolts SKILL.md
+# NOT traced: code-gates / hard-rule-scan / bolt-contract / halts-and-handoff (56,787 B), always-load in execute-bolts SKILL.md
 # but unread in the inline runs — this list under-counts that written contract. Published as MEASURED per release.
 # 9.0 (P1, 2026-09-27): the four classic skills were deleted; plan's Tier-3 pointers now resolve to the
 # relocated contracts (plugins references/vault-core.md; plan/references/context-authoring.md replaces the
