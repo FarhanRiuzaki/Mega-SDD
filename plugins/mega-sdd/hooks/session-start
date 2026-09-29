@@ -189,6 +189,26 @@ if [ "$sp_present" -eq 0 ]; then
   WARN=$'\n\n<important-reminder>⚠️ Mega-SDD detected SDD work in CWD but the `superpowers` plugin is not installed. Mega-SDD runs standalone; superpowers adds optional technique enhancements to the bolts phase. To enable them run: `/plugin install superpowers`</important-reminder>'
 fi
 
+# ─── Version drift (tests/update/test-version-drift.sh) ──────────────────────
+# running (this session's plugin.json) vs installed (highest mega-sdd@mega-sdd in
+# installed_plugins.json) vs available (the marketplace clone). Builtins only; a read error → silent.
+_vx='"version"[[:space:]]*:[[:space:]]*"([0-9]+(\.[0-9]+)*)"'
+_vd() { local s=""; { IFS= read -r -d '' s <"$1"; } 2>/dev/null || true; _VD=""; [[ "$s" =~ $_vx ]] && _VD="${BASH_REMATCH[1]}"; return 0; }
+_vgt() { local IFS=. i; local -a a=($1) b=($2)  # numeric dotted compare: $1 > $2
+  for ((i=0; i<${#a[@]} || i<${#b[@]}; i++)); do
+    ((10#${a[i]:-0} != 10#${b[i]:-0})) && { ((10#${a[i]:-0} > 10#${b[i]:-0})); return; }; done; return 1; }
+DRIFT=""; _vr=""; _vi=""; _vs=""; _vk='"mega-sdd@mega-sdd"'; _PL="${HOME}/.claude/plugins"
+[ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && { _vd "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json"; _vr="$_VD"; }
+{ IFS= read -r -d '' _vs <"${_PL}/installed_plugins.json"; } 2>/dev/null || true
+[[ "$_vs" == *"$_vk"* ]] && _vs="${_vs#*"$_vk"}" && _vs="${_vs%%]*}" || _vs=""  # that key's entry array
+while [[ "$_vs" =~ $_vx ]]; do { [ -z "$_vi" ] || _vgt "${BASH_REMATCH[1]}" "$_vi"; } && _vi="${BASH_REMATCH[1]}"; _vs="${_vs#*"${BASH_REMATCH[0]}"}"; done
+_vd "${_PL}/marketplaces/mega-sdd/plugins/mega-sdd/.claude-plugin/plugin.json"
+if [ -n "$_vr" ] && [ -n "$_vi" ] && _vgt "$_vi" "$_vr"; then
+  DRIFT=$'\n\n'"mega-sdd: sesi ini masih ${_vr}, versi ${_vi} sudah ter-install — jalankan /reload-plugins (atau restart Claude Code)."
+elif [ -n "$_vi" ] && [ -n "$_VD" ] && _vgt "$_VD" "$_vi"; then
+  DRIFT=$'\n\n'"mega-sdd: versi ${_VD} tersedia (ter-install ${_vi}) — jalankan /mega-sdd:update-plugin."
+fi
+
 # ─── State anchor block (spec 2026-09-25-state-anchor-design.md §6) ──────────
 # Replaces the old repo-wide "codebase moved" notice. Rendered on EVERY exit
 # below (also the no-python one): HEAD sha + branch, FRESH/STALE per vault scope
@@ -244,7 +264,7 @@ if [ -f "$PY_LIB_SS" ]; then
     # builtin printf, byte-identical to the old heredoc (-1 exec); the block is
     # printed BEFORE any state write, so a write failure can never cost the anchor
     printf '%s\n' "<<EXTREMELY_IMPORTANT>>" "You have mega-sdd skills available. SDD context detected in CWD." "" \
-      "${ANCHOR_CONTENT}${WARN}${PY_WARN}${STATE_TEXT}" "<</EXTREMELY_IMPORTANT>>"
+      "${ANCHOR_CONTENT}${WARN}${DRIFT}${PY_WARN}${STATE_TEXT}" "<</EXTREMELY_IMPORTANT>>"
     if declare -F mega_state_seen_write >/dev/null; then mega_state_seen_write; fi
     exit 0
   fi
@@ -261,6 +281,6 @@ fi
 # it exits early (see the missing-interpreter block above). Interpolated anyway so
 # the notice still renders if that early exit is ever made conditional.
 printf '%s\n' "<<EXTREMELY_IMPORTANT>>" "You have mega-sdd skills available. SDD context detected in CWD." "" \
-  "${ANCHOR_CONTENT}${WARN}${PY_WARN}${STATE_TEXT}" "<</EXTREMELY_IMPORTANT>>"
+  "${ANCHOR_CONTENT}${WARN}${DRIFT}${PY_WARN}${STATE_TEXT}" "<</EXTREMELY_IMPORTANT>>"
 # state writes (overlay + this session's seen-ring entry) only AFTER the output
 if declare -F mega_state_seen_write >/dev/null; then mega_state_seen_write; fi
