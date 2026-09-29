@@ -125,9 +125,9 @@ python3 -c "import json;d=json.load(open('$V/bolts/U-002/binding.json'));c=[x fo
   && pass "d: mutation — fs change flips the verdict on recompute (no cached truth)" || fail "d: verdict did not follow the filesystem"
 
 # ── e: hook evidence-deny names binding.json at every site (Bash-tamper ×2, Write/Edit ×2, bash PROTECTED) ──
-n=$(grep -c 'review-tier|binding)\\.json' "$HOOK"); m=$(grep -c "review-tier|binding)\\\\.json'" "$HOOK")
+n=$(grep -c 'acceptance|binding)\\.json' "$HOOK"); m=$(grep -c "acceptance|binding)\\\\.json'" "$HOOK")
 [ "$n" -ge 4 ] && pass "e1: python-form evidence-deny regex carries |binding at $n site(s)" || fail "e1: python-form sites=$n (<4)"
-grep -q 'findings|review-tier|binding)\\.json' "$HOOK" && pass "e2: bash PROTECTED alternation carries binding" || fail "e2: bash PROTECTED missing binding"
+grep -q 'acceptance|binding)\\.json' "$HOOK" && pass "e2: bash PROTECTED alternation carries binding" || fail "e2: bash PROTECTED missing binding"
 
 # ── f: v8 P2 D1 — a Next.js route-group / dynamic-segment anchor keeps its full path ──
 # (lite 7.36.1 arm: `src/app/(blank-layout-pages)/register/page.tsx:1-22` was cut to

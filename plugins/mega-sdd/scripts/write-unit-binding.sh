@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # write-unit-binding.sh — SOLE writer of <vault>/bolts/U-XXX/binding.json (v8 P1,
 # spec 2026-09-10 Appendix F3). The file is hook-guarded evidence (evidence-deny
-# regex, like postflight/acceptance/findings): Write/Edit/Bash writes are denied,
+# regex, like postflight/acceptance): Write/Edit/Bash writes are denied,
 # only this script produces or amends it — so a verdict can never be typed in.
 #
 #   write-unit-binding.sh --cwd=<root> --vault=<vault> --unit=U-XXX --claims=<bolts/U-XXX/_claims.json> [--verdicts=<json>]
