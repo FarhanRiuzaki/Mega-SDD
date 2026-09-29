@@ -235,7 +235,7 @@ These lanes are opt-in and sit outside the build path:
 
 ## Measured against plain Claude Code
 
-Setup for every block: n=3 clean runs per arm, opus, and vanilla Claude Code (mega-sdd disabled) as the control. Figures are medians, with [min–max] where shown. The protocol and the decision rules were locked before the first run: [`benchmarks/runbooks/vanilla-vs-megasdd.md`](benchmarks/runbooks/vanilla-vs-megasdd.md) (greenfield) and commit `5d880e8b` + [`trap-judge.py`](benchmarks/scripts/trap-judge.py) (brownfield).
+Setup for every block: n=3 clean runs per arm, opus, and vanilla Claude Code (mega-sdd disabled) as the control. Figures are medians, with [min–max] where shown. The protocol and the decision rules were locked before the first run: [`benchmarks/runbooks/vanilla-vs-megasdd.md`](benchmarks/runbooks/vanilla-vs-megasdd.md) (greenfield) and commit `d447a6d2` + [`trap-judge.py`](benchmarks/scripts/trap-judge.py) (brownfield).
 
 **Greenfield** (xs = a three-screen company-profile site; clinic = a multi-flow clinic app whose PRD carries open questions):
 

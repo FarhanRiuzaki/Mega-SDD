@@ -362,12 +362,12 @@ metrics are OVERLAP (AC 13 vs 13, Critical 0 vs 0, Important 0 vs 0, traps 5/5 �
 ### 8.6 P3 outcome (2026-09-28)
 
 **Decision.** On 2026-09-28 the owner decided to run the full P3 (commits C0–C9) and accepted O2.
-The plan is in the P3 commit bodies (merge `037ca18f`). It was produced by the read-only workflow
+The plan was committed in `2d02ae3b`; merge `037ca18f` records what landed. It was produced by the read-only workflow
 `p3-caller-audit` (144 agents: inventory, 9 cluster audits, 135 adversarial refutation checks, a
 synthesis) at `4e1cf166`. The only basis for deleting anything is §8.5: inline was non-inferior to
 the per-unit agent path on one brownfield fixture, n=3. **P3 claims no speed, cost or quality
 gain.** An item the refutation checks refuted stays KEEP; only the single lockstep lines and forced
-test re-pins listed in plan §2b change in it. An item that was not refuted but is
+test re-pins listed in the plan (`2d02ae3b`) §2b change in it. An item that was not refuted but is
 coupled to a refuted one moves to P3b as a unit, rather than being half-done.
 
 **`--agents` is retired.** The token is still recognized and still implies `--guarded`. A user who
@@ -378,7 +378,7 @@ left to record inline runs under an "agents" label. This follows the 9.0 `--clas
 `--inline` stays an accepted no-op alias. `--model-tier=<role>:<tier>` (extract-intelligence roles)
 is unchanged. `--max-retries=N` stays as a prose cap per task, and no hook counts it. The retired
 flags are: `--review-panel`, the bare `--model-tier=<tier>`, `--no-escalate`, execute-bolts
-`--resume` and `--rollback`. Each gets a one-line notice (plan §5; the bare `--model-tier` and
+`--resume` and `--rollback`. Each gets a one-line notice (`2d02ae3b` plan §5; the bare `--model-tier` and
 `--no-escalate` share one). The fan-out flags
 (`--parallel`, `--sequential`, `--per-squad`, `--worktree`, `--sprint-checkpoint`) keep their text
 in P3. They are inert because they are scoped to `--agents`, and P3b retires them.

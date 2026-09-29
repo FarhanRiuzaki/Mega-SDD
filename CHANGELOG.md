@@ -228,7 +228,7 @@ Sumber: commit `cf8d3df3`. Pada PRD greenfield, pipeline (lite/classic) 2,4–12
 - `bolt-implementer` step 5b: zona waktu dipin, secret divalidasi saat request (bukan saat import/prerender), dan test tanpa `scripts.test` dilaporkan.
 - `tests/lanes/test-lanes.sh`: 32 cek untuk router, delivery-check, `.gitignore`, dan wiring.
 - Harness: arm `routed` (`P0_ENTRY=frontdoor`, prompt `/mega-sdd:mega-sdd <PRD>`).
-- Runbook brownfield (commit `5d880e8b`): eksperimen berikutnya setelah blok router. Dijalankan 2026-09-27; hasilnya di bullet `existing_code` di atas.
+- Runbook brownfield (commit `d447a6d2`): eksperimen berikutnya setelah blok router. Dijalankan 2026-09-27; hasilnya di bullet `existing_code` di atas.
 
 ### Notes — hasil arm `routed` vs vanilla (MEASURED 2026-09-27, n=3 run bersih per arm, opus)
 Laporan: commit `d447a6d2`. Router memilih `direct` untuk xs dan `assisted` untuk klinik.

@@ -9,5 +9,5 @@ brownfield routed 2 PRD/prd-clinic-v2.md
 brownfield routed 3 PRD/prd-clinic-v2.md
 brownfield vanilla 2 PRD/prd-clinic-v2.md
 brownfield vanilla 3 PRD/prd-clinic-v2.md
-# replacement for vanilla-1 (outage_sleep: idle + maintenance sleep on battery at run start), runbook §4
+# replacement for vanilla-1 (outage_sleep: idle + maintenance sleep on battery at run start), runbook §4 (d447a6d2)
 brownfield vanilla 4 PRD/prd-clinic-v2.md
