@@ -82,3 +82,5 @@ Claude outputs/
 # them (extract.json, run.meta, quality.json, vault-snapshot/) stay tracked.
 benchmarks/results/**/stream.jsonl
 benchmarks/results/**/stderr.log
+# root runtime state of mega-sdd sessions run in this repo (the hooks recreate it on use)
+/.mega-sdd/
