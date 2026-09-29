@@ -9,7 +9,6 @@ Loaded when detect-drift runs under `--auto` or as an orchestrate-flow chain pha
 - Handoff YAML
 - Auto-trigger as a chain phase
 - Snapshot reuse
-- Per-bolt incremental mode
 
 ## `--auto` behavior
 
@@ -124,17 +123,3 @@ Per `plugins/mega-sdd/references/shared-snapshot-schema.md`. When run as the pos
 5. Performance: ~5s on a 20-bolt batch vs ~28s for a full re-scan.
 
 Stale detection: if `postflight.json.vault_sha256` ≠ the current `vault.json` sha256, fresh-scan that unit's files.
-
-## Per-bolt incremental mode
-
-execute-bolts performs its own inline per-bolt drift check (`execute-bolts/references/halts-and-handoff.md`); detect-drift is NOT invoked per bolt. The shape below is what that inline check renders (single-bolt scope: only that bolt's `target_files` vs vault expectations; no report written):
-
-```
-per_bolt_drift_result:
-  unit_id: U-XXX
-  drift_detected: true | false
-  critical_findings: [<list>]
-  non_critical_findings: [<list>]
-```
-
-execute-bolts renders this inline in its compact streaming format.

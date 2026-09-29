@@ -144,7 +144,7 @@ The user always holds control — they remove a dep only if they confirm it's un
 
 ## list-modules
 
-Display module progress + DoD status for the current vault. The read-only rollup — per-module unit completion (from `bolt-outcomes.json`), DoD marked-count, `blocked_by` resolution, and status label — is a single script mode: `scripts/query-graph.sh --modules`. This procedure runs it for the display, and owns the **interactive `--mark-dod` flow** (which mutates `modules.yaml` and may re-run DoD test commands — neither belongs in the read-only script).
+Display module progress + DoD status for the current vault. The read-only rollup — per-module unit completion (from the evidence done rule — `_lib/exec_units.done`; `bolt-outcomes.json` of older runs as fallback), DoD marked-count, `blocked_by` resolution, and status label — is a single script mode: `scripts/query-graph.sh --modules`. This procedure runs it for the display, and owns the **interactive `--mark-dod` flow** (which mutates `modules.yaml` and may re-run DoD test commands — neither belongs in the read-only script).
 
 Flags: `[vault-path] [--module=<id>] [--mark-dod=<module>] [--format=table|json]`.
 
@@ -176,7 +176,7 @@ The script's DoD column reflects the **marked** state only (a `dod:` item writte
 
 ### list-modules rails + halts
 
-- Module status is derived from **objective signals** — unit membership from each unit's `module:` frontmatter, completion from `<vault>/.memory/bolt-outcomes.json` (`status: completed` / `halted_*`), DoD marked-state from `modules.yaml` — **never inferred**.
+- Module status is derived from **objective signals** — unit membership from each unit's `module:` frontmatter, completion from the evidence done rule (`_lib/exec_units.done`; `<vault>/.memory/bolt-outcomes.json` of older runs as fallback), DoD marked-state from `modules.yaml` — **never inferred**.
 - **DoD test commands are never auto-marked from the read-only display.** They are only re-run in the `--mark-dod` flow above, via Bash, where the exit code (not an LLM guess) decides pass/fail.
 - `blocked_by` is resolved against each blocking module's computed status; a blocker is "ok" only when that module is itself `completed`.
 - Halts: vault not found / `vault.json` corrupt → script exits **1**, relay and stop; `--module=<id>` / `--mark-dod=<id>` names an unknown module → halt with the list of valid module IDs (the script exits **2** on an unknown `--module`); a `--mark-dod` test command fails → do **not** auto-mark; the user resolves it manually.

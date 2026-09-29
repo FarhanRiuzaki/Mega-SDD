@@ -49,7 +49,7 @@ V_OF() { printf '%s/.mega-sdd/vaults/web' "$1"; }
 bind() { # <dir> [writer flags…]
   local F="$1" V; V=$(V_OF "$1"); shift
   bash "$S/derive-unit-claims.sh" --cwd="$F" --vault="$V" --units=U-001 >/dev/null 2>&1
-  bash "$S/write-unit-binding.sh" --cwd="$F" --vault="$V" --unit=U-001 --claims="$V/bolts/_wave-claims.json" "$@" >/dev/null 2>&1
+  bash "$S/write-unit-binding.sh" --cwd="$F" --vault="$V" --unit=U-001 --claims="$V/bolts/U-001/_claims.json" "$@" >/dev/null 2>&1
 }
 B() { printf '%s/bolts/U-001/binding.json' "$(V_OF "$1")"; }
 BASE="$WORK/base"; mk "$BASE"
@@ -68,7 +68,7 @@ D=$(fresh a); bind "$D"; H=$(git -C "$D" rev-parse HEAD)
 D=$(fresh b); V=$(V_OF "$D")
 bash "$S/derive-unit-claims.sh" --cwd="$D" --vault="$V" --units=U-001 >/dev/null 2>&1
 echo 'b6' >> "$D/src/b.ts"
-bash "$S/write-unit-binding.sh" --cwd="$D" --vault="$V" --unit=U-001 --claims="$V/bolts/_wave-claims.json" >/dev/null 2>&1
+bash "$S/write-unit-binding.sh" --cwd="$D" --vault="$V" --unit=U-001 --claims="$V/bolts/U-001/_claims.json" >/dev/null 2>&1
 [ "$(J "$(B "$D")" 'd["based_on_sha"]')" = "None" ] && [ "$(J "$(B "$D")" 'd.get("null_cause")')" = "writer_capture_moved" ] && [ "$(J "$(B "$D")" 'd["head"]')" = "None" ] \
   && ok "dirt between capture and write: stamp null (writer_capture_moved), head alias null" || bad "capture moved: $(J "$(B "$D")" 'd.get("null_cause")')"
 
@@ -78,20 +78,20 @@ printf '\n## Claims\n- C-U001-01 "beta returns one" — expect: beta returns a c
 ( cd "$D" && G add -A && G commit -qm claims ); bind "$D"
 ( cd "$D" && echo 'c3' >> src/c.ts && G commit -qam "feat: c3" )
 printf '{"C-U001-01":{"verdict":"CONFIRMED","anchor":"src/b.ts:3","confidence":"high","evidence":"read"}}\n' > "$WORK/v.json"
-bash "$S/write-unit-binding.sh" --cwd="$D" --vault="$V" --unit=U-001 --claims="$V/bolts/_wave-claims.json" --verdicts="$WORK/v.json" >/dev/null 2>&1
+bash "$S/write-unit-binding.sh" --cwd="$D" --vault="$V" --unit=U-001 --claims="$V/bolts/U-001/_claims.json" --verdicts="$WORK/v.json" >/dev/null 2>&1
 [ "$(J "$(B "$D")" 'd.get("null_cause")')" = "evidence_off_line" ] && ok "E3 evidence from a capture before an in-scope commit: null evidence_off_line" || bad "off_line: $(J "$(B "$D")" 'd.get("null_cause")')"
 
 # 4. a git error while a .git exists REFUSES (exit 3, nothing written)
 D=$(fresh d); V=$(V_OF "$D"); bash "$S/derive-unit-claims.sh" --cwd="$D" --vault="$V" --units=U-001 >/dev/null 2>&1
 SH="$WORK/gfail"; mkdir -p "$SH"; RG=$(command -v git)
 printf '#!/bin/bash\ncase "$*" in *ls-files*) echo "fatal: index file corrupt" >&2; exit 128 ;; esac\nexec "%s" "$@"\n' "$RG" > "$SH/git"; chmod +x "$SH/git"
-PATH="$SH:$PATH" bash "$S/write-unit-binding.sh" --cwd="$D" --vault="$V" --unit=U-001 --claims="$V/bolts/_wave-claims.json" >/dev/null 2>&1; rc=$?
+PATH="$SH:$PATH" bash "$S/write-unit-binding.sh" --cwd="$D" --vault="$V" --unit=U-001 --claims="$V/bolts/U-001/_claims.json" >/dev/null 2>&1; rc=$?
 [ "$rc" -eq 3 ] && [ ! -f "$(B "$D")" ] && ok "git failure during the dirty map: REFUSE exit 3, no binding written" || bad "git refuse rc=$rc"
 
 # 5. claim-set integrity: the unit's claims changed after the capture → refuse
 D=$(fresh e); V=$(V_OF "$D"); bash "$S/derive-unit-claims.sh" --cwd="$D" --vault="$V" --units=U-001 >/dev/null 2>&1
 sed -i.bak 's#src/c.ts:1#src/c.ts:2#' "$V/units/U-001.md"; rm -f "$V/units/U-001.md.bak"
-bash "$S/write-unit-binding.sh" --cwd="$D" --vault="$V" --unit=U-001 --claims="$V/bolts/_wave-claims.json" >/dev/null 2>&1; rc=$?
+bash "$S/write-unit-binding.sh" --cwd="$D" --vault="$V" --unit=U-001 --claims="$V/bolts/U-001/_claims.json" >/dev/null 2>&1; rc=$?
 [ "$rc" -eq 3 ] && ok "claims drifted since the capture: REFUSE (exit 3)" || bad "integrity rc=$rc"
 
 # 6. ladder: rung 1 identical, rung 2a moved verbatim (prior content_sha), rung 4 label, rung 5 drift

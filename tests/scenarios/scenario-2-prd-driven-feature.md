@@ -201,7 +201,7 @@ target_files:
 acceptance_test:
   - type: test
     command: ./vendor/bin/phpunit --filter=PatientUserTest
-    expects: "OK ("                       # a literal substring phpunit prints on success; an empty expects is flagged acceptance_expects_missing (an analyze advisory)
+    expects: "OK ("                       # a literal substring phpunit prints on success; an empty expects is flagged acceptance_expects_missing (fails plan Step 5)
 ---
 
 ## Anchors

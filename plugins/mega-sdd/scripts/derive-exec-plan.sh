@@ -2,11 +2,13 @@
 # derive-exec-plan.sh — the run-start CONFLICT gate and plan generator of the inline `execute-bolts` run (the default), zero model
 # tokens (spec docs/superpowers/specs/2026-09-27-v9-simplification-design.md §8.1; skills/execute-bolts/references/inline-run.md).
 #
-#   derive-exec-plan.sh --cwd=<root> --vault=<vault> [--units=all|U-001,…] [--pending | --rebind-wip | --retire [--dry-run]] [--quiet]
+#   derive-exec-plan.sh --cwd=<root> --vault=<vault> [--units=all|U-001,… | --module=<id>] [--pending | --rebind-wip | --retire [--dry-run]] [--quiet]
 #
 # done       derive-ready-units.sh `done`, or _lib/exec_units.done (the rule the run-boundary scan uses).
 # --pending  ONE JSON line {"pending":[…]}: not done, not `status: superseded`, topological — the list the
 #            controller re-binds up front. Writes nothing.
+# --module   the module's pending units (members: query-graph.sh --modules) instead of --units; a blocked_by module undeclared, with
+#            a pending unit or unmarked DoD → exit 1 + halt module_blocked_by (--pending too: before any re-bind). Only modules.yaml.auto → exit 2.
 # --rebind-wip  the close, before its evidence commit: re-binds each unit with an open own_wip CONFLICT (a resume's own work,
 #            done since: CONFIRMED) → {"rebound":[…]}; a CONFLICT left, or named by a `Close: halt` ledger line → exit 1 + halt
 #            {scope: close} + that line. --retire: the same (--dry-run: no re-bind), then removes plans, ledgers, workspaces.
@@ -19,6 +21,8 @@
 #                                   fs_must_exist CONFLICT on a path an in-scope ancestor creates (`deferred`
 #                                   to the task's re-bind) and an `own_wip` one (the unit's own uncommitted work).
 #              quarantine_recorded  derive-ready-units.sh lists it (write-unit-quarantine.sh)
+#              cross_squad_interface_draft  a `consumes_interfaces` note <vault>/interfaces/<id>.md is still `status: draft`
+#                                   (interface_id, producer_squad, consumer_squad; the producer squad locks it)
 #              binding_stale        _lib/freshness.gate_check (the run-start freshness check)
 #              depends_on_quarantined  a depends_on unit is quarantined, or neither done nor a candidate
 #            halt {type: binding_conflict}: a validator drop with no unit_id, or nothing left in scope while a
@@ -31,16 +35,17 @@
 # Exit 0 = plan written, resumed, re-bound or retired · 1 = nothing executable (no plan), or a CONFLICT left at the
 # close · 2 = usage / cycle / unreadable input / a failed re-bind.
 set -u
-CWD="."; VAULT=""; UNITS="all"; MODE=""; QUIET=0; DRY=0
+CWD="."; VAULT=""; UNITS="all"; MODE=""; QUIET=0; DRY=0; MODULE=""
 for arg in "$@"; do case "$arg" in
-  --cwd=*) CWD="${arg#*=}" ;; --vault=*) VAULT="${arg#*=}" ;; --units=*) UNITS="${arg#*=}" ;;
+  --cwd=*) CWD="${arg#*=}" ;; --vault=*) VAULT="${arg#*=}" ;; --units=*) UNITS="${arg#*=}" ;; --module=*) MODULE="${arg#*=}" ;;
   --pending|--retire|--rebind-wip) MODE="${arg#--}" ;; --quiet) QUIET=1 ;; --dry-run) DRY=1 ;;
-  *) echo "usage: derive-exec-plan.sh --cwd=<root> --vault=<vault> [--units=…] [--pending | --rebind-wip | --retire [--dry-run]] [--quiet]" >&2; exit 2 ;;
+  *) echo "usage: derive-exec-plan.sh --cwd=<root> --vault=<vault> [--units=… | --module=<id>] [--pending | --rebind-wip | --retire [--dry-run]] [--quiet]" >&2; exit 2 ;;
 esac; done
+[ -z "$MODULE" ] || case "$UNITS/$MODE" in all/|all/pending) ;; *) echo "usage: --module=<id> takes no --units=, --rebind-wip or --retire" >&2; exit 2 ;; esac
 [ -n "$VAULT" ] && [ -d "$VAULT/units" ] || { echo "usage: --vault=<dir with units/> required" >&2; exit 2; }
 [ -d "$CWD" ] || { echo "usage: --cwd=<existing project root> required" >&2; exit 2; }
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-V_CWD="$CWD" V_VAULT="$VAULT" V_UNITS="${UNITS:-all}" V_MODE="$MODE" V_QUIET="$QUIET" V_DRY="$DRY" V_SCRIPTS="$SCRIPT_DIR" \
+V_CWD="$CWD" V_VAULT="$VAULT" V_UNITS="${UNITS:-all}" V_MODE="$MODE" V_QUIET="$QUIET" V_DRY="$DRY" V_SCRIPTS="$SCRIPT_DIR" V_MODULE="$MODULE" \
   python3 - <<'PYEOF'
 import glob, heapq, json, os, re, shlex, shutil, subprocess, sys
 
@@ -148,9 +153,27 @@ while heap:
                 heapq.heappush(heap, (natkey(c), c))
 if len(order) != len(pending):
     die("depends_on cycle among %s — fix the units' depends_on" % ", ".join(sorted(pending - set(order), key=natkey)))
+mod_halt, mods = None, {}
+if E["V_MODULE"]:  # the rollup gives membership + DoD, never "done" (it also reads bolt-outcomes); halts before (b)2 re-binds anything
+    meta = os.path.join(vault, "_meta", "modules.yaml")
+    if os.path.isfile(meta + ".auto") and not os.path.isfile(meta):
+        die("only _meta/modules.yaml.auto exists — review it, then promote it: mv _meta/modules.yaml.auto _meta/modules.yaml")
+    r = run(["bash", os.path.join(scripts, "query-graph.sh"), "--modules", vault, "--cwd=" + root, "--format=json"])
+    try:
+        mods = {m["id"]: m for m in json.loads(r.stdout)["modules"]}
+        mod = mods[E["V_MODULE"]]
+    except (AttributeError, ValueError, KeyError, TypeError):
+        die("unknown module %s (%s)" % (E["V_MODULE"], "valid: " + ", ".join(sorted(mods)) if mods else (r.stderr.strip() if r else "") or "query-graph.sh --modules gave no rollup"))
+    order = [u for u in order if u in mod["unit_ids"]]
+    unmet = [b for b in mod["blocked_by"] if b not in mods or pending & set(mods[b]["unit_ids"]) or mods[b]["dod"]["done"] < mods[b]["dod"]["total"]]
+    if unmet and order:
+        blk = mods.get(unmet[0]) or {"status": "undeclared", "unit_ids": []}
+        mod_halt = {"type": "module_blocked_by", "scope": "run", "unit_id": order[0], "blocking_module_id": unmet[0], "blocked_status": blk["status"],
+                    "pending_units": sorted(pending & set(blk["unit_ids"]), key=natkey), "next_action": "execute-bolts --module=%s first (DoD items: "
+                    "list-modules --mark-dod)" % unmet[0], "keterangan": "modul prasyarat %s belum selesai — jalankan dulu, lalu ulangi" % unmet[0]}
 if E["V_MODE"] == "pending":
-    print(json.dumps({"pending": order}))
-    sys.exit(0)
+    print(json.dumps(dict({"pending": order}, **({"halt": mod_halt} if mod_halt else {}))))
+    sys.exit(1 if mod_halt else 0)
 
 want = [u.strip() for u in E["V_UNITS"].split(",") if u.strip() and u.strip() != "all"]
 if set(want) - set(units):
@@ -184,7 +207,8 @@ for old in sorted(glob.glob(os.path.join(BOLTS, "_exec-plan-*.md"))):  # an open
         res.update(plan=old, run_base=rb, resumed=True, in_scope=re.findall(r"(?m)^## Task \d+: (U-[\w.-]+) — ", txt))
         print(json.dumps(res)) if E["V_QUIET"] != "1" else None
         sys.exit(0)
-if not cands:
+res["halt"] = mod_halt
+if mod_halt or not cands:
     finish(1)
 
 # ── the CONFLICT gate at run start: the per-dispatch validator over every candidate ──
@@ -211,21 +235,33 @@ def ancestors(u, seen):
     return seen
 
 
+def drafts(u):  # consumed interface notes still `status: draft`; a missing note is plan's interface_ref_missing, not a block
+    out = []
+    for i in units[u]["consumes"]:
+        p = os.path.join(vault, "interfaces", i + ".md")
+        t = open(p, encoding="utf-8", errors="replace").read() if os.path.isfile(p) else ""
+        if re.search(r"(?m)^status:[ \t]*['\"]?draft\b", t):
+            out.append({"id": i, "producer": (re.findall(r"(?m)^producer:[ \t]*['\"]?([\w.-]+)", t) or [None])[0]})
+    return out
+
+
 quar, deferred, recorded = {}, {}, set(ready.get("quarantined") or [])
 for u in cands:  # topological: an ancestor is decided before its dependents
     via = next((a for a in sorted(set(units[u]["deps"]), key=natkey) if a not in done and (a in quar or a not in cands)), None)
-    opn = open_conflicts(u)  # None = unparseable: fail closed
+    opn, dr = open_conflicts(u), drafts(u)  # opn None = unparseable: fail closed
     creates = {t["path"] for a in ancestors(u, set()) if a in cands and a not in quar
                for t in units[a]["targets"] if t["operation"] == "create"}
     dfr = sorted({str(c.get("id")) for c in opn or [] if c.get("kind") == "fs_must_exist" and xu.pnorm(c.get("expect")) in creates}, key=natkey)
     wip = {str(c.get("id")) for c in opn or [] if c.get("own_wip")}  # the unit's own uncommitted work (a resume)
     blocking = sorted(({str(c.get("id")) for c in opn or []} | dropped.get(u, set())) - set(dfr) - wip, key=natkey)
     try:
-        why = None if (opn is None or blocking or u in recorded or via) else fr.gate_check(root, vault, u, None)[0]
+        why = None if (opn is None or blocking or u in recorded or dr or via) else fr.gate_check(root, vault, u, None)[0]
     except Exception:  # noqa: BLE001 — a git failure or any exception: fail closed (not_evaluated)
         why = "not_evaluated"
     rec = ({"reason": "binding_conflict", "conflict_ids": blocking or ["binding.json unparseable"]} if opn is None or blocking
            else {"reason": "quarantine_recorded"} if u in recorded
+           else {"reason": "cross_squad_interface_draft", "interface_id": dr[0]["id"], "interfaces": [x["id"] for x in dr],
+                 "producer_squad": dr[0]["producer"], "consumer_squad": units[u]["squad"] or None} if dr
            else {"reason": "binding_stale", "freshness": why} if why
            else {"reason": "depends_on_quarantined"} if via else None)
     if rec:
@@ -272,9 +308,10 @@ A("**Architecture:** one task per unit, in `depends_on` order. The unit file a t
 A("**Tech Stack:** the project's own. **Spec:** %s." % " · ".join(spec))
 A("**Run base:** `%s`. **Generated by:** derive-exec-plan.sh (mega-sdd %s) — never hand-edit it." % (base, VERSION))
 if res["quarantined"]:
+    det = lambda rq: rq.get("conflict_ids") or (rq["interfaces"] + ["producer %s" % rq["producer_squad"]] if rq.get("interfaces")  # noqa: E731
+                                                else [rq["freshness"]] if rq.get("freshness") else [])
     A("\n".join(["**Not in this plan (quarantined at run start — the Karantina table of the run report):**"] + [
-        "- %s — %s%s%s" % (rq["unit"], rq["reason"], " (%s)" % ", ".join(rq.get("conflict_ids") or [rq.get("freshness") or ""])
-                           if rq.get("conflict_ids") or rq.get("freshness") else "", " · via " + rq["via"] if rq.get("via") else "")
+        "- %s — %s%s%s" % (rq["unit"], rq["reason"], " (%s)" % ", ".join(det(rq)) if det(rq) else "", " · via " + rq["via"] if rq.get("via") else "")
         for rq in res["quarantined"]]))
 A("## Global Constraints")
 A("\n".join([

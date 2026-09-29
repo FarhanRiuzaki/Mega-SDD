@@ -64,10 +64,10 @@ Mode: every run is inline (BI1, BI2, BI4, BH6); the per-unit `--agents` path is 
 - **Prompt:** `/mega-sdd:execute-bolts --squad=squad-fe-web`
 - **Expect:** only units where `squad: squad-fe-web` are selected (the set becomes `--units=<ids>` for the plan, `references/inline-run.md` (a)); BE and integrations units skipped; bolts written only for FE units
 
-### BH7 (v1.1+): --squad=<id> halts on draft consumed interface
-- **Setup:** FE unit U-FE-002 declares `consumes_interfaces: [api-x]`; `interfaces/api-x.md` has `status: draft`
+### BH7 (v1.1+): --squad=<id> quarantines a unit whose consumed interface is draft
+- **Setup:** FE unit U-FE-002 declares `consumes_interfaces: [api-x]`; `interfaces/api-x.md` has `status: draft`, `producer: squad-be`
 - **Prompt:** `/mega-sdd:execute-bolts --squad=squad-fe-web`
-- **Expect:** halt with `cross_squad_interface_draft` blocker; next_action names producer squad
+- **Expect:** U-FE-002 quarantined `cross_squad_interface_draft` (Karantina row names api-x and producer squad squad-be), its dependents skipped via it, the other FE units run
 
 ## Hard Rule pre-flight + post-flight (v1.2+, Iter 3)
 

@@ -102,7 +102,7 @@ HARD_RULE: Public reusable library code MUST reside under pkg/ — not mixed int
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: Go doc comments (`// Name …` directly above the declaration; rendered by `go doc`/pkg.go.dev) — **read by**: `revive` (`exported` and `package-comments` are in its default rule set) and staticcheck `ST1020`–`ST1022` (off by default) — but only when `.golangci.yml` enables them: golangci-lint's standard set (errcheck, govet, ineffassign, staticcheck, unused) does NOT flag a missing comment; `swag` reads `// @Summary`-style annotations ONLY when the project generates OpenAPI with it. So an exported identifier gets its one-sentence `// Name …` when the project lints for it or exports the package; otherwise only where the name hides the contract.
 - **Skip**: unexported functions with a self-explanatory name; handlers ``func(c echo.Context) error`` whose route registration says it; getters (Go has no `Get` prefix); struct fields whose name + type say it; `// returns an error` on a signature that returns `error`; test functions (the name is the sentence).
@@ -111,8 +111,7 @@ HARD_RULE: Public reusable library code MUST reside under pkg/ — not mixed int
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — `c.Bind(&req)` then `c.Validate(&req)` against `validate:"..."` tags via the registered `e.Validator`; the bypass is calling `Bind` without `Validate` — Echo does NOT auto-validate on bind — or reading raw `c.QueryParam()`/`c.FormValue()` strings that no tag ever sees.

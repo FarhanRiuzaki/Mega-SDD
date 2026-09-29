@@ -62,7 +62,7 @@ L[1]="CHANGED 2"; L[2]="CHANGED 3"; L[3]="CHANGED 4"; open(p,"w").write("\n".joi
 PY
 G add -A >/dev/null; G commit -qm "feat(U-000): move b, rewrite c"
 
-W="$V/bolts/_wave-claims.json"
+W="$V/bolts/U-001/_claims.json"
 bash "$S/derive-unit-claims.sh" --cwd="$F" --vault="$V" --units=U-001 >/dev/null 2>&1 || bad "derive-unit-claims failed"
 bash "$S/write-unit-binding.sh" --cwd="$F" --vault="$V" --unit=U-001 --claims="$W" >/dev/null 2>&1 || bad "write-unit-binding failed"
 B="$V/bolts/U-001/binding.json"

@@ -228,6 +228,26 @@ bash "$RCG" --cwd="$FIX" --base="$BASE" --head="$HEAD" --pack="$WORK/does-not-ex
   && ok "missing --pack file → pack_requested_not_engaged flagged + detection fallback" || fail "missing pack silently fell back (rc=$rc)"
 [ "$(jget "$OUT6D" "len([s for s in d['skips'] if s['gate']=='toolchain'])")" = "1" ] && ok "the non-engagement reason rides in skips[]" || fail "pack non-engagement reason missing"
 
+note "== 6c2. no --pack: the first project pack whose ## Toolchain engages self-resolves (P3b OD-4) =="
+FIXS="$WORK/selfpack"; mkfix "$FIXS"; mkdir -p "$FIXS/.mega-sdd/packs"
+TPL="${ROOT}/plugins/mega-sdd/references/framework-conventions/_template.md"
+{ printf -- '---\nframework: a\n---\n'; awk '/^## /{p=/^## Toolchain/} p' "$TPL"; } > "$FIXS/.mega-sdd/packs/a.md"
+grep -q '^  lint_cmd: *<' "$FIXS/.mega-sdd/packs/a.md" || fail "fixture: the _template ## Toolchain block (placeholders) was not copied"
+printf -- '---\nframework: b\n---\n## Toolchain\n```yaml\ntoolchain:\n  lint_cmd: true\n```\n' > "$FIXS/.mega-sdd/packs/b.md"
+OUT6S="$WORK/selfpack.json"
+bash "$RCG" --cwd="$FIXS" --base=HEAD --head=HEAD > "$OUT6S"; rc=$?
+[ "$rc" -eq 0 ] && [ "$(jget "$OUT6S" "d['gates']['toolchain']['source']")" = "pack" ] \
+  && [ "$(jget "$OUT6S" "d['gates']['lint_typecheck']['results'][0]['tool']")" = "pack-override" ] \
+  && [ "$(jget "$OUT6S" "d['gates']['toolchain'].get('pack')")" = ".mega-sdd/packs/b.md" ] \
+  && ok "no --pack → b.md's lint_cmd runs as pack-override (a.md, placeholders only, is passed over)" \
+  || fail "project pack not self-resolved (rc=$rc): $(jget "$OUT6S" "d['gates'].get('toolchain')")"
+rm -f "$FIXS/.mega-sdd/packs/b.md"
+bash "$RCG" --cwd="$FIXS" --base=HEAD --head=HEAD > "$OUT6S"; rc=$?
+[ "$rc" -eq 0 ] && [ "$(jget "$OUT6S" "d['gates']['toolchain']['source']")" = "detect" ] \
+  && [ "$(jget "$OUT6S" "len([s for s in d['skips'] if s['gate']=='toolchain'])")" = "0" ] \
+  && ok "a block copied from _template and never filled engages nothing, with no 'NOT engaged' note" \
+  || fail "placeholder-only pack engaged or noted (rc=$rc): $(jget "$OUT6S" "[d['gates'].get('toolchain'), d['skips']]")"
+
 note "== 6d. unresolvable --unit is a VISIBLE skip, never a silent enforced:false =="
 OUT6E="$WORK/unitmiss.json"
 bash "$RCG" --cwd="$FIX" --base="$BASE" --head="$HEAD" --unit="$WORK/no-such-unit.md" > "$OUT6E"; rc=$?

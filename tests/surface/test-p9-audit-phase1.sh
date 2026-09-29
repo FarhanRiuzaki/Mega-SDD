@@ -41,12 +41,21 @@ grep -qF 'chain-execution.md` §Starterkit detection + mode classification' "$FD
   || fail "B4: starterkit pointer misroutes (owner heading missing or pointer wrong)"
 
 # ── A2 — halt-taxonomy aligned to the canonical registry ──
+# P3b OD-3: verify_unit_writable is ALWAYS STOP (validate-preflight.sh fatal +
+# execute-bolts pre-flight 2 halt; no dispatch-layer auto-clear exists) — re-pinned
+# out of C1 in the taxonomy, the registry row and the family entry alike.
 HT="$OF/halt-taxonomy.md"
+C1SEC=$(sed -n '/^## Self-resolve (C1/,/^## Soft/p' "$HT")
+ASSEC=$(sed -n '/^## Always-stop/,/^## Self-resolve/p' "$HT")
 if ! grep -q 'classification conflict' "$HT" \
    && grep -q '## Self-resolve (C1' "$HT" \
-   && grep -qF 'memory_in_use` · `mode_migrate` · `invalid_handoff` · `verify_unit_writable' "$HT"; then
-  pass "A2: 5 admitted conflicts resolved into the C1 self-resolve list"
-else fail "A2: halt-taxonomy conflicts not resolved"; fi
+   && grep -qF 'memory_in_use` · `mode_migrate` · `invalid_handoff` · `vault_json_corrupt' "$HT" \
+   && ! printf '%s' "$C1SEC" | grep -qF '`verify_unit_writable`' \
+   && printf '%s' "$ASSEC" | grep -qF '`verify_unit_writable`' \
+   && ! grep -F -- '- `verify_unit_writable` —' "$P/references/halt-protocol.md" | grep -q 'C1 SELF-RESOLVE' \
+   && ! grep -F -- '- `verify_unit_writable` —' "$P/references/halt-families/bolts.md" | grep -qi 'C1 SELF-RESOLVE\|auto-clear'; then
+  pass "A2: admitted conflicts resolved; verify_unit_writable always-stop (taxonomy, registry, family)"
+else fail "A2: halt-taxonomy conflicts not resolved, or verify_unit_writable still filed as C1 / auto-clear"; fi
 
 # ── A3 — staging drop advisory ──
 # 9.0 P1: the layout-2 04-flows authoring template died with generate-intent
@@ -170,6 +179,8 @@ grep -qF 'mega-sdd-trace:extract-intelligence' "$P/skills/extract-intelligence/r
 # C3 (deep-scan dispatch tag) RETIRED in 9.0 P1 — deep-scan dispatch deleted with scan-codebase.
 grep -qE '^[[:space:]]*mega-sdd-trace:execute-bolts$' "$P/skills/execute-bolts/references/inline-run.md" \
   && pass "C4: the inline close-review prompt carries the tag on its own line" || fail "C4: inline-run reviewer tag missing"
+grep -qE '^mega-sdd-trace:execute-bolts$' "$P/skills/execute-bolts/references/propose-and-confirm-prompt.md" \
+  && pass "C5: the fix-proposer prompt carries the tag on its own line" || fail "C5: propose-and-confirm fix-proposer tag missing"
 
 # ── D — infra batch ──
 # D1 (v7.3.1): user-prompt-submit is RESTORED as the pure-shell gateway-marker

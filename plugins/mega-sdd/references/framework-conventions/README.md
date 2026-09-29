@@ -1,14 +1,14 @@
 # Framework Convention Packs
 
-Pluggable convention packs for common backend/frontend frameworks. Each pack declares file-location standards, naming standards, idioms, and Hard Rules. When the matching framework is detected by the GROUND matcher (`scripts/ground.sh` → `state_probes.probe_framework_pack` → `state.json` `derived.framework_pack`), the dispatch builder filters the glob-matched pack rules into each bolt's T2 `framework_pack_rules` (`build-dispatch-prompt.sh` priority 7) and the pack's `## Code style` into `code_style_slice` (7b).
+Pluggable convention packs for common backend/frontend frameworks. Each pack declares file-location standards, naming standards, idioms, and Hard Rules. The matching framework is detected by the GROUND matcher (`scripts/ground.sh` → `state_probes.probe_framework_pack` → `state.json` `derived.framework_pack`). The pack-driven validators read their sections through `scripts/_lib/resolve-framework-pack.sh`, `scripts/run-code-gates.sh` runs a project pack's `## Toolchain` commands as L0 gates 1–2, and plan's AI technical decisions may cite the pack (`references/vault-core.md §AI technical decisions`); no pack section is injected into the inline run's context.
 
 ## Pluggable, not opinionated-by-default
 
 mega-sdd stays framework-agnostic. Convention packs are **OPT-IN BY DETECTION**:
 
 1. GROUND (`scripts/ground.sh` → `state_probes.probe_framework_pack`) matches each pack's `detection_signature` against the root + one-level workspace manifests (`composer.json`, `package.json`, `Gemfile`, `pyproject.toml`/`requirements.txt`, `go.mod`, `Cargo.toml`, `pom.xml`/`build.gradle`, `*.csproj`); the winner goes to `state.json` `derived.framework_pack`
-2. The resolver (`scripts/_lib/resolve-framework-pack.sh`) + dispatch builder read it and load the matching pack chain from this folder (project pack root first)
-3. `execute-bolts`: pack rules reach the bolt as advisory T2 `framework_pack_rules`; a pack-derived rule a unit already carries in `## Hard rules` (a migrated vault) is enforced like any Hard rule — v1 mechanical forms deterministically, v2 fenced ast-grep rules via `ast-grep scan`
+2. The resolver (`scripts/_lib/resolve-framework-pack.sh`) reads it and loads the matching pack chain from this folder (project pack root first) for the pack-driven validators (flow-coverage, sibling-consistency, ui-quality, unit-spec)
+3. `execute-bolts`: no pack section reaches the inline run; a pack-derived rule a unit already carries in `## Hard rules` (a migrated vault) is enforced like any Hard rule — v1 mechanical forms deterministically, v2 fenced ast-grep rules via `ast-grep scan`
 
 Fallback when no framework match → `_universal.md` (universal good practices that apply to any codebase).
 

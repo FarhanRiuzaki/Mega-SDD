@@ -128,8 +128,8 @@ for vj in vault_jsons:
 # Scan units for task_type=verify with non-empty target_files (forbidden per
 # attestation reclassification: verify units MUST be read-only). DETECTION-ONLY:
 # emit a chat notice; DO NOT modify on-disk unit (preserves
-# bad spec for human review). Dispatch-time auto-clear is execute-bolts's job
-# (separate concern).
+# bad spec for human review). NOT C1: execute-bolts pre-flight 2 halts the unit
+# (validate-preflight.sh, fatal, stops the chain first).
 #
 # Every vault layout + both unit shapes (U-*.md and U-*/unit.md) via the shared
 # vault_layouts.unit_files contract (7.13.0 — was the `*-bound/`-only pair).
@@ -185,12 +185,12 @@ for up in unit_paths_vw:
         unit_id = os.path.basename(up).replace(".md", "")
     emit_event(
         "verify_unit_writable",
-        f"detected at GROUND; on-disk unit preserved for review; execute-bolts will auto-clear at dispatch time",
+        "detected at GROUND; on-disk unit preserved for review; execute-bolts pre-flight 2 halts it",
         unit_id=unit_id,
         unit_path=rel_up,
         forbidden_operations=forbidden_ops,
     )
-    notices.append(f"[self-resolved] verify_unit_writable: {unit_id} has task_type=verify + writable target_files (review needed; dispatch will auto-clear)")
+    notices.append(f"[advisory] verify_unit_writable: {unit_id} has task_type=verify + writable target_files (execute-bolts pre-flight 2 halts it; empty its target_files)")
 
 # ─── Guard 5: framework_pack_unparseable (B.7) + framework_pack_cycle (B.8) ─
 # + framework_pack_missing (B.10) — combined pack-integrity scan.
@@ -448,25 +448,28 @@ fi
 # Field class (DD9000 #11): a typecheck-only repo makes gate-L0 format/lint SKIP
 # on every bolt — each skip is recorded honestly, but 36 honest skips never
 # became a HUMAN decision. Run-boundary ADVISORY, never a gate: silent once a
-# decision is recorded (.mega-sdd/l0-toolchain-decision.json) or a project pack
-# carries `## Toolchain` (the F-14 override path). Detection is fail-open — a
-# failed/unparseable detect run emits nothing and writes no probe.
+# decision is recorded (.mega-sdd/l0-toolchain-decision.json) or a project pack's
+# `## Toolchain` engages run-code-gates.sh (the F-14 override path; one test,
+# _lib/pack_toolchain.py — a placeholder-only block does not silence). Detection
+# is fail-open — a failed/unparseable detect run emits nothing and writes no probe.
 if [ -d "${CWD}/.mega-sdd" ] && [ ! -f "${CWD}/.mega-sdd/l0-toolchain-decision.json" ]; then
-  if ! grep -qs '^## Toolchain' "${CWD}/.mega-sdd/packs/"*.md 2>/dev/null; then
-    TL_JSON="$(bash "$SCRIPT_DIR/detect-toolchain.sh" --cwd="$CWD" 2>/dev/null || true)"
-    if [ -n "$TL_JSON" ]; then
-      TL_JSON="$TL_JSON" CWD="$CWD" MEGA_SDD_LIB_DIR="$SCRIPT_DIR/_lib" SCRIPT_DIR="$SCRIPT_DIR" python3 - <<'PYEOF' 2>/dev/null
+  TL_JSON="$(bash "$SCRIPT_DIR/detect-toolchain.sh" --cwd="$CWD" 2>/dev/null || true)"
+  if [ -n "$TL_JSON" ]; then
+    TL_JSON="$TL_JSON" CWD="$CWD" MEGA_SDD_LIB_DIR="$SCRIPT_DIR/_lib" SCRIPT_DIR="$SCRIPT_DIR" python3 - <<'PYEOF' 2>/dev/null
 import json, os, sys
 try:
     tc = json.loads(os.environ["TL_JSON"])
 except Exception:
     sys.exit(0)  # unparseable detection -> no advisory, no probe (fail open)
 cwd = os.environ["CWD"]
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import pack_toolchain
+if pack_toolchain.project_pack(cwd)[1] is not None:
+    sys.exit(0)  # run-code-gates.sh runs this pack's commands: no advisory, no probe
 nf = len(tc.get("formatters") or []); nl = len(tc.get("linters") or []); nt = len(tc.get("typecheckers") or [])
 # Typecheck ALONE does not silence the advisory — that is the field case.
 probe = {"formatters": nf, "linters": nl, "typecheckers": nt, "advisory": (nf == 0 and nl == 0)}
 try:
-    sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
     import plugin_meta
     probe.update(plugin_meta.stamp(os.environ.get("SCRIPT_DIR")))
 except Exception:
@@ -483,7 +486,6 @@ if probe["advisory"]:
           "(.mega-sdd/packs/) · atau catat keputusan N/A ke "
           ".mega-sdd/l0-toolchain-decision.json (execute-bolts akan menanyakan SEKALI)." % nt)
 PYEOF
-    fi
   fi
 fi
 

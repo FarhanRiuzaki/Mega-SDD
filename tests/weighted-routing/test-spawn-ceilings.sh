@@ -206,12 +206,12 @@ printf '# PRD\n\n## Halaman A\n\nx\n' > "$FIXJ/docs/PRD.md"; echo '{"open_questi
 SCR="$PLUGIN/scripts"
 run_script() { ( cd "$FIXJ" && PATH="$SHIM:$PATH" /bin/sh -c "$1" ) >/dev/null 2>&1; }
 reset_counts; run_script "bash '$SCR'/derive-unit-claims.sh --cwd=$FIXJ --vault=$JV --units=U-001"
-[ "$(total)" -le 6 ] && [ -f "$JV/bolts/_wave-claims.json" ] \
-  && ok "C10 derive-unit-claims: ≤6 spawns ($(total)), wave claims written" \
-  || bad "C10 derive-unit-claims: spawns=$(total) out=$([ -f "$JV/bolts/_wave-claims.json" ] && echo yes || echo no)"
-reset_counts; run_script "bash '$SCR'/write-unit-binding.sh --cwd=$FIXJ --vault=$JV --unit=U-001 --claims=$JV/bolts/_wave-claims.json"
+[ "$(total)" -le 6 ] && [ -f "$JV/bolts/U-001/_claims.json" ] \
+  && ok "C10 derive-unit-claims: ≤6 spawns ($(total)), per-unit _claims.json written" \
+  || bad "C10 derive-unit-claims: spawns=$(total) out=$([ -f "$JV/bolts/U-001/_claims.json" ] && echo yes || echo no)"
+reset_counts; run_script "bash '$SCR'/write-unit-binding.sh --cwd=$FIXJ --vault=$JV --unit=U-001 --claims=$JV/bolts/U-001/_claims.json"
 [ "$(total)" -le 6 ] && [ -f "$JV/bolts/U-001/binding.json" ] \
-  && ok "C11 write-unit-binding (fs-only wave, 0 model tokens): ≤6 spawns ($(total)), binding.json written" \
+  && ok "C11 write-unit-binding (fs-only unit, 0 model tokens): ≤6 spawns ($(total)), binding.json written" \
   || bad "C11 write-unit-binding: spawns=$(total) out=$([ -f "$JV/bolts/U-001/binding.json" ] && echo yes || echo no)"
 # C11b (spec 2026-09-25 §10 / D30): the writer's CONDITIONAL paths — a re-bind after the
 # unit's own bolt commit edited its anchored block (rung-3 attribution), created its create
@@ -227,7 +227,7 @@ printf -- '---\nid: U-001\ntitle: t\ntarget_files:\n  - path: src/c.ts\n    oper
 wg() { git -C "$FIXW" -c user.email=t@t -c user.name=t -c commit.gpgsign=false "$@" >/dev/null 2>&1; }
 wg init -q -b main .; wg add -A; wg commit -qm seed
 bash "$SCR/derive-unit-claims.sh" --cwd="$FIXW" --vault="$WV" --units=U-001 >/dev/null 2>&1
-bash "$SCR/write-unit-binding.sh" --cwd="$FIXW" --vault="$WV" --unit=U-001 --claims="$WV/bolts/_wave-claims.json" >/dev/null 2>&1
+bash "$SCR/write-unit-binding.sh" --cwd="$FIXW" --vault="$WV" --unit=U-001 --claims="$WV/bolts/U-001/_claims.json" >/dev/null 2>&1
 printf 'C1-own\nc2\n' > "$FIXW/src/c.ts"; echo new > "$FIXW/src/New.ts"; wg add -A
 wg commit -qm "feat(U-001): own edit" -m "Unit: U-001
 SDD-PROVENANCE: mega-sdd/execute-bolts unit=U-001
@@ -235,7 +235,7 @@ SDD-Acceptance: v5" -m "Co-Authored-By: Claude <noreply@anthropic.com>"
 echo r > "$FIXW/README.md"; wg add -A; wg commit -qm "docs: teammate"
 bash "$SCR/derive-unit-claims.sh" --cwd="$FIXW" --vault="$WV" --units=U-001 >/dev/null 2>&1
 reset_counts
-( cd "$FIXW" && PATH="$SHIM:$PATH" /bin/sh -c "bash '$SCR'/write-unit-binding.sh --cwd=$FIXW --vault=$WV --unit=U-001 --claims=$WV/bolts/_wave-claims.json" ) >/dev/null 2>&1
+( cd "$FIXW" && PATH="$SHIM:$PATH" /bin/sh -c "bash '$SCR'/write-unit-binding.sh --cwd=$FIXW --vault=$WV --unit=U-001 --claims=$WV/bolts/U-001/_claims.json" ) >/dev/null 2>&1
 C11B_ST=$(python3 -c 'import json,sys;print(",".join(c.get("state") or "" for c in json.load(open(sys.argv[1]))["claims"]))' "$WV/bolts/U-001/binding.json" 2>/dev/null)
 [ "$(total)" -le 20 ] && [ "$C11B_ST" = "IMPLEMENTED,IMPLEMENTED_BY_UNIT,IMPLEMENTED_BY_UNIT" ] \
   && ok "C11b write-unit-binding conditional paths (rung 3 + absent_at + ordering + carry-forward): ≤20 spawns ($(total), git $(count git))" \
@@ -254,7 +254,7 @@ reset_counts; run_script "bash '$SCR'/validate-plan-coverage.sh --cwd=$FIXJ --pr
   || bad "C14 validate-plan-coverage: spawns=$(total)"
 reset_counts; run_script "bash '$SCR'/derive-ready-units.sh --cwd=$FIXJ --vault=$JV"
 [ "$(total)" -le 8 ] \
-  && ok "C15 derive-ready-units (W2 lite readiness; wraps compute-unit-staleness): ≤8 spawns ($(total))" \
+  && ok "C15 derive-ready-units (the done/quarantined source of derive-exec-plan; wraps compute-unit-staleness): ≤8 spawns ($(total))" \
   || bad "C15 derive-ready-units: spawns=$(total)"
 reset_counts; run_script "bash '$SCR'/derive-plan-pins.sh --cwd=$FIXJ --prd=docs/PRD.md"
 [ "$(total)" -le 8 ] \

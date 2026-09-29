@@ -13,6 +13,8 @@
 #   h8  plan Step 9.5 adversarial dispatch carries mega-sdd-trace:plan (+ listed in the contract)
 #   h9  paths.md names no deleted script
 #   h10 migrate-paths layout-2 rung: following its printed NEXT step reaches the layout-3 rung
+#   h11 no execute-bolts / orchestrate-flow text promises the acceptance_test_concern harvest (its writer went in P3,
+#       spec §8.6 G2); build-fsd-core.sh keeps reading the field from legacy bolt-reports
 # Run: bash tests/v9/test-honesty-docs.sh </dev/null
 set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"; P="$ROOT/plugins/mega-sdd"
@@ -128,4 +130,9 @@ else
   [ "$R3" -eq 0 ] && [ -f "$W/p/.mega-sdd/vaults/clinic/context.md" ] && echo "$OUT3" | grep -q 'full JIT re-bind required' \
     && ok "h10: following the layout-2 NEXT step reaches the layout-3 rung and its JIT re-bind" || bad "h10: layout-3 rung after the layout-2 NEXT step: rc=$R3 $(echo "$OUT3" | tail -2)"
 fi
+
+# h11
+hits=$(grep -rlF 'acceptance_test_concern' "$P/skills/execute-bolts" "$P/skills/orchestrate-flow" | sed "s|$P/||" | tr '\n' ' ')
+[ -z "$hits" ] && ok "h11: no execute-bolts / orchestrate-flow text promises the writerless acceptance_test_concern harvest" || bad "h11: the harvest is still promised in: $hits"
+grep -qF 'acceptance_test_concern:' "$P/scripts/build-fsd-core.sh" && ok "h11: build-fsd-core.sh still reads the field from legacy bolt-reports" || bad "h11: build-fsd-core.sh lost its legacy reader"
 exit $rc

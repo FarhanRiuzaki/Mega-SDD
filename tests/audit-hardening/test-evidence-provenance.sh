@@ -5,8 +5,8 @@
 #
 # Pins the surviving mechanisms:
 #   C  run-code-gates.sh --write persists a stamped lens-inputs/U-XXX/l0-results.json
-#   E  guards: findings.json / l0-results.json / review-tier.json are denied to
-#      Write/Edit and to Bash tamper verbs; the sanctioned run-code-gates.sh passes
+#   E  guard: l0-results.json is denied to Write/Edit and to Bash tamper verbs;
+#      the sanctioned run-code-gates.sh passes (findings/review-tier: no writer, P3b)
 #   F  provenance: every writer stamps plugin_version + written_at
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -54,8 +54,8 @@ L0="$V/lens-inputs/U-001/l0-results.json"
 [ "$(J "$L0" 'd.get("plugin_version")')" = "$VER" ] && ok "C4 l0 record carries plugin_version" || bad "C4 plugin_version missing on l0"
 
 drive(){ printf '%s' "$1" | bash "$HOOK" 2>/dev/null; }
-echo "── E: the three artifacts are guarded ──"
-for f in "bolts/U-001/findings.json" "lens-inputs/U-001/l0-results.json" "bolts/U-001/review-tier.json"; do
+echo "── E: the L0 record is guarded ──"
+for f in "lens-inputs/U-001/l0-results.json"; do
   OUT=$(drive "{\"session_id\":\"s\",\"cwd\":\"$repo\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$V/$f\",\"content\":\"{}\"}}")
   printf '%s' "$OUT" | grep -q '"permissionDecision": "deny"' && ok "E: Write of $f denied" || bad "E: Write of $f ALLOWED"
   OUT=$(drive "{\"session_id\":\"s\",\"cwd\":\"$repo\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"echo '{}' > .mega-sdd/vaults/v1/$f\"}}")

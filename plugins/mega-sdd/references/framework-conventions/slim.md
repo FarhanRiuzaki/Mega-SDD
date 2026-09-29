@@ -101,7 +101,7 @@ HARD_RULE: Middleware MUST be applied via $app->add() or $group->add() / route->
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: PHPDoc — **read by**: PHPStan/Psalm when configured (`phpstan.neon`) for the generics and array shapes PSR-7/PSR-15 code cannot type natively (`array<string, mixed>` route args, `@param array{id: int} $args`); nothing in Slim reads a docblock — routes, middleware and the container are code. A full block only where a static analyser reads it, or on public API consumed outside this module.
 - **Skip**: action classes with `__invoke(Request $request, Response $response, array $args)` — the PSR signature is the doc; getters/setters/constructors; `@param`/`@return` repeating native types; `@var` on a typed property.
@@ -110,8 +110,7 @@ HARD_RULE: Middleware MUST be applied via $app->add() or $group->add() / route->
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Slim ships none; validate `$request->getParsedBody()` with Respect\Validation (or a validation middleware) inside the Action before it reaches the domain layer — handing the parsed body straight to a service is unvalidated input.

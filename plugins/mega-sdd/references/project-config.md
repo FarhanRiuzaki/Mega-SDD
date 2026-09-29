@@ -33,15 +33,6 @@ lane: lite          # lite is the only pipeline; `standard` is retired (the fron
 model_tiers:
   extract-intelligence-module: sonnet  # catalog roles only (references/model-tiers.md): the extract
                              # roles; a stale bolt_implementer key gets GROUND's model_tier_unknown notice
-parallel_max: 4              # execute-bolts in-flight implementer cap (Claude Code's own default is 20
-                             # concurrent subagents — one bolt-implementer is ~80 turns; 4 keeps
-                             # a fleet Windows laptop responsive). SCRIPT-READ, not
-                             # prose-only — `_lib/vault_layouts.parallel_max()` (top-level key, first
-                             # match, absent/non-integer → 4) feeds the in-run dispatch gate
-                             # (hooks/pre-tool-use): on the lite lane a unit whose postflight +
-                             # acceptance passed but whose panel has not merged yet is "panel-pending",
-                             # and the gate lets the next dispatch through only while ≤ parallel_max
-                             # such units exist (execute-bolts references/batch-and-fanout.md).
 max_retries: 3             # default for the inline run's per-task fix cap (prose, execute-bolts
                            # `references/inline-run.md` (a); `--max-retries=N` wins); nothing counts it.
 code_gates: true           # false → skip the L0 toolchain + SAST gates (execute-bolts references/code-gates.md).

@@ -66,8 +66,6 @@ Conventions for ASP.NET Core 6+ web projects — Web API (controllers or Minimal
 
 ## Hard Rules emitted
 
-The dispatch builder (`build-dispatch-prompt.sh` priority 7) filters the glob-matched records into the bolt's T2 `framework_pack_rules`.
-
 ```
 HARD_RULE: Web controllers MUST end with the `Controller` suffix
   path_glob: src/**/Controllers/**/*.cs
@@ -109,7 +107,7 @@ HARD_RULE: Endpoints serving non-public data MUST carry `[Authorize]` (or `.Requ
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: XML doc comments (`///` with `<summary>`) — **read by**: the compiler when the project sets `<GenerateDocumentationFile>true</GenerateDocumentationFile>` — then every public member without one raises **CS1591** (an error under `TreatWarningsAsErrors` unless `<NoWarn>1591</NoWarn>`); Swashbuckle when `options.IncludeXmlComments(...)` is configured — `<summary>`, `<remarks>`, `<param>`, `<response>` become the OpenAPI text; StyleCop `SA1600` when configured; IntelliSense for consumers of a referenced assembly. A full block only where one of these reads it, or on public API consumed outside this project.
 - **Skip**: private/internal members with self-explanatory names; auto-properties, records and DTOs whose names say it; constructors that only assign dependencies; `override`s whose contract is on the interface/base; `<param>`/`<returns>` that restate the signature; minimal-API lambdas whose route says it.
@@ -118,8 +116,7 @@ HARD_RULE: Endpoints serving non-public data MUST carry `[Authorize]` (or `.Requ
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom. Base crypto/secrets/SQL idioms
 > are inherited from `dotnet.md`.
 

@@ -1,14 +1,10 @@
 # Halt guidance — bolts family
 
-Per-type guidance for halts emitted by: execute-bolts (L0 + B1–B4 evidence gates, review panel, verify units).
+Per-type guidance for halts emitted by: execute-bolts (L0 + B1–B4 evidence gates, verify units).
 Split from the canonical registry `plugins/mega-sdd/references/halt-protocol.md`
 (spec 2026-08-17-halt-registry-family-split.md) — the registry keeps the envelope
 schema, escalation discipline, subtype enums, and the per-type index that routes
 here. Entries are VERBATIM relocations; edit them here, never re-inline them.
-
-### dispatch_prompt_too_large
-
-- `dispatch_prompt_too_large` — execute-bolts: assembled bolt dispatch prompt exceeds 10KB hard cap. ALWAYS STOP. Resolution: re-tier context.
 
 ### bolt_repeated_partial_failure
 
@@ -17,10 +13,6 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### provenance_missing
 
 - `provenance_missing` — execute-bolts: bolt modified file lacks provenance trailer. ALWAYS STOP.
-
-### bolt_introduces_locked_drift
-
-- `bolt_introduces_locked_drift` — execute-bolts: bolt drift hits a LOCKED entity. ALWAYS STOP (CONFLICT-like; override-only, never propose-and-confirm).
 
 ### self_assessment_missing
 
@@ -36,11 +28,11 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### module_blocked_by
 
-- `module_blocked_by` — execute-bolts: bolt invocation blocked because prerequisite module hasn't completed yet (module-graph dependency). ALWAYS STOP. Details `{unit_id, blocking_module_id, blocked_status}`. Resolution: user runs prerequisite module first OR adjusts module dependency graph in `vault/_meta/modules.yaml`. Source skill: `execute-bolts`.
+- `module_blocked_by` — execute-bolts: bolt invocation blocked because prerequisite module hasn't completed yet (module-graph dependency). ALWAYS STOP. Details `{unit_id, blocking_module_id, blocked_status, pending_units}` (`pending_units`: its units not yet done; superseded counts as done). Resolution: user runs prerequisite module first OR adjusts module dependency graph in `vault/_meta/modules.yaml`. Source skill: `execute-bolts`.
 
 ### acceptance_path_unowned
 
-- `acceptance_path_unowned` — plan/execute-bolts gate: a unit whose `acceptance_test` command runs a path that NO unit declares in `target_files` and that does not exist on disk. ALWAYS STOP. The unit is unfinishable by construction: committing the file trips the B3 whitelist observer (`whitelist_violation`), skipping it fails the acceptance command — the implementer can only discover this after a full dispatch has burned (field case: HOST-AS400 U-001, `scope_creep_detected` after ~70k tokens). Details `{unit_id, unowned_paths[]}`. Resolution: add the path to that unit `target_files` (`operation: create`), or point the command at a path a unit already owns. Source skill: `plan` (Step 5 `validate-unit-spec.sh`; re-gated at the execute-bolts PreToolUse re-derive).
+- `acceptance_path_unowned` — plan/execute-bolts gate: a unit whose `acceptance_test` command runs a path that NO unit declares in `target_files` and that does not exist on disk. ALWAYS STOP. The unit is unfinishable by construction: committing the file trips the B3 whitelist observer (`whitelist_violation`), skipping it fails the acceptance command — the implementer can only discover this after a full dispatch has burned (field case: HOST-AS400 U-001, an out-of-scope halt after ~70k tokens). Details `{unit_id, unowned_paths[]}`. Resolution: add the path to that unit `target_files` (`operation: create`), or point the command at a path a unit already owns. Source skill: `plan` (Step 5 `validate-unit-spec.sh`; re-gated at the execute-bolts PreToolUse re-derive).
 
 ### sprint_blocked_by
 
@@ -52,7 +44,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### verify_unit_writable
 
-- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). **C1 SELF-RESOLVE (SCRIPT-LAYER DETECTION via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7 — DISPATCH-LAYER AUTO-CLEAR in execute-bolts):** at GROUND, the script scans every vault layout's `units/U-*.md` / `units/U-*/unit.md` (`_lib/vault_layouts.unit_files`) AND `<cwd>/.mega-sdd/vaults/*-bound/units/U-*/unit.md` (both layouts). For each `task_type: verify` unit with forbidden ops → emit the chat notice in the GROUND output. On-disk unit NOT modified (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path). Detection-only at GROUND means the warning re-fires at every M/L entry until human fixes the unit — intentional visibility. NEVER halts. Source skill: `execute-bolts`.
+- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). ALWAYS STOP: the chain's predictive preflight (`validate-preflight.sh`, fatal) and execute-bolts pre-flight 2 stop the run before the unit is built. Earlier, `scripts/ground.sh` Guard 4 prints an `[advisory]` GROUND notice for each such unit in every vault layout (`_lib/vault_layouts.unit_files`) at every M/L entry until a human fixes it; the on-disk unit is never modified. Resolution: edit the unit so its `target_files` is empty / all `operation: none` (pre-flight 2's rule). Source skill: `execute-bolts`.
 
 ### secret_in_code
 
@@ -60,15 +52,11 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### sast_critical_finding
 
-- `sast_critical_finding` — execute-bolts (L0 gate): a Critical SAST finding; user fixes before the panel. ALWAYS STOP.
+- `sast_critical_finding` — execute-bolts (L0 gate): a Critical SAST finding; user fixes it before the next task. ALWAYS STOP.
 
 ### dep_not_found
 
 - `dep_not_found` — execute-bolts (L0 gate): a newly-added dependency does not resolve in its registry; user corrects the manifest. ALWAYS STOP.
-
-### review_critical_unresolved
-
-- `review_critical_unresolved` — execute-bolts: the review panel's Critical findings (or a still-❌ spec lens — an unmet requirement carries no severity grade) survived the retry cap; user resolves them. W1: DEFER via quarantine (3.10), final report.
 
 ### batch_suite_red
 
@@ -82,17 +70,9 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 - `postflight_evidence_missing` — execute-bolts: a committed Hard-rule bolt has no passing `postflight.json`; user runs the post-flight scan via `run-postflight-scan.sh`. ALWAYS STOP.
 
-### panel_evidence_missing
-
-- `panel_evidence_missing` — execute-bolts gate (F-07, spec 2026-08-30 §3.1): a bolt dispatched WITH `bolts/U-XXX/review-tier.json` (`resolve-review-tier.sh --write`, the obligation key; earlier bolts advisory) at tier ≠ minimal has no `findings.json` with `written_by: merge-panel-findings.sh`. ALWAYS STOP. Resolution: run the blind panel, merge with the script. Detector `validate-bolt-artifacts.sh --panel-scan`.
-
-### l0_evidence_missing
-
-- `l0_evidence_missing` — execute-bolts gate (F-07): a keyed bolt has no `lens-inputs/U-XXX/l0-results.json` with `written_by: run-code-gates.sh`. ALWAYS STOP. Resolution: `run-code-gates.sh … --unit=<unit.md> --write` over the bolt's range.
-
 ### acceptance_expects_missing
 
-- `acceptance_expects_missing` — execute-bolts IN-RUN gate (F-18, spec §3.3): the dispatched unit has a `type: test` acceptance entry with a command and no `expects` (B4 would pass on rc==0 alone). Per unit at its own dispatch, never the run boundary. ALWAYS STOP for that dispatch. Resolution: add `expects: "<output substring>"`, re-dispatch. Detector `validate-unit-spec.sh`.
+- `acceptance_expects_missing` — plan Step 5 / analyze (F-18, spec §3.3): a unit has a `type: test` acceptance entry with a command and no `expects` (B4 would pass on rc==0 alone). ALWAYS STOP at plan Step 5 (the validator exits 1); no execute-bolts gate reads it, so a running project is never retro-blocked. Resolution: add `expects: "<output substring>"`, re-run plan Step 5. Detector `validate-unit-spec.sh`.
 
 ### acceptance_evidence_missing
 
@@ -117,10 +97,6 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### commit_rejected_by_hook
 
 - `commit_rejected_by_hook` — execute-bolts: the repo's own commit hook (pre-commit/husky/lefthook) or required GPG signing rejected the bolt commit; user fixes the hook finding (never `--no-verify`). ALWAYS STOP.
-
-### scope_creep_detected
-
-- `scope_creep_detected` — execute-bolts: a bolt exceeded its declared scope; user reviews the deviation. ALWAYS STOP.
 
 ### bolt_artifacts_missing
 

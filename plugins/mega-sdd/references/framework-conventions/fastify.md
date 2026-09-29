@@ -102,7 +102,7 @@ HARD_RULE: process.env MUST NOT be accessed outside src/config/ or the app entry
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: JSDoc/TSDoc — **read by**: the TypeScript checker in JavaScript projects with `checkJs` (JSDoc types ARE the type system there); `eslint-plugin-jsdoc` when configured; `@fastify/swagger` builds OpenAPI from the route `schema` (`schema.description`, `schema.summary`), never from comments — API documentation lives in the schema object. A full block only where one of these reads it, or on public API consumed outside this plugin.
 - **Skip**: route handlers whose `schema` + URL say it; plugins with a self-explanatory name; getters/setters/constructors; `@param`/`@returns` repeating TypeScript types; a comment that restates `schema.description`.
@@ -111,8 +111,7 @@ HARD_RULE: process.env MUST NOT be accessed outside src/config/ or the app entry
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — JSON Schema per route (`schema: { body, querystring, params }`) compiled by `ajv` rejects bad input before the handler runs; the bypass is a route registered without a schema — it accepts anything, silently (also a pack hard rule).

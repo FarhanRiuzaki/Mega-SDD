@@ -117,7 +117,7 @@ HARD_RULE: Config MUST load secrets and credentials from environment variables, 
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: docstrings (PEP 257) — **read by**: `none by default` — Flask reads no docstring; ruff `D*` ONLY when `select` includes `D`; Sphinx `autodoc` when docs are built; apispec-based generators (flask-smorest, flasgger) lift view docstrings into OpenAPI ONLY when installed. A full docstring only where one of these reads it, or on public API consumed outside this blueprint.
 - **Skip**: view functions whose route decorator + name say it; blueprints and the `create_app` factory; CLI commands (`help=` carries the text); tests; `:param:`/`:return:` lines repeating type hints.
@@ -126,8 +126,7 @@ HARD_RULE: Config MUST load secrets and credentials from environment variables, 
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Flask validates nothing by itself; the boundary is Flask-WTF/WTForms (`form.validate_on_submit()`) or marshmallow schemas — passing `request.form`/`request.get_json()` straight into queries or model constructors is unvalidated input.

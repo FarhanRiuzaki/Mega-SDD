@@ -10,6 +10,8 @@
 #   E  M-unassigned surfaced for a unit whose module isn't defined
 #   F  PyYAML fallback parser (MEGA_SDD_FORCE_YAML_FALLBACK=1) gives identical math
 #   G  usage/refusal exit codes (unknown flag/format/module → 2; no vault → 1)
+#   H  the evidence done rule (_lib/exec_units.done): a unit with a matching bolt-report + passing
+#      acceptance/postflight and NO bolt-outcomes entry (the inline run writes none) is completed
 set -u
 err=0
 
@@ -156,6 +158,23 @@ bash "$SCRIPT" --modules --cwd="$A" --module=M-nope >/dev/null 2>&1; [ $? -eq 2 
 EMPTY=$(mktemp -d); bash "$SCRIPT" --modules --cwd="$EMPTY" >/dev/null 2>&1; [ $? -eq 1 ] || { echo "G: no vault should exit 1"; errG=1; }
 rm -rf "$EMPTY"
 [ $errG -eq 0 ] && echo "G PASS (unknown flag/format/module → 2; no vault → 1)" || err=1
+
+# ---- Scenario H: the evidence done rule, no bolt-outcomes.json ----
+H=$(mktemp -d); trap 'rm -rf "$A" "$B" "$D" "$H"' EXIT
+hv="$H/.mega-sdd/vaults/leave-management"; mkdir -p "$hv/_meta" "$hv/units" "$hv/bolts/U-001" "$H/src"
+printf 'modules:\n  - id: M-auth\n    blocked_by: []\n  - id: M-leave\n    blocked_by: [M-auth]\n' > "$hv/_meta/modules.yaml"
+printf -- '---\nid: U-001\nmodule: M-auth\ntask_type: create\ntarget_files:\n  - path: src/a.txt\n    operation: create\n---\nbody\n' > "$hv/units/U-001.md"
+_unit "$hv" U-010 M-leave
+printf 'a\n' > "$H/src/a.txt"; ( cd "$H" && git init -q . && git add -A && git -c user.name=t -c user.email=t@t -c commit.gpgsign=false commit -qm "feat(U-001): a" )
+printf -- '---\nunit: U-001\nstatus: success\ntarget_hashes:\n  src/a.txt: %s\n---\n# r\n' "$(shasum -a 256 "$H/src/a.txt" | cut -d' ' -f1)" > "$hv/bolts/U-001/bolt-report.md"
+for f in acceptance postflight; do echo '{"status":"pass"}' > "$hv/bolts/U-001/$f.json"; done
+outH=$(bash "$SCRIPT" --modules --cwd="$H" --format=json 2>&1); rcH=$?
+OUT_JSON="$outH" python3 - <<'PY' && [ $rcH -eq 0 ] && echo "H PASS (evidence-done unit counts completed without bolt-outcomes; the dependent module's blocked_by is satisfied)" || { echo "H: evidence done rule not applied (rc=$rcH): $outH"; err=1; }
+import json, os
+m = {x["id"]: x for x in json.loads(os.environ["OUT_JSON"])["modules"]}
+assert m["M-auth"]["status"] == "completed" and m["M-auth"]["pending_units"] == [], m["M-auth"]
+assert m["M-leave"]["blocked_by_resolved"] == [{"id": "M-auth", "satisfied": True, "status": "completed"}], m["M-leave"]
+PY
 
 echo "──────────────────────────────"
 [ $err -eq 0 ] && echo "ALL PASS" || echo "FAILED"

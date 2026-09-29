@@ -110,7 +110,7 @@ HARD_RULE: `halt` MUST be used for early response termination inside a route blo
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: `#` doc comments (YARD/RDoc) — **read by**: RuboCop `Style/Documentation` ONLY when a `.rubocop.yml` enables it (`Enabled: false` in RuboCop's current default config); YARD/RDoc render comments for a published gem; nothing in Sinatra reads a comment — routes, filters and helpers are code. A full block only where one of these reads it, or on public API consumed outside this app.
 - **Skip**: route blocks whose verb + path say it; helpers with self-explanatory names; `before`/`after` filters; `set :x` settings; specs; YARD `@param`/`@return` repeating an obvious contract.
@@ -119,8 +119,7 @@ HARD_RULE: `halt` MUST be used for early response termination inside a route blo
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Sinatra validates nothing; `params` is raw user input — validate through dry-validation/dry-schema contracts (or explicit guard clauses that `halt 400`) before anything touches the data layer.

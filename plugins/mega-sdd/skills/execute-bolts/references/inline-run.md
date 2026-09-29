@@ -17,7 +17,7 @@ the resolution-verifier, the hook-counted attempt cap, the per-bolt drift check 
 
 | Flag | Inline (no `--agents`) |
 |---|---|
-| a unit id, `--sprint=`, `--module=`, `--squad=` | the unit set they select becomes `--units=<ids>` for (b)3 |
+| a unit id, `--squad=<id>`, `--sprint=<n>`, `--module=<id>` | the set becomes `--units=<ids>` for (b)3; `--sprint=<n>` = `analyze-parallelism.sh --format=json` `waves[n-1]` (1-indexed, never hand-numbered; n outside 1..total_waves = usage error; a `--pending` unit in an earlier wave → halt `sprint_blocked_by`; superseded counts as done, stale does not); `--module=<id>` is passed to (b)1 and (b)3 instead |
 | `--parallel`, `--sequential`, `--worktree`, `--per-squad`, `--sprint-checkpoint`, `--review-panel`, `--model-tier`, `--no-escalate`, `--resume` | nothing (one context, plan order; (b) resumes an open run by itself) |
 | `--max-retries=N` | a prose cap per task, no hook counts it: a step still failing after N fixes → STOP the run |
 | `--dry-run` | (b) runs, the plan is shown, then `--retire --dry-run` (no re-bind) unless (b) resumed an open run; no task starts |
@@ -30,22 +30,22 @@ first task without a `complete` ledger line (built-in `_inline-ledger-*.md`, wri
 `progress.md`); every task done → (d)1, or (d)4 once the built-in ledger has `Close: reviewed` (never a second review).
 (b)3 returns an open run (`"resumed": true`), never a new plan (abandon one: retire it). Otherwise (zero model tokens but E3):
 
-1. `bash <plugin-root>/scripts/derive-exec-plan.sh --cwd=<root> --vault=<vault> --pending` → `{"pending":[…]}` (not done,
-   not superseded, topological). Empty = nothing to execute: say so, stop. Exit 2 = a `depends_on` cycle or usage: fix, re-run.
+1. `bash <plugin-root>/scripts/derive-exec-plan.sh --cwd=<root> --vault=<vault> --pending [--module=<id>]` → `{"pending":[…]}` (not done,
+   not superseded, topological). Empty = nothing to execute: say so, stop. Exit 1 = halt `module_blocked_by`: run that module first. Exit 2 = a `depends_on` cycle or usage: fix, re-run.
 2. `bash <plugin-root>/scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=<pending>` with
    the comma-join of `pending[]` (exit 4 = re-bound; 2/3 = fail closed, re-run with `--units=all`).
    Its `gate: FAIL` / `next` are expected here — step 3 decides. `text_pending` > 0: ladder E3
    (`references/jit-bind-and-quarantine.md §E3`) per unit, then `write-unit-binding.sh --cwd=<root>
    --vault=<vault> --unit=<U> --claims=<claims[U]> --verdicts=<file>`.
-3. `bash <plugin-root>/scripts/derive-exec-plan.sh --cwd=<root> --vault=<vault> [--units=<ids>]`:
+3. `bash <plugin-root>/scripts/derive-exec-plan.sh --cwd=<root> --vault=<vault> [--units=<ids> | --module=<id>]`:
    - **exit 0** — the plan is at `plan`. Say the quarantine in ONE chat line (`Karantina: U-003
      binding_conflict C-U003-01 · U-004 via U-003`); each `quarantined[]` row goes into the **Karantina**
      table (unit · reason · conflict ids or `via` · the question): `binding_conflict` (`resolve-oq --binding`),
-     `quarantine_recorded`, `binding_stale` (re-bind), `depends_on_quarantined`. Not quarantined: `deferred`
-     (the task's re-bind re-verdicts a file an earlier task creates) and `own_wip` (the unit's own WIP).
-   - **exit 1 with `halt`** → **halt `binding_conflict`**: ALWAYS STOP (`jit-bind-and-quarantine.md
-     §3.10`); say its `keterangan`; the human picks KEEP_VAULT / KEEP_CODE / SPLIT via `resolve-oq
-     --binding`, then the run starts again. **Exit 1 without `halt`**: report the Karantina table, stop.
+     `quarantine_recorded`, `cross_squad_interface_draft` (the producer squad sets `status: locked`), `binding_stale` (re-bind),
+     `depends_on_quarantined`. Not quarantined: `deferred` (the task's re-bind re-verdicts a file an earlier task creates) and `own_wip` (the unit's own WIP).
+   - **exit 1 with `halt`** → ALWAYS STOP on `halt.type` (`jit-bind-and-quarantine.md §3.10`); say its `keterangan`:
+     **halt `binding_conflict`** → the human picks KEEP_VAULT / KEEP_CODE / SPLIT via `resolve-oq --binding`, then the run
+     starts again; `module_blocked_by` → run that module first. **Exit 1 without `halt`**: report the Karantina table, stop.
    - **exit 2** — no readable verdict from a validator: fail closed, fix what stderr names, re-run.
 4. `run_base` = the plan's `**Run base:**` sha. Never edit the plan or add a quarantined unit to it.
 
@@ -117,8 +117,7 @@ loop runs them here. Both then run 4–9 in order.
   gate, binding freshness, the F-18 gate (`acceptance_expects_missing`) and the attempt cap. Inline
   runs the CONFLICT gate and freshness once at run start, the re-bind per task as a plan step, and no F-18
   check; a commit past a CONFLICT, or past a skipped re-bind whose claim did not hold, is caught at the boundary.
-- **The per-bolt drift check** (`halts-and-handoff.md`): no task runs it, so `bolt_introduces_locked_drift` cannot fire;
-  the chain-end `detect-drift` auto-gate (standalone: the hand-off suggests it) is the backstop.
+- **The per-bolt drift check** (removed in P3): the chain-end `detect-drift` auto-gate (standalone: the hand-off suggests it) is the backstop.
 - **The per-unit panel and L0 enforcement.** One blind review replaces the panel; `run-code-gates.sh --write` runs per task,
   but no gate checks its `l0-results.json`. No gate checks a `fix(review)` / `fix(delivery)` commit against the touched units'
   `## Hard rules` (B1 judges a unit's own commits) — the same exposure as the `--agents` path's delivery fix; (d)3's rule is prose.

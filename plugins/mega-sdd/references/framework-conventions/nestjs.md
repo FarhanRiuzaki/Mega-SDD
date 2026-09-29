@@ -114,7 +114,7 @@ HARD_RULE: Modules that expose providers to other modules MUST list those provid
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: TSDoc/JSDoc — **read by**: `@nestjs/swagger` ONLY through its CLI plugin with `introspectComments: true` (then a property's or handler's comment becomes the OpenAPI `description`) — by default OpenAPI comes from decorators (`@ApiProperty`, `@ApiOperation`), never from comments; `eslint-plugin-jsdoc` when configured; TypeScript types carry the contract, so `@param`/`@returns` add nothing. A full block only where one of these reads it, or on public API consumed outside this module.
 - **Skip**: controllers/services/providers whose decorators + typed signature say it; DTOs whose `class-validator` decorators are the doc; modules; getters/setters/constructors; `@param`/`@returns` repeating TypeScript types; a comment that repeats `@ApiOperation({ summary })`.
@@ -123,8 +123,7 @@ HARD_RULE: Modules that expose providers to other modules MUST list those provid
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — global `ValidationPipe` + `class-validator` decorators on DTO classes; the bypass is a DTO-less `@Body()` (typed `any` or a bare interface) — class-validator only runs against decorated classes, so such a handler accepts anything.

@@ -2,7 +2,7 @@
 2026-09-10 Appendix F2; moved out of the derive-unit-claims.sh heredoc by the state
 anchor, spec 2026-09-25-state-anchor-design.md §9 "Claim-set integrity").
 
-derive-unit-claims.sh mints a wave's claim set with it; write-unit-binding.sh
+derive-unit-claims.sh mints each unit's claim set with it; write-unit-binding.sh
 re-derives ONE unit's claim set with it to refuse a bind whose claims drifted.
 Both import this module (0 exec) — the grammar is never re-typed.
 

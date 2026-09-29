@@ -122,7 +122,7 @@ HARD_RULE: The root layout MUST be app/layout.tsx and MUST include <html> and <b
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: TSDoc/JSDoc — **read by**: `none by default` — Next.js reads no comment (metadata comes from `export const metadata`, config from `next.config`); TypeScript types carry the contract; `eslint-plugin-jsdoc` when configured; in a JavaScript project with `checkJs` JSDoc types ARE the type system. A full block only where one of these reads it, or on a component/hook consumed outside this app (a shared package).
 - **Skip**: components whose props type + name say it; route handlers and Server Actions whose file path + verb say it; `page`/`layout`/`loading` files; getters/setters/constructors; `@param`/`@returns` repeating TypeScript types; a comment that repeats the component name.
@@ -131,8 +131,7 @@ HARD_RULE: The root layout MUST be app/layout.tsx and MUST include <html> and <b
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — `zod` parse at the server boundary: inside every Server Action (`formData` → schema) and Route Handler (`await request.json()` → schema); the bypass is trusting the payload shape because "the form only sends these fields" — client-side validation is not validation, both surfaces are directly callable.

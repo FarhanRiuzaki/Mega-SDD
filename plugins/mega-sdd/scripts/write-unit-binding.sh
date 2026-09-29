@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # write-unit-binding.sh — SOLE writer of <vault>/bolts/U-XXX/binding.json (v8 P1,
 # spec 2026-09-10 Appendix F3). The file is hook-guarded evidence (evidence-deny
-# regex, like postflight/acceptance/findings): Write/Edit/Bash writes are denied,
+# regex, like postflight/acceptance): Write/Edit/Bash writes are denied,
 # only this script produces or amends it — so a verdict can never be typed in.
 #
-#   write-unit-binding.sh --cwd=<root> --vault=<vault> --unit=U-XXX --claims=<wave claims.json> [--verdicts=<json>]
+#   write-unit-binding.sh --cwd=<root> --vault=<vault> --unit=U-XXX --claims=<bolts/U-XXX/_claims.json> [--verdicts=<json>]
 #   write-unit-binding.sh --cwd=<root> --vault=<vault> --unit=U-XXX --resolve=C-U005-01=KEEP_VAULT|KEEP_CODE|SPLIT|DEFER --by=<who>
 #
 # Verdicts (fail-closed, never CONFIRMED-by-absence):
@@ -46,7 +46,7 @@ for arg in "$@"; do case "$arg" in
   *) echo "usage: write-unit-binding.sh --cwd --vault --unit=U-XXX (--claims=<json> [--verdicts=<json>] [--rebind] | --resolve=C-id=ACTION --by=<who>)" >&2; exit 2 ;;
 esac; done
 [ -n "$VAULT" ] && [ -d "$VAULT" ] && [ -n "$UNIT" ] || { echo "usage: --vault=<dir> --unit=U-XXX required" >&2; exit 2; }
-if [ -z "$RESOLVE" ]; then [ -n "$CLAIMS" ] && [ -f "$CLAIMS" ] || { echo "usage: --claims=<wave claims.json> required (or --resolve)" >&2; exit 2; }; fi
+if [ -z "$RESOLVE" ]; then [ -n "$CLAIMS" ] && [ -f "$CLAIMS" ] || { echo "usage: --claims=<bolts/U-XXX/_claims.json> required (or --resolve)" >&2; exit 2; }; fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 V_CWD="$CWD" V_VAULT="$VAULT" V_UNIT="$UNIT" V_CLAIMS="$CLAIMS" V_VERDICTS="$VERDICTS" V_RESOLVE="$RESOLVE" V_BY="$BY" V_REBIND="$REBIND" \
   python3 "$SCRIPT_DIR/_lib/unit_binding.py"

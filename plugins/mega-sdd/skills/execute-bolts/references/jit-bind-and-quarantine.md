@@ -68,7 +68,7 @@ Relocated from `skills/bind-codebase/references/express-bind.md`, `skills/bind-c
 
 ### The per-claim retrieval ladder
 
-Per `text` claim (`kind: "text"` in `_wave-claims.json`, or in the unit's `_claims.json`), in order, stopping at the first rung that yields decisive evidence:
+Per `text` claim (`kind: "text"` in the unit's `_claims.json`), in order, stopping at the first rung that yields decisive evidence:
 
 1. **Index query** — **Run** `bash <plugin-root>/scripts/query-symbol-index.sh --cwd=<root>
    --name=<variant>` for each symbol the claim's `text` / `expect` names (entities) or its
@@ -162,7 +162,7 @@ For each CONFIRMED claim, additionally classify implementation readiness (conden
 
 ### Context discipline (anti-rot)
 
-The A1 rail, applied to this pass: keep the wave's CLAIM SET and the RUNNING VERDICT TABLE
+The A1 rail, applied to this pass: keep the CLAIM SET and the RUNNING VERDICT TABLE
 (claim id → verdict/state/anchor/confidence) live; **shed raw file-read content
 after each claim's verdict lands** — the verdict row + its anchor is the durable
 residue, the read bytes are not. Never accumulate whole-file reads across claims.
@@ -182,12 +182,10 @@ per unit as its verdicts land — the artifact, not the context, is the memory.
 ## 3.10 Quarantine instead of parking (W1 zero-idle, spec App. F6c)
 
 Only three halts may stop the run and wait for a human: `binding_conflict` /
-`bind_conflict`, `hard_rule_violated`, and OQ P1 business — plus one exception the
-owner kept blocking as CONFLICT-like: `bolt_introduces_locked_drift`
-(a bolt touched a LOCKED entity; pure-pause, override-only, never proposed). Every other
-DEFER-class halt on a unit (L0 trio, B1–B4 evidence, `review_critical_unresolved`,
+`bind_conflict`, `hard_rule_violated`, and OQ P1 business. Every other
+DEFER-class halt on a unit (L0 trio, B1–B4 evidence,
 `test_fail` after the retry budget, `ambiguous_spec`, `anchor_missing`,
-`dispatch_prompt_too_large`, `commit_rejected_by_hook`, `binding_stale` (run-start freshness,
+`commit_rejected_by_hook`, `binding_stale` (run-start freshness,
 `derive-exec-plan.sh`), …) is RECORDED and the wave continues:
 
 ```

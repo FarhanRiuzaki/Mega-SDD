@@ -113,7 +113,7 @@ HARD_RULE: `app/root.tsx` MUST export a default component rendering `<html>`, `<
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: TSDoc/JSDoc — **read by**: `none by default` — Remix reads no comment (`meta`, `links`, `handle` exports carry route metadata); TypeScript types carry the contract; `eslint-plugin-jsdoc` when configured; in a JavaScript project with `checkJs` JSDoc types ARE the type system. A full block only where one of these reads it, or on a module consumed outside this app.
 - **Skip**: route modules whose file path + `loader`/`action` exports say it; components whose props type + name say it; getters/setters/constructors; `@param`/`@returns` repeating TypeScript types; a comment that repeats the export name.
@@ -122,8 +122,7 @@ HARD_RULE: `app/root.tsx` MUST export a default component rendering `<html>`, `<
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — `zod` (or `conform`) parses `request.formData()` and `params` inside every `action`/`loader`; the bypass is reading `formData.get('x')` and trusting it — actions are plain HTTP endpoints anyone can POST to, regardless of what the `<Form>` renders.

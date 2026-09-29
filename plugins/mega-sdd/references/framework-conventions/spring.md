@@ -133,7 +133,7 @@ HARD_RULE: Multi-step write operations MUST be wrapped in a `@Transactional` ser
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16 (Checkstyle docs; springdoc `SpringDocJavadocConfiguration`).
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16 (Checkstyle docs; springdoc `SpringDocJavadocConfiguration`).
 
 - **Doc-comment tool**: Javadoc — **read by**: Checkstyle `MissingJavadocMethod` when a `checkstyle.xml` is configured (default scope `public`, `@Override` exempt, accessors exempt only with `allowMissingPropertyJavadoc=true`); springdoc when `therapi-runtime-javadoc` + its `-scribe` annotation processor are on the classpath (`springdoc.enable-javadoc` default on — Javadoc becomes the OpenAPI description); the Javadoc jar of a published library. None present → a full block only on public API consumed outside this module, or where the name hides the contract.
 - **Skip**: `private`/package-private methods with a self-explanatory name; getters/setters and Lombok accessors (`@Getter`/`@Setter`/`@Data`); `record` components; trivial constructors; `@Override` methods whose contract is on the interface; `@param`/`@return`/`@throws` that restate the signature (a checked exception is already in the `throws` clause).
@@ -142,8 +142,7 @@ HARD_RULE: Multi-step write operations MUST be wrapped in a `@Transactional` ser
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Bean Validation (`@Valid`/`@Validated`) on `@RequestBody` DTOs carrying constraint annotations; a controller binding to an unannotated DTO — or omitting `@Valid` — gets zero validation.

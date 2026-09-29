@@ -36,7 +36,7 @@ bash <plugin-root>/scripts/run-code-gates.sh \
 - **Exit 0** — gates ran, no blocking finding; non-blocking findings + SKIPs ride in `l0-results.json`.
 - **Exit 1** — a BLOCKING finding; the JSON `halt` object carries the type (`secret_in_code` / `sast_critical_finding` / `dep_not_found`) and IS the blocker payload.
 - **Exit 2** — usage/environment error (bad args, unresolvable base/head, an always-run gate could not complete): NOTHING was certified — never treat as clean; fix and re-run.
-- `--unit=` feeds gate 6 (absent → a visible SKIP, never silent). `--pack=` applies a pack `## Toolchain` override to gates 1–2 (pack override > detection, per the section below). `--no-code-gates` and the `code_gates: false` config key (read by the wrapper itself) skip gates 1–2, 4 and 6 — **gates 3 and 5 always run**.
+- `--unit=` feeds gate 6 (absent → a visible SKIP, never silent). A pack `## Toolchain` overrides detection for gates 1–2 (pack override > detection, per the section below): `--pack=` names the pack, else the wrapper takes the first `.mega-sdd/packs/*.md` whose section holds a command that is not a `<…>` placeholder. `--no-code-gates` and the `code_gates: false` config key (read by the wrapper itself) skip gates 1–2, 4 and 6 — **gates 3 and 5 always run**.
 - Timeouts are bounded per command (120s toolchain / 300s gate script): a toolchain timeout is a per-tool failure note, a SAST timeout is a visible SKIP ("scan NOT performed"), a secrets/dep-existence timeout is exit 2 — the always-run pair is never silently skipped.
 - The individual scripts stay invocable directly for debugging; the wrapper is the shipped path.
 

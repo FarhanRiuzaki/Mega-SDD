@@ -159,11 +159,9 @@ _validate_pack() {
   done
 
   # ---- Check 6 (8.2.0 code-style playbook): `## Code style` shape ----------
-  # The section is the stack's DELTA over bolt-implementer Iron Rule 6, consumed
-  # as the T2 code_style_slice: five bold labels must be present and no template
-  # placeholder may survive. Bullet count / byte cap are pinned by
-  # tests/per-stack-packs/test-code-style-section.sh (a style rule, never a
-  # gate on generated code — this only lints the PACK's authoring shape).
+  # The stack's comment/naming DELTA over _universal §Comment conventions: five bold
+  # labels present, no template placeholder left; bullet count / byte cap pinned by
+  # tests/per-stack-packs/test-code-style-section.sh (lints the PACK's shape, never generated code).
   local _cs_body _cs_label
   _cs_body=$(printf '%s\n' "$content" | awk '/^## Code style/{f=1; next} f&&/^## /{exit} f')
   if [ -n "$_cs_body" ]; then

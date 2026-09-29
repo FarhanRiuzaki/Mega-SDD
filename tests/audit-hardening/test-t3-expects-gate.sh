@@ -10,7 +10,7 @@
 #      render entries are exempt)
 #   B  the execute-bolts Skill entry (inline's only gate) is never held by
 #      acceptance_expects_missing (no retro-block of an already-running
-#      project); since P3 no gate reads it (the analyze advisory surfaces it)
+#      project); since P3 no gate reads it (plan Step 5 and analyze fail on it)
 #   C  the writer records expects_missing + output_tail, so a log-flooded
 #      output no longer eats the pass/fail line
 set -u

@@ -12,7 +12,6 @@ How `execute-bolts --agents` dispatches each unit — **first-class mega-sdd age
 - [Summary](#summary)
 - [Acceptance criteria status](#acceptance-criteria-status)
 - [Failures (if any)](#failures-if-any)
-- [Squad-level fan-out](#squad-level-fan-out)
 
 ## Dispatch order
 
@@ -166,19 +165,6 @@ scope: <scope-id>              # only when vault.json carries scope_metadata
 - [ ] / [x] criterion 1
 - [ ] / [x] criterion 2
 
-## Review panel
-<MANDATORY when a panel ran: tier used + the router's `signals_fired[]`
-(the deterministic evidence behind the tier), lens list, finding table
-(severity, file:line, lens), dropped-no-evidence count, and — when the run
-HALTED review_critical_unresolved (an open Critical or a still-❌ spec lens at
-cap exhaustion; the halt is terminal, the bolt never "proceeds" over it) — the
-halt ref.
-Also records design-lens skip reason for non-UI units, and L0 gate SKIPs.
-Derived from the finding ledger (`findings.json`, review-panel.md §Attempt
-rounds) at unit completion AND on any halt; carries per-round outcomes:
-advisory findings, resolution-verifier verdicts per round, and any
-escape-hatch full re-panel with its stated cause.>
-
 ## Failures (if any)
 <test output, error messages, hypothesis>
 ```
@@ -187,7 +173,3 @@ Statuses `halted_postflight` (post-flight Hard-rule violation recorded — see
 hard-rule-scan.md) and `forced_pass` (`--force-skip-postflight` used — anti-bypass
 policy applies) are first-class: consumers (compute-unit-staleness, the sync lane,
 `_summary.md`) must not treat them as schema errors.
-
-## Squad-level fan-out
-
-When `execute-bolts --per-squad` is invoked, the **main-thread controller** loops over the declared squads and runs each squad's units through the per-unit flow above — dispatching the first-class agents at **depth-1**. There is **NO squad subagent**: a forked squad controller could not dispatch the bolt agents (that would be depth-2, which the runtime forbids), and would silently lose the review panel. Parallelism comes from the controller dispatching independent units (across squads) **concurrently**, not from nesting. See `references/squad-subagent.md` for the filter + consolidation protocol.

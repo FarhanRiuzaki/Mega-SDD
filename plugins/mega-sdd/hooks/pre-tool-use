@@ -283,7 +283,7 @@ elif tool_name == "Bash":
         # GUARD_SKIP fold — the prot regex below is a byte-copy of the
         # dedicated interpreter'"'"'s (kept in lockstep by the parity pin).
         root = sc_root.rstrip("/")
-        prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.handoff-validation-state\.json|\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.plan-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|\.bolt-conflict-bypass-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance|attempts|findings|review-tier|binding)\.json|lens-inputs/[^\s\"'"'"';|&<>]*l0-results\.json|bolts/_batch-suite\.json|uat/evidence/[^\s\"'"'"';|&<>]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
+        prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.handoff-validation-state\.json|\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.plan-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|\.bolt-conflict-bypass-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance|binding)\.json|lens-inputs/[^\s\"'"'"';|&<>]*l0-results\.json|bolts/_batch-suite\.json|uat/evidence/[^\s\"'"'"';|&<>]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
         def _rel(t):
             if root and t.startswith(root + "/"):
                 return t[len(root) + 1:]
@@ -323,9 +323,9 @@ elif tool_name in ("Edit", "Write"):
                 verdict = "protected"
             elif re.search(r"(?:^|/)\.mega-sdd/\.cache/pack-resolver/[^/]+$", rel):
                 verdict = "evidence"
-            elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance|attempts|findings|review-tier|binding)\.json|_batch-suite\.json)$", rel):
+            elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance|binding)\.json|_batch-suite\.json)$", rel):
                 verdict = "evidence"
-            elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:_wave-claims\.json|[^/]+/_claims\.json|[^/]+/dispatch-prompt\.md)$", rel):
+            elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/[^/]+/(?:_claims\.json|dispatch-prompt\.md)$", rel):
                 # state anchor D27 (spec 2026-09-25 §8): the JIT capture and the built dispatch
                 # prompt are script-written and gate-read — never agent-written
                 verdict = "evidence"
@@ -464,8 +464,7 @@ EOF
 }
 
 # ─── BRANCH 1: Skill invocation gate ─────────────────────────────────────────
-# Reset, never inherit: an exported GATE_MODE/GATE_SUBJECT must not reach the aggregator.
-GATE_MODE="run"
+# Reset, never inherit: an exported GATE_SUBJECT must not reach the aggregator.
 GATE_SUBJECT="mega-sdd:execute-bolts"
 
 case "${TOOL_NAME:-}" in
@@ -840,8 +839,8 @@ except Exception as e:
         wait  # settle all nine state files before the aggregator reads
       fi
       # D24a (state anchor §8): utf-8 stdout — a cp1252 console must not crash the gate into an ALLOW.
-      GATE_REASON=$(PYTHONIOENCODING=utf-8 PROJECT_ROOT="$PROJECT_ROOT" GATE_MODE="${GATE_MODE:-run}" GATE_SUBJECT="${GATE_SUBJECT:-mega-sdd:execute-bolts}" AGENT_UNIT="${AGENT_UNIT:-}" AGENT_UNITS_ALL="${AGENT_UNITS_ALL:-}" AGENT_POINTER="${AGENT_POINTER:-}" MEGA_SDD_LIB_DIR="${SCRIPT_DIR_RPR}/../scripts/_lib" python3 -c '
-import json, os, sys
+      GATE_REASON=$(PYTHONIOENCODING=utf-8 PROJECT_ROOT="$PROJECT_ROOT" GATE_SUBJECT="${GATE_SUBJECT:-mega-sdd:execute-bolts}" AGENT_UNIT="${AGENT_UNIT:-}" AGENT_UNITS_ALL="${AGENT_UNITS_ALL:-}" AGENT_POINTER="${AGENT_POINTER:-}" python3 -c '
+import json, os
 md = os.path.join(os.environ["PROJECT_ROOT"], ".mega-sdd")
 def L(fn):
     try:
@@ -849,45 +848,8 @@ def L(fn):
     except Exception:
         return None
 fails = []
-# F-09 in-run semantics (spec 2026-08-30 §1.1): on a bolt-implementer dispatch,
-# units whose pipeline is legitimately in flight have their B1/B4/orphan
-# evidence PENDING, not missing — drop those issues before the verdict. B2 is
-# a run-boundary gate and is skipped here. Fail-CLOSED on a helper failure:
-# an unreadable helper leaves inflight empty, i.e. the full run-gate verdict.
-IN_RUN = os.environ.get("GATE_MODE", "run") == "in-run"
-inflight = set()
-if IN_RUN:
-    try:
-        sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
-        import vault_layouts
-        inflight = set(vault_layouts.inflight_units(os.environ["PROJECT_ROOT"]))
-    except Exception:
-        inflight = set()
-# v8 P3 (research/2026-09-15-v8-p3-report.md §2): a unit whose detect-after
-# already PASSED (postflight + acceptance newer than its dispatch-prompt, L0
-# record script-written) but whose blind panel has not merged yet is
-# PANEL-PENDING, not evidence-missing — under lane lite the dependent / sibling
-# dispatch must not wait for that ledger (the measured serializer: 45 % of the
-# clinic bolt-stage with zero implementers running). Dropped for the in-run
-# verdict ONLY, ONLY the panel_evidence_missing class, and ONLY while at most
-# parallel_max units are pending (pipeline depth ≤ cap — more than the cap
-# means the controller is outrunning its review obligation, so the full F-07
-# verdict applies again). The run boundary (Skill entry, Stop hook) still
-# enforces every ledger. Fail-CLOSED on a helper failure (empty set).
-panel_pending = set()
-if IN_RUN:
-    try:
-        _pp = vault_layouts.panel_pending_units(os.environ["PROJECT_ROOT"])
-        if 0 < len(_pp) <= vault_layouts.parallel_max(os.environ["PROJECT_ROOT"]):
-            panel_pending = set(_pp)
-    except Exception:
-        panel_pending = set()
 def live_issues(d):
-    """The issues that still gate under the current mode."""
-    iss = (d or {}).get("issues", []) or []
-    if not inflight:
-        return iss
-    return [i for i in iss if i.get("unit_id") not in inflight]
+    return (d or {}).get("issues", []) or []
 
 # MOAT GATE — binding->units: unresolved drops/CONFLICT block unit->bolt.
 # Fail-CLOSED on a corrupt moat state (AUDIT L4): a present-but-unparseable
@@ -918,8 +880,8 @@ if os.path.exists(moat_path):
         fails.append(("binding->units", "handoff validator detected %s unresolved drop(s) (binding->units; types: %s). Run bash scripts/validate-handoff-binding-units.sh --cwd=<root> for the drop list. %s. State: %s/.validation-blockers.json" % (n, ", ".join(types), "; ".join(rem) or "see the expected field on each drop", md)))
 
 # conflict-bypass (invariant #2, spec 2026-09-27 v9 §8): a unit committed past an open CONFLICT, a quarantine
-# (its own, or that of a depends_on ancestor) or a skipped re-bind. At the Skill entry AND an in-run dispatch; never
-# dropped for in-flight units — a violation, not pending evidence.
+# (its own, or that of a depends_on ancestor) or a skipped re-bind. At the Skill entry; never dropped — a violation,
+# not pending evidence.
 d = L(".bolt-conflict-bypass-state.json")
 if d and d.get("status") == "FAIL" and d.get("issues"):
     lab = sorted({"%s %s%s" % (i.get("unit_id"), i.get("reason"), " via %s" % i["via"] if i.get("via") else "") for i in d["issues"]})
@@ -942,7 +904,7 @@ if d and d.get("status") == "FAIL" and live_issues(d):
 # per-bolt tests cannot catch a later bolt or an out-of-band edit breaking an earlier
 # bolt contract — the freshness anchor is the newest code commit, not the newest bolt).
 d = L(".batch-suite-gate-state.json")
-if d and d.get("status") == "FAIL" and not IN_RUN:
+if d and d.get("status") == "FAIL":
     ht = d.get("halt_type", "batch_suite_gate_missing")
     if ht == "batch_suite_red":
         fails.append(("batch-suite-gate", "recorded full-suite result is RED (%s). Fix the failing tests, then run `bash <plugin>/scripts/run-full-suite.sh --cwd=<project-root>` — it re-runs the FULL suite and records <vault>/bolts/_batch-suite.json itself (the artifact is hook-guarded; direct writes are denied). State: %s/.batch-suite-gate-state.json" % (d.get("detail", ""), md)))
@@ -1152,16 +1114,16 @@ elif re.search(r"(?:^|/)\.mega-sdd/\.cache/pack-resolver/[^/]+$", rel):
     # The Bash lane already denies this path; this closes the Write/Edit lane
     # (the _GUARDED tuple is exact-basename and cannot express the path).
     print("evidence")
-elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance|attempts|findings|review-tier|binding)\.json|_batch-suite\.json)$", rel):
+elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:[^/]+/(?:(?:pre|post)flight|acceptance|binding)\.json|_batch-suite\.json)$", rel):
     # Anchored to a real vault prefix (S6 EB-VAL-7 fix): a user project'"'"'s OWN
     # top-level or unrelated bolts/…/postflight.json is no longer false-blocked;
     # a forged mega-sdd artifact always lives under <vault>/bolts/ so it still matches.
     print("evidence")
-elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/(?:_wave-claims\.json|[^/]+/_claims\.json|[^/]+/dispatch-prompt\.md)$", rel):
-    # State anchor D27 (spec 2026-09-25 §8): the JIT capture and the built dispatch
-    # prompt are script-written (derive-unit-claims.sh / build-dispatch-prompt.sh) and
-    # gate-read (the binding_sha256 header, the dirty capture) — a Write/Edit of either
-    # would forge what the BOLTS gate compares against.
+elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/bolts/[^/]+/(?:_claims\.json|dispatch-prompt\.md)$", rel):
+    # State anchor D27 (spec 2026-09-25 §8): the per-unit JIT capture is script-written
+    # (derive-unit-claims.sh) and gate-read (the binding records its sha256, the dirty
+    # capture); a legacy dispatch-prompt.md is read by the done rule. A Write/Edit of
+    # either would forge what the gate compares against.
     print("evidence")
 elif re.search(r"(?:^|/)(?:\.mega-sdd/vaults/[^/]+|docs/mega-sdd/vaults/[^/]+|[^/]+-bound)/lens-inputs/[^/]+/l0-results\.json$", rel):
     # F-08 7.11.0: the L0 record is script-written (run-code-gates.sh --write) and gate-read — guarded like the bolt evidence.
@@ -1335,7 +1297,7 @@ print(base64.b64decode(sys.stdin.read()).decode("utf-8", errors="replace"), end=
 import os, re, sys
 cmd = sys.stdin.read()
 root = (os.environ.get("PROJECT_ROOT", "") or "").rstrip("/")
-prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.handoff-validation-state\.json|\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.plan-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|\.bolt-conflict-bypass-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance|attempts|findings|review-tier|binding)\.json|lens-inputs/[^\s\"'"'"';|&<>]*l0-results\.json|bolts/_batch-suite\.json|uat/evidence/[^\s\"'"'"';|&<>]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
+prot = re.compile(r"[^\s\"'"'"';|&<>]*(?:\.handoff-validation-state\.json|\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.plan-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|\.bolt-conflict-bypass-state\.json|bolts/[^\s\"'"'"';|&<>]*(?:(?:pre|post)flight|acceptance|binding)\.json|lens-inputs/[^\s\"'"'"';|&<>]*l0-results\.json|bolts/_batch-suite\.json|uat/evidence/[^\s\"'"'"';|&<>]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^\s\"'"'"';|&<>]*|\.mega-sdd/vaults/[^\s\"'"'"';|&<>]*binding[^\s\"'"'"';|&<>]*\.md)")
 def rel(t):
     if root and t.startswith(root + "/"):
         return t[len(root) + 1:]
@@ -1363,7 +1325,7 @@ else:
     # S6 EB-GATE-4: the B1/B2 evidence artifacts join — their deterministic
     # writers run as `bash <script>` commands that never NAME the artifact, so
     # the guard only ever fires on direct forging/tampering verbs.)
-    PROTECTED='\.handoff-validation-state\.json|\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.plan-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|\.bolt-conflict-bypass-state\.json|bolts/[^[:space:]]*((pre|post)flight|acceptance|attempts|findings|review-tier|binding)\.json|lens-inputs/[^[:space:]]*l0-results\.json|bolts/_batch-suite\.json|uat/evidence/[^[:space:]]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^[:space:]]*'
+    PROTECTED='\.handoff-validation-state\.json|\.gateguard-state\.json|\.validation-blockers\.json|\.plan-pending|\.replan-budget|\.iter-classifier\.json|\.unit-spec-state\.json|\.flow-coverage-state\.json|\.plan-coverage-state\.json|\.sibling-consistency-state\.json|\.ui-quality-blockers\.json|\.cross-cutting-state\.json|\.bolt-orphans-state\.json|\.batch-suite-gate-state\.json|\.bolt-postflight-state\.json|\.factory-ledger-state\.json|\.bolt-whitelist-state\.json|\.bolt-acceptance-state\.json|\.bolt-conflict-bypass-state\.json|bolts/[^[:space:]]*((pre|post)flight|acceptance|binding)\.json|lens-inputs/[^[:space:]]*l0-results\.json|bolts/_batch-suite\.json|uat/evidence/[^[:space:]]*result\.json|\.stop-scan-stamp|\.ptu-scan-stamp|\.mega-sdd/\.cache/pack-resolver/[^[:space:]]*'
     # S4 BC-BINDING-DELETE rail: deleting binding docs is a one-indirection
     # bypass (orphaned units re-validate to PASS). rm/unlink of a binding doc
     # under .mega-sdd/vaults/ is denied; re-binds OVERWRITE via Write, never rm.

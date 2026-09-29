@@ -12,7 +12,7 @@ Iter 54 — Hybrid Confluence FSD emitter skill. Anti-hallucination citation dis
 ### EF2: Post-development mode auto-detection
 - **Setup:** vault + units/ + bolts/ all present; bolt-reports include acceptance_test results
 - **Prompt:** `/mega-sdd:emit-fsd`
-- **Expect:** Mode = `post-dev`; section 9 populated with actual UAT results table; section 10 includes aggregated `acceptance_test_concerns` from bolt-reports
+- **Expect:** Mode = `post-dev`; section 9 populated with actual UAT results table; section 10 includes aggregated `acceptance_test_concerns` from legacy bolt-reports
 
 ### EF3: Pandoc absent → markdown-only graceful degrade
 - **Setup:** vault exists; `command -v pandoc` returns non-zero

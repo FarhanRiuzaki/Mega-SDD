@@ -56,7 +56,7 @@ This discipline is LIVE: the auto-propose flow and its `halt_auto_propose` confi
 
 ### C3 enforcement via [HOOK-VALIDATE]
 
-C3 halts are enforced by `plugins/mega-sdd/scripts/validate-handoff-*.sh` validators + `PreToolUse` hooks per `docs/mega-sdd/fork-a-recovery-map.md` (repo docs, maintainer-facing since v7.4.0). Skill bodies declaring C3 halts can mention them as design vocabulary, but the actual enforcement is the hook layer. The CONFLICT slice (`validate-handoff-binding-units.sh --units=`, per unit from `bolts/U-XXX/binding.json`) is hook-enforced today; the OQ-ID propagation slice runs only on a layout-2 `binding.md`.
+C3 halts are enforced by `plugins/mega-sdd/scripts/validate-handoff-*.sh` validators + `PreToolUse` hooks per `docs/mega-sdd/fork-a-recovery-map.md` (repo docs, maintainer-facing since v7.4.0). Skill bodies declaring C3 halts can mention them as design vocabulary, but the actual enforcement is the hook layer. The CONFLICT slice is enforced by `derive-exec-plan.sh` (run-start quarantine, halt `binding_conflict`) and, after the fact, by the hook-wired `conflict_bypassed` scan (`validate-bolt-artifacts.sh --conflict-bypass-scan`); the OQ-ID propagation slice runs only on a layout-2 `binding.md`.
 
 ### Backward compatibility
 
@@ -72,7 +72,7 @@ The envelope is uniform across types so a single consumer can handle all of them
 
 ```yaml
 blocker:
-  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | binding_conflict | dep_missing | test_fail | ambiguous_spec | cycle_detected | cross_module_dep_invalid | module_cycle_detected | unit_oq_trace_missing | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_cache_corrupt | starterkit_rule_citation_missing | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | dispatch_prompt_too_large | bolt_repeated_partial_failure | provenance_missing | bolt_introduces_locked_drift | self_assessment_missing | oq_recommend_citation_invalid | predictive_check_failed | invalid_handoff | handoff_type_mismatch | model_tier_unknown | pbt_citation_invalid | pbt_property_violated | handoff_missing | artifact_missing | dedup_ambiguous | hard_rule_unparseable | hard_rule_violated | prd_path_missing | quality_gate_failed | scope_not_declared_in_prd | install_failed | pkg_mgr_not_found | oq_tech_missing_mode | oq_recommend_underspecified | oq_scan_missing_query | oq_tech_undecided | oq_decided_business_signal | oq_business_p1_unresolved | no_starterkit_detected | module_blocked_by | sprint_blocked_by | acceptance_path_unowned | hard_rule_unanchored | unit_underspecified | prd_source_unresolvable | plan_coverage_gap | verify_unit_writable | verify_grounding_untrusted | adoption_demote_confirm | delta_too_large | secret_in_code | sast_critical_finding | dep_not_found | review_critical_unresolved | batch_suite_red | batch_suite_gate_missing | postflight_evidence_missing | acceptance_evidence_missing | acceptance_red | build_broken | panel_evidence_missing | l0_evidence_missing | acceptance_expects_missing | anchor_missing | whitelist_violation | commit_rejected_by_hook | scope_creep_detected | bolt_artifacts_missing | hard_rule_mixed_grammar | convergence_max_reached | phase_stuck | anti_spin | drift_inputs_missing | scope_args_missing | vault_json_corrupt | user_authored_conflict | vault_not_found | vault_corrupt | greenfield_no_bind_context
+  type: oq_blocker | diff_conflict | drift_framework_mismatch | bind_conflict | binding_conflict | dep_missing | test_fail | ambiguous_spec | cycle_detected | cross_module_dep_invalid | module_cycle_detected | unit_oq_trace_missing | mode_migrate | cross_squad_dep_invalid | interface_ref_missing | cross_squad_ambiguous | cross_squad_interface_draft | deep_scan_cache_corrupt | starterkit_rule_citation_missing | framework_pack_missing | framework_pack_cycle | framework_pack_unparseable | constitution_drift_detected | memory_in_use | bolt_repeated_partial_failure | provenance_missing | self_assessment_missing | oq_recommend_citation_invalid | predictive_check_failed | invalid_handoff | handoff_type_mismatch | model_tier_unknown | pbt_citation_invalid | pbt_property_violated | handoff_missing | artifact_missing | dedup_ambiguous | hard_rule_unparseable | hard_rule_violated | prd_path_missing | quality_gate_failed | scope_not_declared_in_prd | install_failed | pkg_mgr_not_found | oq_tech_missing_mode | oq_recommend_underspecified | oq_scan_missing_query | oq_tech_undecided | oq_decided_business_signal | oq_business_p1_unresolved | no_starterkit_detected | module_blocked_by | sprint_blocked_by | acceptance_path_unowned | hard_rule_unanchored | unit_underspecified | prd_source_unresolvable | plan_coverage_gap | verify_unit_writable | verify_grounding_untrusted | adoption_demote_confirm | delta_too_large | secret_in_code | sast_critical_finding | dep_not_found | batch_suite_red | batch_suite_gate_missing | postflight_evidence_missing | acceptance_evidence_missing | acceptance_red | build_broken | acceptance_expects_missing | anchor_missing | whitelist_violation | commit_rejected_by_hook | bolt_artifacts_missing | hard_rule_mixed_grammar | convergence_max_reached | phase_stuck | anti_spin | drift_inputs_missing | scope_args_missing | vault_json_corrupt | user_authored_conflict | vault_not_found | vault_corrupt | greenfield_no_bind_context
   tag: <stable identifier — OQ-AR-1, D-007, etc.>
   priority: P1 | P2 | P3 | n/a
   context: "<what's blocked, e.g. 'Implementing F-U-001 backend' or 'Applying diff-vault Step 6'>"
@@ -177,16 +177,14 @@ Rows below are the halt-type index — this index is the registry-existence surf
 - `unit_oq_trace_missing` — plan Step 4 render pass 12.5 g (prose rail; MOAT-CRITICAL): an implementation-relevant OQ-ID is absent from a unit's `binding_refs:`. ALWAYS STOP. Schema + guidance: `halt-families/units.md`.
 - `cross_squad_dep_invalid` — plan Step 4 (multi-squad): a unit's `depends_on` references a unit in a different squad. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
 - `cross_squad_ambiguous` — plan Step 4 (multi-squad): two or more squads claim the same artifact at the same precedence. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
-- `cross_squad_interface_draft` — execute-bolts (`--per-squad`/`--squad=`): a consumed interface is still `status: draft`. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
+- `cross_squad_interface_draft` — execute-bolts (run start: `derive-exec-plan.sh` quarantines the consuming unit): a consumed interface is still `status: draft`. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
 - `interface_ref_missing` — plan Step 4: `produces_interfaces`/`consumes_interfaces` names an ID with no `<vault>/interfaces/` file. Schema: §Type-specific schemas; guidance: `halt-families/units.md`.
 
 **bolts** (`halt-families/bolts.md`):
 
 - `ambiguous_spec` — execute-bolts (emitted by the implementing session): the unit spec admits more than one reading and it will not guess. ALWAYS STOP (pure-pause; human interpretation call). Guidance: `halt-families/bolts.md`.
-- `dispatch_prompt_too_large` — execute-bolts: assembled bolt dispatch prompt exceeds 10KB hard cap. ALWAYS STOP. Resol…
 - `bolt_repeated_partial_failure` — the same halt fired twice on one unit with different proposed fixes (propose-and-confirm cycle). ALWAYS STOP.
 - `provenance_missing` — execute-bolts: bolt modified file lacks provenance traile…
-- `bolt_introduces_locked_drift` — execute-bolts: bolt drift hits a LOCKED entity. ALWAYS STOP (override-only; CONFLICT-li…
 - `self_assessment_missing` — execute-bolts: bolt-report.md lacks self-assessment secti…
 - `pbt_citation_invalid` — execute-bolts: a PBT property block declares `Cites: §Decision-D-NNN` but the cited ADR…
 - `pbt_property_violated` — execute-bolts post-flight: an error-severity PBT property failed; counterexample preserved; propose-and-confirm bridge. (Owners: `skills/plan/references/pbt-integration.md` + convergence-loops.md.)
@@ -194,15 +192,12 @@ Rows below are the halt-type index — this index is the registry-existence surf
 - `module_blocked_by` — execute-bolts: bolt invocation blocked because prerequisite module hasn't completed yet…
 - `sprint_blocked_by` — execute-bolts: `--sprint=<n>` invoked while an earlier sprint still has incomplete units…
 - `acceptance_path_unowned` — a unit acceptance_test command runs a path no unit declares in target_files and that does not exist…
-- `panel_evidence_missing` — execute-bolts gate (7.11.0): bolt keyed by `review-tier.json` lacks a `merge-panel-findings.sh`-written ledger. ALWAYS STOP.
-- `l0_evidence_missing` — execute-bolts gate (7.11.0): keyed bolt lacks a `run-code-gates.sh --write` L0 record. ALWAYS STOP.
-- `acceptance_expects_missing` — execute-bolts in-run gate (7.11.0): dispatched unit has a `type: test` entry with no `expects`. ALWAYS STOP (that dispatch only).
+- `acceptance_expects_missing` — plan Step 5 / analyze (`validate-unit-spec.sh`): a `type: test` acceptance entry has a command and no `expects`. ALWAYS STOP at plan Step 5 (validator exit 1); no execute-bolts gate reads it.
 - `hard_rule_unanchored` — execute-bolts: a unit's `## Hard Rules` block references an ANCHOR (file path / functio…
-- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈… **[C1 SELF-RESOLVE — never halts on the primary path]**
+- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈… ALWAYS STOP (GROUND notice; execute-bolts pre-flight 2 halts).
 - `secret_in_code` — execute-bolts (L0 gate): a committed secret was detected; user rotates it + purges it f…
-- `sast_critical_finding` — execute-bolts (L0 gate): a Critical SAST finding; user fixes before the panel. ALWAYS S…
+- `sast_critical_finding` — execute-bolts (L0 gate): a Critical SAST finding; user fixes it before the next task. ALWAYS STOP.
 - `dep_not_found` — execute-bolts (L0 gate): a newly-added dependency does not resolve in its registry; use…
-- `review_critical_unresolved` — execute-bolts: the review panel's Critical findings (or a still-❌ spec lens — an unmet…
 - `batch_suite_red` — execute-bolts: the batch-completion FULL suite ended RED; user fixes the failing test(s…
 - `batch_suite_gate_missing` — execute-bolts: no green `_batch-suite.json` covers the newest code commit (a bolt OR an…
 - `postflight_evidence_missing` — execute-bolts: a committed Hard-rule bolt has no passing `postflight.json`; user runs t…
@@ -212,7 +207,6 @@ Rows below are the halt-type index — this index is the registry-existence surf
 - `anchor_missing` — execute-bolts (pre-flight, `check-anchor-freshness.sh`): a `## Anchors` entry `file:lin…
 - `whitelist_violation` — execute-bolts: a bolt commit touched files outside the unit's `target_files` ∪ sanction…
 - `commit_rejected_by_hook` — execute-bolts: the repo's own commit hook (pre-commit/husky/lefthook) or required GPG s…
-- `scope_creep_detected` — execute-bolts: a bolt exceeded its declared scope; user reviews the deviation. ALWAYS S…
 - `bolt_artifacts_missing` — execute-bolts: a `completed` unit emitted no `bolts/U-XXX/bolt-report.md`; structural s…
 - `hard_rule_mixed_grammar` — execute-bolts: a unit's `## Hard rules` mixes v1 (bulleted) + v2 (YAML) grammar; user p…
 - `test_fail` — execute-bolts: a unit's tests still fail after max retries. Schema: §Type-specific schemas (`test_fail`); guidance: `halt-families/bolts.md`.
@@ -374,8 +368,8 @@ details:
   claimed_by_squads: [<id-1>, <id-2>, ...]
   matched_via: owns_layers | owns_components | owns_flow_prefixes | owns_feature_tags
 
-# cross_squad_interface_draft — emitted by execute-bolts (specifically
-# --per-squad or --squad=<id> modes) when a unit consumes an interface
+# cross_squad_interface_draft — emitted by execute-bolts (run start:
+# derive-exec-plan.sh quarantines the consuming unit) when a unit consumes an interface
 # whose status is draft, blocking consumer execution until producer locks
 details:
   unit_id: U-XXX

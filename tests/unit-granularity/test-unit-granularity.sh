@@ -10,7 +10,6 @@
 #   C  the medium DEFAULT (300 LOC / 5 files) did not move
 #   D  unit-schema atomicity: threshold stays advisory-no-validator + names the knob
 #   E  lint-units merge_candidate advisory: all 6 criteria + never-halt/never-auto-merge
-#   F  precedent guard: squad-subagent.md still rejects the group-subagent topology
 #
 # 9.0 P1: generate-units was removed; `plan` is the only unit producer. Its unit
 # flags + Step 3 atomize were relocated VERBATIM to plan/references/unit-procedure.md
@@ -24,7 +23,6 @@ PS="$ROOT/plugins/mega-sdd/skills/plan/SKILL.md"
 GU="$ROOT/plugins/mega-sdd/skills/plan/references/unit-procedure.md"
 US="$ROOT/plugins/mega-sdd/skills/plan/references/unit-schema.md"
 DP="$ROOT/plugins/mega-sdd/skills/orchestrate-flow/references/diagnostics-procedures.md"
-SQ="$ROOT/plugins/mega-sdd/skills/execute-bolts/references/squad-subagent.md"
 err=0; ok(){ echo "  ok: $*"; }; bad(){ echo "  FAIL: $*"; err=1; }
 
 echo "── A: the large knob ──"
@@ -55,9 +53,5 @@ done
 grep -q "never a halt, never an auto-merge" "$DP" && ok "E3 advisory-forever clause" || bad "E3 never-halt/never-auto-merge missing"
 grep -q "merge_candidate: U-00X..U-00Z" "$DP" && ok "E4 emission format pinned" || bad "E4 emission format missing"
 grep -q "2026-09-01-sprint-subagent-granularity" "$DP" && ok "E5 research provenance cited" || bad "E5 research citation missing"
-
-echo "── F: precedent guard (the rejection stays on the record) ──"
-grep -q "NEVER forks a squad subagent" "$SQ" && grep -q "depth-1" "$SQ" \
-  && ok "F1 squad-subagent depth-1 rejection intact (also rejects sprint-subagent)" || bad "F1 group-subagent rejection eroded"
 
 echo; [ $err -eq 0 ] && { echo "test-unit-granularity: ALL PASS"; exit 0; } || { echo "test-unit-granularity: FAILED"; exit 1; }

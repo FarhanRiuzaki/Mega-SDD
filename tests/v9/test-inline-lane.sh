@@ -8,7 +8,8 @@
 # Fixture F: U-001 claims lib/config.js (exists); U-002 → U-001; U-003 claims a missing path (a real CONFLICT); U-004
 # → U-003 (commented inline list); U-005 → U-004 (commented block list); U-006 independent. F2 create→modify→verify;
 # F3 two vaults, colliding ids; F4 a docs/mega-sdd vault, nested unit. Sections: a --pending · b no bind · c run-start
-# gate, open run · d the plan · e retire, quarantine paths · k F2 · f the scan · g the hook · m episodes, own_wip,
+# gate, open run · d the plan · e retire, quarantine paths (e10–e18: --module via the query-graph.sh --modules rollup, a
+# draft consumed interface) · k F2 · f the scan · g the hook · m episodes, own_wip,
 # rebind_skipped, own_wip at the close, done rule, a literal run · h wiring + docs.   Run: bash tests/v9/test-inline-lane.sh </dev/null
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"; P="$ROOT/plugins/mega-sdd"; S="$P/scripts"
@@ -127,9 +128,6 @@ OUT="$(dep)"; R=$?; PLAN="$(J "$OUT" 'd["plan"]')"
   && ok "c2: U-003 binding_conflict C-U003-01; U-004 via U-003 and U-005 via U-004 (commented depends_on, transitive)" || bad "c2: $(qr "$OUT")"
 [ "$PLAN" = "$V/bolts/_exec-plan-$(git -C "$F" rev-parse HEAD | cut -c1-12).md" ] && [ -f "$PLAN" ] && ok "c3: plan at <vault>/bolts/_exec-plan-<head12>.md" || bad "c3: $PLAN"
 [ "$(J "$OUT" 'd["halt"]')" = "None" ] && [ "$(J "$OUT" 'd["run_base"]')" = "$SEED" ] && ok "c4: halt null; run_base is the full HEAD" || bad "c4: $OUT"
-RU="$(bash "$S/derive-ready-units.sh" --cwd="$F" --vault="$V" 2>/dev/null)"
-[ "$(J "$RU" 'sorted((b["unit"], tuple(b["waiting_on"])) for b in d["blocked"])')" = "[('U-002', ('U-001',)), ('U-004', ('U-003',)), ('U-005', ('U-004',))]" ] \
-  && ok "c5: derive-ready-units (the default path) reads a commented depends_on too" || bad "c5: $RU"
 [ "$(head -1 "$V/bolts/_inline-ledger-$(git -C "$F" rev-parse HEAD | cut -c1-12).md" 2>/dev/null)" = "# inline ledger — plan: $PLAN" ] && ok "c6: the built-in ledger (identity line) is written with the plan (F1/I1)" || bad "c6: $(ls "$V/bolts")"
 cp "$PLAN" "$T/plan.c1"; mv "$V/bolts/U-002/binding.json" "$T/b2x.json"; OUT="$(bash "$DEP" --cwd="$F" --vault="$V" 2>/dev/null)"; R=$?; mv "$T/b2x.json" "$V/bolts/U-002/binding.json"
 [ $R -eq 0 ] && [ "$(J "$OUT" '(d.get("resumed"), d["plan"], d["in_scope"])')" = "(True, '$PLAN', ['U-001', 'U-002', 'U-006'])" ] && cmp -s "$PLAN" "$T/plan.c1" \
@@ -210,6 +208,44 @@ clone cs; printf 'beta\n' > "$T/cs/docs/beta.md"; G "$T/cs" add docs/beta.md && 
 [ "$(qr "$(depat "$T/cs")" | grep -c "('U-002', 'binding_stale', 'binding_stale')")" = 1 ] && ok "e7: a binding a later non-unit commit made stale → binding_stale (the dispatch gate's function)" || bad "e7: $(depat "$T/cs")"
 clone cx; printf '{not json' > "$T/cx/.mega-sdd/vaults/demo/bolts/U-006/binding.json"
 [ "$(qr "$(depat "$T/cx")" | grep -c "('U-006', 'binding_conflict'")" = 1 ] && ok "e9: an unparseable binding at run start → binding_conflict (fail closed)" || bad "e9: $(depat "$T/cx")"
+clone cm; CM="$T/cm/.mega-sdd/vaults/demo"; mkdir -p "$CM/_meta"; printf 'modules:\n  - id: M-a\n    blocked_by: []\n  - id: M-b\n    blocked_by: [M-a]\n' > "$CM/_meta/modules.yaml"
+for m in U-001:M-a U-002:M-a U-006:M-b; do ins "$CM/units/${m%%:*}.md" "task_type: create" "module: ${m#*:}"; done
+G "$T/cm" add -A && G "$T/cm" commit -qm "chore: modules" && bash "$S/rebind-units.sh" --cwd="$T/cm" --vault="$CM" --units=U-001,U-002,U-006 >/dev/null 2>&1
+OUT="$(depat "$T/cm" --module=M-b)"; R=$?
+[ $R -eq 1 ] && [ "$(J "$OUT" '[d["halt"][k] for k in ("type", "unit_id", "blocking_module_id", "blocked_status")] + [d["plan"]]')" = "['module_blocked_by', 'U-006', 'M-a', 'not-started', None]" ] \
+  && J "$OUT" 'd["halt"]["keterangan"] + d["halt"]["next_action"]' | grep -qF -- '--module=M-a' && [ "$(ls "$CM/bolts" | grep -c '^_exec-plan')" = 0 ] \
+  && ok "e10: --module=M-b while its blocked_by M-a is not completed → exit 1, halt module_blocked_by {unit_id, blocking_module_id, blocked_status}, no plan" || bad "e10: rc=$R $OUT"
+OUT="$(depat "$T/cm" --module=M-a)"; R=$?
+[ $R -eq 0 ] && [ "$(J "$OUT" '(d["in_scope"], d["quarantined"], d["halt"])')" = "(['U-001', 'U-002'], [], None)" ] && ok "e11: --module=M-a → in_scope is exactly M-a's pending units" || bad "e11: rc=$R $OUT"
+mv "$CM/_meta/modules.yaml" "$CM/_meta/modules.yaml.auto"; depat "$T/cm" --module=M-a >/dev/null; R=$?; mv "$CM/_meta/modules.yaml.auto" "$CM/_meta/modules.yaml"
+[ $R -eq 2 ] && grep -qF 'mv _meta/modules.yaml.auto _meta/modules.yaml' "$T/dep.err" && ok "e12: only modules.yaml.auto → exit 2 naming the promotion (mv)" || bad "e12: rc=$R $(cat "$T/dep.err")"
+OUT="$(dep --module=M-default)"; R=$?
+[ $R -eq 0 ] && [ "$(J "$OUT" '(d["in_scope"], [q["unit"] for q in d["quarantined"]])')" = "(['U-001', 'U-002', 'U-006'], ['U-003', 'U-004', 'U-005'])" ] \
+  && ok "e13: no _meta/ → --module=M-default runs every pending unit (modules-schema: M-default-only vault)" || bad "e13: rc=$R $OUT"
+rm -rf "$T/cm2"; cp -R "$T/cm" "$T/cm2"; rm -rf "$T/cm2/.mega-sdd/vaults/demo/bolts"; OUT="$(bash "$DEP" --cwd="$T/cm2" --vault="$T/cm2/.mega-sdd/vaults/demo" --pending --module=M-b 2>&1)"; R=$?
+[ $R -eq 1 ] && [ "$(J "$OUT" '(d["pending"], d["halt"]["type"])')" = "(['U-006'], 'module_blocked_by')" ] && [ ! -e "$T/cm2/.mega-sdd/vaults/demo/bolts" ] \
+  && ok "e14: --pending --module=M-b → exit 1 with the halt before (b)2 re-binds anything; nothing written" || bad "e14: rc=$R $OUT"
+pm() { bash "$DEP" --cwd="$1" --vault="$1/.mega-sdd/vaults/demo" --pending --module="$2" 2>&1; }
+rm -rf "$T/cm3"; cp -R "$T/cm2" "$T/cm3"; sleep 1; bolt "$T/cm3" U-001 docs/alpha.md "Alpha page" v5; evid "$T/cm3" U-001; report "$T/cm3/.mega-sdd/vaults/demo" U-001 "$T/cm3" docs/alpha.md
+ins "$T/cm3/.mega-sdd/vaults/demo/units/U-002.md" "task_type: create" "status: superseded"; OUT="$(pm "$T/cm3" M-b)"; R=$?
+[ "$(J "$(pm "$T/cm3" M-a)" 'd["pending"]')" = "[]" ] && [ $R -eq 0 ] && [ "$(J "$OUT" '(d["pending"], d.get("halt"))')" = "(['U-006'], None)" ] \
+  && ok "e17: prerequisite M-a = one done unit + one superseded (plan --reconcile keeps the file) → nothing left in M-a, M-b runs (superseded counts as done)" || bad "e17: rc=$R $OUT"
+rm -rf "$T/cm4"; cp -R "$T/cm2" "$T/cm4"; mkdir -p "$T/cm4/.mega-sdd/vaults/demo/.memory"
+printf '{"bolts": [{"unit_id": "U-001", "status": "completed"}, {"unit_id": "U-002", "status": "completed"}]}\n' > "$T/cm4/.mega-sdd/vaults/demo/.memory/bolt-outcomes.json"
+OUT="$(pm "$T/cm4" M-b)"; R=$?
+[ "$(J "$(pm "$T/cm4" M-a)" 'd["pending"]')" = "['U-001', 'U-002']" ] && [ $R -eq 1 ] && [ "$(J "$OUT" '(d["halt"]["type"], d["halt"]["pending_units"])')" = "('module_blocked_by', ['U-001', 'U-002'])" ] \
+  && ok "e18: a stale bolt-outcomes 'completed' (no done evidence) neither drops a unit from --module=M-a nor satisfies M-b's blocked_by (halt names pending_units)" || bad "e18: rc=$R $OUT"
+clone ci; CI="$T/ci/.mega-sdd/vaults/demo"; mkdir -p "$CI/interfaces"; ins "$CI/units/U-001.md" "task_type: create" "squad: squad-fe
+consumes_interfaces: [api-x]   # the backend's endpoint"
+printf -- '---\nid: api-x\nproducer: squad-be\nconsumers: [squad-fe]\nstatus: draft\n---\n# api-x\n' > "$CI/interfaces/api-x.md"
+G "$T/ci" add -A && G "$T/ci" commit -qm "chore: interface" && bash "$S/rebind-units.sh" --cwd="$T/ci" --vault="$CI" --units=U-001 >/dev/null 2>&1
+OUT="$(depat "$T/ci")"; R=$?
+[ $R -eq 0 ] && [ "$(J "$OUT" '[(q["unit"], q["reason"], q.get("interface_id"), q.get("producer_squad"), q.get("consumer_squad"), q.get("via")) for q in d["quarantined"]][:2]')" = \
+  "[('U-001', 'cross_squad_interface_draft', 'api-x', 'squad-be', 'squad-fe', None), ('U-002', 'depends_on_quarantined', None, None, None, 'U-001')]" ] \
+  && [ "$(J "$OUT" 'd["in_scope"]')" = "['U-006']" ] && grep -qF -- '- U-001 — cross_squad_interface_draft (api-x, producer squad-be)' "$(J "$OUT" 'd["plan"]')" \
+  && ok "e15: a consumed interface still draft → run-start quarantine cross_squad_interface_draft (interface_id, producer_squad), its dependent via it, the rest in scope" || bad "e15: rc=$R $OUT"
+sed -i.x 's/^status: draft$/status: locked/' "$CI/interfaces/api-x.md"; rm -f "$CI/interfaces/api-x.md.x"; OUT="$(depat "$T/ci")"; R=$?
+[ $R -eq 0 ] && [ "$(J "$OUT" 'd["in_scope"]')" = "['U-001', 'U-002', 'U-006']" ] && ok "e16: the producer locks it (status: locked) → the consumer is in scope" || bad "e16: rc=$R $OUT"
 dep >/dev/null
 
 # ── k: F2 — create → modify → verify ─────────────────────────────────────────
@@ -599,8 +635,8 @@ assert "quarantined and reported" in fd, "front door --deep binding_conflict"
 eb = rd(P + "/skills/execute-bolts/SKILL.md")
 mr = [l for l in eb.splitlines() if l.startswith("  - `--max-retries=N`")][0]
 assert "prose" in mr and "resolve-review-tier" not in mr, "--max-retries scope"
-for f in ("--parallel", "--per-squad"):
-    assert "(`--agents` only)" in [l for l in eb.splitlines() if l.startswith("  - `%s`" % f)][0], f
+rl = [l for l in eb.splitlines() if l.startswith("  - `--parallel`, `--sequential`")][0]
+assert "retired" in rl and "`--per-squad`" in rl, "fan-out flags retired (P3b)"
 assert "(every run)" not in eb and "every run —" not in rd(P + "/skills/execute-bolts/references/jit-bind-and-quarantine.md")[:400], "3.9 every run"
 cond = eb.split("**Only when the condition holds")[1]
 assert "review-panel.md" not in eb and cond, "review-panel.md retired (P3 C3)"

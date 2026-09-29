@@ -267,7 +267,7 @@ HARD_RULE: yarn (not npm) for frontend builds
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: PHPDoc — **read by**: Larastan at PHPStan level 5 (`composer analyse`; the pre-commit hook runs it on staged files; the 109 KB baseline holds accepted debt — never "fix" baseline items inside an unrelated unit) — relation/collection generics and `@property` model attributes for IDE contracts; nothing else in the starterkit reads a docblock. A full block only where Larastan or a boundary-crossing caller needs it.
 - **Skip**: signature echoes on getters/setters/constructors/plain methods (already ruled in §Idioms); `@param`/`@return` repeating native types; `// Step 1` narration in services, jobs and helpers; a docblock on a starterkit helper/trait whose name + signature already say it.

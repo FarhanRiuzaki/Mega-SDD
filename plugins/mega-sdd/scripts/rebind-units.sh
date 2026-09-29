@@ -28,10 +28,9 @@
 #                   `rebind_exhausted` — the one-re-bind bound is a mechanism, not a count.
 #   index first     build-symbol-index.sh runs BEFORE the re-bind when the index head_commit ≠ HEAD
 #                   or its dirty map differs on the re-bound scope (conditional, never per bolt).
-#   per-unit capture  derive-unit-claims --out=unit writes <vault>/bolts/U-XXX/_claims.json; the
-#                   shared _wave-claims.json is never touched, so a sibling's re-bind cannot change
-#                   the capture another unit's E3 (--verdicts) pass reads. The JSON line names
-#                   each unit's claims path.
+#   per-unit capture  derive-unit-claims writes <vault>/bolts/U-XXX/_claims.json, so one unit's
+#                   re-bind cannot change the capture another unit's E3 (--verdicts) pass reads.
+#                   The JSON line names each unit's claims path.
 #
 # stdout: ONE JSON line {schema, lane, changed, affected[], rebound, conflicts, oq,
 #         text_pending, gate} — pointers for the controller (it dispatches nothing).
@@ -163,7 +162,7 @@ PYEOF
 if [ "$IDX_STALE" = "1" ]; then
   bash "$SCRIPT_DIR/build-symbol-index.sh" --cwd="$CWD" >/dev/null 2>&1 || true   # exit 3 = no ast-grep: symbol claims stay OQ
 fi
-bash "$SCRIPT_DIR/derive-unit-claims.sh" --cwd="$CWD" --vault="$VAULT" --units="$AFF_LIST" --out=unit >/dev/null 2>&1 || { echo "rebind-units: derive-unit-claims failed for $AFF_LIST — full JIT re-bind required" >&2; exit 3; }
+bash "$SCRIPT_DIR/derive-unit-claims.sh" --cwd="$CWD" --vault="$VAULT" --units="$AFF_LIST" >/dev/null 2>&1 || { echo "rebind-units: derive-unit-claims failed for $AFF_LIST — full JIT re-bind required" >&2; exit 3; }
 IFS=',' read -r -a UARR <<< "$AFF_LIST"
 for u in "${UARR[@]}"; do
   bash "$SCRIPT_DIR/write-unit-binding.sh" --cwd="$CWD" --vault="$VAULT" --unit="$u" --claims="$VAULT/bolts/$u/_claims.json" $REBIND_FLAG >/dev/null 2>&1 \

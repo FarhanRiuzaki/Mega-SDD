@@ -119,7 +119,7 @@ HARD_RULE: process.env MUST NOT be accessed in components, composables, or pages
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: TSDoc/JSDoc — **read by**: `none by default` — Nuxt reads no comment (`definePageMeta`, `useSeoMeta`, `nuxt.config` carry metadata); `vue-tsc`/TypeScript types carry the contract; `eslint-plugin-jsdoc` when configured; in a JavaScript project with `checkJs` JSDoc types ARE the type system. A full block only where one of these reads it, or on a composable/component consumed outside this app (a layer or module).
 - **Skip**: components whose `defineProps` type + name say it; pages/layouts whose path says it; auto-imported composables with a self-explanatory `useX` name; `server/api/*` handlers whose path + method say it; `@param`/`@returns` repeating TypeScript types.
@@ -128,8 +128,7 @@ HARD_RULE: process.env MUST NOT be accessed in components, composables, or pages
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Nitro server routes validate with `readValidatedBody(event, schema.parse)` / `getValidatedQuery(event, …)` backed by `zod`; the bypass is plain `readBody(event)` with the shape trusted as-is — `server/api/` routes are directly callable regardless of what the UI sends.

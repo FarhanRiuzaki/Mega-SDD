@@ -57,10 +57,9 @@ UP="$PLAN/references/unit-procedure.md"      # successor of generate-units/SKILL
 PSK="$PLAN/SKILL.md"
 UH="${ROOT}/plugins/mega-sdd/references/halt-families/units.md"   # successor of generate-units halt-protocol.md
 MS="${ROOT}/plugins/mega-sdd/references/modules-schema.md"
-BAF="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/batch-and-fanout.md"
 BG="${ROOT}/plugins/mega-sdd/scripts/build-graph.sh"
 EBS="${ROOT}/plugins/mega-sdd/skills/execute-bolts/SKILL.md"
-for f in "$TT" "$US" "$DR" "$VP" "$PBT" "$ATP" "$UP" "$PSK" "$UH" "$MS" "$BAF" "$BG" "$EBS"; do
+for f in "$TT" "$US" "$DR" "$VP" "$PBT" "$ATP" "$UP" "$PSK" "$UH" "$MS" "$BG" "$EBS"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -137,7 +136,7 @@ if grep -rqF '<vault>-bound/units (or' "$PLAN"; then fail "HANDOFF: legacy -boun
 if grep -rqF -- '--derive-modules' "${ROOT}/plugins/mega-sdd"; then fail "MODFLAG: phantom --derive-modules survives"; else ok "MODFLAG: --derive-modules eradicated"; fi
 if grep -rqF -- '--refresh-modules' "${ROOT}/plugins/mega-sdd"; then fail "MODFLAG: phantom --refresh-modules survives"; else ok "MODFLAG: --refresh-modules eradicated"; fi
 grep -qF 'mv _meta/modules.yaml.auto _meta/modules.yaml' "$MS" && ok "MODFLAG: modules-schema recovery = promote .auto" || fail "MODFLAG: recovery route missing"
-grep -qF 'modules.yaml.auto` exists → instruct' "$BAF" && ok "MODFLAG: execute-bolts halt routes through the .auto promotion" || fail "MODFLAG: batch-and-fanout stale"
+grep -qF 'mv _meta/modules.yaml.auto _meta/modules.yaml' "${ROOT}/plugins/mega-sdd/scripts/derive-exec-plan.sh" && ok "MODFLAG: execute-bolts --module routes through the .auto promotion (derive-exec-plan.sh)" || fail "MODFLAG: derive-exec-plan.sh lost the .auto promotion"
 
 # ── GU-GRAPH-CONFLICT-1 (empirical) ──
 F="$WORK/graph"; mkdir -p "$F/.mega-sdd/vaults/demo/units"
