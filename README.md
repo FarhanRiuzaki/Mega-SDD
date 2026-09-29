@@ -250,27 +250,27 @@ Setup for every block: n=3 clean runs per arm, opus, and vanilla Claude Code (me
 
 **Brownfield** (the clinic app plus a v2 PRD with 7 seeded traps: spec-vs-code contradictions, business ambiguities, a concurrency rule and a footnote-only criterion):
 
-| | vanilla | guarded pipeline |
-|---|---|---|
-| review-ready | 19.1 min [18.9–21.9] | 60.8 min [39.8–63.6] |
-| cost | $6.46 [5.99–7.28] | $38.93 [37.64–39.32] (6.0×) |
-| subagents | 0 | 78 |
-| traps surfaced (T1–T5) | 5/5 in every run | 5/5 in every run |
-| AC / Critical / regressions in the v1 suite | 13/13 / 0 / none | 13/13 / 0 / none |
+| | vanilla | guarded, per-unit agents (pre-P2) | guarded, inline (the default) |
+|---|---|---|---|
+| review-ready | 19.1 min [18.9–21.9] | 60.8 min [39.8–63.6] | 50.9 min [44.2–51.1] |
+| cost | $6.46 [5.99–7.28] | $38.93 [37.64–39.32] (6.0×) | $25.08 [20.88–25.38] (3.9×) |
+| subagents | 0 | 78 | 3 |
+| traps surfaced (T1–T5) | 5/5 in every run | 5/5 in every run | 5/5 in every run |
+| AC / Critical / regressions in the v1 suite | 13/13 / 0 / none | 13/13 / 0 / none | 13/13 / 0 / none |
 
 What the numbers say:
 
 - **Routed (direct / assisted) landed in vanilla's range on the two greenfield fixtures, not better.** Median cost was 1.13× (xs) and 1.21× (clinic) vanilla, and total tokens 1.30× and 1.38×. Every range overlaps, so the locked rule reads `OVERLAP`: not shown to differ, which is not a saving. Assisted on existing code, the brownfield default, was never measured. The xs speed difference is formally `BETTER` under the locked rule, but it is not claimed: the runs were on different days, the gap is about 0.5 min, and the prompts differ. AC and Critical overlap too. The xs blind rubric is formally `WORSE` (93–94 vs 95–96), but vanilla 1–3 were scored in an earlier batch, and the one vanilla run scored in the routed runs' batch got 94 (n=1), so it reads as not shown to differ.
-- **The guarded pipeline surfaced the same 5/5 seeded traps as vanilla, at ~6× the cost.** Its CONFLICT gate fired 3 times in 3 runs, all false positives on the pipeline's own anchors. None of the seeded contradictions reached the gate. The runs were headless, so the value of a CONFLICT halt with a human answering it is unmeasured.
+- **The guarded pipeline surfaced the same 5/5 seeded traps as vanilla, at ~6× the cost (per-unit agents) and ~3.9× (inline, the default since P2).** Its CONFLICT gate fired 3 times in 3 runs, all false positives on the pipeline's own anchors. None of the seeded contradictions reached the gate. The runs were headless, so the value of a CONFLICT halt with a human answering it is unmeasured.
 - **The old default** (the pipeline on every greenfield PRD) was 2.4–12× slower and 8.8–22× costlier than vanilla, with equal or lower quality. That is why 9.0 routes first and keeps one pipeline.
 - **So mega-sdd makes no claim to be faster, cheaper, lighter or stronger than plain Claude Code.** What it adds:
   - a router that kept ordinary greenfield work within vanilla's cost range (two fixtures; medians 1.1–1.2× cost, 1.3–1.4× tokens, overlapping ranges);
   - the delivery check (the pre-9.0 pipeline failed it in 9/9 clean runs; the routed and vanilla runs passed it). On direct and assisted it is prose-enforced: the routed runs ran it 3/3 before "done = `VERDICT: PASS`" was written into the lane instructions and 6/6 after;
   - on assisted, one batched ask for business decisions. The runs were headless, so its value with a human answering is unmeasured.
 
-  Opt-in, it adds the spec and audit artefacts of the guarded lane. Their value is traceability, not code quality.
+  Opt-in, it adds the guarded lane's spec artefacts, which keep the agent grounded (the human audit trail is the commit history), not better code.
 
-Tables: [`REPORT.md`](benchmarks/results/vanilla-ab/REPORT.md) · decisions: commits `cf8d3df3`, `d447a6d2`, `5d880e8b` · per-run data in [`benchmarks/results/vanilla-ab/`](benchmarks/results/vanilla-ab/). The rule these claims follow: [`plugins/mega-sdd/CLAUDE.md` §Release evidence](plugins/mega-sdd/CLAUDE.md#release-evidence--complexity-budget).
+Tables: [`REPORT.md`](benchmarks/results/vanilla-ab/REPORT.md), [`REPORT-p2.md`](benchmarks/results/vanilla-ab/REPORT-p2.md) · decisions: commits `cf8d3df3`, `d447a6d2`, `5d880e8b`, `dbd3d7d4` · per-run data in [`benchmarks/results/vanilla-ab/`](benchmarks/results/vanilla-ab/). The rule these claims follow: [`plugins/mega-sdd/CLAUDE.md` §Release evidence](plugins/mega-sdd/CLAUDE.md#release-evidence--complexity-budget).
 
 ---
 
@@ -363,7 +363,7 @@ Three maintenance one-timers (`migrate-paths`, `install-deps`, `update-plugin`) 
 | Render md/KB jadi HTML offline interaktif | `/mega-sdd:emit html <dir-atau-file.md>` — or say "render html" / "html-kan" |
 | Generate executive summary (grounded, angka bercitasi) | `/mega-sdd:emit summary` — or say "emit summary" |
 | Jawab OQ hasil extract (KB mode, tanpa vault) | say "resolve oq kb" / "jawab OQ hasil extract" |
-| Unit kekecilan / kebanyakan wave | set `.mega-sdd/config.yaml` `unit_granularity: coarse` (or `--max-complexity=large`) |
+| Unit kekecilan / kebanyakan | set `.mega-sdd/config.yaml` `unit_granularity: coarse` (or `--max-complexity=large`) |
 | Install missing native deps (pandoc, mmdc, etc.) | `/mega-sdd:install-deps` (auto-detect OS + pkg mgr) |
 | Update mega-sdd to the latest version | `/mega-sdd:update-plugin` then `/plugin marketplace update mega-sdd` |
 | Migrate legacy paths → `.mega-sdd/` (one-time) | `/mega-sdd:migrate-paths --dry-run` then `/mega-sdd:migrate-paths` |

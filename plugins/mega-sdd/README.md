@@ -265,8 +265,10 @@ Mega-sdd adopts stable native binaries instead of reinventing them — all optio
 - **One result contract** on every lane: AC → test table, `delivery-check.sh` `VERDICT: PASS`, assumptions.
 - **The classic chain is removed.** The skills `generate-intent`, `scan-codebase`, `bind-codebase` and `generate-units` are gone (20 → 16 skills), along with the scan-first spine. Their surviving contracts were relocated into `plan` and `execute-bolts`.
 - **`plan --kb`** is the legacy-rebuild hand-off from `extract-intelligence`.
+- **`execute-bolts` runs inline by default** (one context, one blind review, the CONFLICT gate at run start + `conflict_bypassed` at the boundary; commit `dbd3d7d4`). P3/P3b removed the per-unit `--agents` path (7 of 9 agents, the review panel, the dispatch builder, the fan-out flags).
+- **Declared plan coverage:** every PRD heading needs a unit, an OQ with `[covers:]`, or a `## Coverage exclusions` line with a reason.
 - **Pre-9.0 vaults** are read; to build on one, run `migrate-paths --vault-layout=3`.
-- **Measured against vanilla Claude Code** (n=3 per arm): routed = within vanilla's range on two greenfield fixtures (medians 1.1–1.2× cost, 1.3–1.4× tokens, ranges overlapping; assisted on existing code unmeasured); guarded = the same trap coverage at ~6× the cost. Details in CHANGELOG 9.0.0 and the research reports linked above.
+- **Measured against vanilla Claude Code** (n=3 per arm): routed = within vanilla's range on two greenfield fixtures (medians 1.1–1.2× cost, 1.3–1.4× tokens, ranges overlapping; assisted on existing code unmeasured); guarded = the same trap coverage at ~3.9× the cost inline (~6× with the removed per-unit agents). Tables: `benchmarks/results/vanilla-ab/REPORT.md`, `REPORT-p2.md`.
 
 **v8.5.0 – v8.8.1** — technical OQs decided by the AI as labelled, cited, reversible choices (8.5.0); the per-unit attempt cap enforced by the hook (8.6.0); the in-band gateway session note (8.7.0); the **state anchor** (8.8.x): code at HEAD is the source of truth, shown as a per-vault FRESH/STALE block at session start and enforced by the fail-closed binding-freshness gate at bolt dispatch.
 
