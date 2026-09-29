@@ -1,3 +1,0 @@
-32800dd 2026-09-27T17:23:46+07:00 feat: company profile — Beranda, Tentang Kami, Kontak with stored contact form
-ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
-da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

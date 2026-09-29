@@ -3,8 +3,8 @@
 
   python3 benchmarks/scripts/arm-metrics.py <results-dir> [--repo <arm-clone> --base <sha>] [--json out.json]
 
-The p3-* extractors key on mega-sdd artefacts (U-XXX commits, gate scripts, panel ledgers), so
-they cannot read a vanilla arm. This one reads only what BOTH arms produce:
+The removed p3-* extractors keyed on mega-sdd artefacts (U-XXX commits, gate scripts, panel ledgers),
+so they could not read a vanilla arm. This one reads only what BOTH arms produce:
 
   <results-dir>/stream.jsonl   `claude -p --output-format stream-json` (every process of the run)
   <results-dir>/run.meta       launcher record (arm_kind, model, plugins=, purity=, resume_*/outage_*)

@@ -189,7 +189,7 @@ BUSINESS_TEXT_RE = re.compile(
 )
 # QUESTION-text-only rows (never the recommendation/rationale — "no paid licence
 # needed" is a fine reason for a technical pick). Every row is a class observed
-# tagged `tech` in the field vaults (benchmarks/results/p3 clinic runs,
+# tagged `tech` in the field vaults (the P3 clinic runs, commit 2cbbd3d4,
 # 2026-09-20): spend the AI cannot authorise (paid licence / tier / budget),
 # hosting + infrastructure ownership, NFR targets, and WHICH STACK wins when
 # the PRD names one and the repo is another. Deliberately NO generic

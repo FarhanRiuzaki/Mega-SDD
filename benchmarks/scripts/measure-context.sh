@@ -4,8 +4,8 @@
 # Reads benchmarks/tasks/T*/files.<arm-name>.txt (one repo-relative path per line;
 # optional trailing " [SECTION:...]" marker = whole file counted as UPPER BOUND).
 # Evidence class: file sizes = MEASURED; the file LISTS are a STATIC TRACE of the
-# loading contract (PROXY for runtime context — derivation cited in each task's
-# TRACE.md); token figures = ESTIMATED (chars/4).
+# loading contract (PROXY for runtime context — derivation in each list's header
+# comment); token figures = ESTIMATED (chars/4).
 set -u
 ROOT="${1:?arm-root}"; ARM="${2:?arm-name}"; OUT="${3:?out-json}"
 BENCH="$(cd "$(dirname "$0")/.." && pwd)"

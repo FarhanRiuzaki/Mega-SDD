@@ -44,7 +44,7 @@ while read -r SCEN ARMNAME RID PRD; do
   echo "== $(date -u +%H:%M:%SZ) launch $SCEN $ARMNAME $RID"
   ENTRY=chain; case "$ARMNAME" in routed|guarded|guarded-inline) ENTRY=frontdoor ;; esac
   P0_ARM=$KIND P0_ENTRY=$ENTRY P0_FLAGS="$FLAGS" P0_PLUGIN_DIR="${P0_PLUGIN_DIR:-}" \
-    bash "$BENCH/p0-headless-run.sh" "$ARMDIR" "$PRD" "$OUT" "$MODEL" > "$OUT.launch.log" 2>&1
+    bash "$BENCH/p0-headless-run.sh" "$ARMDIR" "$PRD" "$OUT" "$MODEL" > "$ARMDIR.launch.log" 2>&1
   PID=$(grep -m1 '^pid=' "$OUT/run.meta" 2>/dev/null | cut -d= -f2)
   START=$(date +%s)
   while [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; do

@@ -1,7 +1,7 @@
 # Runbook — vanilla Claude Code vs mega-sdd (xs + klinik, n ≥ 3 per arm)
 
 **Status:** arm `routed` (lane router) diukur 2026-09-27 (§8d). Blok xs (vanilla / lite / classic, n=3 bersih masing-masing) dan klinik (vanilla / lite, n=3 bersih masing-masing) **SUDAH DIUKUR** 2026-09-26/27 — hasil §8, analisis commit `cf8d3df3`. Klinik classic **belum diukur**.
-**Kenapa ada:** setiap benchmark di repo ini (`benchmarks/results/{baseline,comparison,optimized,p0-baseline,p2-w2,p3}`) membandingkan mega-sdd dengan **mega-sdd versi lain**. Belum pernah ada arm Claude Code tanpa plugin. Jadi klaim "mega-sdd lebih cepat/hemat/ringan/kuat" belum punya pembanding. Aturan repo sejak runbook ini: klaim itu **tidak boleh** ditulis sebelum tabel §8 terisi dan verdict-nya `BETTER` (`plugins/mega-sdd/CLAUDE.md §Release evidence`).
+**Kenapa ada:** setiap benchmark di repo ini (`benchmarks/results/{baseline,comparison,optimized,p0-baseline,p2-w2,p3}`, dihapus dari tree 2026-09-29; ada di git history) membandingkan mega-sdd dengan **mega-sdd versi lain**. Belum pernah ada arm Claude Code tanpa plugin. Jadi klaim "mega-sdd lebih cepat/hemat/ringan/kuat" belum punya pembanding. Aturan repo sejak runbook ini: klaim itu **tidak boleh** ditulis sebelum tabel §8 terisi dan verdict-nya `BETTER` (`plugins/mega-sdd/CLAUDE.md §Release evidence`).
 
 ## 1. "Seperti Feather", dijadikan angka
 
@@ -81,7 +81,7 @@ Teks lengkap yang dipakai scorer ada di `ac-checklist-xs.md` dan `ac-checklist-c
 
 Batasan yang diakui: kebutaan tidak sempurna, karena gaya kode dan struktur file bisa membocorkan arm.
 
-**Batasan headless (berlaku sama untuk semua arm):** `AskUserQuestion` tidak tersedia di `claude -p`, jadi setiap tanya diganti pilihan paling konservatif `[ASSUMED-BY-RUNNER]`, dan human-wait = 0. Perbandingan antar-arm tetap setara karena deviasinya sama. Tapi angka absolutnya bukan angka sesi interaktif (`runbooks/velocity-live-ab.md`). `ask_attempts` menghitung upaya bertanya, bukan jawaban.
+**Batasan headless (berlaku sama untuk semua arm):** `AskUserQuestion` tidak tersedia di `claude -p`, jadi setiap tanya diganti pilihan paling konservatif `[ASSUMED-BY-RUNNER]`, dan human-wait = 0. Perbandingan antar-arm tetap setara karena deviasinya sama. Tapi angka absolutnya bukan angka sesi interaktif. `ask_attempts` menghitung upaya bertanya, bukan jawaban.
 
 **(c) File skor per run:** `benchmarks/results/vanilla-ab/<scenario>/<arm>-<n>/quality.score.json`
 `{"completion": 0..1, "ac_pass": n, "ac_total": n, "critical": n, "important": n, "minor": n, "rubric": 0..100, "scorer_sid": "…", "blind_label": "B"}`
@@ -174,6 +174,8 @@ Detail per run, verdict, dan batasan: commit `d447a6d2` + `results/vanilla-ab/RE
 - Delivery-check 9/9 PASS.
 
 ### 8c. Konteks historis — mega-sdd saja, TIDAK sebanding dengan vanilla
+
+Run sumber tabel ini dihapus dari tree 2026-09-29 (git history: commit 2cbbd3d4 dan sesudahnya); angkanya tetap di sini.
 
 Diukur ulang 2026-09-26 dengan `arm-metrics.py` dari `stream.jsonl` yang sudah di-commit. Run yang tidak bersih ada di file-nya, tidak di sini. Fixture dan PRD sama, tapi versi plugin berbeda-beda. Tabel ini menunjukkan **variansi**, bukan perbandingan.
 

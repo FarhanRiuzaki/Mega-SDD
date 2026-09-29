@@ -2,7 +2,7 @@
 # 9.0 (P1, 2026-09-27): what a default run on a clear greenfield PRD commands. route-lane.sh (a script — RUN,
 # not read) sends it to the DIRECT lane; references/direct-lane.md is the whole procedure. Before 9.0 this list
 # traced the classic chain (generate-intent -> bind -> units -> bolts), which no longer exists; the pre-9.0 list
-# is in git history (commit 01437dfb) and in files.baseline.txt's lineage.
+# is in git history (commit 01437dfb).
 plugins/mega-sdd/skills/using-mega-sdd/SKILL.md
 plugins/mega-sdd/commands/mega-sdd.md
 plugins/mega-sdd/references/direct-lane.md

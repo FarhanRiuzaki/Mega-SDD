@@ -119,13 +119,13 @@ Yang dipertahankan utuh per prinsip 2: acceptance test dieksekusi (B4 + `run-acc
 | 3-screen xs greenfield (4 unit paralel) | ≤ 2 m | ≤ 15 m (1 turn + 1 batched ask) | ≤ 35 m wall | **≤ 60 m** | **≤ 2** |
 | klinik standard (10 unit) | — | — | — | **≤ 2 jam** | **≤ 3** |
 
-Endpoint budget = **time-to-DONE** (semua unit committed + gate hijau), bukan time-to-first-code; pengukuran = protokol P5 interaktif + ekstraktor `research/2026-08-04-p5-extract.py` (phase decomposition + BOLT-1 breakdown + interaction points + `idle_ratio`; hasil → `benchmarks/results/p0-baseline/`). Semua angka berlabel MEASURED/EST; klaim tanpa label ditolak di laporan gate.
+Endpoint budget = **time-to-DONE** (semua unit committed + gate hijau), bukan time-to-first-code; pengukuran = protokol P5 interaktif + ekstraktor `research/2026-08-04-p5-extract.py` (commit 04d2e0ab) (phase decomposition + BOLT-1 breakdown + interaction points + `idle_ratio`; hasil → `benchmarks/results/p0-baseline/` (dihapus dari tree; commit f2aac7b6)). Semua angka berlabel MEASURED/EST; klaim tanpa label ditolak di laporan gate.
 
 **Dua workstream lintas fase:**
 - **W1 zero-idle** (P0.4 audit → P1.4 implementasi, berlaku juga di v7): sensus SEMUA titik chain berhenti menunggu manusia (halt taxonomy + situs `AskUserQuestion`), klasifikasi per titik **BATCH** (dilipat ke satu ask di ujung PLAN) / **DEFER** (dicatat + resurface di laporan akhir) / **TETAP BLOCKING** (hanya CONFLICT, `hard_rule_violated`, OQ P1 business); halt non-blocking di-defer ke laporan akhir; OQ P1 business + keputusan L0 = satu batched ask; pesan halt blocking satu layar (apa berhenti · satu pertanyaan · opsi). Pin: happy-path 3-screen = tepat 2 titik interaksi; bukti tutup P1 = `idle_ratio` run P5 < 20 %.
 - **W2 fast lane bolts** (P2.3, di `--lite`): paralel default untuk wave xs tanpa dependency (`parallel_max` existing); verifier round xs dibatasi 1; tanpa konfirmasi per-bolt; ukur WALL per model untuk unit xs (sonnet vs default) dengan acceptance pass sama — lebih cepat ⇒ sel xs→sonnet aktif di `--lite`.
 
-**P0 diamandemen (mandat implementasi):** P0.3 baseline 7.31 MEASURED terdekomposisi — pra-kode per fase vs bolt-1 (implementer turns × durasi, panel, fix rounds, gate scripts, konfirmasi) vs idle (wall − aktif), disimpan ke `benchmarks/results/p0-baseline/`; P0.4 = audit titik interaksi W1.1 (tabel titik × klasifikasi × bukti file:line, commit 7c30bf5b). Kill-criterion tetap: pra-kode < 25 % time-to-first-code ⇒ program berhenti di P1 (JIT bind + W1 saja).
+**P0 diamandemen (mandat implementasi):** P0.3 baseline 7.31 MEASURED terdekomposisi — pra-kode per fase vs bolt-1 (implementer turns × durasi, panel, fix rounds, gate scripts, konfirmasi) vs idle (wall − aktif), disimpan ke `benchmarks/results/p0-baseline/` (dihapus dari tree; commit f2aac7b6); P0.4 = audit titik interaksi W1.1 (tabel titik × klasifikasi × bukti file:line, commit 7c30bf5b). Kill-criterion tetap: pra-kode < 25 % time-to-first-code ⇒ program berhenti di P1 (JIT bind + W1 saja).
 
 **Keputusan gate owner 2026-09-10 (mengikat, tidak bergeser):**
 

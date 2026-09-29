@@ -20,6 +20,8 @@
 
 ## 3. Measurement protocol (runbook amendment #5 applies)
 
+> The `benchmarks/results/p3/` runs and the `p3-*` extractors cited below were removed from the tree on 2026-09-29; they live in git history (commits 2cbbd3d4, b1b9adeb and later).
+
 1. Cache the tree at the lever's commit; xs scenario = the same 3-screen fixture/prd/lane/model as run #2 (`benchmarks/results/p3/xs-lite-7.38.0-run2`); chain `p3-chain-xs.sh` (net-aware, rule C: pre-dispatch death → fresh attempt ≤ 3; post-dispatch → same-session resume labelled TERCEMAR).
 2. Per lever, **n = 2 clean xs runs**; extract with `p3-done-endpoints.py` + `p3-parallelism.py` + `p3-ship-verdict.py`; compare to run #2 (DONE 1h11m02s; F.4 trailer run DONE 59m18s n=1).
 3. Only if L1 fires on every return (xs) and L2/L3 hit their targets → clinic ONCE (`P0_FLAGS=--lite … p0-clinic-arm3 … reset --hard b915556`) and judge criterion (b) again: in-flight ≥ 2.5 AND idle < 20 % AND acceptance full AND Critical 0 → `--lite` default (`derived.lane` default = lite, `--classic` opt-out) in 9.0.0; otherwise stays opt-in and the dissection repeats (no new lever that session).
