@@ -40,7 +40,6 @@ sys.path.insert(0, LIB)
 import bolt_attrib  # noqa: E402
 import freshness as fr  # noqa: E402
 import unit_claims  # noqa: E402
-import vault_layouts  # noqa: E402
 import vault_scope as vs  # noqa: E402
 
 ENUM = ("CONFIRMED", "CONFLICT", "OQ")
@@ -457,7 +456,8 @@ done = False
 _br = os.path.join(out_dir, "bolt-report.md")
 if os.path.isfile(_br):
     _st = re.search(r"(?m)^status:\s*(\w+)", open(_br, encoding="utf-8", errors="replace").read())
-    done = bool(_st and _st.group(1) in ("success", "forced_pass")) and unit not in set(vault_layouts.inflight_units(cwd))
+    _open = os.path.isfile(os.path.join(out_dir, "dispatch-prompt.md")) and not os.path.isfile(os.path.join(out_dir, "postflight.json"))  # a legacy run cut before post-flight
+    done = bool(_st and _st.group(1) in ("success", "forced_pass")) and not _open
 symbol_from_index = False
 
 verdicts = []

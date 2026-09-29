@@ -64,33 +64,6 @@ def batch_suite_files(cwd):
     return sorted({os.path.realpath(p) for p in got})
 
 
-def inflight_units(cwd):
-    """Units whose bolt pipeline is legitimately IN FLIGHT, sorted by id.
-
-    In-flight ⇔ `<vault>/bolts/U-XXX/dispatch-prompt.md` exists AND
-    `postflight.json` is absent or OLDER than it. dispatch-prompt is the FIRST
-    artifact of a bolt run (the retired per-unit dispatch wrote it);
-    postflight.json is the LAST (the per-unit pipeline ends on the post-flight
-    scan). The window between them is a unit that is running — its commit may
-    exist while its panel / fix round / evidence writers have not run yet.
-
-    Read by unit_binding.py's done rule; legacy bolts/U-*/dispatch-prompt.md only (no writer since P3)."""
-    got = set()
-    for pre in vault_prefixes(cwd):
-        for dp in glob.glob(os.path.join(pre, "bolts", "U-*", "dispatch-prompt.md")):
-            bd = os.path.dirname(dp)
-            uid = os.path.basename(bd)
-            pf = os.path.join(bd, "postflight.json")
-            try:
-                dp_m = os.path.getmtime(dp)
-                pf_m = os.path.getmtime(pf) if os.path.isfile(pf) else None
-            except OSError:
-                continue
-            if pf_m is None or pf_m < dp_m:
-                got.add(uid)
-    return sorted(got)
-
-
 def decision_dirs(cwd):
     """Every `<vault>/decisions/` dir across all layouts (plus the one-level-nested
     shape the PBT citation check historically accepted), deduped."""
