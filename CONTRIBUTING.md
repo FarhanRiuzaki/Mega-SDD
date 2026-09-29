@@ -32,7 +32,7 @@ What is measured today:
 - the direct and assisted lanes are **on par** with vanilla;
 - the guarded pipeline surfaced the same seeded spec traps as vanilla at ~6× the cost.
 
-Reports: `research/2026-09-27-{vanilla-vs-megasdd,lane-router,brownfield}-results.md`.
+Tables: `benchmarks/results/vanilla-ab/REPORT.md`; decisions: commits `cf8d3df3`, `d447a6d2`, `5d880e8b`.
 
 ## Skill changes
 

@@ -2,7 +2,7 @@
 # test-size-proxy.sh — direct pins of _lib/unit_tier.size_proxy (the `unit_tier: xs`
 # size class, spec 2026-08-23 §1a; shared by validate-unit-spec.sh xs_body_advisory).
 # Re-homed from tests/size-weighted/test-unit-tier-router.sh cases 1-9 so the size rule
-# stays pinned without the router (P3 plan research/2026-09-28-p3-deletion-plan.md §3d):
+# stays pinned without the router (P3 C0, commit 2d02ae3b):
 #   - small = acceptance_test 1..2 AND at least one work-item section AND every present
 #     section within 1..3 items;
 #   - absent/empty structure is NEVER small (unknown never lowers a tier);

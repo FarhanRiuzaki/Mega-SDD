@@ -78,16 +78,16 @@ n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
 # args: 3846 → 3844. Still a shrink; the 4030 cap stands.
 # 8.4.0 re-baseline (spec 2026-09-16-doc-audit-debt-gate-design.md §3): the Hard-gate line now carries the lite-lane
 # qualifier (binding_conflict at execute-bolts dispatch) — +125 B, still under the 4030 cap.
-# 2026-09-27 re-baseline (research/2026-09-27-lane-router-results.md): the tier-L row names the lane router
+# 2026-09-27 re-baseline (commit d447a6d2): the tier-L row names the lane router
 # (route-lane.sh → direct / assisted / guarded) — +13 B, still under the 4030 cap.
 # 9.0 P1 re-baseline (RECORDED — spec 2026-09-27-v9-simplification-design.md; classic skills deleted):
 # the Hard-gate line no longer names the deleted `bind-codebase` / classic `binding.md`; it now pins the
 # surviving JIT per-unit gate (bolts/U-XXX/binding.json, pre-flight 3.9, binding_conflict, resolve-oq --binding).
 # That line is the ONLY change above the marker: 3982 → 3952 (−30 B, a shrink; the 4030 cap stands).
-# 9.0 §8.5 re-baseline (RECORDED — research/2026-09-28-p2-inline-results.md; execute-bolts inline by default): the
+# 9.0 §8.5 re-baseline (RECORDED — commit dbd3d7d4; execute-bolts inline by default): the
 # Hard-gate line states the run-start quarantine (JIT bind up front + per task) and scopes the dispatch gate to
 # `--agents`. That line is the ONLY change above the marker: 3952 → 3988 (+36 B, under the 4030 cap).
-# P3 C6b re-baseline (RECORDED — spec v9 §8.6, plan research/2026-09-28-p3-deletion-plan.md R15): the per-dispatch
+# P3 C6b re-baseline (RECORDED — spec v9 §8.6, commit 561e418d): the per-dispatch
 # path is removed, so the Hard-gate line drops its `--agents` aside. The ONLY change above the marker: 3988 → 3963 (−25 B).
 [ "$n" -eq 3963 ] && ok "C1 anchor-core byte length unchanged ($n)" || fail "C1 anchor core changed: $n bytes (baseline 3963, P3 C6b: Hard-gate line drops the retired --agents aside — spec 2026-09-27-v9-simplification-design.md §8.6; under the 4030 cap)"
 # C1b: the COMPACT-mode extraction ('## Hard rule' awk, session-start:150-153 —

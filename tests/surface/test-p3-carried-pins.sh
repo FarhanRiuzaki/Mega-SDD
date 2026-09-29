@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-p3-carried-pins.sh — pins carried out of tests/surface/test-p7-bolt-loop-efficiency.sh
-# before that per-unit suite is deleted (P3 plan research/2026-09-28-p3-deletion-plan.md §3d):
+# before that per-unit suite is deleted (P3 C0, commit 2d02ae3b):
 #   M8  the emitted consumer-guide template keeps vault ids OUT of code comments
 #       (re-pointed from the removed generate-intent template to plan's)
 #   F1  halts-and-handoff keeps the evidence-commit batching section (spec D7)

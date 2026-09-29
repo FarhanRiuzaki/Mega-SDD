@@ -4,11 +4,11 @@ The front door runs `scripts/route-lane.sh` FIRST for a PRD file or a free-text 
 picks `direct`, `assisted` or `guarded` from observable signals (its header lists them). This file
 is the procedure for the first two. `guarded` is the spec pipeline (`orchestrate-flow`), unchanged.
 
-**Why these lanes exist (measured, `research/2026-09-27-vanilla-vs-megasdd-results.md`).** On a
+**Why these lanes exist (measured, commit `cf8d3df3`).** On a
 greenfield PRD, vanilla Claude Code shipped 12/12 (xs) and 10/10 (clinic) acceptance criteria in
 3–30 min for $1–8. The lite and classic pipelines took 2.4–12× longer, cost 8.8–22× more and scored
 equal or lower. On a brownfield PRD with seeded spec-vs-code traps the pipeline surfaced the same 5/5
-traps as vanilla at 5.2–6.6× the cost (`research/2026-09-27-brownfield-results.md`). So every task
+traps as vanilla at 5.2–6.6× the cost (commit `5d880e8b`). So every task
 without an existing vault is built here, with no vault, units or `.mega-sdd/` writes. Assisted adds the batched ask — the part of the pipeline that did its job (surfacing).
 
 **Done means `delivery-check.sh` printed `VERDICT: PASS` on your last commit, and its output is quoted in your report.** Not "tests pass locally". The check runs on a fresh checkout, which is where the pipeline's own defects hid. A report without that line is an unfinished run.

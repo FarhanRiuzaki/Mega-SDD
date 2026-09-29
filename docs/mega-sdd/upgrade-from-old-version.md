@@ -27,9 +27,9 @@
 ## Upgrading to 9.0 (one pipeline: the four classic skills removed)
 
 **Why (measured, n=3 clean runs per arm, vanilla Claude Code as control):**
-- Greenfield xs + clinic — the pipeline (lite and classic) was 2.3–12× slower and 9–22× costlier than vanilla, with equal or lower quality: `research/2026-09-27-vanilla-vs-megasdd-results.md`.
-- Lane router — the routed direct/assisted lanes are on par with vanilla on the same two PRDs: `research/2026-09-27-lane-router-results.md`.
-- Brownfield with seeded spec traps — the guarded pipeline surfaced the same 5/5 traps as vanilla at ~6× the cost; its CONFLICT gate fired 3× in 3 runs, all false positives on its own anchors: `research/2026-09-27-brownfield-results.md`.
+- Greenfield xs + clinic — the pipeline (lite and classic) was 2.3–12× slower and 9–22× costlier than vanilla, with equal or lower quality: commit `cf8d3df3`.
+- Lane router — the routed direct/assisted lanes are on par with vanilla on the same two PRDs: commit `d447a6d2`.
+- Brownfield with seeded spec traps — the guarded pipeline surfaced the same 5/5 traps as vanilla at ~6× the cost; its CONFLICT gate fired 3× in 3 runs, all false positives on its own anchors: commit `5d880e8b`.
 - Lite vs classic (xs) — lite was faster and cheaper, quality overlapped: `benchmarks/results/vanilla-ab/REPORT.md`.
 
 Design, component verdicts and the P1 decisions: `docs/superpowers/specs/2026-09-27-v9-simplification-design.md`; the release entry is `CHANGELOG.md` `## [9.0.0]`. No speed, cost or quality gain over plain Claude Code is claimed for any lane. The guarded pipeline is kept for what vanilla does not leave behind: the vault, the units, per-unit binding evidence and the team documents (traceability and audit).

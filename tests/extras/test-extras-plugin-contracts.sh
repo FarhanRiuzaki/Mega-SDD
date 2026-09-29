@@ -85,13 +85,13 @@ CORE=$(awk 'BEGIN{dash=0;body=0}
 n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
 # 8.4.0 re-baseline (spec 2026-09-16-doc-audit-debt-gate-design.md §3): the Hard-gate line now carries the lite-lane
 # qualifier (binding_conflict at execute-bolts dispatch) — +125 B, still under the 4030 cap.
-# 2026-09-27 re-baseline (research/2026-09-27-lane-router-results.md): the tier-L row names the lane router
+# 2026-09-27 re-baseline (commit d447a6d2): the tier-L row names the lane router
 # (route-lane.sh → direct / assisted / guarded) — +13 B, still under the 4030 cap.
 # 9.0 P1 re-baseline (spec 2026-09-27-v9-simplification-design.md): bind-codebase was deleted, so the Hard-gate line
 # no longer names bind-codebase/binding.md/classic lane — it now states the surviving JIT-bind CONFLICT gate
 # (bolts/U-XXX/binding.json, pre-flight 3.9 → binding_conflict at execute-bolts dispatch, resolve-oq --binding).
 # That is the only in-anchor edit — −30 B (3982 → 3952), still under the 4030 cap; extras still adds nothing.
-# 9.0 §8.5 re-baseline (research/2026-09-28-p2-inline-results.md): execute-bolts runs inline by default, so the Hard-gate
+# 9.0 §8.5 re-baseline (commit dbd3d7d4): execute-bolts runs inline by default, so the Hard-gate
 # line states the run-start quarantine (JIT bind up front + per task) and scopes the dispatch gate to `--agents` —
 # +36 B (3952 → 3988), under the 4000 cap of test-b3-anchor-and-panel.sh M-13a; extras still adds nothing.
 # P3 C6b re-baseline (RECORDED, spec v9 §8.6): the Hard-gate line drops its `--agents` aside, 3988 → 3963 (−25 B).

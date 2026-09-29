@@ -194,7 +194,7 @@ blocker:
 
 The four actions at the walk: KEEP_VAULT — code harus diubah mengikuti vault (migrate all auth to Bearer; high effort); KEEP_CODE — vault di-update mengikuti kenyataan code (preserve session auth); DEFER — jadi OQ yang dibawa unit (the gate opens; execute-bolts asks before the final bolt); SPLIT — claim dipecah jadi sub-claim (Sanctum for /api/*, sessions for web).
 
-**Check the anchor before you pick.** A CONFLICT can be the pipeline's own anchor error rather than a spec-vs-code contradiction. In the 9.0 brownfield benchmark the gate fired 3 times in 3 runs and all 3 were false positives — one line range the pipeline mistyped, two anchors moved by a sibling unit's legitimate commit — each resolved `KEEP_CODE` (`research/2026-09-27-brownfield-results.md` §3). The writer repairs a stale line range itself when the content is unchanged; a range it cannot repair stays a CONFLICT, and `KEEP_CODE` + a hand-corrected `## Anchors` line is the human path. Never edit an anchor just to make a claim pass.
+**Check the anchor before you pick.** A CONFLICT can be the pipeline's own anchor error rather than a spec-vs-code contradiction. In the 9.0 brownfield benchmark the gate fired 3 times in 3 runs and all 3 were false positives — one line range the pipeline mistyped, two anchors moved by a sibling unit's legitimate commit — each resolved `KEEP_CODE` (commit `5d880e8b`). The writer repairs a stale line range itself when the content is unchanged; a range it cannot repair stays a CONFLICT, and `KEEP_CODE` + a hand-corrected `## Anchors` line is the human path. Never edit an anchor just to make a claim pass.
 
 ### Recovery
 

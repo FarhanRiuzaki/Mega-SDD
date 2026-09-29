@@ -1,6 +1,6 @@
 # Runbook — vanilla Claude Code vs mega-sdd (xs + klinik, n ≥ 3 per arm)
 
-**Status:** arm `routed` (lane router) diukur 2026-09-27 (§8d). Blok xs (vanilla / lite / classic, n=3 bersih masing-masing) dan klinik (vanilla / lite, n=3 bersih masing-masing) **SUDAH DIUKUR** 2026-09-26/27 — hasil §8, analisis `research/2026-09-27-vanilla-vs-megasdd-results.md`. Klinik classic **belum diukur**.
+**Status:** arm `routed` (lane router) diukur 2026-09-27 (§8d). Blok xs (vanilla / lite / classic, n=3 bersih masing-masing) dan klinik (vanilla / lite, n=3 bersih masing-masing) **SUDAH DIUKUR** 2026-09-26/27 — hasil §8, analisis commit `cf8d3df3`. Klinik classic **belum diukur**.
 **Kenapa ada:** setiap benchmark di repo ini (`benchmarks/results/{baseline,comparison,optimized,p0-baseline,p2-w2,p3}`) membandingkan mega-sdd dengan **mega-sdd versi lain**. Belum pernah ada arm Claude Code tanpa plugin. Jadi klaim "mega-sdd lebih cepat/hemat/ringan/kuat" belum punya pembanding. Aturan repo sejak runbook ini: klaim itu **tidak boleh** ditulis sebelum tabel §8 terisi dan verdict-nya `BETTER` (`plugins/mega-sdd/CLAUDE.md §Release evidence`).
 
 ## 1. "Seperti Feather", dijadikan angka
@@ -164,7 +164,7 @@ Median run bersih (n=3 per arm): review-ready vanilla 30,0 · lite 70,6 menit; c
 
 ### 8d. routed (lane router) vs vanilla — xs + klinik (fixture sama, 2026-09-27)
 
-Detail per run, verdict, dan batasan: `research/2026-09-27-lane-router-results.md` + `results/vanilla-ab/REPORT.md` (arm `routed`, `routed-v1`, `vanilla-day2`).
+Detail per run, verdict, dan batasan: commit `d447a6d2` + `results/vanilla-ab/REPORT.md` (arm `routed`, `routed-v1`, `vanilla-day2`).
 - Median: xs 2,7 menit / $1,16 / AC 12/12 / rubric 94; klinik 26,6 menit / $9,30 / AC 10/10 / rubric 91.
 - Verdict vs vanilla OVERLAP, kecuali (semuanya formal, tidak ada yang diklaim; beda hari dan prompt asimetris):
   - xs `BETTER`: review-ready, wall, output token, baris kode+test (`routed-v1`: hanya baris kode+test);
@@ -202,7 +202,7 @@ Run yang dicatat TERCEMAR di log pengukurannya (mis. `xs-lite-8.3.0-levers-run1`
 | 2026-09-26 | **Plugin di arm mega-sdd:** salinan `git archive` dari `plugins/mega-sdd` di branch `bench/vanilla-arm` (8.8.1) di path TANPA spasi (`P0_PLUGIN_DIR=/private/tmp/claude-501/mega-sdd-bench/plugin-8.8.1`) dimuat sebagai `mega-sdd@inline`, salinan marketplace 8.7.2 dimatikan per sesi. Roster lain identik di kedua arm (probe: superpowers 6.4.1, agents-md, telemetry) | Claude |
 | 2026-09-27 | **Lane router + direct lane** diterapkan (brief owner: "rombak berdasarkan bukti"). Arm baru `routed` diukur pada fixture xs + klinik yang SAMA, n=3, plus satu vanilla per skenario (vanilla-4) sebagai cek drift hari-berbeda terhadap vanilla 1–3. Seed urutan `20260929` (xs) / `20260930` (klinik), plan `results/vanilla-ab/plan-routed-*.txt`. Plugin = snapshot working tree `bench/vanilla-arm` (belum di-commit) di `plugin-routed/` | Claude atas delegasi owner |
 | 2026-09-27 | **PRD baru di lane guarded → lite secara default** (vault lama tetap di lane-nya; `lane: standard` = classic). **Deviasi dari aturan §7 yang dikunci:** aturan meminta lite vs classic di KEDUA skenario, sedangkan klinik classic belum pernah diukur di fixture ini. Dasar keputusan: xs n=3 (lite BETTER di waktu dan biaya, AC/rubric/Critical OVERLAP), klinik historis classic $259,66 / wall 301,4 menit (n=1, plugin 7.35.0, fixture lain; §8c) vs lite $53–73 / 65–94 menit, dan mandat owner "pertahankan hanya kompleksitas dengan nilai terukur" (classic menambah tiga fase model tanpa manfaat terukur). Bisa dibalik lewat config. Classic klinik tetap jadi arm opsional di blok brownfield | Claude atas mandat owner |
-| 2026-09-27 | Eksperimen brownfield + PRD ambigu dirancang, TIDAK dijalankan: `brownfield-ambiguous-prd.md` | Claude |
-| 2026-09-27 | Eksperimen brownfield dijalankan kemudian di hari yang sama (vanilla vs routed, n=3 run bersih per arm). Hasil dan keputusan: `research/2026-09-27-brownfield-results.md` + log di `brownfield-ambiguous-prd.md` | Claude |
+| 2026-09-27 | Eksperimen brownfield + PRD ambigu dirancang, TIDAK dijalankan: commit `5d880e8b` | Claude |
+| 2026-09-27 | Eksperimen brownfield dijalankan kemudian di hari yang sama (vanilla vs routed, n=3 run bersih per arm). Hasil dan keputusan: commit `5d880e8b` + `results/vanilla-ab/REPORT.md` (skenario `brownfield`) | Claude |
 
 **Estimasi biaya (EST, dari run historis §8c):** xs ≈ $25–80 per arm-run (vanilla belum diketahui), klinik ≈ $105–260. 2 arm mega-sdd (lite + classic) × 3 run: xs 6 × $25–80 ≈ $150–480, klinik 6 × $105–260 ≈ $630–1.560. Total ≈ $780–2.040, ditambah arm vanilla (belum diketahui) dan scorer. Keputusan budget ada di owner.

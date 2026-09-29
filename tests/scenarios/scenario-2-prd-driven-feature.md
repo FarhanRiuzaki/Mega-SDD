@@ -123,7 +123,7 @@ Every criterion in `§Clinic.5` appears in the table, with its status and the te
 
 ## Part B — the guarded lane (spec pipeline on existing code)
 
-Use it when the team needs the spec, the per-unit binding and the bolt evidence as an audit trail, or wants the FSD/SIT/UAT documents afterwards. The honest trade-off comes from a brownfield PRD with seeded spec-vs-code traps (n=3 per arm, `research/2026-09-27-brownfield-results.md`): the guarded pipeline surfaced the same 5/5 traps as plain Claude Code at about 6× the cost. Its value is the traceability, not better code.
+Use it when the team needs the spec, the per-unit binding and the bolt evidence as an audit trail, or wants the FSD/SIT/UAT documents afterwards. The honest trade-off comes from a brownfield PRD with seeded spec-vs-code traps (n=3 per arm, commit `5d880e8b`): the guarded pipeline surfaced the same 5/5 traps as plain Claude Code at about 6× the cost. Its value is the traceability, not better code.
 
 ### Step B1 — Ask for the pipeline
 

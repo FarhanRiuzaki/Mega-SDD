@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """trap-judge.py — did a run TELL the human about the seeded spec traps? (brownfield block,
-benchmarks/runbooks/brownfield-ambiguous-prd.md §4, 2026-09-27)
+commit 5d880e8b, 2026-09-27; the traps are TRAPS below)
 
   trap-judge.py <results-dir> <arm-repo> <base-sha> [--model opus] [--extract-only]
 

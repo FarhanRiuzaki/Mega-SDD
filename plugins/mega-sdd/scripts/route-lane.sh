@@ -4,8 +4,8 @@
 # tokens. The front door runs it FIRST for a PRD/brief so a light task never
 # walks into the pipeline by accident.
 #
-# Why (benchmarks/results/vanilla-ab, research/2026-09-27-vanilla-vs-megasdd-
-# results.md): on greenfield PRDs vanilla Claude Code was 2.3–12x faster and
+# Why (benchmarks/results/vanilla-ab/REPORT.md, commit cf8d3df3): on
+# greenfield PRDs vanilla Claude Code was 2.3–12x faster and
 # 9–22x cheaper than the lite/classic pipeline with equal or better quality.
 # The pipeline's claimed value (binding CONFLICT gate, OQ handling) needs
 # existing code or an ambiguous spec to act on — neither exists in a clear
@@ -25,7 +25,7 @@
 #   guarded   vault_present     a mega-sdd vault already exists (delta/revision)
 #   assisted  existing_code     >= CODE_MIN (10) git-tracked source files outside
 #                               config/type stubs — an app, not a scaffold.
-#                               (research/2026-09-27-brownfield-results.md)
+#                               (commit 5d880e8b)
 #             spec_open_items   list items under an "Open questions" /
 #                               "Pertanyaan terbuka" heading that are not
 #                               "none / tidak ada / resolved", or inline TBD,
