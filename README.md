@@ -489,7 +489,6 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 │   ├── scenarios/                          # USER-FACING walkthroughs (scenario-0 … scenario-12, no 9 + sample PRDs)
 │   ├── lanes/  delivery/  v9/              # router, delivery-check, 9.0 exit criteria
 │   ├── skill-triggering/                   # per-skill trigger fixtures
-│   ├── integration/                        # E2E pipeline tests
 │   └── pack-kit/  per-stack-packs/         # framework-pack linter + coverage gates
 ├── CHANGELOG.md                            # version history (pre-v5.2.3: git history)
 ├── CONTRIBUTING.md

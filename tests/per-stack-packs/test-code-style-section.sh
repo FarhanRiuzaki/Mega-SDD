@@ -38,7 +38,7 @@ for f in "$CONV"/*.md; do
   # unfilled template placeholder = `<` at a word start with spaces/pipes inside (`<the CONCRETE …>`, `<tool>`);
   # generics glued to an identifier (`array<int, User>`, `Vec<T>`) and backticked XML tags (`<summary>`) are legitimate
   printf '%s\n' "$body" | grep -qE -- '(^|[ :(])<([A-Za-z][^>]*[ |][^>]*|[a-z]+)>' && fail "$b: unfilled <placeholder> left in the section"
-  # tier-aware like `validate-pack.sh --all` / test-all-full-ready: only a `pack_tier: full` pack must lint clean;
+  # tier-aware like `validate-pack.sh --all`: only a `pack_tier: full` pack must lint clean;
   # an untiered project pack (laravel-base-26, 5 pre-existing missing-section violations) is shape-checked only
   tier=$(awk '/^---/{n++; if(n==1)next; if(n==2)exit} n==1' "$f" | grep -m1 '^pack_tier:' | sed 's/pack_tier:[[:space:]]*//' | tr -d '"'"'"'"' | tr -d '[:space:]')
   if [ "$tier" = "full" ]; then

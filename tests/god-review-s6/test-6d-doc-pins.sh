@@ -32,7 +32,7 @@ BAD=0
 # that the code is uncommitted") and pre-flight timing ("HALT before any code is written",
 # "halt before the panel") untouched.
 # NB: the hyphenated "halts pre-commit" form is the phrasing this defect recurred in
-# most (e2e-iter6, auto.test.md header, both dated specs) — it MUST be in the net, not
+# most (auto.test.md header, both dated specs) — it MUST be in the net, not
 # just the "before commit" wording. Scanned case-insensitively (grep -i).
 # "code in working tree" (not just stays/remains/preserved) is also a detect-after
 # residue — the broadened `code[^.]{0,20}working tree` catches it (a prior narrow
@@ -49,7 +49,6 @@ for f in "$EB/SKILL.md" "$EB/references/hard-rule-scan.md" "$EB/references/hard-
          "$EB/references/halts-and-handoff.md" "${ROOT}/tests/skill-triggering/execute-bolts.test.md" \
          "${ROOT}/tests/skill-triggering/auto.test.md" "${ROOT}/tests/scenarios/scenario-2-prd-driven-feature.md" \
          "${ROOT}/tests/scenarios/scenario-6-recovery-from-halt.md" \
-         "${ROOT}/tests/integration/e2e-iter6.test.md" \
          "${P}/skills/plan/references/scope-flow.md" \
          "${P}/references/vault-core.md" \
          "${P}/references/halt-protocol.md" \

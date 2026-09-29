@@ -10,8 +10,5 @@ grep -qE 'permission_required|PermissionRequiredMixin|Group|django\.contrib\.aut
 grep -qE 'Gate::define|app/Http|@extends' "$p" 2>/dev/null && { echo "django.md leaks Laravel"; err=1; }
 # The lib-patterns/django/{auth,rbac,ui,generic}-libs.md existence checks were retired in
 # 9.0 P1b: the catalogs lost their only consumer (the removed deep-scan extractors) and were deleted.
-fx="tests/fixtures/de-laravelize/django-sample/.mega-sdd/codebase/starterkit-context.yaml"
-[ -f "$fx" ] || { echo "missing django fixture"; err=1; }
-grep -q 'authz:' "$fx" 2>/dev/null || { echo "django fixture not neutral shape"; err=1; }
-grep -qE '^\s*rbac:' "$fx" 2>/dev/null && { echo "django fixture uses old rbac shape"; err=1; }
+# The django-sample fixture checks were retired 2026-09-29: the fixture had no other reader.
 exit $err

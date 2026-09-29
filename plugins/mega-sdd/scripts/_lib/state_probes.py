@@ -137,7 +137,7 @@ def _iso(ts):
 # IDENTICAL semantics to the inline functions validate-preflight.sh carried
 # pre-P1 (Iter-79 O-1 + S4 BC-PREFLIGHT-LEGACY). Vault predicates probe the
 # CANONICAL root only — preflight's historical FATAL contract. Pinned by
-# tests/fixtures/code-delivery/preflight/verify.sh + god-review-s4 4C +
+# the manual preflight fixture (removed 2026-09-29) + god-review-s4 4C +
 # tests/state/test-derive-state.sh parity assertions.
 
 

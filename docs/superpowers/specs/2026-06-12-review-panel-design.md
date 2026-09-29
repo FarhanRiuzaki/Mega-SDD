@@ -67,7 +67,7 @@ Edit: `superpowers-bridge.md` (flow), `execute-bolts/SKILL.md` (flag + routing, 
 - Panel agents exist, read-only, no forbidden frontmatter keys, adversarial + evidence-disciplined (pin tests).
 - superpowers-bridge describes parallel blind dispatch + controller merge; depth-1 rationale intact.
 - Risk tiers + override chain documented in review-panel.md and project-config.md.
-- `claude plugin validate .` passes; `tests/review-panel/run-all.sh` green.
+- `claude plugin validate .` passes; `tests/review-panel/*` green.
 
 ## Phase 2 addendum — L0 deterministic floor (implemented same day)
 

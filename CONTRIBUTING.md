@@ -65,7 +65,7 @@ The complexity budget is a ratchet (`benchmarks/config/complexity-budget.json`, 
 
 None of these may grow past its ceiling without a `raises` entry that carries the evidence. When you shrink something, lower the ceiling in the same change.
 
-The markdown fixtures under `tests/skill-triggering/` and `tests/integration/` are manual walkthroughs: read them and step through each case in a fresh Claude Code session.
+The markdown fixtures under `tests/skill-triggering/` are manual walkthroughs: read them and step through each case in a fresh Claude Code session.
 
 ## Versioning rules
 

@@ -310,7 +310,7 @@ This is forward-compat scaffolding for Iter 2. In Iter 1, `category` is recorded
 
 - `tests/skill-triggering/bind-codebase.test.md` — add cases for IMPLEMENTED/PARTIAL/NEW/UNKNOWN classification
 - `tests/skill-triggering/generate-units.test.md` — add cases for verify/extend unit emission + dedup promotion + split-on-mixed-state
-- `tests/integration/e2e-impl-state.test.md` (new) — full pipeline on a fixture where `User CRUD` already exists; expect `verify` unit for read+list, `extend` for adding pagination, `create` for new audit-log endpoint
+- `tests/integration/e2e-impl-state.test.md` (new; removed 2026-09-29, never in CI) — full pipeline on a fixture where `User CRUD` already exists; expect `verify` unit for read+list, `extend` for adding pagination, `create` for new audit-log endpoint
 
 ---
 
