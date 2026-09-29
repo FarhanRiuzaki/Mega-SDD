@@ -79,5 +79,8 @@ target_files:
 MD
 OUT=$(bash "$G" --cwd="$F6" 2>/dev/null)
 echo "$OUT" | grep -q "verify_unit_writable: U-010" && ok "G1 verify+writable unit flagged in the canonical layout" || bad "G1 canonical unit invisible to Guard 4: $(echo "$OUT" | head -2)"
+# P3b OD-3: not C1 — the notice names the execute-bolts halt, never a dispatch auto-clear.
+VN=$(echo "$OUT" | grep "verify_unit_writable: U-010")
+echo "$VN" | grep -q "^\[advisory\] .*pre-flight 2 halts" && ! echo "$VN" | grep -q "auto-clear\|self-resolved" && ok "G2 notice is advisory and names the pre-flight 2 halt" || bad "G2 notice still claims self-resolve/auto-clear: $VN"
 
 echo; [ $err -eq 0 ] && { echo "test-l0-vacuous-advisory: ALL PASS"; exit 0; } || { echo "test-l0-vacuous-advisory: FAILED"; exit 1; }

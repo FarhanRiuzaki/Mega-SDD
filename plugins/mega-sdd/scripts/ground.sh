@@ -128,8 +128,8 @@ for vj in vault_jsons:
 # Scan units for task_type=verify with non-empty target_files (forbidden per
 # attestation reclassification: verify units MUST be read-only). DETECTION-ONLY:
 # emit a chat notice; DO NOT modify on-disk unit (preserves
-# bad spec for human review). Dispatch-time auto-clear is execute-bolts's job
-# (separate concern).
+# bad spec for human review). NOT C1: execute-bolts pre-flight 2 halts the unit
+# (validate-preflight.sh, fatal, stops the chain first).
 #
 # Every vault layout + both unit shapes (U-*.md and U-*/unit.md) via the shared
 # vault_layouts.unit_files contract (7.13.0 — was the `*-bound/`-only pair).
@@ -185,12 +185,12 @@ for up in unit_paths_vw:
         unit_id = os.path.basename(up).replace(".md", "")
     emit_event(
         "verify_unit_writable",
-        f"detected at GROUND; on-disk unit preserved for review; execute-bolts will auto-clear at dispatch time",
+        "detected at GROUND; on-disk unit preserved for review; execute-bolts pre-flight 2 halts it",
         unit_id=unit_id,
         unit_path=rel_up,
         forbidden_operations=forbidden_ops,
     )
-    notices.append(f"[self-resolved] verify_unit_writable: {unit_id} has task_type=verify + writable target_files (review needed; dispatch will auto-clear)")
+    notices.append(f"[advisory] verify_unit_writable: {unit_id} has task_type=verify + writable target_files (execute-bolts pre-flight 2 halts it; empty its target_files)")
 
 # ─── Guard 5: framework_pack_unparseable (B.7) + framework_pack_cycle (B.8) ─
 # + framework_pack_missing (B.10) — combined pack-integrity scan.

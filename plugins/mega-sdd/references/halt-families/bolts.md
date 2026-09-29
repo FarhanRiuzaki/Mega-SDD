@@ -44,7 +44,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### verify_unit_writable
 
-- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). **C1 SELF-RESOLVE (SCRIPT-LAYER DETECTION via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7 — DISPATCH-LAYER AUTO-CLEAR in execute-bolts):** at GROUND, the script scans every vault layout's `units/U-*.md` / `units/U-*/unit.md` (`_lib/vault_layouts.unit_files`) AND `<cwd>/.mega-sdd/vaults/*-bound/units/U-*/unit.md` (both layouts). For each `task_type: verify` unit with forbidden ops → emit the chat notice in the GROUND output. On-disk unit NOT modified (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path). Detection-only at GROUND means the warning re-fires at every M/L entry until human fixes the unit — intentional visibility. NEVER halts. Source skill: `execute-bolts`.
+- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). ALWAYS STOP: the chain's predictive preflight (`validate-preflight.sh`, fatal) and execute-bolts pre-flight 2 stop the run before the unit is built. Earlier, `scripts/ground.sh` Guard 4 prints an `[advisory]` GROUND notice for each such unit in every vault layout (`_lib/vault_layouts.unit_files`) at every M/L entry until a human fixes it; the on-disk unit is never modified. Resolution: edit the unit so its `target_files` is empty / all `operation: none` (pre-flight 2's rule). Source skill: `execute-bolts`.
 
 ### secret_in_code
 
