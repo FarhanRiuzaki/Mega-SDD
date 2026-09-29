@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Audit Phase 2b (spec 2026-08-11-audit-phase2b-scripts-and-owners.md) —
+# Audit Phase 2b (spec: commit 83e0b624) —
 # S4 sync short-circuit wiring, S5 owner outcomes, S6 hand-synchronized
 # contract parity pins (v1: presence-pair pins — each pair member must keep
 # its half of the contract; a deleted half fails here before it drifts).

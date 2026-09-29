@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S3 (spec 2026-08-11-audit-phase2b-scripts-and-owners.md) — detect-os.sh
+# S3 (audit Phase-2b spec, commit 83e0b624) — detect-os.sh
 # contract: verbatim port of os-detection.md:16-119, three-line
 # OS:/PKG_MGR:/FALLBACKS: output, exit 0 always.
 # Run: bash tests/scripts/test-detect-os.sh </dev/null

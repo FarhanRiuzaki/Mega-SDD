@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-w5-vault-json-derive.sh — batch2 W5 end-to-end (spec
-# 2026-07-19-batch2-derive-and-diet.md): vault.json exits the model write-lane.
+# commit a950422c): vault.json exits the model write-lane.
 # On a COPY of tests/fixtures/sample-project (the checked-in fixture is never
 # touched), upgrade the sample-vault markdown to the canonical grammar and:
 #

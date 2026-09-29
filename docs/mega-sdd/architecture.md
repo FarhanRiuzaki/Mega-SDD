@@ -1,6 +1,6 @@
 # Mega-SDD Architecture Overview
 
-This document is the durable architecture record. For implementation details, see `plugins/mega-sdd/` directly. For design rationale, see `docs/superpowers/specs/2026-05-13-mega-sdd-revamp-design.md`; for the current (9.0) shape and why it is this small, see `docs/superpowers/specs/2026-09-27-v9-simplification-design.md`.
+This document is the durable architecture record. For implementation details, see `plugins/mega-sdd/` directly. For the original (1.0) design rationale, see commit b882ff85; for the current (9.0) shape and why it is this small, see `docs/superpowers/specs/2026-09-27-v9-simplification-design.md`.
 
 ## The router in front
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # sync-intersect.sh — the sync-lane claim-intersection short-circuit gate
-# (spec 2026-08-11-audit-phase2b-scripts-and-owners.md §S4).
+# (audit Phase-2b spec §S4, commit 83e0b624).
 #
 #   sync-intersect.sh --cwd=<root> --vault=<vault-dir> [--paths=@<file>|<csv>]
 #

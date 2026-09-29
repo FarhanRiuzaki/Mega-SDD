@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-a1-a4.sh — pins spec 2026-08-17-delta-hygiene-a1-a4.md (v6.16.0).
+# test-a1-a4.sh — pins the delta-hygiene A1-A4 spec (v6.16.0, commit 34931ccb).
 # Run </dev/null.
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

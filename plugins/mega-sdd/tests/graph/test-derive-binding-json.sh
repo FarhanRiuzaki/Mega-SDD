@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-derive-binding-json.sh — W-batch W2 (spec 2026-07-19-w-batch-script-derive.md):
+# test-derive-binding-json.sh — W-batch W2 (W-batch spec, commit dc2f9486):
 # binding.json is DERIVED from binding.md by scripts/derive-binding-json.sh —
 # never re-typed by the model. 10 cases:
 #

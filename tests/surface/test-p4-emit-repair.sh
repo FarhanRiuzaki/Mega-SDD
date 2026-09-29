@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-p4-emit-repair.sh — v6 P4.2: the on-demand doc pack derives from the
-# MODERN vault generation (spec 2026-08-03-v6-express-spine-design.md §P4.2).
+# MODERN vault generation (v6 express-spine spec §P4.2, commit 1be513ef).
 #
 # Pins:
 #   1  FSD §5 falls back to 04-flows.md `### F-*` when 02-functional.md is

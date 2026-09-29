@@ -25,7 +25,7 @@ intent only partially, and pays for the wrong things:
   real operator environments (macOS: grammar compile OOM, live incident 2026-08-02;
   Windows/EDR: one-spawn-per-file ≈ 37 min at 10k files). ~280 doc lines + a spawn-cost
   gate exist solely to stop this advisory feature from hanging machines.
-- Post-T1 (`2026-08-02-oom-safe-ast-engine-ladder.md`), a FULL-repo symbol extraction is
+- Post-T1 (the OOM-safe engine ladder, commit 20965b7f), a FULL-repo symbol extraction is
   **one ast-grep spawn and zero model tokens** — the "full scan is expensive" premise is
   dead at the extraction layer. What remains expensive is model-mediated copying and
   whole-map loading; neither is needed for reuse.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# S2 (spec 2026-08-11-audit-phase2b-scripts-and-owners.md) — probe-tool.sh
+# S2 (audit Phase-2b spec, commit 83e0b624) — probe-tool.sh
 # contract: one-line `<verdict> bound=<N>s rc=<rc>` output, exit 0 always,
 # verdict map per install-deps SKILL Steps 2/6 + rails 12-13.
 # Run: bash tests/scripts/test-probe-tool.sh </dev/null

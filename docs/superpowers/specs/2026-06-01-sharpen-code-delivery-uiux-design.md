@@ -11,7 +11,7 @@
 
 **Date:** 2026-06-01
 **Status:** Approved (design); implementation in progress on `feat/sharpen-code-delivery-uiux`
-**Traces to:** `docs/superpowers/audits/2026-06-01-code-delivery-uiux-deep-audit.md` (structural audit) + the `new-tradefinance-import` Phase-2 real-run evidence (fixture).
+**Traces to:** the code-delivery UI/UX deep audit (structural audit, commit dd416ce2) + the `new-tradefinance-import` Phase-2 real-run evidence (fixture).
 **Author partner:** Farhan Riuzaki
 
 ---

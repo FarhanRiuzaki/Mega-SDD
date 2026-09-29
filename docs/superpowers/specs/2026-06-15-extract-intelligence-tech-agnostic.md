@@ -2,7 +2,7 @@
 
 - **Date:** 2026-06-15
 - **Status:** ACTIVE
-- **Supersedes/extends:** `2026-06-02-extract-intelligence-deepening-design.md` (the deepening spec that introduced P1–P5)
+- **Supersedes/extends:** the deepening spec that introduced P1–P5 (commit e4b4b941)
 - **Plugin version target:** 4.29.0 (MINOR — new reasoning discipline + new advisory script + scorecard field, all back-compat; no breaking renames, no halt-enum removal, no new skill dir)
 - **Skill version target:** `extract-intelligence` 1.10.0 → 1.11.0
 

@@ -7,7 +7,7 @@
 # presence). THIS script is the Hard-rule pre-flight SNAPSHOT writer — the
 # pre-bolt twin of run-postflight-scan.sh (the writer pair).
 #
-# W4 (spec 2026-07-19-w-batch-script-derive.md): the pre-flight snapshot used to
+# W4 (W-batch spec, commit dc2f9486): the pre-flight snapshot used to
 # be model-written on trust — and scan_unit gave a PRESENT sha/signature snapshot
 # PRECEDENCE over git commit evidence, so a wrong sha256 at pre-flight made a
 # DO_NOT_MODIFY violation undetectable even at the recompute gate. Since 7.9.0

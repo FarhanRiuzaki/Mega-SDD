@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-oom-safe-engine-ladder.sh — T1 + D2 (specs 2026-08-02-oom-safe-ast-engine-ladder.md
+# test-oom-safe-engine-ladder.sh — T1 + D2 (OOM-safe ladder spec, commit 20965b7f,
 # + 2026-08-02-reuse-first-grounding-index.md §D2; v7.4.0 Fase 5 №4 removed the
 # --engine=tree-sitter opt-in lane entirely).
 # 9.0 P1b deleted the ladder's resolver (scripts/probe-scan-engine.sh, whose only

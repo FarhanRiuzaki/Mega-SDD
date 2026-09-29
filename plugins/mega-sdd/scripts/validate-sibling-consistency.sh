@@ -2,7 +2,7 @@
 # validate-sibling-consistency.sh — code-delivery sharpening, Task B (decomposition).
 #
 # Per docs/superpowers/specs/2026-06-01-sharpen-code-delivery-uiux-design.md §3 Slice B
-# and plan docs/superpowers/plans/2026-06-01-sharpen-code-delivery-uiux.md §Task B.
+# and its implementation plan §Task B (commit 6ce2ec74).
 #
 # Cross-unit sibling-consistency gate: when a cross-cutting concern applies to a set of
 # structurally-analogous sibling units, every sibling must implement it the SAME way

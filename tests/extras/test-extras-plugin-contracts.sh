@@ -83,7 +83,7 @@ CORE=$(awk 'BEGIN{dash=0;body=0}
   /ANCHOR-CORE ends/{exit}
   {print}' "$P/skills/using-mega-sdd/SKILL.md")
 n=$(printf '%s' "$CORE" | wc -c | tr -d ' ')
-# 8.4.0 re-baseline (spec 2026-09-16-doc-audit-debt-gate-design.md §3): the Hard-gate line now carries the lite-lane
+# 8.4.0 re-baseline (debt-gate spec §3, commit 840488d5): the Hard-gate line now carries the lite-lane
 # qualifier (binding_conflict at execute-bolts dispatch) — +125 B, still under the 4030 cap.
 # 2026-09-27 re-baseline (commit d447a6d2): the tier-L row names the lane router
 # (route-lane.sh → direct / assisted / guarded) — +13 B, still under the 4030 cap.

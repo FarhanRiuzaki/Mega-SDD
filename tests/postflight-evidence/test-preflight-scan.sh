@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# W4 (spec 2026-07-19-w-batch-script-derive.md): preflight.json is SCRIPT-written.
+# W4 (W-batch spec, commit dc2f9486): preflight.json is SCRIPT-written.
 # run-preflight-scan.sh is the deterministic pre-flight Hard-rule BASELINE writer —
 # it imports the SAME _lib/postflight_rules.py primitives the post-flight engine
 # evaluates with, so the snapshot is byte-compatible with both consumers

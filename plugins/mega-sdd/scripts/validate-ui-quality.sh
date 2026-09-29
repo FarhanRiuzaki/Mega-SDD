@@ -2,7 +2,7 @@
 # validate-ui-quality.sh — code-delivery sharpening, Task E (gate / UI quality).
 #
 # Per docs/superpowers/specs/2026-06-01-sharpen-code-delivery-uiux-design.md §3 Slice E
-# and plan docs/superpowers/plans/2026-06-01-sharpen-code-delivery-uiux.md §Task E.
+# and its implementation plan §Task E (commit 6ce2ec74).
 #
 # UI scaffold-tells quality gate. Scans GENERATED VIEW FILES (not unit specs — this is
 # the gate-stage / post-write check, slice E) for raw-scaffold "tells" that must NOT

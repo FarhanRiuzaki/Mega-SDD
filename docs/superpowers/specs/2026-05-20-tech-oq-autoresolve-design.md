@@ -3,7 +3,7 @@
 **Status**: Approved 2026-05-20 (Iter 1 in execution; Iter 2/3 designed, awaiting separate kick-off)
 **Date**: 2026-05-20
 **Author**: Farhan Riuzaki (via Claude collaboration)
-**Builds on**: `2026-05-20-extract-intelligence-skill-design.md` (KB-as-context)
+**Builds on**: the extract-intelligence skill design, commit 396b3474 (KB-as-context)
 **Targets**: bind-codebase, generate-units, generate-intent, execute-bolts
 **Plugin versions affected**: 1.4.0 → 1.5.0 (iter 1) → 1.6.0 (iter 2) → 1.7.0 (iter 3)
 
@@ -603,7 +603,7 @@ After all three: mega-sdd's behavior matches the superpowers mental model the us
 | v1.4 unit without Hard rules | execute-bolts skips pre-flight | Same | execute-bolts skips pre-flight |
 | Existing pipelines invoking `/mega-sdd:*` | Identical output if no opt-in flags | Same | Same |
 
-The KB integration (from `2026-05-20-extract-intelligence-skill-design.md`) layers cleanly on top of this design — KB markers `[VERIFIED]/[INFERRED]/[OPEN]` map onto IMPLEMENTED/PARTIAL/NEW respectively when consulted by bind-codebase.
+The KB integration (from the extract-intelligence skill design, commit 396b3474) layers cleanly on top of this design — KB markers `[VERIFIED]/[INFERRED]/[OPEN]` map onto IMPLEMENTED/PARTIAL/NEW respectively when consulted by bind-codebase.
 
 ---
 
@@ -668,9 +668,9 @@ That gap was later mis-wired: `bind-codebase/references/auto-memory-handoff.md` 
 
 ## 12. References
 
-- `2026-05-20-extract-intelligence-skill-design.md` — KB integration prior spec
-- `2026-05-13-mega-sdd-revamp-design.md` — pipeline shape
-- `2026-05-13-mega-sdd-v1.1-alignment-oq-deferral-design.md` — OQ status/deferral lineage
+- extract-intelligence skill design (commit 396b3474) — KB integration prior spec
+- mega-sdd revamp design (commit b882ff85) — pipeline shape
+- v1.1 alignment + OQ deferral design (commit c70923da) — OQ status/deferral lineage
 - `plugins/mega-sdd/skills/bind-codebase/references/binding-contract.md` — current binding contract
 - `plugins/mega-sdd/skills/generate-units/references/unit-schema.md` — current unit schema
 - `plugins/mega-sdd/skills/generate-intent/references/vault-contract.md` — current OQ-conventions

@@ -9,7 +9,7 @@
 
 ## §halt-escalation-discipline (anti-erosion gate)
 
-Halts are classified into THREE operational categories. Categorization is per-halt and authoritative (lives in this doc + per-halt description below). See `docs/superpowers/audits/2026-05-27-halt-escalation-classification.md` and `docs/superpowers/audits/2026-05-27-c1-collapse-attestation.md` for full classification + per-halt reasoning + reviewer attestation.
+Halts are classified into THREE operational categories. Categorization is per-halt and authoritative (lives in this doc + per-halt description below). The original classification audit, per-halt reasoning and reviewer attestation landed in commit 417ffe91 (git history keeps them).
 
 ### Three categories
 

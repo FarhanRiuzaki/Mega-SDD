@@ -2,7 +2,7 @@
 # test-p3-unit-diet.sh — Batch 2 P3: the unit-spec diet (units are re-sent per-bolt
 # AND per-review-lens; every frontmatter byte multiplies ~5-6x per full-tier attempt).
 #
-# Pins the diet contract (spec 2026-07-19-batch2-derive-and-diet.md, item P3):
+# Pins the diet contract (batch2 spec, commit a950422c, item P3):
 #   (a) the unit writer (`plan` since 9.0; generate-units before) stops WRITING the gate-inert frontmatter surfaces —
 #       grounding_evidence block, superpowers_skills, estimated_complexity, the
 #       nested mutability map (source + rebuild_freedom) — mutability collapses to

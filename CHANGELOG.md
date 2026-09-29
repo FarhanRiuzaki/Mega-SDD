@@ -2259,7 +2259,7 @@ First tranche of [`docs/superpowers/specs/2026-08-02-reuse-first-grounding-index
 
 ## [5.27.0] - 2026-08-02 — T1: the OOM-safe AST engine ladder (tree-sitter → ast-grep → regex)
 
-New spec [`docs/superpowers/specs/2026-08-02-oom-safe-ast-engine-ladder.md`](docs/superpowers/specs/2026-08-02-oom-safe-ast-engine-ladder.md). Motivation is a REAL incident, live-reproduced during implementation: `tree-sitter query` compiles grammars locally with clang on first use, and on a memory-tight Mac the compile is OOM-killed — surfacing as `rc=1` + `clang: … Killed: 9` on stderr, so classification must read stderr, not just the return code. On that machine class tier 2 is not a fallback; it is the only working AST path.
+New spec `2026-08-02-oom-safe-ast-engine-ladder.md` (commit 20965b7f). Motivation is a REAL incident, live-reproduced during implementation: `tree-sitter query` compiles grammars locally with clang on first use, and on a memory-tight Mac the compile is OOM-killed — surfacing as `rc=1` + `clang: … Killed: 9` on stderr, so classification must read stderr, not just the return code. On that machine class tier 2 is not a fallback; it is the only working AST path.
 
 - **`scripts/probe-scan-engine.sh` (NEW):** Step-0 engine detection is now ONE deterministic spawn — probes both tree-sitter binary names, runs the per-language grammar smoke tests **serially with a hard per-probe timeout** (the parallel-compile OOM is prevented by construction, not by prose), probes ast-grep, and emits one JSON digest. The OOM class is first-class: `grammar_compile_killed` (both spellings — SIGKILLed probe AND `Killed: 9` on stderr), distinct from `grammar_missing`/`grammar_compile_failed`/`probe_timeout`/`binary_unrunnable`. A forced `--engine=` whose binary is absent halts `dep_missing` — never a silent fall-through.
 - **Tier 2 — `queries/astgrep/<lang>.yml` (NEW, 9 packs):** kind-based ast-grep definition rules mirroring the `.scm` coverage, every kind verified against ast-grep 0.42.3 (never assumed). Grammars are EMBEDDED in the static binary — zero compilation ever — and the whole non-REUSE set across ALL tier-2 languages extracts in **ONE process** (rules are language-tagged), vs one-per-FILE under tree-sitter: on `OS=windows-bash` (~220 ms/spawn) that turns a 2,000-file ~7.3-minute extraction into one spawn, and ast-grep installs via scoop/winget on the locked-down office laptops. `precision_tier` stays `ast` at tier 2, so bind-codebase field-level diff is untouched; PageRank self-skips with its loud record (no reference captures) — re-keyed on `engine: tree-sitter` so an ast-grep map can never re-open the per-file clang path.
@@ -2490,7 +2490,7 @@ The planned fix was a per-lane constant. Measurement made that unnecessary: **th
 
 fix(windows): five findings from a full-plugin Windows portability audit — including a missing `.gitattributes` that makes a default Git-for-Windows clone unable to execute a single script.
 
-A six-finder sweep over the whole transitive closure (`SKILL.md` → `references/` → `scripts/` → `_lib/` → `hooks/`, ~300 files) produced **27 findings that survived adversarial refutation** — 4 `hang`, 7 `silent-wrong`, 13 `degraded`, 3 `cosmetic`. Full report and the per-skill verdict table: [`research/2026-07-29-windows-portability-audit.md`](research/2026-07-29-windows-portability-audit.md). Spec: [`docs/superpowers/specs/2026-07-30-windows-portability-audit-fixes.md`](docs/superpowers/specs/2026-07-30-windows-portability-audit-fixes.md). This release ships the five that were safely verifiable without a Windows machine.
+A six-finder sweep over the whole transitive closure (`SKILL.md` → `references/` → `scripts/` → `_lib/` → `hooks/`, ~300 files) produced **27 findings that survived adversarial refutation** — 4 `hang`, 7 `silent-wrong`, 13 `degraded`, 3 `cosmetic`. Full report and the per-skill verdict table: [`research/2026-07-29-windows-portability-audit.md`](research/2026-07-29-windows-portability-audit.md). Spec: `2026-07-30-windows-portability-audit-fixes.md` (commit 2bcec39d). This release ships the five that were safely verifiable without a Windows machine.
 
 **1. `.gitattributes` — the whole plugin, not one skill.** The install path is a `git clone` (`~/.claude/plugins/marketplaces/mega-sdd/.git`), `core.autocrlf` is unset there so it inherits the machine's global config, and no `.gitattributes` existed anywhere. Git for Windows' *default* installer option is `core.autocrlf=true`. Measured effect: `set -u\r` → `set: -: invalid option`, `case "$1" in\r` → syntax error, and a heredoc terminator `PYEOF\r` never matching `<<'PYEOF'` — the plugin has **124 heredocs across 87 files**. Under real bash 5.3, `hooks/run-hook.sh` exits RC=2 dispatching nothing. The rule is `* text=auto eol=lf`, **not** `*.sh`: the eight hook entry points are extensionless. Two office laptops work today only because their global git happens to be `false`/`input` — luck, not design. **Note: this does not renormalize an existing clone; an affected machine must re-clone the plugin cache.**
 
@@ -2607,7 +2607,7 @@ Also recorded, and explicitly **not** a plugin defect: `EUNKNOWN: uv_spawn` on `
 
 **Not verified here:** no Windows machine was available. The `winreg` write path, `py -3`, the scoop `python3` shim and `tree-sitter-cli --version` are exercised against fakes, upstream docs and source — not the real platform. The nine `--version` exit codes were measured locally.
 
-Design: [`docs/superpowers/specs/2026-07-30-install-deps-windows-path-and-verify.md`](docs/superpowers/specs/2026-07-30-install-deps-windows-path-and-verify.md).
+Design: `2026-07-30-install-deps-windows-path-and-verify.md` (commit b5dd1e8e).
 
 ## [5.7.1] - 2026-07-29
 
@@ -2646,7 +2646,7 @@ Fixed with one normalization immediately after the `eval`, before any consumer �
 
 This un-parks `write-fanout-no-megasdd-precondition` (~120 spawns), whose premise was that these globs work.
 
-Design + measurements: [`docs/superpowers/specs/2026-07-29-post-tool-use-native-path-dispatch.md`](docs/superpowers/specs/2026-07-29-post-tool-use-native-path-dispatch.md).
+Design + measurements: `2026-07-29-post-tool-use-native-path-dispatch.md` (commit 12917d82).
 
 ## [5.6.0] - 2026-07-29
 
@@ -2673,7 +2673,7 @@ Fixed by normalizing to `/` at all three sites (both guards plus `build-locked-i
 
 Tests pin the class with `ntpath`, Python's Windows path module, which imports on any platform and reproduces exact Windows semantics from macOS — no Windows machine required. Includes an anti-drift check, since the test transcribes the guard logic and a transcription that drifts from its source stops testing anything silently.
 
-Design: [`docs/superpowers/specs/2026-07-29-windows-path-separator-guards.md`](docs/superpowers/specs/2026-07-29-windows-path-separator-guards.md). **D2 remains open** — `post-tool-use`'s 12 `case "$FILE_PATH"` globs still match no native Windows path.
+Design: `2026-07-29-windows-path-separator-guards.md` (commit 58db5758). **D2 remains open** — `post-tool-use`'s 12 `case "$FILE_PATH"` globs still match no native Windows path.
 
 ## [5.5.0] - 2026-07-29
 
@@ -2697,7 +2697,7 @@ Fixed at the producer with `shlex.quote()`, routed through a single `emit()` hel
 
 Also hardens v5.4.1's own short-circuit against the same class: it read the first `"cwd"` in the raw JSON and would have silently `exit 0`'d on a real mega-sdd project if that scan ever picked up the wrong value. It now short-circuits only when the extracted cwd is a real directory — fail-safe instead of fail-open, still zero forks.
 
-Design, measurements, and the two Windows separator defects deliberately left for a follow-up (D2: 12 `case "$FILE_PATH"` globs that match no native Windows path; D3: the anti-self-bypass guard proven inert under Windows path semantics via `ntpath`): [`docs/superpowers/specs/2026-07-29-hook-stdin-eval-quoting.md`](docs/superpowers/specs/2026-07-29-hook-stdin-eval-quoting.md).
+Design, measurements, and the two Windows separator defects deliberately left for a follow-up (D2: 12 `case "$FILE_PATH"` globs that match no native Windows path; D3: the anti-self-bypass guard proven inert under Windows path semantics via `ntpath`): `2026-07-29-hook-stdin-eval-quoting.md` (commit d15d0947).
 
 ## [5.4.1] - 2026-07-29
 
@@ -2709,13 +2709,13 @@ It now resolves the project root in pure shell first and exits immediately when 
 
 Moat-neutral by construction: the short-circuit fires only when no `.mega-sdd` exists anywhere up the chain, which is mutually exclusive with every branch below it — all of them already gated on `.mega-sdd`. It costs zero forks itself (cwd extraction is parameter expansion, not `sed`), and falls through to the authoritative path whenever the cwd cannot be extracted or the resolver helper is absent.
 
-Second item struck from the spawn-reduction backlog in [`docs/superpowers/specs/2026-07-29-windows-hook-hang-and-python-guard.md`](docs/superpowers/specs/2026-07-29-windows-hook-hang-and-python-guard.md) §8.
+Second item struck from the spawn-reduction backlog in `2026-07-29-windows-hook-hang-and-python-guard.md` (commit 1ac07805) §8.
 
 ## [5.4.0] - 2026-07-29
 
 fix(windows): two independent P0 defects found by field-diagnosing a Windows 11 + CrowdStrike laptop where Claude Code sat "red" for tens of minutes at 100% CPU — an unbounded process-spawning loop in the shared project-root resolver, and a `command -v python3` guard that is a false positive against the Windows App Execution Alias stub, which had been letting every enforcement gate pass unevaluated and silently.
 
-Design + measurements: [`docs/superpowers/specs/2026-07-29-windows-hook-hang-and-python-guard.md`](docs/superpowers/specs/2026-07-29-windows-hook-hang-and-python-guard.md).
+Design + measurements: `2026-07-29-windows-hook-hang-and-python-guard.md` (commit 1ac07805).
 
 ### Fixed
 - **`scripts/_lib/resolve-project-root.sh` no longer spins forever on a Windows path.** The walk-up loop used `d=$(dirname "$d")` and terminated only on `[ "$d" != "/" ]`; on Git Bash `dirname C:` returns `C:`, a fixed point the condition can never satisfy. Reached from the `pre-tool-use` fast short-circuit — which runs *before* the python parse — on every `Bash`/`Edit`/`Write`/`Skill` call, inside an `async: false` hook Claude Code blocks on. Measured 220 ms/iteration on the reporting machine (`sys` 4.637s vs `user` 2.083s — 69% kernel time, the EDR scanning each spawn), so a single stuck hook spawned ~5,400 processes against the 600 s default timeout. This helper is sourced by **9 hooks and 43 scripts**. The same defect was reproducible on macOS for relative inputs (`dirname a` → `.` → `.`), just never reached there.

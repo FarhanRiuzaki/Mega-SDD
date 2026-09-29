@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # FMEA rail pins — from the 2026-06-10/11 per-phase edge-case audit
-# (spec: 2026-06-10-fmea-and-future-roadmap.md).
+# (FMEA + roadmap spec: commit 361657ec).
 set -u
 here="$(cd "$(dirname "$0")" && pwd)"
 cd "$here/../.." || exit 2

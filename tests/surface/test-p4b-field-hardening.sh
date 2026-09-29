@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-p4b-field-hardening.sh — 6.0.1 field-test hardening
-# (spec 2026-08-04-v6-field-test-hardening.md; source: the simkredit run).
+# (spec: commit e5e39b80; source: the simkredit run).
 #
 # Pins:
 #   F1  the dirty journal records ONLY in-repo writes (writer), and the probe

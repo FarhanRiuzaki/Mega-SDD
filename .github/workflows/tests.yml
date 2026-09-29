@@ -97,7 +97,7 @@ jobs:
           fi
 
       - name: Validate plugin manifests (claude plugin validate)
-        # A1 (spec 2026-08-17-delta-hygiene-a1-a4): blocks on manifest field/schema
+        # A1 (delta-hygiene spec, commit 34931ccb): blocks on manifest field/schema
         # ERRORS (the misspelled-plugin.json class). Plain mode, NOT --strict: the
         # root-CLAUDE.md warning flags our DELIBERATE contributor contract. CLI pin
         # 2.1.233 joins the registry-rot review checklist (CLAUDE.md §Versioning).

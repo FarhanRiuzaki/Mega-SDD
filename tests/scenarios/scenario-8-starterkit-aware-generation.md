@@ -123,4 +123,4 @@ A starterkit without a plugin pack gets one by authoring a project pack at `<roo
 
 - `docs/superpowers/specs/2026-09-27-v9-simplification-design.md` §7 decisions #1–#2 (why the deep-scan derivation was dropped) and §8.6 (P3 removed the pack slices with the dispatch builder)
 - `plugins/mega-sdd/references/framework-conventions/laravel-base-26.md` + `laravel.md` (the packs this scenario exercises)
-- `docs/superpowers/specs/2026-05-24-iter-32-starterkit-aware-deep-scan-design.md` + `docs/superpowers/plans/2026-05-24-iter-32-starterkit-aware-deep-scan.md` (the original, pre-9.0 deep-scan design and plan — historical)
+- The original, pre-9.0 deep-scan design and plan (historical): commit d367a1a3 (spec) and commit 43861360 (plan)

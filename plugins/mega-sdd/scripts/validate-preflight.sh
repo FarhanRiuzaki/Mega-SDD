@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # validate-preflight.sh — pipeline-intelligence, Iter-79 O-1 (orchestrator, F2 closure).
 #
-# Per docs/superpowers/audits/2026-06-02-intelligence-e2e/01-orchestrator-baseline.md §O-1
+# Per the intelligence-e2e orchestrator-baseline audit §O-1 (commit bab2da2b)
 # and the predictive-checks.md catalog (which was prose-only — the model could skip it).
 #
 # Predictive PRE-flight: detect a KNOWN, knowable-in-advance input precondition for the

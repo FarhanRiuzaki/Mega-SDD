@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # derive-vault-json.sh — deterministic generator (W5): <vault>/vault.json is
 # DERIVED from the 7 vault markdown files, never hand-written or model-emitted.
-# HYBRID three-lane contract (spec 2026-07-19-batch2-derive-and-diet.md, W5):
+# HYBRID three-lane contract (batch2 spec, commit a950422c, W5):
 #   DERIVE lane        — structural mirrors from md (entities / flows / adrs /
 #                        open_questions skeletons / summary / Vault Lock enums).
 #                        md is authoritative for existence — EXCEPT entries

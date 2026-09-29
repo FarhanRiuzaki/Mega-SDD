@@ -3,7 +3,7 @@
 **Status**: Proposed (design only; execution sequenced AFTER Iter 1 validation + Iter 2/3 ship)
 **Date**: 2026-05-20
 **Author**: Farhan Riuzaki (via Claude collaboration)
-**Builds on**: `2026-05-20-extract-intelligence-skill-design.md`, `2026-05-20-tech-oq-autoresolve-design.md`
+**Builds on**: the extract-intelligence skill design (commit 396b3474), `2026-05-20-tech-oq-autoresolve-design.md`
 **Targets**: `orchestrate-flow`, `using-mega-sdd`, every skill's handoff message format; new command `/mega-sdd:auto`
 **Plugin versions affected**: 1.7.0 → 2.0.0 (major bump — new top-level entrypoint + cap-lift considered breaking-ish for users relying on 3-skill cap behavior)
 
@@ -371,9 +371,9 @@ Fixtures: `resolve-oq.test.md` BM4-BM6, `orchestrate-flow.test.md` R-FACTORY-4 +
 
 ## 12. References
 
-- `2026-05-13-mega-sdd-revamp-design.md` — pipeline shape this layer wraps
-- `2026-05-13-flow-orchestrator-design.md` — original orchestrate-flow design (Iter 4 extends this)
-- `2026-05-20-extract-intelligence-skill-design.md` — KB integration this layer auto-chains
+- mega-sdd revamp design (commit b882ff85) — pipeline shape this layer wraps
+- flow orchestrator design (commit 315d229a) — original orchestrate-flow design (Iter 4 extends this)
+- extract-intelligence skill design (commit 396b3474) — KB integration this layer auto-chains
 - `2026-05-20-tech-oq-autoresolve-design.md` — Iters 1-3 this layer sits atop
 - `plugins/mega-sdd/skills/orchestrate-flow/SKILL.md` — current orchestrator (becomes the deep-mode engine)
 - `plugins/mega-sdd/skills/using-mega-sdd/SKILL.md` — current anchor (gets sharper auto-route rules)

@@ -484,7 +484,7 @@ ONE upfront confirmation. Halts may re-engage user mid-chain (test failures, con
 ├── plugins/mega-sdd-extras/                # optional companion plugin (/mega-sdd-extras:slice)
 ├── benchmarks/                             # vanilla-vs-mega-sdd harness, runbooks, results, complexity budget
 ├── research/                               # measured reports + decision records
-├── docs/superpowers/{specs,audits}/        # design specs + honest audits
+├── docs/superpowers/specs/                 # design specs of live mechanisms
 ├── tests/
 │   ├── scenarios/                          # USER-FACING walkthroughs (scenario-0 … scenario-12, no 9 + sample PRDs)
 │   ├── lanes/  delivery/  v9/              # router, delivery-check, 9.0 exit criteria

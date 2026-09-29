@@ -1,5 +1,5 @@
-"""vault_md.py — the ONE vault-markdown parsing grammar (W5, spec
-2026-07-19-batch2-derive-and-diet.md).
+"""vault_md.py — the ONE vault-markdown parsing grammar (W5, batch2 spec,
+commit a950422c).
 
 Shared by BOTH `validate-vault-oqs.sh` (analyze rail) and
 `derive-vault-json.sh` (deterministic generator) via the MEGA_SDD_LIB_DIR

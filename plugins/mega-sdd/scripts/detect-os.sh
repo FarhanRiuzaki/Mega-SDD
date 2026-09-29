@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # detect-os.sh — canonical OS + package-manager detection (audit Phase-2b spec
-# 2026-08-11-audit-phase2b-scripts-and-owners.md §S3).
+# §S3, commit 83e0b624).
 #
 # VERBATIM port of skills/install-deps/references/os-detection.md §Detection
 # algorithm (canonical), lines 16-119 — keep in sync with that ref (the ref
