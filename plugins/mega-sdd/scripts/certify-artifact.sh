@@ -11,7 +11,7 @@
 #   DEMOTE               — offered a LOWER rung (e.g. foreign vault grammar →
 #                          PRD-rung re-ingest). Under --auto a DEMOTE is ALWAYS
 #                          a confirmed C2 halt (adoption_demote_confirm,
-#                          decision 7) — it burns generate-intent tokens and
+#                          decision 7) — it burns plan tokens and
 #                          produces a DIFFERENT vault than the user placed.
 #   REJECTED             — cannot enter (binary PRD, degenerate map, not-a-vault)
 # every verdict with keterangan (Indonesian: why + what to do next).
@@ -33,7 +33,7 @@
 #   kb    → validate-kb.sh --surface=output + --surface=markers over the SAME file
 #           selection run-analyze.sh uses (10-domains/20-workflows/40-business-rules;
 #           markers over 10-domains) — the citations surface needs
-#           --legacy-root and stays in the extract/bind lane
+#           --legacy-root and stays in the extract lane
 #   units → validate-unit-spec.sh (file staged into a scratch vault layout so
 #           the validator's path filter accepts it)
 # Validator state files land in a SCRATCH cwd — certify writes NOTHING into the
@@ -126,7 +126,7 @@ else:
         verdict = "CERTIFIED"
         lines = [
             "Dokumen terdeteksi berbentuk PRD %s." % stats,
-            "Siap masuk `generate-intent <path>` (Mode A).",
+            "Siap masuk `plan <path>` (lane guarded: vault layout-3 + units).",
             "Catatan: sniffer ini hanya MENGKLASIFIKASI — tidak ada gate downstream;",
             "grounding tetap ditegakkan oleh pipeline (OQ, binding, citation).",
         ]
@@ -135,16 +135,20 @@ else:
         lines = [
             "Dokumen teks tapi TIDAK berbentuk PRD %s —" % stats,
             "struktur heading/pola requirement/panjang di bawah ambang sniffer.",
-            "Tetap bisa masuk `generate-intent`, tapi vault-nya bakal berat di Open",
-            "Question. Selanjutnya: lengkapi dokumen jadi PRD, ATAU pakai Mode B",
-            "(`generate-intent --from-prompt`) untuk brief bebas.",
+            "Tetap bisa masuk `plan <path>`, tapi vault-nya bakal berat di Open",
+            "Question. Selanjutnya: lengkapi dokumen jadi PRD, ATAU jalankan",
+            "`/mega-sdd <brief>` untuk brief bebas (lane direct/assisted, tanpa vault;",
+            "dengan --guarded front door menulis brief ke file lalu `plan`).",
         ]
         if looks_like_code:
             lines.append(
                 "File ini kelihatan seperti SOURCE CODE — kalau ini codebase, lane yang"
             )
             lines.append(
-                "benar adalah `scan-codebase` / `extract-intelligence`, bukan rung PRD."
+                "benar adalah `extract-intelligence <dir>` (legacy → KB → `plan --kb`),"
+            )
+            lines.append(
+                "atau `/mega-sdd` di root repo itu (ground.sh), bukan rung PRD."
             )
 
 print("VERDICT: %s prd %s" % (verdict, path))
@@ -200,22 +204,24 @@ warn_notes = [
 if status in ("PASS", "WARN"):
     verdict, rc = "CERTIFIED", 0
     lines = ["Peta codebase lolos validate-codebase-map.sh (frontmatter + 7 section lengkap).",
-             "Siap dipakai `bind-codebase` sebagai ground truth."]
+             "Peta sah dibaca read-only (emit-*, detect-drift, enrichment). Pipeline tidak",
+             "bind ke peta: bind JIT per unit (the up-front bind) memakai symbol index",
+             "dari `scripts/ground.sh`."]
     if warn_notes:
         lines.append("Catatan (advisory, tidak menahan):")
         lines.extend(warn_notes)
 elif unreadable or (sections_fail and not megasdd_authored):
     verdict, rc = "REJECTED", 4
     missing = next((i.get("missing") for i in issues if i.get("halt_type") == "codebase_map_sections_incomplete"), None)
-    lines = ["Peta ini DEGENERATE — bukan codebase-map yang bisa dipakai binding."]
+    lines = ["Peta ini DEGENERATE — bukan codebase-map yang bisa dibaca."]
     if unreadable:
         lines.append("File tidak terbaca sebagai teks.")
     if missing:
         lines.append("Section wajib yang hilang: %s." % ", ".join(missing))
     lines += [
-        "Tawaran DEMOTE ke rung scan: buang peta ini dan jalankan",
-        "`scan-codebase` — men-generate ulang codebase-map ber-provenance",
-        "langsung dari repo (deterministik, bukan menebak isi peta lama).",
+        "Tawaran DEMOTE: buang peta ini — pipeline tidak membangun codebase-map;",
+        "grounding lewat `scripts/ground.sh` (symbol index, deterministik",
+        "langsung dari repo, bukan menebak isi peta lama).",
     ]
 elif sections_fail and megasdd_authored:
     verdict, rc = "CERTIFIED_DEGRADED", 0
@@ -223,20 +229,18 @@ elif sections_fail and megasdd_authored:
         "Peta ber-provenance mega-sdd tapi section wajibnya tidak lengkap —",
         "kemungkinan terpotong / teredit manual. Migration guarantee: artefak",
         "buatan mega-sdd tidak pernah REJECTED; floor-nya CERTIFIED_DEGRADED.",
-        "Selanjutnya: jalankan `scan-codebase` untuk restamp peta utuh.",
+        "Peta dibaca apa adanya (read-only); pipeline tidak me-restamp peta —",
+        "grounding presisi lewat `scripts/ground.sh`.",
     ]
 else:
-    # Sections present; frontmatter/provenance missing → the P0
-    # unverified-external lane (bind SKILL.md Step 1).
+    # Sections present; frontmatter/provenance missing → unverified-external
+    # (read-only context; the whole-vault bind that consumed it is retired).
     verdict, rc = "CERTIFIED_DEGRADED", 0
     lines = [
         "Section lengkap tapi frontmatter provenance hilang/invalid — peta ini",
         "ditulis di luar mega-sdd (unverified-external).",
-        "Bind TETAP jalan, tapi presisi binding turun ke klasifikasi biner dan",
-        "binding.md akan mencatat `codebase_map_provenance: \"unverified-external\"`",
-        "(tidak pernah `snapshot-verified` untuk peta seperti ini).",
-        "Selanjutnya: jalankan `scan-codebase` untuk map ber-provenance",
-        "dengan presisi penuh (field-level diff).",
+        "Peta dibaca sebagai konteks read-only (emit-*, detect-drift, enrichment);",
+        "grounding presisi lewat `scripts/ground.sh` (symbol index).",
     ]
 
 print("VERDICT: %s map %s" % (verdict, path))
@@ -255,10 +259,17 @@ if [ "$RUNG" = "vault" ]; then
   RC=$?
   case "$RC" in
     0)
+      if [ -f "${APATH%/}/context.md" ]; then
+        VAULT_NEXT="Siap dikonsumsi execute-bolts (bind JIT per unit, the up-front bind); \`plan --reconcile\` menyegarkan task_type."
+      elif [ -f "${APATH%/}/vault.md" ]; then
+        VAULT_NEXT="Vault layout-2: dibaca read-only (emit-*, analyze); untuk build/sync jalankan \`/mega-sdd:migrate-paths --vault-layout=3\` dulu."
+      else
+        VAULT_NEXT="Vault legacy (00-index): dibaca read-only; untuk build/sync jalankan \`/mega-sdd:migrate-paths --vault-layout\` lalu \`--vault-layout=3\`."
+      fi
       emit "CERTIFIED" 0 <<EOF
 Dokumen vault cocok dengan grammar mega-sdd — vault.json berhasil diderivasi
 (sekarang ada di ${APATH%/}/vault.json; satu-satunya file yang ditulis).
-Siap dikonsumsi pipeline: bind-codebase / generate-units membaca manifest ini.
+${VAULT_NEXT}
 $(printf '%s\n' "$DERIVE_OUT" | grep '^WARN' | sed 's/^/Catatan deriver: /')
 EOF
       ;;
@@ -270,12 +281,14 @@ Output deriver (verbatim):
 $(printf '%s\n' "$DERIVE_OUT" | sed 's/^/  | /')
 Tawaran DEMOTE (butuh konfirmasi lo — decision 7):
   (a) RE-INGEST — perlakukan dokumen vault ini sebagai input rung PRD:
-      \`generate-intent\` membacanya sebagai dokumen sumber dan membangun vault
-      BARU ber-grammar mega-sdd. Konsekuensi: burn token generate-intent dan
-      hasilnya vault yang BERBEDA dari yang lo taruh — makanya di --auto ini
-      selalu halt C2 \`adoption_demote_confirm\`, tidak pernah jalan sendiri.
-  (b) MANUAL FIX — perbaiki dokumen mengikuti template generate-intent
-      (skills/generate-intent/references/), lalu jalankan ulang certify.
+      gabungkan jadi SATU file sumber, lalu \`plan <file>\` membacanya sebagai
+      PRD dan membangun vault layout-3 BARU ber-grammar mega-sdd. Konsekuensi:
+      burn token plan dan hasilnya vault yang BERBEDA dari yang lo taruh —
+      makanya di --auto ini selalu halt C2 \`adoption_demote_confirm\`, tidak
+      pernah jalan sendiri.
+  (b) MANUAL FIX — perbaiki dokumen mengikuti template vault plan (layout-3:
+      skills/plan/references/templates/context.md + plugins/mega-sdd/references/vault-core.md),
+      lalu jalankan ulang certify.
 EOF
       ;;
     3)
@@ -284,7 +297,8 @@ Direktori ini bukan vault mega-sdd — context.md (layout-3), vault.md (layout-2
 maupun 00-index.md (legacy) tidak ada / direktori tidak terbaca (derive-vault-json.sh exit 3).
 $(printf '%s\n' "$DERIVE_OUT" | sed 's/^/  | /')
 Selanjutnya: kalau ini kumpulan dokumen spec, masuk lewat rung PRD —
-\`certify-artifact --rung=prd --path=<file>\` per dokumen, lalu \`generate-intent\`.
+\`certify-artifact --rung=prd --path=<file>\` per dokumen, gabungkan jadi SATU
+file sumber, lalu \`plan <file>\`.
 EOF
       ;;
     4)
@@ -310,8 +324,8 @@ if [ "$RUNG" = "kb" ]; then
       MODN=$(find "$APATH/modules" -name "*.prd.md" 2>/dev/null | grep -c . || true)
       emit "CERTIFIED" 0 <<EOF
 KB ber-grammar PRD-kontrak: census gate PASS — semua file census ter-claim +
-tersitasi lintas ${MODN} module PRD. Siap dikonsumsi \`generate-intent --kb=...\`
-dan \`bind-codebase\` (ground truth sekunder).
+tersitasi lintas ${MODN} module PRD. Siap dikonsumsi \`plan --kb=$APATH\`
+dan bind JIT per unit di execute-bolts (rung KB di ladder E3 — ground truth sekunder).
 EOF
     else
       emit "DEMOTE" 3 <<EOF
@@ -337,7 +351,7 @@ Ada dokumen markdown, tapi struktur folder BUKAN knowledge base mega-sdd
 grammar KB tidak pernah diadopsi di sini.
 Tawaran DEMOTE (butuh konfirmasi lo — decision 7):
   (a) RE-INGEST — perlakukan dokumen-dokumen ini sebagai input rung PRD
-      (\`generate-intent\` per dokumen / gabungan). Konsekuensi: burn token dan
+      (\`plan <file>\` atas dokumen yang digabung jadi satu file sumber). Konsekuensi: burn token dan
       hasilnya artefak BARU — di --auto selalu halt C2 \`adoption_demote_confirm\`.
   (b) RE-EXTRACT — kalau sumber aslinya codebase legacy, jalankan
       \`extract-intelligence <legacy>\` untuk KB ber-grammar mega-sdd.
@@ -380,7 +394,7 @@ print('yes' if any(c.get('check')=='frontmatter_present' and c.get('status')=='F
 Struktur folder mirip KB, tapi SEMUA domain file ($TOTAL file) tanpa frontmatter
 KB mega-sdd — grammar-nya asing (KB ini ditulis tool lain).
 Tawaran DEMOTE (butuh konfirmasi lo — decision 7):
-  (a) RE-INGEST — dokumen-dokumen ini masuk sebagai rung PRD via \`generate-intent\`.
+  (a) RE-INGEST — gabungkan dokumen-dokumen ini jadi satu file, masuk rung PRD via \`plan <file>\`.
   (b) RE-EXTRACT — \`extract-intelligence <legacy>\` untuk KB ber-grammar
       mega-sdd (dengan marker [VERIFIED]/[INFERRED]/[OPEN]).
 EOF
@@ -388,9 +402,9 @@ EOF
     emit "CERTIFIED" 0 <<EOF
 Knowledge base lolos validator KB ($TOTAL domain file: validate-kb.sh
 surface output + markers untuk 10-domains) — marker grounding + struktur 11-section OK.
-Siap dikonsumsi \`generate-intent --kb=$APATH\` dan \`bind-codebase\` (ground truth
-sekunder). Catatan: cek citation-ke-legacy (surface citations) butuh
---legacy-root dan jalan di lane extract/bind, bukan di certify.
+Siap dikonsumsi \`plan --kb=$APATH\` dan bind JIT per unit (rung KB di ladder E3 —
+ground truth sekunder). Catatan: cek citation-ke-legacy (surface citations) butuh
+--legacy-root dan jalan di lane extract, bukan di certify.
 EOF
   else
     emit "CERTIFIED_DEGRADED" 0 <<EOF
@@ -398,7 +412,8 @@ KB dikenali (grammar mega-sdd) tapi $FAILED dari $TOTAL domain file gagal
 validator (marker tanpa citation / count mismatch / section kurang):
 $(cat "$DETAILS")
 Konsekuensi: klaim yang gagal grounding diperlakukan maksimal [INFERRED] oleh
-konsumen — bind-codebase tidak akan menaikkan claim tak-bercitation jadi fakta.
+konsumen — \`plan --kb\` dan bind JIT per unit (rung KB ladder E3) tidak akan
+menaikkan claim tak-bercitation jadi fakta.
 Selanjutnya: perbaiki file yang gagal (atau re-extract domain terkait), lalu
 jalankan ulang certify.
 EOF
@@ -449,8 +464,8 @@ if no_frontmatter:
         "File ini bukan unit spec mega-sdd — tidak ada blok frontmatter YAML",
         "(--- ... ---) sama sekali, jadi tidak ada id/task_type/target_files yang",
         "bisa dibaca dispatcher bolt.",
-        "Selanjutnya: generate unit yang benar via `generate-units`",
-        "(dari vault ter-bind), atau kalau ini dokumen kebutuhan, masuk lewat",
+        "Selanjutnya: generate unit yang benar via `plan <prd>` (units ditulis di fase",
+        "yang sama), atau kalau ini dokumen kebutuhan, masuk lewat",
         "rung PRD (`certify-artifact --rung=prd`).",
     ]
 elif not blocking:
@@ -470,7 +485,8 @@ else:
     lines += [
         "Konsekuensi: execute-bolts akan halt di pre-flight untuk field yang hilang.",
         "Selanjutnya: lengkapi field wajib (unit_id/title/task_type/target_files/",
-        "vault_source + acceptance_test) atau re-generate via `generate-units`.",
+        "context_source (layout-3) / vault_source (layout-2) + acceptance_test) atau",
+        "re-generate via `plan` (`--reconcile` untuk vault yang ada).",
     ]
 
 print("VERDICT: %s units %s" % (verdict, path))

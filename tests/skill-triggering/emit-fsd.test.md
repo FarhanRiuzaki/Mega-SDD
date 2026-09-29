@@ -5,14 +5,14 @@ Iter 54 — Hybrid Confluence FSD emitter skill. Anti-hallucination citation dis
 ## Trigger cases
 
 ### EF1: Explicit invocation on stable vault
-- **Setup:** vault exists at `<project>/.mega-sdd/vaults/<slug>/` with vault.json + 01-overview.md + 02-functional.md; no units/ yet
+- **Setup:** plan-born vault at `<project>/.mega-sdd/vaults/<slug>/` with `context.md` + `vault.json` (layout-3); no units/ yet
 - **Prompt:** `/mega-sdd:emit-fsd`
 - **Expect:** Skill invoked; mode auto-detected as `pre-dev`; FSD.md + (if Chrome available) FSD.pdf else FSD.html + .citation-map.json written to `<vault>/fsd/`; FSD.md has `DRAFT` watermark + section 9 = "TBD — pending bolt execution"
 
 ### EF2: Post-development mode auto-detection
 - **Setup:** vault + units/ + bolts/ all present; bolt-reports include acceptance_test results
 - **Prompt:** `/mega-sdd:emit-fsd`
-- **Expect:** Mode = `post-dev`; section 9 populated with actual UAT results table; section 10 includes aggregated `acceptance_test_concerns` from bolt-reports
+- **Expect:** Mode = `post-dev`; section 9 populated with actual UAT results table; section 10 includes aggregated `acceptance_test_concerns` from legacy bolt-reports
 
 ### EF3: Pandoc absent → markdown-only graceful degrade
 - **Setup:** vault exists; `command -v pandoc` returns non-zero
@@ -25,7 +25,7 @@ Iter 54 — Hybrid Confluence FSD emitter skill. Anti-hallucination citation dis
 - **Expect:** FSD.md emitted; pandoc generates FSD.html (standalone, self-contained) instead of PDF; handoff metric `fallback_format: html`
 
 ### EF5: Drift detection on re-emit
-- **Setup:** prior `.citation-map.json` exists from earlier emit; user edits `vault/01-overview.md` (sha256 changes)
+- **Setup:** prior `.citation-map.json` exists from earlier emit; user edits `<vault>/context.md` (sha256 changes)
 - **Prompt:** `/mega-sdd:emit-fsd`
 - **Expect:** Skill runs `scripts/build-citation-map.sh (--check-drift mode)` (Step 2) and consumes its `DRIFT <section> <path> <old12> <new12>` line — it NEVER Reads `.citation-map.json` directly; the `⚠ Updated since last emit` callout inserted BEFORE regenerated section 1 uses the script's old12/new12 prefixes; handoff metric `drift_callouts_count: 1`
 
@@ -35,18 +35,18 @@ Iter 54 — Hybrid Confluence FSD emitter skill. Anti-hallucination citation dis
 - **Expect:** FSD.md emitted with only sections 1, 2, 5, 7, 8, 10; sections 3, 4, 6, 9 skipped per styling.include_sections filter; handoff metric `sections_excluded: 4`
 
 ### EF7: Anti-halu — missing source artifact emits placeholder, never fabricates
-- **Setup:** vault has 01-overview.md + 02-functional.md but NO binding.md (scan-codebase + bind-codebase not yet run)
+- **Setup:** layout-3 vault with units but no bolts yet — no unit has been bound, so no `bolts/U-*/binding.json` exists; no pre-9.0 `codebase-map.md`
 - **Prompt:** `/mega-sdd:emit-fsd`
-- **Expect:** Section 7 (Design / Architecture) emits `[Pending — binding.md not yet generated. Run /mega-sdd:bind-codebase.]` placeholder; NEVER fabricates design content from vault alone
+- **Expect:** Section 7 (Design / Architecture) emits `[Pending — binding.md / bolts/U-*/binding.json: no confirmed claim yet (execute-bolts binds each unit before it runs)]` for the confirmed-claims slot and the `[Pending — codebase-map.md absent (not produced for this project); …]` placeholders for entities / modules (`scripts/build-fsd-core.sh` `CB_ABSENT`); NEVER fabricates design content from the vault alone
 
-### EF8: Auto-invocation from /mega-sdd front-door pipeline
-- **Setup:** vault + units + bolts complete; `/mega-sdd ./prd.md` running
-- **Expect:** At chain end (after emit-agents-md), orchestrate-flow Step 6 auto-invokes `/mega-sdd:emit-fsd --auto`; FSD.pdf emitted; chain summary includes "FSD emitted: N sections, M citations, mode: post-dev"
+### EF8: Opt-in invocation from the /mega-sdd guarded pipeline
+- **Setup:** vault + units + bolts complete; `/mega-sdd ./prd.md --guarded --with-fsd` running
+- **Expect:** At chain end orchestrate-flow invokes `emit-fsd --auto` (opt-in via `--with-fsd`); FSD.pdf emitted; chain summary includes "FSD emitted: N sections, M citations, mode: post-dev"
 
-### EF9: --no-fsd flag skips auto-invocation
+### EF9: No `--with-fsd` → no FSD (default)
 - **Setup:** same as EF8
-- **Prompt:** `/mega-sdd ./prd.md --no-fsd`
-- **Expect:** Chain runs to completion WITHOUT invoking emit-fsd; chain summary OMITS FSD line
+- **Prompt:** `/mega-sdd ./prd.md --guarded` (or with the legacy no-op `--no-fsd`)
+- **Expect:** Chain runs to completion WITHOUT invoking emit-fsd; chain summary OMITS FSD line. The direct/assisted lanes never run emit-* at all
 
 ### EF10: --dry-run prints plan without execution
 - **Setup:** vault stable

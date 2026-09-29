@@ -2,18 +2,25 @@
 # test-p2-ground-express-default.sh — v6 P2 proof suite (spec
 # 2026-08-03-v6-express-spine-design.md §P2.7):
 #
-#   1. Chain renders: express DEFAULT (no scan hop, --express on bind) per
-#      position; `spine: classic` restores the scan-first rows verbatim.
+#   1. Chain renders: the default chain has no scan hop — since 9.0 it is the
+#      one pipeline (plan -> execute-bolts); a leftover `spine: classic` is
+#      ignored with a one-line note (spec 2026-09-27-v9-simplification-design.md §2/§4).
 #   2. probe_framework_pack: precedence (starterkit variant > base, meta >
 #      substrate), *.csproj glob, manifest alternates, _universal fallback;
 #      resolver reads the matcher's state.json output (one sniff, one grammar).
-#   3. Sync on express-born projects: index-stale change signal fires, Mode D
-#      proposes the derive-changed-paths chain, and the script derives the
-#      changed set from git diff ∪ dirty journal.
-#   4. Resurrect-vector pins: preflight express carve-out wiring, chain-
-#      optimization short-circuit, units Step 0.5, intent map-less default,
-#      oq_gate probe-keyed resolution.
+#   3. Sync on index-only (map-less) projects: index-stale change signal fires;
+#      a layout-2 vault is routed to migrate-paths (9.0 §4); a layout-3 vault
+#      reaches Mode D with the derive-changed-paths -> rebind-units -> plan
+#      --reconcile chain, and the script derives the changed set from git diff ∪
+#      dirty journal.
+#   4. Resurrect-vector pins: dispatch-arg forwarding, preflight has no map
+#      precondition and refuses the removed scan-codebase, plan is map-less,
+#      oq_gate probe-keyed resolution, scan_query probe targets.
 #   5. validate-pack detection_priority lint; ground.sh wrapper honesty.
+#
+# 9.0 P1 retired the pins of the deleted classic skills / spine: bind --express
+# injection, classic scan-first chain + derived.spine, the preflight map arm,
+# the chain-optimization short-circuit, generate-units Step 0.5, express-bind.md.
 #
 # CI-safe: bash + python3 + git only (no ast-grep; index fixtures hand-written).
 set -uo pipefail
@@ -40,6 +47,16 @@ print(eval(os.environ["EXPR"]))
 PY
 }
 
+l3_vault() {  # $1=vault dir  $2=target path — a plan-born layout-3 vault
+  # (context.md + vault.json + one unit), bound PER UNIT by the JIT writer
+  # (bolts/U-001/binding.json) — no whole-vault binding.md exists on layout-3.
+  mkdir -p "$1/units" "$1/bolts/U-001"
+  printf -- '---\ndoc_id: context\ntype: context\nvault_layout: 3\nmode: existing\n---\n# demo\n\n## Overview\n\nx\n\n## Flows\n\ny\n' > "$1/context.md"
+  printf '{"vault_version":"1.0","mode":"existing","open_questions":[]}\n' > "$1/vault.json"
+  printf -- '---\nid: U-001\ntitle: t\ntask_type: extend\nvault_source: context.md#flows\ntarget_files:\n  - path: %s\n    operation: modify\nacceptance_test:\n  - type: test\n    command: x\n    expects: "ok"\n---\n# u\n\n## Anchors\n- %s:1 — x\n' "$2" "$2" > "$1/units/U-001.md"
+  printf '{"schema":"unit-binding/1","unit":"U-001","claims":[]}\n' > "$1/bolts/U-001/binding.json"
+}
+
 # ══ 1. Chain renders — express default vs classic ════════════════════════════
 PROJ="$WORK/p1"; mkdir -p "$PROJ/.mega-sdd/codebase"
 ( cd "$PROJ" && git init -q . )
@@ -58,24 +75,27 @@ echo "$CHAIN" | grep -q "scan-codebase" \
 echo "$CHAIN" | grep -q -- "--scan=" \
   && fail "express chain carries --scan=: $CHAIN" \
   || pass "express default: no --scan= argument (no producer exists)"
-echo "$CHAIN" | grep -q "bind-codebase --express" \
-  && pass "express default: bind hop carries --express (finish() injection)" \
-  || fail "bind hop missing --express: $CHAIN"
+# 9.0: the bind hop (and its finish() --express injection) is gone with
+# bind-codebase — the default chain is the one pipeline, bind is JIT per unit.
+ONE_PIPE="['plan prd.md --lite --mode=new', 'execute-bolts --all --lite']"
+[ "$CHAIN" = "$ONE_PIPE" ] \
+  && pass "default prd_no_vault chain is the one pipeline: plan -> execute-bolts --all --lite (no bind hop)" \
+  || fail "default chain is not plan -> execute-bolts: $CHAIN"
 POS=$(py_probe "$PROJ" "d['derived']['position']")
 [ "$POS" = "prd_no_vault" ] && pass "position prd_no_vault unchanged" \
   || fail "position drifted: $POS"
 
+# 9.0 (spec §4): `spine: classic` no longer restores a scan-first chain — the
+# key is read only so derive() can say in one line that it is ignored.
 printf 'spine: classic\n' > "$PROJ/.mega-sdd/config.yaml"
 CHAIN_C=$(py_probe "$PROJ" "d['derived']['proposed_next']")
-echo "$CHAIN_C" | grep -q "scan-codebase" \
-  && pass "classic spine restores the scan-first chain" \
-  || fail "classic chain lost scan: $CHAIN_C"
-echo "$CHAIN_C" | grep -q -- "--express" \
-  && fail "classic chain carries --express: $CHAIN_C" \
-  || pass "classic chain carries no --express"
-SPINE=$(py_probe "$PROJ" "d['derived']['spine']")
-[ "$SPINE" = "classic" ] && pass "derived.spine reads the config key" \
-  || fail "derived.spine=$SPINE"
+[ "$CHAIN_C" = "$CHAIN" ] && ! echo "$CHAIN_C" | grep -q "scan-codebase" \
+  && pass "leftover spine: classic is ignored — chain identical to the default, no scan hop" \
+  || fail "spine: classic changed the chain: $CHAIN_C"
+SPINE_NOTE=$(py_probe "$PROJ" "' || '.join(d['derived']['notes'])")
+echo "$SPINE_NOTE" | grep -qF "spine: classic is retired in 9.0 and ignored" \
+  && pass "the spine config key is still read — one-line 'retired, ignored' note" \
+  || fail "no retired-spine note: $SPINE_NOTE"
 rm -f "$PROJ/.mega-sdd/config.yaml"
 
 # ══ 2. The pack matcher ══════════════════════════════════════════════════════
@@ -112,7 +132,7 @@ M5="$WORK/m5"; mkdir -p "$M5"
 printf 'x = 1\n' > "$M5/main.py"
 GOT=$(py_probe "$M5" "d['probes']['framework_pack']['pack']")
 [ "$GOT" = "_universal" ] \
-  && pass "no manifest -> _universal fallback (same as scan Step 8.5)" \
+  && pass "no manifest -> _universal fallback" \
   || fail "fallback arm picked $GOT"
 
 # resolver parity: state.json is a resolver source (one matcher, one grammar)
@@ -129,7 +149,7 @@ echo "$rtk_head" | grep -q "packres-v2 .* st=1" \
   && pass "pack-resolver cache bumped to v2 with the state input flag" \
   || fail "cache meta not v2/st: $rtk_head"
 
-# ══ 3. Sync on an express-born project ═══════════════════════════════════════
+# ══ 3. Sync on an index-only (map-less) project ═══════════════════════════════
 SY="$WORK/sync"; mkdir -p "$SY/.mega-sdd/codebase" "$SY/.mega-sdd/vaults/demo"
 cp "$P/tests/graph/fixtures/derive-vault"/0*.md "$SY/.mega-sdd/vaults/demo/"
 # neutralize the fixture's open P0/P1 OQs — this arm tests Mode D, and the
@@ -174,15 +194,30 @@ EOF
 SIG=$(py_probe "$SY" "d['derived']['change_signal']['index_stamp_matches_head']")
 [ "$SIG" = "no" ] && pass "express-born change signal: index stamp != HEAD detected" \
   || fail "index change signal: $SIG"
+# 9.0 (spec §4): a layout-2 vault stays READABLE but 9.0 builds and syncs
+# layout-3 only — the same change signal on it proposes the migrate-paths
+# one-timer (never auto-run), never the removed bind-codebase chain.
+L2=$(py_probe "$SY" "d['derived']['position'] + '|' + str(d['derived']['proposed_next']) + '|' + ' || '.join(d['derived']['notes'])")
+case "$L2" in
+  "layout2_needs_migration|[]|"*"/mega-sdd:migrate-paths --vault-layout=3 --vault=.mega-sdd/vaults/demo"*"rebind-units.sh --units=all"*)
+    pass "layout-2 vault + sync signal -> layout2_needs_migration: migrate-paths proposed, empty chain (no bind-codebase)" ;;
+  *) fail "layout-2 sync arm: $L2" ;;
+esac
+# migrate the fixture to layout-3 (what migrate-paths produces: context.md +
+# per-unit bindings; the whole-vault binding.md is gone)
+rm -f "$SY/.mega-sdd/vaults/demo"/0*.md "$SY/.mega-sdd/vaults/demo/binding.md"
+l3_vault "$SY/.mega-sdd/vaults/demo" app.py
 POS=$(py_probe "$SY" "d['derived']['position']")
 [ "$POS" = "maintenance_sync" ] \
-  && pass "express-born Mode D reachable (no map, index substrate)" \
-  || fail "express-born sync position: $POS"
-CHAIN=$(py_probe "$SY" "d['derived']['proposed_next']")
-echo "$CHAIN" | grep -q "derive-changed-paths.sh" \
-  && echo "$CHAIN" | grep -q "bind-codebase --paths=.*--express" \
-  && pass "express-born Mode D chain: script changed-set producer + bind --paths --express" \
-  || fail "express-born sync chain: $CHAIN"
+  && pass "map-less Mode D reachable on layout-3 (no map, index substrate, per-unit binding)" \
+  || fail "map-less sync position: $POS"
+CHAIN=$(py_probe "$SY" "chr(10).join(d['derived']['proposed_next'])")
+echo "$CHAIN" | sed -n 1p | grep -qx "scripts/derive-changed-paths.sh --vault .mega-sdd/vaults/demo" \
+  && echo "$CHAIN" | sed -n 3p | grep -qE "^scripts/rebind-units\.sh --cwd[= ]\. --vault[= ]\.mega-sdd/vaults/demo --paths=@\.mega-sdd/vaults/demo/\.sync-changed-paths\.txt$" \
+  && [ "$(echo "$CHAIN" | sed -n 4p)" = "plan --reconcile" ] \
+  && ! echo "$CHAIN" | grep -qE "bind-codebase|generate-units|scan-codebase" \
+  && pass "map-less Mode D chain: script changed-set producer -> rebind-units --paths=@ -> plan --reconcile (no classic hop)" \
+  || fail "map-less sync chain: $(echo "$CHAIN" | tr '\n' '|')"
 
 # the changed-set producer itself
 printf '{"ts":"t","path":"lib/extra.py","tool":"write","session":"s"}\n' \
@@ -207,30 +242,32 @@ bash "$P/scripts/derive-changed-paths.sh" --cwd="$SY" --vault "$SY/.mega-sdd/vau
 grep -qF -- '--args-b64="${SKILL_ARGS_B64:-}"' "$P/hooks/pre-tool-use" \
   && pass "pre-tool-use forwards dispatch args to validate-preflight" \
   || fail "hook args forwarding missing"
-grep -qF 'elif not express and not has_codebase_map():' "$P/scripts/validate-preflight.sh" \
-  && pass "validate-preflight map arm is express-aware (vault arm stays FATAL)" \
-  || fail "preflight carve-out missing"
-CE="$P/skills/orchestrate-flow/references/chain-execution.md"
-grep -qF 'Express-lane short-circuit' "$CE" \
-  && pass "chain-optimization no-snapshot branch cannot resurrect scan on express" \
-  || fail "chain-execution short-circuit missing"
-grep -qF 'Express-lane rule (P2)' "$P/skills/generate-units/SKILL.md" \
-  && pass "generate-units Step 0.5 cannot auto-resurrect scan on express projects" \
-  || fail "units Step 0.5 express rule missing"
-SF="$P/skills/generate-intent/references/setup-flow.md"
-grep -qF 'DEFAULT (express spine, P2): proceed map-less' "$SF" \
-  && pass "intent brownfield default is map-less (prompt demoted to classic)" \
-  || fail "intent map-less default missing"
-grep -qF 'keeps the express path non-stop' "$SF" \
-  && pass "oq_gate trap: classifier resolves tech/scan OQs from probes" \
+# 9.0: the preflight map arm (bind-codebase's) is gone with its skill. Its
+# successor pins: a map-less brownfield dispatch of the spec producer never
+# FATALs on a missing map, and a scan-codebase dispatch cannot resurrect scan.
+PF="$WORK/pf"; mkdir -p "$PF/.mega-sdd"
+printf '# PRD\n' > "$PF/prd.md"; printf 'x = 1\n' > "$PF/app.py"
+PF_ARGS=$(printf 'prd.md --lite --mode=existing' | base64 | tr -d '\n')
+bash "$P/scripts/validate-preflight.sh" --cwd="$PF" --skill=mega-sdd:plan --args-b64="$PF_ARGS" --quiet >/dev/null 2>&1
+[ $? -eq 0 ] \
+  && pass "validate-preflight: map-less brownfield plan dispatch passes (no codebase-map precondition)" \
+  || fail "validate-preflight FATALs a map-less plan dispatch"
+PF_OUT=$(bash "$P/scripts/validate-preflight.sh" --cwd="$PF" --skill=mega-sdd:scan-codebase 2>/dev/null); PF_RC=$?
+[ "$PF_RC" -eq 1 ] && echo "$PF_OUT" | grep -q '"fatal_check_id": *"skill_removed_in_9"' \
+  && pass "validate-preflight: a scan-codebase dispatch FATALs skill_removed_in_9 (scan cannot be resurrected)" \
+  || fail "scan-codebase dispatch not refused: rc=$PF_RC ${PF_OUT:0:160}"
+# the successor of intent's map-less default: plan, the one spec producer,
+# reads no codebase-map and has no scan hop to prompt for.
+! grep -rqE 'codebase-map|scan-codebase' "$P/skills/plan" \
+  && pass "plan is map-less by construction (no codebase-map input, no scan-codebase hop)" \
+  || fail "plan references codebase-map / scan-codebase: $(grep -rlE 'codebase-map|scan-codebase' "$P/skills/plan" | tr '\n' ' ')"
+VC="$P/references/vault-core.md"
+grep -qF 'probe at authoring time and write the OQ already decided' "$VC" \
+  && pass "oq_gate trap: tech/scan OQs are resolved from probes at authoring time (vault-core §scan)" \
   || fail "oq_gate classifier re-key missing"
-grep -qF 'symbol-index LeaveRequest' "$P/skills/generate-intent/references/vault-core.md" \
+grep -qF 'symbol-index LeaveRequest' "$VC" \
   && pass "vault-core scan_query re-keyed to probe targets" \
   || fail "scan_query re-key missing"
-grep -qF 'the lane the express spine dispatches by default' "$P/skills/bind-codebase/references/express-bind.md" \
-  && grep -qF 'Lane default:' "$P/skills/bind-codebase/SKILL.md" \
-  && pass "express-bind.md states the spine-dispatch default (+ SKILL lane-default sentence)" \
-  || fail "express-bind default note missing"
 
 # ══ 4b. Round-folded arms (P2 dual-blind) ════════════════════════════════════
 # F1 — ground.sh must NOT clobber the sync baseline: with a sync pending, the
@@ -284,20 +321,40 @@ GOT=$(py_probe "$F7" "d['probes']['framework_pack']['pack']")
   && pass "F7: alternates fire even when the canonical manifest exists markerless" \
   || fail "F7: picked $GOT"
 
-# F4 — classic parity: fresh map + stale index must NOT trigger Mode D
+# F4 — substrate rule, re-keyed in 9.0 (the pre-9.0 rule "a map-bearing project
+# keys freshness on the map, index leg n/a" died with scan-codebase, the only
+# map producer). The symbol index is the ONE freshness substrate: a leftover
+# map's stamp is informational — nothing advances it, so keying Mode D on it
+# would re-fire on every derive (the F4 livelock, now on the map leg).
 F4="$WORK/f4"; mkdir -p "$F4/.mega-sdd/codebase"
 ( cd "$F4" && git init -q . && git config user.email t@t && git config user.name t \
   && printf 'x\n' > a.py && git add a.py && git commit -qm one )
 H=$(git -C "$F4" rev-parse HEAD)
-printf -- '---\nlast_scanned_commit: %s\n---\n# map\n' "$H" > "$F4/.mega-sdd/codebase/codebase-map.md"
-printf '{"generated_by":"build-symbol-index.sh","head_commit":"0000000000000000000000000000000000000000","symbols":[]}' \
+Z=0000000000000000000000000000000000000000
+l3_vault "$F4/.mega-sdd/vaults/demo" a.py
+# F4a: STALE leftover map + FRESH index -> the map leg reads "no" but no Mode D
+printf -- '---\nlast_scanned_commit: %s\n---\n# map\n' "$Z" > "$F4/.mega-sdd/codebase/codebase-map.md"
+printf '{"generated_by":"build-symbol-index.sh","head_commit":"%s","symbols":[]}' "$H" \
   > "$F4/.mega-sdd/codebase/symbol-index.json"
-SIG=$(py_probe "$F4" "d['derived']['change_signal']['index_stamp_matches_head']")
-[ "$SIG" = "n/a" ] \
-  && pass "F4: index leg is n/a on a map-bearing project (substrate rule — no livelock)" \
-  || fail "F4: index leg fired beside a fresh map: $SIG"
+GOT=$(py_probe "$F4" "d['derived']['change_signal']['map_stamp_matches_head'] + '|' + d['derived']['change_signal']['index_stamp_matches_head'] + '|' + d['derived']['position']")
+case "$GOT" in
+  "no|yes|maintenance_sync") fail "F4a: a stale leftover map stamp triggers Mode D (livelock): $GOT" ;;
+  "no|yes|"*) pass "F4a: stale leftover map + fresh index -> map leg informational, NO Mode D (no livelock)" ;;
+  *) fail "F4a: fixture signals wrong: $GOT" ;;
+esac
+# F4b: FRESH leftover map + STALE index -> the index leg still fires (a map
+# never masks the one substrate)
+printf -- '---\nlast_scanned_commit: %s\n---\n# map\n' "$H" > "$F4/.mega-sdd/codebase/codebase-map.md"
+printf '{"generated_by":"build-symbol-index.sh","head_commit":"%s","symbols":[]}' "$Z" \
+  > "$F4/.mega-sdd/codebase/symbol-index.json"
+GOT=$(py_probe "$F4" "d['derived']['change_signal']['index_stamp_matches_head'] + '|' + d['derived']['position']")
+[ "$GOT" = "no|maintenance_sync" ] \
+  && pass "F4b: fresh leftover map + stale index -> index leg fires, Mode D (the index is the one substrate)" \
+  || fail "F4b: index leg masked by a fresh map: $GOT"
 
-# doc-6 — express unviable (no index, no ast-grep) -> classic render, loudly
+# doc-6 — no index + no ast-grep: pre-9.0 this fell back to the classic
+# scan-first chain; 9.0 has no classic chain, so the one pipeline renders
+# (never a dead-end) and the degradation is said loudly in a note.
 UV="$WORK/uv"; mkdir -p "$UV"
 ( cd "$UV" && git init -q . )
 printf '{"require": {"laravel/framework": "^11.0"}}' > "$UV/composer.json"
@@ -312,10 +369,16 @@ print(json.dumps({"chain": d["derived"]["proposed_next"],
                   "notes": d["derived"]["notes"]}))
 PY
 )
-echo "$UV_OUT" | grep -q "scan-codebase" \
-  && echo "$UV_OUT" | grep -q "express unavailable" \
-  && pass "doc-6: no index + no ast-grep -> CLASSIC chain + loud note (no dead-end)" \
-  || fail "doc-6: unviable-express render: $UV_OUT"
+UV_CHK=$(UV_OUT="$UV_OUT" python3 -c '
+import json, os
+d = json.loads(os.environ["UV_OUT"])
+notes = " || ".join(d["notes"])
+print(d["chain"] == ["plan prd.md --lite --mode=new", "execute-bolts --all --lite"]
+      and "ast-grep not installed and no symbol index" in notes
+      and "/mega-sdd:install-deps" in notes)' 2>/dev/null)
+[ "$UV_CHK" = "True" ] && ! echo "$UV_OUT" | grep -q "scan-codebase" \
+  && pass "doc-6: no index + no ast-grep -> the one pipeline still renders (no scan, no dead-end) + loud install-deps note" \
+  || fail "doc-6: no-index/no-ast-grep render: $UV_OUT"
 
 # F3 — session-start staleness fires on an express-born project (index, no map)
 SS_OUT=$(STATE="$SY/.mega-sdd/state.json" python3 - <<'PY'

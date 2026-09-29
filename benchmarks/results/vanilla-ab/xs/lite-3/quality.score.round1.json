@@ -1,0 +1,57 @@
+{
+ "completion": 0.9166666666666666,
+ "ac_pass": 11,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "FAIL"
+ },
+ "critical": 0,
+ "important": 2,
+ "minor": 4,
+ "rubric": 88,
+ "findings": [
+  {
+   "severity": "Important",
+   "where": "src/app/layout.tsx:26",
+   "what": "No site navigation; no page links to /tentang-kami, so Tentang Kami is unreachable from the UI"
+  },
+  {
+   "severity": "Important",
+   "where": "package.json:5-10",
+   "what": "No `test` script; npm test fails with Missing script although node --test tests/*.test.mjs passes 30/30 (X12 FAIL)"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/layout.tsx:15-18,23",
+   "what": "Starter metadata 'Create Next App' left in place and html lang='en' for Indonesian content"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/actions.ts:32",
+   "what": "saveContactMessage not wrapped in try/catch; DB failure yields an unhandled server-action error instead of a user-facing message"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-messages.ts:11,26",
+   "what": "CWD-relative default DB path; path.resolve triggers Turbopack overly-broad file trace warning during build"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/types/node-sqlite.d.ts:1",
+   "what": "Hand-written node:sqlite typings with @types/node 20; no engines field declaring the Node >=22.5 requirement"
+  }
+ ],
+ "blind_label": "VF",
+ "scorer_sid": "7ebda6a9-4a3c-4fa1-a265-7efb0c54c77d"
+}

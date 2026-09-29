@@ -1,7 +1,7 @@
 ---
 # Canonical PRD frontmatter (per docs/templates/prd-template.md) — machine-read by mega-sdd.
-#   generate-intent → Mode A PRD parse + scope picker;  emit-fsd → stakeholders[] sign-off table;
-#   resolve-oq → industry seeds OQ context;  diff-vault → re-diffs when this file's sha256 changes.
+#   plan → PRD parse + scope picker + industry (design-source OQ signal);
+#   emit-fsd → stakeholders[] FSD §3 table;  diff-vault → re-diffs when this file's sha256 changes.
 # NOTE: this sample uses a concrete modern stack (Next.js + Bun + Postgres + shadcn/ui) to make
 # the walkthrough realistic. mega-sdd is tech-agnostic — the SAME pipeline works for Laravel,
 # Rails, Django, Gin, Axum, etc.; the stack here is illustrative, not a default.

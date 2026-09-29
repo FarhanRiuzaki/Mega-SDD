@@ -12,7 +12,6 @@ pass() { echo "PASS: $1"; }
 DV="$P/skills/diff-vault/SKILL.md"
 DP="$P/skills/diff-vault/references/diff-procedure.md"
 AC="$P/skills/diff-vault/references/auto-and-chain.md"
-BC="$P/skills/bind-codebase/references/binding-contract.md"
 RR="$P/skills/orchestrate-flow/references/routing-rules.md"
 HP="$P/references/halt-protocol.md"
 HT="$P/skills/orchestrate-flow/references/halt-taxonomy.md"
@@ -21,11 +20,19 @@ FD="$P/commands/mega-sdd.md"
 MP="$P/references/multi-prd-lifecycle.md"
 UM="$P/skills/using-mega-sdd/SKILL.md"
 
-# ── 1. front door: vault-presence branch + greenfield unchanged + ASK keterangan ──
-grep -qF 'YES, and NO vault exists in CWD' "$FD" \
-  && grep -qF 'generate-intent --from-prompt <input>` (greenfield brief — unchanged)' "$FD" \
-  && pass "1a: front door keeps the greenfield Mode B branch unchanged" \
-  || fail "1a: greenfield Mode B branch lost/reworded"
+# ── 1. front door: vault-presence branch + greenfield (no-vault) branch + ASK keterangan ──
+# 9.0 P1 (design 2026-09-27 §7 decision 4): generate-intent is deleted, so the no-vault
+# branch no longer proposes `generate-intent --from-prompt`; it writes the brief to a seed
+# PRD (plan/references/brief-input.md) and proposes `plan`. Line-scoped so the no-vault
+# branch is pinned to plan AND can never fall into the delta lane (diff-vault).
+NOVAULT="$(grep -F 'YES, and NO vault exists in CWD' "$FD")"
+[ -n "$NOVAULT" ] \
+  && echo "$NOVAULT" | grep -qF 'Write the brief to a seed PRD per `skills/plan/references/brief-input.md`' \
+  && echo "$NOVAULT" | grep -qF 'plan <OUTPUT_DIR>/source/seed-PRD.md' \
+  && ! echo "$NOVAULT" | grep -qF 'diff-vault' \
+  && [ -f "$P/skills/plan/references/brief-input.md" ] \
+  && pass "1a: front door keeps the greenfield (no-vault) branch: seed PRD -> plan, never the delta lane" \
+  || fail "1a: greenfield (no-vault) branch lost/reworded or leaks into the delta lane"
 grep -qF 'diff-vault --from-prompt <input>' "$FD" \
   && grep -qF '.delta-changed-paths.txt' "$FD" \
   && pass "1b: front door delta branch proposes diff-vault --from-prompt + the delta scope file" \
@@ -104,17 +111,32 @@ echo "$DVROW" | grep -qF 'mega-sdd:bind-codebase' \
   && fail "7b: row names bind-codebase directly (forbidden — the router owns the re-bind hop)" \
   || pass "7b: row never names bind-codebase (delta re-bind goes through the router)"
 
-# ── 8. binding-contract: vault-section leg concrete + patch-bump narrowing + moat sentences verbatim ──
-grep -qF 'Vault-section leg, concrete detection' "$BC" \
-  && pass "8a: the vault-section selection leg is concrete (reads VAULT-DIFF.md)" \
-  || fail "8a: vault-section leg still unspecified"
-grep -qF 'without a diff-vault patch record' "$BC" \
-  && pass "8b: patch-bump != regeneration narrowing present" \
-  || fail "8b: a diff-vault apply still degrades every scoped re-bind to full"
-grep -qF 'every ACTIVE CONFLICT from the previous binding regardless of path intersection' "$BC" \
-  && grep -qF 'A carried-forward verdict is never silently upgraded or downgraded' "$BC" \
-  && pass "8c: the moat-pinned selection/carry-forward sentences stay VERBATIM" \
-  || fail "8c: a moat-pinned sentence was reworded"
+# ── 8. vault-section leg of the delta re-bind scope (concrete, reads VAULT-DIFF.md) ──
+# 9.0 P1: bind-codebase and its binding-contract.md are deleted (design 2026-09-27 §3). The
+# delta lane's re-bind hop is `rebind-units.sh --paths=@<vault>/.delta-changed-paths.txt`, and
+# the vault-section leg (VAULT-DIFF.md rows -> affected claims -> units) lives in diff-vault
+# Step 7.5 -> scripts/derive-delta-paths.sh (behaviour-pinned by test-derive-delta-paths.sh).
+# 8a is REPOINTED there, keeping its strength: every diff category (Conflicts + Auto-resolved
+# OQs, not just Added/Changed/Removed) feeds the scope — only Summary/Unchanged are excluded.
+# RETIRED with bind-codebase (no lite counterpart by design):
+#   8b "without a diff-vault patch record" — the classic scoped bind's fallback trigger that
+#      degraded to a full binding.md rewrite on a vault version bump; rebind-units.sh scopes by
+#      paths only and has no version-bump fallback to narrow.
+#   8c binding.md carry-forward sentences ("every ACTIVE CONFLICT ... regardless of path
+#      intersection", "A carried-forward verdict is never silently upgraded or downgraded") —
+#      the whole-vault binding.md with `provenance: carried_forward` rows no longer exists; lite
+#      bindings are per unit (bolts/U-XXX/binding.json) and gated per unit at dispatch.
+DDP="$P/scripts/derive-delta-paths.sh"
+RF="$P/skills/diff-vault/references/report-format.md"
+grep -qF "touched VAULT-DIFF docs → affected claims' anchor paths" "$DV" \
+  && grep -qF 'the `rebind-units.sh --paths=@file` consumer contract' "$DV" \
+  && grep -qF 'derive-delta-paths.sh` maps each changed `context.md#<section>` to the units that cite it' "$RR" \
+  && grep -qF 'vd_path = os.path.join(vault, "VAULT-DIFF.md")' "$DDP" \
+  && grep -qF 'if heading.startswith("summary") or heading.startswith("unchanged"):' "$DDP" \
+  && grep -qF '**in every category**' "$RF" \
+  && grep -qF 'Conflict entries carry the doc' "$RF" \
+  && pass "8a: the vault-section selection leg is concrete (diff-vault Step 7.5 -> derive-delta-paths reads every VAULT-DIFF.md category)" \
+  || fail "8a: vault-section leg (VAULT-DIFF.md -> delta scope) lost or narrowed"
 
 # ── 9. scope-cut on record: NO census keywords added to ANY always-loaded description ──
 head -5 "$UM" | grep -qiF 'tambah kolom' \

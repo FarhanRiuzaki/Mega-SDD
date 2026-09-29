@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # v8 P1 F1(e) (spec 2026-09-10 App. F1e): validate-unit-spec.sh `xs_body_advisory` —
-# an xs-class unit (router size proxy: acceptance 1..2 AND steps 1..3, ONE
+# an xs-class unit (size proxy: acceptance 1..2 AND steps 1..3, ONE
 # implementation in _lib/unit_tier.py) whose body exceeds the xs diet (Goal 1
 # line · Context <= 2 sentences · Anti-patterns/Out of scope sourced per item)
 # is LISTED, never an issue / status / exit-code change. Non-xs units are
@@ -55,17 +55,17 @@ assert not any(i.get("halt_type", "").startswith("xs") for i in d["issues"]), "a
 assert "xs_body_advisory" in d["next_action"] and "never a halt" in d["next_action"]
 assert d["status"] == "PASS" and rc == 0, (d["status"], rc)
 EOF2
-# b: the proxy is ONE implementation — router and validator agree on the class
-python3 - "$ROOT" <<'EOF2' && pass "b: _lib/unit_tier.py is the single size proxy (resolver imports it; validator imports it)" || fail "b: proxy duplicated"
-import sys, re
-root = sys.argv[1]
-r = open(root + "/plugins/mega-sdd/scripts/resolve-review-tier.sh").read()
-v = open(root + "/plugins/mega-sdd/scripts/validate-unit-spec.sh").read()
-assert "from unit_tier import size_proxy" in r and "from unit_tier import size_proxy" in v
-assert r.count("def _section_items") == 0, "resolver still carries the inline proxy"
+# b: the proxy is ONE implementation — the validator imports it from _lib
+python3 - "$ROOT" <<'EOF2' && pass "b: _lib/unit_tier.py is the single size proxy (validator imports it)" || fail "b: proxy duplicated"
+import sys
+v = open(sys.argv[1] + "/plugins/mega-sdd/scripts/validate-unit-spec.sh").read()
+assert "from unit_tier import size_proxy" in v and v.count("def _section_items") == 0, "validator carries an inline proxy"
 EOF2
 # c: prose — writer contract names the diet and the advisory
+# 9.0 P1: generate-units was deleted; its unit walk (Step 10), unit template and
+# unit schema were relocated verbatim under skills/plan/references/ — repointed.
 P="$ROOT/plugins/mega-sdd"
-grep -q 'xs_body_advisory' "$P/skills/generate-units/SKILL.md" && grep -q 'xs' "$P/skills/generate-units/references/templates/unit.md" && grep -q 'xs body diet' "$P/skills/generate-units/references/unit-schema.md" \
-  && pass "c: generate-units Step 10 + template + schema carry the xs body diet" || fail "c: writer prose missing the diet"
+PR="$P/skills/plan/references"
+grep -Eq '^\*\*10\. Write each unit file\*\*.*xs body diet.*xs_body_advisory' "$PR/unit-procedure.md" && grep -q 'xs' "$PR/templates/unit.md" && grep -q 'xs body diet' "$PR/unit-schema.md" \
+  && pass "c: plan unit-procedure Step 10 + template + schema carry the xs body diet" || fail "c: writer prose missing the diet"
 echo; [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"; exit $rc

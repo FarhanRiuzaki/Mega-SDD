@@ -318,9 +318,9 @@ PYEOF
   if [ "$VL_APPLY" -eq 1 ]; then
     echo ""
     echo "NEXT (MANDATORY): full re-bind required — binding line anchors invalidated."
-    echo "  The merge shifted line numbers; binding.json / .citation-map.json are NEVER"
-    echo "  patched (regenerate, jangan fabricate): run /mega-sdd (bind) ulang untuk"
-    echo "  vault ini, lalu graph/emisi akan self-heal pada run berikutnya."
+    echo "  The merge shifted line numbers; binding.json / .citation-map.json are NEVER patched"
+    echo "  (regenerate, jangan fabricate). Commit hasil ini, lalu rung layout-3: /mega-sdd:migrate-paths --vault-layout=3 --apply"
+    echo "  — rung itu diakhiri full JIT re-bind wajib (rebind-units.sh --units=all); graph/emisi self-heal di run berikutnya."
   else
     echo ""
     echo "Preview only — nothing changed. Re-run with --apply to execute."

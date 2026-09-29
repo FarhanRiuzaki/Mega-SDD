@@ -9,7 +9,8 @@
 #   commit-keying (the migration guarantee) — a LEGACY bolt (no SDD-Acceptance
 #     trailer) NEVER blocks (advisory only); a v5-keyed bolt blocks on
 #     absent (acceptance_evidence_missing), red (acceptance_red), broken syntax
-#     (build_broken), and stale evidence (a newer bolt commit uncovers it).
+#     (build_broken), and stale evidence (a newer bolt commit uncovers it);
+#   the runner's bounded default (TIMEOUT=120).
 # Run: bash tests/postflight-evidence/test-acceptance-evidence.sh
 set -uo pipefail
 
@@ -240,6 +241,10 @@ import json, sys
 d = json.load(open(sys.argv[1])); cmds = [e["command"] for e in d["entries"]]
 assert 'printf \'[%s]\' "hello world"' in cmds and "printf '[%s]' 'a b'" in cmds, cmds
 PYC
+
+# ── bounded runner: the 120 s default (carried from tests/wave-rail/, P3 plan §3d, 2d02ae3b) ──
+grep -q '^TIMEOUT=120$' "$RAT" && ok "acceptance runner stays bounded: TIMEOUT=120 default" \
+  || fail "run-acceptance-tests.sh default timeout moved off TIMEOUT=120"
 
 echo
 [ "$FAILED" -eq 0 ] && { echo "test-acceptance-evidence: ALL PASS"; exit 0; } || { echo "test-acceptance-evidence: FAILURES"; exit 1; }

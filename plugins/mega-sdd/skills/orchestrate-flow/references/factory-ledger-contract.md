@@ -9,20 +9,20 @@ The factory ledger is a **derived**, project-scope, append-only record of what e
 ## Record schema
 
 ```yaml
-- phase: bind-codebase           # = handoff.emitted_by
+- phase: plan                     # emitting skill (handoff.emitted_by, or the blocker envelope's emitted_by for plan)
   attempt: 1                      # increments per re-run of this phase; basis of the retry cap
   emitted_at: 2026-06-25T10:05:00Z
   status: unresolved              # completed | unresolved | halted
-  confidence: 0.72                # = handoff.next_action.confidence (overall, 0..1)
+  # confidence: 0.72              # optional — handoff.next_action.confidence (0..1); plan emits no handoff, so its record omits it
   did:                            # concise "what I did" — for a downstream phase to read
-    - "Validated 14 claims: 11 CONFIRMED, 3 CONFLICT"
+    - "Wrote context.md + 18 units; 1 P1 business OQ open"
   unresolved:                     # drives BACKWARD routing; [] when green
-    - id: CONFLICT-003            # MUST be anchored: CONFLICT-N | OQ-N | file:line
-      kind: conflict              # conflict | oq | low_confidence | missing_input
-      blocks: [generate-units]    # downstream phase(s) this item blocks
-      note: "auth model mismatch vs codebase-map"
-  artifacts: [".mega-sdd/vaults/v1/binding.md"]   # = handoff.artifacts
-  consumed: [scan-codebase@1]     # which upstream checkpoints this phase read (query trail)
+    - id: OQ-007                  # MUST be anchored: CONFLICT-N | OQ-N | file:line
+      kind: oq                    # conflict | oq | low_confidence | missing_input
+      blocks: [execute-bolts]     # downstream phase(s) this item blocks
+      note: "refund window absent from KB modules/billing.prd.md §4"
+  artifacts: [".mega-sdd/vaults/v1/context.md", ".mega-sdd/vaults/v1/units/_index.md"]   # = handoff.artifacts, or the files plan wrote
+  consumed: [extract-intelligence@1]   # the KB a plan --kb=<kb-dir> read (query trail)
 ```
 
 ## Rules

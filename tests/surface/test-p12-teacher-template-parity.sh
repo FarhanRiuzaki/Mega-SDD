@@ -17,9 +17,11 @@ rc=0
 fail() { echo "FAIL: $1"; rc=1; }
 pass() { echo "PASS: $1"; }
 
-# ── (a) generate-units required-frontmatter keys: schema teaches, template carries ──
-US="$P/skills/generate-units/references/unit-schema.md"
-UT="$P/skills/generate-units/references/templates/unit.md"
+# ── (a) unit required-frontmatter keys: schema teaches, template carries ──
+# 9.0 P1: generate-units was removed; its unit schema + template were relocated
+# (git mv) into plan, the only unit producer (design 2026-09-27 §3). Same pair.
+US="$P/skills/plan/references/unit-schema.md"
+UT="$P/skills/plan/references/templates/unit.md"
 ok_a=1
 for key in task_type grounding_confidence module; do
   grep -qF "$key" "$US" || { fail "a: unit-schema.md lost required key '$key'"; ok_a=0; }
@@ -33,12 +35,19 @@ if grep -qF 'substring the runner LITERALLY prints' "$UT" \
   pass "b: expects substring contract present at BOTH template ('LITERALLY prints') and schema ('SUBSTRING MATCHER')"
 else fail "b: expects contract pair broken (6.1.1 poison class can re-enter)"; fi
 
-# ── (c) staging-drop severity: advisory at BOTH template and teacher; NEITHER halts ──
-FT="$P/skills/generate-intent/references/templates/flows.md"
-VC="$P/skills/generate-intent/references/vault-core.md"
-grep -q 'advisory `vault_flow_staging_drop`' "$FT" \
-  && pass "c1: 04-flows template says advisory vault_flow_staging_drop" \
-  || fail "c1: 04-flows template lost the advisory severity (A3 re-drift)"
+# ── (c) staging-drop severity: ONE owner (vault-core) says advisory; the flow template
+#    points at the owner; NEITHER claims a halt ──
+# 9.0 P1: generate-intent (and its layout-2 04-flows template) was removed. The
+# surviving flow template is plan's layout-3 context.md `## Flows`, which no longer
+# restates the severity — it carries an owner pointer to vault-core §stages-propagation
+# (relocated to plugin references/). Parity now = template points at the owner (c1),
+# owner says advisory + "no longer blocks" (c2/c4), neither claims a halt (c3/c5).
+FT="$P/skills/plan/references/templates/context.md"
+VC="$P/references/vault-core.md"
+grep -qF 'vault-core.md §stages-propagation' "$FT" \
+  && grep -qF 'validate-vault-flow-staging.sh' "$FT" \
+  && pass "c1: context.md flow template carries the owner pointer (vault-core §stages-propagation + validator)" \
+  || fail "c1: context.md flow template lost its pointer to the staging owner (A3 re-drift)"
 grep -F 'vault_flow_staging_drop' "$VC" | grep -q 'advisory' \
   && pass "c2: vault-contract says advisory for vault_flow_staging_drop" \
   || fail "c2: vault-contract severity drifted"
@@ -51,6 +60,11 @@ else pass "c3: neither file's vault_flow_staging_drop lines claim a halt"; fi
 grep -F 'vault_flow_staging_drop' "$VC" | grep -qF 'no longer blocks' \
   && pass "c4: teacher keeps the demotion negation ('no longer blocks')" \
   || fail "c4: teacher lost the it-does-NOT-block statement"
+# Negative pin on the template's staged-only pointer comment (it names no finding id,
+# so c3 alone cannot see it): the pointer must not re-grow a halt/block severity.
+if sed -n '/staged-only:/,/-->/p' "$FT" | grep -qiE 'halt|block(s|ed)? (execute|bolt)|hard-block'; then
+  fail "c5: context.md staged-only pointer claims a halt/block (severity fork reopened)"
+else pass "c5: context.md staged-only pointer claims no halt/block"; fi
 
 # ── (d) UAT step-row owner: uat-sections §Section 2 owns; SKILL + template point ──
 UO="$P/skills/emit-uat/references/uat-sections.md"
@@ -85,13 +99,33 @@ grep -qF "$ANNEX_PH" "$USK" && grep -qF 'ANNEX_FORGED' "$USK" \
   && pass "f3: SKILL carries the placeholder literal + ANNEX_FORGED wiring" \
   || fail "f3: SKILL lost the §5 wiring"
 
-# ── (e) binding marker pair: template + the ONLY writer (binding-mode) ──
-BT="$P/skills/bind-codebase/references/binding-md-template.md"
+# ── (e) binding marker pair: grammar owner + the ONLY writer (binding-mode) ──
+# 9.0 P1: bind-codebase (and binding-md-template.md) was removed. Per design
+# 2026-09-27 §7 decision #10 the layout-2 binding grammar is owned by the code,
+# scripts/_lib/binding_md.py (shared by the gate validator + derive-binding-json),
+# and the template is NOT relocated. The pair is therefore owner(code) + writer(doc).
+BT="$P/scripts/_lib/binding_md.py"
 BM="$P/skills/resolve-oq/references/binding-mode.md"
 if grep -qF '### ✅ CONFLICT-' "$BT" && grep -qF '### ✅ CONFLICT-' "$BM" \
    && grep -qF '**Resolution**: ✅ RESOLVED (' "$BT" && grep -qF '**Resolution**: ✅ RESOLVED (' "$BM"; then
-  pass "e: '### ✅ CONFLICT-' + '**Resolution**: ✅ RESOLVED (' present at BOTH template and writer"
-else fail "e: binding marker pair broken (template/writer drift or deletion)"; fi
+  pass "e1: '### ✅ CONFLICT-' + '**Resolution**: ✅ RESOLVED (' present at BOTH grammar owner and writer"
+else fail "e1: binding marker pair broken (owner/writer drift or deletion)"; fi
+# Behavioural half (the owner is code, so check it, not just its comments): the
+# owner's regexes must accept the writer's exact write-back forms.
+if MEGA_SDD_LIB_DIR="$P/scripts/_lib" python3 - <<'PYEOF'
+import os, sys
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import binding_md as b
+h = "### ✅ CONFLICT-1 RESOLVED (KEEP_CODE) — original title"
+r = "- **Resolution**: ✅ RESOLVED (KEEP_CODE) 2026-09-27 — rationale"
+m = b.CONFLICT_HEADING_RE.match(h)
+ok = bool(m) and m.group(1) == "CONFLICT-1"
+ok = ok and bool(b.RESOLUTION_LINE_RE.search(r))
+ok = ok and all((b._ACTION_IN_PARENS_RE.search(x) or [None, None])[1] == "KEEP_CODE" for x in (h, r))
+sys.exit(0 if ok else 1)
+PYEOF
+then pass "e2: binding_md.py grammar accepts the writer's heading + Resolution-line forms"
+else fail "e2: binding_md.py grammar no longer accepts the writer's write-back forms"; fi
 
 echo
 [ $rc -eq 0 ] && echo "ALL PASS" || echo "FAILURES PRESENT"

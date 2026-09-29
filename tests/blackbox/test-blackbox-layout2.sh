@@ -4,14 +4,21 @@
 #
 #   L1  seed: git project + the clinic 7-file vault (grounded in sample-prd-clinic.md)
 #   L2  migrate-paths --vault-layout --apply  → 4 files, derive PASS, re-bind msg
-#   L3  derive-claims-ledger on layout-2 (DOC_CODE via section anchors)
 #   L4  live validators on layout-2 writes (vault-flows Mermaid mandate, vault-oqs)
 #   L5  binding with layout-2 vault_source refs (+1 active CONFLICT)
-#       → derive-binding-json + parity gate
-#   L6  CONFLICT gate LIVE on layout-2: make-bound REFUSES, resolve, clean bound/
-#       (bound/ carries the 4 layout-2 docs, BIND annotation lands in flows.md)
-#   L7  unit write (vault_source: flows.md:F-U-001) → validate-unit-spec PASS
+#       → derive-binding-json
+#   L6  CONFLICT gate LIVE on layout-2: validate-handoff-binding-units BLOCKS
+#       (conflict_unresolved), resolve → re-derive → conflict_unresolved clears
+#   L7  unit write (vault_source: flows.md:F-U-001; binding_refs carries the
+#       resolved CONFLICT-1) → validate-unit-spec PASS → the binding->units
+#       gate PASSES (exit 0)
 #   L8  validate-flow-coverage locates the layout-2 vault + units
+#
+# 9.0 P1b: derive-claims-ledger.sh, make-bound.sh and validate-binding-json.sh
+# were deleted (no surviving executor). L3 (the ledger) was retired with its
+# script; the L5 parity leg went with the validator; L6 keeps the CONFLICT gate
+# on layout-2, re-pointed to its surviving carrier validate-handoff-binding-units
+# (invariant #2), and dropped the bound/ doc-set + BIND-annotation assertions.
 #
 # Run: bash tests/blackbox/test-blackbox-layout2.sh </dev/null
 set -uo pipefail
@@ -53,18 +60,6 @@ import json; d=json.load(open('$VAULT/vault.json'))
 assert d.get('vault_layout')==2 and len(d['entities'])==4 and len(d['flows'])==3, d.get('vault_layout')
 print('  ✓ vault.json: layout 2, 4 entities, 3 flows,', len(d['open_questions']), 'oqs')" || bad "vault.json shape wrong"
 
-# ── L3 claims ledger ─────────────────────────────────────────────────────────
-stage "L3 derive-claims-ledger (section-attributed DOC_CODE)"
-OUT="$(bash "$SCR/derive-claims-ledger.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
-[ $RC -eq 0 ] && ok "ledger rc=0: $OUT" || bad "ledger rc=$RC: $OUT"
-python3 -c "
-import json; c=json.load(open('$VAULT/claims-ledger.json'))['claims']
-codes={x['id'].split('-')[1] for x in c}
-assert {'DM','FL','DC'} <= codes, codes
-srcs={x['source'].rsplit(':',1)[0] for x in c}
-assert srcs <= {'vault.md','model.md','flows.md','constraints.md'}, srcs
-print('  ✓ claim codes', sorted(codes), 'sources', sorted(srcs))" || bad "ledger shape wrong"
-
 # ── L4 live validators on layout-2 writes ────────────────────────────────────
 stage "L4 validators: vault-flows + vault-oqs on layout-2"
 OUT="$(bash "$SCR/validate-kb.sh" --surface=vault-flows --cwd="$PROJ" --file-path="$VAULT/flows.md" </dev/null 2>&1)"; RC=$?
@@ -98,7 +93,7 @@ OUT="$(bash "$SCR/validate-vault-oqs.sh" --cwd="$PROJ" --file-path="$VAULT/const
 [ $RC -eq 0 ] && ok "validate-vault-oqs PASS on constraints.md once hosting + paid-licence are [business] (a real PASS)" || bad "vault-oqs rc=$RC after re-tag: $(printf '%s' "$OUT" | grep -E 'halt_type|detail' | head -4)"
 
 # ── L5 binding with layout-2 refs ────────────────────────────────────────────
-stage "L5 binding write (layout-2 vault_source) -> stamp -> parity"
+stage "L5 binding write (layout-2 vault_source) -> stamp -> derive"
 DM_LN=$(grep -n '^Table appointment' "$VAULT/model.md" | head -1 | cut -d: -f1)
 FL_LN=$(grep -n '^### F-U-001' "$VAULT/flows.md" | head -1 | cut -d: -f1)
 ST_LN=$(grep -n '^Table staff' "$VAULT/model.md" | head -1 | cut -d: -f1)
@@ -158,25 +153,23 @@ EOF
 write_binding 1
 OUT="$(bash "$SCR/derive-binding-json.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
 [ $RC -eq 0 ] && ok "derive-binding-json (phase-0 stamp) rc=0" || bad "derive rc=$RC: $OUT"
-OUT="$(bash "$SCR/validate-binding-json.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
-[ $RC -eq 0 ] && ok "binding parity gate PASS" || bad "parity rc=$RC: $OUT"
 
 # ── L6 CONFLICT gate LIVE on layout-2 ────────────────────────────────────────
-stage "L6 make-bound: refusal on CONFLICT, then clean layout-2 bound/"
-OUT="$(bash "$SCR/make-bound.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
-if [ $RC -eq 2 ] && [ ! -d "$VAULT/bound" ]; then
-  ok "GATE FIRED on layout-2: make-bound refused (exit 2), no bound/"
-else bad "expected refusal, rc=$RC: $OUT"; fi
+stage "L6 validate-handoff-binding-units: block on CONFLICT, clear once resolved"
+BLK="$PROJ/.mega-sdd/.validation-blockers.json"
+OUT="$(bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --quiet </dev/null 2>&1)"; RC=$?
+if [ $RC -eq 1 ] && python3 -c "import json,sys;d=json.load(open(sys.argv[1]));assert d['status']=='FAIL' and [x for x in d['drops'] if x['type']=='conflict_unresolved' and x.get('conflict_id')=='CONFLICT-1'], d" "$BLK" 2>/dev/null; then
+  ok "GATE FIRED on layout-2: active CONFLICT-1 blocks the binding->units boundary (exit 1, conflict_unresolved)"
+else bad "expected a conflict_unresolved block, rc=$RC: $OUT $(head -c 300 "$BLK" 2>/dev/null)"; fi
 write_binding 2
 bash "$SCR/derive-binding-json.sh" --vault "$VAULT" </dev/null >/dev/null 2>&1
-OUT="$(bash "$SCR/make-bound.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
-[ $RC -eq 0 ] && [ -d "$VAULT/bound" ] && ok "clean bind produced bound/: $OUT" || bad "make-bound rc=$RC: $OUT"
-B=1; for f in vault.md model.md flows.md constraints.md; do [ -f "$VAULT/bound/$f" ] || B=0; done
-[ "$B" = 1 ] && ok "bound/ carries the 4 layout-2 docs" || bad "bound/ doc set wrong: $(ls "$VAULT/bound" 2>/dev/null | tr '\n' ' ')"
-grep -q "<!-- BIND: " "$VAULT/bound/flows.md" && ok "BIND annotation landed in bound/flows.md" || bad "flows.md annotation missing"
+OUT="$(bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --quiet </dev/null 2>&1)"; RC=$?
+if python3 -c "import json,sys;d=json.load(open(sys.argv[1]));assert not [x for x in d['drops'] if x['type']=='conflict_unresolved'], d['drops']" "$BLK" 2>/dev/null; then
+  ok "resolved CONFLICT-1 no longer blocks as unresolved (rc=$RC until a unit carries it — L7)"
+else bad "resolved binding still conflict_unresolved, rc=$RC: $OUT $(head -c 300 "$BLK" 2>/dev/null)"; fi
 
 # ── L7 unit ──────────────────────────────────────────────────────────────────
-stage "L7 unit write (vault_source: flows.md) + validate-unit-spec"
+stage "L7 unit write (vault_source: flows.md) + validate-unit-spec + binding->units gate"
 mkdir -p "$VAULT/units"
 cat > "$VAULT/units/U-001.md" <<'EOF'
 ---
@@ -186,6 +179,7 @@ vault_source: flows.md:F-U-001
 task_type: create
 binding_refs:
   - C-001
+  - CONFLICT-1
 target_files:
   - path: src/db/schema/appointment.ts
     operation: create
@@ -220,6 +214,9 @@ See frontmatter `acceptance_test` (structured authority).
 EOF
 OUT="$(bash "$SCR/validate-unit-spec.sh" --cwd="$PROJ" --file-path="$VAULT/units/U-001.md" </dev/null 2>&1)"; RC=$?
 [ $RC -eq 0 ] && ok "validate-unit-spec PASS on the layout-2 unit" || bad "unit spec rc=$RC: $OUT"
+OUT="$(bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --quiet </dev/null 2>&1)"; RC=$?
+[ $RC -eq 0 ] && ok "binding->units gate PASS on layout-2 once U-001 carries the resolved CONFLICT-1 (rc=0)" \
+  || bad "binding->units gate rc=$RC after resolve + unit write: $OUT $(head -c 300 "$BLK" 2>/dev/null)"
 
 # ── L8 flow coverage locates the layout-2 vault ──────────────────────────────
 stage "L8 validate-flow-coverage on layout-2"

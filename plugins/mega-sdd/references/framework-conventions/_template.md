@@ -51,13 +51,13 @@ extends: <other-pack-or-null>           # optional — pack inheritance (e.g., l
 
 ## Hard Rules emitted
 
-These rules merge into `binding.md` §Suggested Unit Hard Rules on the classic lane (`bind-codebase` 2.9); on every lane the dispatch builder filters the glob-matched records into the bolt's T2 `framework_pack_rules`.
+Lint-checked by `validate-pack.sh`; `plan` promotes none into units (`plan/references/validation-passes.md §12.4.5`).
 
 ```
 HARD_RULE: <human-readable rule statement>
   path_glob: <e.g., app/Models/*.php>
   rule_type: NAMING_RULE | LOCATION_RULE | SIGNATURE_RULE | DEP_RULE | LOCK_RULE | SECURITY | PERFORMANCE | CUSTOM
-  pattern: <regex — or `required_pattern:` / `forbidden_pattern:` / `case_style:`, the keys the dispatch builder renders; a rule that needs an AST match carries a real ast-grep `rule:` body (promoted as a v2 fence)>
+  pattern: <regex — or `required_pattern:` / `forbidden_pattern:` / `case_style:`, keys no script parses today (plan promotes none — validation-passes §12.4.5); a rule that needs an AST match carries a real ast-grep `rule:` body (promoted as a v2 fence)>
   rationale: <1-sentence why>
 ```
 
@@ -78,15 +78,12 @@ What violates this framework's idioms (anti-patterns that bolts must NOT generat
 - <Anti-pattern 2 — e.g., "Business logic in `routes/*.php` (use Controllers or Actions)">
 - <Anti-pattern 3 — e.g., "Direct `$_POST` / `$_GET` access (use Request object)">
 
-## Code style (self-documenting)   <!-- REQUIRED — stack DELTA over Iron Rule 6 / _universal §Comment conventions — never restate the generic rule -->
+## Code style (self-documenting)   <!-- REQUIRED — stack DELTA over _universal §Comment conventions — never restate the generic rule -->
 
-> Consumed by `build-dispatch-prompt.sh` (T2 `code_style_slice`, priority 7b — `- ` bullets only;
-> MOST-SPECIFIC pack wins, no chain merge; ladder all → first two → first bullet, and the first
-> bullet is the floor) for `bolt-implementer`, and by the controller inside the standards-lens
-> slice. A STYLE rule, never a gate (F.5: no comment-counting validator, no HARD_RULE on
-> comments). 4–6 bullets, ≤ 1 600 bytes of bullets, at most ONE bad/good pair, and ONLY what is
+> A STYLE rule, never a gate (F.5: no comment-counting validator, no HARD_RULE on comments).
+> 4–6 bullets, ≤ 1 600 bytes of bullets, at most ONE bad/good pair, and ONLY what is
 > specific to this stack — the generic rule (WHY not WHAT, the delete test, minimality, the
-> protect-list, comment language = surrounding code) is agent-carried and must not be repeated.
+> protect-list, comment language = surrounding code) lives in `_universal.md §Comment conventions` and must not be repeated.
 > Every `read by` fact is web-verified at authoring (bump `last_verified_against:`). REQUIRED since
 > 8.2.0 (`_lint.md` Check 2 header + Check 6 shape). `_universal.md` never carries this section.
 
@@ -97,14 +94,7 @@ What violates this framework's idioms (anti-patterns that bolts must NOT generat
 
 ## Security idioms
 
-> Consumed by the execute-bolts review panel: the controller passes this section to the
-> `security-reviewer` lens as the pack security slice, and `bolt-implementer` receives ONLY the idioms
-> that also carry a `HARD_RULE` row (the T2 framework-pack rules read `## Hard Rules emitted`,
-> never this section) — so a mechanically expressible idiom MUST get its row below to be
-> born into generated code, not retrofitted. Keep bullets PROJECT-ACTIONABLE and stack-correct:
-> name the mechanism and the dangerous bypass, not generic advice the model already knows.
-> An idiom that is mechanically expressible ALSO gets a HARD_RULE row in
-> `## Hard Rules emitted` (the existing merge machinery — never a parallel rules channel).
+> PROJECT-ACTIONABLE, stack-correct: name the mechanism and the dangerous bypass, not generic advice the model already knows.
 
 - **Input validation** — <the stack's validation idiom + where it lives>
 - **SQL injection** — <the ORM/parameterized idiom + the raw-query escape hatch to avoid>
@@ -140,9 +130,9 @@ Extends `references/framework-conventions/_universal.md` §ERD Quality Rails:
 ## Flow-artifact derivation
 
 > Consumed by `validate-flow-coverage.sh` (code-delivery slice A). Declares how an
-> input-accepting state-transition step in `flows.md` maps to a REQUIRED code
-> artifact. The validator is tech-agnostic: it reads these signatures, never
-> hardcodes a stack. A pack that omits this section → the validator writes
+> input-accepting state-transition step in the vault flows (`context.md ## Flows`;
+> `flows.md` on layout-2) maps to a REQUIRED code artifact. The validator is
+> tech-agnostic: it reads these signatures, never hardcodes a stack. A pack that omits this section → the validator writes
 > `status: SKIP` (graceful, never errors). NOTE: `target_files` is read from BOTH the unit
 > frontmatter `target_files:` list (canonical) and the `## Target files` body block (union).
 
@@ -242,7 +232,7 @@ detail_view_render:
      $this->get(route('{resource}.show', $m))->assertOk()->assertSee((string) $m->{display_field});>
   test_glob: <glob where that render test lives, e.g. tests/Feature/**/*Test.php>
   # Only `detail_view_glob` is machine-parsed (validate-unit-spec.sh); `detail_view_render.template` is read by
-  # generate-units when it authors the acceptance test; `test_glob` has no consumer today.
+  # plan when it authors the render acceptance test (decomposition-rails §Render test); `test_glob` has no consumer today.
 ```
 
 ## UI quality signatures

@@ -1,17 +1,25 @@
 #!/usr/bin/env bash
-# test-sync-lane-vault-signal.sh — the Mode-D full-scan-fallback handoff must carry <vault>.
+# test-sync-lane-vault-signal.sh — the Mode-D no-baseline fallback re-bind must carry <vault>.
 #
 # WHY (fork-safety audit 2026-07-30, research/2026-07-30-fork-safety-audit-scan-bind.md):
-# on the Mode-D sync lane, scan-codebase's full-scan fallback writes NO
-# .sync-changed-paths.txt and hands straight to a FULL re-bind. On that branch the
-# vault path is the ONLY signal the downstream bind receives — and bind is
-# non-interactive there, so it cannot ask for it. Two of the three surfaces that
-# render this handoff had drifted to a bare `bind-codebase --auto`, which hands a
-# non-interactive (and, once Phase 5a lands, FORKED) bind nothing to resolve from.
+# on the Mode-D sync lane, the changed-set fallback writes NO .sync-changed-paths.txt
+# and goes straight to a FULL re-bind. On that branch the vault path is the ONLY signal
+# the downstream re-bind receives — the chain is non-interactive there, so it cannot
+# ask for it. The audit found surfaces that had drifted to a vault-less re-bind handoff.
 #
-# Also pins the fork-attribution: the docs described bind-codebase as already
-# `context: fork` while its frontmatter carried no `context:` key at all. A doc that
-# claims a skill is forked when it is not is how the real flip gets skipped.
+# 9.0 (P1, design docs/superpowers/specs/2026-09-27-v9-simplification-design.md §2/§3):
+# the classic scan → whole-vault-bind spine was removed. The fallback's PRODUCER is now
+# `scripts/derive-changed-paths.sh` exit 3 (no symbol-index baseline / git unavailable /
+# write failed) and the re-bind hop is the per-unit JIT writer
+# `scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=all`. Same invariant,
+# repointed: every surface that renders the fallback must render it WITH the vault.
+# Retired with the classic skills: the scan-procedure / halts-flags-handoff pins, the
+# 2026-06-10 living-vault spec's whole-vault-bind shorthand pin, and the whole-vault
+# bind's fork-attribution pin (that skill no longer exists).
+#
+# Also pins the fork attribution that survives: detect-drift is the ONE forked Mode-D
+# hop. A doc that claims a skill is forked when its frontmatter says otherwise is how a
+# real flip gets skipped (or an interactive phase gets run as if it could not ask).
 #
 # CI-safe: bash + python3 only. No network, no fixtures.
 set -uo pipefail
@@ -19,17 +27,17 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-PROC="$PLUGIN_ROOT/skills/scan-codebase/references/scan-procedure.md"
-HFH="$PLUGIN_ROOT/skills/scan-codebase/references/halts-flags-handoff.md"
+# The three surfaces that render the Mode-D no-baseline fallback in 9.0:
+#   ROUT — the router's authoritative Mode-D detail (was one of the three pre-9.0 surfaces)
+#   SYNC — the /mega-sdd:sync command's hard rails
+#   DCP  — the fallback's producer: derive-changed-paths.sh's exit-3 message is the
+#          handoff the non-interactive chain reads (replaces the scan fallback handoff)
 ROUT="$PLUGIN_ROOT/skills/orchestrate-flow/references/routing-rules.md"
-BIND="$PLUGIN_ROOT/skills/bind-codebase/SKILL.md"
-# The design spec is the SOURCE the operative refs implement — its shorthand was the
-# drift that let three downstream surfaces drop the vault. Pin it too, or the same
-# drift re-enters from the authority.
-REPO_ROOT="$(cd "$PLUGIN_ROOT/../.." && pwd)"
-SPEC="$REPO_ROOT/docs/superpowers/specs/2026-06-10-living-vault-continuous-sync-design.md"
+SYNC="$PLUGIN_ROOT/commands/sync.md"
+DCP="$PLUGIN_ROOT/scripts/derive-changed-paths.sh"
+REBIND="$PLUGIN_ROOT/scripts/rebind-units.sh"
 
-for f in "$PROC" "$HFH" "$ROUT" "$BIND" "$SPEC"; do
+for f in "$ROUT" "$SYNC" "$DCP" "$REBIND"; do
   [ -f "$f" ] || { echo "FAIL: missing $f"; exit 1; }
 done
 
@@ -37,71 +45,97 @@ fails=0
 pass() { echo "  PASS: $1"; }
 fail() { echo "  FAIL: $1"; fails=$((fails + 1)); }
 
-# ── 1. No surface may render the bind handoff WITHOUT a vault ────────────────
-# `bind-codebase --auto` with nothing between the verb and the flag is the defect.
-# `bind-codebase <vault> --auto` and `bind-codebase --paths=@…` are both fine.
-for f in "$PROC" "$HFH" "$ROUT" "$SPEC"; do
+# ── 0. The re-bind hop itself refuses a vault-less call (fail-closed, never a guess) ──
+# The doc pins below matter because the script cannot resolve a vault on its own: a
+# missing --vault is a usage error (exit 2), not a discovered default.
+tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+bash "$REBIND" --cwd="$tmp" --units=all >/dev/null 2>&1; rc=$?
+[ "$rc" -eq 2 ] \
+  && pass "rebind-units.sh exits 2 (usage) when --vault is absent — it never guesses a vault" \
+  || fail "rebind-units.sh without --vault exited $rc (expected 2: usage, fail-closed)"
+
+# ── 1. No surface may render a full re-bind invocation WITHOUT a vault ──────────────
+# `rebind-units.sh --cwd=<x> --units=…` / `--paths=…` with nothing between --cwd and the
+# scope flag is the defect (the vault was dropped from a full command form).
+for f in "$ROUT" "$SYNC" "$DCP"; do
   base="$(basename "$f")"
-  if grep -qE 'bind-codebase --auto' "$f"; then
-    fail "$base renders a vault-less \`bind-codebase --auto\` (forked bind gets no vault signal)"
-    grep -nE 'bind-codebase --auto' "$f" | head -2 | sed 's/^/        /'
+  if grep -qE 'rebind-units\.sh --cwd[= ][^ `)]+ --(units|paths)' "$f"; then
+    fail "$base renders a vault-less \`rebind-units.sh --cwd=… --units/--paths\` (the re-bind gets no vault signal)"
+    grep -nE 'rebind-units\.sh --cwd[= ][^ `)]+ --(units|paths)' "$f" | head -2 | sed 's/^/        /'
   else
-    pass "$base carries no vault-less bind handoff"
+    pass "$base carries no vault-less re-bind handoff"
   fi
 done
 
-# ── 2. The full-scan fallback branch must name the vault explicitly ──────────
-grep -qE 'bind-codebase <vault> --auto' "$PROC" \
-  && pass "scan-procedure renders the fallback as \`bind-codebase <vault> --auto\`" \
-  || fail "scan-procedure lost the <vault> in the full-scan fallback handoff"
-grep -qE 'bind-codebase <vault> --auto' "$HFH" \
-  && pass "halts-flags-handoff keeps the authoritative <vault>-carrying shape" \
-  || fail "halts-flags-handoff lost the authoritative <vault> shape"
-grep -qE 'bind-codebase <vault> --auto' "$ROUT" \
-  && pass "routing-rules renders the fallback with <vault>" \
-  || fail "routing-rules lost the <vault> in the Mode-D fallback"
+# ── 2. The no-baseline fallback branch must name the vault explicitly ───────────────
+FALLBACK_SHAPE='rebind-units\.sh --cwd=[^ `]+ --vault=<vault> --units=all'
+# ROUT + SYNC: the vault-carrying full re-bind must sit ON the fallback line itself
+# (the line naming the no-baseline / exit-3 branch), not merely somewhere in the file.
+grep -E '[Nn]o baseline|exit 3' "$ROUT" | grep -qE "$FALLBACK_SHAPE" \
+  && pass "routing-rules renders the Mode-D no-baseline fallback as \`rebind-units.sh --cwd=. --vault=<vault> --units=all\`" \
+  || fail "routing-rules lost the <vault> in the Mode-D no-baseline fallback"
+grep -E '[Nn]o baseline|exit 3' "$SYNC" | grep -qE "$FALLBACK_SHAPE" \
+  && pass "sync.md renders the changed-set-failure fallback with <vault>" \
+  || fail "sync.md lost the <vault> in the changed-set-failure (exit 3) fallback"
+# DCP: the producer's exit-3 message must hand off the vault-carrying shape, and that
+# message must be the exit-3 branch (the message spans lines, so check the block).
+python3 - "$DCP" "$FALLBACK_SHAPE" <<'PY' \
+  && pass "derive-changed-paths.sh's exit-3 handoff names the vault-carrying full re-bind" \
+  || fail "derive-changed-paths.sh's exit-3 (no baseline) handoff lost the <vault>"
+import re, sys
+src = open(sys.argv[1], encoding="utf-8").read()
+m = re.search(r'if not stamp:(.*?)sys\.exit\(3\)', src, re.S)
+sys.exit(0 if m and re.search(sys.argv[2], m.group(1)) else 1)
+PY
 
-# ── 3. Fork attribution must match bind-codebase's ACTUAL frontmatter ────────
-# Until Phase 5a flips it, no surface may assert bind-codebase is already forked.
-HAS_FORK="$(python3 - "$BIND" <<'PY'
-import sys
-try:
-    fm = open(sys.argv[1]).read().split('---', 2)[1]
-except Exception:
-    print("ERR"); raise SystemExit
-print("yes" if any(l.strip().startswith('context:') and 'fork' in l for l in fm.splitlines()) else "no")
+# ── 3. Fork attribution must match the downstream hops' ACTUAL frontmatter ──────────
+# After the drift hop, Mode D runs a SCRIPT (rebind-units.sh) then the skills
+# plan --reconcile → execute-bolts. While neither carries context: fork, no Mode-D
+# surface may lump them in with detect-drift as forked downstream phases.
+FORKED_DOWNSTREAM="$(python3 - "$PLUGIN_ROOT/skills/plan/SKILL.md" "$PLUGIN_ROOT/skills/execute-bolts/SKILL.md" <<'PY'
+import os, sys
+out = []
+for p in sys.argv[1:]:
+    try:
+        fm = open(p, encoding="utf-8").read().split('---', 2)[1]
+    except Exception:
+        print("ERR"); raise SystemExit
+    if any(l.strip().startswith('context:') and 'fork' in l for l in fm.splitlines()):
+        out.append(os.path.basename(os.path.dirname(p)))
+print(",".join(out) if out else "none")
 PY
 )"
-echo "  (bind-codebase context: fork = $HAS_FORK)"
+echo "  (forked Mode-D downstream skills = $FORKED_DOWNSTREAM)"
 
-if [ "$HAS_FORK" = "no" ]; then
+if [ "$FORKED_DOWNSTREAM" = "none" ]; then
   BAD=0
-  for f in "$PROC" "$HFH" "$ROUT"; do
-    # "two forked ... downstream phases" lumps bind in with detect-drift.
+  for f in "$ROUT" "$SYNC"; do
     if grep -qiE 'two forked[^.]*downstream|forked downstream phases' "$f"; then
-      fail "$(basename "$f") calls bind-codebase forked, but its frontmatter has no context: fork"
+      fail "$(basename "$f") calls the Mode-D downstream phases forked, but plan/execute-bolts carry no context: fork"
       BAD=1
     fi
   done
-  [ "$BAD" -eq 0 ] && pass "no surface claims bind-codebase is forked while it is not"
-elif [ "$HAS_FORK" = "yes" ]; then
-  # Phase 5a landed — the audit's Group C/D contract must have landed with it.
-  grep -qiE 'NEVER calls .?AskUserQuestion|non-interactive \(forked' "$BIND" \
-    && pass "forked bind carries the non-interactive declaration" \
-    || fail "bind-codebase is context: fork but carries no never-AskUserQuestion rail"
-  grep -qE 'bind_inputs_missing' "$BIND" \
-    && pass "forked bind defines the deterministic-input blocker" \
-    || fail "bind-codebase is context: fork with no bind_inputs_missing blocker (it would have to guess a vault)"
+  [ "$BAD" -eq 0 ] && pass "no Mode-D surface claims a downstream phase is forked while it is not"
+elif [ "$FORKED_DOWNSTREAM" = "ERR" ]; then
+  fail "could not parse plan / execute-bolts frontmatter"
 else
-  fail "could not parse bind-codebase frontmatter"
+  # A downstream hop flipped to context: fork — it can no longer ask, so it must carry
+  # the non-interactive rail (the same contract detect-drift carries).
+  for s in ${FORKED_DOWNSTREAM//,/ }; do
+    grep -qiE 'NEVER calls .?AskUserQuestion' "$PLUGIN_ROOT/skills/$s/SKILL.md" \
+      && pass "forked $s carries the non-interactive declaration" \
+      || fail "$s is context: fork but carries no never-AskUserQuestion rail"
+  done
 fi
 
-# ── 4. detect-drift IS forked — the attribution must stay TRUE for it ────────
+# ── 4. detect-drift IS forked — the attribution must stay TRUE for it ───────────────
 DD="$PLUGIN_ROOT/skills/detect-drift/SKILL.md"
 if [ -f "$DD" ]; then
   grep -qE '^context:[[:space:]]*fork' "$DD" \
     && pass "detect-drift still carries context: fork (the live precedent)" \
     || fail "detect-drift lost context: fork — the fork precedent is gone"
+else
+  fail "missing $DD (detect-drift is a kept 9.0 skill)"
 fi
 
 echo

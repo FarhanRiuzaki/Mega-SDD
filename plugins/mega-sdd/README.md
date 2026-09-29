@@ -1,16 +1,16 @@
-<p align="center"><img src="../../docs/mega-sdd/mega-sdd.png" width="140" alt="mega-sdd — intent → binding → done" /></p>
+<p align="center"><img src="../../docs/mega-sdd/mega-sdd.png" width="140" alt="mega-sdd — route, build, check" /></p>
 
 # mega-sdd
 
-Spec-driven AI development pipeline for [Claude Code](https://claude.com/claude-code). PRD or idea → vault → atomic units → tested commits, with anti-hallucination at every handoff.
+Build from a PRD or a brief in [Claude Code](https://claude.com/claude-code). A front door routes each task to the lightest lane that fits (direct / assisted / guarded), and every lane ends with the same checked result: an acceptance-criterion → test table, `delivery-check.sh` `VERDICT: PASS` on the final commit, and the assumptions made. The guarded lane adds a cited spec, per-unit binding and audit evidence for teams that need traceability.
 
 **Version:** see [`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) (single source of truth) · **License:** MIT
 
-> **This page's job**: per-command reference + plugin internals (defense layers, config, native tools). Install/update + orientation → root [`../../README.md`](../../README.md) · walkthroughs → [`../../tests/scenarios/`](../../tests/scenarios/) · version history → [`../../CHANGELOG.md`](../../CHANGELOG.md).
+> **This page's job**: per-command reference + plugin internals (lanes, the guarded pipeline, defense layers, config, native tools). Install/update + orientation → root [`../../README.md`](../../README.md) · walkthroughs → [`../../tests/scenarios/`](../../tests/scenarios/) · version history → [`../../CHANGELOG.md`](../../CHANGELOG.md).
 
 ## Install / update
 
-Canonical install, update, and uninstall instructions live in the **[root README — Quick start](../../README.md#quick-start-5-minutes)**. TL;DR (typed inside the Claude Code chat, not your shell): add the marketplace, `/plugin install mega-sdd`, optionally `/mega-sdd:install-deps` — then in any project:
+Canonical install, update, and uninstall instructions live in the **[root README — Quick start](../../README.md#quick-start-5-minutes)**. TL;DR (typed inside the Claude Code chat, not your shell): add the marketplace, `/plugin install mega-sdd`, optionally `/mega-sdd:install-deps`, then `/reload-plugins` — then in any project:
 
 ```
 /mega-sdd ./prd.md
@@ -27,14 +27,16 @@ Never used Claude Code itself? Start with [Scenario 0 — Zero to first run](../
 
 > **How the bare verb works**: Claude Code registers plugin commands only as `/mega-sdd:<command>`, so `/mega-sdd` itself is a user-level wrapper (`~/.claude/commands/mega-sdd.md`) that the SessionStart hook auto-installs on your first session and keeps current across plugin updates (`scripts/install-front-door.sh`, version-marker idempotent — a hand-edited wrapper without the marker is never touched). Before that first session, use `/mega-sdd:mega-sdd`.
 
-`/mega-sdd` is the headline — it runs the whole pipeline autonomously with one upfront confirmation (no arg = status view + proposed next chain). `/mega-sdd:sync` reconciles after out-of-pipeline changes; `/mega-sdd:emit <prd|fsd|sit|uat|html|summary>` emits the four team documents plus the two presentation lanes (offline interactive HTML render; grounded executive summary). Everything else is reachable by natural-language phrase through the front door; a typed legacy (pre-v7) form still arrives as plain text and routes to its skill — the full old→new map: [`docs/mega-sdd/upgrade-from-old-version.md`](../../docs/mega-sdd/upgrade-from-old-version.md).
+`/mega-sdd` is the headline. With a PRD or a brief it routes first, then builds. With no argument it shows the status of the project's vaults and proposes the next chain. `/mega-sdd:sync` reconciles a guarded project after out-of-pipeline changes. `/mega-sdd:emit <prd|fsd|sit|uat|html|summary>` emits the four team documents plus the two presentation lanes (offline interactive HTML render; grounded executive summary).
+
+Everything else is reachable by natural-language phrase through the front door. A typed legacy (pre-v7) form still arrives as plain text and routes to its skill; the full old→new map is in [`docs/mega-sdd/upgrade-from-old-version.md`](../../docs/mega-sdd/upgrade-from-old-version.md).
 
 | Command | What it does |
 |---|---|
-| `/mega-sdd <input>` | **The one command** — routes a PRD / idea / legacy path through the full pipeline end-to-end. Task weight is auto-judged S/M/L (default S = answer inline, zero pipeline); override with `--weight=S\|M\|L`; `--classic` restores the scan-first spine; `--lite` opts into the v8 lane (plan → execute-bolts --all --lite; config `lane: lite`) |
-| `/mega-sdd:sync` | **The other one** — after ANY out-of-pipeline change (manual edit, AI edit, hotfix, `git pull`): incremental re-scan → drift → re-bind → unit reconcile. `--auto` = one confirmation, zero mid-chain questions |
-| `/mega-sdd:emit <prd\|fsd\|sit\|uat\|html\|summary>` | The four team documents (PRD / Confluence FSD / SIT / UAT) emitted from vault/units/bolts state; no arg lists them with maturity. The uat lane also generates Playwright e2e skeletons + OFFERS an automated evidence run (§5 annex — human execution surfaces untouched). `html <file\|dir>` renders any md/KB bundle to self-contained offline interactive HTML (deterministic script, zero model tokens); `summary` writes a grounded executive summary with cited numbers |
-| `/mega-sdd:migrate-paths` | One-time move of pre-v3.4 scattered outputs into the canonical `.mega-sdd/` layout; `--vault-layout` migrates a legacy 7-file vault to the 4-file layout-2 (dry-run default; `--apply` executes, then a full re-bind is mandatory); `--vault-layout=3 --vault=<dir>` (8.0.0) migrates a layout-2 vault to layout-3 `context.md` (dry-run default; `--apply`; archives the four docs + `binding.md` under `_meta/archive/layout2/`; then a full JIT re-bind is MANDATORY: `scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=all`) |
+| `/mega-sdd <input>` | **The one command.** For a PRD or a brief it runs `scripts/route-lane.sh` first and builds in the lane it picks: **direct**, **assisted** or **guarded** (see [Lanes](#lanes)). A directory input takes another path: a legacy codebase goes to extract-intelligence, a KB to `plan --kb`, a vault to its next chain.<br>• Force a lane with `--direct` / `--assisted` / `--guarded`. `--lite` and the pipeline-only flags imply guarded.<br>• `--weight=S\|M\|L` overrides the session anchor's task weight.<br>• `--classic` and `lane: standard` are retired: the front door ignores them with a one-line note. |
+| `/mega-sdd:sync` | **The other one.** Use it after ANY out-of-pipeline change on a guarded project (manual edit, AI edit, hotfix, `git pull`). The chain: changed-set derivation (a zero-token script) → drift triage → per-unit re-bind (`scripts/rebind-units.sh`) → `plan --reconcile` → `execute-bolts` on stale units only.<br>• `--auto`: one confirmation, zero mid-chain questions.<br>• `--full-bind`: re-binds every unit (the "apakah kode masih sinkron dengan spec?" audit). |
+| `/mega-sdd:emit <prd\|fsd\|sit\|uat\|html\|summary>` | The four team documents (PRD / Confluence FSD / SIT / UAT), emitted from vault/units/bolts state; no argument lists them with their maturity.<br>• The `uat` lane also generates Playwright e2e skeletons and OFFERS an automated evidence run (§5 annex — human execution surfaces untouched).<br>• `html <file\|dir>` renders any md/KB bundle to self-contained offline interactive HTML (deterministic script, zero model tokens).<br>• `summary` writes a grounded executive summary with cited numbers. |
+| `/mega-sdd:migrate-paths` | One-time move of pre-v3.4 scattered outputs into the canonical `.mega-sdd/` layout. Its vault-layout rungs:<br>• `--vault-layout=3 --vault=<dir>` moves a pre-9.0 (layout-2) vault to layout-3 `context.md`. This is how you build or sync on a pre-9.0 vault. Dry-run by default; `--apply` executes and archives the four docs + `binding.md` under `_meta/archive/layout2/`. A full JIT re-bind is then MANDATORY: `scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=all`.<br>• `--vault-layout` migrates a legacy 7-file vault to layout-2 first. |
 | `/mega-sdd:install-deps` | OS-aware install of the optional native tools |
 | `/mega-sdd:update-plugin` | Pull the latest plugin version (then `/plugin marketplace update mega-sdd` + `/reload-plugins` to activate) |
 
@@ -43,36 +45,102 @@ Full surface: **3 public verbs + 3 maintenance one-timers** — exactly the 6 fi
 
 ## First time? Start with a scenario
 
-The full chooser table (12 guided walkthroughs with copy-paste inputs + expected outputs) lives in **[`tests/scenarios/README.md`](../../tests/scenarios/README.md)**. Most common entry points: [Scenario 0 — Zero to first run](../../tests/scenarios/scenario-0-zero-to-first-run.md) (never used Claude Code) · [Scenario 1 — Greenfield from idea](../../tests/scenarios/scenario-1-greenfield-from-idea.md) · [Scenario 12 — Continuous sync](../../tests/scenarios/scenario-12-continuous-sync.md) (code changed after "done").
+The full chooser table (guided walkthroughs with copy-paste inputs + expected outputs) lives in **[`tests/scenarios/README.md`](../../tests/scenarios/README.md)**. Most common entry points: [Scenario 0 — Zero to first run](../../tests/scenarios/scenario-0-zero-to-first-run.md) (never used Claude Code) · [Scenario 1 — Greenfield from idea](../../tests/scenarios/scenario-1-greenfield-from-idea.md) · [Scenario 12 — Continuous sync](../../tests/scenarios/scenario-12-continuous-sync.md) (code changed after "done").
 
 A canonical example PRD (the standard frontmatter + `§`-section format) lives at [`../../tests/scenarios/sample-prd-clinic.md`](../../tests/scenarios/sample-prd-clinic.md); the blank template is [`../../docs/templates/prd-template.md`](../../docs/templates/prd-template.md).
 
-## The pipeline
+## Lanes
 
 ```mermaid
 flowchart LR
-    LEG[legacy] --> EXT["extract-intelligence<br/>census → PRD-kontrak"]
-    EXT --> PRD[PRD / idea] --> GI[generate-intent]
-    GI --> SB[scan + bind<br/>brownfield] --> GU[generate-units] --> EB[execute-bolts]
-    PRD -.->|"--lite (opt-in, 8.0.0)"| PL["plan<br/>context.md + units (layout-3)"] -.-> EB
-    EB --> EMIT[emit-agents-md<br/>+ emit prd / fsd / sit / uat]
+    IN["/mega-sdd &lt;prd | brief&gt;"] --> R["route-lane.sh<br/>observable signals"]
+    R -->|no signal| D["direct<br/>main session builds it"]
+    R -->|"open business items · security ·<br/>multi-flow · existing app"| A["assisted<br/>direct + ONE batched ask<br/>+ ONE blind review"]
+    R -->|"existing vault · --guarded"| G["guarded<br/>plan → execute-bolts"]
+    D --> C["delivery-check.sh<br/>VERDICT: PASS"]
+    A --> C
+    G --> C
+    C --> RES(["result contract<br/>AC → test table · assumptions · commits"])
 ```
 
-`/mega-sdd` wraps all of it: single upfront confirmation, diagnostics (lint / analyze / drift) auto-invoked at the right phases, halt-protocol preserved throughout. Brownfield runs bind claim-scoped via `bind-codebase --express` (default spine — `scan-codebase` is on-demand / classic); the legacy-rebuild lane starts from `extract-intelligence`. Two lanes: the chain above is the classic DEFAULT for all of 8.x; `--lite` (or `lane: lite`) folds generate-intent + generate-units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` (`bolts/U-XXX/binding.json`).
+- **direct** — no signal fired. The main session builds the spec the way plain Claude Code would. No vault, no units, no subagents, no `.mega-sdd/` writes.
+- **assisted** — fires on `spec_open_items`, `security_surface`, `multi_flow` or `existing_code` (≥10 tracked source files). It is direct plus two steps:
+  - before coding, the spec's open business items go to the human in ONE `AskUserQuestion`; technical items are decided and listed;
+  - after the delivery check passes, ONE blind review subagent reads the whole diff. It gets the PRD and the commit range, but not the implementer's notes.
+- **guarded** — `vault_present`, or forced. This is the spec pipeline below.
 
-**And it loops.** Development never actually ends — so after the pipeline "finishes", every out-of-pipeline change (a manual hotfix, an AI-prompted edit in any session, a `git pull`) is captured ambiently (a PostToolUse journal + per-unit binding stamps checked against HEAD), surfaced in the session-start state block (HEAD, FRESH/STALE per vault, and the rule "code at HEAD decides what the code IS"), blocked at dispatch when a unit's binding no longer describes HEAD, and reconciled by `/mega-sdd:sync`:
+The direct/assisted procedure is [`references/direct-lane.md`](./references/direct-lane.md). The signals and their thresholds are in the [`scripts/route-lane.sh`](./scripts/route-lane.sh) header, and `<repo-root>/tests/lanes/test-lanes.sh` pins them. Direct and assisted stop and offer `--guarded` in one line when the work shows a spec-vs-code contradiction, a cross-owner change, or a blocking business decision.
+
+**The result contract (every lane).** The run is done only when `scripts/delivery-check.sh` printed `VERDICT: PASS` on the final commit. The chat report then carries four items:
+- a table of every criterion with its status and the test that covers it;
+- the delivery-check verdict, quoting the PASS line;
+- every assumption and decision made;
+- the commits.
+
+**What the delivery check runs.** It works on a fresh checkout of HEAD:
+- a real `scripts.test` (blocking);
+- tests under TZ=UTC and TZ=UTC+14 (blocking);
+- `build` with an empty env (blocking);
+- unlinked Next.js pages (advisory).
+
+A repo without a `package.json` gets `SKIP`, and the run executes that stack's own test and build commands. `<repo-root>/tests/v9/test-result-contract.sh` pins the contract in both places that end a run.
+
+## The guarded pipeline
+
+```mermaid
+flowchart LR
+    LEG[legacy code] --> EXT["extract-intelligence<br/>census → PRD-kontrak KB"]
+    EXT -->|"plan --kb"| PL
+    PRD[PRD / BRD] --> PL
+    BR["brief (--guarded)"] -->|seed PRD| PL
+    PL["plan<br/>context.md + constitution.md + units (layout-3)<br/>ONE batched ask"] --> EB["execute-bolts --all --lite<br/>one context · bind up front + per task · CONFLICT gate at run start"]
+    EB --> DC[delivery-check.sh]
+    EB -.-> EMIT["emit prd / fsd / sit / uat<br/>+ emit-agents-md"]
+```
+
+ONE spec pipeline. `--lite` survives only as its lane marker.
+
+- **`plan`** is ONE model phase. Its input is a PRD/BRD, a seed PRD that the front door writes from a brief under `--guarded`, or `--kb=<kb-dir>` for an extract-intelligence KB. It writes the layout-3 vault (`context.md` with flows, DBML, NFRs and OQs, plus `constitution.md` and `vault.json`) and the atomic units (`units/U-*.md` + `_index.md`), each carrying `prd_source` / `context_source` citations. P1 business OQs go out in ONE batched ask. `validate-plan-coverage.sh` must PASS before the bolts hop: every PRD heading needs a decision — a unit, an open OQ carrying `[covers: <prd>#<slug>]`, or a `context.md ## Coverage exclusions` line with a reason (the gate checks that a decision exists; it never guesses which headings are meta). It reads markdown only: a `.pdf`/`.docx`/`.txt` PRD gets a `.md` rendition first. Each plan-born vault needs its own fresh PASS: an edit to the PRD, the exclusions, an OQ or a unit's `prd_source`, a re-pinned PRD or an added KB module after the gate ran is refused until it re-runs.
+- **`execute-bolts --all --lite`** runs every unit in ONE context from a generated plan (spec v9 §8.5; commit `dbd3d7d4`: not WORSE than the per-unit agent path on AC, Critical, Important, traps and regressions, n=3). It binds every pending unit up front: `derive-unit-claims.sh` → `write-unit-binding.sh`, the sole writer of `bolts/U-XXX/binding.json` (CONFIRMED / CONFLICT / OQ per claim) → `validate-handoff-binding-units.sh`. `derive-exec-plan.sh` quarantines a unit with an unresolved CONFLICT (`binding_conflict`) and skips its dependents, until `resolve-oq --binding` settles it; each task re-binds its unit first. Each unit is built test-first with the pre/post-flight Hard Rule scans and the evidence writers; ONE blind review covers the run, and `conflict_bypassed` plus the evidence gates check it at the boundary. The per-unit `--agents` path was removed in P3 (spec v9 §8.6). The run ends with `delivery-check.sh` and the result contract.
+- **Why it exists:** traceability and audit. It gives a PRD section → unit → binding verdict → commit trail, per-bolt evidence on disk, and the inputs for FSD/SIT/UAT. It is **not** a code-quality gain; see [Measured](#measured-against-plain-claude-code).
+
+**Removed in 9.0:** the classic chain (`generate-intent → scan-codebase → bind-codebase → generate-units`) and the scan-first spine. `--classic` and a config `lane: standard` select nothing: the front door says so in one line and carries on with the one pipeline. **Pre-9.0 (layout-2) vaults** are still READ (resolver: layout-3 → layout-2 → legacy), so emit-* and status keep working. To build or sync on one, run `/mega-sdd:migrate-paths --vault-layout=3` and then the mandatory full re-bind. The front door proposes this and never runs it silently.
+
+**And it loops.** Development never actually ends. After a guarded run "finishes", every out-of-pipeline change (a manual hotfix, an AI-prompted edit in any session, a `git pull`) goes through the same steps:
+1. It is captured ambiently: a PostToolUse journal, plus per-unit binding stamps checked against HEAD.
+2. It is surfaced in the session-start state block: HEAD, FRESH/STALE per vault, and the rule "code at HEAD decides what the code IS".
+3. It is blocked when a unit's binding no longer describes HEAD (at run start).
+4. It is reconciled by `/mega-sdd:sync`:
 
 ```mermaid
 flowchart LR
     MOVE[code moves<br/>any way] --> NOTICE[system notices<br/>journal + git stamp] --> SYNC["/mega-sdd:sync [--auto]"]
-    SYNC --> CHAIN[scan --changed-only → drift scoped<br/>→ bind --paths → units --reconcile<br/>→ bolts stale/new only]
+    SYNC --> CHAIN[changed paths → drift scoped<br/>→ rebind-units --paths → plan --reconcile<br/>→ bolts stale only]
     CHAIN --> REPORT[SYNC-REPORT.md<br/>+ PENDING-SYNC.md queue]
     REPORT -.repeat forever.-> MOVE
 ```
 
-On a `--lite` / layout-3 vault the re-bind hop is `scripts/rebind-units.sh --paths=@…` → `plan --reconcile` → `execute-bolts --all --lite`; `sync --full-bind` audits every unit.
+`plan --reconcile` flips `task_type` / `status` and marks superseded units; it never adds a unit. A new requirement goes `diff-vault` → `plan --regenerate`. `sync --full-bind` audits every unit.
 
 Under `--auto`: one upfront confirmation, zero mid-chain questions — human-required decisions (drift direction calls, vault patches, CONFLICTs) are QUEUED, never auto-resolved. Walkthrough: [scenario 12](../../tests/scenarios/scenario-12-continuous-sync.md) · design: [`living-vault spec`](../../docs/superpowers/specs/2026-06-10-living-vault-continuous-sync-design.md).
+
+## Measured against plain Claude Code
+
+Setup: n=3 clean runs per arm, opus, vanilla Claude Code (mega-sdd disabled) as the control, medians. The protocol and decision rules were locked before the runs (`benchmarks/runbooks/vanilla-vs-megasdd.md`). The routed rows are two greenfield fixtures only; assisted on existing code (the brownfield default) is unmeasured.
+
+| Block | vanilla | mega-sdd | verdict |
+|---|---|---|---|
+| greenfield xs (routed → direct) | 3.2 min · $1.03 · AC 12/12 | 2.7 min · $1.16 · AC 12/12 | OVERLAP: cost 1.13×, tokens 1.30× (the xs speed gap is not claimed) |
+| greenfield clinic (routed → assisted) | 30.0 min · $7.68 · AC 10/10 | 26.6 min · $9.30 · AC 10/10 | OVERLAP: cost 1.21×, tokens 1.38× |
+| brownfield, 7 seeded traps (guarded, per-unit path — removed in P3) | 19.1 min · $6.46 · traps 5/5 | 60.8 min · $38.93 · traps 5/5 | same traps at ~6× the cost |
+| old default pipeline, greenfield (lite/classic) | — | 2.4–12× slower, 8.8–22× costlier | equal or lower quality |
+
+- The guarded CONFLICT gate (per-unit path, history) fired 3× in 3 runs, all false positives on the pipeline's own anchors. None of the seeded contradictions reached it.
+- The runs were headless, so the interactive value of a CONFLICT halt is unmeasured.
+- No hook runs `delivery-check.sh`. On direct/assisted it is a prose rule: the routed runs ran it 3/3 while it was a procedure step and 6/6 once "done = `VERDICT: PASS`" was written into the lane instructions.
+- mega-sdd makes **no** claim to be faster, cheaper, lighter or stronger than plain Claude Code (rule: [`CLAUDE.md` §Release evidence](./CLAUDE.md#release-evidence--complexity-budget)).
+
+Decisions: commits `cf8d3df3` (greenfield), `d447a6d2` (lane router), `5d880e8b` (brownfield) · the full tables: [root README](../../README.md#measured-against-plain-claude-code).
 
 ## What's in this folder
 
@@ -80,23 +148,19 @@ Under `--auto`: one upfront confirmation, zero mid-chain questions — human-req
 plugins/mega-sdd/
 ├── .claude-plugin/plugin.json    # plugin manifest (version SSOT)
 ├── .mcp.json                     # bundled MCP pins (playwright + context7, exact versions)
-├── skills/                       # 20 skills — lean routers + progressive disclosure (each SKILL.md ≤500 lines)
+├── skills/                       # 16 skills — lean routers + progressive disclosure (each SKILL.md ≤500 lines)
 │   ├── using-mega-sdd/           # anchor skill (auto-injected at session start)
-│   ├── extract-intelligence/  generate-intent/  scan-codebase/  bind-codebase/
-│   ├── generate-units/  execute-bolts/          # the core pipeline
-│   ├── orchestrate-flow/  plan/  resolve-oq/  detect-drift/  diff-vault/  analyze/  graph/
+│   ├── plan/  execute-bolts/     # the guarded pipeline
+│   ├── orchestrate-flow/  resolve-oq/  detect-drift/  diff-vault/  analyze/  graph/
+│   ├── extract-intelligence/     # legacy → KB (hands off to plan --kb)
 │   ├── emit-agents-md/  emit-prd/  emit-fsd/  emit-sit/  emit-uat/  install-deps/
-├── agents/                       # 9 first-class subagents
-│   ├── bolt-implementer.md       # execute-bolts implementer
-│   ├── spec-reviewer.md, code-quality-reviewer.md, security-reviewer.md, standards-reviewer.md, design-reviewer.md
-│   │                             #   ↳ the execute-bolts review panel (parallel blind lenses, risk-tiered; design joins for UI-bearing units)
-│   ├── resolution-verifier.md    # execute-bolts fix-round reviewer (verifies open findings at the new head instead of a full re-panel)
+├── agents/                       # 2 first-class subagents (the execute-bolts agents were removed in P3, spec v9 §8.6)
 │   ├── domain-extractor.md       # extract-intelligence per-module PRD-kontrak extractor
 │   ├── claim-verifier.md         # extract-intelligence adversarial per-module verify lane (grades citations EXACT/IMPRECISE/WRONG; 100% of [LOCKED] + money-class rules)
 ├── commands/                     # exactly 6: 3 public verbs (mega-sdd · sync · emit) + 3 maintenance one-timers (migrate-paths · install-deps · update-plugin)
-├── references/                   # paths.md (canonical layout), framework-conventions/, tooling-install.md, …
+├── references/                   # direct-lane.md (direct/assisted procedure), paths.md (canonical layout), vault-core.md, framework-conventions/, tooling-install.md, …
 ├── hooks/                        # 6 events, dispatched direct (no run-hook shim): SessionStart anchor + gateway session note · PreToolUse gate · PostToolUse journal · Stop · UserPromptExpansion · UserPromptSubmit (gateway tag + sync offer)
-├── scripts/                      # /analyze engine (run-analyze.sh) + validators + sync scripts
+├── scripts/                      # route-lane.sh · delivery-check.sh · /analyze engine (run-analyze.sh) · validators · sync scripts
 ├── tests/                        # moat / drift / handoff / state suites (more under repo-root tests/)
 ├── CLAUDE.md                     # AI-agent contributor guide (contracts + invariants)
 └── LICENSE
@@ -106,37 +170,56 @@ plugins/mega-sdd/
 
 The plugin emits exactly two in-band artifacts for an LLM gateway, and nothing else: the `mega-sdd-trace:*` tag family (the gateway filters mega-sdd sessions on it) and, on gateway-routed sessions only, one sanitized `mega-sdd-note:` line at session start carrying the repository, branch and commit the session ran in — a vanilla session gets neither cost nor output from it. All token/cost/session accounting lives gateway-side. Spec: [`../../docs/gateway-contract.md`](../../docs/gateway-contract.md).
 
-## How it prevents hallucination
+## Guarded-lane defense layers
 
-Mega-sdd's reason for existing is that it **won't let an agent invent what isn't grounded**. Defense is layered across every handoff — uncertain claims become Open Questions, never guesses; the binding gate blocks on unresolved CONFLICTs; units carry a `target_files` whitelist + acceptance test + cited anchors; Hard Rules are AST-validated at bolt time. The full defense in depth:
+The guarded pipeline is built so an agent does not act on what isn't grounded: its procedure turns an uncertain claim into an Open Question rather than a guess (technical OQs are AI-decided as labelled choices; headless runs record business defaults as assumptions). These layers make its output traceable and auditable. Measured against plain Claude Code they did not produce better code ([Measured](#measured-against-plain-claude-code)), so they are an audit mechanism, not a quality claim. The full list:
 
-1. **Intent** — uncertain claims promote to Open Questions
-2. **OQ classification** — business vs tech; tech auto-resolves with cited evidence
-3. **Binding gate** — unresolved CONFLICTs (and CONFLICT *resolution*) block downstream generation (whole-vault `binding.md` on classic; per-unit `bolts/U-XXX/binding.json` on `--lite`)
-4. **Implementation state** — IMPLEMENTED / NEW / PARTIAL_FIELDS_MISSING / UNKNOWN per claim
-5. **Unit grounding** — `target_files` whitelist + acceptance_test + cited Anchors
+1. **Spec** — `plan` promotes uncertain claims to Open Questions
+2. **OQ classification** — business vs tech; tech is decided by the AI as a labelled, cited, reversible choice; business stays human
+3. **Binding gate** — an unresolved CONFLICT in a unit's `bolts/U-XXX/binding.json` (JIT bind: up front and per task) blocks that unit until a human resolution is recorded (`resolve-oq --binding`, through the same sole writer)
+4. **Implementation state** — IMPLEMENTED / PARTIAL_* / NEW / UNKNOWN per confirmed claim (JIT bind). `plan` types units `create` / `extend` / `verify` from the symbol index, and `plan --reconcile` re-types them from the per-unit binding evidence
+5. **Unit grounding** — `target_files` whitelist + acceptance_test + cited Anchors + `prd_source`
 6. **Hard Rules pre/post-flight** — ast-grep validates constraints at bolt time
-7. **AST-precise extraction** — ast-grep (zero-compilation, one spawn — no regex guessing of structure; the tree-sitter opt-in lane was removed in v7.4.0)
-8. **Reuse-first write loop** — a script-built full-repo symbol index feeds every bolt dispatch an "Existing symbols — REUSE, don't recreate" slice at write time, and a post-write duplication sweep (exact / camel-snake / same-suffix-root / verb-synonym matching) hands mechanical evidence rows to the code-quality review lens
+7. **AST-precise lookup** — ast-grep builds the GROUND symbol index (zero-compilation, one bounded pass — no regex guessing of structure); without it, symbol claims are verdicted OQ with the reason, never CONFIRMED
+8. **Reuse evidence** — the script-built symbol index feeds the JIT bind's symbol claims, and the duplication sweep (exact / camel-snake / same-suffix-root / verb-synonym matching) stays an `analyze` advisory
 9. **Drift detection** — committed code reconciled against the vault
-10. **Interface lock** — cross-squad consumed interfaces must be locked
+10. **Interface lock** — on a vault that carries cross-squad interfaces, consumed interfaces must be locked
 11. **Mutability tiers** — `[LOCKED]/[INTENT]/[ARTIFACT]`, orthogonal to confidence
 12. **Constitution layer** — project invariants enforced as Hard Rules at bolt time
-13. **Framework convention packs** — stack conventions inject into Suggested Unit Hard Rules
+13. **Framework convention packs** — stack conventions reach units through plan-authored pack content (render tests, UI contracts, cross-cutting obligations) and the pack-driven gates; no pack section is injected into the execute-bolts context
 14. **Predictive preflight** — upcoming halts surfaced *before* a skill runs
 15. **Handoff schema validation** — handoff YAML type-checked at emission
 16. **Code-delivery quality gates** — tech-agnostic validators (flow-coverage, sibling-consistency incl. render-test + cross-cutting registration, unit-spec incl. verify-grounding, ui-quality) hard-block `execute-bolts`, all re-derived at the gate itself; signatures from the framework pack, SKIP off-stack
-17. **Bolt evidence gates** — seven artifact gates at the `execute-bolts` hook: bolt-orphans, batch-suite (B2), postflight-evidence (B1 — recomputed at the gate from git/fs ground truth), the whitelist observer (B3), acceptance-evidence (B4, commit-keyed), panel-evidence (a dispatched bolt must carry script-written `findings.json` + `l0-results.json`), and the in-run acceptance-expects gate — plus the Factory Line ledger gate in both directions; a `bolt-implementer` **Agent** dispatch is gated the same as the Skill route (hand-dispatch cannot slip past)
+17. **Bolt evidence gates** — the artifact gates at the `execute-bolts` hook (all hard-block):
+    - bolt-orphans;
+    - batch-suite (B2);
+    - postflight-evidence (B1, recomputed at the gate from git/fs ground truth);
+    - the whitelist observer (B3);
+    - acceptance-evidence (B4, commit-keyed);
+    - conflict-bypass: a unit commit that landed past an open CONFLICT, a quarantine or a skipped re-bind (`conflict_bypassed`);
+    - the Factory Line ledger gate, in both directions.
 18. **Pipeline-intelligence advisories** (non-blocking, surfaced by `analyze`) — fan-out parity, UI-deferral, a typed `next_action.confidence`
 19. **Semantic-depth fidelity** — a multi-step workflow's staged inputs must survive the KB→vault handoff — `vault_flow_staging_drop` is surfaced by `analyze` (advisory)
-20. **Living-vault sync invariants** — incremental re-bind NEVER carries an active CONFLICT forward silently (always re-validated; moat-test-pinned); autonomous sync defers human decisions to a queue instead of deciding them; drift write-back requires git provenance + explicit ACCEPT, and `[LOCKED]` claims are never patched from code
+20. **Living-vault sync invariants** — the incremental re-bind (`rebind-units.sh`) NEVER clears an active CONFLICT silently: an affected unit is re-verdicted by the same JIT writers, and an unaffected unit keeps its `binding.json`, so its unresolved CONFLICT still closes the gate at run start (`sync --full-bind` re-verdicts every unit); autonomous sync defers human decisions to a queue instead of deciding them; drift write-back requires git provenance + explicit ACCEPT, and `[LOCKED]` claims are never patched from code
 21. **Extraction claim-verify lane** — after each module's quality gate, a blind `claim-verifier` subagent adversarially re-checks the PRD-kontrak against the legacy source (sampled citations graded EXACT/IMPRECISE/WRONG; 100% of `[LOCKED]` + money-class rules), with coverage recomputed at the census gate — the writer never checks itself
+
+On every lane, including direct and assisted, the delivery check and the result contract apply.
 
 > The doctrine: **a blocking gate is a deterministic validator wired to a hook — prose that says "HALT" enforces nothing.** Which gates hard-block vs. advise is defined in [`CLAUDE.md`](./CLAUDE.md); the analyze skill ("cek konsistensi") surfaces the advisory ones.
 
 ## Apa yang otomatis, apa yang tidak (v7.5.0)
 
-Tanpa mengetik `/mega-sdd` sekalipun: **(a)** kalimat berniat M/L ("tambah field NIK di form", "kode berubah, sync") di-route otomatis oleh anchor + front door; **(b)** guard anti-forge selalu aktif di tier apa pun; **(c)** begitu satu skill mega-sdd jalan, seluruh gate chain arm sendiri; **(d)** edit inline file yang ter-anchor ke claim `[LOCKED]` memunculkan SATU baris notice (0 fork) — kontrak berubah → tawarkan `/mega-sdd:sync`, bug fix internal → lanjut; **(e)** kalimat "selesai" (`udah`/`commit`/`push`/`PR`/`merge`, census di test) saat ada perubahan ter-journal memunculkan satu baris TAWARAN sync — bukan auto-run. Yang **sengaja tidak** otomatis: pipeline tidak pernah auto-invoke dari keberadaan `.mega-sdd/` atau dari sembarang prompt (pelajaran bug-hunt 20 menit, klausa :13(c) dihapus permanen); acceptance auto-offer per-edit hanya hidup kalau `auto_verify_on_edit: true` di config (default false).
+Tanpa mengetik `/mega-sdd` sekalipun:
+- **(a)** kalimat berniat M/L ("tambah field NIK di form", "kode berubah, sync") di-route otomatis oleh anchor + front door;
+- **(b)** guard anti-forge selalu aktif di tier apa pun;
+- **(c)** begitu satu skill mega-sdd jalan, seluruh gate chain arm sendiri;
+- **(d)** edit inline file yang ter-anchor ke claim `[LOCKED]` memunculkan SATU baris notice (0 fork) — kontrak berubah → tawarkan `/mega-sdd:sync`, bug fix internal → lanjut;
+- **(e)** kalimat "selesai" (`udah`/`commit`/`push`/`PR`/`merge`, census di test) saat ada perubahan ter-journal memunculkan satu baris TAWARAN sync — bukan auto-run.
+
+Yang **sengaja tidak** otomatis:
+- pipeline tidak pernah auto-invoke dari keberadaan `.mega-sdd/` atau dari sembarang prompt (pelajaran bug-hunt 20 menit, klausa :13(c) dihapus permanen);
+- PRD atau brief di front door tidak otomatis masuk pipeline: `route-lane.sh` memilih lane dulu, dan lane direct/assisted tidak menulis `.mega-sdd/` sama sekali;
+- acceptance auto-offer per-edit hanya hidup kalau `auto_verify_on_edit: true` di config (default false).
 
 ## Per-project config
 
@@ -147,26 +230,24 @@ dirty_journal: true       # false → living-vault journaling off (git channel s
 staleness_notice: true    # false → session-start state block keeps only header + rule line; no "HEAD moved" prompt line
 layout: new               # legacy → pre-migration scattered output paths
 auto_verify_on_edit: false # true → inline edit of a unit's target_file offers its acceptance run
-spine: express            # classic → restore the scan-first chain + Stop-hook analyze aggregate
-# unit_granularity:       # ABSENT is the default (medium); fine|coarse resize generated units (--max-complexity flag wins)
-parallel_max: 4           # execute-bolts wave width
-# lane: lite              # ABSENT = classic (default through 8.x); lite → plan → execute-bolts --all --lite, JIT bind per wave
-# profile: lean           # trims advisory diagnostics (never a gate); also governs the Stop-hook analyze aggregate
+# unit_granularity:       # ABSENT is the default (medium); fine|coarse resize the units plan writes (--max-complexity flag wins)
+# profile: lean           # trims advisory diagnostics (never a gate); `full` re-enables the Stop-hook analyze aggregate
+# render_html: on         # ABSENT = off for pipeline hand-offs (the emit lanes always render)
 knowledge_base: ""        # KB dir OUTSIDE the tree (monorepo submodule shared by FE + BE apps); empty → in-project paths
 model_tiers:
-  bolt_implementer: inherit # auto → per-unit routing via resolve-review-tier (haiku/sonnet/opus + cascade)
+  extract-intelligence-module: sonnet # catalog roles only (references/model-tiers.md)
+# spine / lane            # retired selectors: express + lite are the only spine and pipeline; `spine: classic` / `lane: standard` select nothing (one-line note)
 ```
 
 Full key reference + scope table (user / project / vault): [`references/project-config.md`](./references/project-config.md). Safe to commit (no secrets by design) or gitignore for per-developer preferences.
 
 ## Optional native tools
 
-Mega-sdd adopts stable native binaries instead of reinventing them — all optional, each with a graceful fallback. `/mega-sdd:install-deps` installs them for you (see [Install / update](#install--update)).
+Mega-sdd adopts stable native binaries instead of reinventing them — all optional, each with a graceful fallback. The direct and assisted lanes use none of them. `/mega-sdd:install-deps` installs them for you (see [Install / update](#install--update)).
 
 | Tool | Used by | Fallback |
 |---|---|---|
-| `ast-grep` | scan-codebase (the auto AST engine) / execute-bolts + generate-units (Hard Rules v2) / the reuse symbol index + duplication sweep | scan falls to regex tier; rules fall to the v1 5-type grammar |
-| `ripgrep` (`rg`) | scan-codebase (structured JSON grep) | GNU grep |
+| `ast-grep` | the GROUND symbol index (`build-symbol-index.sh` — plan's brownfield task typing, the JIT bind's symbol claims, the duplication sweep) / execute-bolts + detect-drift (Hard Rules v2) | no symbol index: JIT symbol claims stay OQ with the reason; rules fall to the v1 grammar |
 | `jd` | diff-vault (canonical JSON/YAML patches) | manual Read+compare |
 | `pandoc` | emit-fsd / emit-prd / emit-sit / emit-uat (PDF rendering) | Markdown-only output |
 | `mmdc` | emit lanes — mermaid→SVG for the md2pdf PDF (Chrome-print, GitHub style) | mermaid stays code |
@@ -175,9 +256,19 @@ Mega-sdd adopts stable native binaries instead of reinventing them — all optio
 | `semgrep` | execute-bolts L0 code gate 4 (SAST on bolt diffs) | gate SKIPs with a note |
 | `gitleaks` | execute-bolts L0 code gate 3 (secret scan) | plugin regex fallback (always scanned) |
 
-Full per-platform install matrix + **platform support table** (macOS/Linux/WSL = full; Git Bash = works with a `python3` shim; native cmd = prose-only, not recommended): [`references/tooling-install.md`](./references/tooling-install.md). Running the gates in CI / headless (`claude -p`, claude-code-action, pure-script exit-code gates): [`references/ci-recipe.md`](./references/ci-recipe.md).
+`python3` is the one REQUIRED interpreter: the hooks parse through it, and without it the PreToolUse gates fail closed. Full per-platform install matrix + **platform support table** (macOS/Linux/WSL = full; Git Bash = works with a `python3` shim; native cmd = prose-only, not recommended): [`references/tooling-install.md`](./references/tooling-install.md). Running the gates in CI / headless (`claude -p`, claude-code-action, pure-script exit-code gates): [`docs/mega-sdd/ci-recipe.md`](../../docs/mega-sdd/ci-recipe.md).
 
 ## What's new
+
+**v9.0.0** — *one front door, one pipeline*:
+- **Lane router.** `/mega-sdd` runs `route-lane.sh` first. direct/assisted build like plain Claude Code (+ one ask and one blind review on assisted). guarded (an existing vault, or `--guarded`) runs the one spec pipeline.
+- **One result contract** on every lane: AC → test table, `delivery-check.sh` `VERDICT: PASS`, assumptions.
+- **The classic chain is removed.** The skills `generate-intent`, `scan-codebase`, `bind-codebase` and `generate-units` are gone (20 → 16 skills), along with the scan-first spine. Their surviving contracts were relocated into `plan` and `execute-bolts`.
+- **`plan --kb`** is the legacy-rebuild hand-off from `extract-intelligence`.
+- **Pre-9.0 vaults** are read; to build on one, run `migrate-paths --vault-layout=3`.
+- **Measured against vanilla Claude Code** (n=3 per arm): routed = within vanilla's range on two greenfield fixtures (medians 1.1–1.2× cost, 1.3–1.4× tokens, ranges overlapping; assisted on existing code unmeasured); guarded = the same trap coverage at ~6× the cost. Details in CHANGELOG 9.0.0 and the research reports linked above.
+
+**v8.5.0 – v8.8.1** — technical OQs decided by the AI as labelled, cited, reversible choices (8.5.0); the per-unit attempt cap enforced by the hook (8.6.0); the in-band gateway session note (8.7.0); the **state anchor** (8.8.x): code at HEAD is the source of truth, shown as a per-vault FRESH/STALE block at session start and enforced by the fail-closed binding-freshness gate at bolt dispatch.
 
 **v8.4.0** — *debt gate after the doc audit*: 20 code findings closed (RESOLUTIONS column order, `validate-unit-spec.sh --vault=` exit scope, per-vault layout-3 folding, `constitution.md` reaches FSD/PRD, `model_tiers` key normalization, MAP-form `scopes:`, the publisher ships `bolts/U-*/binding.json`, `--resolve=DEFER`, `run-full-suite.sh --base=` writes `bypass_commits[]`, inline `### D-NNN` ADR cites), 13 live halt types registered, `plan.test.md`, and a version-archaeology diet of the runtime prose (CHANGELOG 8.4.0).
 
@@ -205,7 +296,7 @@ Everything older → [`../../CHANGELOG.md`](../../CHANGELOG.md) (the single sour
 
 ## Contributing
 
-If you're an AI agent submitting a PR, read [`CLAUDE.md`](./CLAUDE.md) first — the anti-slop protocol applies and every behavior change must trace to a spec in [`../../docs/superpowers/specs/`](../../docs/superpowers/specs/). Human contributors: [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md).
+If you're an AI agent submitting a PR, read [`CLAUDE.md`](./CLAUDE.md) first — the anti-slop protocol applies, every behavior change must trace to a spec in [`../../docs/superpowers/specs/`](../../docs/superpowers/specs/), and no comparative claim against plain Claude Code may be written without the measured comparison (§Release evidence). Human contributors: [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md).
 
 ## License
 

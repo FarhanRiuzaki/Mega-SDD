@@ -442,7 +442,7 @@ if any(p["flows"] for p in parsed):
                 row = "| %s %s" % (scope_label(p), row)
             L.append(row)
 else:
-    L.append("[Pending — flows doc vault (flows.md / 04-flows.md) belum berisi flow F-* — jalankan generate-intent dulu]")
+    L.append("[Pending — flows doc vault (context.md ## Flows / flows.md / 04-flows.md) belum berisi flow F-* — jalankan `plan <prd>` dulu]")
 L.append("")
 L.append("**Module DoD:**")
 L.append("")
@@ -538,7 +538,7 @@ if tc_rows:
             row = "| %s %s" % (scope_label(p), row)
         L.append(row)
 else:
-    L.append("[Pending — units belum digenerate — jalankan generate-units dulu]")
+    L.append("[Pending — units belum ada — jalankan `plan <prd>` dulu (units ditulis di fase yang sama)]")
 L.append("")
 L.append("**Sources for this section:**")
 cited3 = False

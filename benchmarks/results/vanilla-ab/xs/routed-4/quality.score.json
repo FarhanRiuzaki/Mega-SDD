@@ -1,0 +1,47 @@
+{
+ "completion": 1.0,
+ "ac_pass": 12,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 4,
+ "rubric": 94,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/actions.ts:10, src/lib/contact.ts:73",
+   "what": "Errors from save() are not caught; if the DB is unwritable or locked, the action throws to the error boundary, with no friendly message and the typed values lost"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact.ts:44,52",
+   "what": "Length limits count UTF-16 code units, not characters, so names or messages with emoji or astral characters are wrongly rejected below the 100/2000 limit"
+  },
+  {
+   "severity": "Minor",
+   "where": "package.json:10, src/lib/contact-store.ts:6",
+   "what": "Tests rely on Node's native TypeScript support (MODULE_TYPELESS_PACKAGE_JSON warning) and the experimental node:sqlite module, which is fragile across Node versions"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/tentang-kami/page.tsx:14,22; src/app/page.tsx:16",
+   "what": "Content strings used as React keys; duplicate placeholder content would collide"
+  }
+ ],
+ "blind_label": "JH",
+ "scorer_sid": "a0823549-ccb6-4c7c-b37b-69f652fe0a06"
+}

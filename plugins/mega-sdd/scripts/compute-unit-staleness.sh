@@ -8,7 +8,8 @@
 #   - all hashes match                  → implemented
 #   - bolt-report absent or no target_hashes field → unknown (legacy; never guessed)
 # `superseded` is NOT computed here — that requires binding/vault knowledge and is
-# assigned by generate-units --reconcile when a claim vanishes.
+# assigned at reconcile (plan --reconcile, plan/references/task-typing.md
+# §Reconcile pass) when a unit's vault home vanishes.
 #
 # Usage:
 #   compute-unit-staleness.sh --vault=<vault-dir> [--project=<repo-root>]

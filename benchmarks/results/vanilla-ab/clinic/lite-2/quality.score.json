@@ -1,0 +1,60 @@
+{
+ "completion": 0.9,
+ "ac_pass": 9,
+ "ac_total": 10,
+ "ac": {
+  "C1": "PASS",
+  "C2": "PASS",
+  "C3": "PASS",
+  "C4": "PASS",
+  "C5": "PASS",
+  "C6": "PASS",
+  "C7": "PASS",
+  "C8": "PASS",
+  "C9": "PASS",
+  "C10": "FAIL"
+ },
+ "critical": 0,
+ "important": 3,
+ "minor": 4,
+ "rubric": 85,
+ "findings": [
+  {
+   "severity": "Important",
+   "where": "src/components/booking/slot-picker.test.tsx:12,99",
+   "what": "Test suite fails at HEAD (1/220): 'disables a weekend day button' uses a fixed today but react-day-picker's 'Today' label uses the host clock; fails in non-UTC TZ (passes with TZ=UTC)"
+  },
+  {
+   "severity": "Important",
+   "where": "src/app/staff/login/page.tsx:20 -> src/lib/env.ts:46",
+   "what": "npm run build fails without full env: /staff/login is prerendered and calls getSession, which parses server env; contradicts env.ts comment that build works without env"
+  },
+  {
+   "severity": "Important",
+   "where": "src/app/book/actions.ts:57-120",
+   "what": "Public /book booking and slot actions have no rate limiting, though PRD \u00a7Clinic.3 requires 'public (rate-limited)'"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/book/actions.ts:57",
+   "what": "submitBooking(deps, rawInput) exported from a 'use server' module becomes a callable server action with caller-supplied deps (not exploitable since functions can't be serialized; inconsistent with the reschedule module's pattern)"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/components/schedule/schedule-grid.tsx",
+   "what": "Custom schedule grid instead of the Schedule-X resource view named in PRD \u00a78.1"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:167",
+   "what": "Every appointment is 15 minutes regardless of service.duration_minutes"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/proxy.ts:9",
+   "what": "Proxy only checks cookie presence; role enforcement relies entirely on requireStaff in each page/action (documented, but coarse)"
+  }
+ ],
+ "blind_label": "ZS",
+ "scorer_sid": "617ab6ba-c3b8-4441-8d79-f34be38dad33"
+}

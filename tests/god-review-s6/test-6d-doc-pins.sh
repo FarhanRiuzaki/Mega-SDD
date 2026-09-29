@@ -4,14 +4,13 @@
 #               scan halts BEFORE commit / leaves the violation uncommitted.
 #   EB-GATE-2   the canonical commit identity + trailers appear on every producer surface.
 #   EB-DOC-5    the canonical bolt-halt enum has ONE home (halts-and-handoff.md);
-#               handoff-contract points at it and carries NO inline copy (M-02).
+#               handoff-contract points at it and carries NO inline copy (M-02);
+#               the six names retired in P3b (no emitter after P3) stay out of it.
 #   PHANTOMS    --strict-provenance gone; `ast-grep test --validate` only ever mentioned
 #               as NOT existing; missing_dependency retired from the dispatch vocabulary.
-#   EB-DOC-4/HONEST-4  spec-reviewer body is blind-era (no implementer-report trust);
-#               all five lenses carry a read-only rail.
 #   EB-DOC-7    stale create/extend/modify enum phrase eliminated.
-#   LOCKED-DRIFT one eligibility (override-only) — no surface still says propose-eligible.
-#   EB-PHANTOM-1 review-panel no longer claims a per-lens model_tiers override.
+#   LOCKED-DRIFT no surface still says propose-eligible (the halt itself is retired, P3b).
+#   (P3 C3: the panel lens agents and review-panel.md are deleted; their pins went with them.)
 # Run: bash tests/god-review-s6/test-6d-doc-pins.sh
 set -uo pipefail
 
@@ -38,15 +37,21 @@ BAD=0
 # "code in working tree" (not just stays/remains/preserved) is also a detect-after
 # residue — the broadened `code[^.]{0,20}working tree` catches it (a prior narrow
 # pattern let it survive in vault-contract.md + halt-taxonomy.md).
+# 9.0 P1: generate-intent is deleted. Its vault-core.md moved to the plugin-root
+# references/vault-core.md (repointed). vault-contract.md is deleted on purpose.
+# Its §Starterkit-binding half belonged to the retired `--scan` classic lane and has
+# no successor. Its §Multi-scope overlay now lives in plan/references/scope-flow.md,
+# so that file takes its slot in the net. Its old §halt-protocol text had already
+# moved to references/halt-protocol.md, which the net scans.
 TOPO_BAD='halts?[[:space:]]+pre-commit|pre-commit[[:space:]]+halts?|halts? before commit|re-validate[^.]*before commit|code[^.]{0,20}working tree|preserved in (the )?working tree|remains? in[^.]{0,20}\(not committed\)'
 for f in "$EB/SKILL.md" "$EB/references/hard-rule-scan.md" "$EB/references/hard-rule-grammar-v2.md" \
-         "$EB/references/code-gates.md" "$EB/references/review-panel.md" "$EB/references/batch-and-fanout.md" \
+         "$EB/references/code-gates.md" "$EB/references/inline-run.md" \
          "$EB/references/halts-and-handoff.md" "${ROOT}/tests/skill-triggering/execute-bolts.test.md" \
          "${ROOT}/tests/skill-triggering/auto.test.md" "${ROOT}/tests/scenarios/scenario-2-prd-driven-feature.md" \
          "${ROOT}/tests/scenarios/scenario-6-recovery-from-halt.md" \
          "${ROOT}/tests/integration/e2e-iter6.test.md" \
-         "${P}/skills/generate-intent/references/vault-contract.md" \
-         "${P}/skills/generate-intent/references/vault-core.md" \
+         "${P}/skills/plan/references/scope-flow.md" \
+         "${P}/references/vault-core.md" \
          "${P}/references/halt-protocol.md" \
          "${P}/skills/orchestrate-flow/references/halt-taxonomy.md"; do
   [ -f "$f" ] || { fail "EB-GATE-3 scan target missing: $f"; BAD=1; continue; }
@@ -66,9 +71,9 @@ echo "── EB-GATE-2: commit identity on every producer surface ──"
 grep -q "SDD-PROVENANCE: mega-sdd/execute-bolts" "$EB/references/bolt-contract.md" \
   && grep -q "Unit: U-XXX" "$EB/references/bolt-contract.md" \
   && ok "bolt-contract carries both trailers" || fail "bolt-contract trailers missing"
-grep -q "SDD-PROVENANCE" "$P/agents/bolt-implementer.md" && ok "bolt-implementer instructs the trailers" || fail "bolt-implementer trailer instruction missing"
-grep -q "SDD-PROVENANCE: mega-sdd/execute-bolts unit=U-XXX" "$P/agents/bolt-implementer.md" \
-  && ok "bolt-implementer (the dispatch system prompt) scaffolds the full trailer — sole prompt-side copy (M-09)" || fail "bolt-implementer full trailer scaffold missing"
+# P3 C6b (spec v9 §8.6): the bolt-implementer agent is deleted; the inline plan's commit step is the producer.
+grep -qF 'SDD-PROVENANCE: mega-sdd/execute-bolts unit=%s' "$P/scripts/derive-exec-plan.sh" && grep -qF 'Unit: %s' "$P/scripts/derive-exec-plan.sh" \
+  && ok "the inline plan's commit step (derive-exec-plan.sh) scaffolds both trailers" || fail "inline plan commit-step trailer scaffold missing"
 grep -q 'UNIT_SCOPE' "$P/scripts/validate-bolt-artifacts.sh" && grep -q 'trailers:key=Unit' "$P/scripts/validate-bolt-artifacts.sh" \
   && ok "validator accepts scope + trailer identity channels" || fail "validator identity channels missing"
 
@@ -79,10 +84,13 @@ hh, hc, ht = open(sys.argv[1]).read(), open(sys.argv[2]).read(), open(sys.argv[3
 m = re.search(r"CANONICAL bolt-halt enum.*?\n\n(`.*?`)\n", hh, re.DOTALL)
 assert m, "canonical enum block missing from halts-and-handoff"
 canon = set(re.findall(r"`([a-z_]+)`", m.group(1)))
-for required in ("whitelist_violation", "review_critical_unresolved", "batch_suite_red",
+for required in ("whitelist_violation", "acceptance_red", "batch_suite_red",
                  "postflight_evidence_missing", "hard_rule_mixed_grammar", "commit_rejected_by_hook",
                  "memory_in_use"):
     assert required in canon, "canonical enum missing %s" % required
+for gone in ("dispatch_prompt_too_large", "panel_evidence_missing", "l0_evidence_missing",
+             "review_critical_unresolved", "scope_creep_detected", "bolt_introduces_locked_drift"):
+    assert gone not in canon, "retired halt %s back in the canonical enum" % gone
 # M-02 ownership flip: handoff-contract carries NO inline copy of the enum any more —
 # a single pointer names the canonical owner (halts-and-handoff.md), so copy-drift is
 # impossible by construction. Assert BOTH directions: the pointer exists AND no inline
@@ -111,34 +119,14 @@ while IFS= read -r line; do
   echo "$line" | grep -qiE "does not exist|does NOT exist" || { fail "ast-grep test --validate presented as real: $line"; BAD=1; }
 done < <(grep -rn "ast-grep test --validate" "$P/skills" "$P/commands" 2>/dev/null | grep -v Binary)
 [ "$BAD" = "0" ] && ok "ast-grep test --validate only ever mentioned as nonexistent"
-# P2d moved the halt vocabulary into the agent system prompt — the canonical
-# dep_missing pin must cover BOTH the dispatch template AND its new home.
-BAD=0
-for f in "$EB/references/bolt-dispatch-prompt.md" "$P/agents/bolt-implementer.md"; do
-  grep -q "missing_dependency" "$f" && { fail "missing_dependency alias survives in $(basename "$f")"; BAD=1; }
-done
-[ "$BAD" = "0" ] && ok "halt vocabulary uses canonical dep_missing (dispatch template + bolt-implementer agent)"
-grep -q "dep_missing" "$P/agents/bolt-implementer.md" \
-  && ok "bolt-implementer carries the canonical dep_missing halt type" \
-  || fail "bolt-implementer missing the dep_missing halt type (vocabulary did not land in the agent)"
-
-echo "── panel agents ──"
-grep -q "implementer claims" "$P/agents/spec-reviewer.md" \
-  && fail "spec-reviewer still describes the implementer's report as its input" \
-  || ok "spec-reviewer body is blind-era (no report in prompt)"
-grep -q "base/head commit SHAs" "$P/agents/spec-reviewer.md" && grep -q "git diff" "$P/agents/spec-reviewer.md" \
-  && ok "spec-reviewer derives the change set from the diff" || fail "spec-reviewer lacks the diff instruction"
-for a in code-quality-reviewer security-reviewer standards-reviewer design-reviewer; do
-  grep -q "Read-only discipline" "$P/agents/$a.md" || fail "$a missing the read-only rail"
-done
-grep -q "never modify anything" "$P/agents/design-reviewer.md" && ok "all four sibling lenses carry the read-only rail"
-grep -q "never run a Bash command that mutates" "$P/agents/spec-reviewer.md" && ok "spec-reviewer carries the read-only rail inline" || fail "spec-reviewer read-only rail missing"
+# The agent that carried the halt vocabulary is deleted (P3 C6b); SKILL.md pre-flight 3.5/4 names it.
+! grep -q "missing_dependency" "$EB/SKILL.md" && grep -q 'halt `dep_missing`' "$EB/SKILL.md" \
+  && ok "halt vocabulary uses canonical dep_missing (execute-bolts SKILL.md)" \
+  || fail "execute-bolts SKILL.md lost the canonical dep_missing halt type"
 
 echo "── enum + eligibility coherence ──"
 grep -rqE "create/extend/modify" "$EB" && fail "stale create/extend/modify enum phrase survives" || ok "task_type enum phrases honest ({create,verify,extend})"
-grep -rq "propose-and-confirm OR override" "$EB" && fail "locked-drift dual-eligibility survives" || ok "bolt_introduces_locked_drift is override-only everywhere"
-grep -q "Models are NEVER hardcoded" "$EB/references/review-panel.md" && fail "phantom per-lens model override claim survives" || ok "panel model pinning documented honestly"
-grep -q "risk: high" "$EB/references/review-panel.md" && ok "unit risk: frontmatter consumed as panel signal 6" || fail "risk: signal missing from tier selection"
+grep -rq "propose-and-confirm OR override" "$EB" && fail "locked-drift dual-eligibility survives" || ok "no locked-drift dual-eligibility phrase survives"
 
 echo "── whitelist observer documented where it exists ──"
 grep -q "whitelist-scan" "$EB/SKILL.md" && grep -q "whitelist_violation" "$EB/SKILL.md" \

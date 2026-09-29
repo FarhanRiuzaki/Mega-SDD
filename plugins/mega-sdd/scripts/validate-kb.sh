@@ -933,7 +933,7 @@ result = {
     "advisories": advisories,   # v3.71.0+ semantic-depth — non-blocking
     "summary": _summary,
     "next_action": (
-        "Advisory: workflow looks multi-step but has no stages: block. Author the Stages block (vault-core.md §stages-propagation) or re-run generate-intent --kb on the module."
+        "Advisory: workflow looks multi-step but has no stages: block. Author the stages: block (prd-kontrak-template.md §Staged inputs) or re-extract the module (extract-intelligence); plan --kb then copies it verbatim (plugins/mega-sdd/references/vault-core.md §stages-propagation)."
         if advisories else None
     ),
 }

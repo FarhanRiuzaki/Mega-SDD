@@ -72,13 +72,18 @@ else bad "census missing precedence section or Tier-3 per-artifact table"; fi
 # Anchorless entry points (no .mega-sdd/ signal → no session-start injection)
 # must carry the default themselves. Each must name the default AND precedence
 # AND point to the census.
+# 9.0 (P1): the classic spec producer's carrier duty moved with its triggers —
+# `plan` is now the only spec producer and answers "spec out this feature" /
+# "pecah PRD ini buat AI dev" with no .mega-sdd/ signal (anchorless), and the
+# brief → seed-PRD procedure lives in plan/references/brief-input.md. Retired:
+# the removed scanner skill (no successor skill; GROUND is a script) and the
+# vault-core §boilerplate shim (dropped in the relocation — zero readers; the
+# carriers state the clause themselves).
 CARRIERS=(
-  "generate-intent/SKILL.md"
-  "generate-intent/references/from-prompt-mode.md"
-  "generate-intent/references/vault-core.md"
+  "plan/SKILL.md"
+  "plan/references/brief-input.md"
   "orchestrate-flow/SKILL.md"
   "extract-intelligence/SKILL.md"
-  "scan-codebase/SKILL.md"
   "install-deps/SKILL.md"
 )
 for c in "${CARRIERS[@]}"; do
@@ -117,10 +122,10 @@ fi
 # their "recorded in the vault's existing language" clause is the correct Tier-3
 # behavior. If a future edit bolts the chat-default onto them it would spend
 # hot-path tokens for no gain — flag it so the deliberate scope decision stays
-# visible (advisory, never fails the suite). NOTE: scan-codebase + install-deps
-# are NOT here — they are greenfield-reachable (anchorless) and MUST carry the
-# clause; they are pinned positively in CARRIERS above.
-for s in detect-drift bind-codebase resolve-oq diff-vault; do
+# visible (advisory, never fails the suite). NOTE: install-deps is NOT here — it
+# is greenfield-reachable (anchorless) and MUST carry the clause; it is pinned
+# positively in CARRIERS above.
+for s in detect-drift resolve-oq diff-vault; do
   if grep -qiF "Indonesian + English technical terms" "$SKILLS/$s/SKILL.md" 2>/dev/null; then
     printf '  note: %s now carries the chat-default clause — confirm intended (bound-session skill, anchor already covers it)\n' "$s"
   fi

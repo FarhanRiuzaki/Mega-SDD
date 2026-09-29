@@ -9,7 +9,6 @@ Loaded when detect-drift runs under `--auto` or as an orchestrate-flow chain pha
 - Handoff YAML
 - Auto-trigger as a chain phase
 - Snapshot reuse
-- Per-bolt incremental mode
 
 ## `--auto` behavior
 
@@ -20,7 +19,7 @@ detect-drift is **forked + non-interactive by default** (`context: fork`) — th
 | Step 0 (vault path) | `--vault=<path>` arg, else auto-detect the CWD vault dir; unresolvable → `drift_inputs_missing` (vault) |
 | Step 0 (codebase path) | `--code=<path>` arg, else CWD if it's obviously a repo (`composer.json` / `package.json` / `Gemfile` / `pom.xml` / `Cargo.toml` / `go.mod` / `requirements.txt`\|`pyproject.toml`); otherwise **never guess** → `drift_inputs_missing` (code) |
 | Step 0 (mode=new) | STOP — surface `mode_migrate_after` (a hard rule) |
-| Step 0 (scope dirs) | `--scope=<dirs\|@file>` arg — sync lane passes `--scope=@<vault>/.sync-changed-paths.txt` (scan's resolved changed set); else full scan. Never self-resolves journal/git post-scan (both consumed by scan-codebase); `@`-prefixed → path-list file |
+| Step 0 (scope dirs) | `--scope=<dirs\|@file>` arg — sync lane passes `--scope=@<vault>/.sync-changed-paths.txt` (the changed set `scripts/derive-changed-paths.sh` wrote); else full scan. Never self-resolves journal/git (journal rotated by `derive-changed-paths.sh` after its write; baseline = the symbol-index stamp GROUND rebuilt); `@`-prefixed → path-list file |
 | Step 1.5 (framework) | Auto-detect; single signature → use it; multi/ambiguous → `drift_framework_mismatch` |
 | Step 5 (direction calls) | Queue every finding to `PENDING-SYNC.md`; `--auto-apply=safe` writes back ONLY the narrow safe class. Never `DRIFT-ACTIONS.md`, never a walkthrough |
 
@@ -78,13 +77,12 @@ handoff:
   next_action:
     # Branch on invocation mode (see "Sync-lane vs standalone detection" below).
     # SYNC LANE  ⟺  the resolved --scope is an @file whose basename == `.sync-changed-paths.txt`
-    #   → CONTINUE the Mode D chain into claim-scoped re-bind (spec §3.3).
-    #   `--paths` echoes the ACTUAL resolved SCOPE_DIRS @-path detect-drift scanned (NOT a hardcoded literal):
-    suggested_skill: mega-sdd:bind-codebase
-    suggested_args: ["--paths=@<resolved SCOPE_DIRS @-path, e.g. <vault>/.sync-changed-paths.txt>", "--auto"]
-    # layout-3 / lite: the engine renders `scripts/rebind-units.sh --cwd . --vault <vault> --paths=@<same file>`
-    # → `plan --reconcile` instead (orchestrate-flow/references/routing-rules.md).
-    rationale: "<e.g. 'Sync lane: N drift finding(s) queued to PENDING-SYNC.md; continue Mode D → claim-scoped re-bind (§3.3)' OR 'Zero drift; vault + code aligned'>"
+    #   → CONTINUE the Mode D chain: the engine first runs `scripts/rebind-units.sh --cwd=<root> --vault=<vault>
+    #   --paths=@<the ACTUAL resolved SCOPE_DIRS @-path detect-drift scanned>` (a script is never a suggested_skill),
+    #   then the reconcile hop:
+    suggested_skill: mega-sdd:plan
+    suggested_args: ["--reconcile", "--auto"]
+    rationale: "<e.g. 'Sync lane: N drift finding(s) queued to PENDING-SYNC.md; continue Mode D → re-bind → reconcile' OR 'Zero drift; vault + code aligned'>"
     # STANDALONE (any other --scope: a non-sync @file whose basename ≠ .sync-changed-paths.txt, a drift-axis
     #   --scope, a bare scope-id, or no scope) → emit `next_action: null` instead. The DRIFT-REPORT.md +
     #   PENDING-SYNC.md ARE the deliverable; a human triages the queue later via `/mega-sdd:sync` or `resolve-oq`.
@@ -103,7 +101,7 @@ handoff:
 
 Status `halted` on `drift_framework_mismatch`. Standalone invocation emits an informational chat hint only.
 
-**Sync-lane vs standalone detection (drives `next_action`).** detect-drift has NO dedicated sync flag (unlike bind's `--paths` / scan's `--changed-only`), so sync mode is inferred from the SCOPE_DIRS source (a convention, not a guaranteed flag). The discriminator is a **deterministic basename check**, NOT "any `@file`" (an `@file` scope is a general STANDALONE input per SKILL.md Step 0). **Sync lane** ⟺ the resolved `--scope` is an `@file` whose **basename == `.sync-changed-paths.txt`** — the canonical cross-skill scope artifact scan-codebase `--changed-only` writes, and the ONLY `--scope` the Mode D orchestrator (`orchestrate-flow --sync`) passes. On the sync lane emit `next_action.suggested_skill: mega-sdd:bind-codebase` with `--paths=@<the EXACT resolved SCOPE_DIRS @-path detect-drift read>` (echo the actual scoped file — e.g. `@<vault>/.sync-changed-paths.txt` — NEVER a hardcoded literal, so even a misclassification can only point `--paths` at a file that provably exists and was actually scanned) to CONTINUE the chain (§3.3): scan `--changed-only` → detect-drift (scoped) → claim-scoped re-bind → reconcile → execute. Everything else is **standalone** → `next_action: null`: a **non-sync `@file`** (`--scope=@<other>.txt`, basename ≠ `.sync-changed-paths.txt` — a documented-valid standalone input, e.g. a hand-authored path list), a drift-axis `--scope` (`schema-only` / `flows-only` / …), a bare scope-id `--scope=<id>` (the post-bolt auto-gate — governed by the severity→chain-action map above, which emits halt/pause/log, NOT a bind hand-off), or no scope (full scan). Queued drift stays in `PENDING-SYNC.md` awaiting human triage; the chain does not stall on it, but the moat still blocks downstream units/bolts if the re-bind re-surfaces a CONFLICT (§3.4 / §3.7, invariant #2). Never emit `resolve-oq` for drift routing.
+**Sync-lane vs standalone detection (drives `next_action`).** detect-drift has NO dedicated sync flag (unlike `rebind-units.sh --paths`), so sync mode is inferred from the SCOPE_DIRS source (a convention, not a guaranteed flag). The discriminator is a **deterministic basename check**, NOT "any `@file`" (an `@file` scope is a general STANDALONE input per SKILL.md Step 0). **Sync lane** ⟺ the resolved `--scope` is an `@file` whose **basename == `.sync-changed-paths.txt`** — the canonical cross-skill scope artifact `scripts/derive-changed-paths.sh` writes, and the ONLY `--scope` the Mode D orchestrator (`orchestrate-flow --sync`) passes. On the sync lane emit `next_action.suggested_skill: mega-sdd:plan` `["--reconcile", "--auto"]`, with the re-bind hop `rebind-units.sh --paths=@<the EXACT resolved SCOPE_DIRS @-path detect-drift read>` named in the handoff (echo the actual scoped file — e.g. `@<vault>/.sync-changed-paths.txt` — NEVER a hardcoded literal, so even a misclassification can only point `--paths` at a file that provably exists and was actually scanned) to CONTINUE the chain (§3.3): `derive-changed-paths.sh` → detect-drift (scoped) → `rebind-units.sh` → `plan --reconcile` → execute. Everything else is **standalone** → `next_action: null`: a **non-sync `@file`** (`--scope=@<other>.txt`, basename ≠ `.sync-changed-paths.txt` — a documented-valid standalone input, e.g. a hand-authored path list), a drift-axis `--scope` (`schema-only` / `flows-only` / …), a bare scope-id `--scope=<id>` (the post-bolt auto-gate — governed by the severity→chain-action map above, which emits halt/pause/log, NOT a re-bind hand-off), or no scope (full scan). Queued drift stays in `PENDING-SYNC.md` awaiting human triage; the chain does not stall on it, but the moat still blocks downstream units/bolts if the re-bind re-surfaces a CONFLICT (§3.4 / §3.7, invariant #2). Never emit `resolve-oq` for drift routing.
 
 ## Auto-trigger as a chain phase
 
@@ -125,17 +123,3 @@ Per `plugins/mega-sdd/references/shared-snapshot-schema.md`. When run as the pos
 5. Performance: ~5s on a 20-bolt batch vs ~28s for a full re-scan.
 
 Stale detection: if `postflight.json.vault_sha256` ≠ the current `vault.json` sha256, fresh-scan that unit's files.
-
-## Per-bolt incremental mode
-
-execute-bolts performs its own inline per-bolt drift check (`execute-bolts/references/halts-and-handoff.md`); detect-drift is NOT invoked per bolt. The shape below is what that inline check renders (single-bolt scope: only that bolt's `target_files` vs vault expectations; no report written):
-
-```
-per_bolt_drift_result:
-  unit_id: U-XXX
-  drift_detected: true | false
-  critical_findings: [<list>]
-  non_critical_findings: [<list>]
-```
-
-execute-bolts renders this inline in its compact streaming format.

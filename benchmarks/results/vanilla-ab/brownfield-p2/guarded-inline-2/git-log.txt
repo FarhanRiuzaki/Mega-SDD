@@ -1,0 +1,49 @@
+fc173c1 2026-09-28T04:12:47+07:00 chore(sdd): drift gate report after execute-bolts (8 findings queued in PENDING-SYNC)
+e03085f 2026-09-28T04:08:06+07:00 chore(sdd): evidence run d7a0f5a — final gate recompute
+1bf23ac 2026-09-28T04:07:58+07:00 chore(sdd): evidence run d7a0f5a — gate recompute
+e66e05f 2026-09-28T04:07:52+07:00 chore(sdd): evidence U-002 — acceptance at the fix(U-002) commit
+f0bf014 2026-09-28T04:07:23+07:00 chore(sdd): evidence run d7a0f5a
+06c50dd 2026-09-28T04:06:12+07:00 chore(sdd): evidence U-004, U-009 — final-review fixes
+cf8f3cd 2026-09-28T04:05:51+07:00 fix(U-009): leave never flips appointments that already started
+2cda8d3 2026-09-28T04:05:51+07:00 fix(U-004): refuse joining the waitlist on a doctor's leave date
+6ca535e 2026-09-28T04:01:25+07:00 chore(sdd): evidence U-012 — acceptance re-run
+aae7502 2026-09-28T04:01:23+07:00 chore(sdd): evidence U-012 — Add the receptionist leave page
+479f149 2026-09-28T04:01:17+07:00 feat(U-012): Add the receptionist leave page — record leave, then reassign or cancel affected appointments
+e370ef8 2026-09-28T03:59:29+07:00 chore(sdd): evidence U-011 — acceptance re-run
+1ec62c7 2026-09-28T03:59:22+07:00 chore(sdd): evidence U-011 — Reassign or cancel appointments affected by leave
+ff2103e 2026-09-28T03:59:11+07:00 feat(U-011): Reassign or cancel appointments affected by leave, one or many, without double-booking
+a539f43 2026-09-28T03:56:28+07:00 chore(sdd): evidence U-010 — acceptance re-run
+e7cfe47 2026-09-28T03:56:11+07:00 chore(sdd): evidence U-010 — Hide and refuse a doctor's slots on leave dates
+6ba577e 2026-09-28T03:55:51+07:00 feat(U-010): Hide and refuse a doctor's slots on leave dates for booking, reschedule and waitlist offers
+7dc358f 2026-09-28T03:54:19+07:00 chore(sdd): evidence U-009 — acceptance re-run
+9c741dd 2026-09-28T03:54:12+07:00 chore(sdd): evidence U-009 — Build the doctor-leave service
+7a5cab2 2026-09-28T03:54:03+07:00 feat(U-009): Build the doctor-leave service — record leave, flag affected appointments, find free doctors
+2c8b43c 2026-09-28T03:52:30+07:00 chore(sdd): evidence U-008 — acceptance re-run
+ddc6b67 2026-09-28T03:52:28+07:00 chore(sdd): evidence U-008 — Add the receptionist waitlist page
+f1f92c2 2026-09-28T03:52:24+07:00 feat(U-008): Add the receptionist waitlist page with remove, and the v2 staff routes (waitlist, leave) in nav and access policy
+2ea8ef8 2026-09-28T03:51:10+07:00 chore(sdd): evidence U-007 — acceptance re-run
+6cb721f 2026-09-28T03:51:08+07:00 chore(sdd): evidence U-007 — Add the public waitlist-offer page
+0be3b5c 2026-09-28T03:51:03+07:00 feat(U-007): Add the public waitlist-offer page where the patient accepts the freed slot once
+9eb3767 2026-09-28T03:49:59+07:00 chore(sdd): evidence U-006 — acceptance re-run
+3e8e703 2026-09-28T03:49:52+07:00 chore(sdd): evidence U-006 — Let patients join the waitlist from the booking page
+2dde339 2026-09-28T03:49:44+07:00 feat(U-006): Let patients join the waitlist from the booking page when a date has no free slot
+a26a680 2026-09-28T03:48:04+07:00 chore(sdd): evidence U-005 — acceptance re-run
+03187a1 2026-09-28T03:47:50+07:00 chore(sdd): evidence U-005 — Offer the freed slot when a patient cancels
+bdacf3f 2026-09-28T03:47:30+07:00 feat(U-005): Offer the freed slot when a patient cancels, and sweep expired offers in the existing cron
+59c2e20 2026-09-28T03:46:22+07:00 chore(sdd): evidence U-004 — acceptance re-run
+67ca661 2026-09-28T03:46:16+07:00 chore(sdd): evidence U-004 — Build the waitlist service
+19fc5b0 2026-09-28T03:46:06+07:00 fix(U-004): order waitlist test joins with the test clock (queue ties were random)
+3ecc44c 2026-09-28T03:45:20+07:00 feat(U-004): Build the waitlist service — join with booking validation, list per doctor and date, remove
+11265d2 2026-09-28T03:43:49+07:00 chore(sdd): evidence U-003 — acceptance re-run
+4d83d57 2026-09-28T03:43:42+07:00 chore(sdd): evidence U-003 — Build the waitlist offer lifecycle
+5da671f 2026-09-28T03:43:32+07:00 feat(U-003): Build the waitlist offer lifecycle — offer a freed slot, accept once, expire and pass on
+0c78a14 2026-09-28T03:40:58+07:00 chore(sdd): evidence U-002 — postflight after unit refresh
+6dc7673 2026-09-28T03:40:58+07:00 fix(U-002): refresh anchor line written by the task re-bind
+13bf357 2026-09-28T03:40:50+07:00 chore(sdd): evidence U-002 — acceptance re-run
+a10de7a 2026-09-28T03:40:40+07:00 chore(sdd): evidence U-002 — Refuse patient cancel/reschedule links inside the configurable cancellation window
+f5e82e4 2026-09-28T03:40:26+07:00 feat(U-002): Refuse patient cancel/reschedule links inside the configurable cancellation window
+4b5adef 2026-09-28T03:39:22+07:00 chore(sdd): evidence U-001 — acceptance re-run
+b8a248c 2026-09-28T03:38:59+07:00 chore(sdd): evidence U-001 — Add the v2 schema — rescheduling_required status, waitlist and leave tables, migration 0001
+1cf733d 2026-09-28T03:38:19+07:00 feat(U-001): Add the v2 schema — rescheduling_required status, waitlist and leave tables, migration 0001
+d7a0f5a 2026-09-28T03:35:56+07:00 plan: clinic-v2 vault (context, constitution, 12 units)
+015ecf3 2026-09-27T08:25:21+07:00 fixture: Harbor Clinic v1 app (from vanilla clinic run) + PRD v2

@@ -21,9 +21,9 @@ Every pack MUST contain ALL six of the following `## ` headings (in any order):
 1. `## File location standards` — table mapping artifact kinds to filesystem paths
 2. `## Naming standards` — table of naming conventions (class, method, file, column, etc.)
 3. `## Idioms` — bullet list of the framework's preferred patterns
-4. `## Hard Rules emitted` — fenced block of `HARD_RULE:` entries that merge into `binding.md`
+4. `## Hard Rules emitted` — fenced block of `HARD_RULE:` entries (a migrated unit that carries one cites it — `plan/references/validation-passes.md §12.4.5`)
 5. `## Testing conventions` — test runner, test file location, naming, and fixture conventions
-6. `## Code style (self-documenting)` — the stack's code-style DELTA over Iron Rule 6 (since 8.2.0; shape in Check 6)
+6. `## Code style (self-documenting)` — the stack's code-style DELTA over `_universal.md §Comment conventions` (since 8.2.0; shape in Check 6)
 
 A pack that omits any of these is incomplete: `--all` blocks a `pack_tier: full` pack on it and `--registry` marks it `partial`.
 
@@ -46,7 +46,7 @@ Any `## ` header that is not in the recognized set but resembles one of the gate
 
 ## Check 6 — `## Code style (self-documenting)` shape (REQUIRED since 8.2.0; the header itself is Check 2)
 
-The stack's code-style DELTA over Iron Rule 6 (`agents/bolt-implementer.md`): four bold slots — **Doc-comment tool** + **read by**, **Skip**, **Write**, **Names carry the meaning** — 4–6 bullets, ≤ 1 600 bytes of bullets, `read by` naming concrete toolchain consumers (or `none by default`), every fact web-verified at authoring (bump `last_verified_against:`). The script checks that all five labels are present and that no template placeholder (`<the … >`, `<tool>`) survives; bullet count and byte cap are pinned by `tests/per-stack-packs/test-code-style-section.sh`. Consumed by the dispatch builder as the T2 `code_style_slice` (most-specific pack wins, no chain merge). `_universal.md` MUST NOT carry it — the generic rule is agent-carried. Spec: `docs/superpowers/specs/2026-09-16-code-style-playbook-design.md`.
+The stack's code-style DELTA over `_universal.md §Comment conventions`: four bold slots — **Doc-comment tool** + **read by**, **Skip**, **Write**, **Names carry the meaning** — 4–6 bullets, ≤ 1 600 bytes of bullets, `read by` naming concrete toolchain consumers (or `none by default`), every fact web-verified at authoring (bump `last_verified_against:`). The script checks that all five labels are present and that no template placeholder (`<the … >`, `<tool>`) survives; bullet count and byte cap are pinned by `tests/per-stack-packs/test-code-style-section.sh`. `_universal.md` MUST NOT carry it — its §Comment conventions is the generic rule. Spec: `docs/superpowers/specs/2026-09-16-code-style-playbook-design.md`.
 
 ## Check 4 — Valid YAML in hint-section fenced blocks
 
@@ -60,7 +60,7 @@ A pack's BODY (everything after the frontmatter closing `---`) MUST NOT contain 
 
 The token map below is the machine-readable source for this check. The script reads the `## Cross-framework token map` section, determines the pack's `framework:` value, and greps the body for every OTHER framework's tokens. Any match outside a "contrast example" fence is a violation.
 
-Rationale: a token leak indicates the pack was copy-edited from another framework's pack and not properly cleaned, or the author accidentally documented the wrong stack's idioms. Leaks confuse every pack consumer (the classic bind step, the validators, the dispatch builder).
+Rationale: a token leak indicates the pack was copy-edited from another framework's pack and not properly cleaned, or the author accidentally documented the wrong stack's idioms. Leaks confuse every pack consumer (the code gates, the validators, plan).
 
 ---
 

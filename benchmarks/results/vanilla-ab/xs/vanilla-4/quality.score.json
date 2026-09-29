@@ -1,0 +1,47 @@
+{
+ "completion": 1.0,
+ "ac_pass": 12,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 4,
+ "rubric": 94,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/actions.ts:39",
+   "what": "insertContactMessage/getDb errors are not caught; a DB failure throws to the error boundary and the user's form input is lost with no field-level feedback"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/db.ts:3",
+   "what": "Relies on node:sqlite with no engines field in package.json; the default DB path 'data/app.db' (line 27) is relative to cwd and fails on read-only/serverless filesystems"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact.ts:26",
+   "what": "Length limits count UTF-16 code units rather than characters, so astral-plane characters such as emoji count as 2"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/actions.ts:14",
+   "what": "Public form has no rate limiting or spam protection, allowing unbounded inserts into contact_messages"
+  }
+ ],
+ "blind_label": "EU",
+ "scorer_sid": "18c153b4-1d06-4e78-96ff-68b7e9880153"
+}

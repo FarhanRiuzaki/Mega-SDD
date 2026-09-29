@@ -1,24 +1,22 @@
 # Scenario 1 — Greenfield from Idea
 
-**Time**: ~15 minutes
-**Goal**: Run mega-sdd end-to-end on a fresh idea (no PRD, no existing code). Get a working Next.js feature shipped with passing tests.
+**Time**: ~15–30 minutes (Part A) · Part B takes several times longer
+**Goal**: Run mega-sdd end-to-end on a fresh idea (no PRD, no existing code) and get working code with passing tests, plus the result contract every lane ends with.
 
-You'll start with just a sentence ("build a clinic appointment system") and end with committed code + passing tests.
+You'll start with just a sentence ("build a clinic appointment system") and end with committed code, passing tests and a delivery check that says `VERDICT: PASS`.
 
-This walkthrough follows the classic chain (the DEFAULT for every 8.x release); the opt-in `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
+- **Part A**: the default route. The front door's router sends a clear idea to the **direct lane**, where Claude builds it like plain Claude Code would.
+- **Part B**: the same idea on the **guarded lane**, the spec pipeline (`plan` → `execute-bolts`). Use it when your team needs the spec and audit trail: vault, units, per-unit binding and bolt evidence.
 
 ## Prerequisites
 
 - Mega-sdd installed ([install check](README.md#before-you-start--install-check))
-- Empty (or new) Next.js project (or just an empty directory — `bunx create-next-app` not strictly required for this scenario; mega-sdd can scaffold structure)
-- Recommended: `ast-grep` installed (optional; precision boost)
+- An empty directory (Part A). Part B also needs a framework scaffold (Step B1).
+- Optional: `ast-grep`. Only the guarded lane uses it (the symbol index); a greenfield run barely needs it.
 
-```bash
-# Verify install
-command -v ast-grep && echo "✓ ready"
-```
+## Part A — the default route (direct lane)
 
-## Step 1 — Create empty project dir
+### Step A1 — Create an empty project dir
 
 ```bash
 mkdir ~/playground/clinic-app
@@ -26,206 +24,244 @@ cd ~/playground/clinic-app
 git init
 ```
 
-## Step 2 — Kick off mega-sdd auto
+### Step A2 — Hand mega-sdd the idea
 
-In Claude Code session at the new dir:
+In a Claude Code session at the new dir:
 
 ```
-/mega-sdd --greenfield "build a clinic appointment system for a small medical clinic — patients self-book, doctors view schedules, email reminders 24 hours before appointment"
+/mega-sdd "build a clinic appointment system for a small medical clinic — patients self-book, doctors view schedules, email reminders 24 hours before appointment"
 ```
 
-(Without `--greenfield`, a `no_starterkit_detected` confirmation comes first — the flag skips that question upfront.)
+The front door runs `scripts/route-lane.sh` first. It is a read-only script with zero model tokens, and it looks for evidence that the task needs more than plain Claude Code: an existing vault, existing code, open items in the spec, a security surface, several flows. This sentence fires none of them:
 
-Mega-sdd detects:
-- Input is quoted free-text → Mode B brief
-- No existing code → greenfield
-- No vault → starts from `generate-intent`
+```
+lane: direct (signals: none) · naik ke pipeline: /mega-sdd "build a clinic appointment system…" --guarded `mega-sdd-trace:direct`
+```
 
-You'll see a chain proposal:
+There is no chain proposal and no confirmation prompt, and nothing is written under `.mega-sdd/`. The request itself is the go-ahead.
+
+> **Want the question round anyway?** The brief implies staff logins, but it doesn't say so in words the router counts. Add `--assisted` to force the assisted lane: before coding you get ONE batched `AskUserQuestion` for the business decisions, and after delivery ONE blind review of the diff ([Scenario 2](scenario-2-prd-driven-feature.md) walks it).
+
+### Step A3 — Claude builds it in the main session
+
+The procedure is `plugins/mega-sdd/references/direct-lane.md`:
+
+1. Claude lists every requirement and acceptance criterion from your sentence in its working notes. That list is the contract it reports against at the end.
+2. It implements in this session. There are no implementer subagents, no vault and no units.
+3. The brief is silent on stack, storage and email provider. Claude picks the simplest reversible option for each and records each one as an assumption. It never invents a business rule.
+4. It meets the delivery bar, where each item is a defect a benchmark run once shipped:
+   - at least one automated test per criterion, run through the repo's standard test command;
+   - date/time logic pins its time zone (the 24-hour reminder is exactly this kind of logic);
+   - `build` passes on a fresh checkout with no local `.env`, and secrets are validated at request time;
+   - every page is reachable from the app's navigation.
+
+### Step A4 — The delivery check
+
+After committing, Claude runs `bash "${CLAUDE_PLUGIN_ROOT}/scripts/delivery-check.sh" --cwd=.` against a fresh copy of HEAD, and repeats fix → commit → re-run until it passes:
+
+```
+delivery-check @ 3f9c2e1 (/Users/you/playground/clinic-app)
+  D1 PASS scripts.test = vitest run
+  D2 PASS npm test (TZ=UTC) exit 0
+  D3 PASS npm test (TZ=Pacific/Kiritimati) exit 0
+  D4 PASS npm run build on a fresh checkout, empty env: exit 0
+  D5 PASS every static page route (4) is linked from another source file
+VERDICT: PASS
+```
+
+D1–D4 block, D5 is advisory: a `D5 WARN` names a page nothing links to, and Claude fixes it or says why it is intended. On a non-Node stack the check prints `D0 SKIP`, and Claude runs that stack's own test and build commands instead.
+
+### Step A5 — The result contract
+
+The run is reported in chat, briefly, and only after `VERDICT: PASS`. No report file is written. Every lane ends with this same shape (illustrative values):
+
+```
+| # | Criterion (from your brief)                    | Status | Test                                           |
+|---|------------------------------------------------|--------|------------------------------------------------|
+| 1 | Patients self-book an appointment              | ✓      | tests/booking.test.ts › books a free slot      |
+| 2 | Doctors view their schedule                    | ✓      | tests/schedule.test.ts › doctor sees own day   |
+| 3 | Email reminder 24 hours before the appointment | ✓      | tests/reminders.test.ts › sends at T-24h (UTC) |
+
+delivery-check: VERDICT: PASS (3f9c2e1)
+
+Assumptions & decisions:
+- Stack: Next.js + SQLite via Drizzle (brief names none; easiest to swap)
+- Email: provider interface + console transport in dev (no provider named)
+- Slot length 30 min, clinic hours 09:00–17:00 (brief silent; one constant each)
+- One appointment per doctor per slot; a second booking is rejected (brief silent; the conservative reading of "self-book")
+
+Commits: a1b2c3d, 3f9c2e1
+```
+
+### Step A6 — Verify it yourself
+
+```bash
+git log --oneline
+npm test          # or: bun test — whatever scripts.test runs
+npm run dev       # open the app, walk the booking flow
+```
+
+**Measured, so you know what to expect:** on the benchmark's greenfield PRDs the routed lanes were **on par with plain Claude Code** in time, cost and quality. They were not better. The one thing they add is the delivery check, which plain Claude Code does not run (commit `d447a6d2`).
+
+## Part B — the same idea on the guarded lane (spec + audit trail)
+
+Use this when the team wants the spec and audit artefacts:
+
+- a cited vault;
+- atomic units with acceptance tests;
+- a binding verdict per unit;
+- bolt evidence per commit;
+- later, FSD / SIT / UAT documents via `/mega-sdd:emit`.
+
+Be clear about what you are buying. On the greenfield benchmark the pipeline cost 9–22× plain Claude Code and did not produce better code (commit `cf8d3df3`). What it adds is traceability, not quality.
+
+### Step B1 — Scaffold first
+
+The guarded lane runs on a framework scaffold (the "starterkit"):
+
+```bash
+mkdir ~/playground/clinic-app-guarded && cd ~/playground/clinic-app-guarded
+bunx create-next-app@latest .     # also runs git init + a first commit; any framework a pack knows works the same way
+git log --oneline                 # the baseline commit is there
+```
+
+Without a framework manifest, the front door halts `no_starterkit_detected`, with three options: scaffold first, opt in to greenfield, or cancel. `--greenfield` lets `plan` write stack-agnostic units, but `execute-bolts` waits until you scaffold.
+
+### Step B2 — Ask for the pipeline
+
+```
+/mega-sdd "build a clinic appointment system for a small medical clinic — patients self-book, doctors view schedules, email reminders 24 hours before appointment" --guarded
+```
+
+`plan` takes a PRD, not a sentence, so the front door first writes your brief to a seed PRD at `.mega-sdd/vaults/<slug>/source/seed-PRD.md`:
+
+- your words are kept verbatim;
+- there is **no Q&A before planning**;
+- every topic the brief leaves open becomes `(unspecified)`, and later an Open Question.
+
+Then you get ONE confirmation for the whole chain:
 
 ```
 Proposed pipeline (--deep):
-  1. generate-intent --from-prompt "build a clinic appointment system..."
-  2. generate-units                                  → atomic implementation units
-  3. execute-bolts --all --parallel                  → code commits per unit
+  1. plan .mega-sdd/vaults/<slug>/source/seed-PRD.md --vault=.mega-sdd/vaults/<slug> --lite --mode=existing → context.md + units/
+  2. execute-bolts --all --lite           → bolts/ (JIT bind per unit → bolts/U-XXX/binding.json) + delivery-check
 
-Halts may re-engage you mid-chain (test failures, business OQ resolutions,
-hard-rule violations, dedup ambiguity, recommendation reviews). Otherwise
-runs end-to-end silently with progress indicators.
+Halts may re-engage you mid-chain (test failures, business OQ
+resolutions, hard-rule violations, dedup ambiguity, recommendation
+reviews). Otherwise runs end-to-end silently with progress indicators.
 
 [Run] [Edit] [Cancel]
 ```
 
-Click **Run**.
+`--mode=existing` because the repo already carries code files: the scaffold's own pages count. The engine picks the mode; you are not asked. It only means `plan` looks each unit up in the symbol index before typing it. Click **Run**.
 
-## Step 3 — Phase 1: generate-intent Q&A
+### Step B3 — Phase 1: `plan` (one phase: vault + units)
 
-Mega-sdd opens an interactive Q&A (≤10 questions) to extract concrete spec from your one-sentence brief. You'll be asked things like:
+`plan` reads the seed PRD once and writes the layout-3 vault into `.mega-sdd/vaults/<slug>/`:
 
-- Project shape? → **web-app**
-- Implementation mode? → **new** (greenfield)
-- Tech stack preference? → **Next.js 16 + Bun + PostgreSQL** (or accept defaults)
-- Output mode? → **compact** (recommended for first run)
-- Auth approach? → **Better Auth**
+- `context.md` — flows (Mermaid + DoD per flow), data model, constraints, and the one `## Open Questions` home; every row cites its source
+- `constitution.md` — the project rules, each clause source-cited
+- `vault.json` — the manifest (script-derived, never hand-written)
+- `_meta/ai-consumer-guide.md`
+- `units/U-*.md` + `units/_index.md` — atomic, PR-sized units, each with `prd_source:` + `context_source:` citations, a `target_files` whitelist and at least one `acceptance_test`. Units that add new files are `task_type: create`. A unit that changes a scaffold file, such as the root layout for navigation, is typed from its symbol-index hit (`extend`, with `## Migration notes`).
 
-Answer based on the [sample PRD](sample-prd-clinic.md) if you want exact reproduction. Or improvise — mega-sdd accepts your choices.
+Open Questions are sorted before anyone is asked:
 
-After Q&A, mega-sdd writes vault to `.mega-sdd/vaults/clinic-app/` (or similar slug):
-- `vault.md` — frontmatter lock scalars + Overview/Architecture/Decisions
-- `model.md` — entities
-- `flows.md` — Mermaid flows + DoD
-- `constraints.md` — constraints + the one authored `## Open Questions` home (`[origin:]` tokens)
-- `vault.json` — manifest
-
-You'll see chat output:
-```
-✓ Phase 1 of 3: generate-intent → status: completed, items: 9 OQs (3 P1 business, 4 P2 tech, 2 P3 refinement), blocked: 3
-```
-
-## Step 4 — Phase 1.5: Resolve P1 business OQs
-
-On the express default the chain asks the P1 business OQs itself (batched, ≤4 per prompt) and continues; on `--classic` it pauses with `oq_business_p1_unresolved` — say "resolve open questions", then `/mega-sdd --resume`. The classic pause looks like:
+- **Technical** OQs are decided by the AI as labelled, cited, reversible choices (`→ **Resolved v<X.Y>** (AI decision, <date>): <pick>`) and listed in the report.
+- **P1 business** OQs come to you in ONE batched ask, with at most 4 questions. Each option carries a keterangan line and a recommendation, or "no recommendation — needs stakeholder":
 
 ```
-⏸ Phase 1 paused: 2 P1 business OQs need resolution.
-  OQ-FL-002: Should patients see other patients' names? (privacy)
-  OQ-CN-001: HIPAA/GDPR compliance scope?
-Say "resolve open questions" to walk these interactively.
+OQ-004 [P1] [business]:
+  "Which patient-data regulation applies (storage + reminder emails)?"
+  (source: seed-PRD §G Regulatory & compliance — (unspecified))
+
+  [1] No recommendation — needs stakeholder
+      keterangan: no source in the brief; the AI will not pick a legal regime
+  [2] Defer — the units that depend on it stay blocked at bolts
+  [3] Out of scope
+  — Other: free text (e.g. "GDPR — EU clinic")
 ```
 
-Either way, each P1 OQ is walked like this:
+An answer lands in `context.md ## Open Questions`. A P1 business OQ left unanswered, including every one past the first four, stays `blocking`. Its units stay blocked at bolts and the chain pauses there with `oq_business_p1_unresolved`, so the AI never answers it for you.
 
 ```
-OQ-FL-002 [P1] [business / blocking]:
-  "Should patients see other patients' names in schedule view?"
-  
-  Recommendation: No — show only "Booked" for occupied slots (recommended)
-  Rationale: Privacy default; common pattern for booking systems.
-  Fallback-if-wrong: If clinic explicitly wants visible names (small-team
-    practice), revisit with privacy lawyer.
-  Confidence: HIGH
-  
-  Options:
-    [1] No — show "Booked" only (recommended)
-    [2] Skip
-    [3] Defer
-    [4] Out of scope
-    — Other: free text (e.g. "Yes — show names")
+▶ Phase 1 of 2: invoking plan (.mega-sdd/vaults/<slug>/source/seed-PRD.md --lite --mode=existing)
+✓ Phase 1 of 2: plan → status: completed, items: 14 units, blocked: 0
 ```
 
-Pick (1). The resolution lands in the vault (`constraints.md ## Open Questions`, status: resolved). On the express default the chain simply continues; on `--classic`, resume:
+Before the next hop, the validators must pass: unit spec, flow coverage, and plan coverage. Plan coverage means every PRD heading has a unit, an open OQ carrying `[covers: …]`, or a `context.md ## Coverage exclusions` line with a reason; a gap halts `plan_coverage_gap`. `plan` emits no handoff YAML, so the front door re-derives state from disk before it dispatches bolts.
+
+### Step B4 — Phase 2: `execute-bolts --all --lite`
+
+Before any task runs, the up-front bind binds every pending unit **just in time** (each task re-binds its unit again before it starts):
+
+- `derive-unit-claims.sh` collects each unit's claims;
+- `write-unit-binding.sh` writes the verdicts to `bolts/U-XXX/binding.json`. It is the only writer of that file.
+
+On a fresh scaffold almost every claim is a filesystem check (a `create` target must not exist yet; a modified file must exist), verdicted by the script. A bind with no symbol or free-text claims costs zero model tokens. A CONFLICT would stop only the unit it belongs to: `derive-exec-plan.sh` quarantines it at run start (and skips the units that depend on it).
+
+The units then run in ONE context, one task per unit in the generated plan's order: the task's re-bind, test first, the L0 gates and the detect-after scans (Hard-rule post-flight, acceptance), then its evidence commit. ONE blind review of the whole run range closes the run. Per unit you see two lines:
 
 ```
-/mega-sdd --resume
+▶ Bolt 1/14: U-001 "Create appointment schema + migration"
+✓ Bolt 1/14: U-001 → done in 2m05s, 0 retries, confidence 0.90, anchors 0/0 ✓, commit 8a3f2e1
+…
+✓ execute-bolts batch complete: 14/14 done, 0 halted
 ```
 
-Chain continues.
+The chain ends with the same `delivery-check.sh` as Part A.
 
-## Step 5 — Phase 2: generate-units
+### Step B5 — Same result contract, plus the audit trail
 
-After OQ resolution, mega-sdd generates atomic units. For clinic system, expect ~12-15 units:
-
-```
-▶ Phase 2 of 3: invoking generate-units
-✓ Phase 2 of 3: generate-units → status: completed, items: 14 units, blocked: 0
-```
-
-On `--classic` the chain also auto-runs lint + analyze here; on the express default ask "lint units" on demand. Each unit:
-- Atomic (~1 PR-sized commit; <300 LOC)
-- Has Anchors citing Next.js patterns
-- Has acceptance_test (Vitest/Playwright)
-- Has Hard Rules (ast-grep YAML if v2 grammar installed)
-- Has grounding_confidence: HIGH (with full context)
-
-Inspect units:
+The final summary is the Part A contract: the criterion → test table, the delivery-check `VERDICT:` line of the last commit, and the assumptions and decisions. That covers the AI's tech decisions and your answers to the business OQs. On top of it you have:
 
 ```bash
-ls .mega-sdd/vaults/clinic-app/units/
-# U-001.md, U-002.md, ... U-014.md, _index.md
+ls .mega-sdd/vaults/<slug>/
+# context.md  constitution.md  vault.json  source/  _meta/  units/  bolts/
+ls .mega-sdd/vaults/<slug>/bolts/U-001/
+# binding.json  dispatch-prompt.md  bolt-report.md  acceptance.json  …
+git log --oneline      # one commit per unit
 ```
 
-`_index.md` shows units grouped by module:
-- M-auth (3 units)
-- M-booking (4 units)
-- M-reminders (2 units)
-- M-admin-schedule (3 units)
-- M-data-model (2 units)
-
-## Step 6 — Phase 3: execute-bolts
-
-Mega-sdd auto-runs `execute-bolts --all --parallel` (single squad in this scenario — `--per-squad` needs ≥2 squads):
-
-```
-▶ Phase 3 of 3: invoking execute-bolts (using wave plan)
-  Wave 1 (4 parallel): U-001 U-002 U-003 U-004
-  ✓ Wave 1 complete in 4 min
-  Wave 2 (4 parallel): U-005 U-006 U-007 U-008
-  ✓ Wave 2 complete in 4 min
-  Wave 3 (4 parallel): U-009 U-010 U-011 U-012
-  ✓ Wave 3 complete in 3 min
-  Wave 4 (2 parallel): U-013 U-014
-  ✓ Wave 4 complete in 2 min
-✓ Phase 3 of 3: execute-bolts → status: completed, items: 14/14 bolts, blocked: 0 (13 min total)
-```
-
-Total wall-clock for execution: ~13 minutes (vs ~40 min sequential).
-
-## Step 7 — Verify
-
-```bash
-# Check committed work
-git log --oneline -20
-
-# Run all tests
-bun test && bunx playwright test
-# Or if Next.js not scaffolded yet, mega-sdd will have run via superpowers TDD
-# in isolated environment
-
-# Tool-agnostic export: run "generate AGENTS.md" on demand if you want it
-```
-
-You should see:
-- 14 atomic commits (one per unit)
-- All Vitest/Playwright tests passing
-- If you want the tool-agnostic `AGENTS.md` export, run "generate AGENTS.md" on demand (auto-emit is classic-spine only)
+Tool-agnostic `AGENTS.md` export: say "emit agents.md" (the chain skips it by default). Team documents: `/mega-sdd:emit fsd|sit|uat`.
 
 ## Common pitfalls
 
-### Pipeline halts during Q&A
+### delivery-check keeps failing (any lane)
 
-If you skip too many questions, mega-sdd flags vault as too-vague (lots of OQs). Either:
-- Answer the questions more concretely
-- Accept and resolve as P1 OQs in Step 4
+The check runs on a fresh `git archive` of HEAD: untracked files and your local `.env` are not there. Typical failures:
 
-### Phase 3 halts on test_fail
+- `D1 FAIL` — `package.json` has no real `scripts.test`, so tests only `node --test` can find don't count. Add the command the tests actually run with.
+- `D3 FAIL` — the tests pass under UTC and fail under UTC+14. Pin the zone in the code or the test.
+- `D4 FAIL` — the build reads a secret at import or prerender time. Read and validate it at request time instead.
 
-A bolt's acceptance test failed 3 times. Read the bolt-report:
+A report without `VERDICT: PASS` is an unfinished run.
+
+### Guarded: `no_starterkit_detected` on an empty directory
+
+Scaffold first (Step B1), or add `--greenfield` to plan stack-agnostic units now and run bolts after you scaffold.
+
+### Guarded: a bolt halts on `test_fail`
+
+The unit's acceptance test still failed after its retry budget (3 by default; 1 on an xs project). Read the bolt report:
 
 ```bash
-cat .mega-sdd/vaults/clinic-app/bolts/U-XXX/bolt-report.md
+cat .mega-sdd/vaults/<slug>/bolts/U-XXX/bolt-report.md
 ```
 
-Common causes:
-- Test runner not installed (run `bun add -d vitest @playwright/test`)
-- Database not migrated (run `bun run db:migrate`)
-- Test references file that doesn't exist (unit may be missing target_file dependency)
+Common causes: the test runner isn't installed, the database isn't migrated, or the test references a file outside the unit's `target_files`. Resolve it, then `/mega-sdd --resume`.
 
-Resolve, then `/mega-sdd --resume`.
+### Guarded: you want to review units before any code is written
 
-### Wall-clock longer than 15 min
-
-Acceptable for greenfield. Optimization targets:
-- Run with `--parallel` (already default in `auto` chain via wave plan)
-- Skip non-essential phases via `--stop-after=generate-units` if you want to review units before bolts
+Add `--stop-after=plan`. The chain halts after Phase 1; continue with `/mega-sdd --resume`.
 
 ## What you learned
 
-- `/mega-sdd` runs the FULL pipeline from a single sentence
-- Auto-detect handles greenfield (no PRD, no code)
-- Weighted routing + batched OQs keep interaction minimal
-- Anti-halu rails fire on real issues; auto-continues otherwise
-- ONE command + minimal interaction = working code with tests
+- `/mega-sdd` routes first. A clear idea takes the direct lane, which is plain Claude Code plus the delivery check.
+- Every lane ends with the same result contract: criterion → test table, `delivery-check.sh` `VERDICT: PASS`, and the assumptions and decisions.
+- `--guarded` runs the one spec pipeline, `plan` → `execute-bolts`, with a single batched business ask and a JIT bind per unit.
+- The pipeline's value is traceability and audit artefacts, not better code. Choose it for that reason.
 
 ## Next scenario
 
-→ [Scenario 2 — PRD-driven feature](scenario-2-prd-driven-feature.md): start from a real PRD file.
+→ [Scenario 2 — PRD-driven feature](scenario-2-prd-driven-feature.md): start from a real PRD file in an existing project.

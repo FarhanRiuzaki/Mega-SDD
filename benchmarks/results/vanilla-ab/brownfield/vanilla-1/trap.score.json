@@ -1,0 +1,40 @@
+{
+ "traps": {
+  "T1": {
+   "surfaced": true,
+   "quote": "The PRD says v1 has 20-minute slots, 48-hour reminders and an existing `rescheduling_required` status, but the code has 15-minute slots",
+   "judge_said": true,
+   "verified": true
+  },
+  "T2": {
+   "surfaced": true,
+   "quote": "48-hour reminders and an existing `rescheduling_required` status, but the code has 15-minute slots, 24-hour reminders",
+   "judge_said": true,
+   "verified": true
+  },
+  "T3": {
+   "surfaced": true,
+   "quote": "but the code has 15-minute slots, 24-hour reminders and no such status. Which is right? -> keep the code's behaviour and add the status",
+   "judge_said": true,
+   "verified": true
+  },
+  "T4": {
+   "surfaced": true,
+   "quote": "but no penalty is defined -> deferred; patients simply can't cancel online inside the window",
+   "judge_said": true,
+   "verified": true
+  },
+  "T5": {
+   "surfaced": true,
+   "quote": "but no VIP concept exists -> deferred; the queue is first come, first served",
+   "judge_said": true,
+   "verified": true
+  }
+ },
+ "surfaced": 5,
+ "total": 5,
+ "overturned": [],
+ "bundle_chars": 11588,
+ "judge_sid": "5ed68285-49f6-48ab-be12-218ef6850bd9",
+ "judge_cost_usd": 0.16405820000000002
+}

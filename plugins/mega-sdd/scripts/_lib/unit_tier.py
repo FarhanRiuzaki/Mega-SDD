@@ -1,9 +1,7 @@
 """unit_tier — the size proxy behind `unit_tier: xs` (size-weighted spec
-2026-08-23 §1a, A1 option i, approved 2026-09-05), shared verbatim by
-`resolve-review-tier.sh` (the router: xs = tier "minimal" AND size_small) and
-`validate-unit-spec.sh` (v8 P1 F1(e): the `xs_body_advisory` over the SAME
-class of unit). One implementation so the router and the advisory can never
-disagree about what "small" means (B1 precedent: shared _lib, byte-identical).
+2026-08-23 §1a, A1 option i, approved 2026-09-05), read by
+`validate-unit-spec.sh` (v8 P1 F1(e): the `xs_body_advisory`). One
+implementation in _lib (B1 precedent) so "small" has a single definition.
 
 size_proxy(fm, body) -> dict(n_accept, n_steps, n_reqs, size_small)
   n_accept  entries under `acceptance_test:` — (?m) WITHOUT (?s): the block

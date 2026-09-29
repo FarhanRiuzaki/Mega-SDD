@@ -2,9 +2,9 @@
 # validate-codebase-map.sh — R6: codebase-map schema validation.
 #
 # Checks codebase-map.md has all 7 required sections and valid frontmatter.
-# Probes the same locations bind-codebase binds against (canonical
-# .mega-sdd/codebase/codebase-map.md, then legacy <root>/codebase-map.md),
-# or validates an explicit --file-path.
+# Probes the references/paths.md codebase-map order (canonical
+# .mega-sdd/codebase/codebase-map.md, then legacy <root>/codebase-map.md;
+# state_probes.py probe 7), or validates an explicit --file-path.
 #
 # Inputs: --cwd=<project> [--file-path=<map>] [--quiet]
 # Outputs: <cwd>/.mega-sdd/.codebase-map-state.json
@@ -41,8 +41,9 @@ STATE_FILE="${CWD}/.mega-sdd/.codebase-map-state.json"
 # state dir — without this the state write fails silently and the DEGENERATE gate
 # reads nothing (fail-open on the exact layout the legacy probe exists for).
 mkdir -p "${CWD}/.mega-sdd" 2>/dev/null
-# S3 V7: probe order mirrors bind-codebase SKILL.md (canonical → legacy root) so
-# the map the binder actually binds against is the map that gets validated.
+# S3 V7: probe order mirrors references/paths.md (canonical → legacy root) so
+# the map every reader (analyze, emit-*, detect-drift) consumes is the map that
+# gets validated.
 # An EXPLICIT --file-path that doesn't exist is a usage error (exit 2, state
 # untouched) — never silently substitute a probed map for the asked-for file.
 MAP_PATH=""
@@ -110,8 +111,8 @@ if not fm_match:
 else:
     checks.append({"check": "frontmatter_present", "status": "PASS"})
     fm = fm_match.group(1)
-    # S3 V6: `engine` is schema-required (bind-codebase keys precision behavior
-    # off it); a map without it predates the precision contract → re-scan.
+    # S3 V6: `engine` is required by the codebase-map writer contract; a map
+    # without it predates the precision contract.
     required_fm = ["generated_by", "generated_at", "repo_root", "languages_detected", "engine"]
     for field in required_fm:
         if not re.search(r"^\s*" + re.escape(field) + r"\s*:", fm, re.MULTILINE):
@@ -123,8 +124,9 @@ else:
     # last_scanned_commit; in a git repo its absence silently disables that lane.
     # WARN (advisory): non-git repos legitimately omit it (schema: OPTIONAL), and a
     # zero-commit repo (no resolvable HEAD) legitimately omits it too. A stamp whose
-    # VALUE is the literal string "HEAD" is the zero-commit-era poison shape the
-    # procedure defines as missing (scan-procedure §Step 10) — WARN, not PASS.
+    # VALUE is the literal string "HEAD" is the zero-commit-era poison shape,
+    # treated as missing (same rule as state_probes.probe_codebase_map) — WARN,
+    # not PASS.
     if os.path.exists(os.path.join(cwd, ".git")):
         import subprocess
         try:
@@ -215,13 +217,13 @@ if sec2_match:
         checks.append({"check": "interfaces_populated", "status": "PASS",
                        "detail": f"§2 has {data_rows} interface rows"})
 
-# Check 4 (Iter-79 U-SC): DEPTH — the map's only consumer (bind-codebase field-level
-# diff) REQUIRES `precision_tier: ast` + signature-bearing §2 rows; on regex it degrades
-# to binary classification. Prior validator checked §2 ROW COUNT only, never row DEPTH —
-# a map of bare symbol names passed while silently degrading binding. Advisory (WARN):
+# Check 4 (Iter-79 U-SC): DEPTH — a map claiming `precision_tier: ast` must carry
+# signature-bearing §2 rows. Prior validator checked §2 ROW COUNT only, never row
+# DEPTH — a map of bare symbol names passed while claiming ast precision. Advisory
+# (WARN; P1b prune candidate — its field-level-diff consumer retired in 9.0):
 #   - precision_tier: ast  but no §2 row carries a signature token (param/field list) →
-#     codebase_map_depth_claim_unmet (claims ast precision; binding will get bare names).
-#   - precision_tier: regex (or absent)  → note that binding field-diff degrades to binary.
+#     codebase_map_depth_claim_unmet (the ast precision claim is unmet).
+#   - precision_tier: regex (or absent)  → note that §2 carries names only.
 precision_tier = None
 if fm_match:
     pt = re.search(r"^\s*precision_tier\s*:\s*([A-Za-z_]+)", fm_match.group(1), re.MULTILINE)
@@ -250,8 +252,8 @@ if sec2_match:
             issues.append({
                 "halt_type": "codebase_map_depth_claim_unmet",
                 "detail": "frontmatter declares precision_tier: ast but no §2 Public-interfaces "
-                          "row carries a signature (param/field list) — bind-codebase field-level "
-                          "diff will silently degrade to binary classification.",
+                          "row carries a signature (param/field list) — the map's ast precision "
+                          "claim is unmet.",
             })
             checks.append({"check": "interface_depth", "status": "WARN",
                            "detail": "precision_tier: ast but §2 rows carry no signatures"})
@@ -260,12 +262,12 @@ if sec2_match:
                            "detail": f"precision_tier: ast with {sig_rows} signature-bearing §2 row(s)"})
     elif precision_tier == "regex":
         checks.append({"check": "interface_depth", "status": "WARN",
-                       "detail": "precision_tier: regex — bind-codebase field-level diff degrades "
-                                 "to binary classification (no per-field ADD/KEEP/REMOVE)."})
+                       "detail": "precision_tier: regex — §2 carries names only (no per-field "
+                                 "signatures)."})
     else:
         checks.append({"check": "interface_depth", "status": "WARN",
-                       "detail": "frontmatter declares no precision_tier — binding cannot tell "
-                                 "whether field-level diff is available; add precision_tier: ast|regex."})
+                       "detail": "frontmatter declares no precision_tier — a reader cannot tell "
+                                 "whether §2 carries signatures; add precision_tier: ast|regex."})
 
 has_fail = any(c["status"] == "FAIL" for c in checks)
 has_warn = any(c["status"] == "WARN" for c in checks)

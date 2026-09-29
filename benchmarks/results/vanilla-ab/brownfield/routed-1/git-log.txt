@@ -1,0 +1,37 @@
+602844c 2026-09-27T09:49:25+07:00 chore(sdd): detect-drift report + PENDING-SYNC queue (clinic-v2)
+baf3636 2026-09-27T09:44:51+07:00 chore(sdd): batch evidence — _summary.md, _batch-suite.json, refreshed postflight
+9c15ea6 2026-09-27T09:44:26+07:00 chore(sdd): evidence U-012 — bolt report, gate evidence, panel ledger
+24edcd0 2026-09-27T09:44:20+07:00 chore(sdd): evidence U-015 — bolt report, gate evidence, panel ledger
+75eeff6 2026-09-27T09:43:20+07:00 chore(sdd): evidence U-016 — bolt report, gate evidence, panel ledger
+e1f8bfc 2026-09-27T09:42:47+07:00 chore(sdd): evidence U-009 — bolt report, gate evidence, panel ledger
+06ab5d7 2026-09-27T09:41:04+07:00 chore(sdd): evidence U-014 — bolt report, gate evidence, panel ledger
+2c24c93 2026-09-27T09:40:50+07:00 chore(sdd): evidence U-008 — bolt report, gate evidence, panel ledger
+32d9f0a 2026-09-27T09:40:45+07:00 feat(U-012): Staff doctor-leave page — record leave and resolve affected appointments
+925bf7a 2026-09-27T09:40:42+07:00 chore(sdd): evidence U-010 — bolt report, gate evidence, panel ledger
+990a985 2026-09-27T09:40:34+07:00 feat(U-009): Trigger offers on patient cancellation and run the offer-expiry sweep from cron
+4c0f691 2026-09-27T09:39:58+07:00 feat(U-015): Waitlist offer page — review and accept the freed slot
+353b51a 2026-09-27T09:39:44+07:00 chore(sdd): evidence U-006 — bolt report, gate evidence, panel ledger
+7038295 2026-09-27T09:39:32+07:00 feat(U-016): Show the call-the-clinic message on the cancel and reschedule pages inside the window
+14e042d 2026-09-27T09:37:43+07:00 chore(sdd): evidence U-011 — bolt report, gate evidence, panel ledger
+5fdd314 2026-09-27T09:37:34+07:00 chore(sdd): evidence U-013 — bolt report, gate evidence, panel ledger
+2129ebb 2026-09-27T09:37:19+07:00 feat(U-014): Booking page — join the waitlist when the chosen date has no free slot
+3c5d944 2026-09-27T09:36:39+07:00 feat(U-006): Leave dates are not bookable — hide slots and refuse online booking/reschedule
+3cb0220 2026-09-27T09:36:19+07:00 feat(U-008): Waitlist offer engine — offer freed slot, accept via one-time link, expiry sweep
+bfe20ef 2026-09-27T09:36:05+07:00 feat(U-010): Leave resolution service — reassign or cancel affected appointments, individually or in bulk
+a677cdc 2026-09-27T09:35:01+07:00 chore(sdd): evidence U-007 — bolt report, gate evidence, panel ledger
+87f1206 2026-09-27T09:34:50+07:00 feat(U-013): Staff waitlist page — each doctor's waitlist per date with remove
+fa524fe 2026-09-27T09:34:00+07:00 chore(sdd): evidence U-004 — bolt report, gate evidence, panel ledger
+7c8bdd5 2026-09-27T09:33:46+07:00 chore(sdd): evidence U-005 — bolt report, gate evidence, panel ledger
+8b094a5 2026-09-27T09:31:59+07:00 chore(sdd): evidence U-001 — bolt report, gate evidence, panel ledger
+c178033 2026-09-27T09:31:52+07:00 feat(U-007): Cancellation window — refuse patient link cancel/reschedule inside the window
+3a90ec4 2026-09-27T09:31:40+07:00 chore(sdd): evidence U-011 — bolt report, gate evidence, panel ledger
+11cd943 2026-09-27T09:31:21+07:00 chore(sdd): evidence U-002 — bolt report, gate evidence, panel ledger
+6a62e21 2026-09-27T09:31:14+07:00 feat(U-004): Waitlist service — join, list per doctor/date, remove
+648403a 2026-09-27T09:31:12+07:00 feat(U-005): Doctor leave service — record leave, mark affected appointments, on-leave check
+88c6338 2026-09-27T09:30:27+07:00 chore(sdd): evidence U-003 — bolt report, gate evidence, panel ledger
+d45bcba 2026-09-27T09:30:13+07:00 feat(U-011): Affected-appointments list component with per-row and bulk reassign/cancel
+e44ffd1 2026-09-27T09:28:08+07:00 feat(U-001): Add rescheduling_required status and the waitlist_entries / doctor_leaves tables
+165698e 2026-09-27T09:28:06+07:00 feat(U-002): Add the cancellation and waitlist-offer email kinds
+12d68be 2026-09-27T09:27:12+07:00 feat(U-003): Route access and staff navigation for /staff/waitlist and /staff/leave
+b5b6592 2026-09-27T09:25:44+07:00 plan: clinic-v2 lite vault (context.md, constitution, 16 units)
+015ecf3 2026-09-27T08:25:21+07:00 fixture: Harbor Clinic v1 app (from vanilla clinic run) + PRD v2

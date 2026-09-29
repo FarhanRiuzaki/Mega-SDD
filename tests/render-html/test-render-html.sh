@@ -103,13 +103,15 @@ grep -q "render-html.sh" "$EMIT" && ok "H2 emit html dispatches the script" || b
 grep -q "jangan menebak" "$EMIT" && ok "H3 ambiguous target → ask, never guess" || bad "H3 no-guess rail missing"
 grep -q "emit html" "$ROOT/plugins/mega-sdd/skills/using-mega-sdd/SKILL.md" && ok "H4 router side-lane names the html lane" || bad "H4 router pointer missing"
 
-echo "── I: auto-render at every pipeline hand-off (7.18.0) ──"
-for s in extract-intelligence generate-intent generate-units execute-bolts; do
+echo "── I: pipeline hand-off render is OPT-IN (render_html: on; the render was 78–88% of committed .mega-sdd/ lines) ──"
+# 9.0 P1: generate-intent + generate-units (classic spine) were deleted; their vault/units hand-off
+# render now lives in `plan` (checked below), so those two iterations are retired, not repointed.
+for s in extract-intelligence execute-bolts plan; do
   SK="$ROOT/plugins/mega-sdd/skills/$s/SKILL.md"
-  if grep -q "render-html.sh" "$SK" && grep -q "Fail-open" "$SK" && grep -q "render_html: off" "$SK"; then
-    ok "I1 $s hand-off auto-renders (fail-open + config opt-out)"
+  if grep -q "render-html.sh" "$SK" && grep -q "render_html: on" "$SK" && ! grep -q "Auto-render HTML" "$SK"; then
+    ok "I1 $s hand-off renders only on opt-in (render_html: on)"
   else
-    bad "I1 $s missing the auto-render hand-off line"
+    bad "I1 $s hand-off still auto-renders or lost the opt-in line"
   fi
 done
 

@@ -10,7 +10,7 @@ Loaded when `resolve-oq` runs under `--auto`, as an `orchestrate-flow` chain pha
 
 ## --auto flag
 
-The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip **logistical** prompts only. **Substance prompts — per-OQ Resolve / Out-of-Scope / Defer / Skip choices — ALWAYS stay interactive on the BLOCKING tier (P1), and on EVERY tier in a standalone/classic invocation.** That is the entire point of this skill: capturing stakeholder answers, not Claude's guesses. **P3 express-chain carve-out:** P2/P3 OQs on the chain-routed express path auto-defer WITHOUT a prompt — no answer is invented (invariant #5 governs answer CONTENT; the defer fact, reason string, and re-surface obligations are all recorded mechanically), and `metrics.items_deferred` carries the full id list so the chain summary re-surfaces them.
+The `--auto` flag is passed by upstream callers (typically `/mega-sdd`) to skip **logistical** prompts only. **Substance prompts — per-OQ Resolve / Out-of-Scope / Defer / Skip choices — ALWAYS stay interactive on the BLOCKING tier (P1), and on EVERY tier in a standalone invocation.** That is the entire point of this skill: capturing stakeholder answers, not Claude's guesses. **P3 express-chain carve-out:** P2/P3 OQs on the chain-routed express path auto-defer WITHOUT a prompt — no answer is invented (invariant #5 governs answer CONTENT; the defer fact, reason string, and re-surface obligations are all recorded mechanically), and `metrics.items_deferred` carries the full id list so the chain summary re-surfaces them.
 
 | Step | Interactive behavior | `--auto` behavior |
 |------|---------------------|-------------------|
@@ -56,17 +56,17 @@ For each OQ/CONFLICT during the walk:
 
 ### Use case — convergence loops
 
-When `orchestrate-flow --converge` hits `bind_conflict`:
+When `orchestrate-flow --converge` halts on `binding_conflict` (execute-bolts run start, `derive-exec-plan.sh`):
 
 ```
-🔁 Cycle 1/3: invoking resolve-oq --binding --auto-accept --confidence-min=0.80
+🔁 Cycle 1/3: invoking resolve-oq --binding <vault> --auto-accept --confidence-min=0.80
 
 resolve-oq walking 3 conflicts:
-  ✓ C-007 (auth) → KEEP_CODE (codebase anchor evidence; conf 0.95) → AUTO-ACCEPTED
-  ✓ C-009 (Sanctum) → KEEP_VAULT (constitution §B-001; conf 1.00) → AUTO-ACCEPTED
-  ⏸ C-011 (audit schema) → recommendation conf 0.65 < 0.80 → DEFERRED for manual
+  ✓ U-007 · C-U007-01 (auth) → KEEP_CODE (codebase anchor evidence; conf 0.95) → AUTO-ACCEPTED
+  ✓ U-009 · C-U009-02 (Sanctum) → KEEP_VAULT (constitution §B-001; conf 1.00) → AUTO-ACCEPTED
+  ⏸ U-011 · C-U011-01 (audit schema) → recommendation conf 0.65 < 0.80 → DEFERRED for manual
 
-2 conflicts resolved auto; 1 deferred. Convergence loop continues to re-bind.
+2 conflicts resolved auto; 1 deferred. Convergence loop re-invokes execute-bolts: its run start re-binds and re-plans.
 ```
 
 ### Anti-halu rails
@@ -104,17 +104,18 @@ handoff:
   status: completed | paused
   artifacts:
     - <absolute path to vault.json (updated)>
-    - <absolute path to binding.md (classic) or the touched bolts/U-*/binding.json (lite) when --binding mode>
+    - <absolute path to the touched bolts/U-*/binding.json when --binding mode (layout-2 leg: binding.md)>
   next_action:
-    # --binding mode — the next hop is ACTION-MIX dependent (binding-mode.md Step 5). A
-    # blanket re-bind LOOPS on KEEP_VAULT/DEFER: bind re-derives the SAME CONFLICT from the
-    # unchanged vault-vs-code contradiction (it never consumes a prior resolution as evidence).
-    #   • any KEEP_CODE or SPLIT chosen (vault was edited)  → mega-sdd:bind-codebase   (re-bind is clean)
-    #   • ONLY KEEP_VAULT / DEFER (vault + code unchanged)  → mega-sdd:generate-units  (the resolution-marked binding.md already passes validate-handoff-binding-units.sh; proceed)
-    # intent mode (non-binding OQ walk) → mega-sdd:orchestrate-flow (resume chain)
-    suggested_skill: mega-sdd:bind-codebase    # OR mega-sdd:generate-units (KEEP_VAULT/DEFER-only) OR mega-sdd:orchestrate-flow (intent mode)
-    suggested_args: ["--auto"]
-    rationale: "<1-sentence — e.g., 'KEEP_CODE/SPLIT resolutions; re-run binding gate' / 'KEEP_VAULT/DEFER only; binding resolved, proceed to units' / 'P1 OQs answered; chain resumable'>"
+    # --binding mode — the next hop is ACTION-MIX dependent (binding-mode.md Step 5):
+    #   • any KEEP_CODE or SPLIT (a unit was edited) → the engine runs scripts/rebind-units.sh
+    #     --units=<edited U-ids>, then mega-sdd:plan ["--reconcile", "--auto"] (task_type flips) → execute-bolts
+    #   • ONLY KEEP_VAULT / DEFER → mega-sdd:execute-bolts ["--all", "--lite", "--auto"] (no re-bind;
+    #     a later re-bind carries the resolutions forward — _lib/unit_binding.py)
+    #   • layout-2 leg (binding.md) → propose /mega-sdd:migrate-paths --vault-layout=3, never run silently
+    # standard OQ walk → mega-sdd:orchestrate-flow (resume chain)
+    suggested_skill: mega-sdd:plan    # KEEP_CODE/SPLIT; OR mega-sdd:execute-bolts (KEEP_VAULT/DEFER only) OR mega-sdd:orchestrate-flow (standard walk)
+    suggested_args: ["--reconcile", "--auto"]
+    rationale: "<1-sentence — e.g., 'KEEP_CODE/SPLIT; edited units re-bound, reconcile task_type' / 'KEEP_VAULT/DEFER only; gate open, resume bolts' / 'P1 OQs answered; chain resumable'>"
   blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers)
   metrics:
     items_processed: <N OQs/CONFLICTs walked>

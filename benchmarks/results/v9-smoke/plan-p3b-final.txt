@@ -1,0 +1,2 @@
+# P3b final smoke (n=1, not a benchmark): plugin = git archive of the P3b tip; fixture-xs @ ff006be; opus
+xs guarded p3bfinal PRD/prd-company-profile.md

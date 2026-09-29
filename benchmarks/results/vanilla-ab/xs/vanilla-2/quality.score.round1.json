@@ -1,0 +1,42 @@
+{
+ "completion": 1.0,
+ "ac_pass": 12,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 3,
+ "rubric": 94,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/actions.ts:23",
+   "what": "insertContactMessage not wrapped in try/catch; a DB failure throws from the server action, showing the error boundary and losing the visitor's form input instead of a form-level error"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/db.ts:5,27",
+   "what": "Relies on experimental node:sqlite and a local file DB under process.cwd()/data; not persistent/writable on many hosting targets, which risks losing messages meant for admin reading"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/contact-form.tsx:61,82 vs src/lib/contact.ts:28-30",
+   "what": "Client maxLength counts UTF-16 units while server counts code points, so client blocks non-BMP input before the server limit; no client maxLength on email"
+  }
+ ],
+ "blind_label": "QF",
+ "scorer_sid": "e5a7dd07-cb64-40ba-85fe-158f2848de6c"
+}

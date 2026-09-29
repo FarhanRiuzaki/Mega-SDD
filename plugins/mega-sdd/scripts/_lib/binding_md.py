@@ -1,10 +1,11 @@
 """binding_md.py — the ONE binding.md parsing grammar (W2, spec 2026-07-19-w-batch-script-derive.md).
 
-Shared by BOTH `validate-binding-json.sh` (parity gate) and
-`derive-binding-json.sh` (deterministic generator) via the MEGA_SDD_LIB_DIR
+Shared by `derive-binding-json.sh` (the single binding.json generator),
+`validate-handoff-binding-units.sh` (binding freshness + CONFLICT gate),
+`_lib/state_probes.py` via the MEGA_SDD_LIB_DIR
 sys.path pattern — the B1 shared-engine precedent (`postflight_rules.py`)
-applied to the binding surface: md-parsing can never fork between the
-validator and the generator.
+applied to the binding surface: md-parsing can never fork between its
+readers.
 
 Pure parsing. No __main__; no side effects.
 """

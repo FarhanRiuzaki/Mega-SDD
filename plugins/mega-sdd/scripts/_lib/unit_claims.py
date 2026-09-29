@@ -2,7 +2,7 @@
 2026-09-10 Appendix F2; moved out of the derive-unit-claims.sh heredoc by the state
 anchor, spec 2026-09-25-state-anchor-design.md §9 "Claim-set integrity").
 
-derive-unit-claims.sh mints a wave's claim set with it; write-unit-binding.sh
+derive-unit-claims.sh mints each unit's claim set with it; write-unit-binding.sh
 re-derives ONE unit's claim set with it to refuse a bind whose claims drifted.
 Both import this module (0 exec) — the grammar is never re-typed.
 
@@ -23,7 +23,7 @@ CLAIM_RE = re.compile(r'^-\s+(C-U[\w-]+)\s+"(.+?)"\s+—\s+expect:\s+(.+?)\s*$')
 # — `(group)`, `[id]`, `@slot` — is a legal path segment; the old `[\w.\-]` grammar cut
 # `src/app/(blank-layout-pages)/register/page.tsx:1-22` down to `register/page.tsx:1-22`
 # and minted a FALSE fs_must_exist CONFLICT on 3/7 units. Same literal as the TOKEN regex
-# in check-anchor-freshness.sh / build-dispatch-prompt.sh (kept in step by hand).
+# in check-anchor-freshness.sh (kept in step by hand).
 ANCHOR_RE = re.compile(r'((?:(?:[\w.\-]+|\([\w.\-]+\)|\[[\w.\-]+\]|@[\w.\-]+)/)*[\w.\-]+\.[A-Za-z]\w{0,7}):(\d+)(?:-(\d+))?\b')
 
 

@@ -27,9 +27,15 @@ grep -q '^\*\*Announce at start:\*\*.*mega-sdd-trace:plan' "$SK" && pass "a: ann
 for k in 'never auto-answers a P1 business OQ' 'validate-plan-coverage.sh' 'plan_coverage_gap' 'JIT bind' 'derive-plan-pins.sh' 'ONE batched ask' 'context_source: context.md#' 'prd_source' 'No handoff YAML in this lane' 'xs body diet'; do
   grep -qF "$k" "$SK" && pass "b: SKILL.md says: $k" || fail "b: SKILL.md lacks: $k"
 done
-# references one level deep from the skill dir (own references/) + cross-skill pointers use the ../<skill>/references form
+# references one level deep from the skill dir (own references/) + plugin-wide contracts use the plugins/mega-sdd/references form
 grep -q 'references/plan-procedure.md' "$SK" && grep -q 'references/templates/context.md' "$SK" && pass "b: own references cited" || fail "b: own references missing"
-grep -q '\.\./generate-units/references/unit-schema.md' "$SK" && grep -q '\.\./generate-intent/references/vault-core.md' "$SK" && pass "b: cross-skill pointers (unit-schema, vault-core)" || fail "b: cross-skill pointers missing"
+# 9.0 P1: generate-units + generate-intent were deleted; the unit contract moved into plan's own
+# references/ and vault-core became a plugin-wide reference. The pointers must name the new homes,
+# the targets must exist, and no pointer into a deleted classic skill may survive.
+grep -qE '(^|[^/[:alnum:]_-])references/unit-schema\.md' "$SK" && [ -f "$P/skills/plan/references/unit-schema.md" ] \
+  && grep -qF 'plugins/mega-sdd/references/vault-core.md' "$SK" && [ -f "$P/references/vault-core.md" ] \
+  && pass "b: contract pointers (own unit-schema, plugin-wide vault-core)" || fail "b: contract pointers missing"
+grep -qE '\.\./(generate-units|generate-intent|bind-codebase|scan-codebase)/' "$SK" && fail "b: dangling pointer into a deleted classic skill" || pass "b: no pointer into a deleted classic skill"
 
 # c — template: layout-3 marker + four hard headers, killed sections absent as real headers, OQ rules
 grep -q '^vault_layout: 3' "$TPL" && pass "c: template vault_layout: 3" || fail "c: template layout marker"

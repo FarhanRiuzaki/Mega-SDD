@@ -42,8 +42,8 @@ stay readable by their existing validators; new extractions write ONLY this gram
 ## Module PRD frontmatter
 
 Machine face — read by `validate-extract-census.sh` (coverage recompute),
-`build-graph.sh` (`domain:` → `kb_domain` node), and `bind-codebase`
-(secondary ground truth + counts):
+`build-graph.sh` (`domain:` → `kb_domain` node), and `plan --kb`
+(classification, criticality, depends_on, counts):
 
 ```yaml
 ---
@@ -207,8 +207,8 @@ stages:
   best-effort/advisory — absence never fails a gate.
 - Anti-halu rail: every stage carries its own `_source` anchor — a stage with
   no citation is an `[OPEN]`, never an invented step.
-- Carry-over: `stages:` propagates PRD-kontrak → vault `flows.md` → units
-  verbatim; `generate-intent` copies the block and emits the matching Mermaid
+- Carry-over: `stages:` propagates PRD-kontrak → vault `context.md ## Flows` → units
+  verbatim; `plan --kb` copies the block (with `_kb_source:`) and emits the matching Mermaid
   `stateDiagram`, never re-flattens it; `validate-vault-flow-staging.sh`
   follows the flow's `_kb_source: [modules/<domain>.prd.md]` back-reference to
   prove staging was not dropped.
@@ -220,12 +220,13 @@ Two orthogonal axes; a claim tags only what departs from the default.
 **Confidence (axis 1) — default is VERIFIED:** a cited claim with no marker is
 verified-by-citation. Mark only the exceptions:
 - `[INFERRED]` — single source code path; needs confirmation downstream
-  (generate-intent asks; bind-codebase confirms with note).
+  (`plan --kb` routes it per its tier table: `[INFERRED][LOCKED]` → one
+  confirmation OQ; `[INFERRED][INTENT]` → a body note).
 - `[OPEN]` — unknown from code; the claim body moves to §6 Open Questions and
   propagates to the vault as an OQ.
 
 **Mutability (axis 2) — the revamp contract itself** (plugin invariant #4;
-drives Hard Rules in execute-bolts, ERD freedom in generate-intent, and
+drives Hard Rules in execute-bolts, ERD freedom in `plan --kb`, and
 `data-mutation-policy.md`):
 - `[LOCKED]` — MUST preserve 1:1: regulatory, contractual,
   integration-required, or external-FK-dependent. Needs positive evidence —
@@ -318,8 +319,8 @@ routing probe for "KB exists"). Required sections in order:
 1. **Project header** — name, 1-sentence description, extraction date, legacy source path.
 2. **How to use** — table: reader goal → file.
 3. **Module quick reference** — table of modules: classification + criticality + recommended rebuild order derived from `rebuild_after` (the ACYCLIC field — `depends_on` is references-only and legitimately cyclic, never a build order; module = the phasing unit).
-4. **`## Reengineering Opportunities`** — forward-looking design opportunities (heading verbatim — read by `generate-intent --kb`).
-5. **`## Mutability Tier Distribution`** — LOCKED/INTENT/ARTIFACT counts per module (heading verbatim — read by `generate-intent --kb`).
+4. **`## Reengineering Opportunities`** — forward-looking design opportunities (heading verbatim — read by `plan --kb`).
+5. **`## Mutability Tier Distribution`** — LOCKED/INTENT/ARTIFACT counts per module (heading verbatim — read by `plan --kb`).
 6. **`## Critical Findings`** — do-not-replicate bugs first; lead with what hurts.
 7. **Open Questions roll-up** — 1 line per OQ with link.
 8. **Stats** — module/file/OQ/rule/gotcha counts (from census + the
@@ -337,15 +338,15 @@ PRD's own §3/§4 carry this — never duplicate.
 ## `data-mutation-policy.md` template
 
 Emitted at the KB ROOT, ONLY when ≥1 `[LOCKED]` claim exists across modules
-(omit otherwise — `build-dispatch-prompt.sh` records absence honestly).
-Consumed by `generate-intent --kb` (ERD freedom) and `build-dispatch-prompt.sh`
-(DO-NOT-MODIFY anti-context) — the section headings + table columns below are
-that consumer contract; keep them verbatim:
+(omit otherwise — `plan --kb` then reads every claim as `[INTENT]`).
+Consumed by `plan --kb` (ERD freedom, `plan/references/kb-input.md`) — the
+section headings + table columns below are that consumer contract; keep them
+verbatim:
 
 ```markdown
 ---
 generated_by: mega-sdd:extract-intelligence
-purpose: Entity-level mutability policy — drives ERD freedom in generate-intent --kb
+purpose: Entity-level mutability policy — drives ERD freedom in plan --kb
 ---
 
 # Data Mutation Policy

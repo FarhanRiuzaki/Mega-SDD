@@ -1,7 +1,7 @@
 {
   "name": "mega-sdd",
-  "version": "8.8.1",
-  "description": "Spec-Driven Development as an autonomous agent pipeline: extract → intent → scan → bind → units → bolts. Anti-hallucination by construction — every claim cites its source, and spec↔code binding (CONFIRMED / CONFLICT / OQ verdicts) gates code generation. AST-precise codebase analysis (ast-grep-validated Hard Rules + symbol/reuse index), first-class subagents, and a consolidated analyze consistency surface (phrase-routed skill). Optional native deps (ast-grep + ripgrep) with graceful regex fallback.",
+  "version": "9.0.0",
+  "description": "A lane router for Claude Code: clear tasks run like plain Claude Code (direct), ambiguous or risky ones get one batched business ask and one blind review (assisted), and an existing vault or --guarded runs the one spec pipeline (plan -> execute-bolts, JIT spec-to-code binding with a CONFLICT gate) for traceability. Every lane ends with the same result contract: acceptance-criterion to test table, delivery-check PASS on a fresh checkout, and the assumptions made. Legacy extraction to a knowledge base and team documents (PRD/FSD/SIT/UAT) included.",
   "author": {
     "name": "Farhan Riuzaki"
   },
@@ -12,7 +12,8 @@
     "sdd",
     "spec-driven-development",
     "ai-coding",
-    "anti-hallucination",
+    "traceability",
+    "lane-router",
     "intent-unit-bolt",
     "superpowers"
   ],

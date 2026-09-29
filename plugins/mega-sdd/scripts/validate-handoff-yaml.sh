@@ -424,9 +424,9 @@ else:
             # carries the specific diagnosis; no new halt_type registration needed.
             #
             # Scoped to status==halted ONLY. A `paused` handoff with blockers: []
-            # is VALID and common (e.g. generate-intent surfaces P1-OQ triage via
-            # metrics.items_blocked with blockers: []; handoff-contract.md:7 skill-ref
-            # precedence). Do NOT catch paused/completed.
+            # is VALID and common (e.g. resolve-oq pauses with OQs deferred for
+            # manual resolution — resolve-oq/references/auto-memory-handoff.md).
+            # Do NOT catch paused/completed.
             #
             # Parser-tolerant emptiness: the no-deps parser builds a REAL list for
             # inline `[]` and block-style, and leaves blockers absent as None (never
@@ -473,9 +473,9 @@ else:
                 # template gave the model a cue to use ellipsis shorthand in the
                 # output; this expansion recovers the intended enumeration.
                 #
-                # Producer-side fix is to NOT use shorthand (see execute-bolts and
-                # generate-units handoff template comments); these strips/expansions
-                # are defense-in-depth.
+                # Producer-side fix is to NOT use shorthand (see
+                # execute-bolts/references/halts-and-handoff.md artifacts comment);
+                # these strips/expansions are defense-in-depth.
 
                 # Iter 77: generalize beyond '...' — model invents new range
                 # shorthand variants ('through', 'to', 'thru', Unicode ellipsis '…').

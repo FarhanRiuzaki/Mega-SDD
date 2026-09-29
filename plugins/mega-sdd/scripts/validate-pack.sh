@@ -159,11 +159,9 @@ _validate_pack() {
   done
 
   # ---- Check 6 (8.2.0 code-style playbook): `## Code style` shape ----------
-  # The section is the stack's DELTA over bolt-implementer Iron Rule 6, consumed
-  # as the T2 code_style_slice: five bold labels must be present and no template
-  # placeholder may survive. Bullet count / byte cap are pinned by
-  # tests/per-stack-packs/test-code-style-section.sh (a style rule, never a
-  # gate on generated code — this only lints the PACK's authoring shape).
+  # The stack's comment/naming DELTA over _universal §Comment conventions: five bold
+  # labels present, no template placeholder left; bullet count / byte cap pinned by
+  # tests/per-stack-packs/test-code-style-section.sh (lints the PACK's shape, never generated code).
   local _cs_body _cs_label
   _cs_body=$(printf '%s\n' "$content" | awk '/^## Code style/{f=1; next} f&&/^## /{exit} f')
   if [ -n "$_cs_body" ]; then
@@ -442,25 +440,25 @@ for line in token_map_raw.strip().splitlines():
 # Registry helpers
 # --------------------------------------------------------------------------
 
-# _enum_frameworks: parse §8.5 detection table from scan-procedure.md;
-# emit one framework name per line, sorted alphabetically.
-SCAN_PROC="$SCRIPT_DIR/../skills/scan-codebase/references/scan-procedure.md"
-
+# _enum_frameworks: read `framework:` from each pack's frontmatter (the set
+# GROUND's probe_framework_pack matches); one name per line, sorted.
 _enum_frameworks() {
-  if [ ! -f "$SCAN_PROC" ]; then
-    echo "ERROR: scan-procedure.md not found at $SCAN_PROC" >&2
+  local f b packs=()
+  for f in "$CONV_DIR"/*.md; do
+    b="${f##*/}"
+    case "$b" in _*|README.md) continue ;; esac
+    [ -f "$f" ] && packs+=("$f")
+  done
+  if [ "${#packs[@]}" -eq 0 ]; then
+    echo "ERROR: no framework pack found under $CONV_DIR" >&2
     return 1
   fi
-  # Extract lines between ## Step 8.5 and ## Step 9, filter to table rows,
-  # skip header and separator rows, take the 4th pipe-delimited column (Framework),
-  # strip leading spaces, take the first whitespace token (strips parentheticals),
-  # lowercase, sort.
-  awk '/^## Step 8\.5/,/^## Step 9/' "$SCAN_PROC" \
-    | grep '^|' \
-    | grep -v '^| Manifest\|^|---' \
-    | awk -F'|' '{print $4}' \
-    | sed 's/^[[:space:]]*//' \
-    | awk '{print $1}' \
+  # Frontmatter only (between the first two `---` lines); first `framework:`
+  # per file; first token, quotes stripped; lowercase, sort.
+  awk 'FNR==1{n=0; got=0} /^---/{n++; next}
+       n==1 && !got && /^framework:/{sub(/^framework:[[:space:]]*/, ""); split($0, t, /[[:space:]]+/)
+                                     v=t[1]; gsub(/["\047]/, "", v); print v; got=1}' \
+      "${packs[@]}" \
     | tr '[:upper:]' '[:lower:]' \
     | sort
 }
@@ -517,8 +515,9 @@ _generate_registry_content() {
   printf '\n'
   printf '# Framework Pack Registry\n'
   printf '\n'
-  printf 'Auto-generated readiness table. Frameworks enumerated from §8.5 of\n'
-  printf '`scan-codebase/references/scan-procedure.md` (the framework detection table).\n'
+  printf 'Auto-generated readiness table. Frameworks enumerated from each pack'"'"'s\n'
+  printf '`framework:` frontmatter, the set GROUND'"'"'s manifest->pack matcher\n'
+  printf '(`state_probes.probe_framework_pack`) resolves.\n'
   printf '\n'
   printf '%s\n' '**Status key:**'
   printf '%s\n' '- `ready` — pack file exists, `pack_tier: full`, lints clean'

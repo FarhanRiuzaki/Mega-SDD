@@ -1,0 +1,53 @@
+{
+ "completion": 1.0,
+ "ac_pass": 13,
+ "ac_total": 13,
+ "ac": {
+  "B1": "PASS",
+  "B2": "PASS",
+  "B3": "PASS",
+  "B4": "PASS",
+  "B5": "PASS",
+  "B6": "PASS",
+  "B7": "PASS",
+  "B8": "PASS",
+  "T1c": "PASS",
+  "T2c": "PASS",
+  "T3c": "PASS",
+  "T4c": "PASS",
+  "T5c": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 5,
+ "rubric": 91,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist-offers.ts:20-23,215-221",
+   "what": "Offered slot is not held during the 30-minute offer window; an online booker can take it and the accept then voids the offer."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist-offers.ts:187-227",
+   "what": "acceptOffer claims the offer, creates the appointment and updates the entry in separate non-transactional steps; a crash in between leaves the offer accepted with no appointment and the entry stuck as offered."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/api/cron/reminders/route.ts:26",
+   "what": "Offer expiry and pass-on rely on the 5-minute cron sweep, so the next patient can get the offer up to ~35 minutes after the first was sent."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/leave.ts:42-77",
+   "what": "Recording leave ignores the waitlist: pending offers and waiting entries on leave dates are not voided or notified; offers fail only at accept time and entries stay queued forever."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/leave.ts:105",
+   "what": "findFreeDoctors checks only the start slot with isRegularSlot, and the unique index covers only start_time, so overlapping multi-slot services rely on a read-then-check (same as the v1 pattern)."
+  }
+ ],
+ "blind_label": "YL",
+ "scorer_sid": "4f2aa72e-4154-4387-95ec-3265a58c8d96"
+}

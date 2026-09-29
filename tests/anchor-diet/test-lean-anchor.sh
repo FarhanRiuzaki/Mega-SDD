@@ -56,7 +56,14 @@ for needle in "STOP" "Skill" "orchestrate-flow"; do
   if core_has "$needle"; then ok "hard rule keeps: $needle"; else bad "hard rule LOST: $needle"; fi
 done
 # the bind CONFLICT gate line
-if core_has "bind-codebase" && core_has "CONFLICT"; then ok "bind CONFLICT gate kept in core"
+# 9.0 P1: bind-codebase (classic spine) is deleted; the surviving CONFLICT gate
+# is execute-bolts' JIT bind per unit (pre-flight 3.9 -> bolts/U-XXX/binding.json
+# -> halt binding_conflict, settled by resolve-oq --binding). Pin every leg of
+# that gate line: the artifact, the verdict token, the gate owner, the halt code
+# and the resolver — not just the word CONFLICT.
+if core_has "binding.json" && core_has "CONFLICT" && core_has "execute-bolts" \
+   && core_has "binding_conflict" && core_has "resolve-oq --binding"; then
+  ok "bind CONFLICT gate kept in core"
 else bad "bind CONFLICT gate dropped from core"; fi
 
 # ---- 3b) the 5.0.0 front-door contract survives in the core -----------------

@@ -1,0 +1,37 @@
+0165531 2026-09-26T15:43:51+07:00 chore(sdd): evidence U-013 — bolt report, gate artifacts, panel ledger
+5746b4d 2026-09-26T15:43:51+07:00 chore(sdd): evidence U-012 — bolt report, gate artifacts, panel ledger
+323aea5 2026-09-26T15:43:51+07:00 chore(sdd): evidence U-008 — bolt report, gate artifacts, panel ledger
+ff4bd3b 2026-09-26T15:43:50+07:00 chore(sdd): evidence U-005 — bolt report, gate artifacts, panel ledger
+b83e064 2026-09-26T15:40:10+07:00 feat(U-014): Add the calendar, select, dialog and form primitives
+f0b232a 2026-09-26T15:40:07+07:00 feat(U-025): Implement the receptionist Server Actions — reassign and walk-in/phone booking
+a845295 2026-09-26T15:39:38+07:00 feat(U-015): Implement the public booking Server Actions (slots lookup + create booking)
+4300534 2026-09-26T15:39:31+07:00 feat(U-022): Add the shadcn sidebar block primitives for the staff shell
+037c09c 2026-09-26T15:37:09+07:00 chore(sdd): evidence U-020 — bolt report, gate artifacts, panel ledger
+37fabf0 2026-09-26T15:36:01+07:00 feat(U-005): Define the Zod v4 booking schemas shared by client and server
+6c3cb8a 2026-09-26T15:34:33+07:00 feat(U-013): Add the table and badge primitives and the accessible appointment StatusBadge
+f5e3bbf 2026-09-26T15:34:19+07:00 feat(U-012): Add shadcn/ui form primitives — button, input, label, textarea, card
+2605959 2026-09-26T15:34:17+07:00 feat(U-008): Implement the atomic reschedule and reassign commands
+f5fb33b 2026-09-26T15:32:26+07:00 fix(U-020): Generate auth test fixture passwords at runtime
+ad8ee6d 2026-09-26T15:30:50+07:00 chore(sdd): quarantine U-020 (secret_in_code, DEFER-class)
+6b2c224 2026-09-26T15:30:50+07:00 chore(sdd): evidence U-007 — bolt report, gate artifacts, panel ledger
+120979b 2026-09-26T15:30:49+07:00 chore(sdd): evidence U-009 — bolt report, gate artifacts, panel ledger
+82a0a51 2026-09-26T15:30:49+07:00 chore(sdd): evidence U-006 — bolt report, gate artifacts, panel ledger
+ddea8b1 2026-09-26T15:26:16+07:00 chore(sdd): evidence U-010 — bolt report, gate artifacts, panel ledger
+7dbe5ed 2026-09-26T15:26:16+07:00 chore(sdd): evidence U-004 — bolt report, gate artifacts, panel ledger
+dcc5d48 2026-09-26T15:26:16+07:00 chore(sdd): evidence U-003 — bolt report, gate artifacts, panel ledger
+f802773 2026-09-26T15:26:16+07:00 chore(sdd): evidence U-002 — bolt report, gate artifacts, panel ledger
+d1c220e 2026-09-26T15:26:15+07:00 chore(sdd): evidence U-001 — bolt report, gate artifacts, panel ledger
+85ca6b5 2026-09-26T15:25:00+07:00 feat(U-020): Configure Better Auth for staff with role-aware session helpers
+f22aa28 2026-09-26T15:23:58+07:00 feat(U-007): Implement the book and cancel appointment commands
+960a6ca 2026-09-26T15:23:46+07:00 feat(U-009): Build the Resend mailer and React Email appointment emails
+4ef2292 2026-09-26T15:23:29+07:00 feat(U-006): Implement availability and appointment read queries
+410bc25 2026-09-26T15:20:41+07:00 chore(sdd): evidence U-001 — bolt report, gate artifacts, panel ledger
+f614fc8 2026-09-26T15:19:32+07:00 feat(U-003): Implement the BR-001 slot rules (15-min slots, hours, lunch, weekends, working hours)
+570c7ba 2026-09-26T15:16:44+07:00 feat(U-002): Define the Drizzle schema, initial migration, DB client and PGlite test harness
+fe8eefe 2026-09-26T15:15:55+07:00 feat(U-010): Set up shadcn/ui theming — OKLCH brand tokens, dark mode provider and cn helper
+4d20ff6 2026-09-26T15:15:41+07:00 feat(U-004): Implement the one-time signed appointment token
+dbad0a9 2026-09-26T15:12:42+07:00 build(U-001): Install the PRD stack dependencies and the Vitest test runner
+64fc645 2026-09-26T15:08:59+07:00 chore(mega-sdd): plan clinic vault (context.md + 26 units, lite lane)
+2f1c78c 2026-09-26T12:48:09+07:00 fixture: clinic PRD
+ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
+da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

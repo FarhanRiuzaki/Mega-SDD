@@ -46,7 +46,9 @@
 # over-trigger is the safe direction; a false in_sync is verification loss).
 #
 # Evidence trail (reused shapes, never reinvented):
-#   - binding.json schema: skills/bind-codebase/references/binding-json-schema.md
+#   - binding.json schema: per-unit bolts/U-XXX/binding.json (unit-binding/2,
+#     scripts/_lib/unit_binding.py — the same '+'-split anchor grammar); the
+#     legacy whole-vault binding.json (read-only, scripts/derive-binding-json.sh)
 #     (claims[].anchor: "UserController.php:45 + routes/api.php:12" | null)
 #   - anchor parse: scripts/build-graph.sh claims[].anchor reader — split on
 #     `\s*\+\s*`, strip the :line suffix (anchor_id). The file-like filter is

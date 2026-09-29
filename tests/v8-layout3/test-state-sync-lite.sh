@@ -12,10 +12,14 @@
 #   b  hop 1 + hop 3 replayed: derive-changed-paths.sh writes .sync-changed-paths.txt with the
 #      touched target; rebind-units.sh --paths=@ re-binds ONLY the affected unit (exit 4, gate PASS)
 #   c  journal channel (dirty rows, stamp == HEAD) → the same chain
-#   d  classic control: layout-2 vault + binding.md + no lane key → the classic chain is byte-for-byte
-#      what it was (bind-codebase --paths=@ … --express → generate-units --reconcile → execute-bolts)
-#   e  context.md WITHOUT `lane: lite` (plan-born vault, classic session) → still the lite chain
-#      (the vault layout decides, not the flag)
+#   d  layout control: a pre-9.0 vault (no context.md) + binding.md + a sync signal → NOT the
+#      per-unit chain. 9.0 (spec 2026-09-27 §4) retired the classic sync chain it used to pin
+#      (bind-codebase --paths=@ … --express → generate-units --reconcile → execute-bolts); such a
+#      vault now routes to layout2_needs_migration: empty chain + a note PROPOSING
+#      /mega-sdd:migrate-paths --vault-layout=3, then the mandatory full JIT re-bind
+#   e  context.md in a session still carrying the retired `lane: standard` key → still the lite
+#      chain, derived.lane=lite, and a note naming the key as retired (the vault layout decides,
+#      never the flag; spec 2026-09-27 §4)
 #   f  stamp refreshed to HEAD + journal consumed → NOT maintenance_sync (no vacuous re-run — the
 #      scenario-12 "re-run → in sync" pass criterion)
 # Run: bash tests/v8-layout3/test-state-sync-lite.sh </dev/null
@@ -54,7 +58,10 @@ CHAIN="$(J "$A" "chr(10).join(d['derived']['proposed_next'])")"
 H1="$(echo "$CHAIN" | sed -n 1p)"; H2="$(echo "$CHAIN" | sed -n 2p)"; H3="$(echo "$CHAIN" | sed -n 3p)"; H4="$(echo "$CHAIN" | sed -n 4p)"; H5="$(echo "$CHAIN" | sed -n 5p)"
 case "$H1" in "scripts/derive-changed-paths.sh --vault "*) : ;; *) fail "a2: hop1 '$H1'";; esac
 case "$H2" in "detect-drift --scope=@"*/.sync-changed-paths.txt) : ;; *) fail "a2: hop2 '$H2'";; esac
-case "$H3" in "scripts/rebind-units.sh --cwd . --vault "*" --paths=@"*/.sync-changed-paths.txt) : ;; *) fail "a2: hop3 '$H3'";; esac
+# hop 3 renders rebind-units.sh's own `--k=v` grammar (the script parses `--cwd=` / `--vault=`
+# only — the pre-9.0 `--cwd . --vault <v>` rendering hit its usage exit 2 when run verbatim).
+H1V="${H1##* }"
+[ "$H3" = "scripts/rebind-units.sh --cwd=. --vault=$H1V --paths=@$H1V/.sync-changed-paths.txt" ] || fail "a2: hop3 '$H3'"
 [ "$H4" = "plan --reconcile" ] || fail "a2: hop4 '$H4'"
 [ "$H5" = "execute-bolts --all --lite" ] || fail "a2: hop5 '$H5'"
 [ "$(echo "$CHAIN" | wc -l | tr -d ' ')" = 5 ] && ! echo "$CHAIN" | grep -q 'bind-codebase\|generate-units' \
@@ -88,7 +95,7 @@ POS="$(J "$C" "d['derived']['position']")"; ROWS="$(J "$C" "d['derived']['change
 [ "$POS" = maintenance_sync ] && [ "$ROWS" = 2 ] && case "$H3" in "scripts/rebind-units.sh "*) true;; *) false;; esac \
   && pass "c: journal channel (2 rows, stamp == HEAD) → maintenance_sync with the rebind-units.sh hop" || fail "c: pos=$POS rows=$ROWS hop3=$H3"
 
-# d — classic control: layout-2 + binding.md + no lane key → the classic chain unchanged
+# d — layout control: pre-9.0 vault (no context.md) + binding.md + sync signal → migration proposal
 D="$T/d"; mkdir -p "$D/src/a" "$D/.mega-sdd/codebase" "$D/.mega-sdd/vaults/app/units"
 printf 'export const one = 1;\n' > "$D/src/a/one.ts"; printf '{"name":"x"}\n' > "$D/package.json"
 for n in 00-index 01-goals 02-architecture 03-data-model 04-flows 05-decisions 06-constraints; do printf '# %s\n' "$n" > "$D/.mega-sdd/vaults/app/$n.md"; done
@@ -98,19 +105,32 @@ printf '# binding\n\n## Implementation State Map (0 — ALWAYS 6 columns)\n| Cla
 ( cd "$D" && git init -q . && G "$D" add -A && G "$D" commit -qm base ) >/dev/null 2>&1; idx "$D"
 printf 'export const one = 2;\n' > "$D/src/a/one.ts"; G "$D" commit -qam hotfix >/dev/null
 ds "$D"
-POS="$(J "$D" "d['derived']['position']")"; CHAIN="$(J "$D" "chr(10).join(d['derived']['proposed_next'])")"
-[ "$POS" = maintenance_sync ] && echo "$CHAIN" | sed -n 3p | grep -q '^bind-codebase --paths=@.*--express$' && [ "$(echo "$CHAIN" | sed -n 4p)" = "generate-units --reconcile" ] && [ "$(echo "$CHAIN" | sed -n 5p)" = "execute-bolts" ] && ! echo "$CHAIN" | grep -q 'rebind-units\|plan --reconcile' \
-  && pass "d: classic control (layout-2 + binding.md, no lane key) → bind-codebase --paths=@ --express → generate-units --reconcile → execute-bolts (unchanged)" \
-  || fail "d: pos=$POS chain=$(echo "$CHAIN" | tr '\n' '|')"
+# 9.0: the classic sync chain this case pinned (bind-codebase --paths=@ --express →
+# generate-units --reconcile → execute-bolts) is retired with its skills. What survives is the
+# control: a vault without context.md never gets the per-unit rebind-units / plan --reconcile
+# chain; the engine PROPOSES the layout-3 migration (never runs it) + the full JIT re-bind.
+POS="$(J "$D" "d['derived']['position']")"; NCH="$(J "$D" "len(d['derived']['proposed_next'])")"
+SIGD="$(J "$D" "d['derived']['change_signal']['index_stamp_matches_head']")"
+MIG="$(J "$D" "any('/mega-sdd:migrate-paths --vault-layout=3 --vault=.mega-sdd/vaults/app' in n and 'rebind-units.sh --units=all' in n for n in d['derived']['notes'])")"
+[ "$POS" = layout2_needs_migration ] && [ "$NCH" = 0 ] && [ "$SIGD" = no ] && [ "$MIG" = True ] \
+  && pass "d: layout control (no context.md + binding.md, index stale) → layout2_needs_migration, empty chain (no rebind-units / plan --reconcile / removed classic hops), migrate-paths --vault-layout=3 + full JIT re-bind proposed" \
+  || fail "d: pos=$POS chain_len=$NCH sig=$SIGD migrate_note=$MIG"
 
-# e — context.md without the lane key → the vault layout decides
+# e — context.md in a session carrying the retired `lane: standard` key → the vault layout decides.
+# 9.0 retired the standard lane (spec 2026-09-27 §4): the pre-9.0 `lane != lite` leg of this case
+# pinned the old default (standard) and is gone; the classic-lane session it modelled is now the
+# explicit retired key, which must be ignored (lane=lite) and named in one note.
 E="$T/e"; lite_fixture "$E" 0
+printf 'lane: standard\n' > "$E/.mega-sdd/config.yaml"
 printf 'export const one = 2;\n' > "$E/src/a/one.ts"; G "$E" commit -qam hotfix >/dev/null
 ds "$E"
 POS="$(J "$E" "d['derived']['position']")"; LANE="$(J "$E" "d['derived']['lane']")"; H3="$(J "$E" "d['derived']['proposed_next'][2]")"; H4="$(J "$E" "d['derived']['proposed_next'][3]")"
-[ "$POS" = maintenance_sync ] && [ "$LANE" != lite ] && case "$H3" in "scripts/rebind-units.sh "*) true;; *) false;; esac && [ "$H4" = "plan --reconcile" ] \
-  && pass "e: layout-3 vault in a classic-lane session (lane=$LANE) → still rebind-units.sh → plan --reconcile (the layout decides, never bind-codebase on a per-unit-bound vault)" \
-  || fail "e: pos=$POS lane=$LANE hop3=$H3 hop4=$H4"
+RETN="$(J "$E" "any('lane: standard is retired' in n for n in d['derived']['notes'])")"
+ECH="$(J "$E" "chr(10).join(d['derived']['proposed_next'])")"
+[ "$POS" = maintenance_sync ] && [ "$LANE" = lite ] && [ "$RETN" = True ] && case "$H3" in "scripts/rebind-units.sh "*) true;; *) false;; esac && [ "$H4" = "plan --reconcile" ] \
+  && ! echo "$ECH" | grep -q 'bind-codebase\|generate-units' \
+  && pass "e: layout-3 vault + retired 'lane: standard' key → lane=lite, one retired-key note, still rebind-units.sh → plan --reconcile (the layout decides, never bind-codebase on a per-unit-bound vault)" \
+  || fail "e: pos=$POS lane=$LANE retired_note=$RETN hop3=$H3 hop4=$H4"
 
 # f — stamp refreshed + journal consumed → no vacuous re-run
 idx "$A"; rm -f "$A/.mega-sdd/codebase/.dirty-paths.jsonl"

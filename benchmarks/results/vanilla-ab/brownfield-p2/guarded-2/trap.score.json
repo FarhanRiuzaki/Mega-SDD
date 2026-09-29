@@ -1,0 +1,40 @@
+{
+ "traps": {
+  "T1": {
+   "surfaced": true,
+   "quote": "Slots stay 15 minutes (the PRD says 20)",
+   "judge_said": true,
+   "verified": true
+  },
+  "T2": {
+   "surfaced": true,
+   "quote": "reminders stay 24 hours ahead (the PRD says 48)",
+   "judge_said": true,
+   "verified": true
+  },
+  "T3": {
+   "surfaced": true,
+   "quote": "added, because doctor leave needs it. The PRD calls it existing, but v1 didn't have it.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T4": {
+   "surfaced": true,
+   "quote": "The late-cancellation penalty (OQ-CN-1: no amount or mechanism given).",
+   "judge_said": true,
+   "verified": true
+  },
+  "T5": {
+   "surfaced": true,
+   "quote": "VIP patients skipping the queue (OQ-FL-1: the PRD never says who counts as VIP).",
+   "judge_said": true,
+   "verified": true
+  }
+ },
+ "surfaced": 5,
+ "total": 5,
+ "overturned": [],
+ "bundle_chars": 50671,
+ "judge_sid": "d33b01bd-63bd-4d23-8650-6fcadc4d4e38",
+ "judge_cost_usd": 0.2878902
+}

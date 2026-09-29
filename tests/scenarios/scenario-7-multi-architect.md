@@ -3,11 +3,11 @@
 **Time**: 60 minutes total (20 min per architect)
 **When to use**: Project where PRD is shared across multiple IT architects (BE, MW, FE) — each architect generates their own vault for their scope only
 
-This walkthrough follows the classic chain (the DEFAULT for every 8.x release); the opt-in `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
+A vault per scope is a pipeline artefact, so this walkthrough runs the guarded lane (`plan` → `execute-bolts --all --lite`). The scope picker lives in `plan`. Each architect's FIRST run needs `--guarded`, or `--scope=<id>` (which implies it): without either, the front door's router (`scripts/route-lane.sh`) sends a PRD with no vault in the repo to the direct or assisted lane, which builds it in the main session with no vault and no scope picker (`plugins/mega-sdd/references/direct-lane.md`). Once the vault exists, later runs route to guarded on their own (`vault_present`).
 
 **Prerequisites**:
-- Mega-sdd v7.4+ (multi-scope picker)
-- Canonical PRD with `scopes:` frontmatter (or legacy PRD via retrofit bridge)
+- mega-sdd 9.0+ (the scope picker is `plan` Step 0.9)
+- Canonical PRD with `scopes:` frontmatter (a PRD without one is single-scope — see Common questions)
 - Three separate repos (BE, MW, FE) — or three separate folders within one monorepo
 - Each architect operating in their own session
 
@@ -36,7 +36,7 @@ cp ~/shared/order-mgmt-prd.md ./prd.md
 
 ```bash
 cd ~/projects/order-management-be/
-/mega-sdd ./prd.md
+/mega-sdd ./prd.md --guarded
 ```
 
 Expected output:
@@ -63,79 +63,85 @@ User picks `[1] BE`.
   Sibling scopes noted: MW, FE
 
 ▶ Phase 0b: Starterkit detection
-  ✓ composer.json → laravel-base-26 detected (GROUND matcher; symbol index built — express spine, no scan phase)
+  ✓ composer.json → laravel-base-26 detected (GROUND matcher; symbol index built — no scan phase)
 
-▶ Phase 1: generate-intent --scope=BE ./prd.md
-  Output: .mega-sdd/vaults/order-management-be/
+▶ Phase 1: plan ./prd.md --scope=BE --lite --mode=<existing|new>   (existing when the repo carries code)
+  Output: .mega-sdd/vaults/<slug>/   (slug from the PRD file name)
+  - context.md: scope / scope_name frontmatter + ## Overview "Sibling scopes" note
   - vault.json: scope=BE, scope_metadata declared, prd_sha256 recorded
-  - vault.md: scope header + sibling scopes (MW, FE) noted + locked contracts listed
+  - units/U-*.md: only the BE sections' requirements
 
-▶ Phase 2: bind-codebase --express
-▶ Phase 3: generate-units
-▶ Phase 4: execute-bolts (auto, with halts on conflict)
+▶ Phase 2: execute-bolts --all --lite (JIT bind per unit; a CONFLICT quarantines its unit at run start)
 ```
 
-BE architect's vault is at `.mega-sdd/vaults/order-management-be/`. vault.md shows:
+BE architect's vault is at `.mega-sdd/vaults/<slug>/`. `context.md ## Overview` carries the sibling-scope note:
 
 ```markdown
-# Vault: Order Management System — BE
+### Sibling scopes (managed externally — NOT in this vault)
 
-**Scope**: Backend API (BE)
-**PICs**: Alex Tan
-**Priority**: 1
+- **MW** — Integration Middleware (PIC: Budi Santoso; priority: 2)
+- **FE** — Frontend Web (PIC: Maya Putri; priority: 3)
 
-## Sibling scopes (managed externally)
-- MW — Integration Middleware (PIC: Budi Santoso; priority: 2)
-- FE — Frontend Web (PIC: Maya Putri; priority: 3)
-
-## Locked contracts this scope PUBLISHES
-- be-mw-event-bus
-- be-fe-orders-api
+> Cross-scope coordination handled OUTSIDE mega-sdd. Each scope generates an independent vault.
+> Locked contracts cross-referenced in `vault.json` `scope_metadata` (`published_locked_contracts` / `consumed_locked_contracts`) for awareness, NOT enforcement.
 ```
 
-Recorded in vault.json: prd_sha256 + scope + scope_metadata.
+Recorded in vault.json: prd_sha256 + scope + scope_metadata — including the locked contracts this scope PUBLISHES:
+
+```json
+"scope": "BE",
+"scope_metadata": {
+  "id": "BE",
+  "name": "Backend API",
+  "pics": ["Alex Tan"],
+  "priority": 1,
+  "sibling_scopes_in_prd": ["MW", "FE"],
+  "consumed_locked_contracts": [],
+  "published_locked_contracts": ["be-mw-event-bus", "be-fe-orders-api"]
+}
+```
+
+The bolt run ends with the result contract every lane delivers: the acceptance-criterion → test table, `delivery-check.sh` `VERDICT: PASS` on the final commit, and the assumptions and decisions made.
 
 ## Phase 2 — Architect FE generates vault (20 min, different session)
 
 ```bash
 cd ~/projects/order-management-fe/
-/mega-sdd ./prd.md
+/mega-sdd ./prd.md --scope=FE
 ```
 
-Same PRD, different cwd. Smart default suggests FE.
+Same PRD, different cwd. `--scope=FE` skips the picker (and implies `--guarded`); without it, `--guarded` alone shows the picker with FE as the smart default.
 
-User picks `[3] FE`.
+Vault filtered to §Frontend + universal sections. `vault.json` `scope_metadata` lists what the scope CONSUMES:
 
-Vault filtered to §Frontend + universal sections. vault.md shows:
-
-```markdown
-# Vault: Order Management System — FE
-
-**Scope**: Frontend Web (FE)
-**Priority**: 3
-
-## Sibling scopes (managed externally)
-- BE — Backend API (PIC: Alex Tan; priority: 1)
-- MW — Integration Middleware (PIC: Budi Santoso; priority: 2)
-
-## Locked contracts this scope CONSUMES
-- be-fe-orders-api → see PRD §Cross-scope contracts
-- mw-fe-realtime-channels → see PRD §Cross-scope contracts
+```json
+"scope": "FE",
+"scope_metadata": {
+  "id": "FE",
+  "name": "Frontend Web",
+  "pics": ["Maya Putri"],
+  "priority": 3,
+  "sibling_scopes_in_prd": ["BE", "MW"],
+  "consumed_locked_contracts": ["be-fe-orders-api", "mw-fe-realtime-channels"],
+  "published_locked_contracts": []
+}
 ```
 
-## Phase 3 — Architect BE re-runs (vault.json sha256 recognition)
+`context.md ## Overview` names BE and MW as sibling scopes, and the PRD §Cross-scope contracts dependencies that touch FE ride along as informational notes.
 
-BE architect adds a unit, re-runs:
+## Phase 3 — Architect BE re-plans (prior-vault scope default)
 
-```bash
-cd ~/projects/order-management-be/
-/mega-sdd ./prd.md
+Later the BE architect re-plans the vault from the same, unchanged PRD (`plan` refuses an existing vault unless `--regenerate`; units marked `_authored_by: human` are kept):
+
+```
+plan ./prd.md --regenerate
 ```
 
 Expected:
 
 ```
-▶ PRD ./prd.md recognized (sha256: abc123..., last scope: BE 2026-05-23)
+▶ PRD ./prd.md recognized (sha256: abc123...)
+  Existing vault scope: BE (vault.json)
 
 ❓ Same scope this run?
    [Enter] BE (recommended — confirm-once)
@@ -143,7 +149,7 @@ Expected:
    [5] Cancel
 ```
 
-User presses Enter. Silent re-run with BE scope. No friction.
+User presses Enter. Silent re-run with BE scope. No friction. (Under `--auto` the prior scope is taken without a prompt.)
 
 ## Phase 4 — Architect MW generates vault (later that day)
 
@@ -151,7 +157,7 @@ MW architect arrives later, fresh session:
 
 ```bash
 cd ~/projects/order-management-mw/
-/mega-sdd ./prd.md
+/mega-sdd ./prd.md --guarded
 ```
 
 User picks `[2] MW` (cwd basename matches).
@@ -176,7 +182,7 @@ jq -r '.scope' ~/projects/order-management-mw/.mega-sdd/vaults/*/vault.json
 # Output: MW
 ```
 
-Cross-scope coordination happens OUTSIDE mega-sdd — architects meet, lock contracts in PRD §Cross-scope contracts, then re-generate vaults.
+Cross-scope coordination happens OUTSIDE mega-sdd — architects meet, lock contracts in PRD §Cross-scope contracts, then each applies the revised PRD to their vault (below).
 
 ## What if PRD changes mid-flight
 
@@ -184,18 +190,11 @@ PM updates PRD to add new endpoint:
 
 ```bash
 # Architect BE
-/mega-sdd ./prd.md
+cp ~/shared/order-mgmt-prd.md ./prd.md
+/mega-sdd
 ```
 
-vault.json check:
-```
-▶ PRD ./prd.md recognized (sha256: NEW_HASH... — content changed since last invocation)
-
-⚠️ PRD content changed since last vault generation (2026-05-23, sha: abc123...)
-   Run diff-vault to apply revisions? [Y/n]
-```
-
-User says "PRD updated — diff the vault" (routes to diff-vault) → revisions applied; bolts re-execute for changed units only.
+The status view sees a PRD file newer than the vault (position `prd_revision`) and proposes `diff-vault ./prd.md` first — one confirmation. Or say "PRD updated — diff the vault" (routes to diff-vault) → revisions applied, IDs preserved. The new endpoint needs a NEW unit, which only `plan --regenerate` writes (`plan --reconcile` never adds units); `execute-bolts --all --lite` then runs the new and stale units only.
 
 ## Common questions
 
@@ -206,10 +205,10 @@ A: Mega-sdd proceeds — BE is a declared scope; only an undeclared id halts `sc
 A: Outside mega-sdd. Both vaults reference the contract section in PRD. When contract changes:
 1. BE + FE architects agree on new spec in rapat
 2. PM updates PRD §Cross-scope contracts > be-fe-orders-api
-3. Both architects run `/mega-sdd --resume` → diff-vault detects PRD change → revisions applied per-scope
+3. Both architects run `/mega-sdd` → the status view proposes `diff-vault` for the newer PRD → revisions applied per-scope
 
 **Q: What if PRD has no scopes frontmatter?**
-A: Retrofit bridge fires (per `scope-picker.md` step 2). AI proposes scope partitioning. User accepts or rejects per scope. Retrofit written to `<prd>.retrofit.md` (preserves original). Interactive runs only — the express `--auto` chain treats it as single-scope and offers the retrofit lane in its delivery report.
+A: The PRD is single-scope: no picker, no retrofit prompt, no retrofit subagent. `plan` records `scope_inferred: single` and adds ONE delivery-report line offering the manual retrofit — add a `scopes:` block to the PRD by hand, then re-run `plan --regenerate --scope=<id>` (`plugins/mega-sdd/skills/plan/references/scope-flow.md` Step 0.9 c).
 
 **Q: Can one architect own multiple scopes?**
-A: Yes. PRD `scopes:` can have same person in multiple `pics` arrays. Architect runs mega-sdd once per scope they own; gets multiple vaults.
+A: Yes. PRD `scopes:` can have same person in multiple `pics` arrays. Architect runs `plan` once per scope they own; gets multiple vaults. In ONE repo the second run needs its own vault dir (`plan ./prd.md --scope=MW --vault=.mega-sdd/vaults/<name>`) — the default dir comes from the PRD file name, and `plan` refuses an existing vault.

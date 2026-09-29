@@ -1,0 +1,17 @@
+sid=80849e4a-7620-4393-a956-d33cc1726693
+arm=/private/tmp/claude-501/mega-sdd-bench/work-p2/brownfield-p2-guarded-1
+prd=PRD/prd-clinic-v2.md
+model=opus
+flags=--guarded
+entry=frontdoor
+arm_kind=megasdd
+transcript=/Users/riuzaki/.claude/projects/-private-tmp-claude-501-mega-sdd-bench-work-p2-brownfield-p2-guarded-1/80849e4a-7620-4393-a956-d33cc1726693.jsonl
+started_at=2026-09-27T21:14:31Z
+head_before=015ecf3
+plugin=Version: 9.0.0
+plugin_dir=/private/tmp/claude-501/mega-sdd-bench/plugin-p2
+pid=66398
+purity=PASS mega-sdd 9.0.0 loaded from mega-sdd@inline
+plugins=mega-sdd@9.0.0,superpowers@6.4.1,agents-md@?,telemetry@?
+megasdd_surfaces=32
+finished_at=2026-09-27T22:02:38Z

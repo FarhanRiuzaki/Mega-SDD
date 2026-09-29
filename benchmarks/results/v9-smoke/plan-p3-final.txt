@@ -1,0 +1,2 @@
+# P3 final smoke (n=1, not a benchmark): plugin = git archive of the P3 tip; fixture-xs @ ff006be; opus
+xs guarded p3final PRD/prd-company-profile.md

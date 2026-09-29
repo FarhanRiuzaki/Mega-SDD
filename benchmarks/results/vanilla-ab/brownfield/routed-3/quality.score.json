@@ -1,0 +1,58 @@
+{
+ "completion": 1.0,
+ "ac_pass": 13,
+ "ac_total": 13,
+ "ac": {
+  "B1": "PASS",
+  "B2": "PASS",
+  "B3": "PASS",
+  "B4": "PASS",
+  "B5": "PASS",
+  "B6": "PASS",
+  "B7": "PASS",
+  "B8": "PASS",
+  "T1c": "PASS",
+  "T2c": "PASS",
+  "T3c": "PASS",
+  "T4c": "PASS",
+  "T5c": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 6,
+ "rubric": 91,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist-offers.ts:22-25",
+   "what": "Freed slot is not held while an offer is pending; public booking can take it before the waitlisted patient accepts (handled by voiding and requeueing, documented as interim)."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:33-46",
+   "what": "Duplicate-join check is read-then-insert with no unique index; concurrent identical joins can create duplicate waitlist entries."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/leave.ts:34-70",
+   "what": "Recording leave does not touch waitlist entries for the doctor's leave dates; they stay 'waiting' indefinitely without notification."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:109-114",
+   "what": "removeWaitlistEntry does not validate the id as a UUID; a malformed id causes an uncaught Postgres cast error (500) instead of NOT_FOUND."
+  },
+  {
+   "severity": "Minor",
+   "where": "vercel.json:4",
+   "what": "Offer expiry sweep runs every 5 minutes, so pass-along to the next patient can lag up to ~35 minutes after sending rather than 30."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/staff/(app)/reception/actions.ts:23-60",
+   "what": "PRD 4.3 says staff can cancel/reschedule at any time from the portal, but no general staff cancel/reschedule for booked appointments exists (only reassign, walk-in, and leave-affected cancel)."
+  }
+ ],
+ "blind_label": "UF",
+ "scorer_sid": "8305dd5c-45a5-42aa-af9f-90c0d802ad57"
+}

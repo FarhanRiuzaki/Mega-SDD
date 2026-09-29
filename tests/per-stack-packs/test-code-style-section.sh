@@ -3,7 +3,7 @@
 # Every pack that carries `## Code style (self-documenting)` has the 4-slot shape (Doc-comment tool +
 # read by / Skip / Write / Names carry the meaning), 4–6 bullets, ≤ 1 600 bytes of bullets (T2 cost),
 # and still lints clean; spring.md MUST carry it (R1, the Java-run feedback); _template.md carries the
-# skeleton; _universal.md MUST NOT carry it (the generic rule is agent-carried — Iron Rule 6).
+# skeleton; _universal.md MUST NOT carry it (its §Comment conventions is the generic rule).
 # A STYLE rule, never a gate: this pins the AUTHORING shape only, never generated code.
 # Run: bash tests/per-stack-packs/test-code-style-section.sh </dev/null
 set -u
@@ -14,10 +14,13 @@ VP="$ROOT/plugins/mega-sdd/scripts/validate-pack.sh"
 section() { awk '/^## Code style/{f=1; next} f&&/^## /{exit} f' "$1"; }
 
 grep -q '^## Code style (self-documenting)' "$CONV/spring.md" && pass "spring.md carries ## Code style (self-documenting)" || fail "spring.md lacks the section"
-grep -q '^## Code style (self-documenting)' "$CONV/_template.md" && grep -q 'T2 `code_style_slice`' "$CONV/_template.md" \
-  && pass "_template.md carries the skeleton + names the T2 consumer" || fail "_template.md skeleton missing"
-! grep -q '^## Code style' "$CONV/_universal.md" && pass "_universal.md carries NO section (generic rule is agent-carried)" || fail "_universal.md must not carry ## Code style"
+grep -q '^## Code style (self-documenting)' "$CONV/_template.md" && grep -q 'A STYLE rule, never a gate' "$CONV/_template.md" \
+  && pass "_template.md carries the skeleton + the style-rule stance" || fail "_template.md skeleton missing"
+! grep -q '^## Code style' "$CONV/_universal.md" && pass "_universal.md carries NO section (its §Comment conventions is the generic rule)" || fail "_universal.md must not carry ## Code style"
 grep -q 'Code style|' "$VP" && pass "validate-pack.sh recognizes the header (Check 3b known set)" || fail "validate-pack.sh _known_headers lacks Code style"
+# P3 deleted the dispatch builder, Iron Rule 6 and the panel lenses: no pack names a consumer that no longer exists
+! grep -qE 'code_style_slice|build-dispatch-prompt|Iron Rule 6|security-reviewer|dispatch builder|framework_pack_rules|bolt-implementer' "$CONV"/*.md \
+  && pass "no pack names a P3-deleted consumer" || fail "a pack names a P3-deleted consumer: $(grep -lE 'code_style_slice|build-dispatch-prompt|Iron Rule 6|security-reviewer|dispatch builder|framework_pack_rules|bolt-implementer' "$CONV"/*.md | xargs -n1 basename | tr '\n' ' ')"
 
 n=0
 for f in "$CONV"/*.md; do

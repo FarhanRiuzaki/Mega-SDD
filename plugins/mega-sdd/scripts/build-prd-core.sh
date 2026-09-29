@@ -260,7 +260,7 @@ if mode == "forward":
         cite(3, "vault/" + vdoc_name("02-functional.md"))
     if LAYOUT3 and not fn and prd_sn and prd_sn.get("requirements"):
         # layout-3: requirement rows come from the PRD's own requirement headings
-        # (the same census validate-plan-coverage.sh runs), quoted + cited
+        # (prd_sniff's own name-based list — the coverage gate censuses every heading), quoted + cited
         for r in prd_sn["requirements"]:
             first = prd_sniff.quote(r["body"], 1) or "(tanpa deskripsi)"
             parts.append("- **%s**: %s [Source: %s:L%d (sha256: pending)]"

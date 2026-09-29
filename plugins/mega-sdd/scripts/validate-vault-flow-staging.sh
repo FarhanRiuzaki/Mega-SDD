@@ -5,14 +5,16 @@
 # THE REGRESSION THIS CATCHES:
 #   A legacy multi-step workflow (wizard / maker->checker / multi-page form) stages
 #   its inputs (fields A,B,C at step 1; D,E,F at step 2). extract-intelligence captures
-#   that staging in the KB workflow's `## 3a` `stages:` block. generate-intent is supposed
-#   to PRESERVE it verbatim into the vault `04-flows.md` flow. When it instead FLATTENS to
+#   that staging in the KB workflow's `## 3a` `stages:` block. plan --kb MUST copy it
+#   verbatim into the vault flow (layout-3 context.md ## Flows; layout-2 flows.md /
+#   legacy 04-flows.md still read). When it instead FLATTENS to
 #   one input list, the downstream bolt builds ONE form where the legacy had a multi-step
 #   wizard. (The captured trade-finance regression.)
 #
 # DETERMINISTIC MATCH (no fuzzy title matching):
 #   Each vault flow that derives from a KB workflow carries a `_kb_source: [20-workflows/<f>.md]`
-#   back-reference (the OQ-ID-class stable identifier per vault-core.md §stages-propagation).
+#   back-reference (the OQ-ID-class stable identifier per references/vault-core.md
+#   §stages-propagation).
 #   This validator FOLLOWS that link:
 #     - vault flow has `_kb_source` -> resolve the cited KB workflow file
 #     - cited KB workflow HAS a `stages:` block AND the vault flow does NOT -> vault_flow_staging_drop
@@ -165,7 +167,7 @@ for vault_dir in vault_dirs:
         vault_flow_has_stages = has_stages_block(seg)
         # Advisory arm (v3.71.0): the DOMINANT flatten case — a flow that LOOKS like a multi-step
         # workflow (maker->checker / >=2 decision steps) but has NEITHER a stages: block NOR a
-        # _kb_source back-reference (generate-intent ignored staging wholesale, OR a PRD-only
+        # _kb_source back-reference (plan --kb ignored staging wholesale, OR a PRD-only
         # multi-step flow with no KB). The blocking arm below cannot see this (it needs _kb_source),
         # so surface it as WARN — never status-flipping. Vault-internal heuristic; simple flows
         # (no workflow signal) never trip it, so no false-stop.
@@ -185,9 +187,9 @@ for vault_dir in vault_dirs:
                                "steps) but has no stages: block AND no _kb_source back-reference — staging "
                                "likely flattened wholesale (or PRD-only multi-step). Non-blocking signal."),
                     "suggested_fix": ("author a **Stages** block (+ _kb_source if KB-derived) per "
-                                      "vault-core.md §stages-propagation (the retired enrich-semantics "
-                                      "step has no replacement command — the block is authored by hand "
-                                      "or by re-running generate-intent on the PRD)"),
+                                      "plugins/mega-sdd/references/vault-core.md §stages-propagation — "
+                                      "authored by hand or by re-running plan --kb=<kb-dir> --regenerate "
+                                      "(KB-derived) / plan <prd> --regenerate"),
                 })
             continue  # no back-reference -> blocking drop-check N/A; advisory handled above
         flows_with_kb_source += 1
@@ -209,7 +211,8 @@ for vault_dir in vault_dirs:
                                f"but dropped it — staging flattened (single-form risk)"),
                     "suggested_fix": ("copy the `stages:` block from the cited KB §3a verbatim into this "
                                       "flow's `**Stages**` block + emit the Mermaid stateDiagram "
-                                      "(see vault-core.md §stages-propagation), then re-save 04-flows.md"),
+                                      "(see plugins/mega-sdd/references/vault-core.md §stages-propagation), "
+                                      "then re-save the flows doc (context.md ## Flows on layout-3)"),
                     "severity": "blocking",
                 })
                 break  # one drop per flow is enough
@@ -234,12 +237,13 @@ report = {
     "advisories": advisories,   # v3.71.0 — non-blocking (flatten-without-backref / PRD-only)
     "next_action": (
         (f"{len(advisories)} flow(s) look multi-step but carry no staging AND no _kb_source "
-         f"(advisory — likely wholesale flatten). Author the Stages block (vault-core.md §stages-propagation)."
+         f"(advisory — likely wholesale flatten). Author the Stages block (plugins/mega-sdd/references/vault-core.md §stages-propagation)."
          if advisories else
          "Staged-input preserved across KB->vault boundary (or no staged workflows present).")
         if status == "PASS"
         else f"{len(issues)} vault flow(s) dropped a `stages:` block that the cited KB workflow carried. "
-             f"Restore the stages: block per vault-core.md §stages-propagation, then re-save 04-flows.md."
+             f"Restore the stages: block per plugins/mega-sdd/references/vault-core.md §stages-propagation, "
+             f"then re-save the flows doc (context.md ## Flows on layout-3; flows.md / 04-flows.md on older layouts)."
     ),
 }
 

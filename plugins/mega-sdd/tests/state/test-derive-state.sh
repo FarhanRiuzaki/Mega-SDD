@@ -5,13 +5,15 @@
 # Pins the ONE-probe-library contract:
 #   1. derive-state.sh produces the right `derived.position` + `proposed_next`
 #      for every routing-decision-table fixture row (empty / legacy-code-only /
-#      PRD-only / vault-md-without-json / vault+binding+conflicts /
-#      KEEP_VAULT-DEFER-resolved binding / units-no-bolts / bolts-present /
-#      map-stale-vs-HEAD / dirty-journal).
+#      PRD-only / layout-2 vaults → layout2_needs_migration (9.0, spec
+#      2026-09-27-v9-simplification-design.md §4) / plan-born layout-3 vaults:
+#      context-without-json / units-no-bolts / stale-index + dirty-journal
+#      Mode D (re-bind hop = rebind-units.sh) / bolts-present).
 #   2. PARITY: validate-preflight.sh — now delegating its has_vault()-class
 #      probes to _lib/state_probes.py — judges the same fixtures EXACTLY as the
 #      pre-refactor committed script did (expected literals below were captured
-#      from the v4.92.0 committed validate-preflight BEFORE the refactor).
+#      from the v4.92.0 committed validate-preflight BEFORE the refactor); the
+#      four classic skills removed in 9.0 FATAL skill_removed_in_9.
 #   3. state.json's probes.preflight_predicates agree with the preflight verdicts
 #      (one library, one truth).
 #   4. derive-state NEVER creates .mega-sdd/ in a directory that lacks it
@@ -120,6 +122,24 @@ binding_metadata:
 
 mkvj() { printf '{"vault_version":"1.0","mode":"%s","open_questions":[]}\n' "$2" > "$1/vault.json"; }
 
+# 9.0: plan writes the ONLY buildable layout (layout-3: context.md +
+# constitution.md + vault.json + units/). The f4..f9 vaults above are layout-2 /
+# legacy (classic-born) — still READ (parity/predicates/session-start below),
+# but routed to the migrate row; the *l3 twins pin the surviving build rows.
+vault_l3() {
+  mkdir -p "$1"
+  printf -- '---\ntype: context\nvault_layout: 3\n---\n# Context\n\n## Open Questions\n\n' > "$1/context.md"
+  printf '# Constitution\n' > "$1/constitution.md"
+}
+write_index() { # $1=fixture  $2=head_commit stamp
+  mkdir -p "$1/.mega-sdd/codebase"
+  printf '{"generated_by":"build-symbol-index.sh","head_commit":"%s","symbols":[]}' "$2" \
+    > "$1/.mega-sdd/codebase/symbol-index.json"
+}
+unit_binding() { # $1=vault  $2=unit — the per-unit JIT binding (lite "bound")
+  mkdir -p "$1/bolts/$2"; printf '{"schema":"unit-binding/2","unit":"%s"}\n' "$2" > "$1/bolts/$2/binding.json"
+}
+
 mkdir -p "$WORK/f1-empty"
 
 F="$WORK/f2-legacy-code"; mkdir -p "$F/src"
@@ -140,10 +160,9 @@ printf '{}\n' > "$F/composer.json"; printf '<?php\n' > "$F/src/app.php"
 vault_docs "$F/.mega-sdd/vaults/v1"; mkvj "$F/.mega-sdd/vaults/v1" existing
 gitinit "$F"
 write_map "$F/.mega-sdd/codebase/codebase-map.md" "$(git -C "$F" rev-parse HEAD)"
-# express viability is host-independent in fixtures: an index present makes
-# the spine viable whether or not the runner has ast-grep (CI has none)
-printf '{"generated_by":"build-symbol-index.sh","head_commit":"%s","symbols":[]}' \
-  "$(git -C "$F" rev-parse HEAD)" > "$F/.mega-sdd/codebase/symbol-index.json"
+# a symbol index at HEAD (the 9.0 freshness substrate) — host-independent:
+# fixtures never depend on the runner having ast-grep (CI has none)
+write_index "$F" "$(git -C "$F" rev-parse HEAD)"
 printf '%s' "$BINDING_ACTIVE" > "$F/.mega-sdd/vaults/v1/binding.md"
 
 F="$WORK/f5b-binding-kv-defer"; mkdir -p "$F/src" "$F/.mega-sdd/codebase"
@@ -178,6 +197,45 @@ write_map "$F/.mega-sdd/codebase/codebase-map.md" "fffffffffffffffffffffffffffff
 F="$WORK/f9-dirty-journal"; cp -R "$WORK/f6-units-no-bolts" "$F"
 rm -rf "$F/.git"; gitinit "$F"
 write_map "$F/.mega-sdd/codebase/codebase-map.md" "$(git -C "$F" rev-parse HEAD)"
+printf '{"p":"a.php"}\n{"p":"b.php"}\n{"p":"c.php"}\n' > "$F/.mega-sdd/codebase/.dirty-paths.jsonl"
+
+# f9b — layout-2 vault that TRIPS Mode D (index at HEAD + binding.md + dirty
+# journal): 9.0 syncs layout-3 only, so it still lands on the migrate row,
+# never the rebind-units sync chain.
+F="$WORK/f9b-l2-mode-d"; cp -R "$WORK/f9-dirty-journal" "$F"
+write_index "$F" "$(git -C "$F" rev-parse HEAD)"
+
+# ── layout-3 (plan-born) twins: the surviving build/sync rows ──
+# f4l3 — context.md, no vault.json, no units, a PRD older than the vault
+F="$WORK/f4l3-context-no-json"; vault_l3 "$F/.mega-sdd/vaults/v1"
+printf '# PRD\n' > "$F/prd.md"
+python3 -c "
+import os, time
+old = time.time() - 86400
+os.utime('$F/prd.md', (old, old))
+"
+# f6l3 — context.md + vault.json + 2 units, no bolts
+F="$WORK/f6l3-units-no-bolts"; mkdir -p "$F/src"
+printf '{}\n' > "$F/composer.json"; printf '<?php\n' > "$F/src/app.php"
+vault_l3 "$F/.mega-sdd/vaults/v1"; mkvj "$F/.mega-sdd/vaults/v1" existing
+mkdir -p "$F/.mega-sdd/vaults/v1/units"
+printf -- '---\nid: U-001\n---\n' > "$F/.mega-sdd/vaults/v1/units/U-001.md"
+printf -- '---\nid: U-002\n---\n' > "$F/.mega-sdd/vaults/v1/units/U-002.md"
+# f8l3 — per-unit binding + a STALE index stamp → Mode D
+F="$WORK/f8l3-index-stale"; cp -R "$WORK/f6l3-units-no-bolts" "$F"; gitinit "$F"
+unit_binding "$F/.mega-sdd/vaults/v1" U-001
+write_index "$F" "ffffffffffffffffffffffffffffffffffffffff"
+# f8l3b — index at HEAD, but a leftover pre-9.0 map with a STALE stamp: the map
+# stamp never triggers Mode D (nothing refreshes it — the F4 livelock)
+F="$WORK/f8l3b-map-stale-index-fresh"; cp -R "$WORK/f6l3-units-no-bolts" "$F"; gitinit "$F"
+unit_binding "$F/.mega-sdd/vaults/v1" U-001
+write_index "$F" "$(git -C "$F" rev-parse HEAD)"
+mkdir -p "$F/.mega-sdd/codebase"
+write_map "$F/.mega-sdd/codebase/codebase-map.md" "ffffffffffffffffffffffffffffffffffffffff"
+# f9l3 — per-unit binding + index at HEAD + dirty journal → Mode D
+F="$WORK/f9l3-dirty-journal"; cp -R "$WORK/f6l3-units-no-bolts" "$F"; gitinit "$F"
+unit_binding "$F/.mega-sdd/vaults/v1" U-001
+write_index "$F" "$(git -C "$F" rev-parse HEAD)"
 printf '{"p":"a.php"}\n{"p":"b.php"}\n{"p":"c.php"}\n' > "$F/.mega-sdd/codebase/.dirty-paths.jsonl"
 
 # P2 adoption: foreign-SDD signals — spec-kit dir + generic specs/ (one file WITH
@@ -269,43 +327,63 @@ assert d['mode_inferred']=='brownfield', d['mode_inferred']
 " 2>/dev/null && ok "f2: empty chain + intent note + brownfield inference" \
   || fail "f2: legacy-code default chain/notes/mode wrong"
 
-run_ds "$WORK/f4-vault-md-no-json" >/dev/null 2>&1
-got=$(state_field "$WORK/f4-vault-md-no-json" "d['derived']['position']")
-[ "$got" = "vault_greenfield_no_units" ] && ok "f4: bare-docs vault position=vault_greenfield_no_units" \
-  || fail "f4: position expected vault_greenfield_no_units, got '$got'"
+# ── layout-2 / legacy (classic-born) vaults → the migrate row (9.0, spec §4) ──
+# Retired with the classic chain (9.0 removed generate-intent / bind-codebase /
+# generate-units / scan-codebase): vault_greenfield_no_units, vault_map_unbound
+# (→ bind-codebase --express), binding_resolved_no_rebind (→ generate-units) and
+# the map-keyed Mode D. A layout-2 vault that needs building OR syncing now
+# routes to layout2_needs_migration: empty chain + a note PROPOSING
+# /mega-sdd:migrate-paths --vault-layout=3 (never run silently).
+for fx in f4-vault-md-no-json f5-binding-conflicts f5b-binding-kv-defer f6-units-no-bolts \
+          f8-map-stale f9-dirty-journal f9b-l2-mode-d; do
+  run_ds "$WORK/$fx" >/dev/null 2>&1
+  got=$(state_field "$WORK/$fx" "d['derived']['position']+'|'+repr(d['derived']['proposed_next'])+'|'+str(any('migrate-paths --vault-layout=3' in n for n in d['derived']['notes']))")
+  [ "$got" = "layout2_needs_migration|[]|True" ] \
+    && ok "$fx: layout-2 vault → layout2_needs_migration, chain [], migrate-paths --vault-layout=3 proposed in a note" \
+    || fail "$fx: expected layout2_needs_migration|[]|True, got '$got'"
+done
 got=$(state_field "$WORK/f4-vault-md-no-json" "d['derived']['manifest_derive_needed']")
 [ "$got" = "True" ] && ok "f4: manifest_derive_needed=True (P0 unification)" || fail "f4: manifest_derive_needed wrong: $got"
-got=$(state_field "$WORK/f4-vault-md-no-json" "d['derived']['proposed_next'][0]")
-case "$got" in scripts/derive-vault-json.sh*) ok "f4: chain FIRST derives vault.json (never hand-written)";;
-  *) fail "f4: chain head expected derive-vault-json.sh, got '$got'";; esac
 got=$(state_field "$WORK/f4-vault-md-no-json" "d['probes']['preflight_predicates']['has_vault']")
 [ "$got" = "True" ] && ok "f4: has_vault() TRUE on bare docs (routing==preflight, one library)" \
   || fail "f4: has_vault predicate lost the P0 unification: $got"
-
-run_ds "$WORK/f5-binding-conflicts" >/dev/null 2>&1
-got=$(state_field "$WORK/f5-binding-conflicts" "d['derived']['position']")
-[ "$got" = "vault_map_unbound" ] && ok "f5: active conflict → position=vault_map_unbound (bind-codebase row)" \
-  || fail "f5: position expected vault_map_unbound, got '$got'"
 got=$(state_field "$WORK/f5-binding-conflicts" "str(d['probes']['vaults'][0]['binding']['conflicts_active'])+'/'+str(d['probes']['vaults'][0]['binding']['conflicts_resolved'])")
-[ "$got" = "1/1" ] && ok "f5: conflict counts active=1 resolved=1 (binding_md grammar)" \
+[ "$got" = "1/1" ] && ok "f5: conflict counts active=1 resolved=1 (binding_md grammar — layout-2 stays READABLE)" \
   || fail "f5: conflict counts expected 1/1, got '$got'"
-got=$(state_field "$WORK/f5-binding-conflicts" "d['derived']['proposed_next']")
-[ "$got" = "['bind-codebase --express']" ] && ok "f5: proposed_next=[bind-codebase --express] (P2 spine default)" || fail "f5: chain wrong: $got"
-
-run_ds "$WORK/f5b-binding-kv-defer" >/dev/null 2>&1
-got=$(state_field "$WORK/f5b-binding-kv-defer" "d['derived']['position']")
-[ "$got" = "binding_resolved_no_rebind" ] && ok "f5b: KEEP_VAULT/DEFER-only → binding_resolved_no_rebind (no re-bind loop)" \
-  || fail "f5b: position expected binding_resolved_no_rebind, got '$got'"
-got=$(state_field "$WORK/f5b-binding-kv-defer" "d['derived']['proposed_next']")
-[ "$got" = "['generate-units']" ] && ok "f5b: proposed_next=[generate-units]" || fail "f5b: chain wrong: $got"
-
-run_ds "$WORK/f6-units-no-bolts" >/dev/null 2>&1
-got=$(state_field "$WORK/f6-units-no-bolts" "d['derived']['position']")
-[ "$got" = "units_pending_bolts" ] && ok "f6: position=units_pending_bolts" || fail "f6: position got '$got'"
-got=$(state_field "$WORK/f6-units-no-bolts" "d['derived']['proposed_next']")
-[ "$got" = "['execute-bolts --all --parallel']" ] && ok "f6: proposed_next=[execute-bolts --all --parallel] (chain dispatch is wave-parallel, spec §2a)" || fail "f6: chain wrong: $got"
 got=$(state_field "$WORK/f6-units-no-bolts" "str(d['probes']['vaults'][0]['units_count'])+'/'+str(d['probes']['vaults'][0]['bolts_count'])")
 [ "$got" = "2/0" ] && ok "f6: units=2 bolts=0" || fail "f6: counts expected 2/0, got '$got'"
+got=$(state_field "$WORK/f8-map-stale" "d['derived']['change_signal']['map_stamp_matches_head']")
+[ "$got" = "no" ] && ok "f8: change_signal.map_stamp_matches_head=no" || fail "f8: matches_head got '$got'"
+got=$(state_field "$WORK/f9-dirty-journal" "d['derived']['change_signal']['dirty_journal_rows']")
+[ "$got" = "3" ] && ok "f9: change_signal.dirty_journal_rows=3" || fail "f9: dirty rows got '$got'"
+
+# ── layout-3 (plan-born) twins: the surviving rows ──
+# f4l3: P0 unification — bare docs without vault.json derive the manifest FIRST
+# (repointed from the layout-2 f4 chain-head pin: the prepend fires on any
+# non-empty chain, and a layout-2 vault's chain is now empty).
+run_ds "$WORK/f4l3-context-no-json" >/dev/null 2>&1
+got=$(state_field "$WORK/f4l3-context-no-json" "d['derived']['position']")
+[ "$got" = "lite_context_no_units" ] && ok "f4l3: context.md, no units → position=lite_context_no_units" \
+  || fail "f4l3: position expected lite_context_no_units, got '$got'"
+got=$(state_field "$WORK/f4l3-context-no-json" "d['derived']['manifest_derive_needed']")
+[ "$got" = "True" ] && ok "f4l3: manifest_derive_needed=True (context.md counts as a vault doc)" \
+  || fail "f4l3: manifest_derive_needed wrong: $got"
+got=$(state_field "$WORK/f4l3-context-no-json" "d['derived']['proposed_next'][0]")
+case "$got" in scripts/derive-vault-json.sh*) ok "f4l3: chain FIRST derives vault.json (never hand-written)";;
+  *) fail "f4l3: chain head expected derive-vault-json.sh, got '$got'";; esac
+got=$(state_field "$WORK/f4l3-context-no-json" "d['derived']['proposed_next'][1:]")
+[ "$got" = "['plan prd.md --lite --regenerate', 'execute-bolts --all --lite']" ] \
+  && ok "f4l3: then plan --regenerate → execute-bolts --all --lite (never generate-units)" \
+  || fail "f4l3: chain after the manifest hop wrong: $got"
+
+# f6l3: repointed from f6 (layout-2 now migrates first)
+run_ds "$WORK/f6l3-units-no-bolts" >/dev/null 2>&1
+got=$(state_field "$WORK/f6l3-units-no-bolts" "d['derived']['position']")
+[ "$got" = "units_pending_bolts" ] && ok "f6l3: position=units_pending_bolts" || fail "f6l3: position got '$got'"
+got=$(state_field "$WORK/f6l3-units-no-bolts" "d['derived']['proposed_next']")
+[ "$got" = "['execute-bolts --all --lite']" ] && ok "f6l3: proposed_next=[execute-bolts --all --lite] (the default inline run; --parallel/--per-squad proposed nowhere)" || fail "f6l3: chain wrong: $got"
+got=$(state_field "$WORK/f6l3-units-no-bolts" "str(d['probes']['vaults'][0]['units_count'])+'/'+str(d['probes']['vaults'][0]['bolts_count'])")
+[ "$got" = "2/0" ] && ok "f6l3: units=2 bolts=0" || fail "f6l3: counts expected 2/0, got '$got'"
 
 run_ds "$WORK/f7-bolts-present" >/dev/null 2>&1
 got=$(state_field "$WORK/f7-bolts-present" "d['derived']['position']")
@@ -319,22 +397,32 @@ got=$(state_field "$WORK/f7-bolts-present" "d['derived']['position']")
 [ "$got" = "pipeline_complete" ] && ok "f7+drift: position=pipeline_complete (drift_recent)" \
   || fail "f7+drift: position expected pipeline_complete, got '$got'"
 
-run_ds "$WORK/f8-map-stale" >/dev/null 2>&1
-got=$(state_field "$WORK/f8-map-stale" "d['derived']['position']")
-[ "$got" = "maintenance_sync" ] && ok "f8: stale map stamp → position=maintenance_sync (Mode D)" \
-  || fail "f8: position expected maintenance_sync, got '$got'"
-got=$(state_field "$WORK/f8-map-stale" "d['derived']['change_signal']['map_stamp_matches_head']")
-[ "$got" = "no" ] && ok "f8: change_signal.map_stamp_matches_head=no" || fail "f8: matches_head got '$got'"
-got=$(state_field "$WORK/f8-map-stale" "d['derived']['proposed_next'][2]")
-case "$got" in "bind-codebase --paths=@"*) ok "f8: Mode D chain keeps the claim-scoped re-bind hop";;
-  *) fail "f8: Mode D chain hop 3 expected bind-codebase --paths=@…, got '$got'";; esac
+# f8l3: repointed from f8 — the 9.0 Mode D trigger is the symbol-index stamp
+# (the map stamp is informational), and the claim-scoped re-bind hop is the
+# per-unit writer rebind-units.sh (bind-codebase --paths was removed).
+run_ds "$WORK/f8l3-index-stale" >/dev/null 2>&1
+got=$(state_field "$WORK/f8l3-index-stale" "d['derived']['position']")
+[ "$got" = "maintenance_sync" ] && ok "f8l3: stale index stamp → position=maintenance_sync (Mode D)" \
+  || fail "f8l3: position expected maintenance_sync, got '$got'"
+got=$(state_field "$WORK/f8l3-index-stale" "d['derived']['change_signal']['index_stamp_matches_head']")
+[ "$got" = "no" ] && ok "f8l3: change_signal.index_stamp_matches_head=no" || fail "f8l3: index matches_head got '$got'"
+got=$(state_field "$WORK/f8l3-index-stale" "d['derived']['proposed_next'][2]")
+[ "$got" = "scripts/rebind-units.sh --cwd=. --vault=.mega-sdd/vaults/v1 --paths=@.mega-sdd/vaults/v1/.sync-changed-paths.txt" ] \
+  && ok "f8l3: Mode D chain keeps the claim-scoped re-bind hop (rebind-units.sh --paths=@…)" \
+  || fail "f8l3: Mode D chain hop 3 expected rebind-units.sh --paths=@…, got '$got'"
+# f8l3b: the map stamp never triggers Mode D (F4 livelock guard)
+run_ds "$WORK/f8l3b-map-stale-index-fresh" >/dev/null 2>&1
+got=$(state_field "$WORK/f8l3b-map-stale-index-fresh" "d['derived']['change_signal']['map_stamp_matches_head']+'|'+d['derived']['position']")
+[ "$got" = "no|units_pending_bolts" ] && ok "f8l3b: stale MAP stamp alone (index at HEAD) never fires Mode D" \
+  || fail "f8l3b: expected no|units_pending_bolts, got '$got'"
 
-run_ds "$WORK/f9-dirty-journal" >/dev/null 2>&1
-got=$(state_field "$WORK/f9-dirty-journal" "d['derived']['position']")
-[ "$got" = "maintenance_sync" ] && ok "f9: dirty journal → position=maintenance_sync (Mode D)" \
-  || fail "f9: position expected maintenance_sync, got '$got'"
-got=$(state_field "$WORK/f9-dirty-journal" "d['derived']['change_signal']['dirty_journal_rows']")
-[ "$got" = "3" ] && ok "f9: change_signal.dirty_journal_rows=3" || fail "f9: dirty rows got '$got'"
+# f9l3: repointed from f9 (the journal fires Mode D on a layout-3 vault)
+run_ds "$WORK/f9l3-dirty-journal" >/dev/null 2>&1
+got=$(state_field "$WORK/f9l3-dirty-journal" "d['derived']['position']")
+[ "$got" = "maintenance_sync" ] && ok "f9l3: dirty journal → position=maintenance_sync (Mode D)" \
+  || fail "f9l3: position expected maintenance_sync, got '$got'"
+got=$(state_field "$WORK/f9l3-dirty-journal" "d['derived']['change_signal']['dirty_journal_rows']")
+[ "$got" = "3" ] && ok "f9l3: change_signal.dirty_journal_rows=3" || fail "f9l3: dirty rows got '$got'"
 
 # ── 2. PARITY: validate-preflight verdicts unchanged from pre-refactor ──────
 # Expected literals captured from the COMMITTED v4.92.0 validate-preflight.sh
@@ -357,39 +445,27 @@ expect_pf() { # $1=fixture $2=skill $3=want_rc $4=want_status $5=want_check(- fo
   fi
 }
 
-# no-.mega-sdd fixtures: the exact pre-refactor no-project PASS
+# no-.mega-sdd fixtures: the exact pre-refactor no-project PASS (probed via a
+# surviving skill — the no-project exit precedes every per-skill check)
 for fx in f1-empty f2-legacy-code f3-prd-only; do
-  out=$(bash "$VPF" --cwd="$WORK/$fx" --skill=mega-sdd:bind-codebase </dev/null 2>/dev/null); rc=$?
+  out=$(bash "$VPF" --cwd="$WORK/$fx" --skill=mega-sdd:execute-bolts </dev/null 2>/dev/null); rc=$?
   [ "$rc" = "0" ] && printf '%s' "$out" | grep -qF '"reason":"no .mega-sdd/ project"' \
     && ok "parity $fx: no-project PASS literal unchanged" \
     || fail "parity $fx: no-project lane changed (rc=$rc out=${out:0:80})"
 done
 
-# P2 spine flip: on the DEFAULT (express) spine bind reads no map, so the
-# map-missing arm no longer FATALs; forcing classic (config) restores the
-# pre-P2 FATAL verbatim. Both lanes pinned.
-expect_pf f4-vault-md-no-json bind-codebase  0 PASS  -
-printf 'spine: classic\n' > "$WORK/f4-vault-md-no-json/.mega-sdd/config.yaml"
-expect_pf f4-vault-md-no-json bind-codebase  1 FATAL binding_input_map_missing
-rm -f "$WORK/f4-vault-md-no-json/.mega-sdd/config.yaml"
-expect_pf f4-vault-md-no-json generate-units 0 PASS  -
+# 9.0 retired the classic-skill cells (bind-codebase express/classic-spine
+# map arm, generate-units, scan-codebase tree-sitter WARN) with their skills;
+# the surviving execute-bolts cells are unchanged.
 expect_pf f4-vault-md-no-json execute-bolts  1 FATAL bolts_units_missing
-expect_pf f5-binding-conflicts bind-codebase  0 PASS -
-expect_pf f5-binding-conflicts generate-units 0 PASS -
 expect_pf f5-binding-conflicts execute-bolts  1 FATAL bolts_units_missing
-expect_pf f5b-binding-kv-defer bind-codebase  0 PASS -
-expect_pf f6-units-no-bolts   bind-codebase  0 PASS -
-expect_pf f6-units-no-bolts   generate-units 0 PASS -
 expect_pf f6-units-no-bolts   execute-bolts  0 PASS -
 expect_pf f7-bolts-present    execute-bolts  0 PASS -
-expect_pf f8-map-stale        bind-codebase  0 PASS -
-expect_pf f9-dirty-journal    bind-codebase  0 PASS -
-# scan-codebase: machine-dependent tree-sitter WARN — rc must be 0 either way
-out=$(bash "$VPF" --cwd="$WORK/f6-units-no-bolts" --skill=mega-sdd:scan-codebase </dev/null 2>/dev/null); rc=$?
-st=$(printf '%s' "$out" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status'))" 2>/dev/null)
-{ [ "$rc" = "0" ] && { [ "$st" = "PASS" ] || [ "$st" = "WARN" ]; }; } \
-  && ok "parity f6/scan-codebase: rc=0 status=$st (PASS|WARN, tree-sitter-dependent)" \
-  || fail "parity f6/scan-codebase: rc=$rc status=$st"
+# A direct --skill= dispatch of a removed classic skill FATALs with the one-line
+# replacement pointer (state_probes.REMOVED_SKILLS) — never a fall-through PASS.
+for s in generate-intent bind-codebase generate-units scan-codebase; do
+  expect_pf f6-units-no-bolts "$s" 1 FATAL skill_removed_in_9
+done
 
 # ── 3. predicates in the digest == preflight verdicts (one library) ─────────
 note "== 3. digest predicates agree with preflight =="
@@ -505,8 +581,8 @@ assert k['present'] is True, k
 assert k['source']=='config', k
 assert k['path']=='../../shared-kb/kb/README.md', k
 assert d['derived']['position']=='kb_no_vault', d['derived']['position']
-assert d['derived']['proposed_next'][0]=='generate-intent --kb=../../shared-kb/kb', d['derived']['proposed_next']
-" 2>/dev/null && ok "f11a: external KB via config → present/source=config, chain --kb=../../shared-kb/kb" \
+assert d['derived']['proposed_next'][0]=='plan --kb=../../shared-kb/kb --lite --mode=new', d['derived']['proposed_next']
+" 2>/dev/null && ok "f11a: external KB via config → present/source=config, chain plan --kb=../../shared-kb/kb (9.0: plan is the KB consumer)" \
   || fail "f11a: configured external KB not detected/routed: $(kb_diag "$J")"
 
 kb_fixture "$WORK/mono/f11b-kb-config-missing" 'knowledge_base: ../../shared-kb/does-not-exist/' yes

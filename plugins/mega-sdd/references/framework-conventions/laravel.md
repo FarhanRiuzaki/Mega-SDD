@@ -179,7 +179,7 @@ HARD_RULE: Routes file MUST NOT contain business logic
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: PHPDoc — **read by**: PHPStan/Larastan (`phpstan.neon`) for what native types cannot say — generics on relations and collections (`@return HasMany<Order, $this>`, `Collection<int, User>`), `@property`/`@property-read` model attributes (what `ide-helper` writes), `@mixin`; the IDE for those same contracts; Pint/php-cs-fixer only normalize a block, never require one. A full block only where one of these reads it, or on public API consumed outside this module.
 - **Skip**: methods whose native signature already carries the types; getters/setters, accessors/mutators, constructors; controller actions and route closures; `@param`/`@return` that repeat a native type; `@var` on a typed property.
@@ -188,8 +188,7 @@ HARD_RULE: Routes file MUST NOT contain business logic
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — every input-accepting endpoint validates through a Form Request (`app/Http/Requests/`); `$request->all()` passed onward unvalidated is a defect.

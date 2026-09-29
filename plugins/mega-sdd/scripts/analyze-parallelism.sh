@@ -50,7 +50,8 @@
 #
 # Exit: 0 = ok (metrics emitted)
 #       1 = error / halt-equivalent (vault not found; vault.json corrupt;
-#           DAG has a cycle — generate-units should have caught it, fail safe here)
+#           DAG has a cycle — plan Step 4 (strict depends_on, halt cycle_detected)
+#           should have caught it, fail safe here)
 #       2 = usage error (unknown flag / bad value / --cwd not a directory)
 set -u
 
@@ -425,7 +426,7 @@ if not scoped:
 
 overall = dag_metrics(scoped)
 if overall.get("cycle"):
-    die("DAG has a cycle (units: %s) — generate-units should have rejected this; "
+    die("DAG has a cycle (units: %s) — plan should have rejected this (halt cycle_detected); "
         "refusing to emit metrics" % ", ".join(overall["cycle"]), 1)
 
 xmod_all, xsquad_all = cross_edge_counts(scoped)

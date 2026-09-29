@@ -1,9 +1,13 @@
 ---
 # REQUIRED frontmatter — machine-read by the mega-sdd skills (keep this block 1:1 with them).
-#   Primary reader:  generate-intent  → Mode A BRD parse + scope picker (Step 0.9); `type: BRD`
-#                                        routes the business-view sections below.
-#   Downstream:      emit-fsd          → stakeholders[] becomes the FSD §3 sign-off table;
-#                    resolve-oq        → industry seeds OQ recommendation context;
+#   /mega-sdd routes first (scripts/route-lane.sh): the direct/assisted lanes read this doc as plain
+#   text; the keys below are machine-read on the guarded lane (plan → execute-bolts) and after it.
+#   Primary reader:  plan              → reads a BRD like a PRD (`plan <brd>`): full read (Step 1) +
+#                                        scope picker (Step 0.9, skills/plan/references/scope-flow.md);
+#                                        `type: BRD` selects no separate branch; stakeholders[] → the
+#                                        context.md frontmatter; industry → one PRD signal for the
+#                                        design-source OQ recommendation.
+#   Downstream:      emit-fsd          → stakeholders[] becomes the FSD §3 Stakeholders & Owners table;
 #                    diff-vault        → re-diffs the vault when this doc changes (by sha256).
 title: "<Project Name>"
 type: BRD

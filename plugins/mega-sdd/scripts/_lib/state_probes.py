@@ -13,10 +13,9 @@ Two layers, deliberately distinct and BOTH in this one file so any residual
 asymmetry is visible, never accidental:
 
   1. Preflight-parity predicates — `has_vault()` / `has_bound_or_vault()` /
-     `has_units()` / `has_codebase_map()`: byte-identical semantics to the
-     functions `validate-preflight.sh` shipped inline pre-P1 (canonical
-     `.mega-sdd/vaults/` only for the vault predicates — preflight's historical
-     FATAL contract; the map predicate probes canonical → legacy repo-root).
+     `has_units()`: byte-identical semantics to the functions
+     `validate-preflight.sh` shipped inline pre-P1 (canonical
+     `.mega-sdd/vaults/` only — preflight's historical FATAL contract).
   2. Rich probes — the routing-rules §CWD inspection set (all path
      GENERATIONS per `references/paths.md §Read-side compatibility`). Each
      probe returns plain data — no policy.
@@ -51,7 +50,9 @@ VAULT_ROOT_GENERATIONS = (
     ("legacy-root", "vaults"),
 )
 
-# codebase-map, priority order (routing-rules probe 7; paths.md).
+# codebase-map, priority order (routing-rules probe 7; paths.md). A pre-9.0
+# scan artefact with no 9.0 producer — still read (digest row, certify-artifact
+# --rung=map adoption); its stamp is informational, never a sync trigger.
 CODEBASE_MAP_GENERATIONS = (
     os.path.join(".mega-sdd", "codebase", "codebase-map.md"),
     "codebase-map.md",
@@ -187,24 +188,13 @@ def has_units(cwd):
     )
 
 
-def has_codebase_map(cwd):
-    # S4 BC-PREFLIGHT-LEGACY: probe the SAME order bind-codebase does
-    # (SKILL.md §Inputs + paths.md back-compat) — canonical nested path, then
-    # the legacy repo-root map.
-    return (
-        os.path.isfile(os.path.join(cwd, ".mega-sdd", "codebase", "codebase-map.md"))
-        or os.path.isfile(os.path.join(cwd, "codebase-map.md"))
-    )
-
-
 # ── Layer 2: rich probes (routing-rules §CWD inspection, all generations) ────
 
 
 # One level inside dirs whose name case-insensitively matches this FIXED set is
 # scanned in addition to the root — teams routinely keep the PRD in a PRD/ or
 # docs/ folder (field finding 2026-08-03: a root-only probe missed
-# PRD/prd-simkredit.md, mis-deriving the position AND false-failing the
-# generate-intent preflight check on the same assumption). Fixed set, one
+# PRD/prd-simkredit.md, mis-deriving the position). Fixed set, one
 # level, never a repo walk — determinism over completeness. Matching is done
 # against os.listdir's ON-DISK names (round CL-F3: probing constant-cased
 # names made macOS find `Docs/` while Linux missed it, AND emitted a
@@ -265,8 +255,8 @@ def probe_prd_candidates(cwd):
 
     seen_dirs = {_dir_id(cwd)} - {None}
     _scan(cwd, "")
-    # from-prompt writes its seed under the vault it will grow into
-    # (`.mega-sdd/vaults/<slug>/source/seed-PRD.md`, from-prompt-mode.md Step 4) —
+    # a guarded brief writes its seed under the vault it will grow into
+    # (`.mega-sdd/vaults/<slug>/source/seed-PRD.md`, plan/references/brief-input.md Step 4) —
     # a seed the status view could not see (doc-audit v8 finding #15).
     for src in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "source"))):
         if os.path.isdir(src):
@@ -532,7 +522,7 @@ _INDEX_HEAD_RE = re.compile(r'"head_commit"\s*:\s*(?:"([0-9a-f]{7,40})"|null)')
 
 def probe_symbol_index(cwd, head=None):
     """P2 — symbol-index presence + freshness stamp (the change-signal
-    substrate for express-born projects that never grow a codebase-map)."""
+    substrate; GROUND builds it — no 9.0 phase writes a codebase-map)."""
     p = os.path.join(cwd, ".mega-sdd", "codebase", "symbol-index.json")
     out = {"present": False, "head_commit": None, "matches_head": "n/a"}
     if not os.path.isfile(p):
@@ -552,10 +542,9 @@ def probe_symbol_index(cwd, head=None):
 
 
 def probe_astgrep():
-    """Is ast-grep on PATH? Express viability leg (round doc-6: an express
-    chain on an ast-grep-less machine with no index dead-ends — E0 falls back
-    to the standard lane, which needs the map the express chain never
-    produced). Cached per process."""
+    """Is ast-grep on PATH? Without it and without an index, GROUND builds no
+    symbol index: JIT-bind symbol claims stay OQ and sync has no changed-set
+    baseline. Cached per process."""
     global _ASTGREP_CACHE
     try:
         return _ASTGREP_CACHE
@@ -568,9 +557,10 @@ def probe_astgrep():
 
 def probe_spine(cwd):
     """`spine:` from .mega-sdd/config.yaml — "express" (default) or
-    "classic". P2 flip: express is the default spine; classic restores the
-    scan-first chains verbatim. Same contract as probe_profile: top-level
-    key only, first match wins, absent/unreadable → default."""
+    "classic". Retired in 9.0 (no scan-first chain exists): read only so
+    derive() can say in one line that a leftover `spine: classic` is ignored.
+    Same contract as probe_profile: top-level key only, first match wins,
+    absent/unreadable → default."""
     try:
         with open(os.path.join(cwd, ".mega-sdd", "config.yaml"),
                   encoding="utf-8", errors="replace") as f:
@@ -584,13 +574,12 @@ def probe_spine(cwd):
 
 
 def probe_lane(cwd):
-    """`lane:` from .mega-sdd/config.yaml — "standard" (default) or "lite"
-    (v8 P1, spec 2026-09-10 App. F8; 7.34.0 debt #2). The durable form of the
-    front-door `--lite` flag: execute-bolts pre-flight 3.9 (JIT bind every
-    wave) + W1 zero-idle + the plan-coverage PASS rail key on
-    `derived.lane`, so `--resume` and every hop know without the flag being
-    re-typed. Same contract as probe_spine: top-level key only, first match
-    wins, absent/unreadable → default."""
+    """`lane:` from .mega-sdd/config.yaml — "lite" (default) or "standard".
+    9.0: lite (plan → execute-bolts) is the one pipeline, so `derived.lane` is
+    always "lite"; "standard" is returned only when the retired key is set, so
+    derive() can say in one line that it is ignored. Same contract as
+    probe_spine: top-level key only, first match wins, absent/unreadable →
+    default."""
     try:
         with open(os.path.join(cwd, ".mega-sdd", "config.yaml"),
                   encoding="utf-8", errors="replace") as f:
@@ -600,7 +589,7 @@ def probe_lane(cwd):
                     return m.group(1)
     except OSError:
         pass
-    return "standard"
+    return "lite"
 
 
 def probe_code_files(cwd, limit=4000):
@@ -916,9 +905,9 @@ def probe_oq_counts(vdir):
             continue
         if (oq.get("priority") or "").upper() not in ("P0", "P1"):
             continue
-        # `[tech / scan]` is resolved by bind-codebase probing ground truth — it
-        # is never a human's question, so an open P1 one must not route the chain
-        # into resolve-oq ahead of the bind that answers it.
+        # `[tech / scan]` is AI-decided: plan probes it at authoring time (plan
+        # context.md template §Open Questions); a leftover open one in a migrated
+        # layout-2 vault is still not a human question (invariant 5).
         if str(oq.get("category") or "").lower().startswith("tech") \
                 and str(oq.get("resolution_mode") or "").lower() == "scan":
             continue
@@ -1069,7 +1058,6 @@ def collect_probes(cwd):
             "has_vault": has_vault(cwd),
             "has_bound_or_vault": has_bound_or_vault(cwd),
             "has_units": has_units(cwd),
-            "has_codebase_map": has_codebase_map(cwd),
         },
     }
 
@@ -1082,11 +1070,27 @@ def collect_probes(cwd):
 
 POSITIONS = (
     "empty", "legacy_code_only", "prd_no_vault", "kb_no_vault",
-    "oq_gate", "prd_revision", "maintenance_sync",
-    "vault_greenfield_no_units", "vault_no_map", "vault_map_unbound",
-    "binding_resolved_no_rebind", "bound_no_units",
+    "oq_gate", "prd_revision", "maintenance_sync", "lite_context_no_units",
+    "layout2_needs_migration",
     "units_pending_bolts", "all_units_executed", "pipeline_complete",
 )
+
+# The four classic skills removed in 9.0 → ONE line naming the replacement.
+# validate-preflight.sh FATALs with it in both modes (a stale 8.x chain under
+# --predictive, a direct --skill= dispatch), so nobody falls through to PASS.
+REMOVED_SKILLS = {
+    "generate-intent": "generate-intent was removed in 9.0 — use plan: "
+                       "`plan <prd> --lite --mode=existing|new` (legacy KB: "
+                       "`plan --kb=<kb-dir>`).",
+    "generate-units": "generate-units was removed in 9.0 — use plan: units are "
+                      "written with the vault (`plan <prd> --regenerate`; code "
+                      "moved: `plan --reconcile`).",
+    "bind-codebase": "bind-codebase was removed in 9.0 — use plan → "
+                     "`execute-bolts --all --lite`, which binds each unit before "
+                     "building it (full audit: `scripts/rebind-units.sh --units=all`).",
+    "scan-codebase": "scan-codebase was removed in 9.0 — use plan: GROUND "
+                     "(`scripts/ground.sh`, symbol index) grounds every run.",
+}
 
 
 def probe_profile(cwd):
@@ -1140,34 +1144,29 @@ def derive(probes):
 
     change_signal = {
         "dirty_journal_rows": probes["dirty_journal_rows"],
+        # informational only: no 9.0 phase advances a map stamp, so keying
+        # Mode D on it would fire on every derive (the F4 livelock)
         "map_stamp_matches_head": cmap["matches_head"],
-        # P2: the freshness stamp an express-born project HAS — without it,
-        # every change-signal surface is map-gated and sync goes silent
-        # forever on projects that never grow a map. SUBSTRATE RULE (round
-        # F4 — classic-parity breach + livelock REPRODUCED): the index leg
-        # is a change SIGNAL only when the index is the ONLY substrate — a
-        # map-bearing project keys freshness on the map (execute-bolts
-        # rebuilds the index every batch, so a fresh-map project with a
-        # briefly-stale index would otherwise loop Mode D forever).
-        "index_stamp_matches_head": (
-            sindex["matches_head"] if not cmap["present"] else "n/a"
-        ),
+        # the freshness stamp GROUND keeps current — the only stamp that
+        # triggers Mode D
+        "index_stamp_matches_head": sindex["matches_head"],
     }
 
     foreign_sdd = probes.get("foreign_sdd") or []
 
     profile = probes.get("profile", "full")
-    spine = probes.get("spine", "express")
-    if spine == "express" and not sindex["present"] \
-            and not probes.get("astgrep_available", True):
-        # Express is not VIABLE here (no index and no way to build one) —
-        # an express chain would dead-end at bind E0's fallback (which needs
-        # the map this chain never produces). Render classic, loudly.
-        spine = "classic"
+    # 9.0: lite (plan → execute-bolts) is the one pipeline; the retired chain
+    # selectors are read only to say they are ignored.
+    if probes.get("lane") == "standard":
+        notes.append("lane: standard is retired in 9.0 and ignored — lite "
+                     "(plan -> execute-bolts) is the one pipeline")
+    if probes.get("spine") == "classic":
+        notes.append("spine: classic is retired in 9.0 and ignored")
+    if not sindex["present"] and not probes.get("astgrep_available", True):
         notes.append(
-            "express unavailable: ast-grep not installed and no symbol index "
-            "-> rendering the CLASSIC (scan-first) chain; /mega-sdd:install-deps "
-            "adds ast-grep to enable the express spine"
+            "ast-grep not installed and no symbol index: symbol claims bind as "
+            "OQ and sync has no changed-set baseline; /mega-sdd:install-deps "
+            "adds ast-grep"
         )
     fpack = probes.get("framework_pack") or {"pack": "_universal",
                                              "manifest": None,
@@ -1175,8 +1174,7 @@ def derive(probes):
     derived = {
         "vault": vault["name"] if vault else None,
         "profile": profile,
-        "spine": spine,
-        "lane": probes.get("lane", "standard"),
+        "lane": "lite",
         "framework_pack": fpack["pack"],
         "framework_pack_manifest": fpack["manifest"],
         "vault_path": vault["path"] if vault else None,
@@ -1194,8 +1192,9 @@ def derive(probes):
     }
 
     if foreign_sdd:
-        # Adoption lane (P2): recognition only — a DEMOTE re-ingest burns
-        # generate-intent tokens and produces a DIFFERENT vault than the user
+        # Adoption lane (P2): recognition only — a DEMOTE re-ingest burns plan
+        # tokens (the certified spec re-enters at the PRD rung via
+        # `plan <spec> --lite`) and produces a DIFFERENT vault than the user
         # placed, so it is ALWAYS confirmed (C2 adoption_demote_confirm,
         # decision 7). Never a silent chain hop.
         tools = ",".join(sorted({h["tool"] for h in foreign_sdd}))
@@ -1211,16 +1210,6 @@ def derive(probes):
         # (v7.4.0: the tranche-E --no-advisor hop transform died with the
         # phase-advisor's removal; lean now governs only diagnostics + the
         # Stop-hook aggregate, which read derived.profile directly.)
-        if spine == "express":
-            # P2 flip: every bind hop retrieves claim-scoped by default (the
-            # lean-injection pattern — ONE site, never per return). classic
-            # renders today's chains verbatim.
-            chain = [
-                (h + " --express")
-                if (h.split()[0] == "bind-codebase" and "--express" not in h)
-                else h
-                for h in chain
-            ]
         if derived["manifest_derive_needed"] and chain:
             # P0 unification: bare vault docs → derive the manifest FIRST,
             # never hand-write it, before any phase that reads vault.json.
@@ -1230,45 +1219,47 @@ def derive(probes):
         derived["proposed_next"] = chain
         return derived
 
+    def needs_migration():
+        # 9.0 builds and syncs layout-3 vaults only; a layout-2 / legacy vault
+        # stays READABLE. Proposed, never auto-run (spec §4).
+        notes.append(
+            "layout-2 vault %s: 9.0 builds and syncs layout-3 vaults only -> "
+            "/mega-sdd:migrate-paths --vault-layout=3 --vault=%s (dry-run, then "
+            "--apply; a legacy 7-file vault takes --vault-layout first), then the "
+            "mandatory full JIT re-bind (scripts/rebind-units.sh --units=all)"
+            % (vault["path"], vault["path"])
+        )
+        return finish("layout2_needs_migration", [])
+
     # ── No vault: input-shape ladder ─────────────────────────────────────
+    # The one pipeline (spec §2): ONE model phase (plan: context.md + units +
+    # ONE batched ask) then bolts. No bind hop (JIT bind per unit,
+    # up front + per task), no handoff YAML between the hops — the orchestrator
+    # re-derives state from disk + runs the predictive preflight before the
+    # bolts hop. Mode pin: a repo that already carries code = `existing`
+    # (brownfield claims), a bare scaffold = `new`; never asked.
+    impl_mode = "existing" if has_code else "new"
     if vault is None:
         if probes["knowledge_base"]["present"]:
-            return finish("kb_no_vault", [
-                "generate-intent --kb=%s" % os.path.dirname(
-                    probes["knowledge_base"]["path"]
-                ),
-            ])
+            # legacy rebuild: extract-intelligence KB → plan --kb (owner
+            # principle 2); bolts need a target scaffold to build into.
+            chain = ["plan --kb=%s --lite --mode=%s" % (
+                os.path.dirname(probes["knowledge_base"]["path"]), impl_mode)]
+            if starterkit == "detected":
+                chain.append("execute-bolts --all --lite")
+            else:
+                notes.append(
+                    "no target scaffold detected -> plan --kb writes the vault + "
+                    "units; scaffold the new stack first, then /mega-sdd --resume "
+                    "runs execute-bolts --all --lite"
+                )
+            return finish("kb_no_vault", chain)
         if probes["prd"]["present"]:
             prd = probes["prd"]["candidates"][0]
             if starterkit == "detected":
-                if derived["lane"] == "lite":
-                    # v8 P2 2-hop lite lane (spec §1/§3, App. C3): ONE model
-                    # phase (plan: context.md + units + ONE batched ask) then
-                    # bolts. No bind hop (JIT bind at dispatch, pre-flight 3.9),
-                    # no handoff YAML between the hops — the orchestrator
-                    # re-derives state from disk + runs the predictive
-                    # preflight before the bolts hop. Mode pin: a repo that
-                    # already carries code = `existing` (brownfield claims),
-                    # a bare scaffold = `new`; never asked.
-                    return finish("prd_no_vault", [
-                        "plan %s --lite --mode=%s" % (
-                            prd, "existing" if has_code else "new"),
-                        "execute-bolts --all --lite",
-                    ])
-                if spine == "express":
-                    # P2 default: GROUND already ran as a script (derive-state
-                    # + build-symbol-index); no scan phase, no --scan= arg —
-                    # intent grounds via the index, bind verifies --express.
-                    return finish("prd_no_vault", [
-                        "generate-intent %s" % prd,
-                        "bind-codebase",
-                        "generate-units",
-                    ])
                 return finish("prd_no_vault", [
-                    "scan-codebase",
-                    "generate-intent %s --scan=<codebase-map>" % prd,
-                    "bind-codebase",
-                    "generate-units",
+                    "plan %s --lite --mode=%s" % (prd, impl_mode),
+                    "execute-bolts --all --lite",
                 ])
             notes.append(
                 "starterkit absent + no --greenfield flag -> halt "
@@ -1278,8 +1269,9 @@ def derive(probes):
         if has_code or manifests or git_repo:
             notes.append(
                 "codebase without PRD/KB/vault: needs user intent — rebuild "
-                "(extract-intelligence lane) vs new-feature brief "
-                "(generate-intent --from-prompt); routing table decides"
+                "(extract-intelligence -> plan --kb) vs new-feature brief "
+                "(direct/assisted lane via route-lane.sh; --guarded writes the "
+                "brief to a file -> plan)"
             )
             return finish("legacy_code_only", [])
         notes.append("no inputs found (scanned the root + one level inside PRD//docs//documents//requirements dirs): provide a PRD/brief or run inside a codebase")
@@ -1307,63 +1299,42 @@ def derive(probes):
                                or probes["prd"]["candidates"][0]),
         ])
 
-    # 3. Mode D — maintenance/sync: a freshness substrate (map OR symbol
-    # index — P2: express-born projects never grow a map) + binding exist
-    # AND a change signal fired. The index-only substrate is EXPRESS-spine
-    # territory (round F12: under classic the map-absent branch would propose
-    # a bind --paths chain that FATALs on the missing map — classic falls
-    # through to the scan-first repair rows instead).
-    if (cmap["present"] or (sindex["present"] and spine == "express")) \
+    # 3. Mode D — maintenance/sync: the symbol index (the one 9.0 freshness
+    # substrate) + a binding exist AND a change signal fired (the dirty journal
+    # or a stale index stamp). A leftover pre-9.0 map is no substrate: nothing
+    # advances its stamp, and without an index derive-changed-paths.sh (the
+    # journal's only consumer) exits 3, so a map-keyed row would re-fire on
+    # every derive (livelock). `--sync` still forces the no-baseline fallback.
+    if sindex["present"] \
             and (binding["binding_md"] or binding.get("unit_bindings", 0) > 0) and (
         change_signal["dirty_journal_rows"] > 0
-        or change_signal["map_stamp_matches_head"] == "no"
         or change_signal["index_stamp_matches_head"] == "no"
     ):
+        if not vault.get("has_context_md"):
+            return needs_migration()
         vp = vault["path"]
-        if derived["lane"] == "lite" or vault.get("has_context_md"):
-            # v8 P3 (spec 2026-09-10 §4): the lite / layout-3 vault has no
-            # whole-vault binding to re-bind — the re-bind hop is the per-unit
-            # JIT writer scoped to the changed set (rebind-units.sh: units whose
-            # target_files ∪ ## Anchors ∪ per-unit binding anchors intersect;
-            # exit 0 = nothing affected, 4 = re-bound, read `gate`), and unit
-            # reconcile is `plan --reconcile` (task_type follows the per-unit
-            # binding evidence), never generate-units. Hop 1 stays as on the
-            # classic lane (changed set + drift).
-            first = ("scan-codebase --changed-only" if cmap["present"]
-                     else "scripts/derive-changed-paths.sh --vault %s" % vp)
-            return finish("maintenance_sync", [
-                first,
-                "detect-drift --scope=@%s/.sync-changed-paths.txt" % vp,
-                "scripts/rebind-units.sh --cwd . --vault %s --paths=@%s/.sync-changed-paths.txt" % (vp, vp),
-                "plan --reconcile",
-                "execute-bolts --all --lite",
-            ])
-        if cmap["present"]:
-            # Map-bearing project: today's chain, unchanged — scan
-            # --changed-only refreshes the map AND writes the changed set.
-            return finish("maintenance_sync", [
-                "scan-codebase --changed-only",
-                "detect-drift --scope=@%s/.sync-changed-paths.txt" % vp,
-                "bind-codebase --paths=@%s/.sync-changed-paths.txt" % vp,
-                "generate-units --reconcile",
-                "execute-bolts",
-            ])
-        # Express-born (index, no map): the changed set derives from git
-        # (index head_commit..HEAD) ∪ the dirty journal — a script, zero
-        # model tokens; same downstream consumer contract.
+        # A layout-3 vault has no whole-vault binding to re-bind — the re-bind
+        # hop is the per-unit JIT writer scoped to the changed set
+        # (rebind-units.sh: units whose target_files ∪ ## Anchors ∪ per-unit
+        # binding anchors intersect; exit 0 = nothing affected, 4 = re-bound,
+        # read `gate`), and unit reconcile is `plan --reconcile` (task_type
+        # follows the per-unit binding evidence). Hop 1 = changed set
+        # (derive-changed-paths.sh: index head_commit..HEAD ∪ the dirty
+        # journal, zero model tokens) + scoped drift.
         return finish("maintenance_sync", [
             "scripts/derive-changed-paths.sh --vault %s" % vp,
             "detect-drift --scope=@%s/.sync-changed-paths.txt" % vp,
-            "bind-codebase --paths=@%s/.sync-changed-paths.txt" % vp,
-            "generate-units --reconcile",
-            "execute-bolts",
+            "scripts/rebind-units.sh --cwd=. --vault=%s --paths=@%s/.sync-changed-paths.txt" % (vp, vp),
+            "plan --reconcile",
+            "execute-bolts --all --lite",
         ])
 
     # ── Pipeline ladder ──────────────────────────────────────────────────
-    if units == 0 and derived["lane"] == "lite" and vault.get("has_context_md"):
-        # v8 P2: a layout-3 vault is plan-born and unit-less only when plan
-        # halted before writing units — re-run plan (never generate-units,
-        # which reads the layout-2/legacy docs).
+    if (units == 0 or bolts < units) and not vault.get("has_context_md"):
+        return needs_migration()
+    if units == 0:
+        # A plan-born vault is unit-less only when plan halted before writing
+        # units — re-run plan --regenerate.
         prd = (probes["prd"]["candidates"][0] if probes["prd"]["present"]
                else None)
         if prd:
@@ -1374,42 +1345,9 @@ def derive(probes):
         notes.append("layout-3 vault without units and no PRD candidate on disk: "
                      "run `plan <prd> --lite --regenerate` with the PRD path")
         return finish("lite_context_no_units", [])
-    if (vault["mode"] or ("greenfield" if mode_inferred == "greenfield" else "existing")) == "greenfield":
-        if units == 0:
-            return finish("vault_greenfield_no_units", ["generate-units"])
-    if not cmap["present"] and not vault["bound_present"] and units == 0:
-        if spine == "express":
-            # P2: without the flip this position is an unreachable trap —
-            # the map never exists on the express spine, so every brownfield
-            # vault would demand a scan forever. Express bind needs no map.
-            return finish("vault_no_map", ["bind-codebase", "generate-units"])
-        return finish("vault_no_map", [
-            "scan-codebase", "bind-codebase", "generate-units",
-        ])
-    if not vault["bound_present"] and units == 0:
-        actions = binding["resolution_actions"]
-        if (
-            binding["binding_md"]
-            and binding["conflicts_active"] == 0
-            and actions
-            and set(actions) <= {"KEEP_VAULT", "DEFER"}
-        ):
-            # KEEP_VAULT/DEFER-only resolution leaves bound/ absent by design;
-            # a re-bind would re-raise the SAME conflict and loop.
-            return finish("binding_resolved_no_rebind", ["generate-units"])
-        return finish("vault_map_unbound", ["bind-codebase"])
-    if units == 0:
-        return finish("bound_no_units", ["generate-units"])
     if bolts < units:
-        # Chain dispatch is wave-parallel (token-and-latency spec §2a): the
-        # --per-squad procedure is parallel by construction; the --all leg
-        # carries --parallel explicitly. Standalone suggestions elsewhere keep
-        # plain --all — this is the CHAIN proposer.
-        chain = (
-            ["execute-bolts --per-squad"] if vault["squad_count"] >= 2
-            else ["execute-bolts --all --parallel"]
-        )
-        return finish("units_pending_bolts", chain)
+        # The default run is inline (one context, plan order).
+        return finish("units_pending_bolts", ["execute-bolts --all --lite"])
 
     # All units executed → drift check recency.
     drift = vault["drift_report"]

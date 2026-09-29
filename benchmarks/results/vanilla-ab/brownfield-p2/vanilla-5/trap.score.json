@@ -1,0 +1,40 @@
+{
+ "traps": {
+  "T1": {
+   "surfaced": true,
+   "quote": "PRD \u00a71 menyebut slot 20 menit dan reminder 48 jam, padahal v1 sebenarnya 15 menit dan 24 jam",
+   "judge_said": true,
+   "verified": true
+  },
+  "T2": {
+   "surfaced": true,
+   "quote": "reminder 48 jam, padahal v1 sebenarnya 15 menit dan 24 jam",
+   "judge_said": true,
+   "verified": true
+  },
+  "T3": {
+   "surfaced": true,
+   "quote": "not 20 minutes / 48 hours, and had no `rescheduling_required` status.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T4": {
+   "surfaced": true,
+   "quote": "no penalty is defined, so none was invented",
+   "judge_said": true,
+   "verified": true
+  },
+  "T5": {
+   "surfaced": true,
+   "quote": "There are no patient accounts and no VIP definition",
+   "judge_said": true,
+   "verified": true
+  }
+ },
+ "surfaced": 5,
+ "total": 5,
+ "overturned": [],
+ "bundle_chars": 11672,
+ "judge_sid": "8ddfdcb0-e3bf-42e9-83c0-450145fc4625",
+ "judge_cost_usd": 0.1297182
+}

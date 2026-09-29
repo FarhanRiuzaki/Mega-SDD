@@ -107,10 +107,10 @@ API contracts vs route definitions, same per-finding shape.
 Per finding: Finding ID + severity + entity/field; source-claim mutability tier (kb_locked / kb_intent / kb_artifact / vault_locked / inferred); and the **resolution path**. detect-drift is forked + non-interactive: findings are **queued to `PENDING-SYNC.md`**, never resolved inline. There is **no `resolve-oq --drift` mode** — resolve-oq resolves normal vault OQs (including any drift-CREATED `OQ-DC-N` stub, per §3.5) and does NOT consume drift findings. The resolution path is one of:
 
 1. **Human triage of `PENDING-SYNC.md`** (§3.7) — the default; a person picks the direction (fix code vs update vault) per finding.
-2. **Re-run `/mega-sdd:sync`** — re-walks drift end-to-end through the Mode D chain (scan → drift → re-bind → reconcile → execute).
+2. **Re-run `/mega-sdd:sync`** — re-walks drift end-to-end through the Mode D chain (changed-set → drift → re-bind → reconcile → execute).
 3. **`--auto-apply=safe`** (§3.5) — auto-applies ONLY the narrow safe class: confidence HIGH + category ∈ {name-drift, type-drift, missing-in-vault} + claim NOT `[LOCKED]` + code side committed. CRITICAL / `[LOCKED]` drift is a compliance escalation and is NEVER `--auto-apply=safe` eligible (see §Vault write-back protocol Rails) — it always routes to human triage.
 
-In the **sync lane** (Mode D) the chain auto-continues to claim-scoped re-bind (`bind-codebase --paths=@<vault>/.sync-changed-paths.txt`; layout-3: `rebind-units.sh --paths=@…` → `plan --reconcile`); queued drift does not stall that hop, but the moat re-blocks downstream units/bolts if re-bind surfaces a CONFLICT.
+In the **sync lane** (Mode D) the chain auto-continues to the re-bind (`scripts/rebind-units.sh --cwd=<root> --vault=<vault> --paths=@<vault>/.sync-changed-paths.txt` → `plan --reconcile`); queued drift does not stall that hop, but the moat re-blocks downstream units/bolts if re-bind surfaces a CONFLICT.
 
 ```markdown
 ### Finding D-001 (CRITICAL — drift on LOCKED entity)
@@ -150,7 +150,7 @@ Spec `2026-06-10-living-vault-continuous-sync-design.md` lifts the old "report-o
 
 **Selection is deterministic (non-interactive):** ONLY the `--auto-apply=safe` class from Step 5 is applied — there is no diff presentation and no ACCEPT prompt (a fork cannot confirm). Every out-of-class draft is preserved as a `proposed_patch:` block on its `PENDING-SYNC.md` entry for later manual use; nothing outside the safe class is ever written.
 
-**On apply (per auto-applied patch):** apply the patches; append a vault Changelog entry (vault.md; legacy: 00-index.md) listing every patched section + provenance; bump the vault version (small bump vX.Y+1 — grammar per diff-vault's `references/diff-procedure.md`); refresh `vault.json` by running `bash <plugin>/scripts/derive-vault-json.sh --vault <vault-dir>` (W5: the script re-derives the structural mirror from the patched markdown and holds the `vault.json.lock` itself — exit 4 → `memory_in_use` halt; never hand-write vault.json). The next `bind-codebase` run then re-verdicts the patched claims (in the sync lane, `--paths` covers them automatically since their vault sections changed).
+**On apply (per auto-applied patch):** apply the patches; append a vault Changelog entry (vault.md; legacy: 00-index.md) listing every patched section + provenance; bump the vault version (small bump vX.Y+1 — grammar per diff-vault's `references/diff-procedure.md`); refresh `vault.json` by running `bash <plugin>/scripts/derive-vault-json.sh --vault <vault-dir>` (W5: the script re-derives the structural mirror from the patched markdown and holds the `vault.json.lock` itself — exit 4 → `memory_in_use` halt; never hand-write vault.json). The next JIT bind (`rebind-units.sh` in the sync lane, the execute-bolts up-front bind otherwise) then re-verdicts the units anchored on the patched claims' files, which are already in `.sync-changed-paths.txt`.
 
 **Rails:** the safe class is the ONLY write path — never widen it; never patch from inference (only from the finding's cited code evidence); LOW-confidence findings are NOT write-back eligible (report-only); `[LOCKED]`-tier claims are NEVER patched from code (a CRITICAL drift on a locked claim is a compliance escalation, not a sync) — surface and stop.
 

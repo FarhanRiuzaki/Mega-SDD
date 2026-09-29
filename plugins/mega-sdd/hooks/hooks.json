@@ -21,7 +21,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Skill|Bash|Edit|Write|Agent",
+        "matcher": "Skill|Bash|Edit|Write",
         "hooks": [
           {
             "type": "command",

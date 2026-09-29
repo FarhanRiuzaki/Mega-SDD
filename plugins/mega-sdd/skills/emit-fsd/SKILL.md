@@ -15,7 +15,7 @@ description: Generate a Hybrid Confluence FSD (Markdown + PDF) from vault/units/
 ## When to use
 
 - "generate FSD" / "emit FSD" / "buat FSD" / "FSD untuk confluence"
-- Pre-development sign-off: after generate-intent stabilizes the vault, before bolts run
+- Pre-development sign-off: after plan stabilizes the vault + units (P1 OQ batch answered), before bolts run
 - Post-development as-built record: after execute-bolts completes
 - Re-emission on PRD revision (diff-vault) or OQ resolution (resolve-oq)
 

@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # test-3a-validator-gate.sh — god-review stage 3, Batch 3A.
 # Pins validate-codebase-map.sh determinism: the validator must judge the map
-# grammar the scan procedure actually emits, on the paths bind-codebase actually
-# binds against, without fenced-block/citation false-satisfaction.
+# grammar the (pre-9.0) scan procedure emitted, on the paths those maps live at,
+# without fenced-block/citation false-satisfaction.
 #
-#   INT-1  the state file self-heals at gate time (validator is re-runnable and
+#   INT-1  the state file self-heals on re-validation (validator is re-runnable and
 #          correct on both directions: fresh degenerate map after mv; valid map
-#          replacing a stale FAIL state).
+#          replacing a stale FAIL state). The pre-tool-use bind-gate caller was
+#          pruned in 9.0 P1b with bind-codebase; run-analyze V12 is the executor.
 #   V5     headings/frontmatter quoted inside a fenced code block do NOT satisfy
 #          the presence checks (the schema's own fenced skeleton is the bypass shape).
 #   V1     interface-depth heuristics run on the Signature CELL only — a file:line
@@ -171,7 +172,7 @@ J="$(run fp "$WORK/fp/other-map.md")"
 
 # ── INT-1: state self-heal semantics — validator is authoritative on re-run ──
 # Direction 1 (fail-open): degenerate map lands via mv (no hook) → a direct
-# validator run (what the PreToolUse self-heal executes) must write FAIL state.
+# validator run (what run-analyze V12 executes) must write FAIL state.
 mkproj heal "$FM_OK
 $SECTIONS_OK"
 ST="$WORK/heal/.mega-sdd/.codebase-map-state.json"
@@ -184,23 +185,17 @@ run heal >/dev/null
 mv "$WORK/heal/.mega-sdd/codebase/.tmp-map" "$WORK/heal/.mega-sdd/codebase/codebase-map.md"
 run heal >/dev/null
 [ "$(field "$(cat "$ST")" "d.get('status')")" = "PASS" ] && ok "INT-1: re-validation after valid re-scan → state clears to PASS (no permanent block)" || fail "INT-1: stale FAIL state not cleared"
-# The hook wiring itself: pre-tool-use contains the lazy re-validate block.
-grep -q "codebase-map-state.json" "$ROOT/plugins/mega-sdd/hooks/pre-tool-use" \
-  && grep -q '! "$CM_STATE" -nt "$CM_MAP"' "$ROOT/plugins/mega-sdd/hooks/pre-tool-use" \
-  && ok "INT-1: pre-tool-use lazy re-validate — state must be STRICTLY newer (tie re-validates)" \
-  || fail "INT-1: pre-tool-use self-heal wiring missing/weakened"
-# v7.5.0 №D repin: the PostToolUse map dispatch died with the fan-out. The
-# surviving dispatchers: the bind-gate INT-1 lazy re-validate (pinned above)
-# and run-analyze FULL (V12). Negative + positive pins:
+# v7.5.0 №D repin: the PostToolUse map dispatch died with the fan-out; 9.0 P1b
+# pruned the pre-tool-use bind-gate INT-1 lazy re-validate with bind-codebase. The
+# surviving dispatcher is run-analyze FULL (V12). Negative + positive pins:
 if grep -q 'codebase-map.md' "$ROOT/plugins/mega-sdd/hooks/post-tool-use"; then
   fail "V7: a codebase-map dispatch grew back into post-tool-use (№D)"
 else
   ok "V7: post-tool-use carries no map dispatch (fan-out stays dead)"
 fi
 grep -q 'validate-codebase-map.sh' "$ROOT/plugins/mega-sdd/scripts/run-analyze.sh" \
-  && grep -q 'validate-codebase-map.sh' "$ROOT/plugins/mega-sdd/hooks/pre-tool-use" \
-  && ok "V7: map validator dispatched by analyze FULL + the bind gate (surviving writers)" \
-  || fail "V7: a surviving map-validator dispatcher is missing"
+  && ok "V7: map validator dispatched by analyze FULL (surviving writer)" \
+  || fail "V7: the surviving map-validator dispatcher (run-analyze V12) is missing"
 
 # ── round-2 (fix-review): TRUE legacy layout — root map, NO .mega-sdd/ dir yet ──
 # Pre-fix: every state write failed silently (ENOENT swallowed) → gate read nothing.

@@ -1,0 +1,67 @@
+{
+ "completion": 0.9166666666666666,
+ "ac_pass": 11,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "FAIL"
+ },
+ "critical": 0,
+ "important": 3,
+ "minor": 5,
+ "rubric": 87,
+ "findings": [
+  {
+   "severity": "Important",
+   "where": "package.json:5-10",
+   "what": "No `test` script; `npm test` fails with 'Missing script: test'. Suite (48 tests) only passes via `node --test 'tests/*.test.mjs'`; `node --test tests/` errors with MODULE_NOT_FOUND."
+  },
+  {
+   "severity": "Important",
+   "where": "src/app/page.tsx:15-20, src/app/layout.tsx:26",
+   "what": "No page or layout links to /tentang-kami; the About page is unreachable by visitors navigating the site."
+  },
+  {
+   "severity": "Important",
+   "where": "src/app/kontak/actions.ts:38",
+   "what": "saveContactMessage is not wrapped in try/catch; a DB failure throws to the error boundary, losing the visitor's input with no friendly error."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/layout.tsx:15-18,23",
+   "what": "Scaffold metadata 'Create Next App' left in place and lang='en' on Indonesian content."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-messages.ts:35, .gitignore",
+   "what": "SQLite DB written to data/app.db, which is not gitignored; visitor PII could be committed."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-validation.ts:51,65",
+   "what": "Length limits use UTF-16 .length, so non-BMP characters (emoji) count double against the 100/2000 limits."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-messages.ts:51-58",
+   "what": "Opens the DB, runs CREATE TABLE and closes it on every submit; inefficient."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/page.tsx:5-15",
+   "what": "Kontak page has no navigation back to Beranda."
+  }
+ ],
+ "blind_label": "TD",
+ "scorer_sid": "d118a2f2-bdf2-4b3d-a914-664893c36fdd"
+}

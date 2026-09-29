@@ -52,12 +52,12 @@ These are English words sitting in machine-parsed positions; every one is parser
 | Artifact | Language |
 |---|---|
 | Plugin-authored report prose (FSD body + headings; `CONSISTENCY-REPORT.md` analysis/recommendations) | Indonesian (per precedence) |
-| Vault docs (PRD / BRD / brief → markdown) **and content recorded INTO the vault** (OQ resolution answers, drift rationale, `binding.md` claim text) | the **vault's / input doc's** language (existing behavior — unchanged) |
-| `AGENTS.md`, `vault.json`, `binding.md` **structure** | **English** (machine-interop) |
+| Vault docs (PRD / BRD / brief → markdown) **and content recorded INTO the vault** (OQ resolution answers, drift rationale, binding resolution text — `bolts/U-XXX/binding.json`; layout-2 `binding.md`) | the **vault's / input doc's** language (existing behavior — unchanged) |
+| `AGENTS.md`, `vault.json`, `bolts/U-*/binding.json` (and layout-2 `binding.md`) **structure** | **English** (machine-interop) |
 | **Quoted / cited source content** (PRD excerpts, constitution clauses, binding quotes) | **source language — never translate a citation** (citation discipline) |
 | Doc structural spine (`§` headers parsed by validators, `[Source: sha256:…]`) | **English** |
 
-**Surface split for `analyze` / `detect-drift` / `bind-codebase` / `resolve-oq`:** what they *say to the user* (chat narration of a recommendation, a drift finding, an OQ prompt) is Tier-2 → Indonesian by default, already governed by the anchor. What they *record into a vault artifact* (an OQ resolution answer, drift rationale written to the vault, `binding.md` claim text) is vault content → stays the vault's language. Only the emit-* doc-packs (fsd/prd/sit/uat) and `analyze` author standalone plugin-owned report files, so they are the only L3 Tier-3 pointer additions; the others narrate via the anchor and write via the vault-language rule, and are deliberately not given an artifact-language directive.
+**Surface split for `analyze` / `detect-drift` / `resolve-oq`:** what they *say to the user* (chat narration of a recommendation, a drift finding, an OQ prompt) is Tier-2 → Indonesian by default, already governed by the anchor. What they *record into a vault artifact* (an OQ resolution answer, drift rationale written to the vault, a CONFLICT resolution recorded via `resolve-oq --binding` — `bolts/U-XXX/binding.json`; layout-2 `binding.md`) is vault content → stays the vault's language. Only the emit-* doc-packs (fsd/prd/sit/uat) and `analyze` author standalone plugin-owned report files, so they are the only L3 Tier-3 pointer additions; the others narrate via the anchor and write via the vault-language rule, and are deliberately not given an artifact-language directive.
 
 ## Prompt surfaces (AskUserQuestion / halt menus) — the keterangan contract
 

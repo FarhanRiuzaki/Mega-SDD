@@ -8,9 +8,9 @@
 #   A  validate-unit-spec.sh records acceptance_expects_missing per unit for a
 #      command-bearing `type: test` entry with empty/absent expects (manual and
 #      render entries are exempt)
-#   B  the in-run gate DENIES the dispatch of THAT unit (fix the unit first) —
-#      and never a sibling's; the run-boundary Skill entry is NOT held by it
-#      (no retro-block of an already-running project)
+#   B  the execute-bolts Skill entry (inline's only gate) is never held by
+#      acceptance_expects_missing (no retro-block of an already-running
+#      project); since P3 no gate reads it (plan Step 5 and analyze fail on it)
 #   C  the writer records expects_missing + output_tail, so a log-flooded
 #      output no longer eats the pass/fail line
 set -u
@@ -42,22 +42,10 @@ ST="$repo/.mega-sdd/.unit-spec-state.json"
 J "$ST" '[i for i in d["issues"] if i["halt_type"]=="acceptance_expects_missing"][0]["detail"]' | grep -q "expects" \
   && ok "A2 detail explains the vacuous rc==0 and the fix (add expects)" || bad "A2 detail unhelpful"
 
-echo "── B: gated per unit at dispatch, never at the run boundary ──"
+echo "── B: the Skill entry is never held by expects ──"
 drive(){ printf '%s' "$1" | bash "$HOOK" 2>/dev/null; }
-mkdir -p "$V/bolts/U-001" "$V/bolts/U-002"; echo d > "$V/bolts/U-001/dispatch-prompt.md"; echo d > "$V/bolts/U-002/dispatch-prompt.md"
-agent(){ printf '{"session_id":"s","cwd":"%s","tool_name":"Agent","tool_input":{"subagent_type":"mega-sdd:bolt-implementer","prompt":"mega-sdd-trace:execute-bolts:%s\\nUNIT: %s \\"x\\"\\nREAD FIRST, IN FULL: %s/bolts/%s/dispatch-prompt.md"}}' "$repo" "$1" "$1" "$V" "$1"; }
-OUT=$(drive "$(agent U-001)")
-printf '%s' "$OUT" | grep -q '"deny"' && printf '%s' "$OUT" | grep -q 'acceptance_expects_missing' \
-  && ok "B1 dispatch of U-001 DENIED (its own acceptance contract is vacuous)" || bad "B1 U-001 dispatch not denied: $(printf '%s' "$OUT" | head -c 240)"
-printf '%s' "$OUT" | grep -q 'expects' && ok "B2 deny names the remedy (expects)" || bad "B2 remedy missing"
-OUT=$(drive "$(agent U-002)")
-if printf '%s' "$OUT" | grep -q 'acceptance_expects_missing'; then bad "B3 sibling U-002 (honest) denied over U-001's contract"; else ok "B3 sibling U-002 dispatch NOT held by U-001's issue"; fi
 OUT=$(drive "{\"session_id\":\"s\",\"cwd\":\"$repo\",\"tool_name\":\"Skill\",\"tool_input\":{\"skill\":\"mega-sdd:execute-bolts\",\"args\":\"--all\"}}")
-if printf '%s' "$OUT" | grep -q 'acceptance_expects_missing'; then bad "B4 run-boundary entry retro-blocked by expects (would freeze a running project)"; else ok "B4 run-boundary Skill entry NOT held by expects (per-unit at dispatch only)"; fi
-# fix the unit → dispatch clears
-unit U-001 '  - type: test' '    command: "echo 3 passed"' '    expects: "3 passed"'
-OUT=$(drive "$(agent U-001)")
-if printf '%s' "$OUT" | grep -q 'acceptance_expects_missing'; then bad "B5 fixed U-001 still denied (state not re-derived at gate)"; else ok "B5 after adding expects the dispatch clears (re-derived at the gate)"; fi
+if printf '%s' "$OUT" | grep -q 'acceptance_expects_missing'; then bad "B4 execute-bolts Skill entry held by acceptance_expects_missing (would freeze a running project)"; else ok "B4 the execute-bolts Skill entry (inline's only gate) is never held by acceptance_expects_missing"; fi
 
 echo "── C: the writer records what it could not verify ──"
 unit U-004 '  - type: test' '    command: "for i in $(seq 1 200); do echo log line $i; done; echo FINAL: 7 passed"'

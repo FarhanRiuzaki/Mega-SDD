@@ -7,6 +7,297 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history rotated to [`CHANGELOG-ARCHIVE.md`](CHANGELOG-ARCHIVE.md)** (latest rotation 2026-09-06 — v3.65.0…v5.2.2; earlier rotations 2026-05-26, 2026-06-24). Rotation rule: when this file exceeds 2,000 lines OR 30 versions, oldest 50% rotate to archive.
 
+## [Unreleased] — P3: jalur per-unit `--agents` dihapus (spec v9 §8.6; tanpa klaim gain)
+
+Dasarnya cuma hasil P2 di bawah (inline non-inferior, satu fixture brownfield, n=3). P3 nggak mengklaim lebih cepat, lebih murah, atau lebih bagus dari sebelumnya maupun dari vanilla.
+
+- **Dihapus:** 7 dari 9 agent (bolt-implementer, spec-/code-quality-/security-/standards-/design-reviewer, resolution-verifier; domain-extractor + claim-verifier tetap), 5 script (`merge-panel-findings`, `resolve-review-tier`, `capture-views`, `build-dispatch-prompt`, `validate-dispatch-prompt`), 5 reference execute-bolts (review-panel, context-enrichment, starterkit-enrichment, bolt-dispatch-prompt, partial-state-and-saga), leg hook per-dispatch (panel evidence, attempt cap, wave/probe rail, F-18, binding-freshness, D24a, F-09 Agent; matcher PreToolUse jadi `Skill|Bash|Edit|Write`), 58 file test yang cuma nge-pin kode itu, task benchmark T10.
+- **Flag pensiun (notice sekali, lalu run inline biasa):** `--agents` (tetap implies `--guarded`) → `--agents is retired: the per-unit agent path was removed (spec v9 §8.6); running the default inline run.` · `--review-panel` → `--review-panel is retired: the run closes with one blind review of the whole range.` · bare `--model-tier=<tier>` + `--no-escalate` → `--model-tier=<tier> and --no-escalate are retired (no implementer is dispatched); --model-tier=<role>:<tier> still sets extract-intelligence tiers.` · `execute-bolts --resume` → `execute-bolts --resume is retired: an open run resumes from its _exec-plan-*.md automatically.` · `--rollback` → `--rollback is retired: there is no saga state; revert the unit's commits with git.` `--inline` tetap alias no-op, `--panel-scan` diterima sebagai no-op.
+- **O1:** tag trace per-unit `mega-sdd-trace:execute-bolts:<unit-id>` dipensiunkan (dicatat di `docs/gateway-contract.md`); tag lain nggak berubah. Atribusi per unit sekarang cuma lewat trailer commit `Unit: U-XXX`.
+- **O2:** kewajiban panel + L0 atas unit yang di-commit run `--agents` lama nggak ditegakkan lagi (script remedinya sudah nggak ada).
+- Smoke inline C2 digabung dengan smoke C6b: satu run xs, n=1, delivery-check `VERDICT: PASS`. Itu smoke, bukan benchmark.
+- Ceiling complexity budget diturunkan ke nilai terukur. Fan-out, halt vocabulary, JIT capture dan done-rule ditunda ke P3b.
+
+## [Unreleased] — `execute-bolts` default jadi inline (P2, TERUKUR: non-inferior terhadap jalur per-unit agent, biaya ±60%)
+
+Pilihan owner "P2 ramping" (spec §8), diukur dengan aturan terkunci spec §8.4 di fixture brownfield: n=3 per arm, semua run bersih, vanilla sebagai kontrol (n=4). Tabel: `benchmarks/results/vanilla-ab/REPORT-p2.md`; analisis: commit `dbd3d7d4`.
+
+| | per-unit agents | inline | verdict |
+|---|---|---|---|
+| AC · Critical · Important | 13 [12–13] · 0 · 0 [0–1] | 13 [13–13] · 0 · 0 | OVERLAP |
+| trap surfaced · suite v1 | 5/5 ×3 · 73/73 ×3 | 5/5 ×3 · 73/73 ×3 | OVERLAP |
+| biaya | $42.45 [33.96–43.60] | $25.08 [20.88–25.38] | inline BETTER |
+| subagent · tool call | 70 · 1.040 | 3 · 252 | inline BETTER |
+| waktu review-ready | 55.4 [46.7–67.5] mnt | 50.9 [44.2–51.1] mnt | OVERLAP |
+
+- **Aturan terkunci (spec §8.4) terpenuhi:** kelima metrik kualitas tidak WORSE, dan `conflict_bypassed` = 0. Jadi **inline sekarang default guarded**, sedangkan `--agents` masih bisa dipakai buat jalur per-unit sampai P3.
+- **Yang TIDAK diklaim:**
+  - Guarded (dua-duanya) tetap WORSE dibanding vanilla soal waktu, biaya dan token, dengan kualitas OVERLAP. Guarded tetap opt-in, dan router nggak berubah.
+  - Inline nggak lebih cepat dari agents.
+  - Hasil ini cuma buat satu fixture, n=3.
+
+### Added
+- **`execute-bolts --inline`** (juga `--inline` di front door, diteruskan ke hop execute-bolts). Unit dikerjakan dalam **satu konteks**, tanpa subagent dan tanpa panel per unit:
+  - lewat `superpowers:executing-plans` kalau ada;
+  - kalau nggak ada, lewat loop bawaan di `execute-bolts/references/inline-run.md`.
+- **`scripts/derive-exec-plan.sh`:**
+  - Nentuin unit pending, urutan topologis, dan karantina dengan predikat yang sama seperti gate per-dispatch (CONFLICT terbuka, `quarantine.json`, freshness binding, dan dependents).
+  - Rencananya kompatibel superpowers (`bolts/_exec-plan-<head12>.md` plus ledger). Tiap task dimulai dengan re-bind unitnya (JIT).
+  - CONFLICT atas file yang dibuat unit sebelumnya di run yang sama ditunda, nggak dikarantina.
+  - `--retire` nutup run.
+- **Penutupan run:**
+  - full suite;
+  - satu review buta, yang prompt dispatch-nya bawa baris `mega-sdd-trace:execute-bolts`. Setiap Critical/Important wajib di-fix RED→GREEN atau diputus dengan alasan;
+  - `delivery-check.sh`;
+  - gate batas-run B1–B4, whitelist, orphans, dan `conflict_bypassed`;
+  - result contract.
+- **Gate baru `conflict_bypassed`** (`validate-bolt-artifacts.sh --conflict-bypass-scan`, body `scripts/_lib/conflict_bypass.py`):
+  - Commit unit dinilai berdasarkan state CONFLICT saat commit itu mendarat.
+  - `write-unit-binding.sh` nyimpen onset tiap CONFLICT (dikunci per jenis + ekspektasi) dan riwayat episode yang ditutup re-bind (`conflict_history`), jadi re-bind nggak bisa menghapus bypass diam-diam. Penyelesaiannya tetap keputusan manusia (`resolve-oq --binding`).
+  - Gate ini jalan di Skill entry, di dispatch, dan di Stop hook, jadi **jalur default juga kena leg ini**. Tapi leg ini cuma nyala kalau memang ada bypass.
+- **Model ancaman (normatif, spec §8.2):** gate nangkep kekhilafan controller yang jujur: lupa karantina, resume setelah compaction, re-run, re-plan. Penghindaran yang disengaja (tanggal dimundurkan, bukti dihapus, commit salah label) di luar cakupan, sama seperti di jalur per-dispatch.
+
+### Fixed (juga kena jalur default)
+- `depends_on` dengan komentar `# …` di belakangnya sekarang di-parse. Sebelumnya dependensinya diam-diam hilang (`derive-ready-units.sh`, `validate-unit-spec.sh`).
+
+### Changed — default
+- **`execute-bolts` default = inline.** `--agents` tetap pakai jalur per-unit (`bolt-implementer` + panel + gate CONFLICT per dispatch + attempt cap). `--inline` diterima sebagai alias no-op. Flag yang cuma berlaku per dispatch (`--parallel`, `--per-squad`, `--model-tier`, …) ditandai khusus `--agents`, dan state engine nggak lagi ngusulin `--all --parallel`.
+- **Residual dari blok ukur yang udah ditutup:** `derive-exec-plan.sh --rebind-wip` jalan di penutupan run. Langkah ini nge-re-bind unit yang masih nyimpen CONFLICT `own_wip`, jadi nggak ada verdict terbuka yang ketinggalan. Kalau yang tersisa CONFLICT beneran, run halt dengan `binding_conflict` (`scope: close`).
+
+### Notes
+- Ukurannya, setelah dipangkas ke model ancaman jujur (sempat ~1.440 baris baru): `derive-exec-plan.sh` 405 · `_lib/conflict_bypass.py` 220 · `_lib/exec_units.py` 129 · `inline-run.md` 130. Kenaikan budget dicatat di `raises` beserta bukti terukurnya. Kenaikan ini sementara: P3 bakal ngehapus mesin per-dispatch yang digantikan.
+- Dipin oleh `tests/v9/test-inline-lane.sh` (194 cek, termasuk matriks honest-slip) dan `test-4abc-spawn-tax` (flag gabungan).
+
+## [9.0.0] - 2026-09-27 — satu pipeline: empat skill classic dihapus, `plan → execute-bolts` jadi satu-satunya jalur spec
+
+Sumber: `docs/superpowers/specs/2026-09-27-v9-simplification-design.md`, fase P1. Dasarnya tiga blok benchmark terukur (n=3 run bersih per arm, vanilla Claude Code sebagai kontrol). Di blok mana pun pipeline nggak menghasilkan kode yang lebih baik, dan lite ngalahin classic di semua dimensi biaya dengan kualitas yang overlap. Tiga blok itu jadi usage review yang disyaratkan kontrak plugin sebelum skill boleh dicabut di 9.0.
+
+Moat nggak berubah: CONFLICT tetap nge-block di dispatch (JIT bind per unit, pre-flight 3.9), begitu juga citation discipline, halt taxonomy, dan no-fabrication. Rilis ini nggak ngeklaim guarded menghasilkan kualitas lebih baik (spec §6).
+
+Rilis ini juga membawa dua bagian di bawah (bagian 2: lane router, bagian 3: pembanding vanilla). Kalimat di blok lane router bahwa `lane: standard` mengembalikan chain classic dan `--classic` tetap switch spine sudah nggak berlaku (lihat §Changed — front door dan migrasi).
+
+### Removed
+- **Skill `generate-intent`, `bind-codebase`, `generate-units`, `scan-codebase`** (20 → 16 skill). Penggantinya:
+  - `generate-intent` → `plan` (PRD, atau KB lewat `plan --kb`). Brief masuk lane direct/assisted. Di `--guarded`, front door nulis brief jadi seed PRD dulu.
+  - `generate-units` → `plan`. Unit memang ditulis di fase yang sama sejak 8.0 (`--regenerate`, `--reconcile`).
+  - `bind-codebase` → JIT bind per unit di `execute-bolts` (`write-unit-binding.sh`). Audit penuh: `scripts/rebind-units.sh --units=all`.
+  - `scan-codebase` → GROUND (`scripts/ground.sh` + symbol index). Producer `codebase-map.md` udah nggak ada; map yang sudah ada tetap kebaca.
+- **Chain classic dan spine classic** (`generate-intent → scan-codebase → bind-codebase → generate-units`). Pipeline tinggal satu, yaitu lite: `plan` → `execute-bolts` → `delivery-check.sh`.
+- **`scripts/compute-lock-digests.sh`**: caller-nya cuma skill yang dihapus.
+  - Script lain yang kehilangan executor dibiarkan di P1 untuk baca layout-2: `make-bound.sh`, `derive-claims-ledger.sh`, `derive-codebase-map.sh`, `validate-codebase-map.sh`, `derive-binding-json.sh` (spec §7 #8). P1b (bagian di bawah) menghapus tiga yang pertama; `validate-codebase-map.sh` dan `derive-binding-json.sh` tetap sebagai jalur baca layout-2.
+- `references/halt-families/scan.md`.
+- **`ripgrep` dari tool-matrix `install-deps`** (dan dari `references/tooling-install.md`). Konsumennya cuma scan-codebase. `ast-grep` tetap dipakai (symbol index GROUND, Hard rule v2).
+- Yang nggak ikut direlokasi karena producer-nya udah nggak ada:
+  - starterkit Step 7.7 / 7.7.f dan render check 12.5 f (spec §7 #1). Reader cache lama tetap ada;
+  - authoring multi-squad: `plan` nggak pernah nulis `squads.yaml` / `interfaces/` (spec §7 #3). Aturan squad di sisi unit tetap berlaku untuk vault yang sudah punya file itu.
+
+### Moved — kontrak yang selamat
+- Ke `skills/plan/references/`: `unit-schema`, `unit-procedure`, `decomposition-rails`, `validation-passes`, `task-typing`, `adversarial-test-prompt`, `pbt-integration`, `kb-input`, `context-authoring`, `scope-flow`, `brief-input`, plus `templates/unit.md` dan `templates/ai-consumer-guide.md`.
+- Ke `references/`: `vault-core.md`, `modules-schema.md`. Query ast-grep pindah ke `assets/astgrep-queries/`.
+- Ke `execute-bolts/references/jit-bind-and-quarantine.md` §E3 dan `references/halt-families/units.md`.
+- Setiap reference yang tersisa ditulis ulang ke `plan` / `plan --kb` / `plan --reconcile` / `--regenerate`, JIT bind di execute-bolts, GROUND, dan `rebind-units.sh`.
+
+### Changed — gate, preflight, state
+- **`validate-preflight.sh`:**
+  - check id yang dihapus: `intent_folded_into_plan`, `bind_folded_into_bolts`, `units_folded_into_plan`, `plan_off_lane`, `binding_input_*` (`binding_input_complete`, `binding_input_vault_missing`, `binding_input_map_missing`), dan `units_input_vault_missing`. Alias FATAL 8.x itu ada supaya lane lite nggak jatuh ke fase classic, dan fase-fase itu sekarang udah nggak ada;
+  - check id baru `skill_removed_in_9` (FATAL): chain 8.x basi (mis. `--resume` yang di-pause) atau dispatch `--skill=` langsung yang nyebut skill yang dihapus. Pesannya satu baris yang nyebut penggantinya, jadi nggak ada yang lolos jadi PASS diam-diam;
+  - check id baru `plan_layout2_vault` (FATAL): `plan` cuma nulis layout-3, jadi target vault layout-2 ditolak. Jalan keluarnya: `/mega-sdd:migrate-paths --vault-layout=3` dulu, atau `--vault=<dir-baru>`;
+  - **rail coverage plan (`lite_plan_coverage_pass`) sekarang selalu nyala sebelum `execute-bolts`**; dulu cuma di lane lite. Satu-satunya pengecualian: vault termigrasi (`_meta/archive/layout2/` ada), karena unit lahiran classic nggak punya `prd_source` (spec §7 #12);
+  - hook predictive-preflight sekarang cuma jaga `plan` + `execute-bolts`.
+- **Posisi baru `layout2_needs_migration`** (`derive-state`, `_lib/state_probes.py`):
+  - vault layout-2 yang perlu dibangun atau di-sync → `proposed_next` kosong, plus satu note yang ngusulin `/mega-sdd:migrate-paths --vault-layout=3` (dry-run, lalu `--apply`), diikuti full JIT re-bind wajib. Nggak pernah dijalanin diam-diam (spec §4);
+  - posisi classic yang dihapus: `vault_greenfield_no_units`, `vault_no_map`, `vault_map_unbound`, `binding_resolved_no_rebind`, `bound_no_units`.
+- **`derive-delta-paths.sh` sekarang exit 2 kalau scope-nya kosong**, yaitu kalau semua klaim/unit yang kena nggak punya anchor atau target path.
+  - Dulu exit 0 dengan file paths kosong. Hop re-bind (`rebind-units.sh --paths`) lalu exit "nothing affected", dan itu in-sync palsu.
+  - Sekarang caller wajib ngusulin full re-bind (`rebind-units.sh --units=all`).
+- **Gate CONFLICT untuk vault termigrasi (versi ketat)**, di `validate-handoff-binding-units.sh` (spec §7 #9):
+  - vault hasil `migrate-paths --vault-layout=3` nggak punya `binding.md` lagi, karena sudah diarsip ke `_meta/archive/layout2/`;
+  - CONFLICT-ID yang dikutip unit dianggap tertutup HANYA kalau `bolts/U-XXX/binding-migrated.json` di SETIAP unit pengutipnya membawa blok ID itu dengan resolusi manusia yang tercatat: ✅/RESOLVED di heading, atau baris `- **Resolution**:` / `- **Status**:` yang nilainya diawali ✅/RESOLVED;
+  - file nggak ada, blok kosong, atau blok yang belum resolved → tetap `binding_missing` (invariant #2);
+  - di 8.8.1 setiap kutipan CONFLICT di vault termigrasi nge-block, dan jalan keluarnya cuma bind-codebase, yang sekarang udah dihapus.
+
+### Changed — halt
+- **Dihapus dari enum `blocker.type` (11 token):** `deep_scan_subagent_failed`, `deep_scan_subagent_all_failed`, `scan_repo_too_large`, `scan_primary_app_ambiguous`, `scan_spawn_budget_exceeded`, `codebase_map_derive_failed`, `codebase_map_invalid`, `prd_no_scopes_block_user_rejected_retrofit`, `prd_retrofit_low_confidence`, `bind_inputs_missing`, `bind_conflict_constitution_violation`. Semuanya cuma dipancarkan skill yang dihapus.
+- **Dihapus dari enum subtype `quality_gate_failed`:** `starterkit_metrics_inconsistent`. Producer-nya handoff units classic, yang ikut pensiun.
+- **`bind_conflict` jadi alias legacy dari `binding_conflict`** (nama lama di `binding.md` layout-2). 9.0 cuma memancarkan `binding_conflict` (execute-bolts pre-flight 3.9), dengan schema per unit dari `bolts/U-XXX/binding.json`.
+- `framework_pack_missing` / `framework_pack_cycle` / `framework_pack_unparseable` dan `deep_scan_cache_corrupt`: emitter always-stop-nya (bind-codebase / scan-codebase) udah nggak ada. Yang tersisa jalur self-resolve GROUND yang memang sudah ada (`ground.sh` Guard 5 / Guard 7), dan registry + `halt-taxonomy.md` sekarang mencatatnya sebagai C1.
+- `source_skill` di envelope nggak lagi nerima empat skill yang dihapus.
+
+### Changed — front door dan migrasi
+- `lane: standard` di config nggak lagi milih chain: front door nyebut itu dalam satu baris lalu jalan lite.
+- `--classic` / `spine: classic` dihapus: disebut dalam satu baris lalu diabaikan. `--express` tetap diterima sebagai no-op (express satu-satunya spine) dan berarti `--guarded`.
+- Vault layout-2 (hasil classic) tetap KEBACA: `_lib/vault_md.py` masih resolve layout-3 → layout-2 → legacy, dan emit-* tetap jalan. Untuk build/sync, lihat posisi `layout2_needs_migration` di atas.
+- **Legacy rebuild:** `extract-intelligence` → `plan --kb=<kb-dir>`, yang baca `README.md` + `modules/*.prd.md` satu modul per slice.
+  - Pin vault lahiran KB: `prd_path` = `<kb>/README.md`, `prd_sha256` = sha256 dari `<kb>/census.json` (spec §7 #6).
+  - Dipin oleh `tests/v9/test-kb-to-plan.sh` (exit criterion P1).
+- `plan --reconcile` cuma flip task_type/status dan nandai unit `superseded`. Requirement baru lewat `diff-vault` → `plan --regenerate`. `commands/sync.md` dikoreksi (spec §7 #5).
+- Nggak ada command yang dihapus (tetap 6 file).
+
+### P1b — pangkas yang kehilangan setiap eksekutor (aturan: disebut di dok ≠ dieksekusi)
+Audit: 29 agen mengklasifikasi setiap script, lib, referensi plugin, dan cabang hook berdasarkan eksekutor nyata. Semua kandidat hapus dibantah oleh skeptis dulu. Closure transitif menambah satu item, yaitu `validate-binding-json.sh`, yang eksekutor satu-satunya `make-bound.sh`.
+- **Script dihapus (−1.531 baris):**
+  - `derive-codebase-map.sh`: writer map; reader map lama tetap ada.
+  - `make-bound.sh` dan `validate-binding-json.sh`: dihapus sekaligus.
+  - `derive-claims-ledger.sh`, `probe-scan-engine.sh`, `check-freshness.sh`: gak ada eksekutor.
+- **Referensi dihapus:** `lib-patterns/` (9 file) dan `reuse-index-schema.md`. `ci-recipe.md` dipindah ke `docs/mega-sdd/` dan dikoreksi untuk 9.0.
+- **Hook (−102 baris):** cabang gate DEGENERATE-MAP `bind-codebase` (mati), alternatif pola untuk skill yang dihapus, dan sisa `mega-sdd:auto` sejak 6.0. Gak ada gate atau verdict hidup yang berubah.
+- **Test:** 5 file dipensiunkan karena seluruh assertion-nya memaku artefak yang dihapus. Assertion yang memaku perilaku yang bertahan di-repoint ke `validate-handoff-binding-units.sh` / `derive-binding-json.sh`, dan beberapa malah diperketat (mis. L6 blackbox sekarang wajib exit 1 + drop `conflict_unresolved`, bukan asal non-zero). `tests/v9/test-no-removed-skill-refs.sh` sekarang tanpa allowlist: nggak ada id skill yang dihapus di mana pun di plugin.
+- **Tetap:** jalur baca layout-2 (`_lib/vault_md.py`, `_lib/binding_md.py`, `derive-binding-json.sh` + penandanya, `validate-codebase-map.sh`) dan kontrak gateway.
+
+### Observability — kontrak gateway dipertahankan (wajib, permintaan owner)
+- `mega-sdd-trace:turn`, `mega-sdd-trace:<skill>` di announce, baris trace di setiap prompt dispatch, dan `mega-sdd-note:` **nggak berubah**. Hook `user-prompt-submit` / `session-note` / `session-start` byte-identik dengan 8.8.1.
+- **Regresi yang ditemukan dan ditutup: lane direct/assisted nggak kelihatan di gateway.** Lane ini nggak nulis `.mega-sdd/`, jadi `:turn` hening, dan nggak manggil skill, jadi nggak ada announce. Sekarang:
+  - baris announce lane diakhiri `` `mega-sdd-trace:direct` `` / `` `mega-sdd-trace:assisted` ``;
+  - subagent review buta lane assisted bawa baris `mega-sdd-trace:assisted-review`.
+- `docs/gateway-contract.md` diperbarui secara additive: tag lane baru, dan daftar skill yang ber-announce jadi 10 (empat skill yang dihapus berhenti mengeluarkan tag).
+- Dipin oleh `tests/v9/test-gateway-trace.sh`.
+
+### Changed — gate coverage PRD jadi *declared coverage* (hasil verifikasi 9.0)
+- **Masalahnya:** `validate-plan-coverage.sh` ngebedain heading requirement, meta dan out-of-scope pakai heuristik (daftar nama, qualifier, aturan kata MUST di badan, dll). Kritikus verifikasi nemu gate ini **fail-open**: PRD dengan 4 requirement MUST tanpa unit tetap lolos. Tiga ronde serangan adversarial (fail-open + fail-closed) masing-masing nemu 2–3 HIGH **baru di dua arah**, dan tiap perbaikan satu arah bikin error di arah lain. Contohnya:
+  - "Open Questions" dipaksa jadi requirement;
+  - satu kata "must" deskriptif di Background nyeret section intro lain;
+  - "Out of Scope (Post-MVP)" kehilangan pengecualiannya;
+  - flow To-Be di bawah "Latar Belakang" hilang diam-diam.
+
+  Skripnya tumbuh 182 → 588 baris tanpa konvergen.
+- **Sekarang:** setiap heading H2/H3 di PRD (diparse seperti CommonMark) wajib punya **keputusan eksplisit**:
+  - disebut `prd_source` sebuah unit;
+  - dikutip OQ `[business]` lewat tag `[covers: <ref>]`;
+  - atau dideklarasikan di `context.md` → `## Coverage exclusions`, satu baris per heading, pakai alasan asli (`- "<heading>" — <alasan>`).
+
+  Gate berhenti nebak apakah sebuah heading itu "meta". Yang dicek sekarang cuma apakah keputusannya ada. Hasilnya: penghilangan diam-diam jadi keputusan yang kelihatan dan bisa direview, dan blok palsu selesai dengan satu baris. `--kb` cuma ngecualiin section template KB milik plugin sendiri. Spec §7 #13.
+- **Friksi terukur:** 5–12 baris deklarasi per PRD (xs 5, brownfield 4, clinic ±9, template PRD ±12). Heading yang cuma pengelompok (tanpa teks sendiri) dihitung lewat sub-heading-nya.
+- **Dampak migrasi:** vault lama tanpa deklarasi bakal FAIL di gate ini sampai deklarasinya ditambah. Dari 14 vault bench, 9 FAIL dan 3 dikecualikan (layout-2). Gate nyetak baris siap-tempel di `next_action`. PRD `.pdf` / `.docx` / `.txt` dibuatin rendisi markdown dulu oleh `plan`.
+- **Gate ikut jalan ulang** setelah `resolve-oq` (Step 4.5) dan `diff-vault` (Step 6.5), karena jawaban OQ bisa mengubah apa yang memutus sebuah heading.
+- **Ukuran:** gate 286 baris ditambah parser bersama `scripts/_lib/prd_headings.py` 518 baris, yang juga dipakai `validate-unit-spec.sh` buat resolver `prd_source`. Differential fuzz lawan commonmark.js: 3 heading meleset di 30.000 dokumen acak.
+- **Dipin oleh:**
+  - `tests/v9/test-plan-coverage-prd.sh`: 287 cek, 72 RED di skrip lama;
+  - `tests/v9/test-kb-to-plan.sh`: 64 cek;
+  - `tests/plan-coverage/test-plan-coverage.sh`.
+
+### Skill version moves
+- Verifikasi 9.0 (declared coverage): `plan` 2.0.0 → 2.1.0 · `resolve-oq` 2.17.0 → 2.18.0 · `diff-vault` 2.6.0 → 2.6.1 · `analyze` 2.4.2 → 2.4.3
+- Dihapus: `generate-intent` 2.25.2 · `bind-codebase` 2.20.1 · `generate-units` 2.29.1 · `scan-codebase` 2.31.1
+- `plan` 1.2.1 → 2.0.0 · `execute-bolts` 2.55.0 → 3.0.0 · `orchestrate-flow` 2.29.3 → 3.0.0 · `using-mega-sdd` 4.3.0 → 4.4.0 · `resolve-oq` 2.16.0 → 2.17.0 · `diff-vault` 2.5.1 → 2.6.0 · `detect-drift` 3.2.0 → 3.3.0 · `extract-intelligence` 2.6.1 → 2.7.0
+
+### Notes
+- **Sisa kandidat pangkas setelah P1b** (spec §7 #11): dua file schema, `references/starterkit-context-schema.md` (bagian producer-nya) dan `references/shared-snapshot-schema.md`. Keduanya butuh audit sendiri dengan aturan yang sama (disebut di dok ≠ dieksekusi). Walk `binding.md` di resolve-oq tetap ada sebagai jalur baca layout-2 (spec §7 #10).
+
+## 9.0.0 (bagian 2) — lane router: tugas yang jelas dikerjakan seperti Claude Code biasa, pipeline hanya untuk yang butuh
+
+Sumber: commit `cf8d3df3`. Pada PRD greenfield, pipeline (lite/classic) 2,4–12× lebih lama dan 8,8–22× lebih mahal daripada vanilla Claude Code, sementara kualitasnya setara atau lebih rendah. Perubahan ini memindahkan default, bukan menghapus moat. Pipeline (binding CONFLICT, OQ, panel) tetap utuh di lane `guarded`.
+
+### Changed
+- **Front door merutekan dulu, baru menjalankan pipeline.**
+  - `scripts/route-lane.sh` bersifat deterministik, read-only, dan tanpa token model. Dari sinyal yang bisa diamati ia memilih salah satu lane:
+    - `direct`: tanpa sinyal. Dikerjakan di sesi utama tanpa vault, unit, subagent, atau tulisan ke `.mega-sdd/`.
+    - `assisted`: ada open item bisnis, security surface, produk multi-flow, atau brief pendek di app yang sudah ada. Isinya direct + satu batched ask sebelum coding + satu review buta.
+    - `guarded`: ada vault, atau file PRD di app yang sudah ada. Isinya pipeline seperti sebelumnya.
+  - Flag `--direct` / `--assisted` / `--guarded` memaksa lane. `--lite`, `--classic`, dan flag khusus pipeline otomatis berarti guarded.
+  - Prosedur: `references/direct-lane.md`.
+- **Render HTML di hand-off pipeline jadi opt-in** (`render_html: on`). Lane emit tetap merender. Pada 9 dari 10 repo benchmark, HTML adalah 73,7–87,3% baris `.mega-sdd/` yang ter-commit (git numstat). Repo ke-10, xs lite-2, nggak meng-commit HTML sama sekali.
+- **`.mega-sdd/.gitignore` dikelola `derive-state.sh`.**
+  - Di-ignore: salinan per-lens unit/pack, cache gate-state, `state.json`, `html/`.
+  - Tetap di-track: spec, unit, bukti bolt, `l0-results`, dan `dispatch-prompt.md`.
+  - `.gitignore` tanpa marker dianggap milik user dan tidak pernah ditimpa.
+  - Diukur pada repo benchmark: baris `.mega-sdd/` ter-commit turun 81–89% di 8 dari 9 run bersih (xs ±40k → 4–8k, klinik ±124k → 19–21k). xs lite-2 cuma meng-commit 3.766 baris tanpa HTML, jadi turunnya 2,5%.
+
+- **PRD baru di lane guarded → lite secara default.**
+  - Front door mencatatnya sebagai `lane: lite` di config. Vault lama tetap di lane-nya, dan `lane: standard` mengembalikan chain classic. Flag `--classic` tetap switch spine.
+  - Dasar: xs n=3, lite BETTER vs classic di waktu dan biaya dengan kualitas OVERLAP; klinik classic historis n=1 $259,66 / wall 301,4 menit (plugin 7.35.0, fixture lain) vs lite $53–73 / 65–94 menit.
+  - **Deviasi dari aturan yang dikunci:** aturan meminta kedua skenario, sedangkan klinik classic belum diukur di fixture ini. Dicatat di runbook §9.
+- **Lens `standards` hanya ikut bila `quality` ikut** (H1, `resolve-review-tier.sh`).
+  - Bukti lapangan: 5 dispatch, 0 Critical, 1 fix unik (nama key), ±335k token. Quality: 5 dispatch, 22 fix. Sumbernya `research/2026-08-30-lens-yield-field.md` §2–3 (satu project lapangan; ±335k itu ESTIMATE di laporan itu, 5 × 67k). Tidak bisa dicek dari data mentah benchmark yang ter-commit.
+  - Diterapkan tanpa A/B atas mandat owner. Efeknya pada run **belum diukur**.
+  - Pin: `tests/size-weighted/test-standards-lens-h1.sh`.
+
+- **App yang sudah ada tidak lagi otomatis masuk pipeline** (`existing_code` → assisted, sesuai aturan yang dikunci di runbook brownfield).
+  - Diukur pada PRD brownfield dengan 7 jebakan yang ditanam, n=3 run bersih per arm (commit `5d880e8b`).
+  - Jebakan tersuarakan 5/5 di semua run pada kedua arm. AC 13/13, Critical 0, dan tanpa regresi suite v1 di kedua arm.
+  - Pipeline guarded 3,2× lebih lambat (60,8 vs 19,1 menit) dan 6,0× lebih mahal ($38,93 vs $6,46), dengan 78 subagent.
+  - Gate CONFLICT menyala 3× dan semuanya false positive (anchor buatan pipeline sendiri). Tidak ada jebakan yang ditangkap gate ini.
+  - Guarded sekarang hanya jalan untuk vault yang sudah ada, atau dengan `--guarded` / `--lite` / `--classic`.
+  - Biaya blok: $148,30. Bagian scorer-nya ($4,46) diambil dari stream scorer lokal, jadi tidak bisa dicek dari data mentah yang ter-commit.
+
+### Added
+- **`scripts/delivery-check.sh`:** cek dari sudut pandang reviewer pada checkout HEAD yang fresh.
+  - Blocking: `scripts.test` asli; test lolos di TZ=UTC dan UTC+14; `build` lolos dengan env kosong.
+  - Advisory: halaman Next.js app-router yang tidak di-link dari mana pun.
+  - Wajib di akhir setiap lane. Di guarded, temuannya ditutup dalam satu commit `fix(delivery)` oleh controller.
+  - Dijalankan ke 16 repo benchmark (6 vanilla + 10 pipeline): 6/6 vanilla PASS, 9/9 run pipeline bersih FAIL, dan run pipeline ke-10 (klinik lite-1, dikeluarkan dari median karena sistem sleep) PASS di D1–D5. Ini mereproduksi secara mekanis semua defect yang sebelumnya ditemukan manual. Temuan baru: klinik lite-3 juga gagal build dengan env kosong, jadi 3/3, bukan 2/3 seperti laporan awal.
+- `bolt-implementer` step 5b: zona waktu dipin, secret divalidasi saat request (bukan saat import/prerender), dan test tanpa `scripts.test` dilaporkan.
+- `tests/lanes/test-lanes.sh`: 32 cek untuk router, delivery-check, `.gitignore`, dan wiring.
+- Harness: arm `routed` (`P0_ENTRY=frontdoor`, prompt `/mega-sdd:mega-sdd <PRD>`).
+- Runbook brownfield (commit `d447a6d2`): eksperimen berikutnya setelah blok router. Dijalankan 2026-09-27; hasilnya di bullet `existing_code` di atas.
+
+### Notes — hasil arm `routed` vs vanilla (MEASURED 2026-09-27, n=3 run bersih per arm, opus)
+Laporan: commit `d447a6d2`. Router memilih `direct` untuk xs dan `assisted` untuk klinik.
+
+| | vanilla | routed | lite (pipeline lama) |
+|---|---|---|---|
+| xs review-ready | 3,2 m | 2,7 m | 20,2 m |
+| xs biaya | $1,03 | $1,16 | $11,29 |
+| xs AC / rubric | 12/12 / 95 | 12/12 / 94 | 11/12 / 84 |
+| klinik review-ready | 30,0 m | 26,6 m | 70,6 m |
+| klinik biaya | $7,68 | $9,30 | $67,33 |
+| klinik subagent / baris `.mega-sdd/` | 0 / 0 | 1 / 0 | 126 / 123.824 |
+| klinik AC / Critical / rubric | 10/10 / 0 / 90 | 10/10 / 0 / 91 | 9–10/10 / 0 / 85 |
+| delivery-check | 8/8 PASS (termasuk vanilla-4) | 9/9 PASS | 0/6 run bersih (classic xs juga 0/3) |
+
+**Verdict:** routed **setara** dengan vanilla (OVERLAP), dan **tidak lebih baik**.
+- xs: review-ready, wall, output token, dan baris kode+test formalnya `BETTER`, tapi tidak diklaim. Alasannya: harinya berbeda dengan vanilla 1–3, prompt-nya asimetris, dan selisih waktunya cuma ±0,5 menit.
+- Rubric xs formalnya `WORSE`: median 94 vs 95, antar batch scoring yang berbeda. Vanilla hari yang sama yang dinilai di batch scoring yang sama mendapat 94. (Tiap label dinilai sesi `claude -p` sendiri; pengelompokan batch ada di daftar scoring lokal, bukan di file per run yang ter-commit.)
+- Klinik: Important (0 vs 2) dan baris markdown di luar `.mega-sdd/` (51 vs 78) formalnya `BETTER`; subagent (1 vs 0, review buta lane assisted) dan distinct files read (9 vs 1) formalnya `WORSE`. Tidak ada yang diklaim.
+
+Yang terukur adalah hilangnya overhead pipeline di jalur default greenfield. Lane `guarded` dan moat-nya **tidak diukur di blok ini**; blok brownfield sesudahnya yang mengukurnya (bullet `existing_code` di atas). Biaya blok: $47,45; bagian scorer-nya ($5,41) diambil dari stream scorer lokal, jadi tidak bisa dicek dari data mentah yang ter-commit.
+
+
+## 9.0.0 (bagian 3) — pembanding vanilla Claude Code + complexity budget + hasil terukur pertama vs vanilla
+
+Sumber: audit 2026-09-26. Semua benchmark di repo ini membandingkan mega-sdd dengan mega-sdd versi lain; arm Claude Code tanpa plugin belum pernah ada. Rilis ini cuma nambah alat ukur dan aturan. Perilaku pipeline, gate, lens, dan default lane nggak diubah.
+
+### Added
+- **Arm vanilla di launcher headless:** `P0_ARM=vanilla benchmarks/scripts/p0-headless-run.sh …`. Launcher, model, allowlist, permission mode, dan aturan headless-nya sama. Plugin mega-sdd dimatikan per sesi, dan prompt-nya task produk polos. `arm-purity.py` membaca record `system/init`: arm vanilla yang masih memuat permukaan mega-sdd di-kill dan dicatat `purity=FAIL`. Roster plugin kedua arm dicatat di `plugins=`.
+- **`benchmarks/scripts/arm-metrics.py`:** metrik yang agnostik terhadap arm (speed / token / lightness / clean) dari `stream.jsonl`, `git-log.txt`, dan diff shape.
+  - Counter `total_cost_usd` / `modelUsage` / `duration_api_ms` itu kumulatif per proses. Yang dihitung record terakhir tiap proses, lalu dijumlahkan antar `--resume`.
+  - Sudah dicek ke angka yang dipublikasikan: klinik classic P0 $259,66, xs classic $77,47, klinik lite 7.38.0 $213,75.
+  - Menjumlahkan semua record `result` begitu saja akan menghasilkan $7.530 untuk klinik P0.
+- **`benchmarks/scripts/compare-arms.py`:** tabel per run, median + rentang dari run bersih, dan rasio terhadap vanilla. Target absolut ditaruh di samping verdict relatif. Verdict `BETTER`/`WORSE` hanya keluar kalau rentang kedua arm tidak overlap; selain itu `OVERLAP`, atau `INSUFFICIENT` kalau run bersih kurang dari 3. Tidak ada p-value.
+- **`benchmarks/runbooks/vanilla-vs-megasdd.md`:**
+  - "seperti Feather" dijadikan target relatif ke vanilla (usulan; owner mengunci sebelum run pertama).
+  - Arm dan kondisi yang disamakan, urutan acak ber-seed, aturan berhenti.
+  - Checklist AC tersembunyi (xs X1–X12, klinik C1–C10; `benchmarks/runbooks/ac-checklist-*.md`), review buta dengan scorer tanpa plugin mega-sdd.
+  - Aturan keputusan dikunci sebelum ada angka. Hipotesis overhead H1–H3 didaftarkan, belum diterapkan.
+  - Semua hasil: "belum diukur".
+- **Complexity budget sebagai ratchet:** `benchmarks/config/complexity-budget.json` + `tests/benchmarks/test-complexity-budget.sh`.
+  - Yang dikunci: listing description yang selalu dimuat (13.639 char), trace T01 lite/default (470.979 / 482.657 B), total byte SKILL.md (370.419 B), baris script/hook yang ter-track (45.024 / 3.327).
+  - Menaikkan ceiling wajib pakai entri `raises` beserta buktinya: perbandingan vanilla untuk fitur/performa, regression test untuk fix bug.
+- `plugins/mega-sdd/CLAUDE.md` §Release evidence & complexity budget. `tests/benchmarks/test-vanilla-arm-harness.sh` (fixture, tanpa proses claude).
+
+### Notes — vanilla vs mega-sdd, MEASURED (2026-09-26/27, n=3 run bersih per arm, opus, plugin 8.8.1)
+Laporan: commit `cf8d3df3`. Data per run: `benchmarks/results/vanilla-ab/`.
+
+| | vanilla | lite | classic |
+|---|---|---|---|
+| **xs** review-ready (median) | 3,2 m | 20,2 m | 38,5 m |
+| xs biaya | $1,03 | $11,29 | $22,47 |
+| xs AC / rubric | 12/12 / 95 | 11/12 / 84 | 11/12 / 82 |
+| **klinik** review-ready | 30,0 m | 70,6 m | belum diukur |
+| klinik biaya | $7,68 | $67,33 | belum diukur |
+| klinik AC / rubric | 10/10 / 90 | 9–10/10 / 85 | belum diukur |
+
+- **WORSE** vs vanilla di setiap arm dan skenario (rentang run tidak overlap): speed (review-ready, wall, API time), token (total / input / output / cache read), biaya, tool call, subagent, distinct files read, dan baris `.mega-sdd/` ter-commit.
+- Metrik lightness lain: baris kode+test OVERLAP di xs dan WORSE di klinik lite (1,8×); baris markdown di luar `.mega-sdd/` OVERLAP di xs dan **BETTER** di klinik lite (0 [0–41] vs 78 [57–95]; dokumen pipeline masuk ke `.mega-sdd/`, yang WORSE); interaction points OVERLAP (0 semua).
+- Critical 0 di semua run. Kualitas klinik tidak terbukti berbeda; kualitas xs lebih rendah (AC, completion, dan rubric WORSE; Important WORSE di lite).
+- Tidak ada klaim "mega-sdd lebih cepat / hemat / ringan / kuat dari Claude Code" yang boleh ditulis (`plugins/mega-sdd/CLAUDE.md` §Release evidence).
+- Default lane **tidak diubah**. Aturan yang dikunci butuh lite vs classic di kedua skenario, dan klinik classic belum diukur. Di xs, lite mengalahkan classic dengan rentang tidak overlap.
+- Harness: `sleep-check.py` (sistem sleep mengeluarkan satu run klinik), `blind-score.sh` (strip trailer di semua file teks), `arm-metrics.py` (hitungan API retry; record `result` kosong di tengah proses tidak lagi dihitung sebagai proses baru — sebelumnya menggandakan $73,27 jadi $146,54).
+- Fix test: `tests/weighted-routing/test-spawn-ceilings.sh` mengutip path script di dalam `sh -c`. Di path repo yang mengandung spasi, C10–C16 + C8b sebelumnya tidak pernah menjalankan script-nya (C15/C16 lolos palsu).
+
+### Notes — yang terukur dari data yang sudah ada (MEASURED, `arm-metrics.py`, n=1 per baris, mega-sdd saja)
+- Run klinik lite 8.3.0 (`benchmarks/results/p3/clinic-lite-8.3.0-levers`, 2026-09-17): wall 102 m, $106,18, 102,7 M token. Run ini belum pernah masuk CHANGELOG, dan kualitas/gate-nya belum diekstrak.
+- Dua run xs lite 8.3.0 yang bersih (fixture dan versi sama): wall 35 m dan 97 m (yang kedua memuat stall API ±56 m). Variansi lingkungan sebesar ini melebihi selisih yang dipakai buat memutuskan ship 8.0.0.
+
 ## [8.8.1] - 2026-09-26 — state anchor: audit cakupan test §13 + fix bootstrap view di repo reftable
 
 Sumber: audit cakupan test §13 di spec state anchor (`docs/superpowers/specs/2026-09-25-state-anchor-design.md`). Tiap bullet §13 dicocokkan ke assertion yang beneran ada. Yang belum ada ditulis, dan salah satunya nemu bug. Gate nggak ada yang dilonggarkan.

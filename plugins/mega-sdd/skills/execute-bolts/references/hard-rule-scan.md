@@ -1,6 +1,6 @@
 # execute-bolts — Hard Rule pre/post-flight scan
 
-The anti-hallucination gate. Each unit's `## Hard rules` are validated against real codebase state **before** the bolt (pre-flight snapshot) and **after** the bolt (post-flight scan); any post-flight violation **HALTS the run**. Commit topology (detect-after — one truth, per SKILL.md): the `bolt-implementer` commits after its tests pass, so the post-flight scan runs against an already-committed bolt; a violation gates every further `execute-bolts` (B1) and the remediation is fix-forward or revert of the flagged commit — never a claim that the code is uncommitted. The skill body owns the gate's existence + trigger; this file owns the grammar, snapshot formats, and per-rule mechanics.
+The anti-hallucination gate. Each unit's `## Hard rules` are validated against real codebase state **before** the bolt (pre-flight snapshot) and **after** the bolt (post-flight scan); any post-flight violation **HALTS the run**. Commit topology (detect-after — one truth, per SKILL.md): the unit's bolt commits after its tests pass, so the post-flight scan runs against an already-committed bolt; a violation gates every further `execute-bolts` (B1) and the remediation is fix-forward or revert of the flagged commit — never a claim that the code is uncommitted. The skill body owns the gate's existence + trigger; this file owns the grammar, snapshot formats, and per-rule mechanics.
 
 ## Contents
 - Pre-flight: grammar detection
@@ -11,7 +11,6 @@ The anti-hallucination gate. Each unit's `## Hard rules` are validated against r
 - Post-flight: per-rule re-validation
 - Framework-pack rule provenance
 - Per-sibling cross-cutting registration scan
-- Parent-thread post-flight re-scan
 - Violation handling + `hard_rule_violated` halt YAML
 - verify-unit special path
 
@@ -39,7 +38,7 @@ What the script executes, for each unit with a non-empty `## Hard rules` body se
 
 **For v2 grammar:** probe `command -v ast-grep`. Absent → halt `dep_missing` (install guidance is in the v2 Hard-rule-grammar ref listed in SKILL.md). Validate each YAML block via parse-via-scan (`ast-grep test --validate` does NOT exist in the CLI — the snippet is in `hard-rule-grammar-v2.md` §Pre-flight, the single owner of the parse-check mechanics). Unparseable → halt `hard_rule_unparseable`.
 
-**For v1 grammar (legacy path preserved):** parse each rule line against the 5-grammar set per `generate-units/references/unit-schema.md` §Hard rule grammar (plus the directive tier — see §Directive rules below, which is ACCEPTED, not unparseable). NEVER silently skip a line that matches neither — unparseable → halt `hard_rule_unparseable`:
+**For v1 grammar (legacy path preserved):** parse each rule line against the 5-grammar set per `plan/references/unit-schema.md` §Hard rule grammar (plus the directive tier — see §Directive rules below, which is ACCEPTED, not unparseable). NEVER silently skip a line that matches neither — unparseable → halt `hard_rule_unparseable`:
 
 - `DO NOT modify <path>`
 - `DO NOT add new <manifest> dependencies`
@@ -97,7 +96,7 @@ blocker:
     unit_id: U-XXX
     offending_line: "<verbatim>"
     expected_grammar: [DO_NOT_MODIFY, DO_NOT_ADD_DEPS, NAMING_RULE, SIGNATURE_RULE, FILE_PRESENCE_RULE]
-  next_action: "Fix the unit's ## Hard rules section per generate-units/references/unit-schema.md §Hard rule grammar."
+  next_action: "Fix the unit's ## Hard rules section per plan/references/unit-schema.md §Hard rule grammar."
 ```
 
 ```yaml
@@ -155,17 +154,13 @@ Post-flight results are written to `<vault>/bolts/U-XXX/postflight.json` (per-ru
 
 ## Framework-pack rule provenance
 
-Framework-pack rules (pulled into a unit's Hard Rules by `generate-units` Step 12.4.5) are validated identically to other Hard Rules — Step 12.4.5 emits them **in an executable production** (packs ship `rule_type` inventories, not ready-made ast-grep blocks; the translation happens at emission time per the pack→bolt table in `bind-codebase/references/hard-rules-and-packs.md §2.9` — v1 production, verbatim v2 YAML when the pack carries a real `rule:` body, or the honest `directive`/Anti-pattern tier). The violation surface includes a `framework_pack_source` field in the halt YAML so the user knows WHICH framework rule fired.
+`plan` promotes no framework-pack rule into a unit's Hard Rules. A migrated unit that carries one has it scanned like any other Hard Rule; its `source:` line names the pack rule.
 
 ## Per-sibling cross-cutting registration scan (defense-in-depth)
 
 When a unit fans out into N structurally-analogous sibling models (a module's golden exemplar plus siblings), a cross-cutting concern proven on the exemplar (e.g. registering the `BranchScoped` global scope) must be verified in EACH sibling's generated source — not once. The classic execution-fidelity miss: every sibling SPEC named the `BranchScoped` trait, but the bolt forgot the `addGlobalScope(new BranchScoped)` registration in several generated models — a silent cross-branch authorization leak that no unit-spec or Hard-Rule check catches (the spec was correct; the runtime call was dropped).
 
 This is ENFORCED by `scripts/validate-sibling-consistency.sh --cross-cutting`, which reads the active framework pack's `## Cross-cutting concerns` (each concern's `registration_signature` + `registration_target_glob`) and scans every generated source file that references the concern mechanism AND carries the `applies_when` column, flagging any that lack the registration call. It is re-derived at the execute-bolts PreToolUse gate (→ `.cross-cutting-state.json`), which blocks the NEXT `execute-bolts` on FAIL (honest detect-and-block-next — a hook cannot un-write a file a bolt just wrote mid-turn). This prose is defense-in-depth; the validator is the gate. Tech-agnostic: never assume a stack's registration idiom — it comes from the pack, so add a stack = add a pack.
-
-## Parent-thread post-flight re-scan
-
-The project-wide quality validators that scan GENERATED SOURCE/VIEWS — `validate-sibling-consistency.sh --cross-cutting`, `validate-ui-quality.sh`, and (for vault edits) `validate-vault-oqs.sh` — do not fire on PostToolUse; they are re-derived at the execute-bolts gate. Under `--parallel` / `--per-squad` the project-wide state can therefore lag concurrent writes until the next gate (each validator is a full-glob current-truth re-scan). To make the gate state deterministic: after each bolt batch completes, the **main-thread controller** explicitly bash-invokes those validators against `$PROJECT_ROOT` **with `--quiet`, branching on the exit code** — read the specific `.mega-sdd/.<validator>-state.json` ONLY on non-zero (the PreToolUse gate reads state files, never stdout; an unquieted PASS prints full state JSON incl. the ~350-char canned next_action per validator) — so the gate reflects current truth regardless of write ordering. This is **defense-in-depth** on top of the detect-and-block-next contract — not a load-bearing compensation for an invisible write.
 
 ## Violation handling + `hard_rule_violated` halt YAML
 

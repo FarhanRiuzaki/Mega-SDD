@@ -2,10 +2,13 @@
 # ground.sh — the v6 GROUND step: zero model tokens, seconds.
 #   1. derive-state.sh   — probes (manifest sniff incl. the P2 pack matcher,
 #                          spine, symbol-index freshness) -> .mega-sdd/state.json
-#   2. build-symbol-index.sh — the retrieval substrate for bind --express
+#   2. build-symbol-index.sh — the retrieval substrate for the JIT per-unit bind
+#      (write-unit-binding.sh / rebind-units.sh) and plan's query-symbol-index.sh
+#      reuse lookup
 # GROUND deliberately does NOT: write starterkit-context.yaml (cache-keyed
 # deep-scan artifact — a script stub would read as a false warm cache), or
-# produce a codebase-map (scan-codebase stays the on-demand map seam).
+# produce a codebase-map (no codebase-map producer since 9.0; an existing map
+# stays readable).
 # Exit 0 = grounded (index may still be honestly absent — see INDEX=);
 # 2 = usage; derive-state failures pass through (read-only surface, never blocks).
 set -u
@@ -18,7 +21,7 @@ esac; done
 SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
 
 # ─── C1 self-resolve battery (moved here from hooks/session-start, v7 Fase 2) ─
-# session-start must never write vault artifacts (gate-1 mandate); the 9-guard
+# session-start must never write vault artifacts (gate-1 mandate); the guard
 # battery runs at M/L entry instead — BEFORE derive-state so the probes see
 # repaired state. (v7.3.0: guards emit CHAT notices only — no telemetry.)
 # ─── C1 self-resolve: mode_migrate (Iter 67.7.1, script-layer since v7) ─────
@@ -39,7 +42,7 @@ CONFIG_FILE="${CWD}/.mega-sdd/config.yaml"
 # project (the old `telemetry: false` opt-out died with telemetry itself).
 if [ -d "${CWD}/.mega-sdd" ]; then
     # Run C1 self-resolve guards via python (deterministic detection + fix).
-  # Iter 67.7.1: mode_migrate.  Iter 67.7.2 (v3.51.1+): adds partial_state_corrupt.
+  # Iter 67.7.1: mode_migrate first; the other guards follow.
   SELF_RESOLVE_NOTICES=$(CWD="$CWD" PLUGIN_ROOT_HINT="$SCRIPT_DIR/.." MEGA_SDD_LIB_DIR="$SCRIPT_DIR/_lib" python3 <<'PYEOF' 2>/dev/null
 import json
 import os
@@ -49,6 +52,7 @@ from datetime import datetime, timezone
 
 cwd = os.environ["CWD"]
 ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+ts_fname = ts.replace(":", "-").replace(".", "-")  # filename-safe ISO8601 (Guard 7 .corrupt-<ts>)
 session_id = os.environ.get("CLAUDE_SESSION_ID", "ground-script")  # not a documented hook env var; label-only fallback (stdin session_id is the real source if ever needed)
 notices = []
 
@@ -59,15 +63,13 @@ def emit_event(halt_type, fix_applied, **payload_extras):
 
 # 7.13.0 (doc-audit finding 3): the battery scans EVERY vault layout via the
 # shared vault_layouts helpers, not just the legacy `*-bound/` sibling — the
-# canonical `.mega-sdd/vaults/<name>/` tree was invisible to Guards 2 + 4.
+# canonical `.mega-sdd/vaults/<name>/` tree was invisible to Guard 4.
 # Import failure (broken install) falls back to the pre-7.13 coverage so a
 # missing _lib can never kill the whole battery (this heredoc runs 2>/dev/null).
 sys.path.insert(0, os.environ.get("MEGA_SDD_LIB_DIR", ""))
 try:
-    from vault_layouts import vault_prefixes as _vl_prefixes, unit_files as _vl_unit_files
+    from vault_layouts import unit_files as _vl_unit_files
 except Exception:
-    def _vl_prefixes(c):
-        return (os.path.join(c, ".mega-sdd", "vaults", "*-bound"),)
     def _vl_unit_files(c):
         got = (glob.glob(os.path.join(c, ".mega-sdd", "vaults", "*-bound", "units", "U-*.md")) +
                glob.glob(os.path.join(c, ".mega-sdd", "vaults", "*-bound", "units", "U-*", "unit.md")))
@@ -122,52 +124,12 @@ for vj in vault_jsons:
     )
     notices.append(f"[self-resolved] mode_migrate: {scope_name} mode {old_mode_repr} → {expected_mode}")
 
-# ─── Guard 2: partial_state_corrupt (Iter 67.7.2 — v3.51.1+) ───────────────
-# Scan every vault layout's bolts/U-*/partial-state.json (vault_prefixes —
-# 7.13.0 widened from the legacy `*-bound/`-only glob; realpath-deduped).
-# If file fails JSON parse → rename to partial-state.json.corrupt-<ISO8601>
-# (forensics preserved; --resume restarts fresh per plugins/mega-sdd/references/halt-protocol.md).
-# NEVER halts. Honors same opt-out as mode_migrate (handled by GUARD_ENABLED above).
-ts_fname = ts.replace(":", "-").replace(".", "-")  # filename-safe ISO8601
-_ps_files = []
-for _pre in _vl_prefixes(cwd):
-    _ps_files.extend(glob.glob(os.path.join(_pre, "bolts", "U-*", "partial-state.json")))
-for f in sorted(dict.fromkeys(os.path.realpath(p) for p in _ps_files)):
-    if "/.archived/" in f or "/.archived\\" in f:
-        continue
-    try:
-        with open(f) as fh:
-            json.load(fh)
-        # Parsed cleanly; no action
-        continue
-    except json.JSONDecodeError:
-        # Corrupted — rename and emit
-        corrupt_path = f"{f}.corrupt-{ts_fname}"
-        try:
-            os.rename(f, corrupt_path)
-        except Exception:
-            continue  # rename failed; don't claim resolve
-        rel_orig = os.path.relpath(f, cwd)
-        rel_corrupt = os.path.relpath(corrupt_path, cwd)
-        unit_id = os.path.basename(os.path.dirname(f))  # U-XXX from path
-        emit_event(
-            "partial_state_corrupt",
-            f"renamed → {os.path.basename(corrupt_path)}; --resume will restart fresh",
-            unit_id=unit_id,
-            original_path=rel_orig,
-            corrupt_path=rel_corrupt,
-        )
-        notices.append(f"[self-resolved] partial_state_corrupt: {unit_id} renamed (JSON parse fail); --resume will restart fresh")
-    except Exception:
-        # Non-JSONDecodeError (file system error, encoding etc.) → skip; not a clean self-resolve
-        continue
-
 # ─── Guard 4: verify_unit_writable (Iter 67.7.4 — v3.52.0+) ────────────────
 # Scan units for task_type=verify with non-empty target_files (forbidden per
 # attestation reclassification: verify units MUST be read-only). DETECTION-ONLY:
 # emit a chat notice; DO NOT modify on-disk unit (preserves
-# bad spec for human review). Dispatch-time auto-clear is execute-bolts's job
-# (separate concern).
+# bad spec for human review). NOT C1: execute-bolts pre-flight 2 halts the unit
+# (validate-preflight.sh, fatal, stops the chain first).
 #
 # Every vault layout + both unit shapes (U-*.md and U-*/unit.md) via the shared
 # vault_layouts.unit_files contract (7.13.0 — was the `*-bound/`-only pair).
@@ -223,12 +185,12 @@ for up in unit_paths_vw:
         unit_id = os.path.basename(up).replace(".md", "")
     emit_event(
         "verify_unit_writable",
-        f"detected at GROUND; on-disk unit preserved for review; execute-bolts will auto-clear at dispatch time",
+        "detected at GROUND; on-disk unit preserved for review; execute-bolts pre-flight 2 halts it",
         unit_id=unit_id,
         unit_path=rel_up,
         forbidden_operations=forbidden_ops,
     )
-    notices.append(f"[self-resolved] verify_unit_writable: {unit_id} has task_type=verify + writable target_files (review needed; dispatch will auto-clear)")
+    notices.append(f"[advisory] verify_unit_writable: {unit_id} has task_type=verify + writable target_files (execute-bolts pre-flight 2 halts it; empty its target_files)")
 
 # ─── Guard 5: framework_pack_unparseable (B.7) + framework_pack_cycle (B.8) ─
 # + framework_pack_missing (B.10) — combined pack-integrity scan.
@@ -341,14 +303,16 @@ if missing_bins:
         f"required binaries missing on PATH (advisory): {missing_bins}",
         missing_binaries=missing_bins,
         suggested_action="run /mega-sdd:install-deps (non-interactive only; manual install if needed)",
-        will_degrade_to="regex tier (scan-codebase) / v1 grammar (execute-bolts)",
+        will_degrade_to="no symbol index (build-symbol-index.sh exit 3 -> JIT symbol claims stay OQ) / v1 grammar (execute-bolts)",
     )
     notices.append(f"[self-resolved] dep_missing: {missing_bins} not on PATH; will degrade gracefully")
 
 # ─── Guard 7: deep_scan_cache_corrupt (B.9) ────────────────────────────────
 # Check <cwd>/.mega-sdd/codebase/starterkit-context.yaml — if exists, validate
 # it as parseable YAML (or at least structured key:value pairs). If corrupt,
-# rename and let scan-codebase re-build on next invocation.
+# rename it aside so readers (validate-starterkit-conformance,
+# validate-unit-spec) see it absent; nothing
+# regenerates it in 9.0.
 import re as _re5
 starterkit_path = os.path.join(cwd, ".mega-sdd", "codebase", "starterkit-context.yaml")
 if os.path.isfile(starterkit_path):
@@ -367,12 +331,12 @@ if os.path.isfile(starterkit_path):
             rel_corrupt = os.path.relpath(corrupt_path, cwd)
             emit_event(
                 "deep_scan_cache_corrupt",
-                f"starterkit-context.yaml unparseable; renamed → {os.path.basename(corrupt_path)}; the next ON-DEMAND scan-codebase run rebuilds it (scan is not in the default express chain)",
+                f"starterkit-context.yaml unparseable; renamed → {os.path.basename(corrupt_path)}; the run proceeds (restore a valid file with e.g. git checkout) — no 9.0 phase regenerates it",
                 original_path=rel_orig,
                 corrupt_path=rel_corrupt,
                 reason=str(e),
             )
-            notices.append(f"[self-resolved] deep_scan_cache_corrupt: starterkit-context.yaml renamed; an on-demand scan-codebase run rebuilds it")
+            notices.append(f"[self-resolved] deep_scan_cache_corrupt: starterkit-context.yaml renamed aside; the run proceeds (no 9.0 producer)")
     except Exception:
         pass
 
@@ -454,8 +418,8 @@ if mt_catalog_path:
                     tier = m.group(2)
                     if role in ("model_tiers", "preferences"):
                         continue
-                    # The catalog names roles with hyphens (`bolt-implementer`), the documented
-                    # config key is underscored (`model_tiers.bolt_implementer`) — compare
+                    # The catalog names roles with hyphens (`extract-intelligence-module`), a config
+                    # key may be underscored (`model_tiers.extract_intelligence_module`) — compare
                     # normalized (doc-audit v8 finding #5: every legitimate override tripped
                     # model_tier_unknown, LIVE-proven).
                     _norm = lambda s: s.replace("_", "-").lower()
@@ -484,25 +448,28 @@ fi
 # Field class (DD9000 #11): a typecheck-only repo makes gate-L0 format/lint SKIP
 # on every bolt — each skip is recorded honestly, but 36 honest skips never
 # became a HUMAN decision. Run-boundary ADVISORY, never a gate: silent once a
-# decision is recorded (.mega-sdd/l0-toolchain-decision.json) or a project pack
-# carries `## Toolchain` (the F-14 override path). Detection is fail-open — a
-# failed/unparseable detect run emits nothing and writes no probe.
+# decision is recorded (.mega-sdd/l0-toolchain-decision.json) or a project pack's
+# `## Toolchain` engages run-code-gates.sh (the F-14 override path; one test,
+# _lib/pack_toolchain.py — a placeholder-only block does not silence). Detection
+# is fail-open — a failed/unparseable detect run emits nothing and writes no probe.
 if [ -d "${CWD}/.mega-sdd" ] && [ ! -f "${CWD}/.mega-sdd/l0-toolchain-decision.json" ]; then
-  if ! grep -qs '^## Toolchain' "${CWD}/.mega-sdd/packs/"*.md 2>/dev/null; then
-    TL_JSON="$(bash "$SCRIPT_DIR/detect-toolchain.sh" --cwd="$CWD" 2>/dev/null || true)"
-    if [ -n "$TL_JSON" ]; then
-      TL_JSON="$TL_JSON" CWD="$CWD" MEGA_SDD_LIB_DIR="$SCRIPT_DIR/_lib" SCRIPT_DIR="$SCRIPT_DIR" python3 - <<'PYEOF' 2>/dev/null
+  TL_JSON="$(bash "$SCRIPT_DIR/detect-toolchain.sh" --cwd="$CWD" 2>/dev/null || true)"
+  if [ -n "$TL_JSON" ]; then
+    TL_JSON="$TL_JSON" CWD="$CWD" MEGA_SDD_LIB_DIR="$SCRIPT_DIR/_lib" SCRIPT_DIR="$SCRIPT_DIR" python3 - <<'PYEOF' 2>/dev/null
 import json, os, sys
 try:
     tc = json.loads(os.environ["TL_JSON"])
 except Exception:
     sys.exit(0)  # unparseable detection -> no advisory, no probe (fail open)
 cwd = os.environ["CWD"]
+sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
+import pack_toolchain
+if pack_toolchain.project_pack(cwd)[1] is not None:
+    sys.exit(0)  # run-code-gates.sh runs this pack's commands: no advisory, no probe
 nf = len(tc.get("formatters") or []); nl = len(tc.get("linters") or []); nt = len(tc.get("typecheckers") or [])
 # Typecheck ALONE does not silence the advisory — that is the field case.
 probe = {"formatters": nf, "linters": nl, "typecheckers": nt, "advisory": (nf == 0 and nl == 0)}
 try:
-    sys.path.insert(0, os.environ["MEGA_SDD_LIB_DIR"])
     import plugin_meta
     probe.update(plugin_meta.stamp(os.environ.get("SCRIPT_DIR")))
 except Exception:
@@ -519,7 +486,6 @@ if probe["advisory"]:
           "(.mega-sdd/packs/) · atau catat keputusan N/A ke "
           ".mega-sdd/l0-toolchain-decision.json (execute-bolts akan menanyakan SEKALI)." % nt)
 PYEOF
-    fi
   fi
 fi
 
@@ -594,10 +560,11 @@ fi
 # Sync-pending guard (round F1 — REPRODUCED false 'in sync'): rebuilding the
 # index HERE re-stamps head_commit to HEAD BEFORE derive-changed-paths.sh
 # consumes the old stamp as its diff baseline — the changed set would derive
-# empty and the sync would reconcile nothing. Defer; bind --express E0
-# rebuilds AFTER the re-verdict, advancing the stamp at the correct point.
+# empty and the sync would reconcile nothing. Defer; rebind-units.sh's
+# index-first step rebuilds it after derive-changed-paths.sh has consumed the
+# stale stamp, advancing the stamp at the correct point.
 if [ "$POSITION" = "maintenance_sync" ]; then
-  echo "GROUND: state rc=$STATE_RC · index: rebuild DEFERRED (sync pending — the stale stamp IS the changed-set baseline; bind --express E0 rebuilds after the re-verdict)"
+  echo "GROUND: state rc=$STATE_RC · index: rebuild DEFERRED (sync pending — the stale stamp IS the changed-set baseline; rebind-units.sh rebuilds it before the re-bind)"
   exit 0
 fi
 
@@ -605,8 +572,8 @@ bash "$SCRIPT_DIR/build-symbol-index.sh" --cwd="$CWD"
 IDX_RC=$?
 case "$IDX_RC" in
   0) INDEX="built" ;;
-  3) INDEX="absent (ast-grep not installed — the chain renders CLASSIC; /mega-sdd:install-deps adds ast-grep)" ;;
-  *) INDEX="absent (build failed rc=$IDX_RC — the chain renders CLASSIC)" ;;
+  3) INDEX="absent (ast-grep not installed — JIT symbol claims stay OQ, fs claims still verdict; /mega-sdd:install-deps adds ast-grep)" ;;
+  *) INDEX="absent (build failed rc=$IDX_RC — JIT symbol claims stay OQ; re-run GROUND)" ;;
 esac
 echo "GROUND: state rc=$STATE_RC · index: $INDEX"
 exit 0

@@ -695,12 +695,11 @@ def dirty_paths(g, vaults):
     return set(dirty_map(g, specs))
 
 
-# ── the BOLTS gate leg (Slice 2, §8) ─────────────────────────────────────────
+# ── the per-unit freshness check (Slice 2, §8; the run-start quarantine, derive-exec-plan.sh) ──
 BINDING_V2_FIELDS = ("based_on_sha", "scope", "own_targets", "unit_sha256", "dirty", "index_head", "claims")
 # reason 6 is not exhaustible: the writer hashes the unit AFTER its R1 rewrite, so a
-# unit change at the re-bind HEAD is always a NEW edit a 3.9b clears (never a failed one)
+# unit change at the re-bind HEAD is always a NEW edit a per-unit re-bind clears (never a failed one)
 EXHAUSTIBLE = ("stamp_null", "diverged", "stamp_unreachable", "binding_stale", "uncommitted_in_scope")
-_BSHA_RE = re.compile(r"(?m)^\s*binding_sha256:\s*([0-9a-f]{64})\s*$")
 
 
 def _sha256_file(p):
@@ -731,10 +730,11 @@ def other_vault_targets(root, vault_dir, uid):
 
 
 def gate_check(root, vault_dir, uid, prompt_path=None):
-    """→ (reason | None, detail). Reasons 1–9 of §8 in table order; a hit on an
-    EXHAUSTIBLE reason at the HEAD a 3.9b re-bind already bound at becomes
-    `rebind_exhausted`. A git failure raises GitError (the caller denies
-    `not_evaluated`); no `.git` at all → (None, {}) (the gate does not deny)."""
+    """→ (reason | None, detail). Reasons 1–9 of §8 in table order (reason 5, the
+    dispatch-prompt check, left with the per-dispatch path: `prompt_path` is accepted
+    and ignored); a hit on an EXHAUSTIBLE reason at the HEAD a per-unit re-bind
+    already bound at becomes `rebind_exhausted`. A git failure raises GitError (the
+    caller quarantines `not_evaluated`); no `.git` at all → (None, {})."""
     root = os.path.abspath(root)
     g = find_git(root)
     if not g:
@@ -765,13 +765,6 @@ def gate_check(root, vault_dir, uid, prompt_path=None):
     stamp = doc.get("based_on_sha")
     if not (isinstance(stamp, str) and HEX_FULL.match(stamp)):
         return hit("stamp_null", null_cause=doc.get("null_cause") or "no stamp")
-    if prompt_path is not None:
-        try:
-            m = _BSHA_RE.search(open(prompt_path, encoding="utf-8", errors="replace").read())
-        except OSError:
-            m = None
-        if not m or m.group(1) != hashlib.sha256(raw).hexdigest():
-            return "dispatch_prompt_stale", {}
     uf = vs.unit_file(vault_dir, uid)
     if not uf or _sha256_file(uf) != doc.get("unit_sha256"):
         return hit("unit_changed_since_bind")
@@ -792,7 +785,7 @@ def gate_check(root, vault_dir, uid, prompt_path=None):
             except GitError as e:
                 if "diff-merges" not in str(e):
                     raise  # a timeout / lock / access failure stays not_evaluated (§8)
-                commits = []  # §14 git floor (< 2.31): nothing is dropped → binding_stale; a 3.9b clears it
+                commits = []  # §14 git floor (< 2.31): nothing is dropped → binding_stale; a per-unit re-bind clears it
             att = Attributor(root, g, bolt_attrib.bound_vault_roots(root), commits)
             u = {"uid": uid, "targets": set(doc.get("own_targets") or []),
                  "bolt_dir": os.path.relpath(os.path.join(vault_dir, "bolts", uid), root).replace("\\", "/")}
@@ -822,25 +815,6 @@ def gate_check(root, vault_dir, uid, prompt_path=None):
         diff = sorted(set(now) ^ set(snap) | {q for q in set(now) & set(snap) if now[q] != snap[q]})
         return hit("uncommitted_in_scope", paths=[to_proj(g, q) for q in diff])
     return None, {}
-
-
-def gate_main(argv):
-    root = vault = unit = prompt = None
-    for a in argv:
-        if a.startswith("--cwd="):
-            root = a.split("=", 1)[1]
-        elif a.startswith("--vault="):
-            vault = a.split("=", 1)[1]
-        elif a.startswith("--unit="):
-            unit = a.split("=", 1)[1]
-        elif a.startswith("--prompt="):
-            prompt = a.split("=", 1)[1]
-    try:
-        reason, detail = gate_check(root, vault, unit, prompt)
-    except GitError as e:
-        reason, detail = "not_evaluated", {"error": str(e)}
-    sys.stdout.write(json.dumps({"reason": reason, "detail": detail}) + "\n")
-    return 0
 
 
 # ── rendering ────────────────────────────────────────────────────────────────
@@ -1155,6 +1129,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    if "--gate" in sys.argv[1:]:
-        sys.exit(gate_main([a for a in sys.argv[1:] if a != "--gate"]))
     sys.exit(main(sys.argv[1:]))

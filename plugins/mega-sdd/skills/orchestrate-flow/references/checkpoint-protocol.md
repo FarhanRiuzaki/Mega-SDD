@@ -2,7 +2,7 @@
 
 > **Status:** declared contract — no skill or script emits per-step checkpoints at HEAD and no skill accepts `--resume-from`; `--resume` is CWD-driven only (SKILL.md Step 9). Kept as the target design.
 
-`orchestrate-flow` writes per-step checkpoint files enabling **mid-skill resume** — not just inter-skill resume but also "bind-codebase crashed at claim 45 of 100 → resume at claim 46".
+`orchestrate-flow` writes per-step checkpoint files enabling **mid-skill resume** — not just inter-skill resume but also "`plan` crashed after writing U-012 of 30 units → resume at U-013".
 
 Inspired by LangGraph's checkpoint-per-node pattern (33k ⭐); implemented as JSONL files (per ITER6-OQ-5).
 
@@ -22,7 +22,7 @@ Inspired by LangGraph's checkpoint-per-node pattern (33k ⭐); implemented as JS
 
 ## Why
 
-The base `--resume` is CWD-driven: it reads artifact presence to rebuild the cursor. That works for inter-skill resume (e.g., bind-codebase completed → skip ahead to generate-units). It does NOT work for mid-skill failures (e.g., bind-codebase crashed at claim 45; CWD shows partial binding.md; resume would re-run from claim 1).
+The base `--resume` is CWD-driven: it reads artifact presence to rebuild the cursor. That works for inter-skill resume (e.g., `plan` completed, `units/_index.md` present → skip ahead to `execute-bolts`). It does NOT work for mid-skill failures (e.g., `plan` crashed after U-012; CWD shows a partial `units/`; resume would re-run plan from Step 1).
 
 Checkpoint protocol adds per-step persistence inside each skill invocation.
 
@@ -30,9 +30,9 @@ Checkpoint protocol adds per-step persistence inside each skill invocation.
 
 ```
 <vault>/.internal/checkpoints/
-├── 2026-05-21T10:00:00Z-extract-intelligence-wave-3.jsonl
-├── 2026-05-21T10:30:00Z-generate-intent-step-3.jsonl
-├── 2026-05-21T11:00:00Z-bind-codebase-claim-45.jsonl
+├── 2026-05-21T10:00:00Z-extract-intelligence-module-2.jsonl
+├── 2026-05-21T10:30:00Z-plan-unit-12.jsonl
+├── 2026-05-21T11:00:00Z-execute-bolts-U-003.jsonl
 └── ...
 ```
 
@@ -41,7 +41,7 @@ Format: **JSONL** (one JSON object per line; append-only; race-tolerant).
 ### Per-checkpoint schema
 
 ```json
-{"checkpoint_schema": 1, "skill": "bind-codebase", "step": "claim_validation", "step_id": "claim-45", "cursor": {"claim_index": 45, "claim_id": "C-045"}, "state": {"confirmed": 30, "conflict": 1, "oq": 14}, "next_step": "claim-46", "artifacts_so_far": ["binding.md.partial"], "resume_command": "bind-codebase ./vault --resume-from=claim-46", "timestamp": "2026-05-21T11:00:00Z"}
+{"checkpoint_schema": 1, "skill": "plan", "step": "unit_write", "step_id": "unit-12", "cursor": {"unit_index": 12, "unit_id": "U-012"}, "state": {"units_written": 12, "units_planned": 30, "oq": 4}, "next_step": "unit-13", "artifacts_so_far": ["context.md", "units/U-012.md"], "resume_command": "plan <prd> --resume-from=unit-13", "timestamp": "2026-05-21T11:00:00Z"}
 ```
 
 ## Skill responsibilities
@@ -51,10 +51,8 @@ Each long-running skill MUST emit checkpoints at appropriate granularity:
 | Skill | Checkpoint granularity |
 |---|---|
 | `extract-intelligence` | Per module PRD written |
-| `scan-codebase` | Per major step (detect / tree / extract / write) |
-| `bind-codebase` | Per claim (most granular; can be 100s per vault) |
-| `generate-units` | Per unit candidate generated |
-| `execute-bolts` | Per bolt (per unit invocation) |
+| `plan` | Per unit written (Step 4: `units/U-XXX.md`, `_index.md` last) |
+| `execute-bolts` | Per bolt (per unit). The JIT bind's `bolts/U-XXX/binding.json` is the per-unit bind record, and one unit re-binds via `scripts/rebind-units.sh --units=U-XXX`. |
 
 Skills that complete in <5s SHOULD NOT emit checkpoints (overhead > value). Examples: `resolve-oq` per-OQ-step, `diff-vault` per-section.
 
@@ -96,18 +94,18 @@ Handoff YAML gets one new field:
 handoff:
   # ... existing fields ...
   checkpoints:
-    latest_step_id: claim-45
+    latest_step_id: unit-12
     checkpoint_file: <vault>/.internal/checkpoints/<timestamp>-<skill>-<step>.jsonl
-    resume_command: "bind-codebase --resume-from=claim-46"
+    resume_command: "plan <prd> --resume-from=unit-13"
 ```
 
 When skill emits `status: halted` with active checkpoints, orchestrator surfaces the resume command in chat:
 
 ```
-⛔ Phase 3 of 5: bind-codebase → status: halted, items: 45/100 claims, blocked: 1
+⛔ Phase 1 of 2: plan → status: halted, items: 12/30 units, blocked: 1
 
-Last checkpoint: claim-45 at 2026-05-21T11:00:00Z
-Resume command: /mega-sdd --resume (re-enters chain at bind-codebase claim-46)
+Last checkpoint: unit-12 at 2026-05-21T11:00:00Z
+Resume command: /mega-sdd --resume (re-enters chain at plan unit-13)
 ```
 
 ## Backward compatibility
@@ -125,7 +123,7 @@ Resume command: /mega-sdd --resume (re-enters chain at bind-codebase claim-46)
 
 - Checkpoint replay is DETERMINISTIC. Skill must produce same output for same cursor state.
 - Skills cannot "skip ahead" in checkpoint replay; only resume from explicit cursor
-- Resume re-validates inputs before proceeding (e.g., bind-codebase re-loads vault + codebase-map; if either changed since checkpoint, halt and ask user)
+- Resume re-validates inputs before proceeding (e.g., plan re-reads the PRD and the GROUND state; if the PRD sha (`derive-plan-pins.sh` `prd_sha256`) or HEAD changed since the checkpoint, halt and ask the user)
 - Failed checkpoint writes (disk full) logged but DO NOT halt skill (graceful degradation)
 
 ## References

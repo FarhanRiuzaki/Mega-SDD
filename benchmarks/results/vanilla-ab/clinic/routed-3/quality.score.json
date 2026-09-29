@@ -1,0 +1,55 @@
+{
+ "completion": 1.0,
+ "ac_pass": 10,
+ "ac_total": 10,
+ "ac": {
+  "C1": "PASS",
+  "C2": "PASS",
+  "C3": "PASS",
+  "C4": "PASS",
+  "C5": "PASS",
+  "C6": "PASS",
+  "C7": "PASS",
+  "C8": "PASS",
+  "C9": "PASS",
+  "C10": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 6,
+ "rubric": 91,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/lib/appointments/service.ts:511",
+   "what": "Reminder sweep has no lower bound on lateness; if the cron stalls, reminders are sent late (outside 24h\u00b15min) rather than skipped; window relies entirely on cron cadence."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/appointments/service.ts:519-524",
+   "what": "A reschedule after the sweep claims a reminder can still produce a reminder email for the new time; lease mismatch then leaves reminder_sent false so a second reminder follows."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/appointments/service.ts:633-637",
+   "what": "reassignAppointment does not reject appointments in the past."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/rate-limit.ts:5-20; src/app/book/actions.ts:19",
+   "what": "Rate limiting is in-memory per instance, and the public slot lookup (fetchSlots) is not rate-limited."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/components/staff/schedule-grid.tsx",
+   "what": "Staff schedule uses a custom grid instead of the Schedule-X resource view named in PRD \u00a78.1."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/db/schema.ts:134",
+   "what": "DB unique index covers only identical start times; overlaps between multi-slot visits rely solely on the app-level advisory lock, not an exclusion constraint."
+  }
+ ],
+ "blind_label": "TY",
+ "scorer_sid": "43814add-a32a-4544-9a86-6319b8f31e5c"
+}

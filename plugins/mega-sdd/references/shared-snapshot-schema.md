@@ -1,8 +1,8 @@
 # Shared Snapshot Schema
 
-Canonical JSON schema for code-state snapshots consumed by mega-sdd skills across hops. The schema covers the `execute-bolts ↔ detect-drift` hop plus `scan-codebase → bind-codebase` (new `codebase-map` snapshot_type) and `extract-intelligence → generate-intent --kb` (new `extracted-kb` snapshot_type). Readers skip unfamiliar snapshot_type values (backward-compatible by construction).
+Canonical JSON schema for code-state snapshots consumed by mega-sdd skills across hops. The schema covers the `execute-bolts ↔ detect-drift` hop plus `extract-intelligence → plan --kb` (`extracted-kb` snapshot_type). Readers skip unfamiliar snapshot_type values (backward-compatible by construction).
 
-Goal: every consumer skill that re-reads state already captured by an upstream producer can shortcut to the captured snapshot when source files match. Baseline savings (~28s → ≤5s for drift gate on 20-bolt batch); the v1.1 extension adds a one-sha freshness attestation on the scan→bind hop (NOT a parsing shortcut — binding correctness is unchanged either way) + the KB freshness check (extract→intent hop).
+Goal: every consumer skill that re-reads state already captured by an upstream producer can shortcut to the captured snapshot when source files match. Baseline savings (~28s → ≤5s for drift gate on 20-bolt batch); the v1.1 extension adds the KB freshness check (extract→plan --kb hop).
 
 ## Contents
 
@@ -18,7 +18,7 @@ Goal: every consumer skill that re-reads state already captured by an upstream p
 ```json
 {
   "snapshot_schema_version": "1.1",
-  "snapshot_type": "preflight | postflight | drift-baseline | codebase-map | extracted-kb",
+  "snapshot_type": "preflight | postflight | drift-baseline | extracted-kb",
   "generated_by": "<skill name + version, e.g., execute-bolts@2.6.0 | detect-drift@1.4.0>",
   "generated_at": "<ISO8601 timestamp>",
   "scope": "<scope id from vault.json when multi-scope vault; null otherwise>",
@@ -53,7 +53,6 @@ Goal: every consumer skill that re-reads state already captured by an upstream p
     "binding_state_at_capture": "<CONFIRMED | NEW | UNKNOWN | PARTIAL_FIELDS_* | null>",
     "vault_sha256": "<vault.json hash at capture time>"
   },
-  "codebase_map_sha256": "<sha256 of codebase-map.md content; ONLY when snapshot_type == codebase-map; null otherwise>",
   "source_files_sha256_map": {
     "<repo-relative-path>": "<sha256-hex>",
     "...": "..."
@@ -61,9 +60,8 @@ Goal: every consumer skill that re-reads state already captured by an upstream p
 }
 ```
 
-**v1.1 fields (OPTIONAL):**
-- `codebase_map_sha256` — populated when `snapshot_type == codebase-map`. Allows downstream `bind-codebase` to detect codebase-map.md staleness in one check vs N source-file checks.
-- `source_files_sha256_map` — populated for the `extracted-kb` type ONLY (its generate-intent freshness check reads it, path-by-path). For `codebase-map` it is written EMPTY `{}` — no consumer reads it (bind-codebase compares `codebase_map_sha256` only) and per-file hashes already live in the map's §2 `Last_Scanned_Sha256` column.
+**v1.1 field (OPTIONAL):**
+- `source_files_sha256_map` — populated for the `extracted-kb` type ONLY (the `plan --kb` freshness check reads it, path-by-path; legacy numbered-tree KBs only).
 
 ## Producer responsibilities
 
@@ -71,21 +69,9 @@ Goal: every consumer skill that re-reads state already captured by an upstream p
 
 The bolt artifacts `<vault>/bolts/U-XXX/preflight.json` and `postflight.json` never adopted the snapshot schema above. They are written ONLY by the hook-guarded script pair `scripts/run-preflight-scan.sh` / `scripts/run-postflight-scan.sh` (shared engine `scripts/_lib/postflight_rules.py`; contract in `execute-bolts/references/hard-rule-scan.md`). Preflight records `unit_id`, `grammar`, `head_sha`, `snapshot_at`, `signature_at_preflight`, the extracted Hard `rules[]` (`{type, path | manifest | function}`), `matched_files` and `written_by`; postflight records `unit_id`, `head_sha`, `scanned_at`, the per-rule verdicts (`rules[]`, `status`, `total` / `attested` / `unverified`, `directives`) and `written_by`. No `snapshot_type`, `files[].ast_signatures` or `rules_validated[]` field exists, nothing reads them as snapshots, and there is no `<vault>/_drift-baseline.json` producer — detect-drift always scans fresh.
 
-### scan-codebase (codebase-map snapshot)
-
-> **Express-spine note:** on the default spine this snapshot has no producer (scan runs on-demand only) and no consumer (bind `--express` skips the currency check, provenance fixed `no-snapshot` — `bind-codebase/references/auto-memory-handoff.md`). The lane stays fully live for classic-spine and on-demand scan runs.
-
-Write to `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` after Step 10 codebase-map.md write:
-
-- `snapshot_type: "codebase-map"`
-- `generated_by: "scan-codebase@<version>"`
-- `codebase_map_sha256: "<sha256 of just-written codebase-map.md>"`
-- `source_files_sha256_map: {}` — EMPTY for this type (no consumer; §2's `Last_Scanned_Sha256` column already carries per-file hashes)
-- `files[]: []` (empty)
-
 ### extract-intelligence (extracted-kb snapshot)
 
-> **Producer retired:** the PRD-kontrak grammar carries freshness inside `census.json` (per-file `sha256`), so new extractions emit NO snapshot; `generate-intent --kb` checks census freshness directly. The consumer contract below still applies to legacy numbered-tree KBs that carry a snapshot on disk.
+> **Producer retired:** the PRD-kontrak grammar carries freshness inside `census.json` (per-file `sha256`), so new extractions emit NO snapshot; `plan --kb` checks census freshness directly (per-file sha256 vs `legacy_root`). The consumer contract below still applies to legacy numbered-tree KBs that carry a snapshot on disk.
 
 Write to `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json` after wave-4 consolidation completes:
 
@@ -100,20 +86,9 @@ Write to `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json` after wave-4 co
 
 detect-drift has no snapshot consumer: there is no `--reuse-bolt-snapshots` flag and no baseline file — every run is a fresh scan of the live codebase against the vault (`DRIFT-REPORT.md` + `PENDING-SYNC.md`).
 
-### bind-codebase (codebase-map snapshot consumer)
+### plan --kb (extracted-kb snapshot consumer)
 
-Before Step 3 (claim-vs-code matching):
-
-1. Check if `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json` exists
-2. Read its `codebase_map_sha256` field; compare to current `codebase-map.md` sha256
-3. If MATCH → map freshness attested (one sha compare); binding proceeds against codebase-map.md as usual
-4. If MISMATCH OR snapshot absent → same binding behavior, minus the attestation (no regression)
-
-This hop is a **freshness attestation, NOT a parsing shortcut** (bind-codebase `auto-memory-handoff.md` is the consumer-side contract) — binding correctness and its read path are unchanged whether the attestation confirms or rejects.
-
-### generate-intent --kb (extracted-kb snapshot consumer)
-
-Before reading `<kb-dir>`:
+Before reading `<kb-dir>` (`plan/references/kb-input.md` §KB freshness preflight):
 
 1. Check if `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json` exists
 2. For each path in `source_files_sha256_map`: compute current sha256 of the file in repo
@@ -132,10 +107,10 @@ Legacy bolts wrote preflight/postflight with informal JSON. Migration:
 
 - The first bolt run writes the new schema; older snapshots remain readable but consumer treats them as `snapshot_schema_version: "0.x (legacy)"` and falls back to fresh scan
 - No data migration required; old snapshots aged out naturally as bolts re-execute
+- Pre-9.0 `codebase-map` snapshots (`<project>/.mega-sdd/codebase/.shared-snapshots/`) have no reader; readers skip the type
 
 ## File locations summary
 
 - Bolt Hard-rule artifacts (script-written, NOT this schema — see §Producer responsibilities): `<vault>/bolts/U-XXX/{preflight,postflight}.json`
 - Drift report: `<vault>/DRIFT-REPORT.md` (existing)
-- Codebase-map snapshot (v1.1+): `<project>/.mega-sdd/codebase/.shared-snapshots/codebase-map.snapshot.json`
 - Extracted-KB snapshot (v1.1+): `<kb-dir>/.shared-snapshots/extracted-kb.snapshot.json`

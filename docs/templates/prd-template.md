@@ -1,8 +1,12 @@
 ---
 # REQUIRED frontmatter — machine-read by the mega-sdd skills (keep this block 1:1 with them).
-#   Primary reader:  generate-intent  → Mode A PRD parse + scope picker (Step 0.9).
-#   Downstream:      emit-fsd          → stakeholders[] becomes the FSD §3 sign-off table;
-#                    resolve-oq        → industry seeds OQ recommendation context;
+#   /mega-sdd routes first (scripts/route-lane.sh): the direct/assisted lanes read this doc as plain
+#   text; the keys below are machine-read on the guarded lane (plan → execute-bolts) and after it.
+#   Primary reader:  plan              → PRD parse (Step 1) + scope picker (Step 0.9,
+#                                        skills/plan/references/scope-flow.md); `status: draft` → prd_status;
+#                                        stakeholders[] → the context.md frontmatter;
+#                                        industry → one PRD signal for the design-source OQ recommendation.
+#   Downstream:      emit-fsd          → stakeholders[] becomes the FSD §3 Stakeholders & Owners table;
 #                    diff-vault        → re-diffs the vault when this doc changes (by sha256).
 #   Every key below is consumed by ≥1 skill EXCEPT where annotated "informational only".
 title: "<Project Name>"
@@ -22,7 +26,8 @@ stakeholders:
   - { role: "Product Owner", name: "<name>", email: "<email>" }
 
 # Scope declaration — REQUIRED for multi-scope PRDs
-# When this block is absent → mega-sdd triggers interactive retrofit bridge
+# When this block is absent → plan treats the PRD as single-scope (no ask; one report line
+# offers the manual retrofit: add a scopes: block, then plan --regenerate --scope=<id>)
 scopes:
   BE:
     name: "Backend API"

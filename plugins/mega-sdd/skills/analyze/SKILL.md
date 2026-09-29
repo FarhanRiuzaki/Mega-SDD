@@ -1,6 +1,6 @@
 ---
 name: analyze
-version: 2.4.2
+version: 2.4.3
 description: Unified cross-artifact consistency analysis — semantic-scoped validator re-runs (unchanged files reuse their ledgered verdict) + vault checks; produces CONSISTENCY-REPORT.md. Triggers — "analyze", "consistency check", "check consistency", "consistency report", "run all validators", "cek konsistensi", or paraphrases.
 ---
 
@@ -46,7 +46,7 @@ Read `<cwd>/.mega-sdd/CONSISTENCY-REPORT.md` and present it in chat. (No token/c
 **If `overall == PASS`:**
 ```
 All boundaries clean. Vault internal consistency verified.
-Next: <suggest based on CWD state — e.g., "generate-units" if bound-vault exists but no units>
+Next: <suggest based on CWD state — e.g., "execute-bolts --all" if units exist without bolts; "plan --regenerate" if a layout-3 vault has no units; "plan <prd>" if no vault>
 ```
 
 **If `overall == WARN`:**
@@ -62,11 +62,11 @@ Consistency check FAILED:
 <list FAIL boundaries with detail>
 
 Resolution:
-- binding_units_handoff FAIL → re-run generate-units with binding OQ-IDs
+- binding_units_handoff FAIL → layout-3: unresolved CONFLICT in `bolts/U-*/binding.json` → `resolve-oq --binding`, then `rebind-units.sh` + `plan --reconcile`; layout-2 `binding.md` drop → `/mega-sdd:migrate-paths --vault-layout=3`
 - unit_spec FAIL → fix unit frontmatter per validate-unit-spec.sh findings
-- plan_coverage FAIL → re-run generate-units (classic) / plan --regenerate (lite) — PRD heading without a unit
+- plan_coverage FAIL → PRD heading with no decision (or a vault whose coverage entry is stale): `plan --regenerate`, or add a unit / raise an OQ carrying `[covers: <prd>#<slug>]` / declare it in `context.md ## Coverage exclusions` (`- "<heading>" — <reason>`), then re-run `validate-plan-coverage.sh`
 - vault_oqs FAIL → fix OQ structure in vault docs
-- FAIL traceable to a low-precision (regex-tier) scan or another missing optional native dep upstream → run `/mega-sdd:install-deps` then re-run the upstream skill (scan-codebase / generate-units / etc.)
+- FAIL traceable to a missing optional native dep (e.g. ast-grep → no symbol index / v2 rules) → run `/mega-sdd:install-deps`, re-run GROUND (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/ground.sh" --cwd="$(pwd)"`, rebuilds the symbol index), then `rebind-units.sh` + `plan --reconcile` (re-types units from fresh evidence; `plan --regenerate` only if units must be re-derived)
 <etc.>
 ```
 
@@ -119,7 +119,7 @@ Plus: vault internal consistency checks (entities/OQs/flows count sync, file com
 Beyond the core set, the report surfaces every code-delivery gate's last status read-only from its state file (`NOT_RUN` until a chain writes it), so analyze is a true pre-flight of what will block `execute-bolts`:
 
 - **KEPT hard-blocks** — block `execute-bolts` at the PreToolUse gate; a FAIL here flips the report to FAIL: `flow-coverage`, `render-test` (via unit-spec), `sibling-consistency`, `ui-quality`, `cross-cutting-registration`. (Plus the core invariants enforced at the hook: binding→units handoff, preflight, scope-flag, anti-self-bypass.)
-- **DEMOTED to advisory** (surfaced but NEVER block; an advisory FAIL shows as overall WARN): `dispatch-prompt`, `operator-UX` (vault-oqs), `fanout-parity`, `ui-deferral`, `vault-flow-staging`.
+- **DEMOTED to advisory** (surfaced but NEVER block; an advisory FAIL shows as overall WARN): `operator-UX` (vault-oqs), `fanout-parity`, `ui-deferral`, `vault-flow-staging`.
 
 ## Scope constraints
 

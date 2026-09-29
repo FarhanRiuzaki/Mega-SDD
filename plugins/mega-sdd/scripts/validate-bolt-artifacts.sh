@@ -27,11 +27,18 @@
 # .mega-sdd/.bolt-orphans-state.json; the PreToolUse gate blocks the NEXT
 # execute-bolts on FAIL.
 #
+# CONFLICT-BYPASS-SCAN mode (--conflict-bypass-scan — conflict_bypassed, spec
+# 2026-09-27-v9-simplification-design.md §8): the run-boundary twin of the per-dispatch
+# CONFLICT gate (the default inline `execute-bolts` run dispatches nothing per unit). A unit commit that
+# landed inside an unresolved CONFLICT episode of its binding, after its quarantine.json, while
+# a depends_on ancestor was so blocked, or past a skipped re-bind (rebind_skipped) FAILs (body:
+# _lib/conflict_bypass.py). Writes .mega-sdd/.bolt-conflict-bypass-state.json; the PreToolUse gate blocks on FAIL.
+#
 # COMMIT IDENTITY (S6 EB-GATE-2): a bolt commit is recognized by ANY of —
 #   1. conventional-commit scope   `<type>(U-XXX): …`   (the canonical contract
 #      format per execute-bolts/references/bolt-contract.md §Commit message format)
 #   2. legacy subject grammar      `… (bolt): U-XXX …`
-#   3. git trailer                 `Unit: U-XXX`         (bolt-implementer.md step 6)
+#   3. git trailer                 `Unit: U-XXX`         (halts-and-handoff.md §Provenance trailer enforcement)
 # The old validators keyed ONLY on shape 2, which no producer contract ever
 # emitted — every doc-conformant bolt run shipped with the B1/B2/orphan gates
 # silently dormant (bolt_commits_seen: 0 → PASS).
@@ -46,6 +53,7 @@ BATCH_SUITE_GATE=0
 POSTFLIGHT_SCAN=0
 WHITELIST_SCAN=0
 ACCEPTANCE_SCAN=0
+CONFLICT_BYPASS_SCAN=0
 RECOMPUTE=0
 for arg in "$@"; do
   case "$arg" in
@@ -57,7 +65,8 @@ for arg in "$@"; do
     --recompute) RECOMPUTE=1 ;;
     --whitelist-scan) WHITELIST_SCAN=1 ;;
     --acceptance-scan) ACCEPTANCE_SCAN=1 ;;
-    --panel-scan) PANEL_SCAN=1 ;;
+    --panel-scan) : ;;  # accepted no-op: open plans still pass it
+    --conflict-bypass-scan) CONFLICT_BYPASS_SCAN=1 ;;
     --quiet) QUIET=1 ;;
     *) echo "ERROR: unknown arg: $arg" >&2; exit 2 ;;
   esac
@@ -262,7 +271,7 @@ def code_files(names):
 # single-scan invocation exits inside _scan_done — behavior byte-identical.
 # Every mode's python, state file, and verdict semantics are untouched: this is
 # call-site consolidation, never a scan merge.
-SCAN_COUNT=$((ORPHAN_SCAN + BATCH_SUITE_GATE + POSTFLIGHT_SCAN + WHITELIST_SCAN + ACCEPTANCE_SCAN))
+SCAN_COUNT=$((ORPHAN_SCAN + BATCH_SUITE_GATE + POSTFLIGHT_SCAN + WHITELIST_SCAN + ACCEPTANCE_SCAN + CONFLICT_BYPASS_SCAN))
 if [ "$SCAN_COUNT" -ge 1 ]; then
   # Not a git repo (or no vault layout at all) → nothing to scan; no state written.
   git -C "$CWD" rev-parse --git-dir >/dev/null 2>&1 || exit 0
@@ -642,8 +651,9 @@ def has_hard_rules(text):
     # body of the \`## Hard rules\` section (until the next \`## \` heading).
     # Case-INSENSITIVE heading + tolerate trailing text on the heading line — the
     # canonical unit template emits \`## Hard rules  (validated at bolt time ...)\`
-    # (unit-schema.md), and units may use \`## Hard Rules\`. Matching only the bare
-    # \`## Hard rules\` left the B1 gate INERT on template-conformant units.
+    # (plan/references/unit-schema.md §Required body sections), and units may use
+    # \`## Hard Rules\`. Matching only the bare \`## Hard rules\` left the B1 gate
+    # INERT on template-conformant units.
     m = re.search(r"(?ims)^##[ \t]+Hard[ \t]+rules\b[^\n]*\n(.*?)(?=^##[ \t]|\Z)", text)
     if not m:
         return False
@@ -993,112 +1003,6 @@ PYEOF
   _scan_done $?
 fi
 
-# ─── PANEL-SCAN mode (F-07 — spec 2026-08-30 §3.1) ───────────────────────────
-# The review panel and the L0 code gates caught EVERY real high-class defect of
-# the field run — and left a trace on ≤17/36 and 7/36 units: "mandatory" was
-# prose. Obligation KEY = <vault>/bolts/U-XXX/review-tier.json, written by
-# `resolve-review-tier.sh --write` AT DISPATCH (the B4 precedent: keyed by a
-# stamp made at the time, so a bolt dispatched before this version is advisory
-# only, never retro-blocked). A keyed, committed, non-verify bolt owes:
-#   * tier != minimal → <vault>/bolts/U-XXX/findings.json written by
-#     merge-panel-findings.sh (`written_by` stamp; a hand-written ledger is not
-#     evidence — 3/3 field ledgers were hand-written)   → panel_evidence_missing
-#   * any tier        → <vault>/lens-inputs/U-XXX/l0-results.json written by
-#     run-code-gates.sh --write                          → l0_evidence_missing
-# Writes .mega-sdd/.bolt-panel-state.json; the PreToolUse aggregator blocks on
-# FAIL (in-run: the dispatched unit's own pending evidence is dropped).
-if [ "${PANEL_SCAN:-0}" = "1" ]; then
-  PANEL_STATE="${CWD}/.mega-sdd/.bolt-panel-state.json"
-  CWD="$CWD" PANEL_STATE="$PANEL_STATE" QUIET="$QUIET" python3 <<PYEOF
-$PY_COMMON
-state_file = os.environ["PANEL_STATE"]
-import plugin_meta
-
-per_unit = {}
-for sha, subj, uid, _files in walk_log(300):
-    if uid:
-        per_unit.setdefault(uid, []).append(sha)
-
-def _load(p):
-    try:
-        return json.load(open(p))
-    except (OSError, ValueError, TypeError):
-        return None
-
-issues, legacy_advisory, keyed = [], [], 0
-for uid in sorted(per_unit):
-    uf = vault_layouts.find_unit_file(cwd, uid)
-    if uf is None:
-        continue  # retired unit — orphan-scan owns that case
-    try:
-        utext = open(uf, encoding="utf-8", errors="replace").read()
-    except OSError:
-        utext = ""
-    if re.search(r"(?m)^task_type:\s*[\"']?verify", utext):
-        continue  # read-only unit: no code, no panel obligation
-    rt_path = vault_layouts.find_bolt_artifact(cwd, uid, "review-tier.json")
-    rt = _load(rt_path) if rt_path else None
-    if rt is None:
-        legacy_advisory.append(uid)
-        continue
-    keyed += 1
-    tier = str(rt.get("tier", "standard")).lower()
-    ud = os.path.dirname(uf)
-    vault_root = os.path.dirname(ud) if os.path.basename(ud) == "units" else os.path.dirname(os.path.dirname(ud))
-    if tier != "minimal":
-        fj = vault_layouts.find_bolt_artifact(cwd, uid, "findings.json")
-        led = _load(fj) if fj else None
-        if not (isinstance(led, dict) and led.get("written_by") == "merge-panel-findings.sh"
-                and led.get("schema") == 1):
-            issues.append({
-                "halt_type": "panel_evidence_missing", "unit_id": uid, "tier": tier,
-                "commit": per_unit[uid][0],
-                "detail": ("<vault>/bolts/%s/findings.json is absent or not written by "
-                           "merge-panel-findings.sh — the unit was dispatched at tier %s "
-                           "(review-tier.json) so the blind lens panel MUST have run and its "
-                           "ledger MUST be script-merged; a hand-written ledger is not evidence"
-                           % (uid, tier)),
-            })
-    l0 = os.path.join(vault_root, "lens-inputs", uid, "l0-results.json")
-    rec = _load(l0)
-    if not (isinstance(rec, dict) and rec.get("written_by") == "run-code-gates.sh"):
-        issues.append({
-            "halt_type": "l0_evidence_missing", "unit_id": uid, "tier": tier,
-            "commit": per_unit[uid][0],
-            "detail": ("<vault>/lens-inputs/%s/l0-results.json is absent or not written by "
-                       "run-code-gates.sh — run \`bash <plugin>/scripts/run-code-gates.sh "
-                       "--cwd=<root> --base=<bolt-base> --head=<bolt-head> --unit=<unit.md> "
-                       "--write\` (secret scan / SAST / dep gates over the bolt's own range)"
-                       % uid),
-        })
-
-state = {
-    "ts": ts, "mode": "panel-scan",
-    "status": "FAIL" if issues else "PASS",
-    "bolt_units_seen": len(per_unit),
-    "keyed_units": keyed,
-    "legacy_advisory": legacy_advisory,
-    "issues_count": len(issues), "issues": issues,
-    "next_action": ("%d dispatched bolt(s) lack panel/L0 evidence. Run the blind lens panel and "
-                    "merge with merge-panel-findings.sh, and/or run-code-gates.sh --write for the "
-                    "bolt's range; execute-bolts is gated until resolved." % len(issues))
-                   if issues else
-                   ("Every keyed bolt carries script-written panel + L0 evidence."
-                    + (" (%d bolt(s) dispatched before review-tier.json existed — advisory only.)"
-                       % len(legacy_advisory) if legacy_advisory else "")),
-}
-state.update(plugin_meta.stamp(os.environ["MEGA_SDD_LIB_DIR"]))
-tmp = state_file + ".tmp"
-with open(tmp, "w") as f:
-    json.dump(state, f, indent=1)
-os.replace(tmp, state_file)
-if not quiet:
-    print(json.dumps(state, indent=1))
-sys.exit(1 if issues else 0)
-PYEOF
-  _scan_done $?
-fi
-
 # ─── WHITELIST-SCAN mode (B3 — S6 EB-GATE-11) ────────────────────────────────
 # The target_files whitelist was prompt-tier only ("honored", honestly worded in
 # v4.58) — a scope-escaping bolt write shipped undetected: post-flight is
@@ -1196,7 +1100,7 @@ for uid, info in sorted(per_unit.items()):
         # blessed legacy/app/config.py; and the reverse blessed root config.py), and
         # raw fnmatch let * eat '/' (target src/*.py blessed src/a/b/evil.py) — the
         # exact defect the sibling B1 engine's _glob_match already fixed. Targets are
-        # project-root-relative (generate-units emits them that way); the basename
+        # project-root-relative (plan emits them that way - unit contract target_files); the basename
         # fallback is OFF so a bare filename never sanctions a same-named file in a
         # different directory.
         ok = any(
@@ -1236,6 +1140,32 @@ if not quiet:
 sys.exit(1 if issues else 0)
 PYEOF
   _scan_done $?
+fi
+
+# ─── CONFLICT-BYPASS-SCAN mode (conflict_bypassed — spec 2026-09-27 v9 §8) ────────
+# 0-fork fast path (hook cost doctrine — this runs in the blocking PreToolUse gate and the Stop
+# hook): no bolts/U-XXX/ entry in any vault = no binding or quarantine to re-check (a bolt commit
+# with no bolts/U-XXX/bolt-report.md already fails the orphan scan) → PASS, shell builtins only.
+if [ "$CONFLICT_BYPASS_SCAN" = "1" ]; then
+  CB_STATE="${CWD}/.mega-sdd/.bolt-conflict-bypass-state.json"
+  _CB_ANY=0
+  for _cb in "${CWD}"/.mega-sdd/vaults/*/bolts/U-* "${CWD}"/docs/mega-sdd/vaults/*/bolts/U-* \
+             "${CWD}"/*-bound/bolts/U-* "${CWD}"/*/*-bound/bolts/U-*; do
+    [ -e "$_cb" ] && { _CB_ANY=1; break; }
+  done
+  if [ "$_CB_ANY" = "0" ]; then
+    _CB_JSON='{"mode": "conflict-bypass-scan", "status": "PASS", "fast_path": "no_bolt_artifacts", "legacy_advisory": [], "issues_count": 0, "issues": [], "next_action": "No bolts/U-XXX/ entry in any vault: no CONFLICT gate to re-check."}'
+    printf '%s\n' "$_CB_JSON" > "$CB_STATE" 2>/dev/null
+    [ "$QUIET" = "1" ] || printf '%s\n' "$_CB_JSON"
+    _scan_done 0
+  else
+  CWD="$CWD" CB_STATE="$CB_STATE" QUIET="$QUIET" python3 <<PYEOF
+$PY_COMMON
+import conflict_bypass
+sys.exit(conflict_bypass.run(cwd, os.environ["CB_STATE"], quiet, ts, git, PREFIX, _HAS_TRAILER_ATOM, os.environ["MEGA_SDD_LIB_DIR"]))
+PYEOF
+  _scan_done $?
+  fi
 fi
 
 # A multi-scan invocation ends HERE with the MAX rc of its scans — it must
@@ -1342,11 +1272,12 @@ def find_unit_for_target(target_path):
 
 # ─── Check 1: provenance_missing ────────────────────────────────────────────
 # Triggers when written file is bolt-modified (i.e., listed in some unit's target_files).
-# Provenance trailer format (per agents/bolt-implementer.md §Provenance trailer; values injected per-dispatch;
+# Provenance trailer format (per halts-and-handoff.md §Provenance trailer enforcement;
 # TWO lines since 8.0.2, line 2 = unit + pointer since 8.0.3 — the claim/anchors/hard-rules/sha lines
 # were dropped, nothing ever read them):
 #   Generated by mega-sdd execute-bolts <version>
 #   Unit: U-XXX · provenance: <repo-relative path of bolts/U-XXX/dispatch-prompt.md>
+#   (the inline execute-bolts run dispatches nothing: the pointer is the tracked unit file units/U-XXX.md)
 # We detect by looking for the marker line "Generated by mega-sdd execute-bolts" in
 # the first 30 lines (top-of-file, comment-block-tolerant).
 unit_file, unit_id = find_unit_for_target(file_path)

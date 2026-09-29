@@ -1,0 +1,44 @@
+# fc09 — the natural coverage exclusions (test sidecar: the vault's context.md)
+
+## Coverage exclusions
+
+- "Background — why now" — document context — background for the flows, no behaviour of its own
+- "Background & Current State" — document context — background for the flows, no behaviour of its own
+- "Latar Belakang Bisnis" — document context — background for the flows, no behaviour of its own
+- "Latar Belakang & Konteks Bisnis" — document context — background for the flows, no behaviour of its own
+- "Tujuan Pengembangan" — document context — background for the flows, no behaviour of its own
+- "Tujuan & Sasaran Bisnis" — document context — background for the flows, no behaviour of its own
+- "Goals for Q4" — document context — background for the flows, no behaviour of its own
+- "Goals (OKRs)" — success measurement — tracked outside the software
+- "Scope (In/Out)" — document context — background for the flows, no behaviour of its own
+- "Scope — v1" — document context — background for the flows, no behaviour of its own
+- "Scope of this document" — document context — background for the flows, no behaviour of its own
+- "Ruang Lingkup Pekerjaan" — document context — background for the flows, no behaviour of its own
+- "Ruang Lingkup Pengembangan" — document context — background for the flows, no behaviour of its own
+- "Ruang Lingkup Sistem" — document context — background for the flows, no behaviour of its own
+- "Glossary & Abbreviations" — glossary — vocabulary, not behaviour
+- "Glosarium / Daftar Istilah" — glossary — vocabulary, not behaviour
+- "Open Questions / TBD" — carried into context.md ## Open Questions; nothing to build here
+- "Open Questions (to resolve before dev)" — carried into context.md ## Open Questions; nothing to build here
+- "Open Questions & Answers" — carried into context.md ## Open Questions; nothing to build here
+- "Pertanyaan Terbuka (OQ)" — carried into context.md ## Open Questions; nothing to build here
+- "Data Model (draft)" — captured in context.md ## Data model; the schema units cite the flows that use it
+- "Riwayat Perubahan Dokumen" — document revision history
+- "Riwayat Revisi Dokumen" — document revision history
+- "Introduction" — document context — background for the flows, no behaviour of its own
+- "Executive Summary" — document context — background for the flows, no behaviour of its own
+- "TL;DR" — document context — background for the flows, no behaviour of its own
+- "Pendahuluan" — document context — background for the flows, no behaviour of its own
+- "Ringkasan Eksekutif" — document context — background for the flows, no behaviour of its own
+- "Purpose of this Document" — document context — background for the flows, no behaviour of its own
+- "Istilah & Definisi" — glossary — vocabulary, not behaviour
+- "Definitions & Acronyms" — glossary — vocabulary, not behaviour
+- "Dokumen Referensi" — reference material, not a requirement
+- "Related Links" — reference material, not a requirement
+- "References & Links" — reference material, not a requirement
+- "Isu Terbuka" — carried into context.md ## Open Questions; nothing to build here
+- "Document Revision History" — document revision history
+- "Change History" — document revision history
+- "Approvals / Sign-off" — document sign-off, not product behaviour
+- "Timeline & Milestones" — project schedule, not software behaviour
+- "Risks & Mitigations" — project risk / assumption register — no behaviour to build

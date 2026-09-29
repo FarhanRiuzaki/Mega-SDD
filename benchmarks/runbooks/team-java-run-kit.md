@@ -1,7 +1,7 @@
 # Kit pengukuran run Java tim — bukti lapangan playbook code style (8.1.0 / 8.2.0)
 
 **Untuk siapa:** tim yang menjalankan mega-sdd di proyek backend Java (Spring). Kit ini yang menutup gate bukti "playbook code style selesai" — angka dari repo plugin (skenario Laravel/TS) tidak bisa menggantikannya.
-**Status:** MENUNGGU TIM (belum ada data). Setelah diisi, hasilnya masuk `research/2026-09-15-v8-p3-report.md §6h` atau doc riset baru.
+**Status:** DITUNDA — sejak 9.0 P3 tidak ada kanal yang membawa `## Code style` pack atau Iron Rule 6 ke run, jadi run ≥ 9.0 mengukur "tanpa playbook". Jangan dijalankan dulu.
 
 ## 0. Yang kami butuh dari run LAMA (kolom *before*) — kalau masih ada
 
@@ -18,7 +18,7 @@ claude plugin list | grep mega-sdd      # harus ≥ 8.2.0
 
 ## 2. Jalankan seperti biasa
 
-Pipeline normal (`/mega-sdd` → plan → execute-bolts) di proyek Java yang sama / sejenis. Tidak ada flag khusus. Yang berubah otomatis di ≥ 8.1.0: Iron Rule 6 (komentar KENAPA, tes hapus, docblock hanya bila ada pembaca atau public API lintas modul), dan dispatch tiap unit membawa section `## Code style` dari `spring.md` (Javadoc: dibaca Checkstyle bila `checkstyle.xml` ada, springdoc bila `therapi-runtime-javadoc` di classpath).
+Pipeline normal (`/mega-sdd` → plan → execute-bolts) di proyek Java yang sama / sejenis. Tidak ada flag khusus.
 
 ## 3. Ukur (± 5 menit, dari root repo Java)
 

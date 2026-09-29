@@ -11,19 +11,19 @@ Written by the sync chain whenever an autonomous run defers a human decision. Se
 **Last sync run**: <ISO8601> · **Open items**: N
 
 ## 1. CONFLICTs (BLOCKING — gate closed for affected units)
-- [ ] CONFLICT-7 — <one-line> → resolve via `resolve-oq --binding` (classic: `<vault>/binding.md`; lite: the unit's `bolts/U-XXX/binding.json`)
-      (source: binding.md §CONFLICT-7; affected units: U-004, U-009)
+- [ ] C-U004-01 — <one-line> → resolve via `resolve-oq --binding` (the unit's `bolts/U-XXX/binding.json`)
+      (source: bolts/U-004/binding.json §C-U004-01; affected units: U-004)
 
 ## 2. Drift direction calls (vault stale vs code regressed — your call)
 - [ ] DRIFT-N3 [HIGH] name-drift: vault `failed_debit_count` vs code `failed_attempts`
       (source: DRIFT-REPORT.md §N3; anchor app/models/account.rb:42)
 
 ## 3. Write-back drafts awaiting human triage
-- [ ] PATCH-2 → model.md §Account — proposed_patch preserved on its PENDING-SYNC.md entry
+- [ ] PATCH-2 → context.md §Data model (Table accounts) — proposed_patch preserved on its PENDING-SYNC.md entry
       (provenance: a1b2c3 "hotfix rounding" — <author>, <date>)
 ```
 
-Consumers: the `/mega-sdd` status view (Lane 0 — PENDING-SYNC presence) points HERE when open items exist; `resolve-oq --binding` marks the CONFLICT entries resolved as it goes.
+Consumers: the `/mega-sdd` status view (Lane 0 — PENDING-SYNC presence) points HERE when open items exist. `resolve-oq --binding` resolves a CONFLICT at its source (`write-unit-binding.sh --resolve` on the unit's `bolts/U-XXX/binding.json`) and never edits this file; the next sync run marks the matching row `✅ RESOLVED <date>` once its source claim carries a `resolution`. The gate reads `binding.json`, never this queue.
 
 ## SYNC-REPORT.md — the run report (overwrite)
 
@@ -34,21 +34,21 @@ Consumers: the `/mega-sdd` status view (Lane 0 — PENDING-SYNC presence) points
 
 | Phase | Outcome |
 |---|---|
-| scan --changed-only | merged K paths; F full-scan fallback? (reason) |
+| derive-changed-paths.sh | K changed paths (journal ∪ git since index head) |
 | detect-drift (scoped) | X findings (H high / M med / L low); A auto-applied; Q queued |
-| bind --paths | C claims re-verdicted, R carried forward; conflicts: N (queued) |
-| generate-units --reconcile | T task_type flips; S → stale; P → superseded; W new units |
-| execute-bolts | B stale/new units executed; superseded skipped: V |
+| rebind-units.sh --paths | U units re-bound (bolts/U-XXX/binding.json); conflicts: N (queued) |
+| plan --reconcile | T task_type / status flips (claim ids listed); P → superseded; N not re-bound |
+| execute-bolts | B stale units executed; superseded skipped: V |
 | full-suite gate (B2) | green\|red (P passed / F failed); bolts/_batch-suite.json (source: sync) |
 
 ## Applied patches (provenance)
-- model.md §Account — name-drift (synced from code: a1b2c3 "…" — author, date)
+- context.md §Data model (Table accounts) — name-drift (synced from code: a1b2c3 "…" — author, date)
 
 ## Queued (see PENDING-SYNC.md)
 - 1 CONFLICT, 2 drift calls, 1 draft
 
 ## Closing staleness verification
-`compute-unit-staleness.sh`: stale=0 ✅ | stale=N — explained: <e.g., U-004 blocked by CONFLICT-7>
+`compute-unit-staleness.sh`: stale=0 ✅ | stale=N — explained: <e.g., U-004 blocked by C-U004-01>
 
 ## Closing full-suite gate (B2)
 `<full-suite command>` @ HEAD: green ✅ (P passed / F failed) → bolts/_batch-suite.json (written_by: run-full-suite.sh)

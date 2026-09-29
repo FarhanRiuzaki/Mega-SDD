@@ -233,7 +233,7 @@ if binding is None:
     binding = read(os.path.join(vault, "bound", "binding.md"))
     if binding is not None:
         binding_rel = "bound/binding.md"
-# Every producer (generate-intent / plan / migrate-paths) writes <vault>/constitution.md;
+# Every producer (plan / migrate-paths; classic-built layout-2 vaults too) writes <vault>/constitution.md;
 # `_meta/` is kept as a fallback for hand-made vaults (doc-audit v8 finding #4 — the
 # old `_meta/`-only read meant no LOCKED clause ever reached FSD §6).
 const_rel = "constitution.md"
@@ -252,8 +252,8 @@ cb_rel = os.path.relpath(cbmap_p, cwd).replace(os.sep, "/") if cbmap_p else "cod
 def md_section(text, name):
     """Body of `## <name>`/`### <name>` (numbered headings tolerated) until the
     next same-or-higher heading. `name` may be an alternation of synonyms —
-    the real vault producer emits §Product/§Problem/§Success criteria/§Out of
-    Scope (generate-intent templates), and the real codebase-map numbers its
+    the layout-2 overview template of classic-built vaults carries §Product/
+    §Problem/§Success criteria/§Out of Scope, and a pre-9.0 codebase-map numbers its
     headings (`## 2. Public interfaces`) — ADV-007/ADV-008."""
     if not text:
         return None
@@ -318,7 +318,7 @@ for br in glob.glob(os.path.join(vault, "bolts", "U-*", "bolt-report.md")):
     bolts[uid] = {"status": st.group(1) if st else "unknown",  # absent evidence is NEVER success (ADV-004)
                   "commit": (ci.group(1)[:8] if ci else ""),
                   "concern": cc.group(1).strip() if cc else "",
-                  "agent": ag.group(1) if ag else "bolt-implementer"}
+                  "agent": ag.group(1) if ag else "execute-bolts"}
 
 cites = {n: [] for n in range(1, 11)}
 def cite(n, path, lr=None):
@@ -428,7 +428,7 @@ if units:
         cite(4, u["rel"])
     slots["section-4-user-stories-content"] = "\n\n".join(blocks)
 else:
-    slots["section-4-user-stories-content"] = "[Pending — units/ directory not yet generated. Run generate-units after vault stabilizes.]"
+    slots["section-4-user-stories-content"] = "[Pending — units/ directory not yet generated. Run `plan <prd>` (units are written with the vault).]"
     pending_count += 1
 
 # ── §5 Functional requirements ──
@@ -486,10 +486,10 @@ if fn:
         fr_details.append(d.strip())
     cite(5, "vault/" + vdoc_name("02-functional.md"))
 if not fr_rows:
-    # Modern-vault fallback (P4 repair): today's generate-intent emits no
-    # 02-functional.md — the functional enumeration of a modern vault is its
-    # flows (04-flows.md `### F-*` + per-flow DoD; SIT already builds from
-    # exactly this). Legacy FR-heading vaults keep the branch above.
+    # Modern-vault fallback (P4 repair): layout-2 and layout-3 (plan) vaults carry
+    # no 02-functional.md — their functional list is the flows section (vtext
+    # resolves 04-flows.md -> flows.md / context.md ## Flows; `### F-*` + per-flow
+    # DoD; SIT already builds from exactly this). Legacy FR-heading vaults keep the branch above.
     fl = vtext("04-flows.md")
     if fl:
         # id must END at the match (round: `F-U_002` half-matched as id "F-U";
@@ -633,11 +633,39 @@ if const and any("[LOCKED]" in (slots[s] or "") or "constitution" in (slots[s] o
 ents = md_section(cbmap, "Entities|Data models / Schemas|Data models") if cbmap else None
 mods = md_section(cbmap, "Modules|Top-level structure") if cbmap else None
 conf = md_section(binding, "Confirmed Claims") if binding else None
-slots["section-7-entities-content"] = ents or ("[Pending — codebase-map.md not yet generated. Run scan-codebase.]" if not cbmap else "(no entities recorded)")
-slots["section-7-modules-content"] = mods or ("[Pending — codebase-map.md not yet generated. Run scan-codebase.]" if not cbmap else "(no modules recorded)")
-slots["section-7-binding-confirmed-content"] = conf or "[Pending — binding.md not yet generated. Run bind-codebase.]"
-if not cbmap or not binding:
-    pending_count += 1
+# Layout-3 keeps binding evidence per unit (execute-bolts JIT bind writes
+# bolts/U-XXX/binding.json): with no binding.md §Confirmed Claims, list those
+# CONFIRMED claims verbatim, each line citing the file it came from.
+conf_units = []
+if not conf:
+    def _flat(v):
+        return re.sub(r"\s+", " ", str(v or "")).replace("`", "'").strip() or "—"
+    for bj in sorted(glob.glob(os.path.join(vault, "bolts", "U-*", "binding.json"))):
+        try:
+            bd = json.load(open(bj, encoding="utf-8"))
+        except Exception:
+            continue
+        uid = os.path.basename(os.path.dirname(bj))
+        rel = "bolts/%s/binding.json" % uid
+        claims = bd.get("claims") if isinstance(bd, dict) else None
+        rows = ["- [%s/%s] `%s` -> `%s` [Source: %s (sha256: pending)]"
+                % (uid, _flat(c.get("id")), _flat(c.get("expect")), _flat(c.get("anchor")), rel)
+                for c in (claims if isinstance(claims, list) else [])
+                if isinstance(c, dict) and c.get("verdict") == "CONFIRMED"]
+        if rows:
+            conf_units.extend(rows)
+            cite(7, rel)
+# Owner decision (9.0 P1): nothing writes codebase-map.md any more, so §7.1/§7.2/§8
+# stay [Pending] unless a pre-9.0 map is on disk. NOT re-sourced: the symbol index
+# (advisory; class/function kinds only) and binding.json (fs/symbol claims) carry no
+# entity/module/interface semantics — labelling code as such would be inference, not
+# a cited fact. NOT dropped: a missing source is a [Pending] marker (invariant #3).
+# Marker text is read by FSD readers: say what is absent, no plugin version history.
+CB_ABSENT = "codebase-map.md absent (not produced for this project)"
+slots["section-7-entities-content"] = ents or (("[Pending — %s; entities are codebase facts, never copied from the vault]" % CB_ABSENT) if not cbmap else "(no entities recorded)")
+slots["section-7-modules-content"] = mods or (("[Pending — %s; module inventory not recorded]" % CB_ABSENT) if not cbmap else "(no modules recorded)")
+slots["section-7-binding-confirmed-content"] = conf or "\n".join(conf_units) or \
+    "[Pending — binding.md / bolts/U-*/binding.json: no confirmed claim yet (execute-bolts binds each unit before it runs)]"
 if cbmap:
     cite(7, cb_rel)
 if binding:
@@ -667,8 +695,8 @@ if api:
         elif len(cells) >= 3:
             rows8.append("| %s | %s | %s |" % (cells[0], cells[1], cells[2]))
     cite(8, cb_rel)
-slots["section-8-api-table"] = "\n".join(rows8) if rows8 else ("| — | %s | — |" % pend(cb_rel))
-slots["section-8-entities-content"] = ents or (pend(cb_rel) if not cbmap else "(no entities recorded)")
+slots["section-8-api-table"] = "\n".join(rows8) if rows8 else ("| — | %s | — |" % (pend(cb_rel) if cbmap else "[Pending — %s]" % CB_ABSENT))
+slots["section-8-entities-content"] = ents or (("[Pending — %s]" % CB_ABSENT) if not cbmap else "(no entities recorded)")
 
 # ── §9 Test plan ──
 if mode == "pre-dev":

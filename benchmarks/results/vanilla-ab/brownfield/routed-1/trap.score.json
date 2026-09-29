@@ -1,0 +1,40 @@
+{
+ "traps": {
+  "T1": {
+   "surfaced": true,
+   "quote": "The PRD describes v1 with 20-minute slots and 48-hour reminders, but the code uses 15 minutes and 24 hours.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T2": {
+   "surfaced": true,
+   "quote": "PRD \u00a71 says reminders go out **48 hours** before, but the live code sends them 24 hours before",
+   "judge_said": true,
+   "verified": true
+  },
+  "T3": {
+   "surfaced": true,
+   "quote": "The PRD calls `rescheduling_required` and \"the cancellation email\" existing features; neither existed, so I added both.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T4": {
+   "surfaced": true,
+   "quote": "\"Late cancellations are penalised\" has no defined penalty, so nothing was built for it.",
+   "judge_said": true,
+   "verified": true
+  },
+  "T5": {
+   "surfaced": true,
+   "quote": "\"VIP patients skip the queue\" can't be built because nothing identifies a VIP",
+   "judge_said": true,
+   "verified": true
+  }
+ },
+ "surfaced": 5,
+ "total": 5,
+ "overturned": [],
+ "bundle_chars": 51365,
+ "judge_sid": "3f813797-cf22-4082-85c2-3a21a8bd25de",
+ "judge_cost_usd": 0.28936680000000004
+}

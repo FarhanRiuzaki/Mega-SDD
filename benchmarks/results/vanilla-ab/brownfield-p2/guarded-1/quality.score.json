@@ -1,0 +1,58 @@
+{
+ "completion": 1.0,
+ "ac_pass": 13,
+ "ac_total": 13,
+ "ac": {
+  "B1": "PASS",
+  "B2": "PASS",
+  "B3": "PASS",
+  "B4": "PASS",
+  "B5": "PASS",
+  "B6": "PASS",
+  "B7": "PASS",
+  "B8": "PASS",
+  "T1c": "PASS",
+  "T2c": "PASS",
+  "T3c": "PASS",
+  "T4c": "PASS",
+  "T5c": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 6,
+ "rubric": 92,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist-offers.ts:48-65",
+   "what": "A waiting patient who already holds a pending offer is skipped, so the freed slot may go to the second patient instead of the first in the queue"
+  },
+  {
+   "severity": "Minor",
+   "where": "vercel.json:4; src/server/waitlist-offers.ts:208",
+   "what": "Passing an expired offer to the next patient depends on a 5-minute cron sweep, so handoff can lag up to ~5 min after the 30-min expiry"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/db/schema.ts:151; src/server/leave.ts:161-170",
+   "what": "Unique index covers only exact (doctor,start_time); overlapping appointments with different durations and different starts rely on a read-then-write check under concurrency"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist.ts:30-42",
+   "what": "Duplicate waitlist check is read-then-insert with no unique constraint; concurrent submissions can create duplicate entries"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/leave.ts:63-81",
+   "what": "Recording leave does not clear or notify existing waitlist entries for that doctor on the leave dates"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/api/cron/waitlist/route.ts:7-13",
+   "what": "Cron authorization helper duplicated from the reminders route instead of shared"
+  }
+ ],
+ "blind_label": "EZ",
+ "scorer_sid": "fec23b12-c697-4c42-b87b-afbbd9d67f48"
+}

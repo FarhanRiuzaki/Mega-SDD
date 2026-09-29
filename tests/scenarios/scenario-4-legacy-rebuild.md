@@ -5,19 +5,19 @@
 
 This is mega-sdd's biggest scenario. Real-world example: legacy PHP trade-finance system → modern Laravel rebuild.
 
-The KB-born rebuild is classic-only: `plan` does not accept `--kb`.
+The path is `extract-intelligence` (legacy code → knowledge base) → `plan --kb` (knowledge base → vault + units) → `execute-bolts` (units → commits). A legacy directory never goes through the lane router: a rebuild always takes the spec pipeline.
 
-> **The concept guide** for this whole journey — why each act exists, plus the handoff (doc-pack + UAT evidence) and life-after-rebuild (sync) acts this walkthrough only touches — is [`docs/mega-sdd/revamp-journey.md`](../../docs/mega-sdd/revamp-journey.md).
+> **The concept guide** for this whole journey — why each act exists, plus the handoff (doc-pack + UAT evidence) and life-after-rebuild (sync) acts this walkthrough only touches — is [`docs/mega-sdd/revamp-journey.md`](../../docs/mega-sdd/revamp-journey.md). It predates 9.0: where it names `generate-intent --kb`, `bind-codebase` and `generate-units`, 9.0 runs `plan --kb` and the per-unit JIT bind inside `execute-bolts`.
 
 ## Prerequisites
 
-- Mega-sdd v7.6+ (census-contracted extract-intelligence; the public surface is 3 verbs + 3 one-timers — the front door `/mega-sdd` replaces the old typed stage commands)
+- Mega-sdd 9.0+ (`plan --kb`; the public surface is 3 verbs + 3 one-timers — the front door `/mega-sdd` replaces the old typed stage commands)
 - Legacy codebase available — ANY size works: the census excludes logs/backups/data by construction, and completeness is contracted to the code files it enumerates (a 1-file engine fully covered by 1 PRD is 100% complete)
-- New target project directory ready
-- `ast-grep` recommended for both legacy scan + new build
+- New target project directory ready, scaffolded in the target stack
+- `ast-grep` recommended: it builds the symbol index `plan` and the JIT bind use on the target scaffold
 
 ```bash
-brew install ast-grep ripgrep jd
+brew install ast-grep
 command -v ast-grep && echo "✓ ready"
 ```
 
@@ -51,31 +51,32 @@ The front door detects:
 - Input is directory with code files, no vault → legacy codebase
 - `--out` provided (REQUIRED for this lane) → KB goes to `<out>/knowledge-base/`
 - No existing vault at target → starts from extract-intelligence
+- The target already carries code (the Laravel scaffold) → `plan --mode=existing`, picked by the engine, not asked
 
-Chain proposal (5 phases — the **express spine** is the default, so no separate scan phase; add `--classic` if you want the full `codebase-map.md` lane, which inserts scan-codebase before bind):
+Chain proposal (3 phases, one confirmation):
 
 ```
 Proposed pipeline (--deep):
   1. extract-intelligence ~/projects/legacy-system/ --out=~/projects/rebuild-target/.mega-sdd/  ← census-scaled (script census + per-module agents)
-  2. generate-intent --kb=~/projects/rebuild-target/.mega-sdd/knowledge-base/                    ← ~30 min
-  3. bind-codebase --express                                                                       ← ~15 min
-  4. generate-units                                                                                  ← ~20 min
-  5. execute-bolts --all --parallel                                                                  ← variable (bolt count × ~1-3 min each)
+  2. plan --kb=~/projects/rebuild-target/.mega-sdd/knowledge-base/ --lite --mode=existing        ← vault + units, one phase
+  3. execute-bolts --all --lite                                                                    ← variable (bolt count × ~1-3 min each)
 
 Total: scales with module count + bolt count
-Halts may re-engage you (extract-intelligence quality gates, bind conflicts, Hard Rule violations).
+Halts may re-engage you (extract-intelligence quality gates, plan coverage gaps, business OQs, binding CONFLICTs, Hard Rule violations).
 
 [Run] [Edit] [Cancel]
 ```
 
-Click **Run**. Under the chain, extraction runs with `--auto` — per-batch confirmations are skipped; quality-gate failures still halt.
+Click **Run**. Under the chain, extraction runs with `--auto` — per-batch confirmations are skipped; quality-gate failures still halt. There is no scan phase and no bind phase: GROUND (a script) already matched the target's framework pack and built the symbol index, and binding happens per unit inside `execute-bolts`.
+
+No scaffold yet? Then the proposed chain stops after `plan --kb`, with no `execute-bolts` hop. Scaffold the new stack afterwards and run `/mega-sdd --resume` to reach `execute-bolts`.
 
 ## Step 2 — Phase 1: Extract intelligence (census-scaled)
 
 Extract-intelligence is census-contracted: a script derives the completeness contract, then ONE `domain-extractor` agent extracts each module (no fixed pipeline — cost scales with the census):
 
 ```
-▶ Phase 1 of 5: invoking extract-intelligence
+▶ Phase 1 of 3: invoking extract-intelligence
   Census (script, main thread): derive-extract-census.sh → census.json
     code files + sha256 + stacks + entry points + module proposal
     (logs/backups/data excluded by construction)
@@ -91,7 +92,7 @@ Extract-intelligence is census-contracted: a script derives the completeness con
   Completeness gate: validate-extract-census.sh → PASS
     (every census file claimed exactly once + cited; 6 sections per PRD; flows Mermaid)
 
-✓ Phase 1 of 5: extract-intelligence → 7 module PRDs + README + data-mutation-policy
+✓ Phase 1 of 3: extract-intelligence → 7 module PRDs + README + data-mutation-policy
    Open Questions rolled up in README (P1 business / P2 tech / P3)
    Inline path:line citations to legacy code throughout
 ```
@@ -115,91 +116,53 @@ What you have now: a PRD-kontrak knowledge base at `~/projects/rebuild-target/.m
 
 Marker discipline: confidence is **default-verified** — a cited claim with NO marker is verified; only `[INFERRED]` (single source path) and `[OPEN]` (gap requiring stakeholder) are tagged. Orthogonally, mutability tiers `[LOCKED]/[INTENT]/[ARTIFACT]` carry the revamp contract. Citations are inline (`path:line`) right after each claim.
 
-## Step 3 — Phase 2: Generate intent from KB (~30 min)
+**Worth doing before the rebuild spec — answer the legacy questions while they are fresh.** At hand-off, extract-intelligence offers two things:
+
+- **Resolve-oq KB mode**: "Mau jawab OQ-nya sekarang?" walks each module PRD's §6 Open Questions. An answer given here lands in the vault already resolved, with the stakeholder answer and its provenance carried verbatim.
+- **The architecture advisor**, when the target architecture is still undecided. It produces an ADR; `plan --kb` consumes it only when its status is `accepted`.
+
+Both are offers, never automatic. To take them inside a chain, add `--stop-after=extract-intelligence`, answer, then `/mega-sdd --resume`.
+
+## Step 3 — Phase 2: `plan --kb` (vault + units in one phase)
 
 ```
-▶ Phase 2 of 5: invoking generate-intent --kb=.mega-sdd/knowledge-base/
+▶ Phase 2 of 3: invoking plan (--kb=.mega-sdd/knowledge-base/ --lite --mode=existing)
 ```
 
-Mode B with KB sub-mode. The skill detects the grammar (`census.json` present → PRD-kontrak lane) and reads the KB README (Reengineering Opportunities + Mutability Tier Distribution + module quick-reference) plus every `modules/*.prd.md` as PRD-equivalent source. Q&A (≤10 questions) extracts project shape, tech preferences, modes.
+`plan` detects the KB grammar: `census.json` is present, so this is the PRD-kontrak lane. It treats the KB as **analysis input, not a 1:1 spec**: code and ERD may change as long as the reengineering goals are met, unless a `[LOCKED]` rule requires preservation. It reads the source once, in order:
 
-For legacy rebuild, typical answers:
-- Project shape: web-app
-- Implementation mode: existing (we have Laravel scaffold)
-- Tech stack: Laravel 11 + MySQL (target stack)
-- Mode-migration: legacy PHP → Laravel
-- Output mode: compact
+- the README: Reengineering Opportunities, the Mutability Tier Distribution, and the module quick-reference with its recommended rebuild order;
+- `data-mutation-policy.md`: which entities and fields keep their legacy shape;
+- every `modules/*.prd.md`, one module per self-slice.
 
-Vault written to `.mega-sdd/vaults/<slug>/`. Expect ~30 OQs (lots of business + regulatory questions from the module PRDs' `[OPEN]` items).
+There is no pre-plan Q&A: the target stack comes from the scaffold, not from a questionnaire.
 
-```
-✓ Phase 2 of 5: generate-intent → status: completed, items: 30 OQs (12 P1 business, 10 P2 tech, 8 P3), blocked: 12
-  + Auto-Classification Review section in vault.md (5 tech OQs flagged for review)
-```
+It writes the layout-3 vault into `.mega-sdd/vaults/<slug>/`:
 
-## Step 4 — Phase 2.5: Resolve P1 business OQs (~30 min)
+- `context.md`, `constitution.md`, `vault.json`;
+- `units/` with `prd_source:` pointing at the module PRD heading each unit implements.
 
-Often the biggest time in legacy rebuild — stakeholders need to decide:
-- Which legacy gotchas to preserve vs fix
-- Which regulatory constraints still apply
-- How to handle data migration cutover
+The vault pins its source like any PRD pin. `prd_path` is `<kb>/README.md`, and `prd_sha256` is the sha256 of `<kb>/census.json`, so the pin moves when a legacy file or the extraction changes.
 
-On the express default the chain asks the P1 business OQs itself (batched, ≤4 per prompt) and continues; on `--classic` it halts and invokes the resolve-oq skill (or say "jawab OQ list" / "resolve open questions" to enter it yourself). Either way each P1 is walked with KB-derived recommendations:
+Each KB claim is routed by its markers:
 
-```
-OQ-CN-005 [P1] [business / blocking]:
-  "Should we preserve legacy CFKDDL typo behavior in customer-update endpoint?
-   (KB modules/cif-customer.prd.md §5 Edge Cases & Gotchas, entry 9)"
-  
-  ⚠️ High-stakes business OQ.
-  
-  Recommendation: NO — fix the typo; correct field is "CFKDHL" (recommended)
-  Rationale: the KB records the typo as a cited Critical Finding (do-not-replicate).
-    Legacy silently corrupted 3% of customer updates per audit log analysis.
-  Source: .mega-sdd/knowledge-base/modules/cif-customer.prd.md §5 Edge Cases & Gotchas
-  Mutability tier: [LOCKED] (regulatory citation: BI Reg 23/2/2021 §4 — field validation rule)
-  → Pack-aware Hard Rule emitted into all customer-update units
-  Fallback-if-wrong: If downstream systems depend on bug, add adapter
-    layer to translate; do not propagate corruption.
-  Confidence: HIGH
-  
-  Options:
-    [1] NO — fix typo (recommended)
-    [2] Skip
-    [3] Defer
-    [4] Out of scope
-    — Other: free text (e.g. "YES — preserve legacy bug")
-```
+| KB marker | Where it lands |
+|---|---|
+| cited + `[LOCKED]` | `context.md ## Constraints`, verbatim (legacy field name, type, rule preserved) + a Hard rule candidate |
+| cited + `[INTENT]` / untagged | `context.md ## Flows` as an outcome — the rebuild has design freedom |
+| cited + `[ARTIFACT]` | an Open Question, default "discard unless preservation is required" |
+| `[INFERRED][LOCKED]` | one confirmation question (high stakes), default "keep as LOCKED" |
+| `[INFERRED][INTENT]` | `## Flows` with an "INFERRED — confirm in dev" note |
+| `[INFERRED][ARTIFACT]` | skipped; logged to `.mega-sdd/_diagnostics/kb-skipped-artifacts.md` |
+| `[OPEN]` | an Open Question |
+| a §6 OQ already answered in KB mode | an OQ born resolved, answer + provenance carried verbatim |
 
-Pick; the resolution lands in the vault and the express chain continues on its own (on `--classic`, resume with `/mega-sdd --resume`).
+KB gotchas become unit **Anti-patterns** by default. A gotcha is promoted to a machine-checked **Hard rule** only when it is cited (verified) AND mechanically detectable, and its anchor file exists in the target. `[INFERRED]` and `[OPEN]` items are never promoted.
 
-## Step 5 — Phase 3: Bind (~15 min, express spine)
-
-The GROUND step already ran as a script (framework pack matched from `composer.json`, symbol index built — zero model tokens), so the chain goes straight to bind:
+Before it returns, `validate-plan-coverage.sh --kb=<kb>` checks the KB's requirement headings. Every censused heading of every module PRD needs a unit whose `prd_source` names it, an open OQ carrying `[covers: <kb>/modules/<module>.prd.md#<slug>]`, or a module-qualified line in `context.md ## Coverage exclusions`. A gap halts `plan_coverage_gap`, and while the vault's coverage entry is missing, FAIL or stale the bolts hop is refused.
 
 ```
-▶ Phase 3 of 5: invoking bind-codebase --express
-✓ Phase 3 of 5: bind-codebase → 87 claims, 0 conflicts
-  Implementation State Map:
-    NEW: 85 (greenfield-ish; building new on Laravel)
-  Mutability tier distribution (from KB):
-    [LOCKED]: 12 claims (regulatory + integration contracts)
-    [INTENT]: 68 claims (outcome-only; rebuild has design freedom)
-    [ARTIFACT]: 7 claims (discarded — legacy implementation accidents)
-  Framework pack loaded: laravel-base-26.md (11 Hard Rules emitted into Suggested Unit Hard Rules)
-    e.g., UUID PK enforcement, BaseController extension, DOMContentLoaded JS init, SweetAlert2 dialogs
-    IMPLEMENTED: 2 (Laravel's built-in User model + Auth scaffold)
-    PARTIAL_FIELDS_MISSING: 0
-  KB consultation: module PRDs consulted as secondary ground truth (mutability tiers feed the recommendations)
-```
-
-Greenfield-ish — most claims are NEW since target is empty Laravel.
-
-## Step 6 — Phase 4: Generate units (~20 min)
-
-```
-▶ Phase 4 of 5: invoking generate-units
-✓ Phase 4 of 5: generate-units → 47 units in 8 modules
+✓ Phase 2 of 3: plan → status: completed, items: 47 units, blocked: 0
 
 Modules:
   M-cif-customer     (8 units)   — customer master CRUD + RBAC
@@ -209,33 +172,68 @@ Modules:
   M-monitoring       (4 units)   — LC monitoring + MT message monitoring
   M-reporting        (6 units)   — PSAK/SIMODIS/SIUL regulatory reports
   M-reference-data   (3 units)   — bank/branch/currency/holiday tables
-  M-auth-rbac        (2 units)   — Sanctum auth + role middleware (extends Laravel scaffold)
+  M-auth-rbac        (2 units)   — Sanctum auth + role middleware (extend the scaffold's User model)
 ```
 
-47 units is substantial but manageable. target_files came from binding citations (which referenced KB module PRDs); at bolt time each dispatch carried its symbol_slice of nearby existing code.
+Because `--mode=existing`, units that touch the scaffold's own code are typed from the symbol index: the Laravel `User` model is a hit, so its unit is `extend` with Migration notes. Everything else is `create`.
 
-## Step 7 — Phase 5: Execute bolts (~1-3 hours)
+## Step 4 — The ONE batched ask: P1 business OQs
+
+A legacy rebuild produces many questions (expect ~30 OQs here). `plan` sorts them before anyone is asked:
+
+- **Technical OQs are decided by the AI**, labelled, cited and reversible (`→ **Resolved v<X.Y>** (AI decision, <date>): <pick>`), and listed in the report.
+- **P1 business OQs** go into ONE `AskUserQuestion` with at most 4 questions: the 4 with the largest unit blast radius. Stakeholders have to decide things like:
+  - which legacy gotchas to preserve and which to fix;
+  - which regulatory constraints still apply;
+  - how to handle the data-migration cutover.
 
 ```
-▶ Phase 5 of 5: invoking execute-bolts --all --parallel
-  Squad partition: single squad (no _meta/squads.yaml declared); intra-squad parallel
-  
-  Wave 1 (7 parallel — `parallel_max: 7` in .mega-sdd/config.yaml; the default cap is 4): U-001 U-008 U-015 U-022 U-030 U-038 U-045
-  ✓ Wave 1 complete in 12 min
-  Wave 2 (7 parallel): U-002 U-009 U-016 U-023 U-031 U-039 U-046
-  ✓ Wave 2 complete in 14 min
+OQ-CN-005 [P1] [business]:
+  "Should we preserve legacy CFKDDL typo behavior in customer-update endpoint?
+   (KB modules/cif-customer.prd.md §5 Edge Cases & Gotchas, entry 9)"
+
+  [1] NO — fix the typo; the correct field is "CFKDHL" (recommended)
+      keterangan: the KB records the typo as a cited Critical Finding
+      (do-not-replicate); legacy silently corrupted 3% of customer updates
+      per audit log analysis. If downstream systems depend on the bug,
+      add an adapter layer — do not propagate the corruption.
+  [2] Defer — the customer-update units stay blocked at bolts
+  [3] Out of scope
+  — Other: free text (e.g. "YES — preserve legacy bug")
+```
+
+Pick. The answer lands in `context.md ## Open Questions`, and the customer-update units carry it: here as an Anti-pattern, "Don't replicate the CFKDDL typo", citing the KB entry.
+
+**The P1 business OQs past the first four stay `blocking`.** They are listed in the report, and the units that need them stay blocked at bolts: the chain pauses with `oq_business_p1_unresolved`. Walk them with resolve-oq (say "jawab OQ list" / "resolve open questions") before or during the bolts. The AI never answers a business OQ for you.
+
+## Step 5 — Phase 3: `execute-bolts --all --lite`
+
+Before any task runs, the up-front bind binds every pending unit just in time (each task re-binds its unit again before it starts). `derive-unit-claims.sh` collects the claims and `write-unit-binding.sh` writes one `bolts/U-XXX/binding.json` per unit:
+
+- on a near-empty scaffold most claims are `create` targets that must not exist yet, checked on disk at zero model tokens;
+- symbol claims (the scaffold's `User` model) are checked against the symbol index;
+- free-text claims go through the evidence ladder. The KB is consulted **only when the code evidence is silent**, and it never overrides a code CONFLICT: a `[VERIFIED][LOCKED]` claim diverging from the code is a HIGH-severity CONFLICT.
+
+A CONFLICT blocks that unit only. Its dependents are skipped with the reason, and the rest proceed.
+
+```
+▶ Phase 3 of 3: invoking execute-bolts (--all --lite)
   ...
-  Wave 9 (1 final): U-047
-  ✓ Wave 9 complete in 3 min
 
-✓ Phase 5 of 5: execute-bolts → 47/47 complete (3 halts resolved; total ~2 hr)
-
-📋 Final summary:
-   Phases: 5/5 completed
-   Quality: HIGH grounding throughout   (--classic only — comes from the auto lint pass)
+✓ Phase 3 of 3: execute-bolts → 47/47 complete (3 halts resolved)
 ```
 
-## Step 8 — Verify
+Each unit ran as one task of the generated plan, in one context: the task's re-bind, test first, the L0 gates and the detect-after scans (Hard-rule post-flight, acceptance, whitelist), then its evidence commit. ONE blind review of the whole run range closed the run.
+
+The chain summary ends with the **result contract**, the same in every lane:
+
+- the acceptance-criterion → test table;
+- the delivery-check verdict;
+- the assumptions and decisions: the AI's tech decisions and every stakeholder answer, each with its source.
+
+On a Laravel target, read the delivery-check note in Step 6.
+
+## Step 6 — Verify
 
 ```bash
 cd ~/projects/rebuild-target
@@ -251,7 +249,9 @@ php artisan serve
 # Visit / — rebuild functional with all legacy domain logic preserved
 ```
 
-Want the AGENTS.md tool-agnostic export? Run "generate AGENTS.md" on demand (auto-emit is classic-spine only):
+**delivery-check on a Laravel target:** the check reads `package.json` at HEAD. Laravel's Vite `package.json` has no `test` script, so D1 reports FAIL regardless of phpunit. Run `./vendor/bin/phpunit` and `npm run build` on a fresh clone and quote them in the report ([Scenario 3 → pitfalls](scenario-3-field-extension.md#delivery-check-on-a-laravel-app)).
+
+Want the AGENTS.md tool-agnostic export? Say "emit agents.md" (the chain skips it by default):
 
 ```bash
 cat AGENTS.md
@@ -259,7 +259,7 @@ cat AGENTS.md
 # key decisions, open questions, mega-sdd interop notes
 ```
 
-## Step 9 — Hand off + keep it alive
+## Step 7 — Hand off + keep it alive
 
 The rebuild isn't delivered until the team documents exist and the vault stays in sync with moving code:
 
@@ -274,11 +274,10 @@ The why and the full hand-off/maintenance acts: [`docs/mega-sdd/revamp-journey.m
 ## What you accomplished
 
 - Extracted a census-contracted PRD-kontrak knowledge base from legacy (no manual archaeology — every code file claimed + cited, or an honest OQ)
-- Generated forward-looking vault preserving regulatory + domain context
-- Resolved 12 P1 business OQs with KB-derived recommendations
-- Built 47 atomic units with explicit citations to legacy patterns
-- Executed all units in parallel waves
-- Kept cited claims verified-by-default; flagged `[INFERRED]` for review; surfaced `[OPEN]` as OQs; carried `[LOCKED]/[INTENT]/[ARTIFACT]` into Hard Rules + ERD freedom
+- Turned it into a forward-looking vault + 47 atomic units in one `plan --kb` phase, preserving regulatory + domain context
+- Answered the top P1 business OQs in one batched ask, and walked the rest with resolve-oq
+- Executed all units in parallel waves, each unit bound just in time against the target code
+- Kept cited claims verified-by-default; flagged `[INFERRED]` for review; surfaced `[OPEN]` as OQs; carried `[LOCKED]/[INTENT]/[ARTIFACT]` into Constraints, Hard rules / Anti-patterns and ERD freedom
 
 Total wall-clock: dominated by bolt execution + your OQ decisions. Extraction cost tracks the census, not a fixed pipeline — the field replay ran a single-module legacy with zero dispatches; a multi-module legacy costs one agent per module, in batches.
 
@@ -301,25 +300,30 @@ blocker:
 
 (The registry files this under subtype `module_quality_threshold_unmet`.) The halt surfaces the gate output verbatim and asks with keterangan: **Re-scope module** (pecah/gabung ulang module ini lalu re-dispatch) / **Re-prompt** (re-dispatch sekali lagi dengan arahan tambahan) / **Abort** (berhenti; KB partial disimpan — module PRD yang sudah lolos tetap di disk). There is no auto-resume after Abort: the next run starts again from the census (idempotent). Full walkthrough: [Scenario 6](scenario-6-recovery-from-halt.md).
 
-### Generate-intent --kb produces too many OQs
+### `plan --kb` produces too many OQs
 
 If 30+ OQs feels overwhelming:
-- P1 business → triage carefully; these need stakeholder
-- P2 tech → most auto-resolve at bind-codebase via scan mode
-- P3 refinement → auto-deferred on the express chain; the chain summary re-surfaces the id list
+- P1 business → only 4 reach the batched ask; the rest stay blocking until a stakeholder answers (resolve-oq). Triage them carefully.
+- Tech OQs → already decided by the AI inside `plan`, labelled and cited. Review the list in the report and reverse any decision you disagree with.
+- `[ARTIFACT]` OQs → default "discard". Confirm them; don't agonise.
+- Many of these can be answered earlier, in KB mode right after extraction (Step 2).
+
+### `plan` halts on `plan_coverage_gap`
+
+A module PRD heading has no unit whose `prd_source` names it, and no open OQ carrying `[covers: …]` for it. Add the unit, raise the OQ, or declare it in `context.md ## Coverage exclusions` (`- <module>.prd.md#"<heading>" — <reason>`). Never patch the census to make the gap disappear.
 
 ### Bolt halt on hard_rule_violated in legacy-rebuild
 
-Likely cause: unit attempted to replicate a legacy gotcha that's in Anti-patterns. Mega-sdd correctly halted. Resolve by editing unit's Hard rules OR reverting the offending change.
+Likely cause: the unit attempted to replicate a legacy gotcha that the KB marked as a verified, mechanically detectable Hard rule. Mega-sdd correctly halted. Fix forward or revert the offending change (the B1 gate stays closed until a passing post-flight is recorded), or edit the unit's Hard rules if the rule is wrong.
 
 ## What you learned
 
-- Legacy rebuild is mega-sdd's biggest+highest-value scenario
+- Legacy rebuild is mega-sdd's biggest scenario, and its value is the audit trail from legacy code to rebuilt code, not a claim of better code
 - extract-intelligence does the archaeology census-first: a script derives the completeness contract, one agent per module extracts (a single-module legacy runs on the main thread, zero subagents), and a deterministic gate proves every code file is claimed + cited
-- Default-verified citations + `[INFERRED]/[OPEN]` markers + `[LOCKED]/[INTENT]/[ARTIFACT]` tiers carry knowledge into the vault systematically
-- Field-level + module + squad layers all work together
+- `plan --kb` reads the KB as analysis input: `[LOCKED]` is preserved verbatim, `[INTENT]` becomes an outcome with design freedom, `[ARTIFACT]` defaults to discard, and every module heading is covered by a unit or an OQ
+- Units are bound just in time against the target code, the KB only speaks when the code is silent, and a CONFLICT stops only its unit
 - One command = legacy domain knowledge → working rebuild, at a cost that scales with the legacy's actual code — not its log folder
 
 ## Next scenario
 
-→ [Scenario 5 — Multi-squad parallel](scenario-5-multi-squad-parallel.md): partition work across teams.
+→ [Scenario 5 — Multi-squad parallel](scenario-5-multi-squad-parallel.md): what still works for multi-squad vaults (authoring retired in 9.0).

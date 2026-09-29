@@ -67,8 +67,6 @@ Conventions for general .NET / C# projects (console apps, worker services, class
 
 ## Hard Rules emitted
 
-These rules merge into `binding.md` §Suggested Unit Hard Rules on the classic lane (`bind-codebase` 2.9); on every lane the dispatch builder filters the glob-matched records into the bolt's T2 `framework_pack_rules`.
-
 ```
 HARD_RULE: Interface types MUST be named `I` + PascalCase
   path_glob: src/**/*.cs
@@ -120,7 +118,7 @@ HARD_RULE: Project files MUST enable nullable reference types
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: XML doc comments (`///` with `<summary>`) — **read by**: the compiler when the project sets `<GenerateDocumentationFile>true</GenerateDocumentationFile>` — then every public member without one raises **CS1591** (an error under `TreatWarningsAsErrors` unless `<NoWarn>1591</NoWarn>`); IntelliSense of every consumer of a class library or NuGet package (the `.xml` ships beside the `.dll`); DocFX when docs are built; StyleCop `SA1600` when configured. A console/worker app usually has NO reader: a full block only on the public API of a library consumers use, or where the name hides the contract.
 - **Skip**: private/internal members with self-explanatory names; auto-properties, records and DTOs whose names say it; constructors that only assign dependencies; `override`s whose contract is on the interface/base; `<param>`/`<returns>` that restate the signature; test methods (the name is the sentence).
@@ -129,8 +127,7 @@ HARD_RULE: Project files MUST enable nullable reference types
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom. Web-only concerns (XSS, CSRF,
 > HTTP auth enforcement, file uploads) live in the `aspnetcore` pack that extends this.
 

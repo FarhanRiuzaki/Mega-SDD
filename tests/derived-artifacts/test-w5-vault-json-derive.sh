@@ -16,8 +16,11 @@
 #      build-citation-map stamps into the FSD Source-vault line — is STABLE
 #      across a no-op re-derive (generated_at preserved)
 #   5  writer-handoff sweep: no writer surface still instructs a model-side
-#      vault.json write (lock-dance prose gone from the 4 writer skills +
-#      multi-scope/setup-flow/generation-guide) — TWO signatures per file:
+#      vault.json write (lock-dance prose gone from the 3 writer skills —
+#      plan, resolve-oq, diff-vault — + plan's authoring references that
+#      absorbed generate-intent's multi-scope/setup-flow/generation-guide in
+#      9.0: scope-flow, context-authoring, plan-procedure, kb-input) — TWO
+#      signatures per file:
 #      the lock-acquisition dance AND direct write/emit-vault.json phrasing
 #      (allowlisted for 'never …'/deriver-context sentences)
 #   6  OQ annotation position pins: a resolved OQ that is NOT the last line of
@@ -215,18 +218,23 @@ SHA2=$(python3 -c "import hashlib;print(hashlib.sha256(open('$V/vault.json','rb'
   || fail "4: no-op re-derive drifted the doc-control sha"
 
 # ── 5. writer-handoff sweep: no model-side vault.json write instruction left ──
+# 9.0: generate-intent's vault-writer role moved to `plan` (its
+# generation-guide → plan/references/context-authoring.md + plan-procedure.md,
+# multi-scope + setup-flow Step 0.9 → scope-flow.md, setup-flow Step 3.4 →
+# context-authoring.md §constitution, kb-submode → kb-input.md). bind-codebase
+# was removed outright: the JIT per-unit bind (execute-bolts) writes
+# bolts/U-*/binding.json, never vault.json, so its two sweep entries retired.
 SWEEP_FILES=(
-  "$PLUGIN_ROOT/skills/generate-intent/SKILL.md"
-  "$PLUGIN_ROOT/skills/generate-intent/references/generation-guide.md"
-  "$PLUGIN_ROOT/skills/generate-intent/references/multi-scope.md"
-  "$PLUGIN_ROOT/skills/generate-intent/references/setup-flow.md"
+  "$PLUGIN_ROOT/skills/plan/SKILL.md"
+  "$PLUGIN_ROOT/skills/plan/references/plan-procedure.md"
+  "$PLUGIN_ROOT/skills/plan/references/context-authoring.md"
+  "$PLUGIN_ROOT/skills/plan/references/scope-flow.md"
+  "$PLUGIN_ROOT/skills/plan/references/kb-input.md"
   "$PLUGIN_ROOT/skills/resolve-oq/SKILL.md"
   "$PLUGIN_ROOT/skills/resolve-oq/references/interactive-walk.md"
   "$PLUGIN_ROOT/skills/resolve-oq/references/binding-mode.md"
   "$PLUGIN_ROOT/skills/diff-vault/SKILL.md"
   "$PLUGIN_ROOT/skills/diff-vault/references/diff-procedure.md"
-  "$PLUGIN_ROOT/skills/bind-codebase/SKILL.md"
-  "$PLUGIN_ROOT/skills/bind-codebase/references/auto-memory-handoff.md"
 )
 SWEEP_OK=1
 for f in "${SWEEP_FILES[@]}"; do
@@ -247,14 +255,15 @@ for f in "${SWEEP_FILES[@]}"; do
   fi
 done
 grep -q "derive-vault-json.sh" \
-  "$PLUGIN_ROOT/skills/generate-intent/SKILL.md" \
+  "$PLUGIN_ROOT/skills/plan/SKILL.md" \
   && grep -q "derive-vault-json.sh" "$PLUGIN_ROOT/skills/resolve-oq/SKILL.md" \
   && grep -q "derive-vault-json.sh" "$PLUGIN_ROOT/skills/diff-vault/SKILL.md" \
-  && grep -q "derive-vault-json.sh" "$PLUGIN_ROOT/skills/bind-codebase/SKILL.md" \
   || { fail "5: a writer SKILL.md lost its derive-vault-json.sh Run instruction"; SWEEP_OK=0; }
-grep -q "SCRIPT-DERIVED" "$PLUGIN_ROOT/skills/generate-intent/references/vault-core.md" \
+# vault-core.md relocated in 9.0 out of the removed generate-intent skill to
+# the plugin-level references/ (plan / resolve-oq / diff-vault read it there).
+grep -q "SCRIPT-DERIVED" "$PLUGIN_ROOT/references/vault-core.md" \
   || { fail "5: vault-core.md lost the SCRIPT-DERIVED declaration"; SWEEP_OK=0; }
-[ "$SWEEP_OK" -eq 1 ] && ok "5: all 4 writers run the script; no surface instructs a model-side vault.json write/lock (2-signature sweep)"
+[ "$SWEEP_OK" -eq 1 ] && ok "5: all 3 writers run the script; no surface instructs a model-side vault.json write/lock (2-signature sweep)"
 
 # ── 6. OQ annotation position pins (vault_md.py mid-doc extraction) ──
 V6="$WORK/v6"; mkdir -p "$V6"

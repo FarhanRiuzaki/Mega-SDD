@@ -7,7 +7,7 @@ set -u
 err=0
 pt=plugins/mega-sdd/hooks/pre-tool-use
 V=plugins/mega-sdd/scripts/validate-unit-spec.sh
-SCHEMA=plugins/mega-sdd/skills/generate-units/references/unit-schema.md
+SCHEMA=plugins/mega-sdd/skills/plan/references/unit-schema.md   # 9.0: relocated from the deleted generate-units skill
 
 grep -q 'verify_grounding_untrusted' "$V" || { echo "validator: verify_grounding_untrusted halt missing"; err=1; }
 grep -q '\[grounded:' "$V" || { echo "validator: grounded marker parse missing"; err=1; }

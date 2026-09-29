@@ -97,7 +97,7 @@ HARD_RULE: Router modules MUST be in app/routers/ or app/api/ and declare a modu
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: docstrings (PEP 257) — **read by**: FastAPI itself — a path-operation function's docstring becomes the OpenAPI `description` (Markdown) whenever `description=` is not passed, so on an endpoint it is API surface, not a comment; Pydantic fields document themselves through `Field(description=…)`, not docstrings; ruff `D*` ONLY when `select` includes `D`; Sphinx `autodoc` when docs are built. A full docstring on an endpoint only when consumers need what the route + models do not say; elsewhere only where a reader exists or on public API consumed outside this module.
 - **Skip**: dependencies and services whose type hints carry the contract; Pydantic models (fields + `Field(description=…)` are the doc); routers whose prefix + tags say it; tests; `:param:`/`:return:` lines repeating type hints; a docstring that restates `summary=`.
@@ -106,8 +106,7 @@ HARD_RULE: Router modules MUST be in app/routers/ or app/api/ and declare a modu
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Pydantic models on body/query/path params validate at the boundary automatically; taking `request: Request` and reading `await request.json()` into a raw dict bypasses all of it.

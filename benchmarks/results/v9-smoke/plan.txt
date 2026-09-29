@@ -1,0 +1,4 @@
+# 9.0 live smoke (NOT a benchmark: n=1 per path, to verify the committed 9.0 tree runs end to end).
+# plugin = git archive of 1ab6c43e (9.0.0 + P1b); fixture-xs @ ff006be; model opus.
+xs routed 1 PRD/prd-company-profile.md
+xs guarded 1 PRD/prd-company-profile.md

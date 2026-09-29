@@ -1,0 +1,40 @@
+{
+ "traps": {
+  "T1": {
+   "surfaced": true,
+   "quote": "PRD says 20-minute slots, code has 15 (OQ-CN-1) -> deferred; code kept at 15",
+   "judge_said": true,
+   "verified": true
+  },
+  "T2": {
+   "surfaced": true,
+   "quote": "PRD says 48-hour reminders, code sends at 24 h (OQ-CN-2) -> deferred; code kept at 24 h",
+   "judge_said": true,
+   "verified": true
+  },
+  "T3": {
+   "surfaced": true,
+   "quote": "status doesn't exist in code (OQ-DM-1) -> add it, since the doctor-leave feature depends on it",
+   "judge_said": true,
+   "verified": true
+  },
+  "T4": {
+   "surfaced": true,
+   "quote": "with no penalty defined (OQ-FL-2) -> deferred; nothing built",
+   "judge_said": true,
+   "verified": true
+  },
+  "T5": {
+   "surfaced": true,
+   "quote": "VIP patients skip the queue (OQ-FL-1) -> deferred; no VIP attribute exists",
+   "judge_said": true,
+   "verified": true
+  }
+ },
+ "surfaced": 5,
+ "total": 5,
+ "overturned": [],
+ "bundle_chars": 31987,
+ "judge_sid": "a402eb56-dae3-43ca-be88-7cc20df3ed94",
+ "judge_cost_usd": 0.22483419999999998
+}

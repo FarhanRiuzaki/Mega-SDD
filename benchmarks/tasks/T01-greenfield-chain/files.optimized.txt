@@ -1,39 +1,8 @@
-# T01-greenfield-chain optimized commanded-load set — derivation: TRACE.md + ../ADJUDICATION.md + ../HARMONIZATION.md
+# T01-greenfield-chain, DEFAULT arm (the `default` ceiling in benchmarks/config/complexity-budget.json).
+# 9.0 (P1, 2026-09-27): what a default run on a clear greenfield PRD commands. route-lane.sh (a script — RUN,
+# not read) sends it to the DIRECT lane; references/direct-lane.md is the whole procedure. Before 9.0 this list
+# traced the classic chain (generate-intent -> bind -> units -> bolts), which no longer exists; the pre-9.0 list
+# is in git history (commit 01437dfb) and in files.baseline.txt's lineage.
 plugins/mega-sdd/skills/using-mega-sdd/SKILL.md
-plugins/mega-sdd/skills/orchestrate-flow/SKILL.md
-plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md
-plugins/mega-sdd/references/model-tiers.md [SECTION:Catalog]
-# v7.3.0: removed with the observability/memory cut — no longer loads:
-# plugins/mega-sdd/skills/memory/references/routing-outcomes.md
-plugins/mega-sdd/references/output-language.md [SECTION:Prompt-surfaces]
-plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumption.md
-plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md
 plugins/mega-sdd/commands/mega-sdd.md
-plugins/mega-sdd/skills/orchestrate-flow/references/factory-routing.md
-plugins/mega-sdd/skills/orchestrate-flow/references/factory-ledger-contract.md
-plugins/mega-sdd/skills/orchestrate-flow/references/checkpoint-protocol.md
-plugins/mega-sdd/skills/generate-intent/SKILL.md
-# v7 R2a: the default-lane contract is now its own file (vault-core.md, whole —
-# no more section upper-bound on the 41.6KB vault-contract); vault-contract.md is a
-# conditional overlay (--scan starterkit / multi-scope) and does NOT load here.
-plugins/mega-sdd/skills/generate-intent/references/vault-core.md
-plugins/mega-sdd/skills/generate-intent/references/generation-guide.md [SECTION:Step3+templates+readability]
-plugins/mega-sdd/skills/generate-intent/references/self-check.md
-plugins/mega-sdd/skills/generate-intent/references/auto-and-handoff.md
-plugins/mega-sdd/skills/generate-intent/references/detection-and-shapes.md
-# v7 Fase 3 layout-2 (R5 re-derivation 2026-08-22): the 7 legacy templates
-# became 4; generation-guide still commands per-file template reads.
-plugins/mega-sdd/skills/generate-intent/references/templates/vault.md
-plugins/mega-sdd/skills/generate-intent/references/templates/model.md
-plugins/mega-sdd/skills/generate-intent/references/templates/flows.md
-plugins/mega-sdd/skills/generate-intent/references/templates/constraints.md
-plugins/mega-sdd/skills/generate-units/SKILL.md
-plugins/mega-sdd/skills/generate-units/references/unit-schema.md
-plugins/mega-sdd/skills/generate-units/references/templates/unit.md
-plugins/mega-sdd/skills/generate-units/references/modules-schema.md
-plugins/mega-sdd/skills/generate-units/references/adversarial-test-prompt.md
-plugins/mega-sdd/skills/generate-units/references/auto-and-memory.md [SECTION:scope-propagation+_index]
-plugins/mega-sdd/skills/generate-units/references/decomposition-rails.md [SECTION:dependency-graph]
-plugins/mega-sdd/skills/execute-bolts/SKILL.md
-plugins/mega-sdd/skills/execute-bolts/references/superpowers-bridge.md
-plugins/mega-sdd/skills/execute-bolts/references/batch-and-fanout.md [SECTION:--all]
+plugins/mega-sdd/references/direct-lane.md

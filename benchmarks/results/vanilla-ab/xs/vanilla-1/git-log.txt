@@ -1,0 +1,3 @@
+8f2413f 2026-09-26T11:15:24+07:00 feat: implement company profile mini (PRD/prd-company-profile.md)
+ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
+da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

@@ -29,12 +29,13 @@ tags: ["vault/{{PROJECT_SLUG}}", "doc/context"]
 
 <!-- HARD-HEADER CONTRACT (layout-3): the four H2 anchors `## Flows`,
      `## Data model`, `## Constraints`, `## Open Questions` are EXACT strings —
-     derive-vault-json.sh / derive-claims-ledger.sh exit 2 naming the missing
+     derive-vault-json.sh exits 2 naming the missing
      one. `## Decisions` and `## Overview` are OPTIONAL: present ONLY when the
      source carries them (an architect's D-NNN record; a PRD Background). NEVER
      write `## Architecture`, `## Glossary`, `## Sources`, `## Last updated`,
      `## Phase context`, `## Source documents` — zero readers
-     (spec 2026-09-10 §2). An H2 is a section BOUNDARY: any sub-grouping inside a
+     (spec 2026-09-10 §2). `## Coverage exclusions` is the LAST H2 (read by
+     validate-plan-coverage.sh). An H2 is a section BOUNDARY: any sub-grouping inside a
      section (flow types, entity descriptions, NFR classes) uses H3/H4, never H2.
      Section grammar is byte-identical to layout-2 (_lib/vault_md.py). -->
 
@@ -70,7 +71,8 @@ flowchart TD
 
 <!-- staged-only: multi-step workflows (wizard, maker→checker) keep the KB's
      `stages:` block VERBATIM + the stateDiagram-v2 + `**_kb_source**:` line —
-     the layout-2 flows.md rules apply unchanged (validate-vault-flow-staging.sh). -->
+     per `plugins/mega-sdd/references/vault-core.md §stages-propagation`
+     (validate-vault-flow-staging.sh). -->
 
 **Definition of Done**:
 - [ ] <observable behavior 1>
@@ -177,7 +179,7 @@ Ref: <table>.<fk_field> > <other_table>.id  // many-to-one
 
 > THE ONE AUTHORED OQ SURFACE (layout-3). Every Open Question lives HERE —
 > derive-vault-json exits 2 on an OQ checkbox line found in any other section.
-> Rules (unchanged from layout-2, `../../../generate-intent/references/vault-core.md §OQ-conventions`):
+> Rules (`plugins/mega-sdd/references/vault-core.md §OQ-conventions`):
 > - Tag prefixes stay TOPIC markers (OV/AR/DM/FL/DC/CN — no ID churn).
 > - Every OQ that arose elsewhere carries `[origin: context.md#<anchor>]`
 >   (`#F-U-001`, `#Data-model`, `#Overview`, …); constraints-native OQs need none.
@@ -192,7 +194,7 @@ Ref: <table>.<fk_field> > <other_table>.id  // many-to-one
 >   (there is no bind phase after PLAN — a `scan` question is probed NOW:
 >   manifest / symbol index / file). Never `[tech / blocking]`: a technical
 >   question the AI truly cannot answer is a missing FACT → tag it `[business]`.
->   Pick order + the never-decided list: `vault-core.md §AI technical decisions`.
+>   Pick order + the never-decided list: `plugins/mega-sdd/references/vault-core.md §AI technical decisions`.
 > - Sort P1 → P2 → P3.
 
 - [ ] **OQ-CN-1** [P1] [business]: <e.g. "Performance targets not specified in PRD">
@@ -208,3 +210,12 @@ Ref: <table>.<fk_field> > <other_table>.id  // many-to-one
 | OQ-ID | Keputusan | Dasar (sitasi) | Kalau salah |
 |---|---|---|---|
 | OQ-AR-1 [P2] | <the pick, one line> | <codebase `file:line` / `pack:<fw> §…` / `docs:<lib>@<ver>` / `PRD §X`> | <fallback_if_wrong> |
+
+## Coverage exclusions
+
+> Written at the end of plan Step 4: one line per censused anchor (the gate's
+> next_action lists them) no unit and no OQ [covers: …] decides, with a real
+> reason; an H2 line covers none of its H3s; never a requirement of this vault. Rules:
+> `plan/references/context-authoring.md §Coverage exclusions`.
+
+- "<exact PRD heading text>" — <why nothing is built for it>

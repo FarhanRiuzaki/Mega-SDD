@@ -1,0 +1,4 @@
+# xs classic arm (default lane), seed 20260928 -> ['classic', 'classic', 'classic']; same fixture ff006be as plan-xs.txt
+xs classic 1 PRD/prd-company-profile.md
+xs classic 2 PRD/prd-company-profile.md
+xs classic 3 PRD/prd-company-profile.md

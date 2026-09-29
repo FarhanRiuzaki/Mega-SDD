@@ -567,7 +567,7 @@ if any(p["flows"] for p in parsed):
                 row = "| %s %s" % (scope_label(p), row)
             L.append(row)
 else:
-    L.append("[Pending — flows doc vault (flows.md / 04-flows.md) belum berisi flow F-* — jalankan generate-intent dulu]")
+    L.append("[Pending — flows doc vault (context.md ## Flows / flows.md / 04-flows.md) belum berisi flow F-* — jalankan `plan <prd>` dulu]")
 L.append("")
 L.append("**Kriteria masuk (entry):**")
 L.append("")

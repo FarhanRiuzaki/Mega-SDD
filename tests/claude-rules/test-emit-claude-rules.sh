@@ -79,9 +79,14 @@ C1=$(cat "$F1"); bash "$S" --vault="$V" --cwd="$PRJ" --write </dev/null >/dev/nu
 [ "$C1" = "$(cat "$F1")" ] && ok "d1 re-run byte-equal" || fail "d1 nondeterministic"
 
 echo "── e: offer-only wiring (never silent, never auto) ──"
-grep -q 'emit-claude-rules.sh' "$P/skills/generate-units/SKILL.md" && ok "e1 generate-units offers the emission" || fail "e1 offer missing"
-grep -qF 'QUEUED as a notice' "$P/skills/generate-units/SKILL.md" && grep -qF 'never auto-run' "$P/skills/generate-units/SKILL.md" \
-  && ok "e2 never-auto pillar (both literals — round m-2 de-vacuoused)" || fail "e2 auto-run risk"
+# 9.0 P1: e1 (generate-units Step 13.5 first-emission offer) RETIRED — the
+# classic generate-units skill was deleted and Step 13.5 was deliberately NOT
+# relocated into plan (v9 design §3 + P1 reference audit: "13.5 is no plan
+# step"). The surviving offer site is /mega-sdd:sync (e3); the never-auto
+# pillar (e2) is re-pinned there, scoped to the emission clause itself so the
+# sibling "never auto-run" on the transitive-impact clause cannot satisfy it.
+grep -qE 'emit-claude-rules\.sh --write` \(offer-only[^)]*never auto-run\)' "$P/commands/sync.md" \
+  && ok "e2 never-auto pillar (sync emission clause: offer-only + never auto-run)" || fail "e2 auto-run risk"
 grep -q 'emit-claude-rules' "$P/commands/sync.md" && ok "e3 sync proposes refresh" || fail "e3 sync wiring missing"
 
 echo "── f: round payload classes (B-1/M-1..M-4) ──"

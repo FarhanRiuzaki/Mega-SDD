@@ -1,0 +1,50 @@
+# fc05 — the natural coverage exclusions (test sidecar: the vault's context.md)
+
+## Coverage exclusions
+
+- "Background & Problem Statement" — document context — background for the flows, no behaviour of its own
+- "Background and Motivation" — document context — background for the flows, no behaviour of its own
+- "Background Information" — document context — background for the flows, no behaviour of its own
+- "Latar Belakang Masalah" — document context — background for the flows, no behaviour of its own
+- "Latar Belakang dan Permasalahan" — document context — background for the flows, no behaviour of its own
+- "Goals and KPIs" — success measurement — tracked outside the software
+- "Goals / Success Criteria" — success measurement — tracked outside the software
+- "Tujuan dan Manfaat" — document context — background for the flows, no behaviour of its own
+- "Tujuan Bisnis" — document context — background for the flows, no behaviour of its own
+- "Tujuan Produk" — document context — background for the flows, no behaviour of its own
+- "Scope & Assumptions" — project risk / assumption register — no behaviour to build
+- "Scope and Limitations" — document context — background for the flows, no behaviour of its own
+- "Ruang Lingkup & Batasan" — document context — background for the flows, no behaviour of its own
+- "Ruang Lingkup Proyek" — document context — background for the flows, no behaviour of its own
+- "Sumber Dokumen" — reference material, not a requirement
+- "Source Documents" — reference material, not a requirement
+- "Sources of Truth" — reference material, not a requirement
+- "Data Model & Schema" — captured in context.md ## Data model; the schema units cite the flows that use it
+- "Non-Functional Requirements & Constraints" — captured in context.md ## Constraints; cross-cutting, no unit of its own
+- "NFR & Security" — captured in context.md ## Constraints; cross-cutting, no unit of its own
+- "Non-functional: Performance" — captured in context.md ## Constraints; cross-cutting, no unit of its own
+- "Persyaratan Non-Fungsional" — captured in context.md ## Constraints; cross-cutting, no unit of its own
+- "Open Questions / Assumptions" — carried into context.md ## Open Questions; nothing to build here
+- "Pertanyaan Terbuka & Asumsi" — carried into context.md ## Open Questions; nothing to build here
+- "Glossary & Acronyms" — glossary — vocabulary, not behaviour
+- "Glosarium & Singkatan" — glossary — vocabulary, not behaviour
+- "Glossary / Definitions" — glossary — vocabulary, not behaviour
+- "Riwayat Dokumen" — document revision history
+- "Riwayat Versi" — document revision history
+- "Versi Dokumen" — document revision history
+- background — document context — background for the flows, no behaviour of its own (two headings are named "Background": the unique slug picks each)
+- background-1 — the second "Background" section ({#bg}), document context, no behaviour of its own
+- "Out of Scope Items" — the PRD excludes it from this release
+- "Autodebet bank lain" — listed under 'Out of Scope Items' — excluded by the PRD
+- "Out of Scope / Future Work" — the PRD excludes it from this release
+- "Multi-currency" — listed under 'Out of Scope / Future Work' — excluded by the PRD
+- "Out-of-Scope Features" — the PRD excludes it from this release
+- "Kartu kredit" — listed under 'Out-of-Scope Features' — excluded by the PRD
+- "Di Luar Lingkup Fase 1" — the PRD excludes it from this release
+- "Investasi reksa dana" — listed under 'Di Luar Lingkup Fase 1' — excluded by the PRD
+- "Tidak Termasuk dalam Rilis Ini" — the PRD excludes it from this release
+- "Tarik tunai" — listed under 'Tidak Termasuk dalam Rilis Ini' — excluded by the PRD
+- "Out of Scope" — the PRD excludes it from this release
+- "Kripto" — listed under 'Out of Scope' — excluded by the PRD
+- "Non-Goals (Out of Scope)" — the PRD excludes it from this release
+- "Chatbot" — listed under 'Non-Goals (Out of Scope)' — excluded by the PRD

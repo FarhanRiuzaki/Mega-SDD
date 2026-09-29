@@ -1,0 +1,7 @@
+delivery-check @ edd0585 (/private/tmp/claude-501/mega-sdd-bench/work/clinic-lite-4)
+  D1 PASS scripts.test = vitest run
+  D2 PASS npm test (TZ=UTC) exit 0
+  D3 PASS npm test (TZ=Pacific/Kiritimati) exit 0
+  D4 FAIL npm run build fails on a fresh checkout with an empty env (exit 1) — a missing secret must fail at request time with a clear message, not at import/prerender — tail: Error occurred prerendering page "/staff/reception". Read more: https://nextjs.org/docs/messages/prerender-error Error: Invalid server environment variables: > 55 |     throw new Error( 
+  D5 PASS every static page route (4) is linked from another source file
+VERDICT: FAIL (1 blocking)

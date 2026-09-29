@@ -3,9 +3,9 @@
 > Canonical schema for `.mega-sdd/codebase/starterkit-context.yaml` — single source of truth for all mega-sdd consumers.
 
 **Version:** 3.1 — supersedes 3.0, 2.0, 1.0 (schema lineage: 1.0 initial; 2.0 added per-slice cache; 3.0 added `patterns:`; 3.1 neutral auth/authz reshape — rbac→authz, auth.routes→entrypoints, auth.guard→mechanism)
-**Produced by:** `mega-sdd:scan-codebase` Step 10.5 deep-scan stage + Step 10.5.2.5 pattern extraction
-**Consumed by:** `mega-sdd:generate-units` (Step 7.7), `mega-sdd:execute-bolts` (Step 4.5.b-starterkit — `references/starterkit-enrichment.md`), `mega-sdd:orchestrate-flow` (handoff metadata propagation), `validate-starterkit-conformance.sh` (`patterns:` block consumer)
-**Backward compat:** v1.0 readers skip the `cache_signatures:` block. v2.0 readers skip the `patterns:` block. v3.0+ writers MUST emit `patterns:`. v3.1 reshapes auth/authz (breaking format change — see cache migration note in skills/scan-codebase/references/deep-scan-gate.md Step 10.5.1). Consumers MAY read v1.0/v2.0/v3.0; producers MUST emit v3.1.
+**Produced by:** none in 9.0 (pre-9.0 scan-codebase deep-scan files stay readable; every reader skips cleanly when the file is absent)
+**Consumed by:** `validate-unit-spec.sh` (Check 3), `validate-starterkit-conformance.sh` (`patterns:` block consumer), `_lib/resolve-framework-pack.sh` (reads `framework_pack:` first), `ground.sh` (Guard 7)
+**Backward compat:** v1.0 readers skip the `cache_signatures:` block. v2.0 readers skip the `patterns:` block. v3.1 reshapes auth/authz. Consumers MAY read v1.0–v3.1.
 
 ---
 
@@ -27,11 +27,11 @@
 ```yaml
 starterkit_context:
   schema_version: 3.1                    # v3.1 = neutral auth/authz reshape (rbac->authz, auth.routes->entrypoints, auth.guard->mechanism); v3.0 added patterns:
-  generated_by: scan-codebase v3.0.0
+  generated_by: scan-codebase v3.0.0     # pre-9.0 producer; informational
   generated_at: <ISO8601 timestamp>      # MOST RECENT slice write time
-  framework: laravel                     # from codebase-map.md §7 Framework.name
-  framework_version: "12.x"              # from codebase-map.md §7 Framework.version
-  framework_pack: laravel-base-26        # from codebase-map.md §7 Framework.pack_path basename
+  framework: laravel                     # pre-9.0 producer copied codebase-map.md §7 Framework.name
+  framework_version: "12.x"              # pre-9.0 producer copied codebase-map.md §7 Framework.version
+  framework_pack: laravel-base-26        # pre-9.0 producer copied codebase-map.md §7 Framework.pack_path basename
 
   partial: true                          # OPTIONAL — only when ≥1 slice failed
   partial_slices: [authz]                # OPTIONAL — present when partial: true
@@ -356,6 +356,8 @@ libs:
 
 ## §cache_signatures block (v2.1)
 
+Legacy, ignored by readers (only the retired producer compared these signatures on a re-scan).
+
 ```yaml
 cache_signatures:
   locks_sha256:                         # TECH-AGNOSTIC — one digest per detected ecosystem
@@ -365,53 +367,23 @@ cache_signatures:
   framework_pack: "rails"               # retained
   per_slice:                            # 5 slices — the reuse signature is stored here for
                                         # bookkeeping even though its OUTPUT lives in the
-                                        # sibling reuse-index.yaml (deep-scan-dispatch Step 10.5.3)
+                                        # sibling reuse-index.yaml
     auth:
-      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §auth + auth-libs.md + src_component(auth) + detector version)
+      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §auth + src_component(auth) + detector version)
       generated_at: "2026-05-25T10:00:00Z"
     authz:
-      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §authz + authz-libs.md + src_component(authz) + detector version)
+      signature_sha256: <hex>           # sha256(app_locks_digest + framework_pack §authz + src_component(authz) + detector version)
       generated_at: "2026-05-25T10:00:00Z"
     ui_ux:
-      signature_sha256: <hex>           # sha256(frontend_locks_digest + framework_pack §ui + ui-libs.md + src_component(ui_ux) + detector version)
+      signature_sha256: <hex>           # sha256(frontend_locks_digest + framework_pack §ui + src_component(ui_ux) + detector version)
       generated_at: "2026-05-25T10:00:00Z"
     libs:
-      signature_sha256: <hex>           # sha256(all_locks_digest + framework_pack §libs + generic-libs.md + src_component(libs) + detector version)
+      signature_sha256: <hex>           # sha256(all_locks_digest + framework_pack §libs + src_component(libs) + detector version)
       generated_at: "2026-05-25T10:00:00Z"
     reuse:
       signature_sha256: <hex>           # sha256(listing+mtimes of hinted first-party dirs + framework_pack §Reuse discovery + detector version)
       generated_at: "2026-05-25T10:00:00Z"
 ```
-
-> `src_component(<domain>)` = sha256 of listing+mtimes of the pack's domain file-hint dirs — slice outputs are source-derived, so a source-only edit invalidates the slice (deep-scan-gate Step 10.5.1.3). A domain listed in `partial_slices` gets NO per_slice entry (its next run must re-dispatch).
-
-**Cache reuse rule (v2.0+, per-slice):** on re-scan, scan-codebase computes the current signature for each of the 5 slices independently. For each slice:
-- IF prior.per_slice[<slice>].signature_sha256 == current_<slice>_signature → slice reused (no subagent dispatch for that slice)
-- ELSE (or no per_slice entry, or slice listed in prior partial_slices) → that slice's subagent re-dispatched; consolidator merges fresh slice with other cached slices
-
-**Cache invalidation matrix (v2.1, ecosystem-relative — examples for a non-JS app with a JS asset layer, e.g., Rails+esbuild or Laravel+Vite):**
-
-| Input changed | Slices invalidated | Subagent dispatches needed |
-|---|---|---|
-| app-ecosystem lock only (Gemfile.lock / composer.lock / go.sum / Cargo.lock / …) | auth, authz, libs (3/5) | 3 |
-| js asset-layer lock only | ui_ux, libs (2/5) | 2 |
-| Both | auth, authz, ui_ux, libs (4/5) | 4 |
-| framework_pack §auth section | auth (1/5) | 1 |
-| framework_pack §authz section | authz (1/5) | 1 |
-| framework_pack §ui section | ui_ux (1/5) | 1 |
-| framework_pack §libs section | libs (1/5) | 1 |
-| lib-patterns/<fw>/auth-libs.md | auth (1/5) | 1 (best case — 80% saving) |
-| domain-hinted source dirs (controllers / policies / views…) | the domains whose src_component covers them | 1–3 |
-| first-party source dirs (reuse hints) | reuse (1/5) | 1 |
-| skill (detector) version bump | all (5/5) | 5 |
-
-For a single-ecosystem app (pure Go API, pure Next.js), `app_locks_digest == frontend_locks_digest == all_locks_digest`, so any lock change re-dispatches the 4 manifest-fed slices — correctness preserved, granularity simply has nothing to split.
-
-**Typical savings:** app-dep edit ≈ 40% (3 of 5 dispatched). Asset-layer dep edit ≈ 60% (2 of 5). Single lib-pattern edit ≈ 80% (1 of 5). Framework pack rewrite, detector bump, or initial scan ≈ 0% (all 5 dispatched).
-
-### Legacy v1.0 `cache_key:` block (deprecated — backward-compat read)
-
-Oldest starterkit-context.yaml files have a `cache_key:` block in place of `cache_signatures:`. Producers treat any prior v1.0 file as fully-stale on read (forces all 5 subagent re-dispatches) and write the current `cache_signatures:` schema. One-time migration cost per project; zero breaking change. (v2.0 php/js-only signature files self-heal the same way — changed signature inputs mismatch once, then v2.1 is written.)
 
 ---
 
@@ -442,8 +414,4 @@ Downstream consumers MUST handle `partial: true` gracefully: if a slice they nee
 
 ## See also
 
-- `plugins/mega-sdd/skills/scan-codebase/SKILL.md` §Step 10.5 deep-scan stage (producer)
-- `plugins/mega-sdd/skills/scan-codebase/references/deep-scan-prompts.md` (subagent prompts)
-- `plugins/mega-sdd/references/lib-patterns/laravel/*.md` (per-lib detection patterns)
-- `plugins/mega-sdd/skills/generate-units/SKILL.md` §Step 7.7 (consumer — Anchors + Rules)
-- `plugins/mega-sdd/skills/execute-bolts/SKILL.md` §Step 4.5.b-starterkit (`references/starterkit-enrichment.md`; consumer — T2 slice injection)
+- `plugins/mega-sdd/scripts/validate-starterkit-conformance.sh` (the `patterns:` consumer) and `plugins/mega-sdd/scripts/ground.sh` Guard 7 (the corrupt-file rename). No execute-bolts step reads this file since P3.

@@ -14,7 +14,13 @@ if [ -f "$REF" ]; then
   done
 fi
 grep -q 'Multi-PRD lane' plugins/mega-sdd/skills/using-mega-sdd/SKILL.md || { echo "router not wired in using-mega-sdd"; err=1; }
-grep -qi 'Project constitution gate' plugins/mega-sdd/skills/bind-codebase/SKILL.md || { echo "project-constitution gate not in bind-codebase"; err=1; }
+# 9.0 P1: bind-codebase is deleted; the project-constitution gate now runs in
+# plan (Step 3), specified in plan/references/context-authoring.md and wired
+# from plan's SKILL.md (progressive disclosure).
+CA=plugins/mega-sdd/skills/plan/references/context-authoring.md
+grep -q '^## Project constitution gate' "$CA" || { echo "project-constitution gate section not in plan/references/context-authoring.md"; err=1; }
+grep -q '\.mega-sdd/constitution\.md' "$CA" || { echo "project-constitution gate does not read .mega-sdd/constitution.md"; err=1; }
+grep -qi 'context-authoring\.md.*project constitution gate' plugins/mega-sdd/skills/plan/SKILL.md || { echo "project-constitution gate not wired from plan SKILL.md"; err=1; }
 # zero-phantom: the deleted index script must not be referenced anywhere runnable
 grep -rq 'build-project-index' plugins/mega-sdd/scripts plugins/mega-sdd/hooks && { echo "phantom build-project-index reference"; err=1; }
 exit $err

@@ -2,10 +2,11 @@
 # secret-scan.sh — the ONE deterministic secrets script, two surfaces
 # (v7 Fase 2 merge group 5 folded the former scan-secrets-code.sh in here):
 #
-#   ARTIFACT scrub (scan-codebase Step 10a gate): scans a file ABOUT TO BE
-#   WRITTEN as a scan artifact (codebase-map.md, starterkit-context.yaml) for
-#   credential-shaped values and redacts the VALUE in place as
-#   [REDACTED-SECRET], keeping the surrounding row/line intact. It never
+#   ARTIFACT scrub (--check/--redact): extract-intelligence's pre-write gate on
+#   every KB file (SKILL.md "Secret-scan gate"); legacy map/starterkit
+#   artifacts. Scans a file ABOUT TO BE WRITTEN for credential-shaped values
+#   and redacts the VALUE in place as [REDACTED-SECRET], keeping the
+#   surrounding row/line intact. It never
 #   touches repo source files — only the artifact passed to it.
 #
 #   CODE-DIFF scan (execute-bolts L0 gate 3, --code): scans the diff a bolt is

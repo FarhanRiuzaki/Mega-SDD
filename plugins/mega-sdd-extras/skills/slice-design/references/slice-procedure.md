@@ -49,7 +49,7 @@ Assets: icons and images come back as exported asset URLs that expire in ~7 days
 
 ## 3. Implementation rules
 
-- Follow the ACTIVE framework pack conventions (file locations, naming, idioms) exactly as a bolt would; with no pack readable, mirror the surrounding code of the repo.
+- Follow the ACTIVE framework pack conventions (file locations, naming, idioms); with no pack readable, mirror the surrounding code of the repo.
 - Design floor from the core corpus (§0): tokens/spacing/typography per `ui-design-heuristics.md`; interaction + a11y floor per `design-intelligence/ux-rules.md`; composition per `style-principles.md`. REUSE the corpus — never author new design knowledge here.
 - **Reuse-first**: before writing a component, check the project's existing components and, when present, `<root>/.mega-sdd/codebase/symbol-index.json` (core's reuse index). Never rebuild an existing button.
 - The Figma reference code is a REFERENCE: adapt it to the project's language, framework, component library, and styling system; never paste React+Tailwind into a Blade/Vue/Razor project.

@@ -1,6 +1,6 @@
 ---
 name: orchestrate-flow
-version: 2.29.3
+version: 3.2.0
 description: Multi-skill lifecycle orchestrator — inspects CWD state, proposes a chain of mega-sdd sub-skills, confirms once, executes in --auto mode with halt-pauses; --deep chains to pipeline-end; --resume continues a paused chain; --sync runs the reconcile lane. Use when the user says "orchestrate", "run flow", "run the flow", "auto mega-sdd", "do the next thing", "what's next", "lanjut", "lanjutkan", "next", or paraphrases.
 ---
 
@@ -9,6 +9,8 @@ description: Multi-skill lifecycle orchestrator — inspects CWD state, proposes
 **Announce at start:** "I'm using the orchestrate-flow skill to inspect CWD and propose the next phases. `mega-sdd-trace:orchestrate-flow`"
 
 The orchestrator inspects the working directory, infers where you are in the mega-sdd pipeline, proposes a chain of sub-skills, confirms once, then dispatches them with `--auto`. It generates no content itself — it routes. Heavy detail (decision matrices, preflight catalogs, handoff validation, convergence, halt taxonomy) lives in the references below; this file is the router.
+
+**Entry:** the front door's lane router (`scripts/route-lane.sh`) runs first. `direct` / `assisted` work never reaches this skill (`plugins/mega-sdd/references/direct-lane.md`). This skill runs the **guarded** lane — ONE pipeline, `plan` → `execute-bolts` (JIT bind per unit, delivery check) — and the maintenance lanes (sync, delta, OQ, drift).
 
 > **Instruction language:** this skill reasons in English. User triggers may be Indonesian ("lanjut", "lanjutkan", "next"). Narrate (the announce, proposed-chain prose, confirmations) in **Indonesian + English technical terms by default**; precedence = explicit request > the language the user writes in > Indonesian for short/ambiguous input. Tier-1 structural tokens stay English (→ `plugins/mega-sdd/references/output-language.md`).
 
@@ -26,10 +28,10 @@ The orchestrator inspects the working directory, infers where you are in the meg
    ```
    prd: present | absent
    vault: present | absent (path: ...)
-   bound_vault: present | absent
+   bound_vault: present | absent  # layout-2 artefact (read only)
    units: N
    bolts: N
-   codebase_map: present | absent
+   codebase_map: present | absent  # pre-9.0 scan artefact: optional context, never a routing key
    knowledge_base: present | absent (path: ..., source: config|default)  # priority: `knowledge_base:` in config.yaml (shared KB outside the tree; configured-but-missing = absent + note) → .mega-sdd/knowledge-base → docs/knowledge-base → docs/mega-sdd/knowledge-base → old-reference/knowledge-base
    git_repo: yes | no            # probes.git (rows here are the DIGEST's labels, not state.json key names)
    pending_p0_p1_count: N    # probes.oq — status: open (or absent) P0/P1 OQs — these gate
@@ -39,14 +41,13 @@ The orchestrator inspects the working directory, infers where you are in the meg
    interfaces_count: N   # count of files in <vault>/interfaces/ (excluding _index.md); 0 if folder absent
    change_signal:        # Mode D probes (living-vault sync)
      dirty_journal_rows: N            # grep -c . .mega-sdd/codebase/.dirty-paths.jsonl
-     map_stamp_matches_head: yes | no | n/a   # last_scanned_commit vs git HEAD
-     index_stamp_matches_head: yes | no | n/a # symbol-index head_commit vs git HEAD (express-born substrate)
+     map_stamp_matches_head: yes | no | n/a   # legacy map; informational, not a sync trigger
+     index_stamp_matches_head: yes | no | n/a # symbol-index head_commit vs git HEAD
    starterkit: detected | absent  # framework manifest probe (P2: manifests incl. *.csproj/*.sln globs)
      framework: <name|null>       # derived.framework_pack — the GROUND matcher's pick (e.g., laravel-base-26)
      pack_match: yes | no         # derived.framework_pack != `_universal` (no == fallback)
      manifest_path: <path|null>   # derived.framework_pack_manifest
-   spine: express | classic       # derived.spine — express is the P2 default
-   lane: standard | lite          # derived.lane — config.yaml `lane:`; the durable form of the front-door `--lite` flag
+   lane: lite                     # derived.lane — always lite (one pipeline); config `lane: standard | lite` is informational: a retired `lane: standard` surfaces as a derived.notes line and the run proceeds lite
    ```
 
 3. **Resolution preflight** (per `references/chain-execution.md`). Run in order; each is default-on and falls through silently when not applicable:
@@ -57,19 +58,14 @@ The orchestrator inspects the working directory, infers where you are in the meg
 4. **Build proposed chain.** `derived.proposed_next` (from the Step-2 digest) IS the default chain — the engine is authoritative and needs no table read. Open `references/routing-rules.md §Decision matrix` ONLY when an overlay applies: a routing flag (`--greenfield` / `--brownfield` / `--sync` / `--from` / `--to` / `--resume`), rebuild/adoption intent, multi-squad, or the user edits the proposal.
    - Default mode (no `--deep`): hard cap **3 sub-skills** (legacy behavior, backward-compatible).
    - **`--deep` mode:** cap LIFTED — the engine's proposal already extends to pipeline-end; `references/routing-rules.md §Deep-chain decision matrix` opens under the same overlay-only rule as Step 4. Auto-continue between phases via the handoff YAML protocol (consumed per `references/handoff-consumption.md` — per hop; `references/handoff-contract.md` opens at the b.iv conditional-field check — its schema owns the CONDITIONAL roster — on a validation failure, or for §Resume mechanics; never for the rest of a clean hop).
-   - **Chain optimization:** if the chain includes `scan-codebase` but `binding.md` (classic lane) attests a verified, unchanged snapshot → skip scan-codebase (per `references/chain-execution.md §Chain optimization via binding provenance`).
 
-5. **Predictive preflight** — `Run: bash <plugin-root>/scripts/validate-preflight.sh --predictive --cwd=<root> --chain=<skill,skill,…>` BEFORE invoking any skill in the chain (the script owns each chained skill's checks + the §Cold-halt anticipation set whenever `execute-bolts` is chained; source-of-truth catalog: `references/predictive-checks.md` — open it ONLY to read an `on_fail` hint in full or to author checks, never to hand-run the loop). Read the JSON verdicts: exit 0 → surface any `warn` lines before chain start; exit 3 (≥1 `fatal`) → halt `predictive_check_failed`, STOP chain. Three flag-dependent checks stay MODEL-RUN when their trigger is present (the script skips them by design): `constitution_file_check` under `--strict-constitution`, `new_source_resolves_for_diff` with a positional source, `subagent_capacity_reasonable` with `--max-parallel` — run each from its catalog entry. Detail in `references/chain-execution.md`.
+5. **Predictive preflight** — `Run: bash <plugin-root>/scripts/validate-preflight.sh --predictive --cwd=<root> --chain=<skill,skill,…>` BEFORE invoking any skill in the chain (the script owns each chained skill's checks + the §Cold-halt anticipation set whenever `execute-bolts` is chained; source-of-truth catalog: `references/predictive-checks.md` — open it ONLY to read an `on_fail` hint in full or to author checks, never to hand-run the loop). Read the JSON verdicts: exit 0 → surface any `warn` lines before chain start; exit 3 (≥1 `fatal`) → halt `predictive_check_failed`, STOP chain. Three checks stay MODEL-RUN when their trigger is present (the script skips them by design — their inputs are invisible to `--chain`): `prd_or_kb_input_present` whenever `plan` is chained (positional PRD / `--kb=<kb-dir>` / root probe), `new_source_resolves_for_diff` with a positional source, `subagent_capacity_reasonable` with `--max-parallel` — run each from its catalog entry. Detail in `references/chain-execution.md`.
 
 6. **Present plan + single `AskUserQuestion`** (Run / Edit / Cancel). Edit supports `skip step N` and `stop after step N` only. Include a "Halts may re-engage you" line so users have accurate expectations:
    ```
-   Proposed pipeline (--deep, express spine):
-     1. generate-intent ./prd.md       → vault (index/state-grounded)
-     2. bind-codebase --express        → binding.md + bound-vault/
-     3. generate-units                 → units/
-     4. execute-bolts --all --parallel → bolts/
-   (classic spine additionally opens with scan-codebase → codebase-map.md)
-   (lite lane: 1. plan <prd> --lite --mode=… → context.md + units/  2. execute-bolts --all --lite → bolts/)
+   Proposed pipeline (--deep):
+     1. plan ./prd.md --lite --mode=existing → context.md + units/
+     2. execute-bolts --all --lite           → bolts/ (JIT bind per unit → bolts/U-XXX/binding.json) + delivery-check
 
    Halts may re-engage you mid-chain (test failures, business OQ
    resolutions, hard-rule violations, dedup ambiguity, recommendation
@@ -89,9 +85,9 @@ The orchestrator inspects the working directory, infers where you are in the meg
    e. **Halt-check** — `status==halted` → exit loop; proceed to the Emit-final-summary step.
    f. **Continue-loop** — `status==completed` → continue to next sub-skill.
 
-   **Auto-integrated diagnostics + drift gate run transparently inside this loop** (lint-units `--changed-only`, analyze-parallelism, list-modules, emit-agents-md, optional emit-fsd, and the DEFAULT-ON hybrid `detect-drift` gate after `execute-bolts`). User does NOT run these separately; opt-outs (`--no-lint`, `--no-drift-check`, etc.) and the full phase table are in `references/chain-execution.md`. **Diagnostics are LEAN-BY-DEFAULT on the express spine (P3):** the ADVISORY diagnostics in this loop (`lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`) are SKIPPED on express-spine chains — each re-runnable on demand; `--full` restores them for a run; classic-spine chains keep them (today's behavior verbatim). The Stop hook's auto-analyze aggregate fires only under `spine: classic` or an explicit `profile: full` in config. **`--lean` profile (tranche E):** active when the user passes `--lean` (this run) or `.mega-sdd/config.yaml` carries `profile: lean` (persistent — the Stop-hook aggregate skip engages; `--full` restores the diagnostics for a run but does NOT restore the config-governed Stop aggregate — remove the config key for that). Under lean: the ADVISORY diagnostics in this loop (`lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`) are SKIPPED (each re-runnable on demand), and the Stop hook's auto-analyze aggregate does not fire. The `detect-drift` gate keeps running. **Lean NEVER touches (rail 1 — speed cuts inventory, never verification):** the CONFLICT gate, binding verdicts, citation discipline, the halt taxonomy, no-fabrication, the B1–B4 artifact gates, anti-self-bypass, review-lens blindness, or the review-panel risk tiering — a lean run is a correct run that is less thorough, and the chain summary MUST name the profile (`profile: lean — advisory diagnostics skipped`).
+   **Auto-integrated diagnostics + drift gate run transparently inside this loop** (lint-units `--changed-only`, analyze-parallelism, list-modules, emit-agents-md, optional emit-fsd, and the DEFAULT-ON hybrid `detect-drift` gate after `execute-bolts`). User does NOT run these separately; opt-outs (`--no-lint`, `--no-drift-check`, etc.) and the full phase table are in `references/chain-execution.md`. **Diagnostics are LEAN-BY-DEFAULT (P3):** the ADVISORY diagnostics in this loop (`lint-units`, `analyze-parallelism`, `list-modules`, `emit-agents-md`) are SKIPPED — each re-runnable on demand; `--full` restores them for a run. The Stop hook's auto-analyze aggregate fires only under an explicit `profile: full` in config — or a leftover retired `spine: classic` key, which the hook still honours unless `profile: lean` is set. **`--lean` profile (tranche E):** `--lean` (this run) or `profile: lean` in `.mega-sdd/config.yaml` (persistent) names the same trim explicitly; `--full` restores the diagnostics for a run, never the config-governed Stop aggregate (that needs `profile: full`). The `detect-drift` gate keeps running. **Lean NEVER touches (rail 1 — speed cuts inventory, never verification):** the CONFLICT gate, binding verdicts, citation discipline, the halt taxonomy, no-fabrication, the B1–B4 artifact gates, anti-self-bypass, or the close-of-run blind review — a lean run is a correct run that is less thorough, and the chain summary MUST name the profile (`profile: lean — advisory diagnostics skipped`).
 
-8. **Emit final summary** — completed/paused/skipped per step + verbatim blocker YAMLs if any. **Deferred-OQ resurface (P3/A6, ALWAYS — deep or not):** when the vault carries `open_questions[] status == deferred` (incl. express auto-defers), append one line: `⏸ N OQ deferred — <tags>. Jawab kapan saja: resolve-oq` — the recorded defer's mandated resurface. In `--deep` mode, append the diagnostics summary, predictive-preflight metrics, and phase context (per `references/chain-execution.md §Final summary appendix`).
+8. **Emit final summary** — completed/paused/skipped per step + verbatim blocker YAMLs if any. **Result contract** (the same in every lane — `plugins/mega-sdd/references/direct-lane.md` step 6) when the chain ran `execute-bolts`: a table of every criterion with its status and the test that covers it; the delivery-check verdict (quote the `VERDICT:` line of the last commit — anything but `VERDICT: PASS` means the run is not done); every assumption and decision you made; the commits. A chain that stopped before bolts says the result contract is pending. **Deferred-OQ resurface (P3/A6, ALWAYS — deep or not):** when the vault carries `open_questions[] status == deferred` (incl. the batched walk's P2/P3 auto-defers), append one line: `⏸ N OQ deferred — <tags>. Jawab kapan saja: resolve-oq` — the recorded defer's mandated resurface. In `--deep` mode, append the diagnostics summary, predictive-preflight metrics, and phase context (per `references/chain-execution.md §Final summary appendix`).
 
 9. **Resume support (`--resume`, CWD-driven, no state file).**
     - Skip the upfront confirmation (chain was already approved last run — same ownership rule as Step 6).
@@ -121,11 +117,14 @@ The orchestrator inspects the working directory, infers where you are in the meg
 - `--converge` / `--no-converge` / `--max-cycles=N`: auto-recovery cycling controls (default ON in `--deep`; see `references/convergence-loops.md`)
 - `--greenfield` / `--brownfield`: override starterkit/mode inference
 - `--with-fsd` / `--no-fsd`, `--no-lint`, `--no-analyze`, `--no-modules-summary`, `--no-agents-md`, `--no-drift-check`: diagnostic opt-outs (see `references/chain-execution.md`)
-- `--sync`: force the Mode D maintenance chain (changed-set derivation — incremental scan on map-bearing projects, `scripts/derive-changed-paths.sh` on express-born — → **`scripts/sync-intersect.sh` short-circuit gate (exit 0 = in-sync: stamp + one-line SYNC-REPORT + END; exit 4 = reconcile_needed → proceed; exit 2 or ANY other exit = fail-closed, full chain)** → drift → re-bind → unit reconcile) regardless of other inference — the `/mega-sdd:sync` front-door (per `references/routing-rules.md` §Mode D). `--full-bind`: the re-bind hop becomes the whole-vault JIT sweep (`derive-unit-claims.sh --units=all` → `write-unit-binding.sh` per unit → `validate-handoff-binding-units.sh --units=all`; see `execute-bolts/references/jit-bind-and-quarantine.md §3.9`) — the full sync audit for BA/QA; forward the flag verbatim
+- `--sync`: force the Mode D maintenance chain (changed-set derivation — `scripts/derive-changed-paths.sh`; no index baseline → full JIT re-bind — → **`scripts/sync-intersect.sh` short-circuit gate (exit 0 = in-sync: stamp + one-line SYNC-REPORT + END; exit 4 = reconcile_needed → proceed; exit 2 or ANY other exit = fail-closed, full chain)** → drift → re-bind (`scripts/rebind-units.sh`) → unit reconcile (`plan --reconcile`)) regardless of other inference — the `/mega-sdd:sync` front-door (per `references/routing-rules.md` §Mode D). `--full-bind`: the re-bind hop becomes `rebind-units.sh --units=all` (as `commands/sync.md`) — the full sync audit for BA/QA; forward the flag verbatim
 - `--factory` — enable state-driven factory routing: read the whole checkpoint ledger and route forward OR backward to re-run an unresolved phase, looping to convergence under the retry cap (`references/factory-routing.md`). Implied by `--deep`.
-- `--express` / `--classic`: the spine switch — **express is the DEFAULT (P2)**. Express: the state engine renders chains WITHOUT a scan phase (GROUND ran as a script) and appends `--express` to every `bind-codebase` hop (bind enumerates claims from the script-derived `claims-ledger.json` (classic-lane bind; the lite lane binds per unit at dispatch instead) PLUS a model completeness sweep of the vault docs, and retrieves evidence via symbol-index queries + targeted Reads, zero codebase-map load; honest fallback to the standard lane when the index/ledger is unavailable — `bind-codebase/references/express-bind.md`). `--classic` (this run) or `spine: classic` in `.mega-sdd/config.yaml` (persistent — the engine reads only the config; the FLAG is applied by the orchestrator at dispatch time, the `--lean` precedent) restores the scan-first chains verbatim. No gate or verdict-grammar change on either spine.
+- `--express`: accepted as a no-op (express is the only spine); the front door treats it as a pipeline-only flag that implies `--guarded`
+- `--classic` / `spine: classic` (config): retired — the front door names the removal in one line and ignores the flag (the Stop hook's one exception: Step 7)
 - `--strict-quality`: escalate advisory quality findings to chain-pausing
-- `--lite`: the lite lane for THIS run — forwarded to every `plan` / `execute-bolts` hop (JIT bind every wave, W1 zero-idle, plan-coverage PASS before bolts). **P2 2-hop lane:** with a PRD and no vault the engine proposes `plan <prd> --lite --mode=…` → `execute-bolts --all --lite` (`references/routing-rules.md` lane-lite row); `plan` emits NO handoff YAML — re-derive state from disk after it returns and run the predictive preflight for the bolts hop (`references/handoff-consumption.md §Lite lane exemption`). Durable form = `lane: lite` in `.mega-sdd/config.yaml` (`derived.lane`), which `--resume` reads; a run started with the flag but no config key is lite only for as long as the flag is on the chain — say so in the report and offer the one-line config edit.
+- `--lite`: the pipeline's lane marker — forwarded to every `plan` / `execute-bolts` hop (JIT bind of every unit, W1 zero-idle, plan-coverage PASS before bolts); the pipeline is lite with or without it. **P2 2-hop lane:** with a PRD and no vault the engine proposes `plan <prd> --lite --mode=…` → `execute-bolts --all --lite` (`references/routing-rules.md` lane-lite row); `plan` emits NO handoff YAML — re-derive state from disk after it returns and run the predictive preflight for the bolts hop (`references/handoff-consumption.md §Lite lane exemption`).
+- `--agents`: retired — say once `--agents is retired: the per-unit agent path was removed (spec v9 §8.6); running the default inline run.` and run the hop inline (`execute-bolts --all --lite`)
+- `--inline`: accepted no-op alias of the default inline run — forwarded as `execute-bolts --all --lite --inline` (changes nothing), never to `plan`
 - Checkpoint protocol (`references/checkpoint-protocol.md`) is a DECLARED contract — no skill emits per-step checkpoints at HEAD; `--resume` is CWD-driven only
 
 ## Greenfield vs brownfield routing
@@ -160,7 +159,7 @@ Every blocker a sub-skill emits is classified as **cycle-eligible** (auto-loop i
 - `references/factory-ledger-contract.md` — the derived checkpoint ledger schema each phase appends to.
 - `references/factory-routing.md` — read-whole-ledger forward/backward routing + convergence/cap termination (`--factory` / `--deep`).
 - **`references/routing-rules.md`** — CWD inspection order, the default + `--deep` decision matrices, starterkit-first ordering, multi-squad detection, greenfield/brownfield detection, `--from`/`--to`/`--resume` mechanics. *Open ONLY on a Step-4 overlay (flag / rebuild-adoption intent / multi-squad / user edit) — the engine's `derived.proposed_next` is the default.*
-- **`references/chain-execution.md`** — full resolution-preflight procedure (starterkit/mode classification, model-tier resolution, iter-classifier (REMOVED — tombstone), Plan/Act gating, chain optimization), predictive-preflight loop, first-run pre-flight, auto-integrated diagnostics table, hybrid drift gate, final-summary appendix.
+- **`references/chain-execution.md`** — full resolution-preflight procedure (starterkit/mode classification, model-tier resolution, iter-classifier (REMOVED — tombstone), Plan/Act gating), predictive-preflight loop, first-run pre-flight, auto-integrated diagnostics table, hybrid drift gate, final-summary appendix.
 - **`references/diagnostics-procedures.md`** — the operative procedures for the three auto-integrated diagnostics (`lint-units`, `analyze-parallelism`, `list-modules`; `enrich-semantics` is a removal tombstone); load when a chain row or an on-demand phrase invokes one.
 - **`references/predictive-checks.md`** — per-skill preflight check catalog consulted before chain start.
 - **`references/handoff-consumption.md`** — orchestrator-side handoff validation gate (presence / type / schema / artifact / cross-metric) with halt envelopes, plus the consumption control loop.
@@ -172,4 +171,4 @@ Every blocker a sub-skill emits is classified as **cycle-eligible** (auto-loop i
 
 ## Related skills
 
-Sub-skills orchestrated: `extract-intelligence`, `generate-intent`, `scan-codebase`, `bind-codebase`, `generate-units`, `execute-bolts`, `resolve-oq`, `detect-drift`, `diff-vault` — plus the auto-integrated diagnostics `lint-units`, `analyze-parallelism`, `list-modules` (procedures in `references/diagnostics-procedures.md`, no handoff YAML) and the skills `emit-agents-md`, `emit-fsd` (opt-in), `install-deps` (each emits a handoff YAML). Each skill emits a handoff YAML the orchestrator consumes (`plugins/mega-sdd/references/halt-protocol.md §halt-protocol` for canonical blocker envelopes).
+Sub-skills orchestrated: `extract-intelligence`, `plan`, `execute-bolts`, `resolve-oq`, `detect-drift`, `diff-vault` (the sync lane's script hops: `derive-changed-paths.sh`, `sync-intersect.sh`, `rebind-units.sh`) — plus the auto-integrated diagnostics `lint-units`, `analyze-parallelism`, `list-modules` (procedures in `references/diagnostics-procedures.md`, no handoff YAML) and the skills `emit-agents-md`, `emit-fsd` (opt-in), `install-deps` (each emits a handoff YAML). Each skill emits a handoff YAML the orchestrator consumes (`plugins/mega-sdd/references/halt-protocol.md §halt-protocol` for canonical blocker envelopes).

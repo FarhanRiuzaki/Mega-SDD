@@ -1,0 +1,40 @@
+{
+ "traps": {
+  "T1": {
+   "surfaced": true,
+   "quote": "kept v1's 15-minute slots; PRD \u00a71 contradicts the code and the v1 PRD",
+   "judge_said": true,
+   "verified": true
+  },
+  "T2": {
+   "surfaced": true,
+   "quote": "OQ-OV-2 48-hour reminder? -> Defer: kept v1's 24-hour reminder",
+   "judge_said": true,
+   "verified": true
+  },
+  "T3": {
+   "surfaced": true,
+   "quote": "\u00a74.2 requires it and it is additive; the PRD called it \"existing\" but it wasn't",
+   "judge_said": true,
+   "verified": true
+  },
+  "T4": {
+   "surfaced": true,
+   "quote": "Defer: the penalty is undefined and payments are out of scope; none built",
+   "judge_said": true,
+   "verified": true
+  },
+  "T5": {
+   "surfaced": true,
+   "quote": "Defer: VIP is undefined; offers follow plain queue order",
+   "judge_said": true,
+   "verified": true
+  }
+ },
+ "surfaced": 5,
+ "total": 5,
+ "overturned": [],
+ "bundle_chars": 55635,
+ "judge_sid": "408527de-9859-4e4b-91aa-640726d16cad",
+ "judge_cost_usd": 0.2945508
+}

@@ -7,11 +7,18 @@
 # (vault fixture = plugins/mega-sdd/tests/graph/fixtures/derive-vault, binding
 # adapted from fixtures/derive-full). The proof is two-sided:
 #   happy path  — every deriver/validator produces the real artifact chain;
-#   gate firing — make-bound refuses on CONFLICT, preflight refuses a
+#   gate firing — validate-handoff-binding-units blocks on an active CONFLICT
+#                 (conflict_unresolved), preflight refuses a
 #                 tamper-then-mint (exit 8), postflight catches a committed
 #                 violation (MISMATCH), citation-map halts on a fabricated
 #                 path, drift is detected on source change.
 # Runs entirely in a mktemp workspace; never touches the repo.
+#
+# 9.0 P1b: make-bound.sh and validate-binding-json.sh were deleted (no surviving
+# executor). The S5 parity leg went with the validator; the S6 CONFLICT refusal
+# was RE-POINTED to the surviving invariant-#2 carrier, validate-handoff-binding-units
+# (the bound/ mirror + BIND-annotation assertions left with make-bound; S7+ never
+# read bound/). The per-unit JIT leg of the same gate stays pinned at S14c-e.
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -68,16 +75,20 @@ bash "$SCR/derive-vault-json.sh" --vault "$VAULT" --patch "$WORK/patch.json" </d
 cmp -s "$VAULT/vault.json" "$WORK/v1.json" && ok "re-derive byte-identical (generated_at preserved)" || bad "re-derive not idempotent"
 
 # ── S4 consumer guide (v7: script demoted to the documented cp one-liner) ────
+# 9.0 P1: generate-intent was retired; the shipped template + the cp one-liner
+# now live in plan (plan/SKILL.md Step 3). The guard below pins that the
+# documented one-liner still copies from this exact template path.
 stage "S4 consumer guide cp"
-SHIPPED="$PLG/skills/generate-intent/references/templates/ai-consumer-guide.md"
+SHIPPED="$PLG/skills/plan/references/templates/ai-consumer-guide.md"
 mkdir -p "$VAULT/_meta" && cp "$SHIPPED" "$VAULT/_meta/ai-consumer-guide.md"
 if [ -f "$VAULT/_meta/ai-consumer-guide.md" ] \
-   && [ "$(cksum < "$VAULT/_meta/ai-consumer-guide.md")" = "$(cksum < "$SHIPPED")" ]; then
+   && [ "$(cksum < "$VAULT/_meta/ai-consumer-guide.md")" = "$(cksum < "$SHIPPED")" ] \
+   && grep -qF 'cp "<plugin-root>/skills/plan/references/templates/ai-consumer-guide.md" <vault>/_meta/ai-consumer-guide.md' "$PLG/skills/plan/SKILL.md"; then
   ok "guide installed via cp, cksum-identical to shipped template"
 else bad "consumer guide cp failed"; fi
 
-# ── S5 binding (model-sim, ACTIVE CONFLICT) + stamp + derive + parity ────────
-stage "S5 binding write -> stamp -> derive -> parity"
+# ── S5 binding (model-sim, ACTIVE CONFLICT) + stamp + derive ─────────────────
+stage "S5 binding write -> stamp -> derive"
 write_binding() { # $1 = act (1: active conflict, 2: resolved/clean)
   local C050_VERDICT="CONFLICT" C050_HEAD="### CONFLICT-1 — product name collision"
   local RESLINE=""
@@ -143,21 +154,20 @@ G=0; for g in KEEP_VAULT KEEP_CODE DEFER SPLIT; do grep -q "$g = " "$VAULT/bindi
 [ $G -eq 4 ] && ok "all 4 keterangan glosses present in artifact" || bad "glosses missing ($G/4)"
 OUT="$(bash "$SCR/derive-binding-json.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
 [ $RC -eq 0 ] && ok "derive-binding-json re-run rc=0 (stamp idempotent)" || bad "derive-binding-json rc=$RC: $OUT"
-OUT="$(bash "$SCR/validate-binding-json.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
-[ $RC -eq 0 ] && ok "parity gate PASS" || bad "parity rc=$RC: $OUT"
 
-# ── S6 CONFLICT gate LIVE: refuse, resolve, produce ──────────────────────────
-stage "S6 make-bound: refusal on CONFLICT, then clean production"
-OUT="$(bash "$SCR/make-bound.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
-if [ $RC -eq 2 ] && [ ! -d "$VAULT/bound" ]; then
-  ok "GATE FIRED: make-bound refused (exit 2), no bound/ — $(echo "$OUT" | head -1)"
-else bad "expected refusal, rc=$RC bound=$([ -d "$VAULT/bound" ] && echo yes || echo no): $OUT"; fi
+# ── S6 CONFLICT gate LIVE: block, resolve, clear ─────────────────────────────
+stage "S6 validate-handoff-binding-units: block on CONFLICT, clear once resolved"
+BLK="$PROJ/.mega-sdd/.validation-blockers.json"
+bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --quiet </dev/null >/dev/null 2>&1; RC=$?
+python3 -c "import json,sys;d=json.load(open(sys.argv[1]));assert d['status']=='FAIL' and [x for x in d['drops'] if x['type']=='conflict_unresolved' and x.get('conflict_id')=='CONFLICT-1'], d" "$BLK" 2>/dev/null \
+  && [ $RC -eq 1 ] && ok "GATE FIRED: active CONFLICT-1 -> conflict_unresolved, exit 1" \
+  || bad "expected a conflict_unresolved block on CONFLICT-1, rc=$RC: $(head -c 300 "$BLK" 2>/dev/null)"
 write_binding 2
 bash "$SCR/derive-binding-json.sh" --vault "$VAULT" </dev/null >/dev/null 2>&1
-OUT="$(bash "$SCR/make-bound.sh" --vault "$VAULT" </dev/null 2>&1)"; RC=$?
-[ $RC -eq 0 ] && [ -d "$VAULT/bound" ] && ok "clean re-bind produced bound/: $OUT" || bad "make-bound rc=$RC: $OUT"
-cmp -s "$VAULT/binding.md" "$VAULT/bound/binding.md" && ok "bound/binding.md mirror byte-identical" || bad "mirror differs"
-grep -q "<!-- BIND: " "$VAULT/bound/04-flows.md" && ok "BIND annotations injected from binding.json" || bad "annotations missing"
+bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --quiet </dev/null >/dev/null 2>&1; RC=$?
+python3 -c "import json,sys;d=json.load(open(sys.argv[1]));assert not [x for x in d['drops'] if x['type']=='conflict_unresolved'], d['drops']" "$BLK" 2>/dev/null \
+  && ok "resolved CONFLICT-1 (✅ RESOLVED heading) no longer blocks as conflict_unresolved" \
+  || bad "resolved binding still conflict_unresolved (rc=$RC): $(head -c 300 "$BLK" 2>/dev/null)"
 
 # ── S7 bind event into vault.json ────────────────────────────────────────────
 stage "S7 derive-vault-json --event bind"
@@ -373,8 +383,8 @@ acceptance_test:
 - C-U009-02 "no legacy carryover file" — expect: src/config/limits.php — must-not-exist
 MD
 OUT="$(bash "$SCR/derive-unit-claims.sh" --cwd="$PROJ" --vault="$VAULT" --units=U-009 </dev/null 2>&1)"; RC=$?
-WV="$VAULT/bolts/_wave-claims.json"
-[ $RC -eq 0 ] && [ -f "$WV" ] && echo "$OUT" | grep -q '"text_claims": 0' && ok "S14a derive: fs-only wave, 0 model tokens ($OUT)" || bad "S14a derive rc=$RC: $OUT"
+WV="$VAULT/bolts/U-009/_claims.json"
+[ $RC -eq 0 ] && [ -f "$WV" ] && echo "$OUT" | grep -q '"text_claims": 0' && ok "S14a derive: fs-only unit, 0 model tokens ($OUT)" || bad "S14a derive rc=$RC: $OUT"
 bash "$SCR/write-unit-binding.sh" --cwd="$PROJ" --vault="$VAULT" --unit=U-009 --claims="$WV" </dev/null >/dev/null 2>&1 \
   && python3 -c "import json,sys;d=json.load(open(sys.argv[1]));assert d['summary']['CONFLICT']==1 and d['summary']['CONFIRMED']>=1 and d['summary']['OQ']==0, d['summary']" "$VAULT/bolts/U-009/binding.json" \
   && ok "S14b writer: must-exist CONFIRMED, must-not-exist on an existing file = CONFLICT" || bad "S14b writer verdicts wrong"
@@ -389,7 +399,7 @@ bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --units=U-009 --quie
 python3 -c "import json,sys;d=json.load(open(sys.argv[1]));assert not [x for x in d['drops'] if x.get('unit_id')=='U-009'], [x for x in d['drops'] if x.get('unit_id')=='U-009']" "$PROJ/.mega-sdd/.validation-blockers.json" \
   && python3 -c "import json,sys;d=json.load(open(sys.argv[1]));c=[x for x in d['claims'] if x['id']=='C-U009-02'][0];assert c['resolution']['action']=='KEEP_CODE'" "$VAULT/bolts/U-009/binding.json" \
   && ok "S14e resolved via writer (KEEP_CODE) -> no U-009 drop remains (other stages' binding.md drops are theirs, not JIT's)" || bad "S14e U-009 drop survived resolution"
-rm -f "$VAULT/units/U-009.md"; rm -rf "$VAULT/bolts/U-009" "$VAULT/bolts/_wave-claims.json"
+rm -f "$VAULT/units/U-009.md"; rm -rf "$VAULT/bolts/U-009"
 bash "$SCR/validate-handoff-binding-units.sh" --cwd="$PROJ" --quiet </dev/null >/dev/null 2>&1 || true
 
 stage "S13 verdict"

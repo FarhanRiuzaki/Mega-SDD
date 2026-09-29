@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 # test-3c-secret-redaction.sh — god-review stage 3, Batch 3C.
-# Pins secret-scan.sh delivering what it attests (AH-1) + the deep-scan write
-# sites naming the scrub (AH-6).
+# Pins secret-scan.sh delivering what it attests (AH-1).
 #
 #   AH-1  a PEM private-key block is redacted WHOLE — no base64 body line and no
 #         END marker survives --redact (pre-fix: only the BEGIN header was
 #         stripped while the report said redacted:true, exit 0 — making the
 #         residue LESS detectable to downstream scanners).
 #         A truncated block (no END marker) still gets its header redacted.
-#   AH-6  deep-scan-dispatch.md Step 10.5.3 runs the scrub before BOTH mv sites
-#         (starterkit-context.yaml + reuse-index.yaml); the gate prose names
-#         reuse-index.yaml.
+#   AH-6  RETIRED in 9.0 P1: it pinned scan-codebase's deep-scan write sites
+#         (deep-scan-dispatch.md Step 10.5.3 + halts-flags-handoff.md gate
+#         prose). scan-codebase was removed and deep-scan was the only producer
+#         of starterkit-context.yaml / reuse-index.yaml (v9 design §7 #1). The
+#         surviving --redact caller (extract-intelligence's pre-write gate) is
+#         pinned by tests/fmea/test-fmea-pins.sh U1 and
+#         tests/extract-census/test-prd-kontrak-engine.sh.
 #
 # Run: bash tests/god-review-s3/test-3c-secret-redaction.sh
 set -uo pipefail
@@ -18,9 +21,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 SS="${ROOT}/plugins/mega-sdd/scripts/secret-scan.sh"
-DSS="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/deep-scan-dispatch.md"
-HFH="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/halts-flags-handoff.md"
-for f in "$SS" "$DSS" "$HFH"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+[ -f "$SS" ] || { echo "missing $SS"; exit 1; }
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
@@ -105,12 +106,6 @@ D="$WORK/clean.md"
 printf '%s\n' '# clean' 'nothing here' > "$D"
 OUT="$(bash "$SS" --check "$D")"; RC=$?
 [ "$RC" -eq 0 ] && ok "AH-1: clean file → --check exit 0" || fail "AH-1: clean file should exit 0, got $RC"
-
-# ── AH-6: deep-scan write sites run the scrub; gate prose names reuse-index ──
-grep -qF 'secret-scan.sh" --redact' "$DSS" && ok "AH-6: Step 10.5.3 invokes secret-scan.sh --redact before the mv" || fail "AH-6: Step 10.5.3 scrub invocation missing"
-grep -qF 'reuse-index.yaml.tmp' "$DSS" && ok "AH-6: reuse-index temp file covered by the scrub" || fail "AH-6: reuse-index scrub not named"
-grep -qF '`reuse-index.yaml` content is scrubbed' "$HFH" && ok "AH-6: gate prose names reuse-index.yaml" || fail "AH-6: gate prose does not cover reuse-index.yaml"
-grep -qF 'redacts the WHOLE block' "$HFH" && ok "AH-6: gate prose states whole-block PEM semantics" || fail "AH-6: whole-block semantics not documented"
 
 if [ "$FAILED" -eq 0 ]; then note "ALL 3C OK"; else note "3C had failures"; fi
 exit $FAILED

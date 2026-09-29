@@ -2,118 +2,153 @@
 # test-3e-sync-lane.sh — god-review stage 3, Batch 3E.
 # Pins the incremental/sync-lane correctness fixes:
 #
-#   SP-3  full scan whenever the git delta channel is unavailable, REGARDLESS of
-#         journal state (pre-fix: stamp-missing + any journaled AI write →
+#   SP-3  full fallback whenever the git delta channel is unavailable, REGARDLESS
+#         of journal state (pre-fix: stamp-missing + any journaled AI write →
 #         incremental proceeded blind to manual/pulled changes, then the restamp
-#         laundered the staleness permanently). Journal-only incremental survives
-#         ONLY for not-a-git-repo, with an explicit stale-risk warning.
+#         laundered the staleness permanently).
 #   SP-4  the staleness stamp uses `git rev-parse --verify 'HEAD^{commit}'` (a
 #         zero-commit repo would stamp the literal string "HEAD"); consumers
 #         treat a literal-HEAD stamp as missing.
-#   SP-6  the broken RG_OPTS block (quoting fails on bash AND zsh) is gone.
-#   SP-7  grammar smoke test: binary presence no longer stamps precision_tier ast;
-#         grammars_used lists only languages that passed a real query.
 #   SP-8  "truncate the journal" wording eliminated — the operative protocol is
 #         rotate-and-delete (truncate-in-place loses concurrent-session appends).
-#   SP-9  the flag catalog documents BOTH --shallow-scan semantics.
+#   B6    the no-baseline fallback continues to a FULL re-bind, never a scope-less
+#         detect-drift (which self-classifies STANDALONE → next_action: null →
+#         the chain truncates before the re-bind).
+#
+# 9.0 P1 (scan-codebase + bind-codebase + generate-units removed, spec
+# docs/superpowers/specs/2026-09-27-v9-simplification-design.md §2/§3):
+#   The sync lane's changed-set producer is now `scripts/derive-changed-paths.sh`
+#   (baseline = the GROUND symbol-index `head_commit`, built by
+#   `scripts/build-symbol-index.sh`), its fallback is the full JIT re-bind
+#   `scripts/rebind-units.sh --units=all`, and the reconcile hop is
+#   `plan --reconcile`. SP-3 / SP-4 / SP-8 / B6 are REPOINTED to those surviving
+#   surfaces (commands/sync.md, orchestrate-flow routing-rules §Mode D, the
+#   scripts themselves — empirically where the rule is code, not prose).
+#   RETIRED with the deleted scan-codebase skill (its scan-procedure.md /
+#   SKILL.md / halts-flags-handoff.md no longer exist by design):
+#     - SP-3 not-a-git-repo journal-only incremental exception (the successor has
+#       no journal-only mode: git unavailable → exit 3 → full re-bind, stricter)
+#     - SP-6 RG_OPTS / --type-add block (scan-procedure only)
+#     - SP-7 grammar-smoke-test absence (scan-procedure / scan SKILL.md only)
+#     - SP-9 --shallow-scan two-semantics flag catalog (a scan-codebase flag)
+#     - B6 scan-procedure "so downstream full-scans consistently" negative,
+#       halts-flags-handoff + handoff-contract scan-codebase-row fallback comments
+#       (no scan-codebase handoff row survives; the fallback is engine-run, not a
+#       skill handoff), and the 2026-06-10 spec §3.8(b)(1) mirror (historical
+#       spec text describing `scan-codebase --changed-only`).
 #
 # Run: bash tests/god-review-s3/test-3e-sync-lane.sh
 set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-SP="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/scan-procedure.md"
-SK="${ROOT}/plugins/mega-sdd/skills/scan-codebase/SKILL.md"
-HFH="${ROOT}/plugins/mega-sdd/skills/scan-codebase/references/halts-flags-handoff.md"
-SY="${ROOT}/plugins/mega-sdd/commands/sync.md"
-HC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md"
-RR="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/routing-rules.md"
-SPEC="${ROOT}/docs/superpowers/specs/2026-06-10-living-vault-continuous-sync-design.md"
-for f in "$SP" "$SK" "$HFH" "$SY" "$HC" "$RR" "$SPEC"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+PL="${ROOT}/plugins/mega-sdd"
+SY="${PL}/commands/sync.md"
+RR="${PL}/skills/orchestrate-flow/references/routing-rules.md"
+HC="${PL}/skills/orchestrate-flow/references/handoff-contract.md"
+DCP="${PL}/scripts/derive-changed-paths.sh"
+BSI="${PL}/scripts/build-symbol-index.sh"
+STP="${PL}/scripts/_lib/state_probes.py"
+for f in "$SY" "$RR" "$HC" "$DCP" "$BSI" "$STP"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
 note() { printf '%s\n' "$*"; }
 ok()   { printf '  \xe2\x9c\x93 %s\n' "$*"; }
 fail() { printf '  \xe2\x9c\x97 FAIL: %s\n' "$*"; FAILED=1; }
 
+WORK="$(mktemp -d 2>/dev/null || mktemp -d -t sp3e)"; trap 'rm -rf "$WORK"' EXIT
+HEX40="0123456789abcdef0123456789abcdef01234567"
+
 note "== 3E: incremental/sync lane =="
 
-# ── SP-3 ──
-grep -qF 'the git delta channel is unavailable — regardless of journal state' "$SP" \
-  && ok "SP-3: fallback keyed to git-channel availability, journal-independent" || fail "SP-3: fallback still journal-ANDed"
-if grep -qF 'lacks `last_scanned_commit` AND the journal is empty' "$SP"; then
-  fail "SP-3: old fail-open AND-join survives"
+# ── SP-3 (repointed: derive-changed-paths.sh is the changed-set producer) ──
+grep -qF '(`derive-changed-paths.sh` exit 3 — no baseline stamp / git unavailable / write failed) → full JIT re-bind fallback' "$SY" \
+  && ok "SP-3: sync.md keys the full fallback to baseline/git-channel availability" || fail "SP-3: sync.md fallback (exit 3 → full JIT re-bind) missing"
+SP3_BAD=0
+for f in "$SY" "$RR" "$DCP"; do
+  if grep -qF 'AND the journal is empty' "$f"; then SP3_BAD=1; fi
+done
+[ "$SP3_BAD" -eq 0 ] && ok "SP-3: no stamp-missing-AND-journal-empty join on any sync surface" || fail "SP-3: old fail-open AND-join survives"
+# empirical: git channel unavailable (not a repo) + a valid stamp + journaled
+# writes → exit 3 (full re-bind), journal left un-consumed — journal-independent.
+NG="$WORK/nogit"; mkdir -p "$NG/.mega-sdd/codebase" "$NG/v"
+printf '{"head_commit": "%s", "symbols": []}\n' "$HEX40" > "$NG/.mega-sdd/codebase/symbol-index.json"
+printf '{"path": "src/a.py"}\n' > "$NG/.mega-sdd/codebase/.dirty-paths.jsonl"
+GIT_CEILING_DIRECTORIES="$WORK" bash "$DCP" --cwd="$NG" --vault "$NG/v" >/dev/null 2>&1; RC=$?
+if [ "$RC" -eq 3 ] && [ -s "$NG/.mega-sdd/codebase/.dirty-paths.jsonl" ] \
+   && ! ls "$NG/.mega-sdd/codebase/".dirty-paths.consumed-* >/dev/null 2>&1 \
+   && [ ! -e "$NG/v/.sync-changed-paths.txt" ]; then
+  ok "SP-3: no git channel + journaled writes → exit 3, journal NOT consumed — empirical"
 else
-  ok "SP-3: old stamp-missing-AND-journal-empty join removed"
+  fail "SP-3: no-git derive-changed-paths rc=$RC (want 3) or the journal was consumed / a changed set written"
 fi
-grep -qF 'Not-a-git-repo exception' "$SP" && grep -qF 'incremental merge covers in-session writes only' "$SP" \
-  && ok "SP-3: journal-only incremental reserved for not-a-git-repo, with stale-risk warning" || fail "SP-3: not-a-git-repo exception/warning missing"
 
-# ── SP-4 ──
-grep -qF "git rev-parse --verify 'HEAD^{commit}'" "$SP" && ok "SP-4: stamp uses --verify HEAD^{commit}" || fail "SP-4: stamp guard missing"
-grep -qF 'stamp equal to the literal `HEAD` as missing' "$SP" && ok "SP-4: literal-HEAD stamp treated as missing (consumer rule)" || fail "SP-4: literal-HEAD rule missing"
-grep -qF 'the stamp is the literal string `HEAD`' "$SP" && ok "SP-4: incremental fallback names the literal-HEAD case" || fail "SP-4: incremental side missing literal-HEAD"
+# ── SP-4 (repointed: the GROUND symbol-index head_commit is the freshness stamp) ──
+grep -qF '"rev-parse", "--verify", "HEAD^{commit}"' "$BSI" \
+  && ok "SP-4: symbol-index stamp uses --verify HEAD^{commit}" || fail "SP-4: stamp guard missing from build-symbol-index.sh"
 # empirical: the guard behaves as documented in a zero-commit repo
-WORK="$(mktemp -d 2>/dev/null || mktemp -d -t sp4)"; trap 'rm -rf "$WORK"' EXIT
-( cd "$WORK" && git init -q . )
-if ( cd "$WORK" && git rev-parse --verify 'HEAD^{commit}' >/dev/null 2>&1 ); then
+( cd "$WORK" && mkdir zc && cd zc && git init -q . )
+if ( cd "$WORK/zc" && git rev-parse --verify 'HEAD^{commit}' >/dev/null 2>&1 ); then
   fail "SP-4: --verify unexpectedly succeeded in a zero-commit repo"
 else
   ok "SP-4: --verify fails (→ omit stamp) in a zero-commit repo — empirical"
 fi
-
-# ── SP-6 ──
-if grep -qF 'RG_OPTS' "$SP"; then fail "SP-6: broken RG_OPTS block survives"; else ok "SP-6: RG_OPTS block removed"; fi
-if grep -qF -- "--type-add" "$SP"; then fail "SP-6: needless --type-add survives"; else ok "SP-6: no --type-add (rg types are built-in)"; fi
-
-# ── SP-7 (v7.4.0 form): the grammar-smoke-test lane stays removed ──
-if grep -qF 'grammar smoke test' "$SP" || grep -qF 'grammar smoke test' "$SK"; then
-  fail "SP-7: grammar smoke test prose is back (the tree-sitter lane was removed v7.4.0)"
-else
-  ok "SP-7: no grammar-smoke-test prose (tree-sitter lane stays removed)"
+# empirical consumer rule: a literal-HEAD stamp reads as MISSING in the state probe
+LH="$WORK/lithead"; mkdir -p "$LH/.mega-sdd/codebase" "$LH/v"
+printf '{"head_commit": "HEAD", "symbols": []}\n' > "$LH/.mega-sdd/codebase/symbol-index.json"
+if python3 - "$PL/scripts/_lib" "$LH" <<'PY' >/dev/null 2>&1
+import sys
+sys.path.insert(0, sys.argv[1])
+import state_probes
+r = state_probes.probe_symbol_index(sys.argv[2], head="HEAD")
+sys.exit(0 if r.get("present") and r.get("head_commit") is None else 1)
+PY
+then ok "SP-4: literal-HEAD stamp treated as missing (state probe consumer) — empirical"
+else fail "SP-4: state_probes.probe_symbol_index accepted a literal-HEAD stamp"
 fi
+# empirical: the changed-set producer treats a literal-HEAD stamp as no baseline
+( cd "$LH" && git init -q . && git -c user.email=t@t -c user.name=t commit -q --allow-empty -m init ) >/dev/null 2>&1
+bash "$DCP" --cwd="$LH" --vault "$LH/v" >/dev/null 2>&1; RC=$?
+[ "$RC" -eq 3 ] && ok "SP-4: derive-changed-paths treats a literal-HEAD stamp as no baseline (exit 3) — empirical" \
+  || fail "SP-4: derive-changed-paths rc=$RC on a literal-HEAD stamp (want 3)"
 
-# ── SP-8 ──
-SP8_BAD=0
-for f in "$SK" "$HFH" "$SY"; do
-  if grep -qi 'truncate[d]* the journal\|Journal truncated' "$f"; then SP8_BAD=1; fi
+# ── SP-8 (sync.md is the surviving journal-consume surface; scan SKILL.md and
+#    halts-flags-handoff.md were deleted with scan-codebase) ──
+if grep -qi 'truncate[d]* the journal\|Journal truncated' "$SY"; then
+  fail "SP-8: truncate wording survives in sync.md"
+else
+  ok "SP-8: 'truncate the journal' wording absent from sync.md"
+fi
+grep -qF 'rotate-and-delete' "$SY" \
+  && ok "SP-8: sync.md names the rotate-and-delete consume protocol" || fail "SP-8: rotate wording missing from sync.md"
+
+# ── B6: the no-baseline fallback must continue to a FULL re-bind, not hand off a
+#   scope-less detect-drift. detect-drift infers sync-lane membership ONLY from a
+#   --scope=@file, so with no scope it self-classifies as STANDALONE, emits
+#   next_action: null, and the chain truncates BEFORE the re-bind — leaving
+#   binding/units/bolts stale in exactly the highest-divergence case. ──
+note "-- B6: no-baseline fallback continues to a full re-bind (no truncation) --"
+# The render must carry <vault>: with no .sync-changed-paths.txt written, the
+# vault path is the ONLY signal the non-interactive downstream re-bind receives.
+grep -qF 'full JIT re-bind fallback (`scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=all`' "$SY" \
+  && grep -qF 'detect-drift skipped' "$SY" \
+  && ok "B6: sync.md fallback = rebind-units.sh --vault=<vault> --units=all, detect-drift skipped" \
+  || fail "B6: sync.md fallback missing the full rebind-units.sh <vault> --units=all continuation"
+grep -qF 'a scope-less detect-drift would null-terminate the chain before the re-bind' "$RR" \
+  && grep -qF 'run the FULL re-bind `scripts/rebind-units.sh --cwd=. --vault=<vault> --units=all`' "$RR" \
+  && ok "B6: routing-rules Mode D no-baseline branch skips detect-drift → full re-bind (with <vault>)" \
+  || fail "B6: routing-rules Mode D no-baseline fallback branch missing"
+# the reconcile hop is NOT a scope-channel consumer (it reads per-unit binding.json)
+grep -qF 'the SAME consumer contract detect-drift --scope=@,' "$DCP" \
+  && grep -qF 'sync-intersect.sh --paths=@ and rebind-units.sh --paths=@ read.' "$DCP" \
+  && ok "B6: changed-set consumer contract = detect-drift / sync-intersect / rebind-units only" \
+  || fail "B6: derive-changed-paths.sh consumer contract line changed"
+RC_BAD=0
+for f in "$SY" "$RR" "$HC"; do
+  if grep -qE -- '--reconcile[^`]*(--paths=@|--scope=@)' "$f"; then RC_BAD=1; fi
 done
-[ "$SP8_BAD" -eq 0 ] && ok "SP-8: 'truncate the journal' wording eliminated from all 3 surfaces" || fail "SP-8: truncate wording survives"
-grep -qF 'rotate-and-delete' "$SK" && grep -qF 'rotate-and-delete' "$HFH" && grep -qF 'rotate-and-delete' "$SY" \
-  && ok "SP-8: all 3 surfaces name the rotate-and-delete consume protocol" || fail "SP-8: rotate wording missing somewhere"
-
-# ── SP-9 ──
-grep -qF 'two coupled fast-path semantics' "$HFH" && grep -qF 'per-file invalidation gate' "$HFH" \
-  && ok "SP-9: flag catalog documents both --shallow-scan semantics" || fail "SP-9: catalog still one-semantic"
-
-# ── B6 (confirmed bug): sync-lane full-scan fallback must continue Mode D to a FULL
-#   re-bind, not hand off a scope-less detect-drift. detect-drift infers sync-lane
-#   membership ONLY from a --scope=@file, so with no scope it self-classifies as
-#   STANDALONE, emits next_action: null, and the chain truncates BEFORE the re-bind —
-#   leaving binding/units/bolts stale in exactly the highest-divergence case. ──
-note "-- B6: full-scan fallback continues to a full re-bind (no truncation) --"
-if grep -qF 'so downstream full-scans consistently' "$SP"; then
-  fail "B6: SP fallback still hands off a scope-less detect-drift (chain null-terminates before re-bind)"
-else
-  ok "B6: buggy scope-less-detect-drift fallback wording removed from scan-procedure"
-fi
-# Tightened 2026-07-30 (fork-safety audit): the render must carry <vault>. On this
-# branch no .sync-changed-paths.txt is written, so the vault path is the ONLY signal
-# the non-interactive downstream bind receives. See tests/scan/test-sync-lane-vault-signal.sh.
-grep -qF 'continues the forced Mode D chain straight to a FULL re-bind' "$SP" \
-  && grep -qF 'next_action: mega-sdd:bind-codebase <vault> --auto' "$SP" \
-  && ok "B6: SP fallback hands off bind-codebase <vault> --auto (full re-bind)" || fail "B6: SP fallback missing bind-codebase <vault> --auto continuation"
-grep -qF 'SKIP detect-drift, hand off mega-sdd:bind-codebase' "$HFH" \
-  && ok "B6: HFH handoff comment names the bind-codebase fallback continuation" || fail "B6: HFH fallback comment not updated"
-grep -qF 'SKIP detect-drift, hand off mega-sdd:bind-codebase' "$HC" \
-  && ok "B6: handoff-contract mirror names the bind-codebase fallback continuation" || fail "B6: HC mirror fallback branch not updated"
-grep -qF 'on the full-scan fallback' "$RR" && grep -qF 'hands off `bind-codebase <vault> --auto` DIRECTLY' "$RR" \
-  && ok "B6: routing-rules Mode D row carries the fallback sub-branch (with <vault>)" || fail "B6: routing-rules Mode D row missing fallback sub-branch"
-grep -qF 'continues the forced Mode D chain straight to a FULL re-bind' "$SPEC" \
-  && ok "B6: spec §3.8(b)(1) amended off the buggy 'drop --scope' call" || fail "B6: spec §3.8(b)(1) still says drop --scope"
-# secondary cleanup: generate-units --reconcile is NOT a scope-channel consumer
-grep -qF 'takes NO path arg' "$SP" \
-  && ok "B6: SP no longer overclaims generate-units --reconcile as a scope-channel consumer" || fail "B6: generate-units --reconcile scope-channel overclaim survives"
+[ "$RC_BAD" -eq 0 ] && ok "B6: no surface overclaims plan --reconcile as a scope-channel consumer" \
+  || fail "B6: plan --reconcile scope-channel overclaim"
 
 if [ "$FAILED" -eq 0 ]; then note "ALL 3E OK"; else note "3E had failures"; fi
 exit $FAILED

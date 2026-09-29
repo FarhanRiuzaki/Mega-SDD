@@ -1,20 +1,20 @@
 # UI design quality heuristics (stack-agnostic)
 
-> **Purpose.** Injected as inline context into a `ui_ux`-relevance bolt dispatch prompt
-> (execute-bolts Step 4.5.b-starterkit.inject). It is the `frontend-design` bridge as
+> **Purpose.** Read on demand by the extras slice procedure (`mega-sdd-extras` slice-design
+> `references/slice-procedure.md` §0). It is the `frontend-design` bridge as
 > INJECTED TEXT — NOT a prose instruction to invoke the `frontend-design` skill (prose-only
 > Skill-invoke wire-ups historically no-op'd; see the enforcement doctrine in `plugins/mega-sdd/CLAUDE.md`).
 >
 > **Stack-agnostic.** This file names NO framework, templating language, or CSS library. It
 > describes WHAT a production-grade view must achieve; the concrete HOW (layout extend,
-> component library, formatting helpers) comes from the injected starterkit slice (design
-> tokens + view/component exemplar) alongside this text. Pair the two: the exemplar shows
-> the project's idiom; these heuristics keep the bolt from shipping generic scaffold output.
+> component library, formatting helpers) comes from the ACTIVE framework pack and the repo's
+> existing components, which the slice procedure reads alongside this text. Pair the two: they
+> show the project's idiom; these heuristics keep the output from being generic scaffold.
 >
 > **Anti-hallucination.** Apply these to data and affordances that the unit + vault flows
 > already establish. Never invent fields, statuses, copy, or brand voice not grounded in the
 > unit spec / vault. If a required affordance has no source (e.g. no design system), that is
-> an Open Question for generate-intent — not a value to make up here.
+> an Open Question for the vault (`context.md ## Open Questions` — report it) — not a value to make up here.
 
 ## 1. Visual hierarchy
 

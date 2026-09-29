@@ -1,0 +1,33 @@
+9e31d79 2026-09-28T05:01:16+07:00 chore(sdd): post-bolts drift report (13 items queued in PENDING-SYNC)
+7bbc34b 2026-09-28T04:56:33+07:00 chore(sdd): bolts summary — clinic-v2 batch (13/13 done)
+10755f9 2026-09-28T04:54:08+07:00 chore(sdd): evidence U-013 — bolt report, gate evidence, panel ledger
+be383cb 2026-09-28T04:54:08+07:00 chore(sdd): evidence U-011 — bolt report, gate evidence, panel ledger
+ca3a8ad 2026-09-28T04:54:07+07:00 chore(sdd): evidence U-009 — bolt report, gate evidence, panel ledger
+83d674b 2026-09-28T04:54:07+07:00 chore(sdd): evidence U-008 — bolt report, gate evidence, panel ledger
+b7e2794 2026-09-28T04:49:24+07:00 feat(U-013): Add the staff doctor-leave page (record leave, reassign or cancel affected appointments)
+7e7484b 2026-09-28T04:48:52+07:00 feat(U-008): Enforce the patient cancellation window on emailed cancel/reschedule links
+dbfc71e 2026-09-28T04:48:48+07:00 feat(U-009): Add the waitlist offer-expiry cron route
+607fecf 2026-09-28T04:48:29+07:00 feat(U-011): Add the public waitlist-offer accept page
+3360445 2026-09-28T04:46:17+07:00 chore(sdd): anchor line repair in unit spec U-008 (R1-shift by write-unit-binding.sh)
+42e1824 2026-09-28T04:45:44+07:00 chore(sdd): evidence U-012 — bolt report, gate evidence, panel ledger
+564c04d 2026-09-28T04:45:44+07:00 chore(sdd): evidence U-010 — bolt report, gate evidence, panel ledger
+35248e3 2026-09-28T04:45:44+07:00 chore(sdd): evidence U-007 — bolt report, gate evidence, panel ledger
+0b93523 2026-09-28T04:45:44+07:00 chore(sdd): evidence U-006 — bolt report, gate evidence, panel ledger
+51213df 2026-09-28T04:41:35+07:00 fix(U-007): anchor line repair (R1-shift by write-unit-binding.sh)
+b002172 2026-09-28T04:41:35+07:00 fix(U-006): anchor line repair (R1-shift by write-unit-binding.sh)
+f80553c 2026-09-28T04:40:48+07:00 chore(sdd): evidence U-005 — bolt report, gate evidence, panel ledger
+7a90976 2026-09-28T04:40:47+07:00 chore(sdd): evidence U-004 — bolt report, gate evidence, panel ledger
+95f1862 2026-09-28T04:40:02+07:00 feat(U-006): Waitlist offers — offer freed slots on cancellation, accept by one-time link, expire after 30 minutes
+7b7e363 2026-09-28T04:39:43+07:00 feat(U-010): Let patients join the waitlist from the booking page when a date has no free slot
+09b1901 2026-09-28T04:39:31+07:00 feat(U-012): Add the staff waitlist page (per doctor and date, remove entry)
+5714b2f 2026-09-28T04:39:22+07:00 feat(U-007): Resolve leave-affected appointments — reassign or cancel, one by one or in bulk
+f1e6bf5 2026-09-28T04:36:29+07:00 chore(sdd): evidence U-003 — bolt report, gate evidence, panel ledger
+e6bbcf5 2026-09-28T04:36:29+07:00 chore(sdd): evidence U-002 — bolt report, gate evidence, panel ledger
+f1ced46 2026-09-28T04:36:29+07:00 chore(sdd): evidence U-001 — bolt report, gate evidence, panel ledger
+23592aa 2026-09-28T04:35:06+07:00 feat(U-004): Waitlist server — join, list per doctor and date, remove
+0580c88 2026-09-28T04:35:04+07:00 feat(U-005): Doctor leave server — record leave, flag affected appointments, hide leave-date slots
+6a8141e 2026-09-28T04:31:35+07:00 feat(U-001): Add the v2 data model (rescheduling_required status, waitlist and leave tables)
+63ad8b1 2026-09-28T04:31:14+07:00 feat(U-002): Add the waitlist-offer and cancellation email templates
+266dcb1 2026-09-28T04:30:48+07:00 feat(U-003): Register the staff waitlist and leave routes in navigation and access policy
+178f819 2026-09-28T04:28:37+07:00 plan: clinic-v2 vault (context.md, constitution, 13 units) from PRD v2.1
+015ecf3 2026-09-27T08:25:21+07:00 fixture: Harbor Clinic v1 app (from vanilla clinic run) + PRD v2

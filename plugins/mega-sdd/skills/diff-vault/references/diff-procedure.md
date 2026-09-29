@@ -118,7 +118,7 @@ Vault diff applied from <new source filename + version>.
 
 The delta lane's entry (spec `2026-08-11-free-text-delta-lane.md`): a ticket-scale chat requirement against an existing vault. The brief is the comparison input; everything below the diff computation is the NORMAL diff-vault machinery.
 
-**Brief extraction (Step 2 variant).** Parse the brief with the same extraction grammar as `generate-intent`'s Mode B (`../../generate-intent/references/from-prompt-mode.md` owns it — reuse by pointer, incl. its output-language carriage), but capped **≤ 3 adaptive Q&A questions** (sized-to-delta; the full lane's ≤10 is for a whole vault). Unanswerable gaps → `[ ]` OQ rows via the NORMAL New-OQ category, never guesses.
+**Brief extraction (Step 2 variant).** Parse the brief with the brief-extraction grammar `plan/references/brief-input.md` owns (Steps 1–2, 3a, 3b + the Question taxonomy — reuse by pointer, incl. its output-language carriage; no seed-PRD is written), capped **≤ 3 adaptive Q&A questions** (sized-to-delta; brief-input §Callers and the Q&A cap). Unanswerable gaps → `[ ]` OQ rows via the NORMAL New-OQ category, never guesses.
 
 **Provenance (Steps 1.5 / 6.5).** A chat ticket is NOT a PRD revision:
 - Step 1.5 emits `prd_sha256_changed: n/a`; the recorded `prd_sha256` / `prd_path_at_generation` are NOT re-baselined (that re-baseline is the file lane's deliberate act).
@@ -132,11 +132,11 @@ The delta lane's entry (spec `2026-08-11-free-text-delta-lane.md`): a ticket-sca
 - ANY new scope/squad surface
 - the existing major-scope-shift push-back thresholds (SKILL §When to push back)
 
-→ halt **`delta_too_large`** (ALWAYS STOP; registry + envelope: `plugins/mega-sdd/references/halt-protocol.md`). Nothing is applied; the vault is untouched. The user picks `full_lane` (epic via `generate-intent`), `split_ticket`, or `cancel` — each option carries keterangan. The cap is the no-gimmick guard: an epic may not masquerade as a delta.
+→ halt **`delta_too_large`** (ALWAYS STOP; registry + envelope: `plugins/mega-sdd/references/halt-protocol.md`). Nothing is applied; the vault is untouched. The user picks `full_lane` (epic via the full pipeline: brief written to a file → `plan <file>` (guarded), or the direct/assisted lane), `split_ticket`, or `cancel` — each option carries keterangan. The cap is the no-gimmick guard: an epic may not masquerade as a delta.
 
 **Version bump.** A from-prompt apply is a Small bump by construction of the cap (the scope-bump tiebreak thresholds are unreachable under it); the bump grammar owner above is unchanged.
 
-**Scope derivation (Step 7.5).** After Step 7, **Run** `bash <plugin>/scripts/derive-delta-paths.sh --vault=<VAULT_DIR>` — touched VAULT-DIFF docs → affected claims' anchor paths → `<VAULT_DIR>/.delta-changed-paths.txt`. Exit 3 = unbound vault (no `binding.json` and no per-unit `bolts/U-*/binding.json`) → the router proposes the normal chain; exit 2 = FAIL-CLOSED → the router proposes a FULL re-bind (the script never converts uncertainty into a scoped bind). The downstream hop is the EXISTING claim-scoped machinery: `bind-codebase --paths=@<VAULT_DIR>/.delta-changed-paths.txt` (+ the vault-section leg of `binding-contract.md §Claim-scoped re-bind`, which reads VAULT-DIFF.md) → `generate-units --reconcile` → stale/new bolts.
+**Scope derivation (Step 7.5).** After Step 7, **Run** `bash <plugin>/scripts/derive-delta-paths.sh --vault=<VAULT_DIR>` — touched VAULT-DIFF docs → affected claims' anchor paths → `<VAULT_DIR>/.delta-changed-paths.txt`. Exit 3 = unbound vault (no `binding.json` and no per-unit `bolts/U-*/binding.json`) → no scoped hop, the execute-bolts JIT bind covers it; exit 2 = FAIL-CLOSED (incl. an empty or anchor-less scope, which would otherwise read as in-sync) → the router proposes a FULL re-bind, `rebind-units.sh --units=all` (the script never converts uncertainty into a scoped bind). The downstream hop: `bash <plugin>/scripts/rebind-units.sh --cwd=<root> --vault=<VAULT_DIR> --paths=@<VAULT_DIR>/.delta-changed-paths.txt` → `plan --reconcile` → `execute-bolts --all --lite` (stale units). An Added entity or flow needs a NEW unit, which reconcile never writes → `plan --regenerate` (keeps `_authored_by: human` units and unchanged unit IDs). A layout-2 vault runs `/mega-sdd:migrate-paths --vault-layout=3` first.
 
 ## Halt — `delta_too_large`
 
@@ -150,4 +150,4 @@ Message: "PRD at `<path>` no longer exists; cannot detect changes. Move PRD back
 
 ## Halt — `memory_in_use`
 
-Triggered when `derive-vault-json.sh` exits 4 (the script could not acquire `vault.json.lock` after its 3 backoff retries — Step 6.5). Stop the apply phase; surface the existing `memory_in_use` envelope: another vault writer (diff-vault / bind-codebase / generate-intent / resolve-oq) holds the lock — retry once it releases, or remove an orphaned lock per the script's stderr hint.
+Triggered when `derive-vault-json.sh` exits 4 (the script could not acquire `vault.json.lock` after its 3 backoff retries — Step 6.5). Stop the apply phase; surface the existing `memory_in_use` envelope: another vault writer (diff-vault / plan / resolve-oq / detect-drift) holds the lock — retry once it releases, or remove an orphaned lock per the script's stderr hint.

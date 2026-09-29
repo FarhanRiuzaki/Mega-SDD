@@ -4,7 +4,7 @@ When mega-sdd skills run under `--auto` (i.e., dispatched by `orchestrate-flow -
 
 This contract is required ONLY when `--auto` is in effect. Standalone skill invocations (the user asked for one skill by phrase, outside a chain) MAY emit the YAML but it is informational — no orchestrator consumes it.
 
-> **Precedence (anti-drift rule):** each skill's OWN handoff reference (e.g. `scan-codebase/references/halts-flags-handoff.md`, `execute-bolts/references/halts-and-handoff.md`) is the OPERATIVE emission spec — it loads with the emitting skill at runtime. The per-skill blocks below are a cross-skill INDEX for the orchestrator/consumer side; when they disagree with a skill's own reference, the skill's reference wins and the block here is the bug. Top-level field names/types in §Handoff YAML schema remain binding for everyone (the validator enforces those).
+> **Precedence (anti-drift rule):** each skill's OWN handoff reference (e.g. `extract-intelligence/references/handoff.md`, `execute-bolts/references/halts-and-handoff.md`) is the OPERATIVE emission spec — it loads with the emitting skill at runtime. The per-skill blocks below are a cross-skill INDEX for the orchestrator/consumer side; when they disagree with a skill's own reference, the skill's reference wins and the block here is the bug. Top-level field names/types in §Handoff YAML schema remain binding for everyone (the validator enforces those).
 
 ---
 
@@ -24,7 +24,7 @@ This contract is required ONLY when `--auto` is in effect. Standalone skill invo
 
 ```yaml
 handoff:
-  emitted_by: <skill-name>              # e.g., generate-intent, bind-codebase
+  emitted_by: <skill-name>              # e.g., execute-bolts, resolve-oq
   emitted_at: <ISO8601 timestamp>
   status: completed | paused | halted
   artifacts:
@@ -32,7 +32,7 @@ handoff:
     - <absolute path to primary output 2>
     # ... list every file/dir this skill wrote
   next_action:
-    suggested_skill: mega-sdd:<next-skill>     # e.g., mega-sdd:scan-codebase
+    suggested_skill: mega-sdd:<next-skill>     # e.g., mega-sdd:detect-drift
     suggested_args: ["--flag=value", "positional"]  # exact CLI args to invoke
     rationale: "<1-sentence why this is the right next step>"
   blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers); non-empty (>=1 entry) REQUIRED when status=halted per halt-protocol §blocker envelope
@@ -43,9 +43,9 @@ handoff:
     items_processed: <int>              # OQs / claims / units / etc — context-dependent
     items_blocked: <int>                # number that require human input
   checkpoints:                          # checkpoint protocol; optional
-    latest_step_id: <string>            # e.g., "claim-45" for bind-codebase, "wave-3" for extract-intelligence
+    latest_step_id: <string>            # e.g., "U-003" for execute-bolts (per bolt), "module-2" for extract-intelligence (per module PRD)
     checkpoint_file: <absolute-path>    # <vault>/.internal/checkpoints/<timestamp>-<skill>-<step>.jsonl (canonical per paths.md)
-    resume_command: <string>            # e.g., "bind-codebase --resume-from=claim-46"
+    resume_command: <string>            # e.g., "execute-bolts --resume-from=U-004"
   constitution:                         # when constitution.md exists
     constitution_hash: <sha256>         # of <vault>/constitution.md at handoff emission time
     clauses_referenced: []              # clause IDs cited in this skill's output (e.g., ["A-001", "B-002"])
@@ -66,7 +66,7 @@ handoff:
   replay:                               # when replay capture active
     snapshot_path: <abs path to .internal/replays/*.jsonl>
     divergence_classification: clean | minor | high | n/a
-  starterkit_context:                   # optional; present when scan-codebase deep-scan stage ran
+  starterkit_context:                   # optional; present when .mega-sdd/codebase/starterkit-context.yaml exists (pre-9.0 scan artefact, still read; execute-bolts passes it through)
     reused: <bool>                      # true if cache hit (no subagent dispatch); false if fresh scan
     framework: <string>                 # e.g., laravel
     auth_lib: <enum>                    # mirrors §auth.lib in starterkit-context.yaml
@@ -75,11 +75,12 @@ handoff:
     libs_count: <int>                   # total libs detected in §libs
   metadata:                             # optional; carries resolved model tiers when present
     model_tiers:                        # resolved model tier per named subagent role
-      auth-extractor: sonnet            # example; actual entries depend on chain roles
-      code-quality-reviewer: opus       # catalog default; may be overridden by CLI/project/user
+      extract-intelligence-module: sonnet  # example; actual entries depend on chain roles
+      extract-intelligence-verify: sonnet  # catalog default; may be overridden by CLI/project/user
       # ... (all roles relevant to chain)
-    model_tier_sources:                 # auth-extractor: catalog           # catalog | user | project | cli
-      code-quality-reviewer: catalog
+    model_tier_sources:                 # catalog | user | project | cli
+      extract-intelligence-module: catalog
+      extract-intelligence-verify: catalog
 ```
 
 ---
@@ -93,7 +94,7 @@ Each annotation is machine-readable for the Step 7b validation gate.
 
 ### `emitted_by:` (REQUIRED)
 
-TYPE: string — must match one of the values in `plugins/mega-sdd/references/halt-protocol.md §halt-protocol source_skill` enum (e.g., `generate-intent`, `bind-codebase`). Identifies the producing skill.
+TYPE: string — must match one of the values in `plugins/mega-sdd/references/halt-protocol.md §halt-protocol source_skill` enum (e.g., `execute-bolts`, `resolve-oq`). Identifies the producing skill.
 
 ### `emitted_at:` (REQUIRED)
 
@@ -124,11 +125,11 @@ Every skill's `## Handoff emission` section MUST cause the skill to print a YAML
 
 \`\`\`yaml
 handoff:
-  emitted_by: bind-codebase
+  emitted_by: execute-bolts
   emitted_at: 2026-05-25T14:32:00Z
   status: completed
-  artifacts: ["<vault>/binding.md"]
-  next_action: { suggested_skill: "mega-sdd:generate-units", suggested_args: [], rationale: "..." }
+  artifacts: ["<vault>/bolts/U-001/"]
+  next_action: { suggested_skill: "mega-sdd:detect-drift", suggested_args: [], rationale: "..." }
   blockers: [] # on halt: a LIST of envelope bodies `[ { type, emitted_by, details } ]` — never a mapping (handoff-contract.md §blockers)
 \`\`\`
 ```
@@ -147,7 +148,7 @@ TYPE: object — `{ suggested_skill: string, suggested_args: array<string>, rati
 
 ### `blockers:` (REQUIRED)
 
-TYPE: array\<object\> — **each entry is the body of ONE `blocker:` envelope** (`references/halt-protocol.md §halt-protocol — Unified blocker envelope`: `{ type: <halt_type>, emitted_by: <skill>, details: {…}, recommendation?: {…} }`), i.e. `blockers: [ { type: oq_blocker, emitted_by: generate-intent, details: { oq_ids: [OQ-CN-1], resolver_route: user } } ]` — NEVER the object itself under `blockers:` (a mapping is `handoff_type_mismatch`). A block list nested inside an entry (e.g. `details:` → `conflicts:` → `- id: CONFLICT-1`) is accepted (parsed as a list on the entry, one level flattened) — flat `details: { … }` stays the recommended shape. Non-empty when `status==halted` (`validate-handoff-yaml.sh` FAILs `invalid_handoff` on an empty/absent blocker envelope on a halt). MAY be empty when `status==completed` or `status==paused` — a paused skill legitimately carries `blockers: []` and surfaces triage via `metrics.items_blocked` (e.g. generate-intent's P1-OQ pause; per §Precedence :7 the skill's own reference is operative).
+TYPE: array\<object\> — **each entry is the body of ONE `blocker:` envelope** (`references/halt-protocol.md §halt-protocol — Unified blocker envelope`: `{ type: <halt_type>, emitted_by: <skill>, details: {…}, recommendation?: {…} }`), i.e. `blockers: [ { type: binding_conflict, emitted_by: execute-bolts, details: { unit: U-003, claim_ids: [C-U003-02] } } ]` — NEVER the object itself under `blockers:` (a mapping is `handoff_type_mismatch`). A block list nested inside an entry (e.g. `details:` → `conflicts:` → `- id: CONFLICT-1`) is accepted (parsed as a list on the entry, one level flattened) — flat `details: { … }` stays the recommended shape. Non-empty when `status==halted` (`validate-handoff-yaml.sh` FAILs `invalid_handoff` on an empty/absent blocker envelope on a halt). MAY be empty when `status==completed` or `status==paused` — a paused skill legitimately carries `blockers: []` and surfaces triage via `metrics.items_blocked` (e.g. resolve-oq's mid-walk pause; per §Precedence :7 the skill's own reference is operative).
 
 ### `metrics:` (OPTIONAL but encouraged)
 
@@ -201,15 +202,15 @@ TYPE (companion): object {
   `<role-name>`: enum (catalog | user | project | cli)
 }
 
-### `starterkit_context:` (CONDITIONAL — if scan-codebase deep-scan ran successfully)
+### `starterkit_context:` (CONDITIONAL — execute-bolts only, if .mega-sdd/codebase/starterkit-context.yaml exists)
 
-TYPE: object (see `plugins/mega-sdd/references/starterkit-context-schema.md` for full structure). Required when scan-codebase deep-scan stage ran successfully and a framework was detected with confidence ≥ MEDIUM.
+TYPE: object (see `plugins/mega-sdd/references/starterkit-context-schema.md` for full structure). Required from `execute-bolts` when `.mega-sdd/codebase/starterkit-context.yaml` is present and parses; every other producer omits it (b.iv never demands it from them). The yaml is a pre-9.0 deep-scan artefact; no 9.0 skill writes it, and GROUND deliberately does not.
 
 Optional block carrying starterkit detection results forward through the chain.
 
-**Producer:** scan-codebase deep-scan stage emits this block when a framework is detected with confidence ≥ MEDIUM AND `starterkit-context.yaml` was written.
+**Producer:** execute-bolts, as passthrough + metrics (`execute-bolts/references/halts-and-handoff.md` §Handoff emission), when `starterkit-context.yaml` exists on disk.
 
-**Propagation:** orchestrate-flow passes this block to all downstream skills (generate-intent, bind-codebase, generate-units, execute-bolts) without modification.
+**Propagation:** orchestrate-flow passes a present block through unchanged (handoff-consumption.md §Propagation); execute-bolts passes the block through from `starterkit-context.yaml` (no execution-time reader).
 
 **Schema:**
 
@@ -223,7 +224,7 @@ starterkit_context:
   libs_count: <int>               # total libs detected in §libs
 ```
 
-**Consumer-side annotations:** generate-units and execute-bolts MAY append their own metrics under this block (see per-skill examples).
+**Consumer-side annotations:** execute-bolts MAY append its own metrics under this block (see its operative emission spec).
 
 **Canonical source of truth for full structure:** `plugins/mega-sdd/references/starterkit-context-schema.md`
 
@@ -239,7 +240,7 @@ starterkit_context:
 
 Every skill MUST list its primary output paths (absolute). `orchestrate-flow` uses these to:
 - Verify the skill actually produced output (sanity check before continuing)
-- Locate the next skill's input (e.g., `bind-codebase` needs the vault path from `generate-intent`'s artifact list)
+- Locate the next skill's input (e.g., `detect-drift` needs the vault path from `execute-bolts`' artifact list)
 - Generate the final pipeline summary at chain end
 
 ---
@@ -250,15 +251,12 @@ A compact consumer-side ROUTING INDEX — one row per producer. Per §Precedence
 
 | Producer | Statuses (halt enum) | `next_action` routing — conditional branches | Operative emission spec |
 |---|---|---|---|
-| `extract-intelligence` | completed \| halted (a module's quality gate fails twice per `prd-kontrak-template.md` §Per-module quality gate) | → `mega-sdd:generate-intent --kb=<kb> --auto` | `extract-intelligence/references/handoff.md` |
-| `generate-intent` | completed \| paused (P1 business OQs — user triage; downstream still works) \| halted (`oq_tech_missing_mode` / `oq_recommend_underspecified` / `oq_recommend_citation_invalid` / `oq_scan_missing_query` / `oq_tech_undecided` / `oq_decided_business_signal` / `memory_in_use`) | CWD-conditional on codebase-map presence (routing-rules.md §Decision matrix starterkit rows / §Deep-chain decision matrix; classic spine — express hands off `bind-codebase --express` regardless of map): brownfield + codebase-map PRESENT → `mega-sdd:bind-codebase` (the norm under the scan-first reorder); brownfield + NO codebase-map on disk yet → `mega-sdd:scan-codebase`; greenfield → `mega-sdd:generate-units` | `generate-intent/references/auto-and-handoff.md` |
-| `scan-codebase` | completed \| halted (`deep_scan_subagent_all_failed` / `dep_missing` / `memory_in_use`); soft-halt warn-only, chain continues (`deep_scan_subagent_failed` / `deep_scan_cache_corrupt`) | CWD-conditional: no vault yet → `mega-sdd:generate-intent --scan=<map> --auto` (starterkit-first — draft the vault scan-aware); vault already present → `mega-sdd:bind-codebase <vault> --auto`; sync lane (`--changed-only` under Mode D), incremental ran → `mega-sdd:detect-drift --vault=<vault> --scope=@<vault>/.sync-changed-paths.txt --auto`; sync-lane full-scan fallback → SKIP detect-drift, hand off mega-sdd:bind-codebase `<vault> --auto` (no changed set to scope; continue Mode D straight to a FULL re-bind per §3.8(b)(1) — a scope-less detect-drift null-terminates the chain before the re-bind) | `scan-codebase/references/halts-flags-handoff.md` |
-| `bind-codebase` | completed \| paused \| halted (`bind_conflict` / `bind_conflict_constitution_violation` / `framework_pack_missing` / `framework_pack_cycle` / `framework_pack_unparseable` / `memory_in_use`); tech-OQ recommendations are advisory — surfaced in binding.md, status stays `completed` (bind-codebase §2.7) | completed → `mega-sdd:generate-units` — args STATE-based on what this bind actually did, not the `--paths` flag: `["--auto"]` on a full re-bind (incl. a `--paths` run that fell back per binding-contract.md "Fallback to full re-bind"); `["--reconcile", "--auto"]` ONLY when a claim-scoped re-bind actually executed (S4 living-vault sync lane §3.3/§3.6) so generate-units reconciles in place; halted on conflict → `mega-sdd:resolve-oq` (args unchanged) | `bind-codebase/references/auto-memory-handoff.md` |
-| `generate-units` | completed \| halted (`cycle_detected` / `cross_squad_dep_invalid` / `interface_ref_missing` / `cross_squad_ambiguous` / `cross_module_dep_invalid` / `module_cycle_detected` / `dedup_ambiguous` / `unit_underspecified` / `hard_rule_unparseable` / `starterkit_rule_citation_missing` / `unit_oq_trace_missing`) | → `mega-sdd:execute-bolts --all --parallel --auto` (wave layering from the chain's analyze-parallelism JSON when in context; the overlap rail stays with the dispatcher) | `generate-units/references/auto-and-memory.md` |
-| `execute-bolts` | completed \| halted (any entry of the canonical bolt-halt enum — single owner, see pointer below) | → `mega-sdd:detect-drift` (never terminal — the DEFAULT-ON drift auto-gate); `suggested_args: ["--scope=<id>"]` when the batch ran scope-filtered so detect-drift inherits it, else `[]`; phase advance is an informational `next_action.hint`, never a `suggested_skill`; `metrics.acceptance_test_concerns` (array of `{unit, concern}`; empty when none) is consumed by the chain-end summary diagnostics (`chain-execution.md`) | `execute-bolts/references/halts-and-handoff.md` |
+| `extract-intelligence` | completed \| halted (a module's quality gate fails twice per `prd-kontrak-template.md` §Per-module quality gate) | → `mega-sdd:plan --kb=<kb> --auto` (KB `README.md` + `modules/*.prd.md`, one module at a time) | `extract-intelligence/references/handoff.md` |
+| `plan` | no handoff YAML — state lives on disk (handoff-consumption.md §Lite lane exemption); a halt prints a `blocker:` envelope (`emitted_by: plan`) and the chain stops | → `mega-sdd:execute-bolts --all --lite` (the orchestrator re-derives state from disk; each unit is bound up front and again at its task) | `plan/SKILL.md` §Halt conditions |
+| `execute-bolts` | completed \| halted (any entry of the canonical bolt-halt enum — single owner, see pointer below) | → `mega-sdd:detect-drift` (never terminal — the DEFAULT-ON drift auto-gate); `suggested_args: ["--scope=<id>"]` when the batch ran scope-filtered so detect-drift inherits it, else `[]`; phase advance is an informational `next_action.hint`, never a `suggested_skill` | `execute-bolts/references/halts-and-handoff.md` |
 | `diff-vault` | completed \| paused \| halted (`diff_conflict` / `memory_in_use` / `delta_too_large`) | clean apply → `mega-sdd:orchestrate-flow` (re-inspects CWD + re-plans; subsumes the brownfield re-bind hop and is the only valid hop for a greenfield vault; a from-prompt apply's `.delta-changed-paths.txt` is picked up by the router's §Delta lane row there); halted `delta_too_large` → `mega-sdd:orchestrate-flow` re-plan after the user's full_lane/split_ticket/cancel choice; completed + new `[ ]` OQ rows materialized (`OQ-{CODE}-{N+1}`) → `mega-sdd:resolve-oq` (its `[ ]`-walk can consume them); halted `diff_conflict` → re-invoke `mega-sdd:diff-vault` WITHOUT `--auto` (interactive Step 5) — NEVER resolve-oq, which cannot read a `VAULT-DIFF.md` conflict (its OQ is `[x]` resolved and lives only in `VAULT-DIFF.md`; per §Anti-halu invariants a halted `next_action` must point at the true resolution path) | `diff-vault/references/auto-and-chain.md` |
-| `resolve-oq` | completed \| paused \| halted (malformed vault / cycle protection in `--binding` mode / `memory_in_use`) | `--binding` action-mix (binding-mode.md Step 5): any KEEP_CODE or SPLIT → `mega-sdd:bind-codebase` (re-bind is clean); ONLY KEEP_VAULT/DEFER → `mega-sdd:generate-units` (a blanket re-bind would loop the same CONFLICT); intent mode → `mega-sdd:orchestrate-flow` (resume chain) | `resolve-oq/references/auto-memory-handoff.md` |
-| `detect-drift` | completed \| halted (`drift_framework_mismatch` / `constitution_drift_detected` / `memory_in_use`) | sync lane (SCOPE_DIRS resolved from `--scope=@<vault>/.sync-changed-paths.txt`, passed by orchestrate-flow --sync) → `mega-sdd:bind-codebase --paths=@<vault>/.sync-changed-paths.txt --auto` (CONTINUE Mode D → claim-scoped re-bind §3.3/§3.8); standalone / post-bolt auto-gate (drift-axis `--scope`, bare `--scope=<id>`, or no scope) → `next_action: null` (DRIFT-REPORT.md + PENDING-SYNC.md ARE the deliverable; the severity→action map governs the post-bolt gate); NEVER `resolve-oq` — it has no drift-consumption mode (a drift-CREATED OQ-DC-N stub resolves in resolve-oq's ordinary intent mode) | `detect-drift/references/auto-and-chain.md` |
+| `resolve-oq` | completed \| paused \| halted (malformed vault / cycle protection in `--binding` mode / `memory_in_use`) | `--binding` action-mix (binding-mode.md Step 5): any KEEP_CODE or SPLIT → the engine runs `scripts/rebind-units.sh --cwd=<root> --vault=<vault> --units=<affected U-ids>`, then `mega-sdd:plan` `["--reconcile", "--auto"]` (task_type flips) → execute-bolts; ONLY KEEP_VAULT/DEFER → `mega-sdd:execute-bolts --all --lite` (the resolution `write-unit-binding.sh --resolve` recorded opens the per-unit gate — no re-bind); intent mode → `mega-sdd:orchestrate-flow` (resume chain) | `resolve-oq/references/auto-memory-handoff.md` |
+| `detect-drift` | completed \| halted (`drift_framework_mismatch` / `constitution_drift_detected` / `memory_in_use`) | sync lane (SCOPE_DIRS resolved from `--scope=@<vault>/.sync-changed-paths.txt`, passed by orchestrate-flow --sync) → the engine runs `scripts/rebind-units.sh --cwd=<root> --vault=<vault> --paths=@<vault>/.sync-changed-paths.txt`, then `mega-sdd:plan` `["--reconcile", "--auto"]` (a script is never a `suggested_skill`); standalone / post-bolt auto-gate (drift-axis `--scope`, bare `--scope=<id>`, or no scope) → `next_action: null` (DRIFT-REPORT.md + PENDING-SYNC.md ARE the deliverable; the severity→action map governs the post-bolt gate); NEVER `resolve-oq` — it has no drift-consumption mode (a drift-CREATED OQ-DC-N stub resolves in resolve-oq's ordinary intent mode) | `detect-drift/references/auto-and-chain.md` |
 | `emit-fsd` | completed \| halted (`quality_gate_failed`, subtype `pdf_render_failed` / `template_slot_unfilled`) | terminal — `suggested_skill: null` | local copy in `emit-fsd/SKILL.md` §Handoff emission |
 | `install-deps` | completed \| halted (`install_failed` / `pkg_mgr_not_found`) | terminal — `suggested_skill: null` (user-explicit; no auto-next) | local copy in `install-deps/SKILL.md` §Handoff emission |
 | `emit-agents-md` | completed \| halted (`user_authored_conflict` / `vault_not_found` / `vault_corrupt` / `greenfield_no_bind_context`) | `type: chain_complete` — AGENTS.md is the pipeline terminal output | local copy in `emit-agents-md/SKILL.md` §Handoff emission |
@@ -299,7 +297,7 @@ This keeps orchestrator stateless (per the spec's "no state file" decision).
 | Level | Granularity | Mechanism | Owner |
 |---|---|---|---|
 | Chain | *which phase* to resume | CWD / artifact inspection (`routing-rules.md`) — reads NO persisted chain-state file | orchestrate-flow |
-| Within a phase | *which sub-step* to resume | the phase skill's own checkpoint cursor (`checkpoint-protocol.md`, `<vault>/.internal/checkpoints/`) via `--resume-from=<step-id>` (declared — no skill emits checkpoints at HEAD) | the phase skill (e.g. bind-codebase) |
+| Within a phase | *which sub-step* to resume | the phase skill's own checkpoint cursor (`checkpoint-protocol.md`, `<vault>/.internal/checkpoints/`) via `--resume-from=<step-id>` (declared — no skill emits checkpoints at HEAD) | the phase skill (e.g. extract-intelligence) |
 
 Precedence is unambiguous because the levels never overlap: CWD inspection first selects the phase. If that phase's artifacts already exist (completed), the orchestrator **skips it entirely** and its stale checkpoints are irrelevant. If the phase is incomplete, the orchestrator **re-enters it** and the skill's checkpoint resumes mid-execution from its cursor. A checkpoint never overrides phase selection, and phase selection never reaches into a skill's sub-steps.
 

@@ -63,8 +63,8 @@ B=$(wc -c < "$HP" | tr -d ' ')
 # restored 20 live types + 7 schema-only index rows the registry itself
 # mandates (":147 rejects undeclared types") — correctness bytes, not guidance
 # regrowth (z1 still pins that guidance bodies stay out).
-# 7.11.0: three gate halts registered (panel_evidence_missing / l0_evidence_missing /
-# acceptance_expects_missing, spec 2026-08-30 §3) — cap lifted by their terse entries only.
+# 7.11.0: three gate halts registered (spec 2026-08-30 §3) — cap lifted by their terse
+# entries only. P3b retired the panel and L0 ones with no emitter left (d2e pins them out).
 # 7.29.1: five EMITTED-but-unregistered types (bind_inputs_missing, unit_oq_trace_missing,
 # cross_module_dep_invalid, module_cycle_detected, ambiguous_spec) registered — terse index
 # rows + enum tokens only, same class as the 7.11.0 lift.
@@ -121,7 +121,19 @@ N9=$(grep -c '^- `[a-z0-9_]*` \*(subtype of `quality_gate_failed`)\*' "$HP")
 # 9 -> 7 (doc-audit 2026-08-23): replan_budget_exceeded + revalidate_budget_exceeded
 # deleted — zero emitters anywhere (never shipped); the count pins the LIVE set.
 # 7 -> 8 (8.4.0): claim_verify_failed registered — live emitter in extract-intelligence Step 5.
-[ "$N9" -eq 8 ] && ok "d2c all 8 subtype rows marked" || fail "d2c subtype row markers wrong: $N9"
+# 8 -> 7 (9.0 P1, spec 2026-09-27-v9-simplification-design.md §3 + §7 #1): starterkit_metrics_inconsistent
+# retired — its only producer was orchestrate-flow's generate-units handoff arm
+# (`metrics.units_with_starterkit_rules`), deleted with generate-units; plan dropped the starterkit
+# step, and the flow.md family section went with it. The count still pins the exact LIVE set.
+[ "$N9" -eq 7 ] && ok "d2c all 7 subtype rows marked" || fail "d2c subtype row markers wrong: $N9"
+grep -q 'starterkit_metrics_inconsistent' "$HP" && fail "d2d retired subtype starterkit_metrics_inconsistent back in registry" || ok "d2d retired subtype stays out of registry"
+# P3b: six names lost their emitter in P3 (the dispatch-prompt builder, the panel + F-07 gate,
+# the bolt-implementer, the per-bolt drift check); retired from registry, families and taxonomy.
+for gone in dispatch_prompt_too_large panel_evidence_missing l0_evidence_missing \
+            review_critical_unresolved scope_creep_detected bolt_introduces_locked_drift; do
+  ! grep -q "$gone" "$HP" "$TAX" && ! grep -qE "^### $gone( |\$)" "$FD"/*.md \
+    && ok "d2e retired $gone stays out of registry, family headings and taxonomy" || fail "d2e retired $gone is back"
+done
 
 echo "── d3: stop-class floor across family files (semantic-flip tripwire) ──"
 NSTOP=$(cat "$FD"/*.md | grep -o 'ALWAYS STOP' | wc -l | tr -d ' ')

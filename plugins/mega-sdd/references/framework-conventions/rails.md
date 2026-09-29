@@ -150,7 +150,7 @@ HARD_RULE: Business logic MUST NOT be placed directly in controller actions; com
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: `#` doc comments (YARD/RDoc) — **read by**: RuboCop `Style/Documentation` ONLY when the project's `.rubocop.yml` enables it (the cop is `Enabled: false` in RuboCop's current default config) — then every top-level class/module needs a one-line comment; YARD/RDoc render comments only for a published gem/engine. Nothing in Rails reads a comment: routes, validations and associations are code. A full block only where one of these reads it, or on public API consumed outside this app.
 - **Skip**: models whose associations/validations are the documentation; controllers whose actions follow REST names; migrations; jobs/mailers with self-explanatory names; specs (the description string is the sentence); YARD `@param`/`@return` repeating what Sorbet/RBS already type.
@@ -159,8 +159,7 @@ HARD_RULE: Business logic MUST NOT be placed directly in controller actions; com
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — model validations (`validates`) plus Strong Parameters at the controller boundary; writes via `update_column`/`update_attribute`/`save(validate: false)` skip validations and are the bypass to flag.

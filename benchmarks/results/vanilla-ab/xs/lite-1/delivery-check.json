@@ -1,0 +1,24 @@
+{
+ "head": "8a47497",
+ "verdict": "FAIL",
+ "checks": [
+  {
+   "id": "D1",
+   "status": "FAIL",
+   "blocking": true,
+   "detail": "package.json has no real scripts.test \u2014 a reviewer's `npm test` fails; add the command the tests actually run with"
+  },
+  {
+   "id": "D4",
+   "status": "PASS",
+   "blocking": true,
+   "detail": "npm run build on a fresh checkout, empty env: exit 0"
+  },
+  {
+   "id": "D5",
+   "status": "WARN",
+   "blocking": false,
+   "detail": "1 of 2 page route(s) are linked from no other source file: /tentang \u2014 a user can only reach them by typing the URL"
+  }
+ ]
+}

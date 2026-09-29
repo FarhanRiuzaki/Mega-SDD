@@ -16,7 +16,8 @@
 #   #13 hard_rule_unparseable: re-emit C1; DROP C2 escalate after 2 attempts
 #       (this validator detects first attempt; retry tracking via state file)
 #
-# Detection-only at hook layer; auto-fix is generate-units's responsibility.
+# Detection-only at hook layer; auto-fix is plan's responsibility (plan Step 5
+# treats these halts as findings and re-writes the unit).
 #
 # S5 GU-HOOK-1: the state file reflects ALL units PROJECT-WIDE on every run —
 # it was a single slot overwritten per unit write, so only the LAST-written
@@ -142,17 +143,20 @@ def _section_body(heading_pat, text):
     return m.group(1) if m else None
 
 
-# vault_source grammar (unit-schema.md §Required frontmatter, v8 P0): the doc set
-# is the one make-bound.sh SRC_RE / derive-delta-paths.sh VAULT_DOC_RE accept,
-# plus constitution.md (units cite clauses there). Shapes are named so the
-# advisory says WHAT drifted, not just "non-canonical".
-VS_DOC_RE = r"(?:vault|model|flows|constraints|constitution|\d{2}-[A-Za-z0-9._-]+)\.md"
+# vault_source grammar (skills/plan/references/unit-schema.md §Required
+# frontmatter, v8 P0): the doc set is the one derive-delta-paths.sh VAULT_DOC_RE
+# accepts (the layout-2 vault/model/flows/constraints names + the legacy 0N-*.md
+# shape that _lib/vault_md.py resolves), including the layout-3
+# context.md that `plan` cites in context_source, plus constitution.md (units
+# cite clauses there). Shapes are named so the advisory says WHAT drifted, not
+# just "non-canonical".
+VS_DOC_RE = r"(?:vault|model|flows|constraints|constitution|context|\d{2}-[A-Za-z0-9._-]+)\.md"
 vs_adv = []   # filled per unit by validate_unit(); emitted top-level, never an issue
 
 # xs body diet (v8 P1, spec 2026-09-10 App. F1e) — ADVISORY, never an issue.
-# Keyed on the router's OWN size proxy (_lib/unit_tier.py, the `unit_tier: xs`
-# class: acceptance_test 1..2 AND work items 1..3) so the advisory and the
-# router can never disagree about "small". Budget for that class: Goal 1 line,
+# Keyed on the shared size proxy (_lib/unit_tier.py, the `unit_tier: xs`
+# class: acceptance_test 1..2 AND work items 1..3) so "small" has one
+# definition. Budget for that class: Goal 1 line,
 # Context <= 2 sentences, Implementation steps <= 3 (already implied by the
 # proxy), and `## Anti-patterns` / `## Out of scope` only when every item
 # cites a source (U-XXX, OQ-, C-, a doc anchor or file:line). Lines over the
@@ -194,7 +198,11 @@ def xs_body_over(fm, body):
     return over or None
 
 
-PRD_REF_RE = re.compile(r"^(?P<file>[^#:\s]+?\.md)(?:#(?P<slug>[^\s]+)|:(?P<line>\d+))$")
+# The ref grammar + heading census are SHARED with validate-plan-coverage.sh (_lib/prd_headings.py): a ref resolves
+# here exactly when the coverage gate can match it (setext / indented / HTML headings, {#id}, a whole F-id, unique
+# slugs x, x-1 … for repeated headings, a file path with spaces).
+import prd_headings as _ph
+_PRD_DOCS = {}
 
 
 def parse_prd_source_refs(fm):
@@ -218,29 +226,28 @@ def parse_prd_source_refs(fm):
     return refs
 
 
-def _slug(text):
-    return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", text.strip().lower())).strip("-")
-
-
 def resolve_prd_source(ref):
-    m = PRD_REF_RE.match(ref.strip())
+    m = _ph.REF_RE.match(ref.strip())
     if not m:
         return False, "shape must be <prd-file>.md#<heading-slug> or <prd-file>.md:<line>"
-    path = os.path.join(cwd, m.group("file"))
-    if not os.path.isfile(path):
-        return False, f"file not found under project root: {m.group('file')}"
+    path = os.path.join(cwd, m.group(1))
+    if not os.path.isfile(path) or not _ph.exact_case(cwd, m.group(1)):  # names are case-sensitive, as in the gate
+        return False, f"file not found under project root (exact case): {m.group(1)}"
     try:
-        text = open(path, encoding="utf-8", errors="replace").read()
+        doc = _PRD_DOCS.get(path) or _PRD_DOCS.setdefault(path, _ph.parse(path, m.group(1)))
     except OSError as e:
         return False, f"unreadable: {e}"
-    if m.group("line"):
-        n = int(m.group("line")); total = text.count("\n") + 1
+    if m.group(3):
+        n = int(m.group(3)); total = len(doc["lines"])
         return (1 <= n <= total), ("" if 1 <= n <= total else f"line {n} outside 1..{total}")
-    want = _slug(m.group("slug"))
-    heads = [_slug(h) for h in re.findall(r"^#{1,6}[ \t]+(.+?)\s*$", text, re.MULTILINE)]
-    if want in heads:
+    hits = _ph.resolve_frag(doc, m.group(2))
+    if len(hits) == 1:
         return True, ""
-    return False, f"no heading with slug '{want}' (have: {', '.join(heads[:8])}{'…' if len(heads) > 8 else ''})"
+    if hits:
+        return False, (f"ambiguous: {len(hits)} headings match '{m.group(2)}' — cite a unique slug "
+                       f"({', '.join(h['slug'] for h in hits)}) or <file>:<line>")
+    heads = [h["slug"] for h in doc["heads"]]
+    return False, f"no heading with slug '{_ph.slug(m.group(2))}' (have: {', '.join(heads[:8])}{'…' if len(heads) > 8 else ''})"
 
 
 def vault_source_shape(value):
@@ -307,8 +314,8 @@ def validate_unit(file_path):
     # ─── prd_source (v8 P1, spec App. F1a) — RESOLVED when present, never required ─
     # `<prd-file>#<heading-slug>` or `<prd-file>:<line>`, scalar or YAML list. A
     # citation to a heading/line that does not exist is a fabricated requirement
-    # → issue prd_source_unresolvable (status FAIL for generate-units Step 12 /
-    # analyze; NOT a hook gate). Absent field = legacy unit, silent.
+    # → issue prd_source_unresolvable (status FAIL for plan Step 5 / analyze;
+    # NOT a hook gate). Absent field = legacy unit, silent.
     for ref in parse_prd_source_refs(fm):
         ok, why = resolve_prd_source(ref)
         if not ok:
@@ -379,7 +386,7 @@ def validate_unit(file_path):
         issues.append({
             "halt_type": "unit_underspecified",
             "detail": (f"unit {unit_id} has no non-empty `acceptance_test:` entry — every unit "
-                       f"MUST carry one (unit-schema §acceptance_test, no exceptions)"),
+                       f"MUST carry one (unit-schema.md §Anti-hallucination rails, no exceptions)"),
             "unit_id": unit_id,
             "task_type": task_type,
             "missing_fields": ["acceptance_test"],
@@ -404,7 +411,7 @@ def validate_unit(file_path):
     # stricter than the observer it gates on, it blocks the normal convention.
     # That divergence is exactly the 2026-08-29 field defect, from the other
     # side: the implementer contract omitted these extras and a bolt halted
-    # with scope_creep_detected over a test file B3 would never have flagged.
+    # with an out-of-scope halt over a test file B3 would never have flagged.
     # Pinned by tests/acceptance-path/ (drift tripwire).
     at_cmds = re.findall(r"(?m)^\s*(?:-\s*)?command:\s*(?:\"([^\"]*)\"|'([^']*)'|(.+?))\s*$", body)
     unowned = []
@@ -439,8 +446,8 @@ def validate_unit(file_path):
     # entries on the field run; acceptance never observed a failure). A
     # command-bearing `type: test` entry (or untyped) MUST name the substring the
     # output proves. Exempt: manual (never executed) and render (route-200 +
-    # display assertion — its command IS the proof). Gated PER UNIT at dispatch
-    # by the in-run aggregator (never at the run boundary — no retro-freeze).
+    # display assertion — its command IS the proof). A FAIL (exit 1) at plan Step 5
+    # and analyze; no execute-bolts gate reads it (a running project never freezes).
     try:
         _ftext = open(file_path, encoding="utf-8", errors="replace").read()
     except OSError:
@@ -471,7 +478,7 @@ def validate_unit(file_path):
                        f"entr{'y' if len(_vacuous)==1 else 'ies'} with a command but NO `expects` — "
                        f"the B4 gate then measures only rc==0 of a test the implementer wrote "
                        f"(vacuous). Add `expects: \"<substring the output must contain>\"` "
-                       f"(e.g. the runner's pass line) to each entry, then re-dispatch."),
+                       f"(e.g. the runner's pass line) to each entry, then re-run plan Step 5."),
             "unit_id": unit_id,
             "task_type": task_type,
             "commands": _vacuous,
@@ -494,7 +501,8 @@ def validate_unit(file_path):
     # ─── Per-task_type section contracts (S5 GU-TTCONTRACT-1: content, not just
     # heading presence — an empty `## Anchors`/`## Migration notes` carried no
     # payload for the bolt; a create unit WITH Migration notes signals a
-    # mis-assigned task_type per 12.5.d) ───────────────────────────────────────
+    # mis-assigned task_type per the unit contract (unit-schema.md §Migration
+    # notes: mandatory for extend, omitted otherwise)) ─────────────────────────
     if task_type in ("verify", "extend"):
         anch = _section_body(r"Anchors?", body_after_fm)
         if anch is None:
@@ -507,7 +515,7 @@ def validate_unit(file_path):
         elif not anch.strip():
             issues.append({
                 "halt_type": "unit_underspecified",
-                "detail": f"unit {unit_id} `## Anchors` section is EMPTY — {task_type} requires >=1 anchor entry (12.5.a)",
+                "detail": f"unit {unit_id} `## Anchors` section is EMPTY — {task_type} requires >=1 anchor entry (unit-schema.md §Anchors)",
                 "unit_id": unit_id, "task_type": task_type,
                 "empty_sections": ["Anchors"],
             })
@@ -524,7 +532,7 @@ def validate_unit(file_path):
         elif not mig.strip():
             issues.append({
                 "halt_type": "unit_underspecified",
-                "detail": f"unit {unit_id} `## Migration notes` section is EMPTY — extend requires the ADD/KEEP/REMOVE field plan (12.5.d)",
+                "detail": f"unit {unit_id} `## Migration notes` section is EMPTY — extend requires the ADD/KEEP/REMOVE field plan (unit-schema.md §Migration notes)",
                 "unit_id": unit_id, "task_type": task_type,
                 "empty_sections": ["Migration notes"],
             })
@@ -533,14 +541,14 @@ def validate_unit(file_path):
             if missing_sub:
                 issues.append({
                     "halt_type": "unit_underspecified",
-                    "detail": f"unit {unit_id} `## Migration notes` missing sub-list(s) {missing_sub} — all three of ADD/KEEP/REMOVE must be present (12.5.d)",
+                    "detail": f"unit {unit_id} `## Migration notes` missing sub-list(s) {missing_sub} — all three of ADD/KEEP/REMOVE must be present (unit-schema.md §Migration notes)",
                     "unit_id": unit_id, "task_type": task_type,
                     "missing_sublists": missing_sub,
                 })
     elif task_type in ("create", "verify") and mig is not None:
         issues.append({
             "halt_type": "unit_underspecified",
-            "detail": f"unit {unit_id} task_type={task_type} MUST NOT have a `## Migration notes` section (12.5.d — Migration notes are extend-only; its presence signals a mis-assigned task_type)",
+            "detail": f"unit {unit_id} task_type={task_type} MUST NOT have a `## Migration notes` section (unit-schema.md §Migration notes / §Per-task_type contracts — Migration notes are extend-only; its presence signals a mis-assigned task_type)",
             "unit_id": unit_id, "task_type": task_type,
             "forbidden_sections": ["Migration notes"],
         })
@@ -1049,7 +1057,7 @@ def discover_units():
 
 def _tf_paths(fm_text):
     """target_files paths from one unit's frontmatter — block-mapping, scalar-list,
-    and inline-flow shapes (same three shapes resolve-review-tier.sh parses)."""
+    and inline-flow shapes."""
     out = []
     m = re.search(r"(?ms)^target_files:\s*\n((?:[ \t]+.*\n?)*)", fm_text)
     blk = m.group(1) if m else ""
@@ -1130,19 +1138,19 @@ def _dag_shape_advisory(unit_paths):
         m = re.search(r"(?m)^id:\s*[\"']?(U-[A-Za-z0-9_-]+)", fm)
         uid = m.group(1) if m else (os.path.basename(up)[:-3] if os.path.basename(up).startswith("U-") else os.path.basename(os.path.dirname(up)))
         d = []
-        dm = re.search(r"(?m)^depends_on:[ \t]*(\[[^\]]*\])?[ \t]*\n((?:[ \t]+-[^\n]*\n?)*)", fm + "\n")
+        dm = re.search(r"(?m)^depends_on:[ \t]*(\[[^\]]*\])?[ \t]*(?:#[^\n]*)?\n((?:[ \t]+-[^\n]*\n?)*)", fm + "\n")
         if dm:
             if dm.group(1):
                 d = [x.strip().strip("'\"") for x in dm.group(1)[1:-1].split(",") if x.strip()]
             else:
-                d = [re.sub(r"^[ \t]+-[ \t]*", "", ln).strip().strip("'\"") for ln in dm.group(2).splitlines() if ln.strip()]
+                d = [re.sub(r"\s+#.*", "", re.sub(r"^[ \t]+-[ \t]*", "", ln)).strip().strip("'\"") for ln in dm.group(2).splitlines() if ln.strip()]
         deps[uid] = [x for x in d if x.startswith("U-")]
         sb = _section_body(r"Implementation steps", body) or ""
         steps[uid] = sum(1 for ln in sb.splitlines() if re.match(r"^\s*\d+[.)]\s", ln))
         tfs[uid] = len(_tf_paths(fm))
     if not deps:
         return None
-    # longest path (in hops = nodes) — DAG only; a cycle is generate-units' halt, not ours
+    # longest path (in hops = nodes) — DAG only; a cycle is plan's cycle_detected halt (Step 4), not ours
     memo, onstack = {}, set()
     def longest(u):
         if u in memo:
@@ -1210,9 +1218,10 @@ state = {
     "issues_count": len(merged),
     "hard_rules_machine_checkable": hr_counts[0],
     "hard_rules_directive_prose": hr_counts[1],
-    # F-01(a) advisory (never gating): a prose-heavy rule set is a generate-units
-    # smell — those rules are reviewed by the panel, not verified by B1. Field
-    # run: 256/278 (92%) directives, 0 machine-verifiable outcomes from them.
+    # F-01(a) advisory (never gating): a prose-heavy rule set is a plan
+    # (unit-authoring) smell — those rules are reviewed by the panel, not
+    # verified by B1. Field run: 256/278 (92%) directives, 0 machine-verifiable
+    # outcomes from them.
     "hard_rules_directive_advisory": (
         "%d of %d Hard rules (%d%%) are prose directives — B1 verifies none of them; "
         "express rules as v1 productions (DO NOT modify <path>, DO NOT add new <manifest> "
@@ -1235,7 +1244,7 @@ state = {
     "next_action": (
         ("Unit spec passes integrity checks."
          if status == "PASS"
-         else f"{len(merged)} unit-spec issue(s) detected. Detection-only at hook layer; re-emit unit via generate-units --regenerate or amend manually.")
+         else f"{len(merged)} unit-spec issue(s) detected. Detection-only at hook layer; amend the unit per the unit contract, or re-plan via plan <prd> --regenerate.")
         + (f" Advisory: {len(vs_adv)} unit(s) carry a non-canonical vault_source (canonical `<doc>.md#<anchor>`; see vault_source_advisory) — never a halt."
            if vs_adv else "")
         + (f" Advisory: {len(xs_adv)} xs-class unit(s) exceed the xs body diet (Goal 1 line · Context <= 2 sentences · Anti-patterns/Out of scope sourced; see xs_body_advisory) — trim the body, never a halt."

@@ -140,7 +140,7 @@ HARD_RULE: INSTALLED_APPS MUST list every app whose models, signals, or manageme
 
 ## Code style (self-documenting)
 
-> Stack DELTA over Iron Rule 6 (`agents/bolt-implementer.md`) — consumed by `build-dispatch-prompt.sh` as the T2 `code_style_slice` and by the standards lens. A style rule, never a gate. Facts verified 2026-09-16.
+> Stack DELTA over `_universal.md §Comment conventions`. A style rule, never a gate. Facts verified 2026-09-16.
 
 - **Doc-comment tool**: docstrings (PEP 257) — **read by**: ruff `D*` (pydocstyle) ONLY when `select` includes `D` (off in ruff's default `E`/`F` set); Sphinx `autodoc` when the project builds docs; Django itself reads `help_text`/`verbose_name`, never a docstring, and a management command shows its `help = "…"`, not the class docstring. A full docstring only where one of these reads it, or on public API consumed outside this app.
 - **Skip**: models whose fields are the documentation; views/viewsets whose name + `queryset`/`serializer_class` say it; `Meta` classes; admin registrations; migrations; tests (the test name is the sentence); `:param x:` lines that repeat a type hint.
@@ -149,8 +149,7 @@ HARD_RULE: INSTALLED_APPS MUST list every app whose models, signals, or manageme
 
 ## Security idioms
 
-> Consumed by the review-panel `security-reviewer` lens (pack security slice) and by
-> `bolt-implementer` only through the `HARD_RULE` rows these idioms also emit (T2 framework-pack rules read `## Hard Rules emitted`, not this section). Stack-correct, mechanism-named —
+> Stack-correct, mechanism-named —
 > the dangerous bypass is spelled out next to each idiom.
 
 - **Input validation** — Django forms (`forms.Form`/`ModelForm`) and DRF serializers (`serializer.is_valid(raise_exception=True)`) are the boundary; reading `request.POST`/`request.data` directly into the ORM skips validation entirely.

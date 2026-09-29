@@ -8,14 +8,12 @@
 # byte-identical stamped or not). The 4-code gloss text in PHASE 0 is the
 # SINGLE SOURCE of the enum legend (keterangan contract) — binding.md is a
 # durable Tier-3 artifact (English); the DISPLAYER localizes at prompt time.
-# Shares its md grammar with validate-binding-json.sh via _lib/binding_md.py
-# (the B1 shared-engine precedent — parsing can never fork).
+# Shares its md grammar with every other binding.md reader via
+# _lib/binding_md.py (the B1 shared-engine precedent — parsing can never fork).
 # Exit 0 = derived; 2 = derive/parse error — the artifact does not match the
-# mega-sdd grammar. mega-sdd-authored: an authoring bug (fix the Step-4
-# binding.md write and re-run — not a halt). Externally-authored binding.md:
-# not a bug — the grammar simply was never adopted (the v5 adoption lane covers
-# this); fix manually per binding-md-template.md or re-generate via the
-# pipeline. 3 = usage / unreadable binding.md.
+# mega-sdd grammar. Externally-authored binding.md: not a bug — the grammar
+# was never adopted; layout-3 has no binding.md (migrate-paths --vault-layout=3
+# → per-unit JIT bind). 3 = usage / unreadable binding.md.
 # On ANY error binding.json is NOT written (never a partial/stale overwrite).
 set -u
 VAULT=""
@@ -163,14 +161,13 @@ for cid, row in rows.items():
             )
         anchor = anchor_cell[: m.start()].rstrip()
     elif re.search(r"truncat", anchor_cell, re.IGNORECASE):
-        # Anti-dull: the S4 implementation-state.md MUST, machine-enforced —
-        # a truncation-citing Anchor cell without the machine-closed token
-        # would silently derive state_reason: null and dull the
-        # generate-units direct-probe protection.
+        # Anti-dull, machine-enforced: a truncation-citing Anchor cell without
+        # the machine-closed token would silently derive state_reason: null and
+        # dull the state_reason signal (read by build-graph.sh and
+        # migrate-vault-layout3.sh).
         errors.append(
             f"{cid}: Anchor cell cites truncation without a "
-            f"[reason: truncated_section] token — add the token per "
-            f"implementation-state.md and re-run"
+            f"[reason: truncated_section] token — add the token and re-run"
         )
     claims.append({
         "id": row["id"],
@@ -190,8 +187,9 @@ if errors:
     print(
         "KETERANGAN: artefak tidak cocok dengan grammar mega-sdd — kalau ini file "
         "hasil tulis eksternal, itu bukan bug: grammar-nya memang belum diadopsi "
-        "(binding di-derive dari bind-codebase, bukan di-adopsi); perbaiki manual mengikuti "
-        "binding-md-template.md, atau re-generate via pipeline (re-bind)."
+        "(binding.md adalah artefak layout-2, di-derive bukan di-adopsi); vault layout-3 "
+        "tidak punya binding.md — jalankan /mega-sdd:migrate-paths --vault-layout=3 lalu "
+        "bind JIT per unit."
     )
     sys.exit(2)
 

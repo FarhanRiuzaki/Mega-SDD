@@ -1,0 +1,7 @@
+delivery-check @ 4ae1bc3 (/private/tmp/claude-501/mega-sdd-bench/work/clinic-lite-2)
+  D1 PASS scripts.test = vitest run
+  D2 PASS npm test (TZ=UTC) exit 0
+  D3 FAIL tests depend on the host timezone: pass under UTC, exit 1 under UTC+14 — pin the zone in the code or the test, never rely on the machine's — tail:    Start at  08:30:44    Duration  12.09s (transform 1.35s, setup 3.47s, import 15.98s, tests 94.52s, environment 5.27s)  
+  D4 FAIL npm run build fails on a fresh checkout with an empty env (exit 1) — a missing secret must fail at request time with a clear message, not at import/prerender — tail: Error occurred prerendering page "/staff/login". Read more: https://nextjs.org/docs/messages/prerender-error Error: Invalid server environment — DATABASE_URL: Invalid input: expected string, received undefined; BETTER_AUTH_SECRET: Invalid input: expected string, received undefined; BETTER_AUTH_URL: 
+  D5 PASS every static page route (4) is linked from another source file
+VERDICT: FAIL (2 blocking)

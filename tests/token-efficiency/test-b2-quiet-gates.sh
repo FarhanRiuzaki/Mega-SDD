@@ -5,7 +5,7 @@
 #   M-05a  run-postflight-scan.sh prints ONE line on pass; full artifact on fail;
 #          artifact write + exit codes unchanged.
 #   M-05b  per-bolt streaming is 2 lines (doc pin); stage detail → _summary.md.
-#   M-05c  parent-thread re-scan + scorecard preflight invoke validators --quiet.
+#   M-05c  scorecard preflight invokes validators --quiet.
 #   M-07a  GateGuard dedup is session-LIFETIME (an entry hours old still dedups
 #          within the same session; a different session re-gates).
 #   M-07b  a multi-gate failure deny carries EVERY gate's remediation.
@@ -24,7 +24,9 @@ HC="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-consumpt
 HCON="${ROOT}/plugins/mega-sdd/skills/orchestrate-flow/references/handoff-contract.md"
 HH="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/halts-and-handoff.md"
 HRS="${ROOT}/plugins/mega-sdd/skills/execute-bolts/references/hard-rule-scan.md"
-AMH="${ROOT}/plugins/mega-sdd/skills/bind-codebase/references/auto-memory-handoff.md"
+# 9.0 P1: bind-codebase (and its auto-memory-handoff.md) was deleted; the
+# extraction-scorecard preflight survives in plan's KB-input contract.
+AMH="${ROOT}/plugins/mega-sdd/skills/plan/references/kb-input.md"
 for f in "$PRE" "$PF" "$HC" "$HCON" "$HH" "$HRS" "$AMH"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
@@ -241,8 +243,7 @@ grep -qF '## b.iv — Conditional fields (prose)' "$HC" && ok "M-04: b.iv condit
 grep -qF 'Per-bolt status is TWO lines' "$HH" && ok "M-05b: 2-line streaming pinned" || fail "M-05b: streaming diet missing"
 if grep -qF 'Pre-flight: Hard Rules' "$HH"; then fail "M-05b: old 7-line block survives"; else ok "M-05b: old └─ block gone (detail → _summary.md)"; fi
 grep -qF 'Never print a verified' "$HH" && ok "M-05b: anchors-honesty rail survives" || fail "M-05b: honesty rail lost"
-grep -qF 'with `--quiet`, branching on the exit code' "$HRS" && ok "M-05c: parent-thread re-scan quieted" || fail "M-05c: re-scan still unquieted"
-grep -qF -- '--quiet' "$AMH" && ok "M-05c: scorecard preflight quieted" || fail "M-05c: scorecard preflight still unquieted"
+grep -qF -- 'validate-extract-census.sh" --kb-dir="<kb-dir>" --quiet' "$AMH" && ok "M-05c: scorecard preflight quieted" || fail "M-05c: scorecard preflight still unquieted"
 
 if [ "$FAILED" -eq 0 ]; then note "ALL B2 OK"; else note "B2 had failures"; fi
 exit $FAILED

@@ -1,0 +1,3 @@
+# P2 --inline live smoke (NOT a benchmark: n=1, to verify exp/p2-inline runs end to end before the
+# locked brownfield block). plugin = git archive of exp/p2-inline HEAD; fixture-xs @ ff006be; model opus.
+xs guarded-inline 1 PRD/prd-company-profile.md

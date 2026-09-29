@@ -13,9 +13,14 @@ pass() { echo "PASS: $1"; }
 fail() { echo "FAIL: $1"; rc=1; }
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 VAL="$ROOT/plugins/mega-sdd/scripts/validate-unit-spec.sh"
-SCHEMA="$ROOT/plugins/mega-sdd/skills/generate-units/references/unit-schema.md"
-TPL="$ROOT/plugins/mega-sdd/skills/generate-units/references/templates/unit.md"
+# 9.0 P1: generate-units was retired; its unit-schema.md + templates/unit.md were
+# relocated (git rename) under skills/plan/references/ — `plan` is the only unit writer.
+SCHEMA="$ROOT/plugins/mega-sdd/skills/plan/references/unit-schema.md"
+TPL="$ROOT/plugins/mega-sdd/skills/plan/references/templates/unit.md"
 [ -f "$VAL" ] || { echo "FATAL: validator missing"; exit 1; }
+# The e-block greps below must never pass vacuously on a missing file (e4 is a negative grep).
+[ -f "$SCHEMA" ] || { echo "FATAL: unit-schema.md missing at $SCHEMA"; exit 1; }
+[ -f "$TPL" ] || { echo "FATAL: templates/unit.md missing at $TPL"; exit 1; }
 
 T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
 U="$T/.mega-sdd/vaults/demo/units"; mkdir -p "$U"
@@ -101,11 +106,13 @@ grep -qE '^vault_source: <doc>\.md#<anchor>' "$SCHEMA" \
 grep -q 'vault_source_advisory' "$SCHEMA" \
   && pass "e2: unit-schema.md names the advisory state key (reader ↔ writer agree)" \
   || fail "e2: schema does not name vault_source_advisory"
-grep -qE '^vault_source: <e\.g\., vault\.md#' "$TPL" \
+# 9.0 P1: the surviving (plan) template writes `context_source:` — the schema's alias of
+# vault_source with the SAME `<doc>.md#<anchor>` grammar (plan never emits vault_source).
+grep -qE '^context_source: <e\.g\., context\.md#' "$TPL" \
   && pass "e3: templates/unit.md example uses the # form" \
   || fail "e3: template example drifted from the # form"
 ! grep -q 'vault-file:section' "$SCHEMA" \
-  && pass "e4: the retired `<vault-file:section>` wording is gone" \
+  && pass 'e4: the retired `<vault-file:section>` wording is gone' \
   || fail "e4: retired wording still present"
 
 echo

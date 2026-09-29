@@ -29,7 +29,9 @@
 #   8  prd_sha256 + constitution_hash byte-identical across 5 derives; WARN
 #      (not recompute) when constitution.md drifts; fresh-computed when absent
 #   9  consumer-green sweep: build-graph flow nodes; validate-preflight
-#      bind-codebase; validate-vault-oqs PASS on good / FAIL
+#      --predictive diff-vault,resolve-oq (vault.json resolved + vault_version
+#      + OQ status parsed from the derived json, 0 warn / 0 fatal);
+#      validate-vault-oqs PASS on good / FAIL
 #      oq_recommend_underspecified on stripped-recommend variant;
 #      the --modules rollup + analyze-parallelism do not die
 #  10  grammar parity: vault_md.OQ_TAG_RE / CATEGORY_BRACKET_RE patterns
@@ -294,9 +296,19 @@ ids=[n.get('id','') for n in g.get('nodes',[])]
 sys.exit(0 if any('F-U-001' in i for i in ids) and any('F-S-002' in i for i in ids) else 1)" \
   && [ "$RC" -eq 0 ] && ok "9: build-graph exits 0 and emits both flow nodes from the derived json" \
   || fail "9: build-graph consumer broken (rc=$RC)"
-bash "${PLUGIN_ROOT}/scripts/validate-preflight.sh" --cwd="$PROJ" --skill=mega-sdd:bind-codebase --quiet </dev/null; RC=$?
-[ "$RC" -eq 0 ] && ok "9: validate-preflight bind-codebase sees the derived vault" \
-  || fail "9: preflight consumer broken (rc=$RC)"
+# 9.0: bind-codebase was removed (its dispatch preflight is now a
+# skill_removed_in_9 FATAL by design) and no surviving dispatch-mode branch
+# reads vault.json. The surviving preflight consumer of the derived json is
+# the --predictive registry: diff-vault (vault present + vault_version
+# PARSED) and resolve-oq (vault.json + 06-constraints.md, OQ status field,
+# an unresolved OQ). Every check must come back ok — a lossy derive trips
+# vault_version_parseable (fatal, rc 3) or oq_status_field_present (warn).
+PF_OUT=$(bash "${PLUGIN_ROOT}/scripts/validate-preflight.sh" --predictive --cwd="$PROJ" --chain=diff-vault,resolve-oq </dev/null 2>&1); RC=$?
+[ "$RC" -eq 0 ] && echo "$PF_OUT" | grep -qE '^PREFLIGHT: [1-9][0-9]* ok, 0 warn, 0 fatal$' \
+  && echo "$PF_OUT" | grep -qF '"check": "vault_version_parseable", "status": "ok"' \
+  && echo "$PF_OUT" | grep -qF '"check": "oq_status_field_present", "status": "ok"' \
+  && ok "9: validate-preflight --predictive diff-vault,resolve-oq sees + parses the derived vault" \
+  || fail "9: preflight consumer broken (rc=$RC): $(echo "$PF_OUT" | tail -1)"
 bash "${PLUGIN_ROOT}/scripts/validate-vault-oqs.sh" --cwd="$PROJ" --file-path="$PROJ/.mega-sdd/vaults/demo/02-architecture.md" --quiet </dev/null; RC=$?
 [ "$RC" -eq 0 ] && ok "9: validate-vault-oqs exits 0 on the good derived fixture" \
   || fail "9: validator rejects the good derived fixture (rc=$RC)"

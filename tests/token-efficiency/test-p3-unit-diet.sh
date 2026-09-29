@@ -3,7 +3,7 @@
 # AND per-review-lens; every frontmatter byte multiplies ~5-6x per full-tier attempt).
 #
 # Pins the diet contract (spec 2026-07-19-batch2-derive-and-diet.md, item P3):
-#   (a) generate-units stops WRITING the gate-inert frontmatter surfaces —
+#   (a) the unit writer (`plan` since 9.0; generate-units before) stops WRITING the gate-inert frontmatter surfaces —
 #       grounding_evidence block, superpowers_skills, estimated_complexity, the
 #       nested mutability map (source + rebuild_freedom) — mutability collapses to
 #       ONE QUOTED line `<TIER> — <rationale incl. source>`; legacy units tolerated.
@@ -11,9 +11,7 @@
 #       structured authority; verify keeps expanded (marker-bearing when HIGH) body
 #       criteria (the A1 substrate); create/extend get the pointer line; ears: only
 #       where it adds precision beyond expects: (roadmap pins intact).
-#   (c) per-lens slice trim — security+standards drop Goal/Context/Out-of-scope;
-#       quality KEEPS Goal + Out of scope (drops Context); spec lens FULL body;
-#       design slice unchanged; blind BETWEEN-lens rail untouched.
+#   (c) per-lens slice trim — the bridge diagram's wording (review-panel.md went in P3 C3).
 # Plus the tolerance pair: validate-unit-spec.sh passes a unit WITHOUT the diet
 # keys AND one WITH them (writer-side diet, reader-side tolerance); A1 unaffected
 # in both directions.
@@ -24,13 +22,17 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 P="${ROOT}/plugins/mega-sdd"
-US="${P}/skills/generate-units/references/unit-schema.md"
-TU="${P}/skills/generate-units/references/templates/unit.md"
-DG="${P}/skills/generate-units/references/defensive-generation.md"
-RP="${P}/skills/execute-bolts/references/review-panel.md"
+# 9.0 P1: generate-units was deleted; its unit contract moved to plan/references.
+# defensive-generation.md was not relocated as a file — its surviving halves live in
+# unit-procedure.md (writer diet), validation-passes.md §12.3 (anchor verification
+# outcome → chat + body footer) and unit-schema.md (grounding_confidence labels).
+US="${P}/skills/plan/references/unit-schema.md"
+TU="${P}/skills/plan/references/templates/unit.md"
+UP="${P}/skills/plan/references/unit-procedure.md"
+VP="${P}/skills/plan/references/validation-passes.md"
 BR="${P}/skills/execute-bolts/references/superpowers-bridge.md"
 V="${P}/scripts/validate-unit-spec.sh"
-for f in "$US" "$TU" "$DG" "$RP" "$BR" "$V"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
+for f in "$US" "$TU" "$UP" "$VP" "$BR" "$V"; do [ -f "$f" ] || { echo "missing $f"; exit 1; }; done
 
 FAILED=0
 ok()   { printf '  \xe2\x9c\x93 %s\n' "$*"; }
@@ -59,11 +61,17 @@ for key in superpowers_skills estimated_complexity grounding_evidence; do
   if grep -qE "^${key}:" "$TU"; then fail "templates/unit.md still scaffolds \`${key}:\`"; else ok "templates/unit.md no longer scaffolds \`${key}:\`"; fi
 done
 
-# defensive-generation example sheds grounding_evidence, keeps grounding_confidence
-if grep -qE "^grounding_evidence:" "$DG"; then fail "defensive-generation example still emits grounding_evidence"; else ok "defensive-generation example sheds grounding_evidence"; fi
-grep -qF 'grounding_confidence: HIGH | MEDIUM | LOW' "$DG" && ok "grounding_confidence kept (A1 trigger condition)" || fail "grounding_confidence lost from defensive-generation"
-grep -qF 'no frontmatter block needed' "$DG" && ok "anchor tally rerouted to chat summary line + body footer" || fail "chat-summary rerouting line missing"
-grep -qF 'no longer written; legacy units carrying it are tolerated' "$DG" && ok "anti-halu rail speaks the diet (tolerated legacy)" || fail "anti-halu rail wording stale"
+# unit-writer procedure sheds grounding_evidence (and its anchors_verified tally), keeps grounding_confidence
+# (was pinned on the generate-units defensive-generation reference, deleted in 9.0 P1 — repointed to the
+#  plan references that now carry the same halves)
+for f in "$UP" "$VP"; do
+  if grep -qE "^\s*(grounding_evidence|anchors_verified):" "$f"; then fail "$(basename "$f") still emits a grounding_evidence / anchors_verified frontmatter block"; else ok "$(basename "$f") sheds the grounding_evidence block"; fi
+done
+grep -qF 'grounding_confidence: HIGH | MEDIUM | LOW' "$US" && ok "grounding_confidence kept (A1 trigger condition)" || fail "grounding_confidence lost from unit-schema"
+grep -qF 'Warnings surface visually in chat output + unit body footer' "$VP" && ok "anchor-verification outcome rerouted to chat output + body footer (no frontmatter block)" || fail "chat + body-footer rerouting line missing from validation-passes §12.3"
+grep -qF 'do NOT write the zero-reader fields `mutability`, `estimated_complexity`, `grounding_evidence`, `superpowers_skills`' "$UP" \
+  && grep -qF 'Legacy units may carry `grounding_evidence`' "$US" \
+  && ok "writer procedure speaks the diet (grounding_evidence not written; legacy units tolerated)" || fail "writer-diet / legacy-tolerance wording stale"
 
 # ── (b) ears: roadmap pins survive + sharpened emission guidance ──
 grep -q 'ears:' "$US" && ok "roadmap pin: \`ears:\` key survives (optional tier)" || fail "roadmap pin lost: ears: key"
@@ -79,17 +87,7 @@ grep -qF 'verify_grounding_untrusted' "$US" && ok "A1 enforcement pointer intact
 grep -qF 'Acceptance criteria are the frontmatter' "$TU" && ok "template Acceptance-criteria placeholder is the pointer-line form" || fail "template still scaffolds expanded placeholder bullets"
 grep -qF 'TBD OQ items / prose-only constraints' "$TU" && ok "template names the only non-restating additions (TBD OQs, prose-only constraints)" || fail "template non-restating guidance missing"
 
-# ── (c) review-panel per-lens slice trim matches the locked decision ──
-grep -qF 'security and standards lenses ALSO drop the `## Goal` / `## Context (read first)` / `## Out of scope` prose' "$RP" \
-  && ok "security + standards drop Goal/Context/Out-of-scope" || fail "security/standards orientation-prose trim missing"
-grep -qF 'KEEPS Goal + Out of scope' "$RP" && ok "quality lens KEEPS Goal + Out of scope (scope-creep judgment)" || fail "quality Goal+OoS keep missing"
-grep -qF 'while still dropping Context' "$RP" && ok "quality lens drops Context" || fail "quality Context-drop missing"
-grep -qF 'design lens slice is unchanged' "$RP" && ok "design lens slice unchanged (locked decision: not trimmed)" || fail "design-lens disposition undocumented"
-# the four pre-existing pin strings must survive the wording extension
-grep -qiF 'spec lens gets the full unit body verbatim' "$RP" && ok "pin survives: spec lens FULL body verbatim" || fail "pin lost: spec-lens-full"
-grep -qiF 'NOT the Implementation-steps NARRATIVE' "$RP" && ok "pin survives: Implementation-steps narrative drop" || fail "pin lost: narrative drop"
-grep -qiF 'Migration notes STAYS in every lens' "$RP" && ok "pin survives: Migration notes in every lens" || fail "pin lost: Migration notes"
-grep -qiF 'blind' "$RP" && grep -qF 'NEVER contains' "$RP" && ok "pin survives: blind BETWEEN-lens rail (sizing changed, sharing untouched)" || fail "pin lost: blind rail"
+# ── (c) bridge per-lens slice wording (review-panel.md itself was deleted in P3 C3) ──
 # bridge diagram stays in sync
 grep -qF 'Anchors/Anti-patterns + Migration notes' "$BR" && ok "pin survives: bridge slice includes Anchors/Anti-patterns + Migration notes" || fail "pin lost: bridge slice list"
 grep -qiF 'sized to the lens' "$BR" && ok "pin survives: bridge sized-to-the-lens contract" || fail "pin lost: sized to the lens"

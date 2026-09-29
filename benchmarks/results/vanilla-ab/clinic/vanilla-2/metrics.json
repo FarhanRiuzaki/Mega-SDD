@@ -1,0 +1,80 @@
+{
+ "arm": "vanilla-2",
+ "arm_kind": "vanilla",
+ "model": "opus",
+ "speed": {
+  "wall_min": 36.03,
+  "process_duration_min": 36.09,
+  "api_time_min": 23.49,
+  "stream_silence_over_5m_min": 0.0,
+  "first_commit_min": 10.36,
+  "review_ready_min": 35.81
+ },
+ "tokens": {
+  "per_model": {
+   "claude-opus-5-5": {
+    "inputTokens": 176,
+    "outputTokens": 164077,
+    "cacheReadInputTokens": 13254938,
+    "cacheCreationInputTokens": 233984
+   }
+  },
+  "input": 176,
+  "output": 164077,
+  "cache_read": 13254938,
+  "cache_creation": 233984,
+  "total": 13653175,
+  "cost_usd": 7.81
+ },
+ "light": {
+  "tool_calls": 114,
+  "tool_calls_by_name": {
+   "Bash": 72,
+   "Write": 35,
+   "Edit": 7
+  },
+  "subagent_dispatches": 0,
+  "skill_calls": 0,
+  "ask_attempts": 0,
+  "distinct_files_read": 0,
+  "init_plugins": 3,
+  "init_skills": 42,
+  "commits": 2,
+  "diff_shape": {
+   "code": {
+    "files": 71,
+    "added": 4352,
+    "deleted": 99
+   },
+   "test": {
+    "files": 16,
+    "added": 1534,
+    "deleted": 0
+   },
+   "docs_md": {
+    "files": 1,
+    "added": 95,
+    "deleted": 21
+   },
+   "process": {
+    "files": 0,
+    "added": 0,
+    "deleted": 0
+   },
+   "other": {
+    "files": 9,
+    "added": 11731,
+    "deleted": 4431
+   }
+  }
+ },
+ "clean": {
+  "processes": 1,
+  "resume_or_outage_keys": [],
+  "purity": "PASS no mega-sdd surface loaded",
+  "api_retries": 0,
+  "api_retry_delay_s": 0.0,
+  "api_retry_errors": [],
+  "is_clean": true
+ }
+}

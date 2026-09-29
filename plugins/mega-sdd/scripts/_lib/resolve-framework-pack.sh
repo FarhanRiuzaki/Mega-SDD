@@ -2,7 +2,7 @@
 # resolve-framework-pack.sh — shared framework-pack resolver (Task 0, code-delivery sharpening).
 #
 # WHY: the code-delivery validators (flow-coverage, sibling-consistency,
-# cross-cutting-registration, ui-quality, dispatch-prompt, …) MUST stay
+# cross-cutting-registration, ui-quality, …) MUST stay
 # tech-stack-agnostic. They read ALL stack-specific signatures from the active
 # framework-convention pack rather than hardcoding Laravel (.blade.php, @section,
 # Str::title, …). This helper is the single chokepoint that:
@@ -193,11 +193,10 @@ fi
 
 # Interpreter. Bare `python3` is a documented FALSE POSITIVE on Windows: the
 # WindowsApps App Execution Alias stub sits on the default PATH, prints to
-# stderr and exits 49. A caller that swallows a non-zero exit here loses the
-# WHOLE framework-pack contribution of every dispatch at exit 0 — reproduced at
-# 8733 -> 5412 bytes — so this resolver must not be the weak link.
-# An interpreter already resolved by the CALLER wins (build-dispatch-prompt.sh
-# exports MEGA_SDD_PY); otherwise resolve it here via the shared helper.
+# stderr and exits 49. Known open (commit 72d617a6): 11 call sites run `X=$(resolver) || X=""`,
+# ignoring its exit code: a failed resolve reads as packless and the gate exits 0.
+# So this resolver must not be the weak link: a CALLER-resolved interpreter wins
+# (exported as MEGA_SDD_PY); otherwise resolve it here via the shared helper.
 # $MEGA_SDD_PY MUST be expanded UNQUOTED — `py -3` is two words.
 if [ -z "${MEGA_SDD_PY:-}" ]; then
   _RPY_FP="${_RFP_SELF_DIR}/resolve-python.sh"

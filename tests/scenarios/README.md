@@ -2,7 +2,15 @@
 
 Step-by-step walkthroughs for common mega-sdd use cases. Use these if you're **new to mega-sdd** and want a guided first experience.
 
-These walkthroughs follow the classic chain (the DEFAULT for every 8.x release); the opt-in `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
+Since 9.0, `/mega-sdd <prd|brief>` runs `scripts/route-lane.sh` first and picks a lane:
+
+- **direct** — a clear task: the main session builds it like plain Claude Code (no vault, no units, no subagents). Procedure: [`direct-lane.md`](../../plugins/mega-sdd/references/direct-lane.md).
+- **assisted** — open business items, a security surface, several flows, or an existing app: direct + ONE batched ask before coding + ONE blind review.
+- **guarded** — an existing vault, or `--guarded` (`--lite` implies it): the one spec pipeline, `plan` (PRD, a seed PRD from a brief, or `plan --kb=<kb>` after `extract-intelligence`) → `execute-bolts` (inline: JIT bind up front + per task, CONFLICT quarantine at run start, one blind review).
+
+Walkthroughs that show a vault, units and bolts are guarded-lane runs. The classic chain (`generate-intent` → `scan-codebase` → `bind-codebase` → `generate-units`) was removed in 9.0: where an older walkthrough names one of those skills, read `plan` (spec + units) or the per-unit bind inside `execute-bolts`.
+
+Every lane ends with the same result: an acceptance-criterion → test table, `scripts/delivery-check.sh` `VERDICT: PASS` on the final commit, and the list of assumptions and decisions made. Measured on greenfield PRDs, the routed lanes are on par with plain Claude Code; on a brownfield PRD the guarded pipeline surfaced the same seeded spec traps as plain Claude Code at ~6× the cost. Its value is traceability and audit artefacts, not better code (commits `d447a6d2`, `5d880e8b`).
 
 Each scenario:
 - Takes 5–60 minutes wall-clock (legacy rebuilds vary with the census)
@@ -19,7 +27,7 @@ Each scenario:
 | Have a PRD; existing project | [Scenario 2 — PRD-driven feature](scenario-2-prd-driven-feature.md) | 30 min |
 | Field-level gap (PRD says X, code has Y) | [Scenario 3 — Field-level extension](scenario-3-field-extension.md) | 20 min |
 | Legacy codebase → modern rebuild (one tranche) | [Scenario 4 — Legacy rebuild](scenario-4-legacy-rebuild.md) · concept guide: [Revamp Journey](../../docs/mega-sdd/revamp-journey.md) | varies (census-scaled) |
-| Multi-team coordination | [Scenario 5 — Multi-squad parallel](scenario-5-multi-squad-parallel.md) | 45 min |
+| Multi-team coordination (a vault that already carries `_meta/squads.yaml` — `plan` does not author one) | [Scenario 5 — Multi-squad parallel](scenario-5-multi-squad-parallel.md) | 45 min |
 | Something halted; need to recover | [Scenario 6 — Recovery from halt](scenario-6-recovery-from-halt.md) | 15 min |
 | Multi-architect (BE/FE/MW shared PRD) | [Scenario 7 — Multi-architect](scenario-7-multi-architect.md) | 60 min |
 | Starterkit-aware generation (auto-detected stack) | [Scenario 8 — Starterkit-aware generation](scenario-8-starterkit-aware-generation.md) | 30 min |
@@ -55,31 +63,32 @@ You should see autocomplete with `/mega-sdd:sync`, `/mega-sdd:emit`, and the thr
 ```
 
 Replace `./your-prd.md` with your input. Mega-sdd detects:
-- **PRD file** (`.md`, `.pdf`, `.docx`) → vault generation
-- **Legacy code directory** → extract-intelligence first, then vault
-- **Existing vault directory** → skip ahead to binding/units/bolts
-- **Quoted brief** (`"build a clinic system"`) → free-text Mode B
+- **PRD file** (`.md`, `.pdf`, `.docx`) or **quoted brief** (`"build a clinic system"`) → `route-lane.sh` picks the lane; direct/assisted build it straight away (no vault); guarded (`--guarded`) runs `plan` → `execute-bolts` (a brief is first written to a seed PRD)
+- **Legacy code directory** → `extract-intelligence` → `plan --kb=<kb>` → `execute-bolts` (needs `--out=<path>`)
+- **Knowledge-base directory** (an `extract-intelligence` output) → `plan --kb` → `execute-bolts`
+- **Existing vault directory** → a layout-3 vault with units goes to `execute-bolts` (JIT bind per unit); a pre-9.0 layout-2 vault is still read, and to build or sync on it the front door proposes `/mega-sdd:migrate-paths --vault-layout=3` first (then the mandatory re-bind)
 - **Empty input** → inspects CWD, proposes chain
 
-Single upfront confirmation; then runs end-to-end. Halts on real issues (conflicts, missing OQs); auto-continues otherwise.
+Direct/assisted announce the lane in one line and start — no confirmation prompt. Guarded asks ONE upfront confirmation, then runs end-to-end; it halts on real issues (conflicts, open P1 business OQs) and auto-continues otherwise. `--classic` and `lane: standard` are retired: the front door says so in one line and ignores them.
 
 ## What about all the other stages?
 
 Most users never invoke them directly. They're auto-invoked by the `/mega-sdd` chain, and since 6.0.0 the per-stage typed commands no longer register — ask by phrase instead (a typed legacy form still arrives as plain text and routes to the same skill):
 
-- Phase skills (chain-run): `generate-intent`, `scan-codebase` (on-demand), `bind-codebase`, `generate-units`, `execute-bolts`
+- Phase skills (guarded chain): `plan` (vault + units), `execute-bolts` (JIT bind per unit + bolts); `extract-intelligence` upstream for a legacy rebuild
 - Event-driven: "resolve OQ", "PRD revisi" (diff-vault), "cek drift"
-- Diagnostics (auto-run on classic; on-demand otherwise): "lint units", "cek parallelism", "status module", "generate AGENTS.md"
+- Diagnostics (on demand; auto-run inside a guarded chain only with `--full`): "lint units", "cek parallelism", "status module", "generate AGENTS.md"
 - Maintenance verbs (still typed): `/mega-sdd:migrate-paths`, `/mega-sdd:install-deps`, `/mega-sdd:update-plugin` — plus "migrate hard rules" by phrase
 
 Full migration map: [plugin README §Commands](../../plugins/mega-sdd/README.md#commands-youll-actually-use).
 
 ## If something goes wrong
 
-1. **Pipeline halts mid-chain** → mega-sdd surfaces a YAML blocker with `next_action` field telling you exactly what to run. Resolve, then `/mega-sdd --resume`.
+1. **Guarded pipeline halts mid-chain** → mega-sdd surfaces a YAML blocker with `next_action` field telling you exactly what to run. Resolve, then `/mega-sdd --resume`.
 2. **Confused about state** → say "status module" (the list-modules rollup) or just run `/mega-sdd` with no args for the state view.
-3. **Bolt fails** → check `<vault>/bolts/U-XXX/bolt-report.md` for details. Often acceptance test needs adjustment.
-4. **Want to undo** → bolts produce atomic git commits; `git revert <commit>` rolls back a unit.
+3. **Bolt fails** (guarded) → check `<vault>/bolts/U-XXX/bolt-report.md` for details. Often acceptance test needs adjustment.
+4. **`delivery-check.sh` prints `FAIL`** (any lane) → the run is not done: fix the finding, commit, and re-run until `VERDICT: PASS`.
+5. **Want to undo** → bolts produce atomic git commits; `git revert <commit>` rolls back a unit.
 
 For recovery scenarios, see [Scenario 6](scenario-6-recovery-from-halt.md).
 

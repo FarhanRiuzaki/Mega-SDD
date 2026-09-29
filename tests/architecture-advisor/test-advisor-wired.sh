@@ -11,15 +11,18 @@
 #      block for vault consumption
 #   C  extract-intelligence OFFERS the consultation at hand-off (never auto)
 #      and routes to the ref (one-level rule)
-#   D  generate-intent consumes decisions/ADR-*.md accepted-only (SKILL + the
-#      kb-submode procedure both say so; proposed -> OQ, never a decision)
+#   D  plan --kb consumes decisions/ADR-*.md accepted-only (SKILL + the
+#      kb-input procedure both say so; proposed -> OQ, never a decision).
+#      9.0 P1: generate-intent was removed; its Mode-B KB sub-mode (and this
+#      consumption contract) relocated to plan --kb — plan/SKILL.md +
+#      plan/references/kb-input.md (spec 2026-09-27-v9-simplification-design.md §3/§4).
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 P="$ROOT/plugins/mega-sdd"
 REF="$P/references/architecture-advisor.md"
 EX="$P/skills/extract-intelligence/SKILL.md"
-GI="$P/skills/generate-intent/SKILL.md"
-KS="$P/skills/generate-intent/references/kb-submode.md"
+GI="$P/skills/plan/SKILL.md"
+KS="$P/skills/plan/references/kb-input.md"
 err=0; ok(){ echo "  ok: $*"; }; bad(){ echo "  FAIL: $*"; err=1; }
 
 echo "── A: the reference + its rails ──"
@@ -34,16 +37,17 @@ grep -qi "deferred" "$REF" && ok "A8 unanswered census -> deferred OQ, never ass
 
 echo "── B: the ADR template ──"
 grep -q "Status: accepted | proposed" "$REF" && ok "B1 template splits accepted/proposed" || bad "B1 status split missing"
-grep -q "## Claims (\[INTENT\]" "$REF" && ok "B2 [INTENT] claims block for generate-intent --kb" || bad "B2 claims block missing"
+grep -q "## Claims (\[INTENT\]" "$REF" && ok "B2 [INTENT] claims block for plan --kb" || bad "B2 claims block missing"
 grep -q "## Options considered" "$REF" && ok "B3 rejected options are recorded with reasons" || bad "B3 options-considered section missing"
 
 echo "── C: extract-intelligence wiring ──"
 grep -q "plugins/mega-sdd/references/architecture-advisor.md" "$EX" && ok "C1 SKILL routes to the ref (one-level rule)" || bad "C1 no route from extract-intelligence SKILL"
 grep -q "an OFFER, never auto" "$EX" && ok "C2 the consultation is an offer, never auto" || bad "C2 offer-not-auto rail missing"
 
-echo "── D: generate-intent consumption ──"
+echo "── D: plan --kb consumption ──"
+grep -q "plan --kb\` consumes \`decisions/ADR-\*.md\` with \`Status: accepted\`" "$REF" && ok "D0 ref's downstream contract names plan --kb as the consumer" || bad "D0 ref downstream contract does not name plan --kb"
 grep -q "decisions/ADR-\*.md" "$GI" && grep -q "Status: accepted" "$GI" && ok "D1 SKILL names accepted-ADR consumption" || bad "D1 SKILL consumption line missing"
-grep -q "plugins/mega-sdd/references/architecture-advisor.md" "$GI" && ok "D2 SKILL routes to the ref (kb-submode's sibling pointer is legal)" || bad "D2 SKILL route missing — sibling pointer would be the only route"
-grep -q "decisions/ADR-\*.md" "$KS" && grep -q "NEVER consumed as a decision" "$KS" && ok "D3 kb-submode: accepted consumed, proposed -> OQ" || bad "D3 kb-submode item missing/incomplete"
+grep -q "plugins/mega-sdd/references/architecture-advisor.md" "$GI" && ok "D2 SKILL routes to the ref (kb-input's sibling pointer is legal)" || bad "D2 SKILL route missing — sibling pointer would be the only route"
+grep -q "decisions/ADR-\*.md" "$KS" && grep -q "NEVER consumed as a decision" "$KS" && ok "D3 kb-input: accepted consumed, proposed -> OQ" || bad "D3 kb-input item missing/incomplete"
 
 echo; [ $err -eq 0 ] && { echo "test-advisor-wired: ALL PASS"; exit 0; } || { echo "test-advisor-wired: FAILED"; exit 1; }

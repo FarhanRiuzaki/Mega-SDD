@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # ground.sh self-resolve notices — two debt fixes pinned by behavior:
-#   model_tiers: override roles compare `_`→`-` normalized against references/model-tiers.md, so the
-#   documented key `model_tiers.bolt_implementer` no longer trips model_tier_unknown on every run;
+#   model_tiers: override roles compare `_`→`-` normalized against references/model-tiers.md, so an
+#   underscored key (`model_tiers.extract_intelligence_module`) never trips model_tier_unknown;
 #   a vault.json the mode guard cannot parse is REPORTED (`[self-resolved] vault_json_corrupt`
 #   naming the file) — never skipped silently, never rewritten, and the chain still continues (rc 0).
-#   a   bolt_implementer: sonnet (underscored, the documented form) → no model_tier_unknown
-#   a2  bolt-implementer: sonnet (the catalog's own spelling) → no model_tier_unknown
+#   a   extract_intelligence_module: sonnet (underscored) → no model_tier_unknown
+#   a2  extract-intelligence-module: sonnet (the catalog's own spelling) → no model_tier_unknown
+#   (P3 C6b, spec v9 §8.6: the bolt-implementer row is gone — a stale bolt_implementer key now gets the notice)
 #   b   nonexistent_role: sonnet → model_tier_unknown naming nonexistent_role (proves the catalog loaded)
 #   c   vaults/app/vault.json = `{not json` → notice names the file; file byte-untouched; rc 0
 #   d   a valid vault.json → no vault_json_corrupt
@@ -18,13 +19,13 @@ T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
 mk() { local d="$T/$1"; mkdir -p "$d/.mega-sdd"; ( cd "$d" && git init -q . ); printf '%s' "$d"; }   # one project per case: the guards scan every vault
 gr() { PLUGIN_ROOT_HINT="$P" bash "$S" --cwd="$1" </dev/null 2>&1; }
 
-# a — the documented underscored key must not be flagged
-A="$(mk a)"; printf 'model_tiers:\n  bolt_implementer: sonnet\n' > "$A/.mega-sdd/config.yaml"
+# a — an underscored key must not be flagged
+A="$(mk a)"; printf 'model_tiers:\n  extract_intelligence_module: sonnet\n' > "$A/.mega-sdd/config.yaml"
 OUT="$(gr "$A")"; RC=$?
-[ "$RC" = "0" ] && ! echo "$OUT" | grep -q 'model_tier_unknown' && pass "a: model_tiers.bolt_implementer (underscored) → no model_tier_unknown" || fail "a: rc=$RC out=$(echo "$OUT" | grep 'model_tier' | head -2)"
+[ "$RC" = "0" ] && ! echo "$OUT" | grep -q 'model_tier_unknown' && pass "a: model_tiers.extract_intelligence_module (underscored) → no model_tier_unknown" || fail "a: rc=$RC out=$(echo "$OUT" | grep 'model_tier' | head -2)"
 # a2 — the catalog spelling keeps working too (normalization is symmetric)
-A2="$(mk a2)"; printf 'model_tiers:\n  bolt-implementer: sonnet\n' > "$A2/.mega-sdd/config.yaml"
-OUT="$(gr "$A2")"; ! echo "$OUT" | grep -q 'model_tier_unknown' && pass "a2: model_tiers.bolt-implementer (hyphenated) → no model_tier_unknown" || fail "a2: $(echo "$OUT" | grep 'model_tier' | head -2)"
+A2="$(mk a2)"; printf 'model_tiers:\n  extract-intelligence-module: sonnet\n' > "$A2/.mega-sdd/config.yaml"
+OUT="$(gr "$A2")"; ! echo "$OUT" | grep -q 'model_tier_unknown' && pass "a2: model_tiers.extract-intelligence-module (hyphenated) → no model_tier_unknown" || fail "a2: $(echo "$OUT" | grep 'model_tier' | head -2)"
 
 # b — an unknown role is still flagged (and proves the catalog was found, so a/a2 did not pass vacuously)
 B="$(mk b)"; printf 'model_tiers:\n  nonexistent_role: sonnet\n' > "$B/.mega-sdd/config.yaml"

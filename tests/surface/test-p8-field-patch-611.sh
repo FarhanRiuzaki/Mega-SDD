@@ -2,7 +2,7 @@
 # test-p8-field-patch-611.sh — v6.1.1 field-patch proof
 # F1: vault.json OQ ids count as declarations for the handoff validator
 #     (express-born vaults have no binding.md; 25 false oq_id_extra measured).
-# F2: unit-schema.md teaches expects as a SUBSTRING matcher, never a description.
+# F2: plan/references/unit-schema.md teaches expects as a SUBSTRING matcher, never a description.
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 P="$ROOT/plugins/mega-sdd"
@@ -65,11 +65,14 @@ assert "OQ-AR-1" in ids and "OQ-GHOST-9" in ids, ids
 EOF
 
 # ── F2 schema + template pins ────────────────────────────────────────────────
-US="$P/skills/generate-units/references/unit-schema.md"
-UT="$P/skills/generate-units/references/templates/unit.md"
+# 9.0 P1: generate-units was deleted; its unit schema + template were relocated
+# verbatim to the surviving plan skill (the only unit author now).
+US="$P/skills/plan/references/unit-schema.md"
+UT="$P/skills/plan/references/templates/unit.md"
 # description-shape CLASS pin, both teachers: any expects value containing the
 # words pass/passes/succeeds/works (quoted or not) is the poison shape
 for f in "$US" "$UT"; do
+  [ -f "$f" ] || { note "F2 teacher missing: $f"; continue; }
   grep -Eq 'expects: *"?(passes|pass|succeeds|works)"?( |$)' "$f" \
     && note "F2a $(basename "$f") teaches a description-shaped expects"
 done

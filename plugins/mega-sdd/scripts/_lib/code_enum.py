@@ -4,17 +4,16 @@
 # (Standing lesson: two hand-copied constant lists WILL drift — derive, never
 # duplicate. This is the enumeration sibling of _lib/postflight_rules.py.)
 #
-# exclusions.md (scan-codebase) remains the prose owner of the exclusion list;
-# these constants are its script mirror, moved verbatim from
-# build-symbol-index.sh (spec 2026-08-26-extract-revamp-contract-design.md).
+# The exclusion list is owned HERE. .mega-sdd/** is excluded as an anti-bias
+# rail: reading the vault while enumerating code breeds confirmation bias.
 import os
 import subprocess
 
-# Extensions covered by the shipped ast-grep packs (membership-only gate for
-# the file enumeration — ast-grep assigns each file's language by its own ext
-# mapping, so the values here are documentation of WHICH pack's lane covers
-# the ext). .jsx maps to javascript (ast-grep's js grammar parses JSX; jsx.yml
-# must never exist — it would double-count every .jsx symbol).
+# Extensions covered by the shipped ast-grep packs (assets/astgrep-queries/astgrep;
+# membership-only gate for the file enumeration — ast-grep assigns each file's
+# language by its own ext mapping, so the values here are documentation of WHICH
+# pack's lane covers the ext). .jsx maps to javascript (ast-grep's js grammar
+# parses JSX; jsx.yml must never exist — it would double-count every .jsx symbol).
 EXTS = {".ts": "typescript", ".tsx": "tsx", ".js": "javascript",
         ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
         ".php": "php", ".py": "python", ".rs": "rust", ".go": "go",
@@ -37,9 +36,8 @@ LEGACY_EXTS = {".rpg": "rpg", ".rpgle": "rpgle", ".sqlrpgle": "rpgle",
                ".clp": "cl", ".clle": "cl",
                ".cbl": "cobol", ".cob": "cobol", ".cpy": "cobol-copy"}
 
-# Committed dirs git ls-files can still admit (exclusions.md is the owner of
-# the full list). Segment-based, so a nested packages/app/node_modules/ is
-# excluded too — matching the list's `**` semantics.
+# Committed dirs git ls-files can still admit. Segment-based, so a nested
+# packages/app/node_modules/ is excluded too (`**` semantics).
 # any-depth: dependency trees + caches (nested packages/app/node_modules too)
 EXCL_DIR_NAMES = {"node_modules", "vendor", "__pycache__", ".venv", "venv",
                   ".next", ".nuxt", ".svelte-kit", ".astro", ".turbo", ".git",

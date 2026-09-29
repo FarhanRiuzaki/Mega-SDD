@@ -1,0 +1,47 @@
+{
+ "completion": 1.0,
+ "ac_pass": 12,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 4,
+ "rubric": 93,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "tests/navigation.test.ts:13-32",
+   "what": "Page/form tests are regex checks on source text rather than rendered-output tests; weak UI coverage"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/contact-form.tsx:41-88",
+   "what": "Field error messages have no role=alert/live region and focus is not moved to the first invalid field"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-store.ts:3",
+   "what": "Relies on experimental node:sqlite module (stability risk across Node versions)"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/actions.ts:6-13",
+   "what": "No rate limiting or spam protection on the public contact server action"
+  }
+ ],
+ "blind_label": "VY",
+ "scorer_sid": "362584c2-9478-41ee-81eb-586a02e8d124"
+}

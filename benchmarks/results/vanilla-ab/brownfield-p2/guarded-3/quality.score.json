@@ -1,0 +1,53 @@
+{
+ "completion": 0.9230769230769231,
+ "ac_pass": 12,
+ "ac_total": 13,
+ "ac": {
+  "B1": "PASS",
+  "B2": "PASS",
+  "B3": "PASS",
+  "B4": "PASS",
+  "B5": "FAIL",
+  "B6": "PASS",
+  "B7": "PASS",
+  "B8": "PASS",
+  "T1c": "PASS",
+  "T2c": "PASS",
+  "T3c": "PASS",
+  "T4c": "PASS",
+  "T5c": "PASS"
+ },
+ "critical": 0,
+ "important": 1,
+ "minor": 4,
+ "rubric": 82,
+ "findings": [
+  {
+   "severity": "Important",
+   "where": "src/server/leave.ts:19-44",
+   "what": "AC-204 not implemented: recording leave does not surface affected booked appointments; no affected-appointments list, no bulk reassign, no leave-cancel with re-book email. Only the v1 single reassign (staff.ts:105) exists. Withholding rescheduling_required is justified, the rest is not."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist-offers.ts:197-200",
+   "what": "A failed acceptOffer for any reason (e.g. leave recorded after the offer was sent) voids the offer without passing the slot to the next queued patient."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/appointments.ts:313-314",
+   "what": "Slots freed on a doctor's leave day still trigger waitlist offer emails that cannot be accepted (offerFreedSlot has no leave check)."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/server/waitlist-offers.ts:30-58",
+   "what": "Check-then-insert for 'entry has no pending offer' is not atomic; concurrent cancellations of different slots can give one patient two pending offers."
+  },
+  {
+   "severity": "Minor",
+   "where": "tests/integration/staff.test.ts",
+   "what": "No concurrency test for reassignment racing an online booking (AC-205); safety rests on the unique index without a test verifying it."
+  }
+ ],
+ "blind_label": "BH",
+ "scorer_sid": "431f35b1-ffc8-428c-b122-f8a0ff82f1f6"
+}

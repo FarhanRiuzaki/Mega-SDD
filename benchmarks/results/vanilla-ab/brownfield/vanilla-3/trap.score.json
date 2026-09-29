@@ -1,0 +1,40 @@
+{
+ "traps": {
+  "T1": {
+   "surfaced": true,
+   "quote": "PRD \u00a71 describes v1 as 20-minute slots and 48-hour reminders, but v1's PRD, code and tests use 15 minutes and 24 hours",
+   "judge_said": true,
+   "verified": true
+  },
+  "T2": {
+   "surfaced": true,
+   "quote": "PRD \u00a71 describes v1 as 20-minute slots and 48-hour reminders, but v1's PRD, code and tests use 15 minutes and 24 hours",
+   "judge_said": true,
+   "verified": true
+  },
+  "T3": {
+   "surfaced": true,
+   "quote": "rescheduling_required`** did not exist in v1; it was added to the status enum",
+   "judge_said": true,
+   "verified": true
+  },
+  "T4": {
+   "surfaced": true,
+   "quote": "late cancellations are penalised\" with no penalty defined -> no penalty; late link cancellations are simply refused",
+   "judge_said": true,
+   "verified": true
+  },
+  "T5": {
+   "surfaced": true,
+   "quote": "not implemented, strict join order: VIP is undefined and the PRD contradicts itself",
+   "judge_said": true,
+   "verified": true
+  }
+ },
+ "surfaced": 5,
+ "total": 5,
+ "overturned": [],
+ "bundle_chars": 11266,
+ "judge_sid": "1f21e361-fd74-4499-989e-38f433c2a73b",
+ "judge_cost_usd": 0.1570382
+}

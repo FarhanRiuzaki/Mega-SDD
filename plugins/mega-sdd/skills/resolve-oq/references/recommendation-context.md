@@ -2,7 +2,7 @@
 
 ## Contents
 - Anti-halu invariants (NON-NEGOTIABLE)
-- Context sources (priority order: KB → vault → codebase-map → fallback)
+- Context sources (priority order: KB → vault → codebase → fallback)
 - Recommendation generation algorithm
 - Citation probe step
 - AskUserQuestion presentation
@@ -10,7 +10,7 @@
 - High-stakes domain warning
 - Examples
 
-`resolve-oq` builds context-aware `(recommended)` answers per OQ before presenting `AskUserQuestion`. Extends the `resolution_mode: recommend` pattern from tech-OQs (at generate-intent time) to ALL OQ types (at resolve-oq time).
+`resolve-oq` builds context-aware `(recommended)` answers per OQ before presenting `AskUserQuestion`. Extends the `resolution_mode: recommend` pattern from tech-OQs (decided at `plan` time, Step 3) to ALL OQ types (at resolve-oq time).
 
 Inspired by a user UX request — "kasih (recommended) base on dia baca context, dan kasih suggest yg paling sesuai".
 
@@ -21,7 +21,7 @@ Mirror the recommend-mode discipline:
 1. **Citation MANDATORY.** Every recommendation cites source (file:line OR KB section OR vault ADR). No citation → NO recommendation surfaced (silent fallback to no-recommendation interactive walk).
 2. **Rationale MANDATORY.** Why this pick. 1-3 sentences. Visible in `AskUserQuestion` description.
 3. **Fallback-if-wrong MANDATORY.** What to revisit if this turns out incorrect. 1 sentence.
-4. **User confirms ALWAYS — inside this walk.** Recommendation is `(recommended)` label on default option; user can pick "Other" or override freely. (Tech OQs never enter the walk — the AI decides them upstream, `generate-intent/references/vault-core.md §AI technical decisions`; this invariant governs what a human IS asked: business OQs and an explicit `single-oq` override.)
+4. **User confirms ALWAYS — inside this walk.** Recommendation is `(recommended)` label on default option; user can pick "Other" or override freely. (Tech OQs never enter the walk — the AI decides them at `plan`, `plugins/mega-sdd/references/vault-core.md §AI technical decisions`; this invariant governs what a human IS asked: business OQs and an explicit `single-oq` override.)
 5. **No fabrication.** If context sources don't yield a confident recommendation → omit recommendation; no pre-fill.
 6. **High-stakes warning.** Business-OQ recommendations carry a "review carefully — high-stakes domain" prefix in description (regulatory / finance / edge case markers).
 7. **Meaning-first narration (7.21.1).** When rationale / probe findings are surfaced to the user, lead with the business meaning in common ID/EN ("hasilnya dipakai modul credit analysis buat hitung skor"); the `file:line` / SP-name evidence follows in parentheses — never a bare citation dump as the sentence body (display rules: `interactive-walk.md` Step 2a).
@@ -54,13 +54,13 @@ Current vault context:
 - Citation: `.mega-sdd/vaults/<slug>/vault.md §D-XXX` (legacy: `05-decisions.md §D-XXX`) (canonical)
 - Confidence: MEDIUM (vault is locked spec; recommendation extrapolates from related decisions)
 
-### 3. Codebase-map (medium, brownfield only)
+### 3. Codebase (medium, brownfield only)
 
-If `codebase-map.md` present:
+A `query-symbol-index.sh` hit (the GROUND symbol index), then Read the `file:line` at HEAD:
 
 - Existing code patterns relevant to OQ
 - E.g., OQ about error format → existing `app/Http/Resources/ErrorResource.php` pattern
-- Citation: `codebase-map.md §<N> + <file>:<line>`
+- Citation: `<file>:<line>` — a leftover `codebase-map.md` is a hint only, never the citation (code at HEAD is the source of truth)
 - Confidence: MEDIUM (existing pattern is observed reality; may or may not be desired going forward)
 
 ### 4. No-context fallback (no recommendation)
@@ -76,7 +76,7 @@ function build_recommendation(oq):
   context = collect_context(oq):
     - kb_match     = search_kb(oq) [strongest]
     - vault_related = search_vault(oq)
-    - codebase_match = search_codebase_map(oq)
+    - codebase_match = search_codebase(oq)   # symbol index + live file:line at HEAD
 
   if kb_match.confidence == HIGH:
     return Recommendation(
@@ -101,7 +101,7 @@ function build_recommendation(oq):
 
 ## Citation probe step
 
-BEFORE surfacing the recommendation in `AskUserQuestion`, probe each citation in `Recommendation.citation` for resolution. This prevents LLM-fabricated citations from surfacing (mirrors generate-intent's `oq_recommend_citation_invalid` halt — `validate-vault-oqs.sh` post-write — for tech-OQ recommend mode).
+BEFORE surfacing the recommendation in `AskUserQuestion`, probe each citation in `Recommendation.citation` for resolution. This prevents LLM-fabricated citations from surfacing (mirrors plan's `oq_recommend_citation_invalid` halt — `validate-vault-oqs.sh` post-write, plan Step 5 — for tech-OQ recommend mode).
 
 ### Probe logic
 
@@ -111,7 +111,7 @@ For each citation in the recommendation:
 |---|---|
 | KB section (`<kb-path>/<file>.md §<section>:<line>`) | `Bash test -f <file>` + `Bash grep -n "<section>" <file>` to verify section exists |
 | Vault ADR (`.mega-sdd/vaults/<slug>/vault.md §D-XXX` canonical; legacy `05-decisions.md`) | `Read` the decisions doc + grep for D-XXX heading |
-| Codebase-map line (`.mega-sdd/codebase/codebase-map.md §N + <file>:<line>`) | `Read codebase-map.md` + verify referenced file path exists |
+| Codebase line (`<file>:<line>`) | `Bash test -f <file>` + the line is within the file's bounds at HEAD |
 
 ### Outcomes
 

@@ -8,7 +8,7 @@ Canonical prompt for AI fix proposer subagent dispatched when bolt halts with el
 
 **Eligible halt types** (per spec §6.3):
 - `test_fail` (after default 3 retries)
-- `hard_rule_violated` (with framework pack provenance evidence)
+- `hard_rule_violated`
 - `pbt_property_violated` (counterexample preserved)
 
 **NOT eligible** (always pure pause; never propose fix):
@@ -37,6 +37,7 @@ execute-bolts post-flight detects halt → if halt type eligible → dispatch fi
 ## Prompt template
 
 ```
+mega-sdd-trace:execute-bolts
 ROLE: AI fix proposer for mega-sdd bolt halt.
 
 CONTEXT:
@@ -53,7 +54,7 @@ EVIDENCE FILES (read these via Read tool):
 - Postflight snapshot: <vault>/bolts/U-XXX/postflight.json (if any)
 - Halt-type-specific evidence:
   - test_fail: failing test file from halt details
-  - hard_rule_violated: violating file (from halt details) + framework pack rule definition
+  - hard_rule_violated: violating file (from halt details) + the violated Hard rule's text from the unit
   - pbt_property_violated: counterexample input + failing property definition
 
 TASK:

@@ -1,0 +1,70 @@
+{
+ "completion": 1.0,
+ "ac_pass": 10,
+ "ac_total": 10,
+ "ac": {
+  "C1": "PASS",
+  "C2": "PASS",
+  "C3": "PASS",
+  "C4": "PASS",
+  "C5": "PASS",
+  "C6": "PASS",
+  "C7": "PASS",
+  "C8": "PASS",
+  "C9": "PASS",
+  "C10": "PASS"
+ },
+ "critical": 0,
+ "important": 2,
+ "minor": 7,
+ "rubric": 85,
+ "findings": [
+  {
+   "severity": "Important",
+   "where": "src/app/book/actions.ts:32",
+   "what": "Public booking Server Action has no rate limiting although the PRD surfaces table requires /book to be rate-limited; slot-flooding abuse is possible"
+  },
+  {
+   "severity": "Important",
+   "where": "src/lib/appointments/booking.ts:94-98 / src/lib/slots.ts:102",
+   "what": "Server-side booking validation (isValidSlot) ignores the current time, so a direct call to submitBookingAction can book a past slot; only the client calendar blocks past dates. Booking `date` field is validated but never cross-checked against startTime"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/staff-session.ts:40",
+   "what": "getAuth() (needs DATABASE_URL) is evaluated before await headers(), so bare `npm run build` fails prerendering /staff/reception; succeeds only with DB env set"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/reminders.ts:39-40",
+   "what": "Sweep only matches reminderAt within \u00b15 min of now; a cron outage >10 min or a booking/reschedule made <24h ahead means the reminder is silently never sent"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/appointments/changes.ts:8-10,61-68",
+   "what": "isUniqueViolation and REMINDER_LEAD_MS/SLOT_MS duplicated from booking.ts"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/staff/(shell)/reception/actions.ts:149-199",
+   "what": "Walk-in/phone staff bookings send the patient no confirmation email or manage links"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/components/staff/schedule-grid.tsx",
+   "what": "Schedule-X resource view not used; custom grid substituted"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/appointments/booking.ts:101",
+   "what": "Every booking inserts a new patient row; no patient de-duplication"
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/globals.css:5-8",
+   "what": "Only primary/accent brand tokens set; remaining palette is default shadcn neutral and README still describes the default Geist font setup, so \u00a78.3 anti-generic ceiling only partly met"
+  }
+ ],
+ "blind_label": "MW",
+ "scorer_sid": "4dc4632a-573e-442c-b54f-9706ffd5ac6c"
+}

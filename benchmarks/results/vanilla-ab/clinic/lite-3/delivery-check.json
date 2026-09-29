@@ -1,0 +1,36 @@
+{
+ "head": "4bf93c0",
+ "verdict": "FAIL",
+ "checks": [
+  {
+   "id": "D1",
+   "status": "PASS",
+   "blocking": true,
+   "detail": "scripts.test = vitest run"
+  },
+  {
+   "id": "D2",
+   "status": "PASS",
+   "blocking": true,
+   "detail": "npm test (TZ=UTC) exit 0"
+  },
+  {
+   "id": "D3",
+   "status": "PASS",
+   "blocking": true,
+   "detail": "npm test (TZ=Pacific/Kiritimati) exit 0"
+  },
+  {
+   "id": "D4",
+   "status": "FAIL",
+   "blocking": true,
+   "detail": "npm run build fails on a fresh checkout with an empty env (exit 1) \u2014 a missing secret must fail at request time with a clear message, not at import/prerender \u2014 tail: Error occurred prerendering page \"/staff/schedule\". Read more: https://nextjs.org/docs/messages/prerender-error Error: DATABASE_URL is not set > 18 |       throw new Error(\"DATABASE_URL is not set\"); "
+  },
+  {
+   "id": "D5",
+   "status": "PASS",
+   "blocking": false,
+   "detail": "every static page route (4) is linked from another source file"
+  }
+ ]
+}

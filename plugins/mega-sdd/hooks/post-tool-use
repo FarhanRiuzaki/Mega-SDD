@@ -319,12 +319,12 @@ case "${TOOL_NAME:-}" in
   #  · Skill → validate-starterkit-metrics: its state file had ZERO readers
   #    anywhere (run-analyze excluded it explicitly; no PreToolUse read; no test)
   #    — the starterkit_metrics_inconsistent halt is produced by in-skill prose
-  #    recomputation (orchestrate-flow handoff-consumption.md / generate-units
-  #    auto-and-memory.md), which stands unchanged. Validator deleted with it.
-  #  · Bash → the build-dispatch-prompt.sh parity leg: advisory-only state
-  #    (.dispatch-prompt-state.json — nothing in PreToolUse reads it), now
-  #    written fresh by run-analyze FULL (№C twin change), so the per-Bash-call
-  #    hook firing bought nothing the analyze lane does not already cover.
+  #    recomputation (orchestrate-flow handoff-consumption.md); its only
+  #    producer, the classic units handoff, is retired in 9.0 (plan emits no
+  #    handoff). Validator deleted with it.
+  #  · Bash → the dispatch-prompt parity leg: advisory state (.dispatch-prompt-state.json,
+  #    no PreToolUse reader). Its validator and the builder were removed in P3; run-analyze
+  #    FULL reads V16 as SKIP, so nothing is left for a per-Bash-call firing to cover.
   Write|Edit)
     # №D: this authoritative leg is the JOURNAL fallback for payloads the
     # pure-shell fast path declined (escaped Windows paths, oversized stdin,
@@ -334,8 +334,8 @@ case "${TOOL_NAME:-}" in
 
     # ── Living-vault dirty-paths journal (advisory; spec 2026-06-10-living-vault) ──
     # Source-file writes in a GROUNDED repo are journaled so /mega-sdd:sync +
-    # the changed-set producers (scan --changed-only, derive-changed-paths.sh)
-    # know what moved without git archaeology — covers in-session AI edits even
+    # the changed-set producer (derive-changed-paths.sh, its only consumer)
+    # knows what moved without git archaeology — covers in-session AI edits even
     # before they are committed. P2 rekey: the gate is `.mega-sdd/codebase/`
     # presence (map OR symbol-index) — the old map-only gate silenced the
     # journal forever on express-born projects that never grow a map.
@@ -373,12 +373,11 @@ case "${TOOL_NAME:-}" in
     #    execute-bolts aggregator re-runs handoff-binding-units, unit-spec,
     #    flow-coverage, sibling-consistency (both modes), bolt-artifacts
     #    (5 scans, B1 --recompute), ui-quality, factory-ledger before reading
-    #    a single state (S4 BC-GATE-1 / S5 GU-HOOK-1 / S6 EB-GATE-1), and the
-    #    bind gate lazily re-validates the codebase map (INT-1);
+    #    a single state (S4 BC-GATE-1 / S5 GU-HOOK-1 / S6 EB-GATE-1);
     #  · the Stop hook still runs the bolt-artifact detection scans per turn;
-    #  · run-analyze FULL re-runs the whole validator set — including the four
-    #    advisories whose only writer used to be this fan-out (№C, V13–V16) —
-    #    so the analyze lane stays loss-free;
+    #  · run-analyze FULL re-runs the whole validator set — including the
+    #    advisories whose only writer used to be this fan-out (№C, V13–V15; V16's
+    #    validator was removed in P3 and reads SKIP) — so the analyze lane stays loss-free;
     #  · the KB/vault-flows surfaces (incl. the Mermaid mandate) are re-run by
     #    analyze FULL per file — the hook-time firing was early-warning only.
     # What changed, honestly: per-write early warning is gone — a bad unit

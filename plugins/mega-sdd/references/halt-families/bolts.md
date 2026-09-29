@@ -1,26 +1,18 @@
 # Halt guidance — bolts family
 
-Per-type guidance for halts emitted by: execute-bolts (L0 + B1–B4 evidence gates, review panel, verify units).
+Per-type guidance for halts emitted by: execute-bolts (L0 + B1–B4 evidence gates, verify units).
 Split from the canonical registry `plugins/mega-sdd/references/halt-protocol.md`
 (spec 2026-08-17-halt-registry-family-split.md) — the registry keeps the envelope
 schema, escalation discipline, subtype enums, and the per-type index that routes
 here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
-### dispatch_prompt_too_large
-
-- `dispatch_prompt_too_large` — execute-bolts: assembled bolt dispatch prompt exceeds 10KB hard cap. ALWAYS STOP. Resolution: re-tier context.
-
 ### bolt_repeated_partial_failure
 
-- `bolt_repeated_partial_failure` — execute-bolts: bolt failed 3 partial-state recovery cycles. ALWAYS STOP. Resolution: review unit spec.
+- `bolt_repeated_partial_failure` — the same halt fired twice on one unit with different proposed fixes (propose-and-confirm cycle). ALWAYS STOP. Resolution: review unit spec.
 
 ### provenance_missing
 
 - `provenance_missing` — execute-bolts: bolt modified file lacks provenance trailer. ALWAYS STOP.
-
-### bolt_introduces_locked_drift
-
-- `bolt_introduces_locked_drift` — execute-bolts: bolt drift hits a LOCKED entity. ALWAYS STOP (CONFLICT-like; override-only, never propose-and-confirm).
 
 ### self_assessment_missing
 
@@ -28,11 +20,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### pbt_citation_invalid
 
-- `pbt_citation_invalid` — execute-bolts: a PBT property block declares `Cites: §Decision-D-NNN` but the cited ADR ID does not exist in the bound vault's decisions surface (`vault.md ## Decisions` on layout-2; `05-decisions.md` / `decisions/` on legacy). ALWAYS STOP. Resolution: fix the citation in the unit's PBT block (or remove the property if the underlying decision was rescinded), then re-run the bolt.
-
-### partial_state_corrupt
-
-- `partial_state_corrupt` — execute-bolts: `--resume` mode loaded `<vault>/bolts/U-XXX/partial-state.json` (canonical path per execute-bolts §Partial-state contract) and JSON parse failed. **C1 SELF-RESOLVE (SCRIPT-LAYER ENFORCED via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7):** at GROUND, the script scans every vault layout's `<vault>/bolts/U-*/partial-state.json` (`_lib/vault_layouts`); any file failing JSON parse is renamed to `partial-state.json.corrupt-<ISO8601>` (forensics preserved); next `--resume` invocation restarts fresh from unit spec. The chat one-liner is the record. NEVER halts.
+- `pbt_citation_invalid` — execute-bolts: a PBT property block declares `Cites: §Decision-D-NNN` but the cited ADR ID does not exist in the vault's decisions surface (`context.md ## Decisions` on layout-3; `vault.md ## Decisions` on layout-2; `05-decisions.md` / `decisions/` on legacy). ALWAYS STOP. Resolution: fix the citation in the unit's PBT block (or remove the property if the underlying decision was rescinded), then re-run the bolt.
 
 ### hard_rule_violated
 
@@ -40,11 +28,11 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### module_blocked_by
 
-- `module_blocked_by` — execute-bolts: bolt invocation blocked because prerequisite module hasn't completed yet (module-graph dependency). ALWAYS STOP. Details `{unit_id, blocking_module_id, blocked_status}`. Resolution: user runs prerequisite module first OR adjusts module dependency graph in `vault/_meta/modules.yaml`. Source skill: `execute-bolts`.
+- `module_blocked_by` — execute-bolts: bolt invocation blocked because prerequisite module hasn't completed yet (module-graph dependency). ALWAYS STOP. Details `{unit_id, blocking_module_id, blocked_status, pending_units}` (`pending_units`: its units not yet done; superseded counts as done). Resolution: user runs prerequisite module first OR adjusts module dependency graph in `vault/_meta/modules.yaml`. Source skill: `execute-bolts`.
 
 ### acceptance_path_unowned
 
-- `acceptance_path_unowned` — generate-units/execute-bolts gate: a unit whose `acceptance_test` command runs a path that NO unit declares in `target_files` and that does not exist on disk. ALWAYS STOP. The unit is unfinishable by construction: committing the file trips the B3 whitelist observer (`whitelist_violation`), skipping it fails the acceptance command — the implementer can only discover this after a full dispatch has burned (field case: HOST-AS400 U-001, `scope_creep_detected` after ~70k tokens). Details `{unit_id, unowned_paths[]}`. Resolution: add the path to that unit `target_files` (`operation: create`), or point the command at a path a unit already owns. Source skill: `generate-units` (detected by `scripts/validate-unit-spec.sh`; gated at the execute-bolts PreToolUse re-derive).
+- `acceptance_path_unowned` — plan/execute-bolts gate: a unit whose `acceptance_test` command runs a path that NO unit declares in `target_files` and that does not exist on disk. ALWAYS STOP. The unit is unfinishable by construction: committing the file trips the B3 whitelist observer (`whitelist_violation`), skipping it fails the acceptance command — the implementer can only discover this after a full dispatch has burned (field case: HOST-AS400 U-001, an out-of-scope halt after ~70k tokens). Details `{unit_id, unowned_paths[]}`. Resolution: add the path to that unit `target_files` (`operation: create`), or point the command at a path a unit already owns. Source skill: `plan` (Step 5 `validate-unit-spec.sh`; re-gated at the execute-bolts PreToolUse re-derive).
 
 ### sprint_blocked_by
 
@@ -52,11 +40,11 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### hard_rule_unanchored
 
-- `hard_rule_unanchored` — execute-bolts: a unit's `## Hard Rules` block references an ANCHOR (file path / function signature) that cannot be resolved against the current codebase-map. ALWAYS STOP. Details `{unit_id, rule, missing_anchor}`. Resolution: user fixes anchor reference (rename to current symbol) OR removes obsolete rule. Source skill: `execute-bolts`.
+- `hard_rule_unanchored` — execute-bolts: a unit's `## Hard Rules` block references an ANCHOR (file path / function signature) whose symbol is not found in tracked source (`run-preflight-scan.sh` exit 5, shared `find_decl_line`). ALWAYS STOP. Details `{unit_id, rule, missing_anchor}`. Resolution: user fixes anchor reference (rename to current symbol) OR removes obsolete rule. Source skill: `execute-bolts`.
 
 ### verify_unit_writable
 
-- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). **C1 SELF-RESOLVE (SCRIPT-LAYER DETECTION via GROUND — `scripts/ground.sh` at M/L entry, moved from SessionStart in v7 — DISPATCH-LAYER AUTO-CLEAR in execute-bolts):** at GROUND, the script scans every vault layout's `units/U-*.md` / `units/U-*/unit.md` (`_lib/vault_layouts.unit_files`) AND `<cwd>/.mega-sdd/vaults/*-bound/units/U-*/unit.md` (both layouts). For each `task_type: verify` unit with forbidden ops → emit the chat notice in the GROUND output. On-disk unit NOT modified (preserves bad spec for human review). Dispatch-time auto-clear is execute-bolts's responsibility (separate code path). Detection-only at GROUND means the warning re-fires at every M/L entry until human fixes the unit — intentional visibility. NEVER halts. Source skill: `execute-bolts`.
+- `verify_unit_writable` — execute-bolts: a `task_type: verify` unit has non-empty `target_files` with operation ∈ {create, modify, delete} (verify units should not write code). ALWAYS STOP: the chain's predictive preflight (`validate-preflight.sh`, fatal) and execute-bolts pre-flight 2 stop the run before the unit is built. Earlier, `scripts/ground.sh` Guard 4 prints an `[advisory]` GROUND notice for each such unit in every vault layout (`_lib/vault_layouts.unit_files`) at every M/L entry until a human fixes it; the on-disk unit is never modified. Resolution: edit the unit so its `target_files` is empty / all `operation: none` (pre-flight 2's rule). Source skill: `execute-bolts`.
 
 ### secret_in_code
 
@@ -64,15 +52,11 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### sast_critical_finding
 
-- `sast_critical_finding` — execute-bolts (L0 gate): a Critical SAST finding; user fixes before the panel. ALWAYS STOP.
+- `sast_critical_finding` — execute-bolts (L0 gate): a Critical SAST finding; user fixes it before the next task. ALWAYS STOP.
 
 ### dep_not_found
 
 - `dep_not_found` — execute-bolts (L0 gate): a newly-added dependency does not resolve in its registry; user corrects the manifest. ALWAYS STOP.
-
-### review_critical_unresolved
-
-- `review_critical_unresolved` — execute-bolts: the review panel's Critical findings (or a still-❌ spec lens — an unmet requirement carries no severity grade) survived the retry cap; user resolves them. W1: DEFER via quarantine (3.10), final report.
 
 ### batch_suite_red
 
@@ -86,17 +70,9 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 - `postflight_evidence_missing` — execute-bolts: a committed Hard-rule bolt has no passing `postflight.json`; user runs the post-flight scan via `run-postflight-scan.sh`. ALWAYS STOP.
 
-### panel_evidence_missing
-
-- `panel_evidence_missing` — execute-bolts gate (F-07, spec 2026-08-30 §3.1): a bolt dispatched WITH `bolts/U-XXX/review-tier.json` (`resolve-review-tier.sh --write`, the obligation key; earlier bolts advisory) at tier ≠ minimal has no `findings.json` with `written_by: merge-panel-findings.sh`. ALWAYS STOP. Resolution: run the blind panel, merge with the script. Detector `validate-bolt-artifacts.sh --panel-scan`.
-
-### l0_evidence_missing
-
-- `l0_evidence_missing` — execute-bolts gate (F-07): a keyed bolt has no `lens-inputs/U-XXX/l0-results.json` with `written_by: run-code-gates.sh`. ALWAYS STOP. Resolution: `run-code-gates.sh … --unit=<unit.md> --write` over the bolt's range.
-
 ### acceptance_expects_missing
 
-- `acceptance_expects_missing` — execute-bolts IN-RUN gate (F-18, spec §3.3): the dispatched unit has a `type: test` acceptance entry with a command and no `expects` (B4 would pass on rc==0 alone). Per unit at its own dispatch, never the run boundary. ALWAYS STOP for that dispatch. Resolution: add `expects: "<output substring>"`, re-dispatch. Detector `validate-unit-spec.sh`.
+- `acceptance_expects_missing` — plan Step 5 / analyze (F-18, spec §3.3): a unit has a `type: test` acceptance entry with a command and no `expects` (B4 would pass on rc==0 alone). ALWAYS STOP at plan Step 5 (the validator exits 1); no execute-bolts gate reads it, so a running project is never retro-blocked. Resolution: add `expects: "<output substring>"`, re-run plan Step 5. Detector `validate-unit-spec.sh`.
 
 ### acceptance_evidence_missing
 
@@ -112,7 +88,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### anchor_missing
 
-- `anchor_missing` — execute-bolts (pre-flight, `check-anchor-freshness.sh`): a `## Anchors` entry `file:line` no longer resolves — the file is not git-tracked (deleted/renamed) or the line is past the end of the file. ALWAYS STOP before dispatch (commit-keyed: a unit whose bolts already committed gets an advisory WARN only, never a retro-block). Keterangan: anchor unit menunjuk file/baris yang sudah tidak ada — bolt-implementer akan membaca evidence yang salah; refresh anchors via `/mega-sdd:sync` atau bind ulang, ATAU perbaiki baris `## Anchors` unit ke path:line yang benar, lalu jalankan ulang execute-bolts.
+- `anchor_missing` — execute-bolts (pre-flight, `check-anchor-freshness.sh`): a `## Anchors` entry `file:line` no longer resolves — the file is not git-tracked (deleted/renamed) or the line is past the end of the file. ALWAYS STOP before the unit is built (commit-keyed: a unit whose bolts already committed gets an advisory WARN only, never a retro-block). Keterangan: anchor unit menunjuk file/baris yang sudah tidak ada — sesi implementasi akan membaca evidence yang salah; refresh anchors via `/mega-sdd:sync` atau bind ulang, ATAU perbaiki baris `## Anchors` unit ke path:line yang benar, lalu jalankan ulang execute-bolts.
 
 ### whitelist_violation
 
@@ -121,10 +97,6 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 ### commit_rejected_by_hook
 
 - `commit_rejected_by_hook` — execute-bolts: the repo's own commit hook (pre-commit/husky/lefthook) or required GPG signing rejected the bolt commit; user fixes the hook finding (never `--no-verify`). ALWAYS STOP.
-
-### scope_creep_detected
-
-- `scope_creep_detected` — execute-bolts: a bolt exceeded its declared scope; user reviews the deviation. ALWAYS STOP.
 
 ### bolt_artifacts_missing
 
@@ -140,7 +112,7 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### pbt_property_violated
 
-- `pbt_property_violated` — execute-bolts post-flight (properties born in generate-units `references/pbt-integration.md`): a property-based test failure with `severity: error` halts (severity `warning` → log + commit anyway, per pbt-integration.md Step 3); the counterexample input + failing property definition are preserved in the envelope. Bridged via propose-and-confirm in convergence loops (`orchestrate-flow/references/convergence-loops.md` — propose fix → user approve → re-execute → continue).
+- `pbt_property_violated` — execute-bolts post-flight (properties authored by `plan` step 4 per `plan/references/pbt-integration.md`): a property-based test failure with `severity: error` halts (severity `warning` → log + commit anyway, per pbt-integration.md §Execute-bolts integration); the counterexample input + failing property definition are preserved in the envelope. Bridged via propose-and-confirm in convergence loops (`orchestrate-flow/references/convergence-loops.md` — propose fix → user approve → re-execute → continue).
 
 ### test_fail
 
@@ -148,4 +120,4 @@ here. Entries are VERBATIM relocations; edit them here, never re-inline them.
 
 ### ambiguous_spec
 
-- `ambiguous_spec` — execute-bolts, emitted by the `bolt-implementer` subagent: the unit spec admits more than one reading and the agent will not guess (no-fabrication rail). ALWAYS STOP (pure-pause — human interpretation call; propose-and-confirm does not apply). Resolution: clarify the unit (`## Requirements` / `## Implementation steps`), re-dispatch. Recovery menu: `execute-bolts/references/halt-recovery.md`. (Registered 7.29.1.)
+- `ambiguous_spec` — execute-bolts, emitted by the implementing session: the unit spec admits more than one reading and it will not guess (no-fabrication rail). ALWAYS STOP (pure-pause — human interpretation call; propose-and-confirm does not apply). Resolution: clarify the unit (`## Requirements` / `## Implementation steps`), re-run. Recovery menu: `execute-bolts/references/halt-recovery.md`. (Registered 7.29.1.)

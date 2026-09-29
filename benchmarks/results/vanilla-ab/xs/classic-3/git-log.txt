@@ -1,0 +1,20 @@
+9b6dade 2026-09-26T14:47:16+07:00 chore(sdd): drift report, pending-sync queue, consistency report
+afef318 2026-09-26T14:44:18+07:00 chore(sdd): evidence batch — full-suite gate, bolts summary
+c2470e5 2026-09-26T14:43:46+07:00 chore(sdd): evidence U-007 — bolt report, gates, panel ledger, anchor repair
+f4f9efa 2026-09-26T14:40:34+07:00 feat(U-007): Create the Kontak page, form and submit server action
+3c79ce7 2026-09-26T14:38:32+07:00 chore(sdd): evidence U-006 — bolt report, gates, panel ledger, anchor repair
+39ca1d9 2026-09-26T14:36:37+07:00 feat(U-006): Create the Tentang Kami page
+1a66328 2026-09-26T14:35:39+07:00 chore(sdd): evidence U-005 — bolt report, gates, panel ledger
+ae64088 2026-09-26T14:32:54+07:00 feat(U-005): Replace the scaffold home page with Beranda and localise the root layout
+e45fa33 2026-09-26T14:31:42+07:00 chore(sdd): evidence U-002 — bolt report, gates, panel ledger
+9da54af 2026-09-26T14:30:19+07:00 test(U-002): Create the next-start HTTP test harness helper
+1d8b95a 2026-09-26T14:29:29+07:00 chore(sdd): evidence slice 1 — vault changelog, outcomes, gate state
+6c7077a 2026-09-26T14:29:24+07:00 chore(sdd): evidence U-004 — bolt report, gates, panel ledger
+c876eea 2026-09-26T14:29:24+07:00 chore(sdd): evidence U-003 — bolt report, gates, panel ledger
+a3ead66 2026-09-26T14:29:24+07:00 chore(sdd): evidence U-001 — bolt report, gates, panel ledger
+6151e5b 2026-09-26T14:26:47+07:00 feat(U-004): Create the contact_messages SQLite repository
+71c3ddd 2026-09-26T14:26:30+07:00 feat(U-003): Create server-side contact form validation
+101305e 2026-09-26T14:26:20+07:00 feat(U-001): Create the static site content config
+75bef30 2026-09-26T14:25:05+07:00 chore(sdd): mega-sdd vault, binding and units for company-profile-mini
+ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
+da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

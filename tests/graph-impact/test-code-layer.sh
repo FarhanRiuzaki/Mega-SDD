@@ -167,9 +167,9 @@ S=$(jq_ 'import json,sys; g=json.load(open(sys.argv[1])); print(sum(1 for n in g
 { [ "$V" != "build-graph@1.0.0" ] && [ "$S" = "4" ]; } && ok "stale-builder graph rebuilt on query ($V)" \
   || fail "old graph stayed layer-blind: generated_by=$V symbols=$S"
 
-# ── 10. the OTHER reuse-index shape (references/reuse-index-schema.md) ───────
-# Two shapes exist in the wild: what deep-scan emits (nested under `reuse_index:`,
-# inline flow entries, `_source`) and what the schema documents (top-level
+# ── 10. the OTHER reuse-index shape (the old schema's documented shape) ───────
+# Two shapes exist in the wild: what deep-scan emitted (nested under `reuse_index:`,
+# inline flow entries, `_source`) and what the old schema documented (top-level
 # categories, block entries, `path` + `line`, top-level `truncated`). A parser
 # that reads only one silently produces an EMPTY code layer on the other.
 PRJ2="$WORK/prj2"; MS2="$PRJ2/.mega-sdd"

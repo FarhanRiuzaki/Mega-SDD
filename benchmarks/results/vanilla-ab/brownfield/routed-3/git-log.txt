@@ -1,0 +1,28 @@
+4b3e691 2026-09-27T11:55:30+07:00 chore(sdd): detect-drift report + PENDING-SYNC queue (17 findings, 0 decision violations)
+0cdabc8 2026-09-27T11:50:43+07:00 chore(sdd): batch full-suite evidence (green @0b62b95)
+c311df5 2026-09-27T11:50:40+07:00 chore(sdd): execute-bolts batch summary — 15/15 done, suite green, delivery PASS
+0b62b95 2026-09-27T11:49:02+07:00 chore(sdd): evidence U-013, U-014, U-015 + postflight recompute refresh
+3f41403 2026-09-27T11:45:27+07:00 fix(U-015): Add the staff Waitlist page and navigation link
+78d40c1 2026-09-27T11:44:16+07:00 chore(sdd): amend U-015 — allow backward-compatible DateNav query prop (fix round 1, ledger F-10)
+2beb803 2026-09-27T11:40:11+07:00 feat(U-015): Add the staff Waitlist page and navigation link
+9638586 2026-09-27T11:33:24+07:00 chore(sdd): resolve-oq --binding U-015 C-U015-A07 KEEP_CODE — re-anchor layout nav links
+5f2abfa 2026-09-27T11:32:49+07:00 chore(sdd): evidence U-006, U-008, U-011, U-012 — panel clear, acceptance+postflight pass
+dc7e3fe 2026-09-27T11:31:39+07:00 feat(U-014): Let patients join the waitlist from the booking wizard
+044d293 2026-09-27T11:31:21+07:00 feat(U-013): Add the public waitlist offer accept page
+4d6dcfa 2026-09-27T11:28:55+07:00 chore(sdd): evidence U-005, U-009, U-010 — panel clear, acceptance+postflight pass
+9c5c04b 2026-09-27T11:27:21+07:00 feat(U-006): make a doctor's leave dates unbookable for patients
+5e5338a 2026-09-27T11:27:03+07:00 feat(U-008): Add the Doctor leave staff page, its actions and navigation link
+25f6232 2026-09-27T11:26:14+07:00 feat(U-011): Offer the freed slot to the waitlist when a patient cancels
+f9431a7 2026-09-27T11:26:07+07:00 feat(U-012): Schedule the waitlist offer expiry sweep
+fc74330 2026-09-27T11:24:07+07:00 chore(sdd): evidence U-002, U-003, U-007 — panel clear, acceptance+postflight pass
+7eec55f 2026-09-27T11:22:17+07:00 feat(U-005): Build the doctor leave service (record, affected list, reassign, cancel)
+d3232e8 2026-09-27T11:21:23+07:00 feat(U-010): Build waitlist offers (offer, one-time accept, expiry pass-along)
+c836416 2026-09-27T11:20:21+07:00 feat(U-009): Build the waitlist service (join, list, remove)
+6d33e49 2026-09-27T11:17:02+07:00 chore(sdd): evidence U-001, U-004 — panel clear, acceptance+postflight pass
+403d6a9 2026-09-27T11:16:04+07:00 feat(U-007): Build the leave manager staff component (leave form and affected list)
+aed1c14 2026-09-27T11:14:14+07:00 feat(U-002): Add the v2 schema and migration for leave, waitlist and offers
+87fb850 2026-09-27T11:14:08+07:00 feat(U-003): Refuse patient cancel and reschedule inside the cancellation window
+fb68c3b 2026-09-27T11:09:34+07:00 feat(U-004): Add the cancellation and waitlist-offer patient emails
+ee5c05b 2026-09-27T11:08:49+07:00 feat(U-001): Add the rescheduling_required status to shared types and status UI
+18566ef 2026-09-27T11:06:57+07:00 chore(plan): clinic-v2 lite-lane vault + units
+015ecf3 2026-09-27T08:25:21+07:00 fixture: Harbor Clinic v1 app (from vanilla clinic run) + PRD v2

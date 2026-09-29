@@ -1,6 +1,6 @@
 # Chain diagnostics — operative procedures
 
-The advisory diagnostics the chain auto-runs (classic spine; skipped lean/express — `chain-execution.md §Auto-integrated diagnostics`) and their on-demand form. The typed `/mega-sdd:<name>` forms do not resolve. On-demand invocation is by phrase through the front door (`/mega-sdd` → "lint units" / "cek parallelism" / "status module"); the orchestrator runs the matching procedure below.
+The advisory chain diagnostics and their on-demand form (any auto-run is listed in `chain-execution.md §Auto-integrated diagnostics`). The typed `/mega-sdd:<name>` forms do not resolve. On-demand invocation is by phrase through the front door (`/mega-sdd` → "lint units" / "cek parallelism" / "status module"); the orchestrator runs the matching procedure below.
 
 All are ADVISORY diagnostics: read-only over the pipeline artifacts (the sole exception — `list-modules --mark-dod` mutates `modules.yaml` interactively — is called out in its section). None is a gate; none may block a chain.
 
@@ -18,7 +18,7 @@ Flags: `[vault-path] [--module=<id>] [--squad=<id>] [--changed-only] [--strict] 
 
 ### Step 1 — Resolve vault + load context
 
-Probe canonical (`.mega-sdd/vaults/*/`) then legacy (`docs/mega-sdd/vaults/*/`); use the positional arg if given; halt if no vault found. Load, for the cross-unit checks below: `vault.json`, every `units/U-*.md`, `binding.md` (classic lane; lite = `bolts/U-*/binding.json`) (if present), `_meta/modules.yaml`, `_meta/squads.yaml`, the codebase map (probe both new + legacy paths), and `.memory/bolt-outcomes.json` (for context).
+Probe canonical (`.mega-sdd/vaults/*/`) then legacy (`docs/mega-sdd/vaults/*/`); use the positional arg if given; halt if no vault found. Load, for the cross-unit checks below: `vault.json`, every `units/U-*.md`, `binding.md` (layout-2 vault; layout-3 = `bolts/U-*/binding.json`) (if present), `_meta/modules.yaml`, `_meta/squads.yaml`, the GROUND symbol index (`.mega-sdd/codebase/symbol-index.json`, queried with `scripts/query-symbol-index.sh`) and, when present, a pre-9.0 codebase map, and `.memory/bolt-outcomes.json` (for context).
 
 ### Step 1b — `--changed-only` scope-set (semantic scoping, spec 2026-08-03-semantic-scoped-validation.md)
 
@@ -58,14 +58,14 @@ Surface any FAIL with the validator's evidence string. Under `--strict`, a FAIL 
 
 These are NOT in the validator — run them here, per unit, from the loaded context. All are deterministic (field presence, ID resolution, file/line probe — never LLM judgment):
 
-- **Dependency resolution** — every `depends_on` resolves to a real unit ID (no dangling); every `binding_refs` resolves to a claim in `binding.md`.
+- **Dependency resolution** — every `depends_on` resolves to a real unit ID (no dangling); every `binding_refs` resolves — layout-2: to a claim in `binding.md`; layout-3: to an OQ id in `context.md ## Open Questions` or a claim id in `bolts/U-XXX/binding.json`.
 - **Module assignment** — `module:` present and resolves to `_meta/modules.yaml` (or `M-default`); flag `M-unassigned` for review.
 - **Squad assignment** (only if `_meta/squads.yaml` declares ≥2 squads) — `squad:` present + resolves; any cross-squad `depends_on` is routed via `consumes_interfaces`.
-- **Codebase-map anchor verification** — for each `## Anchors` `<file>:<line>`: file exists in the codebase map OR on disk; line in range. Missing file on `verify`/`extend` → WARNING (likely aspirational); on `create` → OK (greenfield); existing file + out-of-range line → WARNING (drifted).
-- **Binding consistency** (when `binding.md` exists) — `task_type` matches the Implementation State Map (`IMPLEMENTED` at `confidence: high` → `verify`, not `create`; IMPLEMENTED at medium/low is treated as UNKNOWN per task-typing — do NOT flag its `create`/probe-derived type; `PARTIAL_FIELDS_* →` Migration notes match the `field_diff` ADD/KEEP/REMOVE).
-- **Signature-rule anchoring** — a `SIGNATURE_RULE function <name>` references a symbol present in the codebase map (else `hard_rule_unanchored` warning).
-- **Body/prose quality (SOFT)** — `## Goal`, `## Context (read first)` with a `vault_source` citation, `## Implementation steps` with directive prose, `## Anti-patterns`, `## Out of scope` present; `## Migration notes` ABSENT for `create`/`verify`.
-- **Merge-candidate advisory (cohesion)** — flag every LINEAR `depends_on` chain of ≥2 units where ALL of: (a) same `module:`; (b) `task_type: create|extend` only (verify units are no-code and cheap — never counted); (c) `target_files` ≤ 2 per unit; (d) no `## Hard rules`; (e) no `properties:` (PBT); (f) the chain is self-contained — no unit OUTSIDE the chain `depends_on` a MIDDLE unit (a dependent on the chain's head/tail is fine; merging must not reshape the DAG for anyone else). Emit: `merge_candidate: U-00X..U-00Z — N unit kecil berantai se-module; merge = 1 bolt + 1 panel, gabungan diperkirakan masih ≤ threshold. Remedy: --regenerate --max-complexity=large, atau edit manual lalu re-run lint.` **ADVISORY forever — never a halt, never an auto-merge** (propose-first); it feeds Step 4 recommendations like any other finding. Rationale + the sprint-subagent rejection it replaces: `research/2026-09-01-sprint-subagent-granularity.md`.
+- **Anchor verification** — for each `## Anchors` `<file>:<line>`: file exists on disk (or in a pre-9.0 codebase map); line in range. Missing file on `verify`/`extend` → WARNING (likely aspirational); on `create` → OK (greenfield); existing file + out-of-range line → WARNING (drifted).
+- **Binding consistency** (when `binding.md` exists) — `task_type` matches the Implementation State Map (`IMPLEMENTED` at `confidence: high` → `verify`, not `create`; IMPLEMENTED at medium/low is treated as UNKNOWN per `plan/references/task-typing.md` — do NOT flag its `create`/probe-derived type; `PARTIAL_FIELDS_* →` Migration notes match the `field_diff` ADD/KEEP/REMOVE).
+- **Signature-rule anchoring** — a `SIGNATURE_RULE function <name>` references a symbol found by `scripts/query-symbol-index.sh --cwd=<root> --name=<name>` (GROUND index), or in a pre-9.0 codebase map when present (else `hard_rule_unanchored` warning).
+- **Body/prose quality (SOFT)** — `## Goal`, `## Context (read first)` with a `context_source` citation (layout-2 units: `vault_source`), `## Implementation steps` with directive prose, `## Anti-patterns`, `## Out of scope` present; `## Migration notes` ABSENT for `create`/`verify`.
+- **Merge-candidate advisory (cohesion)** — flag every LINEAR `depends_on` chain of ≥2 units where ALL of: (a) same `module:`; (b) `task_type: create|extend` only (verify units are no-code and cheap — never counted); (c) `target_files` ≤ 2 per unit; (d) no `## Hard rules`; (e) no `properties:` (PBT); (f) the chain is self-contained — no unit OUTSIDE the chain `depends_on` a MIDDLE unit (a dependent on the chain's head/tail is fine; merging must not reshape the DAG for anyone else). Emit: `merge_candidate: U-00X..U-00Z — N unit kecil berantai se-module; merge = 1 bolt, gabungan diperkirakan masih ≤ threshold. Remedy: plan <prd> --regenerate --max-complexity=large, atau edit manual lalu re-run lint.` **ADVISORY forever — never a halt, never an auto-merge** (propose-first); it feeds Step 4 recommendations like any other finding. Rationale + the sprint-subagent rejection it replaces: `research/2026-09-01-sprint-subagent-granularity.md`.
 
 ### Step 4 — Summary metrics + recommendations
 
@@ -89,7 +89,7 @@ This relies on markdownlint-cli2's own config discovery (`.markdownlint-cli2.{js
 
 - 0 LOW + 0 frontmatter issues → suggest `execute-bolts` or the list-modules diagnostic (below) to start.
 - LOW units exist → suggest reviewing those specific units before bolting, OR proceeding while accepting the risk.
-- Validator FAILs / frontmatter issues → suggest `generate-units --refresh` to regenerate the problem units.
+- Validator FAILs / frontmatter issues → fix the flagged unit per the validator evidence and re-run lint; to rewrite every unit, `plan <prd> --regenerate` (a layout-2 vault needs `/mega-sdd:migrate-paths --vault-layout=3` first).
 
 ### lint-units rails + halts
 
@@ -123,13 +123,13 @@ Relay the script output to the user. If `--depth-only` was passed, the script em
 The script lists each `depends_on` edge whose endpoints **share zero `target_files`** (and flags those that are also **cross-module**). These are deterministic *candidates*, never auto-removed. For each, add a review suggestion:
 
 - **Zero target-files overlap** → "review: if U-X doesn't actually consume U-Y's output, removing the dep widens this wave by 1." (Optionally eyeball the unit bodies for a symbol reference the script can't see — that heuristic is yours, not the script's.)
-- **Cross-module edge** → "this unit-level `depends_on` crosses a module boundary; prefer a module-level `blocked_by` declaration per `generate-units/references/modules-schema.md`."
+- **Cross-module edge** → "this unit-level `depends_on` crosses a module boundary; prefer a module-level `blocked_by` declaration per `plugins/mega-sdd/references/modules-schema.md`."
 
 The user always holds control — they remove a dep only if they confirm it's unnecessary.
 
 ### Step 3 — Hand-off (judgment, keyed on the script's numbers)
 
-- `parallelism_speedup` ≥ 2 → suggest `execute-bolts --per-squad` when the vault declares ≥2 squads, else `execute-bolts --all --parallel` (`--per-squad` HALTS on a single-squad vault by procedure — never suggest the halting form).
+- `parallelism_speedup` ≥ 2 → suggest `execute-bolts --sprint=<n>` for the first incomplete sprint — never suggest the halting form (an earlier incomplete sprint halts `sprint_blocked_by`).
 - `parallelism_speedup` < 1.5 → suggest reviewing the over-coupling candidates above before executing.
 - Bottlenecks present (high-fork keystone units on the critical path) → suggest scope-down OR explicitly accept the keystone.
 - Always link the lint-units diagnostic (above) for a quality pass before execution.
@@ -144,7 +144,7 @@ The user always holds control — they remove a dep only if they confirm it's un
 
 ## list-modules
 
-Display module progress + DoD status for the current vault. The read-only rollup — per-module unit completion (from `bolt-outcomes.json`), DoD marked-count, `blocked_by` resolution, and status label — is a single script mode: `scripts/query-graph.sh --modules`. This procedure runs it for the display, and owns the **interactive `--mark-dod` flow** (which mutates `modules.yaml` and may re-run DoD test commands — neither belongs in the read-only script).
+Display module progress + DoD status for the current vault. The read-only rollup — per-module unit completion (from the evidence done rule — `_lib/exec_units.done`; `bolt-outcomes.json` of older runs as fallback), DoD marked-count, `blocked_by` resolution, and status label — is a single script mode: `scripts/query-graph.sh --modules`. This procedure runs it for the display, and owns the **interactive `--mark-dod` flow** (which mutates `modules.yaml` and may re-run DoD test commands — neither belongs in the read-only script).
 
 Flags: `[vault-path] [--module=<id>] [--mark-dod=<module>] [--format=table|json]`.
 
@@ -156,7 +156,7 @@ bash <plugin-root>/scripts/query-graph.sh --modules <flags> --cwd="$(pwd)"
 
 The script resolves the vault (positional `[vault-path]`, else auto-probe `.mega-sdd/vaults/` then legacy `docs/mega-sdd/vaults/`), reads `_meta/modules.yaml` (or `modules.yaml.auto`, or falls back to a single implicit `M-default`), and emits per module: ID, name, status (`not-started` / `in-progress` / `units-complete` / `completed`), units `completed/total`, DoD `done/total`, priority, and `blocked_by` resolution — plus an `M-unassigned` warning for units whose `module:` matches no defined module, and the deterministic `Unblocked & actionable:` set. `--format=json` emits the same structured. Relay the output.
 
-> When `modules.yaml` is absent but `modules.yaml.auto` exists, suggest the user rename it to lock the grouping in (`mv _meta/modules.yaml.auto _meta/modules.yaml` — generate-units Step 4.5 auto-derivation produced it).
+> When `modules.yaml` is absent but `modules.yaml.auto` exists, suggest the user rename it to lock the grouping in (`mv _meta/modules.yaml.auto _meta/modules.yaml` — plan Step 4 module assignment auto-derives it when `_meta/modules.yaml` is absent).
 
 ### Step 2 — `--mark-dod=<module-id>` interactive flow (this procedure's job)
 
@@ -176,7 +176,7 @@ The script's DoD column reflects the **marked** state only (a `dod:` item writte
 
 ### list-modules rails + halts
 
-- Module status is derived from **objective signals** — unit membership from each unit's `module:` frontmatter, completion from `<vault>/.memory/bolt-outcomes.json` (`status: completed` / `halted_*`), DoD marked-state from `modules.yaml` — **never inferred**.
+- Module status is derived from **objective signals** — unit membership from each unit's `module:` frontmatter, completion from the evidence done rule (`_lib/exec_units.done`; `<vault>/.memory/bolt-outcomes.json` of older runs as fallback), DoD marked-state from `modules.yaml` — **never inferred**.
 - **DoD test commands are never auto-marked from the read-only display.** They are only re-run in the `--mark-dod` flow above, via Bash, where the exit code (not an LLM guess) decides pass/fail.
 - `blocked_by` is resolved against each blocking module's computed status; a blocker is "ok" only when that module is itself `completed`.
 - Halts: vault not found / `vault.json` corrupt → script exits **1**, relay and stop; `--module=<id>` / `--mark-dod=<id>` names an unknown module → halt with the list of valid module IDs (the script exits **2** on an unknown `--module`); a `--mark-dod` test command fails → do **not** auto-mark; the user resolves it manually.

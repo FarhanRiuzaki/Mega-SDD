@@ -1,7 +1,7 @@
 ---
 name: extract-intelligence
-version: 2.6.0
-description: Tech-agnostic legacy extractor for rebuild/revamp — census-contracted extraction composes the system's logic into one PRD-kontrak per module (inline file:line citations, [LOCKED]/[INTENT]/[ARTIFACT] mutability tiers), consumed by generate-intent --kb and bind-codebase. Cost scales with the census, not a fixed pipeline — a 1-file engine yields 1 PRD. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "revamp project ini ke stack baru", "rebuild di stack baru", "legacy intelligence", or paraphrases.
+version: 2.7.1
+description: Tech-agnostic legacy extractor for rebuild/revamp — census-contracted extraction composes the system's logic into one PRD-kontrak per module (inline file:line citations, [LOCKED]/[INTENT]/[ARTIFACT] mutability tiers), consumed by plan --kb (the rebuild spec) and execute-bolts (JIT bind). Cost scales with the census, not a fixed pipeline — a 1-file engine yields 1 PRD. Triggers — "extract domain knowledge", "reverse engineer this legacy", "pecah legacy code jadi knowledge base", "revamp project ini ke stack baru", "rebuild di stack baru", "legacy intelligence", or paraphrases.
 ---
 
 # Extract-Intelligence — Legacy → PRD-kontrak
@@ -37,19 +37,18 @@ thread with zero subagents.
 **When NOT to use:**
 - Direct code port to a newer version of the same stack → migration tooling.
 - Greenfield projects (no legacy).
-- "What files are in this repo" → `mega-sdd:scan-codebase` (code-organized catalog).
+- "What files are in this repo" → the symbol index (`scripts/ground.sh` → `scripts/query-symbol-index.sh`) or plain Glob/Grep.
 
 ## Relationship to other mega-sdd skills
 
 | Need | Skill | Why |
 |---|---|---|
-| Map files/modules in a brownfield repo | `mega-sdd:scan-codebase` | Heuristic catalog organized by code structure |
-| Validate an SDD vault claim against existing code | `mega-sdd:bind-codebase` | Primary ground truth = codebase-map; PRD-kontrak consulted as secondary |
 | Extract legacy logic into a rebuild contract | **this skill** | Tech-agnostic, module-organized, census-gated |
-| Convert brief/PRD-kontrak → intent vault | `mega-sdd:generate-intent` | Consumes this skill's output via `--kb=<path>` |
+| Validate a unit's claims against existing code | `mega-sdd:execute-bolts` (JIT bind) | CONFLICT gate before the unit is built; the KB is rung 5 of its text-claim ladder (E3), consulted only when code evidence is silent |
+| Turn the PRD-kontrak KB into a buildable spec | `mega-sdd:plan` | `plan --kb=<kb>` writes the layout-3 vault (`context.md` + `constitution.md` + `vault.json`) + `units/` in one phase |
 
 **Typical chain (the revamp lane):**
-`extract-intelligence` → `generate-intent --kb=<kb>` → `bind-codebase` → `generate-units` → `execute-bolts` (classic lane — the KB lane has no `--lite` form; `routing-rules.md` KB rows)
+`extract-intelligence` → `plan --kb=<kb>` → `execute-bolts --all --lite` (JIT bind per unit; ends with `scripts/delivery-check.sh`)
 
 ## Inputs
 
@@ -154,11 +153,11 @@ halt.
 
 **Run** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-extract-census.sh" --kb-dir={out}/knowledge-base` — recomputes coverage from census + the PRD artifacts: unclaimed / double-claimed / phantom / uncited files, missing OQ sections, non-Mermaid flows, the claim-verify states (`.verify/<domain>.json` per module: LOCKED coverage + sample floor recomputed from each PRD body — `claim_verify_missing`/`_failed`/`_incomplete`), site coverage (`site_uncovered` — every derived WRITE/CALL site cited ±2 or in-range), and the README roll-up recount (`rollup_mismatch`). Advisory (never blocks): `oq_answerable_from_disk` — an OQ whose `probe-glob:` now matches an artifact on disk → offer a delta re-extract for that module. FAIL → fix (re-dispatch the owning module / run the missing verifier / cite the site) or honestly record the gap as `[OPEN]`/OQ in the owning PRD, then re-run. Never hand off on FAIL.
 
-**Hand-off announce:** "PRD-kontrak written to `<out>/knowledge-base/` — N module(s), census: N files fully claimed. Critical findings: N. Open questions: N (P1: …, P2: …, P3: …). Next: review `<out>/knowledge-base/README.md`, then `generate-intent --kb=<out>/knowledge-base/` to continue the revamp lane." **When Open questions > 0, ALSO offer answering them now:** "Mau jawab OQ-nya sekarang? (resolve-oq KB mode — jawaban legacy paling akurat selagi konteksnya masih hangat; belum dijawab pun tetap ikut ke vault nanti)" — offer only, never auto-invoke.
+**Hand-off announce:** "PRD-kontrak written to `<out>/knowledge-base/` — N module(s), census: N files fully claimed. Critical findings: N. Open questions: N (P1: …, P2: …, P3: …). Next: review `<out>/knowledge-base/README.md`, then `plan --kb=<out>/knowledge-base/` to build the rebuild spec (vault + units)." **When Open questions > 0, ALSO offer answering them now:** "Mau jawab OQ-nya sekarang? (resolve-oq KB mode — jawaban legacy paling akurat selagi konteksnya masih hangat; belum dijawab pun tetap ikut ke vault nanti)" — offer only, never auto-invoke.
 
-**Auto-render HTML (0 model tokens):** after the gate passes, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-html.sh" <out>/knowledge-base --index` and name `<kb>/html/index.html` in the announce — the shareable per-domain report (opens offline, no Claude needed). Fail-open: a render failure is ONE warning line, never a halt; skip when `.mega-sdd/config.yaml` has `render_html: off`.
+**HTML render — only with `render_html: on` in `.mega-sdd/config.yaml`:** after the gate passes, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/render-html.sh" <out>/knowledge-base --index` and name `<kb>/html/index.html` in the announce — the shareable per-domain report (opens offline, no Claude needed). Fail-open. Absent key = no render (`/mega-sdd:emit html` regenerates it any time).
 
-**Advisor offer (when the target architecture is undecided):** append one line to the announce — "Arsitektur target belum diputuskan? Gue bisa jalanin konsultasi advisor dulu (evidence digest dari KB + census constraint + 2–3 opsi + ADR)." On yes, load `plugins/mega-sdd/references/architecture-advisor.md` and follow it — an OFFER, never auto; the resulting `decisions/ADR-*.md` (accepted) is consumed by `generate-intent --kb`.
+**Advisor offer (when the target architecture is undecided):** append one line to the announce — "Arsitektur target belum diputuskan? Gue bisa jalanin konsultasi advisor dulu (evidence digest dari KB + census constraint + 2–3 opsi + ADR)." On yes, load `plugins/mega-sdd/references/architecture-advisor.md` and follow it — an OFFER, never auto; the resulting `decisions/ADR-*.md` (accepted) is consumed by `plan --kb`.
 
 ## Halt conditions
 
@@ -186,7 +185,7 @@ Under `--auto`, emit the handoff YAML per `references/handoff.md` (operative
 spec; `orchestrate-flow/references/handoff-contract.md` owns the base schema):
 `status: completed | halted` (halted when a module gate fails twice, ≥1
 blocker entry), `artifacts` = KB dir + README path, `next_action` →
-`mega-sdd:generate-intent --kb=<kb> --auto`, `metrics.items_processed` =
+`mega-sdd:plan --kb=<kb> --auto`, `metrics.items_processed` =
 module PRDs written, and the `mutability` block (this skill is the PRIMARY
 mutability-tier producer: `tier_distribution`, `locked_claims_touched`,
 `artifact_discards_proposed`). Standalone invocations may emit informationally.
@@ -197,8 +196,8 @@ mutability-tier producer: `tier_distribution`, `locked_claims_touched`,
 - `references/claim-verify.md` — the adversarial claim-verify lane (dispatch core, controller actions, enforcement).
 - `references/handoff.md` — the `--auto` handoff record.
 - `plugins/mega-sdd/references/architecture-advisor.md` — the optional target-architecture consultation on top of the finished KB (offered at hand-off).
-- `mega-sdd:generate-intent` — consumes the output via `--kb=<path>` (incl. `decisions/ADR-*.md` accepted by the advisor).
-- `mega-sdd:bind-codebase` — consults the output as secondary ground truth.
+- `mega-sdd:plan` — consumes the output via `--kb=<path>` (incl. `decisions/ADR-*.md` accepted by the advisor).
+- `mega-sdd:execute-bolts` — the JIT bind consults the output as rung 5 of its text-claim ladder (E3, secondary ground truth).
 - `scripts/derive-extract-census.sh` / `scripts/validate-extract-census.sh` — census + completeness gate.
 - `scripts/derive-site-census.sh` / `scripts/derive-prd-counts.sh` — WRITE/CALL site inventory + script-derived frontmatter counts.
 - `plugins/mega-sdd/references/legacy-idioms/rpg-as400.md` — extraction-side idiom sheet for the rpg/dds stacks (READ ALSO line in dispatches).

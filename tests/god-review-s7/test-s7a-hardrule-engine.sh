@@ -247,7 +247,8 @@ fi
 # ── doc pins ──
 SK="${ROOT}/plugins/mega-sdd/skills/execute-bolts/SKILL.md"
 UP="${ROOT}/docs/mega-sdd/upgrade-from-old-version.md"
-US="${ROOT}/plugins/mega-sdd/skills/generate-units/references/unit-schema.md"
+# 9.0 P1: the unit schema moved with the unit contract from the deleted generate-units skill to plan/references.
+US="${ROOT}/plugins/mega-sdd/skills/plan/references/unit-schema.md"
 grep -qF 'files:` globs MUST be `**/`-prefixed' "$GR" && ok "HR-1: grammar doc mandates **/-prefixed globs" || fail "HR-1: grammar doc still shows the inert form"
 grep -qF 'NONE — stays v1.' "$GR" && ok "HR-2: mapping routes stateless-impossible types back to v1" || fail "HR-2: mapping still claims impossible v2 equivalents"
 if grep -qF 'pattern: $$$, inside: { kind: program }' "$GR"; then fail "HR-2: invalid flagship rule shape survives in migrate template"; else ok "HR-2: invalid rule shape purged from migrate template"; fi

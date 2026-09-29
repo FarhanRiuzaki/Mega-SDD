@@ -5,7 +5,7 @@
 
 This scenario assumes **nothing**. If you've never opened Claude Code — or never used an AI coding tool at all — start here. If Claude Code is already installed and working, skip to [Scenario 1](scenario-1-greenfield-from-idea.md).
 
-This walkthrough follows the classic chain (the DEFAULT for every 8.x release); the opt-in `--lite` lane folds intent + units into one `plan` phase and binds each unit just-in-time inside `execute-bolts --all --lite` — see scenario-12 Act 3.
+Your first run takes the **direct lane**: `/mega-sdd` routes a clear task to plain Claude Code behaviour (no spec vault, no subagents) and ends with a delivery check. The spec pipeline is opt-in (`--guarded`) — Scenario 1 shows both.
 
 ## What you'll need
 
@@ -84,43 +84,61 @@ In the Claude Code session, type:
 
 You should see `/mega-sdd:sync`, `/mega-sdd:emit`, and the three one-timers. The bare `/mega-sdd` front door is installed by the SessionStart hook on your first session — before that, use `/mega-sdd:mega-sdd`. If nothing appears, restart Claude Code once more, then run `/plugin marketplace update mega-sdd`.
 
-Optional (recommended later, skippable now): `/mega-sdd:install-deps` installs native helper tools (`ast-grep`, `ripgrep`, …) for higher precision. Mega-sdd works fine without them — every tool has a graceful fallback.
+Optional (recommended later, skippable now): `/mega-sdd:install-deps` installs native helper tools (`ast-grep`, `pandoc`, …). Mega-sdd works fine without them — every tool has a graceful fallback.
 
 ## Step 5 — Your first run
 
 Still inside the Claude Code session, in your empty practice folder:
 
 ```
-/mega-sdd "build a simple todo API — create a task, list tasks, mark a task complete"
+/mega-sdd "build a small task-list API — create a task, list tasks, mark a task complete"
 ```
-
-On an empty directory, mega-sdd first asks whether to proceed greenfield (halt `no_starterkit_detected` — no framework manifest found); pick 'Proceed as greenfield'. Or skip the question upfront: `/mega-sdd --greenfield "build a simple todo API…"`.
 
 What you'll see, in order:
 
-1. **A chain proposal** — mega-sdd detects your input is a free-text idea on an empty project and proposes its plan (generate spec → break into tasks → write code). It asks you to confirm **once**, then runs.
-2. **A spec being built** — mega-sdd first writes your idea into a structured spec (the *vault*) instead of jumping straight to code. Anything it isn't sure about becomes an **Open Question** it asks you — it never guesses.
-3. **Work units** — the spec gets broken into small, reviewable tasks (each about the size of one pull request).
-4. **Code + tests + commits** — each unit is implemented with tests and committed to git automatically.
+1. **One lane line, no confirmation prompt.** Mega-sdd first runs a router script over your request and the folder. Nothing here needs a human decision, so it picks the direct lane:
+   ```
+   lane: direct (signals: none) · naik ke pipeline: /mega-sdd "build a small task-list API …" --guarded `mega-sdd-trace:direct`
+   ```
+   (The trailing `mega-sdd-trace:direct` is a fixed tag for the gateway log; ignore it.)
+2. **Claude builds it in this session**, like plain Claude Code would. Your sentence doesn't name a language or framework, so Claude picks the simplest option that is easy to change later, and lists that choice as an assumption at the end.
+3. **Code + tests + commits.** Every requirement gets at least one automated test, run through the project's standard test command.
+4. **The delivery check.** After the last commit, `scripts/delivery-check.sh` runs on a fresh copy of that commit: test script present, tests pass under two time zones, build passes with no local `.env`. Claude fixes any `FAIL` and re-runs it until it prints `VERDICT: PASS`. (It checks Node projects; on another stack it prints `SKIP` and Claude runs that stack's own test and build commands.)
+5. **A short report — the result contract.** Every mega-sdd lane ends with the same three things:
+   ```
+   | Criterion                         | Status | Test                              |
+   |-----------------------------------|--------|-----------------------------------|
+   | create a task                     | ✓      | test/tasks.test.js › creates…     |
+   | list tasks                        | ✓      | test/tasks.test.js › lists…       |
+   | mark a task complete              | ✓      | test/tasks.test.js › completes…   |
 
-If it pauses mid-run, that's a **halt** — a deliberate safety stop, not a crash. It tells you exactly what it needs (usually an answer from you) and how to continue (`/mega-sdd --resume`).
+   delivery-check: VERDICT: PASS
+   Assumptions & decisions: Node + Express (brief names no stack); in-memory store (no persistence asked for) …
+   Commits: 2
+   ```
+   (Illustrative — your file names and choices will differ.)
+
+Nothing is written under `.mega-sdd/` on this lane. If the router had seen open items (an "Open questions" list, `TBD`, `??` …), a security surface (login, payments, roles…) or several user flows, it would have picked **assisted**: the same flow plus ONE batched question round before coding and ONE blind review after. The lane line names the signals that fired.
 
 ## What just happened — the vocabulary
 
 | Term | Plain meaning |
 |---|---|
 | **PRD** | A requirements document — "what we want built". Mega-sdd accepts one, or just a sentence. |
-| **Vault** | The structured spec mega-sdd writes from your PRD/idea, with every claim cited to its source. |
+| **Lane** | How much process a request gets: **direct** (plain Claude Code), **assisted** (+ one question round + one blind review), **guarded** (the spec pipeline). The router picks; `--direct` / `--assisted` / `--guarded` override it. |
+| **Delivery check** | `scripts/delivery-check.sh` — the reviewer's-eye check on a fresh copy of your last commit. A run is done only at `VERDICT: PASS`. |
+| **Result contract** | What every lane hands back: acceptance criterion → test table, the delivery-check verdict, the assumptions and decisions made. |
+| **Vault** | *(guarded lane)* The structured spec written from your PRD/idea, every claim cited to its source. |
 | **Open Question (OQ)** | Anything the spec can't prove becomes a question for you — never a silent guess. |
-| **Binding** | (Brownfield only) Checking the spec against your *real* code before generating tasks (classic lane; the opt-in `--lite` lane binds every unit just-in-time at dispatch). |
-| **Unit** | One small, well-defined task — about one pull request of work. |
-| **Bolt** | An executed unit: code + passing tests, committed to git. |
-| **Halt** | A deliberate pause when something genuinely needs a human. Resume with `--resume`. |
+| **Unit** | *(guarded)* One small, well-defined task — about one pull request of work. |
+| **Binding** | *(guarded)* Just before a unit runs, its claims about your *existing* code are checked against the code. A contradiction (CONFLICT) stops that unit until a human decides. |
+| **Bolt** | *(guarded)* An executed unit: code + passing tests, committed to git. |
+| **Halt** | *(guarded)* A deliberate pause when something genuinely needs a human. Resume with `/mega-sdd --resume`. |
 
 ## Where to go next
 
-- **[Scenario 1 — Greenfield from idea](scenario-1-greenfield-from-idea.md)** (15 min) — the same flow on a realistic example, with expected outputs at every phase.
-- **[Scenario 2 — PRD-driven feature](scenario-2-prd-driven-feature.md)** (30 min) — when you have an actual PRD and an existing codebase.
+- **[Scenario 1 — Greenfield from idea](scenario-1-greenfield-from-idea.md)** (15–30 min) — the same flow on a realistic example, then the same idea on the guarded spec pipeline.
+- **[Scenario 2 — PRD-driven feature](scenario-2-prd-driven-feature.md)** (30 min) — when you have an actual PRD and an existing codebase (assisted lane).
 - The full chooser table: [scenarios README](README.md).
 
 ## Troubleshooting

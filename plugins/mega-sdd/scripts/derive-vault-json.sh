@@ -16,22 +16,25 @@
 #                        scan_citations/fallback_if_wrong/defer_to). Setting a
 #                        derived key exits 2 (anti-laundering).
 #   --event '<json>'   — append ONE changelog event under the same lock
-#                        (bind Step 6, resolve-oq round events).
+#                        (plan step 5 units_generated, resolve-oq round events).
 # Shares its md grammar with validate-vault-oqs.sh via _lib/vault_md.py
 # (two-validators-one-grammar; the W2 binding_md.py precedent).
 # constitution_hash/constitution_version are CARRIED FORWARD like prd_sha256
 # (at-generation pin; recompute would silently re-baseline a hand-edited
 # constitution) — computed fresh ONLY when absent (initial generation); a WARN
 # fires when the carried hash differs from the current constitution.md (free
-# drift advisory — the enforced halt stays binding.md-anchored in detect-drift).
+# drift advisory — the enforced halt is detect-drift constitution_drift_detected
+# (constitution-drift.md: vault.json constitution_hash on layout-3; binding.md
+# only on an existing layout-2 vault)).
 # run-analyze.sh's entities/OQ count-sync checks stay UNTOUCHED as independent
 # loose-parse cross-checks of this deriver.
 # Exit 0 = derived (ONE PASS line; WARNs to stderr); 2 = derive/parse/patch
 # error, vault.json NOT written — on an md-grammar mismatch: mega-sdd-authored
 # docs = an authoring bug (fix the markdown write and re-run); externally-
 # authored vault docs = not a bug, the grammar was never adopted (v5 adoption
-# lane) — fix manually per the generate-intent templates or re-generate via
-# the pipeline; 3 = usage / unreadable vault; 4 =
+# lane) — fix manually per skills/plan/references/templates/context.md (layout-2
+# vault: /mega-sdd:migrate-paths --vault-layout=3 first) or re-generate via
+# plan <prd>; 3 = usage / unreadable vault; 4 =
 # vault.json.lock held after backoff (skill maps to the memory_in_use halt —
 # keterangan envelope stays at the skill layer, verbatim).
 set -u
@@ -117,6 +120,18 @@ KEY_ORDER = [
 
 def warn(msg):
     print("WARN:", msg, file=sys.stderr)
+
+# ONE remediation text for both md-grammar exit-2 paths (parse FAIL + cross-count
+# guard), so the two cannot drift apart.
+KETERANGAN_GRAMMAR = (
+    "KETERANGAN: artefak tidak cocok dengan grammar mega-sdd — kalau ini "
+    "file hasil tulis eksternal, itu bukan bug: grammar-nya memang belum "
+    "diadopsi; cek lane adopsi: scripts/certify-artifact.sh --rung=vault "
+    "menawarkan DEMOTE (re-ingest rung PRD) atau perbaiki manual mengikuti "
+    "template layout-3 skills/plan/references/templates/context.md (vault "
+    "layout-2: /mega-sdd:migrate-paths --vault-layout=3 dulu), atau "
+    "re-generate via plan <prd>."
+)
 
 # ── 1. Advisory lock (script-held; vault-core.md §Concurrency contract) ──
 fd = None
@@ -246,13 +261,7 @@ try:
     if errors:
         for e in errors:
             print("FAIL:", e)
-        print(
-            "KETERANGAN: artefak tidak cocok dengan grammar mega-sdd — kalau ini "
-            "file hasil tulis eksternal, itu bukan bug: grammar-nya memang belum "
-            "diadopsi; cek lane adopsi: scripts/certify-artifact.sh --rung=vault "
-            "menawarkan DEMOTE (re-ingest rung PRD) atau perbaiki manual mengikuti "
-            "template vault generate-intent, atau re-generate via pipeline."
-        )
+        print(KETERANGAN_GRAMMAR)
         sys.exit(2)
 
     # ── 3. Cross-count guard (anti-silent-empty; independent loose parse) ──
@@ -277,14 +286,7 @@ try:
                   f"{loose[cls]} vs parsed {parsed[cls]} (delta > 2). The md "
                   f"grammar the deriver reads diverges from the loose scan — "
                   f"fix the markdown structure, never hand-edit vault.json.")
-            print(
-                "KETERANGAN: artefak tidak cocok dengan grammar mega-sdd — kalau "
-                "ini file hasil tulis eksternal, itu bukan bug: grammar-nya memang "
-                "belum diadopsi; cek lane adopsi: scripts/certify-artifact.sh "
-                "--rung=vault menawarkan DEMOTE (re-ingest rung PRD) atau perbaiki "
-                "manual mengikuti template vault generate-intent, atau re-generate "
-                "via pipeline."
-            )
+            print(KETERANGAN_GRAMMAR)
             sys.exit(2)
 
     # ── 4. Prior + patch + event (validation before any assembly) ──

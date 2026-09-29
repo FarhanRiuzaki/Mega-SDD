@@ -1,0 +1,8 @@
+# xs block, seed 20260926: python3 -c "import random; a=['vanilla']*3+['lite']*3; random.seed(20260926); random.shuffle(a); print(a)"
+# -> ['vanilla', 'lite', 'vanilla', 'lite', 'lite', 'vanilla']
+xs vanilla 1 PRD/prd-company-profile.md
+xs lite 1 PRD/prd-company-profile.md
+xs vanilla 2 PRD/prd-company-profile.md
+xs lite 2 PRD/prd-company-profile.md
+xs lite 3 PRD/prd-company-profile.md
+xs vanilla 3 PRD/prd-company-profile.md

@@ -2,7 +2,7 @@
 title: "<Nama Produk / Fitur>"
 type: PRD
 version: "0.1"
-status: draft            # draft | final — menentukan PRD_STATUS di mega-sdd (draft boleh di-pause saat gap banyak; final tidak pernah pause, semua gap jadi Open Question)
+status: draft            # draft | final — dicatat sebagai `prd_status` oleh `plan` mega-sdd (lane guarded); draft maupun final, setiap gap jadi Open Question — `plan` tidak pause di tengah, satu-satunya pertanyaan adalah batched ask di akhir
 date: YYYY-MM-DD
 authors: ["<nama penulis>"]
 industry: banking
@@ -30,7 +30,7 @@ cross_scope_dependencies: []
 # PRD — <Nama Produk / Fitur>
 
 > **Cara pakai template ini (hapus blok ini sebelum publish):**
-> 1. **Eksplisit > implisit.** Downstream (dev team / AI pipeline `/mega-sdd` → generate-intent) hanya boleh mengimplementasikan apa yang TERTULIS. Yang tidak tertulis akan jadi Open Question, bukan ditebak.
+> 1. **Eksplisit > implisit.** Downstream (dev team / AI via `/mega-sdd`) hanya boleh mengimplementasikan apa yang TERTULIS. Yang tidak tertulis tidak ditebak diam-diam: di lane guarded (`plan`) jadi Open Question; di lane assisted item bisnis yang masih terbuka ditanyakan sekali sebelum coding; selebihnya (direct/assisted) diambil opsi paling sederhana yang bisa dibalik dan dicatat sebagai asumsi di laporan akhir.
 > 2. **Jangan kosongkan section.** Kalau belum tahu, tulis `TBD — confirm with <owner>` atau pindahkan ke §13 Open Questions. Section kosong = ambigu.
 > 3. **Semua flow WAJIB Mermaid** (flowchart / sequenceDiagram / stateDiagram) — bukan prosa panjang atau ASCII art. Sertakan happy path DAN error path.
 > 4. **Out of Scope (§12) wajib diisi eksplisit** — minimal `TBD — confirm with PO`, tidak boleh kosong.

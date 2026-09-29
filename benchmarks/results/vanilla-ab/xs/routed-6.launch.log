@@ -1,0 +1,16 @@
+sid=9f138880-f468-44c0-84ce-010c29ff15e4
+arm=/private/tmp/claude-501/mega-sdd-bench/work/xs-routed-6
+prd=PRD/prd-company-profile.md
+model=opus
+flags=
+entry=frontdoor
+arm_kind=megasdd
+transcript=/Users/riuzaki/.claude/projects/-private-tmp-claude-501-mega-sdd-bench-work-xs-routed-6/9f138880-f468-44c0-84ce-010c29ff15e4.jsonl
+started_at=2026-09-26T20:52:55Z
+head_before=ff006be
+plugin=Version: 8.7.2
+plugin_dir=/private/tmp/claude-501/mega-sdd-bench/plugin-routed
+pid=65848
+purity=PASS mega-sdd 8.8.1 loaded from mega-sdd@inline
+plugins=mega-sdd@8.8.1,superpowers@6.4.1,agents-md@?,telemetry@?
+megasdd_surfaces=36

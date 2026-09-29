@@ -1,0 +1,23 @@
+1e3e8e4 2026-09-29T16:22:35+07:00 docs(sdd): drift report after bolts (8 findings queued in PENDING-SYNC)
+1dd2481 2026-09-29T16:19:00+07:00 chore(sdd): vault changelog bolt_completed (5 units)
+20148fd 2026-09-29T16:18:42+07:00 chore(sdd): evidence gate recompute c0bb6d3
+2b0abf4 2026-09-29T16:18:21+07:00 chore(sdd): evidence run c0bb6d3
+df24387 2026-09-29T16:18:05+07:00 fix(delivery): repo-hygiene test reads .gitignore instead of calling git (fails in a source export)
+6327db5 2026-09-29T16:17:34+07:00 chore(sdd): evidence U-002, U-005 — review fixes
+3b31b74 2026-09-29T16:17:18+07:00 fix(review): git-ignore the contact message database (visitor PII)
+083ce67 2026-09-29T16:17:18+07:00 fix(U-005): link Kontak back to Beranda
+0e3252d 2026-09-29T16:17:18+07:00 fix(U-002): link Tentang Kami from Beranda and set page title/description from siteConfig
+365e1b1 2026-09-29T16:14:59+07:00 chore(sdd): evidence U-005 — Buat halaman Kontak dengan form dan Server Function kirim pesan
+45e2c2b 2026-09-29T16:14:56+07:00 feat(U-005): Buat halaman Kontak dengan form dan Server Function kirim pesan
+dfcf686 2026-09-29T16:13:31+07:00 chore(sdd): evidence U-004 — Buat validasi pesan kontak dan penyimpanan contact_messages
+def19d3 2026-09-29T16:13:28+07:00 feat(U-004): Buat validasi pesan kontak dan penyimpanan contact_messages
+5d4ede9 2026-09-29T16:11:57+07:00 chore(sdd): evidence U-003 — Buat halaman Tentang Kami
+fe29f84 2026-09-29T16:11:54+07:00 feat(U-003): Buat halaman Tentang Kami
+773c03f 2026-09-29T16:11:32+07:00 chore(sdd): evidence U-002 — Ganti halaman Beranda boilerplate dengan profil organisasi
+542968b 2026-09-29T16:11:27+07:00 feat(U-002): Ganti halaman Beranda boilerplate dengan profil organisasi
+c17741e 2026-09-29T16:10:53+07:00 chore(sdd): evidence U-001 — acceptance re-run at task-done
+49fd76d 2026-09-29T16:10:45+07:00 chore(sdd): evidence U-001 — Pasang test runner Vitest dan file konfigurasi konten statis
+0838292 2026-09-29T16:10:13+07:00 feat(U-001): Pasang test runner Vitest dan file konfigurasi konten statis
+c0bb6d3 2026-09-29T16:08:34+07:00 docs(sdd): plan vault company-profile (context, constitution, 5 units)
+ff006be 2026-09-26T11:11:03+07:00 fixture: create-next-app@16.3.6 + PRD xs
+da6f958 2026-09-26T11:10:25+07:00 Initial commit from Create Next App

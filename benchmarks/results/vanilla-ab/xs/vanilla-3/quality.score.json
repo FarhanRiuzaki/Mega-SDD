@@ -1,0 +1,47 @@
+{
+ "completion": 1.0,
+ "ac_pass": 12,
+ "ac_total": 12,
+ "ac": {
+  "X1": "PASS",
+  "X2": "PASS",
+  "X3": "PASS",
+  "X4": "PASS",
+  "X5": "PASS",
+  "X6": "PASS",
+  "X7": "PASS",
+  "X8": "PASS",
+  "X9": "PASS",
+  "X10": "PASS",
+  "X11": "PASS",
+  "X12": "PASS"
+ },
+ "critical": 0,
+ "important": 0,
+ "minor": 4,
+ "rubric": 95,
+ "findings": [
+  {
+   "severity": "Minor",
+   "where": "src/lib/contact-validation.ts:24,32",
+   "what": "Length limits use String.length (UTF-16 code units) rather than characters; emoji/astral chars count double, so valid names/messages near the limit are rejected."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/lib/db.ts:1,21",
+   "what": "Relies on experimental synchronous node:sqlite (Node>=22.5) writing to cwd/data/app.db inside a server action; fails on read-only/serverless hosts and the constraint is undocumented."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/kontak/contact-form.tsx:80-86",
+   "what": "Single role=status live region used for both success and save-failure messages; errors are announced politely only and distinguished just by colour."
+  },
+  {
+   "severity": "Minor",
+   "where": "src/app/tentang/page.tsx:15",
+   "what": "Paragraph text used as React key; duplicate config paragraphs would collide."
+  }
+ ],
+ "blind_label": "LY",
+ "scorer_sid": "6f7d1135-9431-421c-a796-322e8d203330"
+}
