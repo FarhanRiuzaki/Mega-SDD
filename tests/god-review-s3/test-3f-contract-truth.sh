@@ -10,8 +10,7 @@
 #   V4     no inverted §3(routes)/§4(data models) reference anywhere in the plugin.
 #   AH-4   libs slice carries _source under a manifest grammar (schema surface).
 #   DS-3   vault-core carries the canonical lock spec (§Concurrency contract).
-#   DS-5   dead snapshot claims removed (no ~30-50%); source_files_sha256_map is
-#          documented for its one live type and its named consumer reads it.
+#   DS-5   plan --kb spells out the one legacy snapshot read (source_files_sha256_map).
 #
 # 9.0 P1 (classic removal): scan-codebase / bind-codebase / generate-units /
 # generate-intent are deleted. Arms that pinned their own references are RETIRED
@@ -19,7 +18,7 @@
 # dispatch / prompts [INT-4, V3, AH-3, DS-4, DS-5 scan arms, DS-7, DS-8],
 # scan-procedure reference captures, bind-codebase implementation-state /
 # oq-resolution / binding-contract [V4 instance arms, AH-3 binder side], the
-# codebase-map snapshot type in shared-snapshot-schema). Surviving arms are
+# codebase-map snapshot type [DS-5]). Surviving arms are
 # repointed: vault-core → references/vault-core.md, task-typing →
 # plan/references/task-typing.md, INT-3 mirror → the detect-drift row.
 #
@@ -30,13 +29,12 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 P="${ROOT}/plugins/mega-sdd"
 HC="$P/skills/orchestrate-flow/references/handoff-contract.md"
-SSS="$P/references/shared-snapshot-schema.md"
 SCS="$P/references/starterkit-context-schema.md"
 PTH="$P/references/paths.md"
 VCORE="$P/references/vault-core.md"                    # relocated from generate-intent/references/ (9.0 P1)
 TT="$P/skills/plan/references/task-typing.md"           # relocated from generate-units/references/ (9.0 P1)
 KBI="$P/skills/plan/references/kb-input.md"             # plan --kb input contract (9.0 P1)
-for f in "$HC" "$SSS" "$SCS" "$PTH" "$VCORE" "$TT" "$KBI"; do
+for f in "$HC" "$SCS" "$PTH" "$VCORE" "$TT" "$KBI"; do
   [ -f "$f" ] || { echo "missing $f"; exit 1; }
 done
 
@@ -107,15 +105,12 @@ grep -qF 'single advisory-lock pattern' "$VCORE" && ok "DS-3: vault-core declare
 
 # ── DS-5 ──
 # (SKILL.md / deep-scan-gate.md / deep-scan-dispatch.md arms RETIRED 9.0 P1 —
-#  scan-codebase deleted; the codebase-map snapshot type, whose `EMPTY for this
-#  type` sha map the old arm pinned, was removed from the schema with its producer.)
-if grep -q '30-50%' "$SSS"; then fail "DS-5: fabricated ~30-50% figure survives in $(basename "$SSS")"; else ok "DS-5: fabricated perf figure absent from the snapshot schema"; fi
-# Repointed schema-field-doc truth: the map is documented for its ONE live type
-# and the consumer it names (plan --kb) actually reads it (cross-doc agreement).
-grep -qF '`source_files_sha256_map` — populated for the `extracted-kb` type ONLY (the `plan --kb` freshness check reads it' "$SSS" \
-  && grep -qF '`source_files_sha256_map` the same way' "$KBI" \
-  && ok "DS-5: schema scopes source_files_sha256_map to extracted-kb and plan --kb reads it" \
-  || fail "DS-5: schema field doc / plan --kb consumer disagree on source_files_sha256_map"
+#  scan-codebase deleted. The schema arms (no ~30-50% figure; the sha map scoped
+#  to extracted-kb) RETIRED with the snapshot schema doc: nothing wrote or read
+#  it (producers retired, no drift consumer). The one legacy read stays inline:)
+grep -qF '`source_files_sha256_map` the same way' "$KBI" \
+  && ok "DS-5: plan --kb spells out the legacy-tree snapshot freshness read" \
+  || fail "DS-5: plan kb-input lost the legacy-tree source_files_sha256_map read"
 
 # ── DS-7 / DS-8 ── RETIRED 9.0 P1: <FILE_HINTS> and the deep-scan trigger enum
 #   pinned deep-scan-prompts.md / deep-scan-gate.md / scan SKILL.md (deleted).

@@ -22,7 +22,6 @@ plugins/mega-sdd/skills/orchestrate-flow/SKILL.md
 plugins/mega-sdd/skills/orchestrate-flow/references/chain-execution.md
 plugins/mega-sdd/skills/orchestrate-flow/references/factory-routing.md
 plugins/mega-sdd/skills/orchestrate-flow/references/factory-ledger-contract.md
-plugins/mega-sdd/skills/orchestrate-flow/references/checkpoint-protocol.md
 plugins/mega-sdd/references/model-tiers.md [SECTION:Catalog]
 plugins/mega-sdd/references/output-language.md [SECTION:Prompt-surfaces]
 plugins/mega-sdd/skills/plan/SKILL.md

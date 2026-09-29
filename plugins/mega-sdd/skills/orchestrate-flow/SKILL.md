@@ -99,7 +99,7 @@ The orchestrator inspects the working directory, infers where you are in the meg
 ## Hard rails
 
 - No content generation by the orchestrator itself.
-- No **chain-level** state file: `orchestrate-flow --resume` rebuilds chain state by CWD/artifact inspection (which *phase* to resume). A phase skill MAY keep its own sub-step checkpoint (`references/checkpoint-protocol.md`) that resumes *within* the re-entered phase — a different granularity that never conflicts with phase selection (precedence table → `references/handoff-contract.md` §Resume mechanics).
+- No **chain-level** state file: `orchestrate-flow --resume` rebuilds chain state by CWD/artifact inspection (which *phase* to resume); no skill resumes *within* a phase (`references/handoff-contract.md` §Resume mechanics).
 - No skill runs in parallel.
 - Sub-skill substance prompts ALWAYS surface to the human (per-OQ choices, conflict resolutions) regardless of `--auto`.
 - Chain depth ≤ 3 by default; `--deep` lifts the cap with auto-continue via handoff YAML.
@@ -125,7 +125,6 @@ The orchestrator inspects the working directory, infers where you are in the meg
 - `--lite`: the pipeline's lane marker — forwarded to every `plan` / `execute-bolts` hop (JIT bind of every unit, W1 zero-idle, plan-coverage PASS before bolts); the pipeline is lite with or without it. **P2 2-hop lane:** with a PRD and no vault the engine proposes `plan <prd> --lite --mode=…` → `execute-bolts --all --lite` (`references/routing-rules.md` lane-lite row); `plan` emits NO handoff YAML — re-derive state from disk after it returns and run the predictive preflight for the bolts hop (`references/handoff-consumption.md §Lite lane exemption`).
 - `--agents`: retired — say once `--agents is retired: the per-unit agent path was removed (spec v9 §8.6); running the default inline run.` and run the hop inline (`execute-bolts --all --lite`)
 - `--inline`: accepted no-op alias of the default inline run — forwarded as `execute-bolts --all --lite --inline` (changes nothing), never to `plan`
-- Checkpoint protocol (`references/checkpoint-protocol.md`) is a DECLARED contract — no skill emits per-step checkpoints at HEAD; `--resume` is CWD-driven only
 
 ## Greenfield vs brownfield routing
 
@@ -145,10 +144,9 @@ blocker:
 
 When this prompt reaches the user (i.e. the C1 chain-time re-detect did not already fix it — e.g. the user passed an explicit mode flag), the recommended default is the CWD-detected mode (CWD signals are ground truth per halt-protocol) and each resolution carries its consequence: `update vault.mode to match CWD` **(recommended)** — `existing` mengaktifkan detect-drift + verifikasi terhadap code lama sebelum menyentuhnya, `greenfield` melewatinya; `re-detect by moving to clean dir` — pakai kalau CWD-nya memang salah (misal vault greenfield tersimpan di dalam repo lain).
 
-## Convergence loops + checkpoints
+## Convergence loops
 
 - **Convergence** (`--deep`): cycle-eligible halts auto-resolve via grounded (KB/vault/codebase) recommendations and re-run, up to `--max-cycles`; all other halts stop the chain. Algorithm, per-cycle output, `convergence_max_reached` envelope, the propose-and-confirm bolt bridge, and anti-halu rails are in `references/convergence-loops.md`.
-- **Checkpoints:** the declared per-step JSONL checkpoint contract for long-running skills (`/mega-sdd --resume` is chain-level, CWD-driven; the per-skill `--resume-from` sub-step resume is declared in `references/checkpoint-protocol.md` but no skill implements it yet). Granularity, rotation, and resume logic in `references/checkpoint-protocol.md`.
 
 ## Halt protocol
 
@@ -166,7 +164,6 @@ Every blocker a sub-skill emits is classified as **cycle-eligible** (auto-loop i
 - **`references/handoff-contract.md`** — producer-side handoff YAML schema, field TYPE annotations, per-skill expected emissions. *Open at the b.iv conditional-field check (its schema owns the CONDITIONAL roster), on a validation failure, or for §Resume mechanics — `handoff-consumption.md` owns the rest of the per-hop loop.*
 - **`references/convergence-loops.md`** — auto-recovery cycling: eligible halts, algorithm, `--converge` flags, bolt propose-and-confirm bridge.
 - **`references/halt-taxonomy.md`** — every halt type classified (cycle-eligible / always-stop / soft).
-- **`references/checkpoint-protocol.md`** — per-step JSONL checkpoints + mid-skill resume.
 - **`references/sync-digest.md`** — Mode D autonomous deferral contracts: `PENDING-SYNC.md` (deferred-decision queue) + `SYNC-REPORT.md` (run report with closing staleness verification).
 
 ## Related skills
