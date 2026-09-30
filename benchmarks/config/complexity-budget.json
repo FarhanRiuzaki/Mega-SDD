@@ -6,7 +6,7 @@
   "t01_lite_commanded_bytes": 400160,
   "t01_default_commanded_bytes": 39848,
   "skill_md_total_bytes": 256402,
-  "scripts_total_lines": 39850,
+  "scripts_total_lines": 39964,
   "hooks_total_lines": 2827
  },
  "raises": [
@@ -171,6 +171,17 @@
     ]
    },
    "measured_benefit": "Defect fix. Field report 2026-09-30 (office team, Windows 11): after the marketplace update + uninstall/install, installed_plugins.json stayed on 8.7.0 while a complete cache/mega-sdd/mega-sdd/9.0.0 existed, and the Step 5.5 regex (POSIX separators over JSON-escaped backslash paths) returned an EMPTY referenced set, so the dormant sweep would have offered every version, the active one included. Regression test: tests/update/test-version-drift.sh fails without it (I1 J1 J2 J3 against HEAD 90a79a86; G/H exercise the new script: Windows backslash paths, empty set exit 3, repoint skips an incomplete cache dir, backup written, second apply is a no-op); after it ALL PASS, also under bash 3.2. The hook stays builtins-only (no new fork)."
+  },
+  {
+   "date": "2026-09-30",
+   "change": "scripts/build-symbol-index.sh sizes each ast-grep chunk by the host command-line limit (Windows: the quoted command line, rules included, <= 32,000 UTF-16 units; POSIX: 256 KB of paths as before; MEGA_SDD_CMDLINE_MAX forces the Windows accounting). Also counts scripts/repair-install-pointer.py (99 lines), landed in 5807227b while untracked, so that commit's budget run did not see it",
+   "metric": {
+    "scripts_total_lines": [
+     39850,
+     39964
+    ]
+   },
+   "measured_benefit": "Defect fix. Field report 2026-09-30 (office FE team, Windows 11 + Git Bash, Next.js repo, 642 files): the one chunk of paths exceeded the CreateProcessW 32,767-char limit -> [WinError 206], build-symbol-index exit 4, symbol_index absent, every JIT symbol claim bound as OQ. Regression test: tests/scan/test-symbol-index-cmdline.sh fails against the old script (A2 command line 97,815 > 32,000, A3 one chunk, C1) and passes after (7 chunks, longest 31,984, all 642 files scanned; POSIX still one call). The repair-install-pointer.py lines are the Windows update defect fix whose evidence is the entry above (tests/update/test-version-drift.sh G/H)."
   }
  ]
 }
