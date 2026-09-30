@@ -13,6 +13,7 @@
 # Exit: 0 written (status PASS|FAIL inside the state) · 2 unparseable/usage.
 
 set -u
+export PYTHONUTF8=1
 KB_DIR=""; REPORT_FILE=""; QUIET=0
 for arg in "$@"; do
   case "$arg" in

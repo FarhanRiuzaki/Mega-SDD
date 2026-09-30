@@ -36,6 +36,7 @@
 #      "the write failed", 7 means "we never got as far as looking", and the two
 #      have completely different remedies.
 set -uo pipefail
+export PYTHONUTF8=1
 
 case "$0" in */*) SCRIPT_DIR="${0%/*}" ;; *) SCRIPT_DIR="." ;; esac
 

@@ -41,7 +41,7 @@ def plugin_version(start_dir=None):
     if not root:
         return "unknown"
     try:
-        with open(os.path.join(root, ".claude-plugin", "plugin.json")) as f:
+        with open(os.path.join(root, ".claude-plugin", "plugin.json"), encoding="utf-8") as f:
             v = json.load(f).get("version")
         return str(v) if v else "unknown"
     except (OSError, ValueError):

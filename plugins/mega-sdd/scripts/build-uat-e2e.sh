@@ -22,6 +22,7 @@
 # Exit: 0 ok · 1 lint violations · 2 usage / missing inputs.
 # Every write is atomic (tmp + os.replace). Bounded, offline, no network.
 set -uo pipefail
+export PYTHONUTF8=1
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091

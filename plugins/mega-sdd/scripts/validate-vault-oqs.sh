@@ -37,6 +37,7 @@
 # Exit: 0=PASS or no-op, 1=FAIL.
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 FILE_PATH=""
@@ -107,7 +108,7 @@ ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 rel = os.path.relpath(file_path, cwd)
 
 try:
-    body = open(file_path, errors="replace").read()
+    body = open(file_path, errors="replace", encoding="utf-8").read()
 except Exception:
     sys.exit(0)
 
@@ -122,7 +123,7 @@ if kb_present:
         kb_sections.add(rel_kb)
         # Extract headers from file for section-level matching
         try:
-            for line in open(kb_file, errors="replace"):
+            for line in open(kb_file, errors="replace", encoding="utf-8"):
                 m = re.match(r"^#{1,6}\s+(.+?)$", line.rstrip())
                 if m:
                     section_id = m.group(1).strip().lower().replace(" ", "-")
@@ -317,7 +318,7 @@ vj = {}
 vj_ok = False
 if os.path.isfile(vjson_path):
     try:
-        vj = json.load(open(vjson_path, errors="replace"))
+        vj = json.load(open(vjson_path, errors="replace", encoding="utf-8"))
         vj_oqs = vj.get("open_questions") or []
         vj_ok = isinstance(vj, dict) and isinstance(vj.get("open_questions"), list)
     except Exception:
@@ -610,7 +611,7 @@ DESIGN_SOURCE_OQ_RE = re.compile(
 
 def _read(path):
     try:
-        return open(path, errors="replace").read()
+        return open(path, errors="replace", encoding="utf-8").read()
     except Exception:
         return ""
 
@@ -888,7 +889,7 @@ state = {
     ),
 }
 try:
-    with open(state_file, "w") as f:
+    with open(state_file, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
 except Exception:
     sys.exit(2)

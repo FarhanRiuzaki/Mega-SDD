@@ -22,6 +22,7 @@
 #   exit 2 on bad invocation. Secret values are NEVER echoed (6-char excerpt max).
 
 set -u
+export PYTHONUTF8=1
 
 MODE=""; TARGET=""; BASE=""; HEAD=""; CWD="."
 for arg in "$@"; do
@@ -57,7 +58,7 @@ if command -v gitleaks >/dev/null 2>&1; then
 import json, sys
 path, rc = sys.argv[1], int(sys.argv[2])
 try:
-    raw = json.load(open(path))
+    raw = json.load(open(path, encoding="utf-8"))
 except Exception:
     raw = None
 finds = [{"engine": "gitleaks", "rule": f.get("RuleID"), "file": f.get("File"),

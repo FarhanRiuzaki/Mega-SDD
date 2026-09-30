@@ -693,7 +693,7 @@ def scan_unit(cwd, git, unit_id, unit_text, unit_commits, preflight, attest, pri
             # made honest remediation unreachable (fixing the violation necessarily
             # changes the file → permanent MISMATCH fail) — S7 review r1-2.
             ry_norm, _rule_globs = normalize_v2_files(ry)
-            with tempfile.NamedTemporaryFile("w", suffix=".yml", delete=False) as tf:
+            with tempfile.NamedTemporaryFile("w", suffix=".yml", delete=False, encoding="utf-8") as tf:
                 tf.write(ry_norm)
                 tmp_rule = tf.name
             try:

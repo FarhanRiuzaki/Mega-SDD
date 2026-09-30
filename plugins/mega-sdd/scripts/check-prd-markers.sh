@@ -27,6 +27,7 @@
 # Exit: 0 = clean · 1 = ≥1 marker violation (lines + Indonesian keterangan)
 #       2 = usage error
 set -uo pipefail
+export PYTHONUTF8=1
 
 PRD=""
 CWD=""

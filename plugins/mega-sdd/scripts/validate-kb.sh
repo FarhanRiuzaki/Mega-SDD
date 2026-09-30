@@ -13,6 +13,7 @@
 #   vault-flows  → .vault-flows-state.json     (vault 04-flows.md Mermaid mandate)
 # Exit: per surface (0 PASS/SKIP · 1 FAIL · 2 error); unknown --surface → 2.
 set -uo pipefail
+export PYTHONUTF8=1
 
 SURFACE=""
 _STRIPPED=()
@@ -276,7 +277,7 @@ if depends_on:
     for fn, fp in existing_files.items():
         # Extract domain from frontmatter if possible
         try:
-            fc = open(fp).read(500)
+            fc = open(fp, encoding="utf-8").read(500)
             dm = re.search(r"^domain:\s*(\S+)", fc, re.MULTILINE)
             if dm:
                 existing_domains.add(dm.group(1))
@@ -317,7 +318,7 @@ PYEOF
 echo "$RESULT" | python3 -c "
 import json, sys
 data = json.loads(sys.stdin.read())
-with open('$STATE_FILE', 'w') as f:
+with open('$STATE_FILE', 'w', encoding='utf-8') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
 print(data.get('status', 'ERROR'))
@@ -678,7 +679,7 @@ PYEOF
 echo "$RESULT" | python3 -c "
 import json, sys
 data = json.loads(sys.stdin.read())
-with open('$STATE_FILE', 'w') as f:
+with open('$STATE_FILE', 'w', encoding='utf-8') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
 " 2>/dev/null
@@ -944,7 +945,7 @@ PYEOF
 echo "$RESULT" | python3 -c "
 import json, sys
 data = json.loads(sys.stdin.read())
-with open('$STATE_FILE', 'w') as f:
+with open('$STATE_FILE', 'w', encoding='utf-8') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
 " 2>/dev/null
@@ -1169,7 +1170,7 @@ PYEOF
 echo "$RESULT" | python3 -c "
 import json, sys
 data = json.loads(sys.stdin.read())
-with open('$STATE_FILE', 'w') as f:
+with open('$STATE_FILE', 'w', encoding='utf-8') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
 " 2>/dev/null

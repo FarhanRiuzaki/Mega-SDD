@@ -17,6 +17,7 @@
 # generated_at excluded from that guarantee, everything else included).
 
 set -u
+export PYTHONUTF8=1
 CWD="."; OUT=""; TIMEOUT=120
 for arg in "$@"; do
   case "$arg" in

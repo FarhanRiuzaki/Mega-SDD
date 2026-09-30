@@ -33,6 +33,7 @@
 # PreToolUse "Branch 14" block no longer exists; header fixed v7 Fase 2).
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 QUIET=0
@@ -248,7 +249,7 @@ report = {
 }
 
 try:
-    with open(state_file, "w") as f:
+    with open(state_file, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
         f.write("\n")
 except Exception:

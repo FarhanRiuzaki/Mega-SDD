@@ -18,6 +18,7 @@
 #   exit 0=PASS, 1=FAIL (drops), 2=error
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 QUIET=0
@@ -93,7 +94,7 @@ for cf in glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "constitution.
            glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "_meta", "constitution.md")):
     census_files += 1
     try:
-        text = open(cf).read()
+        text = open(cf, encoding="utf-8").read()
         # census keys on the clause-DEFINITION grammar (list item / heading /
         # bold at line start, id followed by a separator) — round fold: a bare
         # findall let one prose cross-reference ("see binding C-009 for …")
@@ -110,7 +111,7 @@ for cf in glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "constitution.
 binding_clause_sources = {}  # clause_id → set of binding files
 for bf in binding_files:
     try:
-        content = open(bf).read()
+        content = open(bf, encoding="utf-8").read()
     except Exception:
         continue
     # census-gated (F4): ids not present in constitution.md are claim ids or
@@ -158,7 +159,7 @@ if not unit_files:
 unit_clause_map = {}  # clause_id → set of unit files citing it
 for uf in unit_files:
     try:
-        content = open(uf).read()
+        content = open(uf, encoding="utf-8").read()
     except Exception:
         continue
     clauses_in_unit = set(clause_pattern.findall(content))
@@ -196,7 +197,7 @@ PYEOF
 echo "$RESULT" | python3 -c "
 import json, sys
 data = json.loads(sys.stdin.read())
-with open('$STATE_FILE', 'w') as f:
+with open('$STATE_FILE', 'w', encoding='utf-8') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
 " 2>/dev/null

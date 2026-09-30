@@ -3,6 +3,7 @@
 # Inject `using-mega-sdd` anchor skill content when SDD signals detected in CWD.
 
 set -euo pipefail
+export PYTHONUTF8=1
 
 # Direct dispatch (v7.5.0 Fase 7 №A): hooks.json runs this body straight — the
 # run-hook.sh dispatcher (bash→dirname→uname→bash, 3 extra procs/event) is gone.

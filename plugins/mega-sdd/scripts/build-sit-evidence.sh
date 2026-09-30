@@ -61,6 +61,7 @@
 #           build-citation-map.sh writes the map on exit 1)
 #       2 = usage error / vault missing
 set -uo pipefail
+export PYTHONUTF8=1
 
 VAULTS=()
 CWD=""
@@ -256,7 +257,7 @@ def parse_vault(vroot):
     vjson_path = os.path.join(vroot, "vault.json")
     if os.path.isfile(vjson_path):
         try:
-            vj = json.load(open(vjson_path))
+            vj = json.load(open(vjson_path, encoding="utf-8"))
             sm = vj.get("scope_metadata") or {}
             sid = str(sm.get("id") or "").strip()
             if sid:
@@ -375,7 +376,7 @@ def read_json(path):
     if not os.path.isfile(path):
         return None
     try:
-        return json.load(open(path))
+        return json.load(open(path, encoding="utf-8"))
     except (OSError, ValueError):
         return {"_unreadable": True}
 

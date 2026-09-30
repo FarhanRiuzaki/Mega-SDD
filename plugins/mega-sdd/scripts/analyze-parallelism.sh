@@ -54,6 +54,7 @@
 #           should have caught it, fail safe here)
 #       2 = usage error (unknown flag / bad value / --cwd not a directory)
 set -u
+export PYTHONUTF8=1
 
 VAULT_ARG=""
 CWD="."
@@ -142,7 +143,7 @@ vault_name = os.path.basename(vault_dir.rstrip("/"))
 vj_path = os.path.join(vault_dir, "vault.json")
 if os.path.isfile(vj_path):
     try:
-        with open(vj_path) as f:
+        with open(vj_path, encoding="utf-8") as f:
             vj = json.load(f)
         vault_name = vj.get("name") or vj.get("slug") or vault_name
     except Exception as e:

@@ -26,6 +26,7 @@
 # The claim grammar lives in scripts/_lib/unit_claims.py (shared with write-unit-binding.sh).
 # Exit 0 written · 2 usage / unit file not found (nothing written).
 set -u
+export PYTHONUTF8=1
 CWD="."; VAULT=""; UNITS=""
 for arg in "$@"; do case "$arg" in
   --cwd=*) CWD="${arg#*=}" ;; --vault=*) VAULT="${arg#*=}" ;; --units=*) UNITS="${arg#*=}" ;;

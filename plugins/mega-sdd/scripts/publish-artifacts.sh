@@ -24,6 +24,7 @@
 #   none → inert exit 0. The token is NEVER echoed/logged.
 # Usage: publish-artifacts.sh --cwd=<project-root>
 set -u
+export PYTHONUTF8=1
 
 CWD=""
 for arg in "$@"; do
@@ -197,7 +198,7 @@ def rel_files(patterns):
 SHARED = ["graph.json", "knowledge-base/**/*", "codebase/codebase-map.md", "codebase/symbol-index.json"]
 state_path = os.path.join(ms, ".publish-state.json")
 try:
-    state = json.load(open(state_path))
+    state = json.load(open(state_path, encoding="utf-8"))
 except Exception:
     state = {}
 
@@ -224,7 +225,7 @@ else:
 
 graph_meta = {}
 try:
-    graph_meta = {"source_hashes": json.load(open(os.path.join(ms, "graph.json"))).get("_meta", {}).get("source_hashes", {})}
+    graph_meta = {"source_hashes": json.load(open(os.path.join(ms, "graph.json"), encoding="utf-8")).get("_meta", {}).get("source_hashes", {})}
 except Exception:
     pass
 
@@ -294,7 +295,7 @@ for vault, extra in vault_specs:
 
 if changed_any:
     tmp = state_path + ".tmp." + str(os.getpid())   # round MINOR-7: parallel-session safe
-    json.dump(state, open(tmp, "w"), indent=1)
+    json.dump(state, open(tmp, "w", encoding="utf-8"), indent=1)
     os.replace(tmp, state_path)
 PYEOF
 exit 0

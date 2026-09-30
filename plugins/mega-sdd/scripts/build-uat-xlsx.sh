@@ -30,6 +30,7 @@
 #       2 = usage error / vault missing / UAT.md missing
 #       3 = target UAT-v<version>.xlsx already exists — REFUSED (never overwrite)
 set -uo pipefail
+export PYTHONUTF8=1
 
 VAULT=""
 for arg in "$@"; do
@@ -53,7 +54,7 @@ if not os.path.isfile(uat_md):
 version = "0.1"
 if os.path.isfile(hist_path):
     try:
-        h = json.load(open(hist_path))
+        h = json.load(open(hist_path, encoding="utf-8"))
         if isinstance(h, dict):  # non-object sidecar → keep the 0.1 default
             version = h.get("version") or "0.1"
     except (OSError, ValueError):

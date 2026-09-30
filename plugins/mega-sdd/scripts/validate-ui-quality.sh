@@ -45,6 +45,7 @@
 #   exit 0 = PASS or SKIP; exit 1 = FAIL; exit 2 = error
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 QUIET=0
@@ -98,7 +99,7 @@ ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def write_and_exit(report, code):
-    with open(state_file, "w") as f:
+    with open(state_file, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
     if not quiet:
         print(json.dumps(report, indent=2))
@@ -168,7 +169,7 @@ def load_units():
         glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*-bound", "units", "U-*", "unit.md"))
     ):
         try:
-            txt = open(up, errors="replace").read()
+            txt = open(up, errors="replace", encoding="utf-8").read()
         except Exception:
             continue
         fm = re.search(r"^---\s*\n(.*?)\n---", txt, re.DOTALL)
@@ -202,7 +203,7 @@ for br in bolt_reports:
     uid = re.match(r"(U-\d+)", uid_dir or "")
     uid = uid.group(1) if uid else uid_dir
     try:
-        report = open(br, errors="replace").read()
+        report = open(br, errors="replace", encoding="utf-8").read()
     except Exception:
         continue
     reports_scanned += 1
@@ -341,7 +342,7 @@ def glob_match(path, pattern):
 
 def write_and_exit(report, code):
     _tmp = state_file + ".tmp.%d" % os.getpid()  # AUDIT L4: atomic write (tmp + os.replace) — no torn read under concurrent bolts
-    with open(_tmp, "w") as f:
+    with open(_tmp, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
     os.replace(_tmp, state_file)
     if not quiet:
@@ -585,7 +586,7 @@ def is_partial(rel, stub_glob):
 violations = []
 for full, rel in view_files:
     try:
-        with open(full, errors="replace") as f:
+        with open(full, errors="replace", encoding="utf-8") as f:
             text = f.read()
     except Exception:
         continue

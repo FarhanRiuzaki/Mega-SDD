@@ -46,6 +46,7 @@
 #       2 = usage / internal error.
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 RUNG=""

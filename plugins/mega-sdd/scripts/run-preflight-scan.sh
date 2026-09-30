@@ -68,6 +68,7 @@
 #           at baseline time; no artifact written. FATAL for this run: commit or
 #           restore the protected file, then re-run (NEVER proceed past it).
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 UNITS=""
@@ -171,7 +172,7 @@ for _i, unit_id in enumerate(unit_ids):
     bolt_dir = os.path.join(vault_root, "bolts", unit_id)
     target = os.path.join(bolt_dir, "preflight.json")
 
-    text = open(uf).read()
+    text = open(uf, encoding="utf-8").read()
 
     # The SHARED lexer — the same extraction the post-flight engine runs, so the
     # rule set snapshotted here is byte-identical to the rule set evaluated later.
@@ -245,7 +246,7 @@ for _i, unit_id in enumerate(unit_ids):
                 if not os.path.isfile(mpath):
                     deps_section = "absent"
                 else:
-                    rawm = open(mpath).read()
+                    rawm = open(mpath, encoding="utf-8").read()
                     keys = postflight_rules.DEP_KEYS.get(os.path.basename(manifest))
                     try:
                         dj = json.loads(rawm)
@@ -287,7 +288,7 @@ for _i, unit_id in enumerate(unit_ids):
             rid_m = re.search(r"^id:\s*(\S+)", ry, re.MULTILINE)
             rid = rid_m.group(1) if rid_m else "v2-rule-%d" % (i + 1)
             ry_norm, _globs = postflight_rules.normalize_v2_files(ry)
-            with tempfile.NamedTemporaryFile("w", suffix=".yml", delete=False) as tf:
+            with tempfile.NamedTemporaryFile("w", suffix=".yml", delete=False, encoding="utf-8") as tf:
                 tf.write(ry_norm)
                 tmp_rule = tf.name
             try:
@@ -375,7 +376,7 @@ for _i, unit_id in enumerate(unit_ids):
     artifact.update(plugin_meta.stamp(os.environ["MEGA_SDD_LIB_DIR"]))
     os.makedirs(bolt_dir, exist_ok=True)
     tmp = target + ".tmp.%d" % os.getpid()
-    with open(tmp, "w") as f:
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(artifact, f, indent=1)
     os.replace(tmp, target)
     if not quiet:

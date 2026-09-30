@@ -42,6 +42,7 @@
 #   exit 0 = PASS or SKIP; exit 1 = FAIL; exit 2 = error
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 QUIET=0
@@ -168,7 +169,7 @@ def glob_match(path, pattern):
 
 def write_and_exit(report, code):
     _tmp = state_file + ".tmp.%d" % os.getpid()  # AUDIT L4: atomic write (tmp + os.replace) — no torn read under concurrent bolts
-    with open(_tmp, "w") as f:
+    with open(_tmp, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
     os.replace(_tmp, state_file)
     if not quiet:
@@ -575,7 +576,7 @@ FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
 
 
 def parse_unit(path):
-    with open(path, errors="replace") as f:
+    with open(path, errors="replace", encoding="utf-8") as f:
         text = f.read()
     fm = {}
     fm_text = ""
@@ -679,7 +680,7 @@ def unit_entity_tokens(fm, target_files):
 flow_sections = []  # (vault, header_text, body_text)
 for _fpath, _upaths, _vname in all_candidates:
     try:
-        with open(_fpath, errors="replace") as f:
+        with open(_fpath, errors="replace", encoding="utf-8") as f:
             flows_text = f.read()
     except Exception:
         continue

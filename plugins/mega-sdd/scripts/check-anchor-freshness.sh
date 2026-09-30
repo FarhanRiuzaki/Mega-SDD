@@ -37,6 +37,7 @@
 #           every offending unit listed)
 #       2 = cannot run (usage / any unit not found / not a git repo)
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 UNITS=""
@@ -114,7 +115,7 @@ unit_commits = None     # lazy: skipped entirely when nothing is stale
 blocking = []           # (unit_id, [lines]) for not-yet-bolted stale units
 
 for unit_id in unit_ids:
-    text = open(unit_files[unit_id]).read()
+    text = open(unit_files[unit_id], encoding="utf-8").read()
 
     # `## Anchors` section body — same heading tolerance as the B1 has_hard_rules
     # matcher (case-insensitive, trailing text on the heading line allowed).
@@ -154,7 +155,7 @@ for unit_id in unit_ids:
             continue
         ap = os.path.join(cwd, p)
         try:
-            n_lines = len(open(ap, errors="replace").read().splitlines())
+            n_lines = len(open(ap, errors="replace", encoding="utf-8").read().splitlines())
         except OSError:
             stale.append((p, line, "file_missing"))
             continue

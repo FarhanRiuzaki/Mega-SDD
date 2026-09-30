@@ -25,6 +25,7 @@
 # Exit: 0 = PASS / WARN / not-applicable; 1 = FATAL precondition unmet; 2 = error
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 # ─── v7 Fase 2 merge group 10: the chain-level PREDICTIVE preflight lives here
 # as the --predictive mode (merged verbatim from predictive-preflight.sh).
@@ -824,7 +825,7 @@ report = {
 state_file = os.path.join(cwd, ".mega-sdd", ".preflight-state.json")
 if not no_project:  # a non-project gets no .mega-sdd/ written into it
     try:
-        with open(state_file, "w") as f:
+        with open(state_file, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2)
             f.write("\n")
     except Exception:

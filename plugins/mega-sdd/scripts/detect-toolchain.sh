@@ -12,6 +12,7 @@
 #   {tool, check_cmd, fix_cmd?, evidence}. Exit 0 always (detection only).
 
 set -u
+export PYTHONUTF8=1
 CWD="."
 for arg in "$@"; do
   case "$arg" in

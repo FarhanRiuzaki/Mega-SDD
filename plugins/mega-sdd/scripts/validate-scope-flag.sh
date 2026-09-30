@@ -18,6 +18,7 @@
 # Note: emits BLOCK directive on stdout when FAIL (for hook to relay).
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 USER_MSG_FILE=""
@@ -70,7 +71,7 @@ flag_match = re.search(r"--scope[=\s]+(\S+)", msg)
 if not flag_match:
     # No flag → pass through (no action)
     state = {"ts": ts, "status": "PASS", "reason": "no --scope flag in user message", "scope_requested": None}
-    with open(state_file, "w") as f:
+    with open(state_file, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
     if not quiet:
         print(json.dumps(state))
@@ -81,7 +82,7 @@ scope_requested = flag_match.group(1).strip().strip("'\"").rstrip(",;)")
 # Special value: --scope=all (legacy) → always valid
 if scope_requested.lower() == "all":
     state = {"ts": ts, "status": "PASS", "reason": "--scope=all legacy fallback (always valid)", "scope_requested": "all"}
-    with open(state_file, "w") as f:
+    with open(state_file, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
     if not quiet:
         print(json.dumps(state))
@@ -136,7 +137,7 @@ if not prd_candidates:
                               ".mega-sdd/{seed-,}prd.md",
                               ".mega-sdd/vaults/*/source/seed-PRD.md"],
     }
-    with open(state_file, "w") as f:
+    with open(state_file, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
     if not quiet:
         print(json.dumps(state))
@@ -146,11 +147,11 @@ if not prd_candidates:
 declared_scopes = []
 prd_path = prd_candidates[0]
 try:
-    with open(prd_path) as f:
+    with open(prd_path, encoding="utf-8") as f:
         prd_content = f.read()
 except Exception:
     state = {"ts": ts, "status": "PASS", "reason": f"cannot read PRD {prd_path}; graceful skip"}
-    with open(state_file, "w") as f:
+    with open(state_file, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
     sys.exit(0)
 
@@ -201,7 +202,7 @@ if not declared_scopes:
         "scope_requested": scope_requested,
         "prd_path": os.path.relpath(prd_path, cwd),
     }
-    with open(state_file, "w") as f:
+    with open(state_file, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
     if not quiet:
         print(json.dumps(state))
@@ -216,7 +217,7 @@ if scope_requested in declared_scopes:
         "declared_scopes": declared_scopes,
         "prd_path": os.path.relpath(prd_path, cwd),
     }
-    with open(state_file, "w") as f:
+    with open(state_file, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
     if not quiet:
         print(json.dumps(state))
@@ -238,7 +239,7 @@ state = {
         f"Cancel and update PRD if the scope SHOULD be added."
     ),
 }
-with open(state_file, "w") as f:
+with open(state_file, "w", encoding="utf-8") as f:
     json.dump(state, f, indent=2)
 if not quiet:
     print(json.dumps(state))

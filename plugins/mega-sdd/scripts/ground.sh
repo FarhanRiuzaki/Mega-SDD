@@ -12,6 +12,7 @@
 # Exit 0 = grounded (index may still be honestly absent — see INDEX=);
 # 2 = usage; derive-state failures pass through (read-only surface, never blocks).
 set -u
+export PYTHONUTF8=1
 CWD="."
 while [ $# -gt 0 ]; do case "$1" in
   --cwd) CWD="$2"; shift 2;;
@@ -91,7 +92,7 @@ for f in sorted(glob.glob(os.path.join(cwd, ".mega-sdd", "vaults", "*", "vault.j
 
 for vj in vault_jsons:
     try:
-        with open(vj) as f:
+        with open(vj, encoding="utf-8") as f:
             data = json.load(f)
     except Exception as _e:
         # C1 detection (registry: vault_json_corrupt — doc-audit v8 finding #6, the
@@ -108,8 +109,8 @@ for vj in vault_jsons:
     old_mode_repr = current_mode if current_mode is not None else "(missing)"
     data["mode"] = expected_mode
     try:
-        with open(vj, "w") as f:
-            json.dump(data, f, indent=2)
+        with open(vj, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
             f.write("\n")
     except Exception:
         continue
@@ -141,7 +142,7 @@ for up in unit_paths_vw:
     if "/.archived/" in up or "/.archived\\" in up:
         continue
     try:
-        body = open(up).read()
+        body = open(up, encoding="utf-8").read()
     except Exception:
         continue
     m = FRONTMATTER_RE_VW.match(body)
@@ -376,7 +377,7 @@ for c in catalog_candidates:
 
 if mt_catalog_path:
     try:
-        catalog_content = open(mt_catalog_path).read()
+        catalog_content = open(mt_catalog_path, encoding="utf-8").read()
         # Role names live in the SECOND cell (backticked) — the first cell is
         # the row number. The old first-cell capture collected row numbers, so
         # every legitimate override tripped a spurious model_tier_unknown
@@ -396,7 +397,7 @@ if mt_catalog_path:
         if not os.path.isfile(cp):
             continue
         try:
-            cfg_text = open(cp).read()
+            cfg_text = open(cp, encoding="utf-8").read()
         except Exception:
             continue
         # Look for model_tiers: block or preferences.md ## Model tiers section
@@ -475,7 +476,7 @@ try:
 except Exception:
     pass  # stamp is provenance, never a reason to drop the probe
 try:
-    with open(os.path.join(cwd, ".mega-sdd", ".l0-toolchain-probe.json"), "w") as f:
+    with open(os.path.join(cwd, ".mega-sdd", ".l0-toolchain-probe.json"), "w", encoding="utf-8") as f:
         json.dump(probe, f, indent=2)
 except OSError:
     sys.exit(0)
@@ -524,7 +525,7 @@ cwd = os.environ["V_CWD"]
 pos = ""
 try:
     try:
-        pos = json.load(open(os.path.join(cwd, ".mega-sdd", "state.json"))).get("derived", {}).get("position", "") or ""
+        pos = json.load(open(os.path.join(cwd, ".mega-sdd", "state.json"), encoding="utf-8")).get("derived", {}).get("position", "") or ""
     except Exception:
         pos = ""
 finally:

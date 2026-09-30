@@ -19,6 +19,7 @@
 # Exit: 0 no new deps / all exist / offline-unverified (warned) · 2 definite 404 (blocking)
 
 set -u
+export PYTHONUTF8=1
 BASE=""; HEAD=""; CWD="."; UNIT=""
 for arg in "$@"; do
   case "$arg" in

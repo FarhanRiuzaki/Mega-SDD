@@ -30,6 +30,7 @@
 #       1 = ≥1 non-pass verdict (artifact written — B1 stays closed until the code is fixed)
 #       2 = cannot run (unit not found / not a git repo)
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 UNIT=""
@@ -97,7 +98,7 @@ d = os.path.dirname(uf)
 vault_root = os.path.dirname(d) if os.path.basename(d) == "units" else os.path.dirname(os.path.dirname(d))
 bolt_dir = os.path.join(vault_root, "bolts", unit_id)
 
-text = open(uf).read()
+text = open(uf, encoding="utf-8").read()
 
 # The unit's bolt commits via the SHARED walk (same identity grammar + pathspec as
 # the gate's recompute). walk_unit_commits returns {uid: newest-first [(sha,[(st,p)])]}.
@@ -122,7 +123,7 @@ preflight = {}
 pf_path = os.path.join(bolt_dir, "preflight.json")
 if os.path.isfile(pf_path):
     try:
-        preflight = json.load(open(pf_path))
+        preflight = json.load(open(pf_path, encoding="utf-8"))
     except (OSError, ValueError):
         preflight = {}
 
@@ -152,7 +153,7 @@ artifact.update(plugin_meta.stamp(os.environ["MEGA_SDD_LIB_DIR"]))
 os.makedirs(bolt_dir, exist_ok=True)
 target = os.path.join(bolt_dir, "postflight.json")
 tmp = target + ".tmp.%d" % os.getpid()
-with open(tmp, "w") as f:
+with open(tmp, "w", encoding="utf-8") as f:
     json.dump(artifact, f, indent=1)
 os.replace(tmp, target)
 if not quiet:

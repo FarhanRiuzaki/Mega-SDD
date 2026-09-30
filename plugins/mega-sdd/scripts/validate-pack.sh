@@ -12,6 +12,7 @@
 #
 # NEVER called as a runtime hook — author/CI gate only.
 set -u
+export PYTHONUTF8=1
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONV_DIR="$(cd "$SCRIPT_DIR/../references/framework-conventions" && pwd)"
@@ -311,7 +312,7 @@ ${line}"
 import sys, re, os
 body_file = os.environ.get("BODY_IN", "")
 try:
-    text = open(body_file).read()
+    text = open(body_file, encoding="utf-8").read()
 except Exception:
     sys.exit(0)
 lines = text.split("\n")
@@ -375,14 +376,14 @@ body_file = os.environ.get("BODY_FILE", "")
 
 # Read body
 try:
-    body = open(body_file).read()
+    body = open(body_file, encoding="utf-8").read()
 except Exception:
     sys.exit(0)
 
 # Parse token map from _lint.md
 token_map_raw = ""
 try:
-    content = open(lint_md).read()
+    content = open(lint_md, encoding="utf-8").read()
     in_map = False
     in_fence = False
     for line in content.splitlines():

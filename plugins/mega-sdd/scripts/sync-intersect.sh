@@ -60,6 +60,7 @@
 #     literal `path:` values inside the frontmatter `target_files:` block;
 #     inline `target_files: []` = empty. python3 stdlib only, like siblings.
 set -u
+export PYTHONUTF8=1
 CWD="."
 VAULT=""
 PATHS=""

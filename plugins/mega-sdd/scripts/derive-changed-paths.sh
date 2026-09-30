@@ -23,6 +23,7 @@
 # Exit 0 = written; 2 = usage; 3 = no baseline stamp / git unavailable /
 # write failed — the caller falls back to a full re-bind, never guesses.
 set -u
+export PYTHONUTF8=1
 CWD="."
 VAULT=""
 while [ $# -gt 0 ]; do case "$1" in

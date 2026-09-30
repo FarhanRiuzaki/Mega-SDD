@@ -245,7 +245,7 @@ def finish(rc, body):
                 os.environ.get("PACKRES_ST", "0"),
                 " ".join("%s.md" % n for n in chain))
             tmp = cache + ".tmp"
-            with open(tmp, "w", newline="\n") as f:
+            with open(tmp, "w", newline="\n", encoding="utf-8") as f:
                 f.write(meta + "\n")
                 if body:
                     f.write(body if body.endswith("\n") else body + "\n")
@@ -268,7 +268,7 @@ def strip_md(name):
 
 def read_text(path):
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return f.read()
     except Exception:
         return None

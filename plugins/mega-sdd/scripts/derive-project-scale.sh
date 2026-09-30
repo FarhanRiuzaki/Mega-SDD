@@ -33,6 +33,7 @@
 #                   items under a data-model/entities section heading )
 #   flows    = distinct F-<letter>-<digits> ids in headings
 set -u
+export PYTHONUTF8=1
 PRD=""
 QUIET=0
 for arg in "$@"; do

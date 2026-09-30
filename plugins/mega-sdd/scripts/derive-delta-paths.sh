@@ -72,6 +72,7 @@
 #     side's reverse index derives from the same binding text, so string
 #     identity holds). python3 stdlib only, like siblings.
 set -u
+export PYTHONUTF8=1
 CWD="."
 VAULT=""
 while [ $# -gt 0 ]; do case "$1" in

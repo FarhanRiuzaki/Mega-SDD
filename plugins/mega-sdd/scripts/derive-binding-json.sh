@@ -16,6 +16,7 @@
 # → per-unit JIT bind). 3 = usage / unreadable binding.md.
 # On ANY error binding.json is NOT written (never a partial/stale overwrite).
 set -u
+export PYTHONUTF8=1
 VAULT=""
 while [ $# -gt 0 ]; do case "$1" in --vault) VAULT="$2"; shift 2;; --vault=*) VAULT="${1#*=}"; shift;; *) shift;; esac; done
 [ -n "$VAULT" ] || { echo "usage: derive-binding-json.sh --vault <dir>" >&2; exit 3; }

@@ -21,6 +21,7 @@
 # Exit: 0 clean/written · 1 drift found (check mode) · 2 usage/IO.
 
 set -u
+export PYTHONUTF8=1
 KB_DIR=""; WRITE=0; QUIET=0
 for arg in "$@"; do
   case "$arg" in

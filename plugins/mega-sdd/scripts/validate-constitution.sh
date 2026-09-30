@@ -13,6 +13,7 @@
 # Exit: 0=PASS/SKIP, 1=FAIL, 2=error
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 QUIET=0
@@ -93,7 +94,7 @@ for const_path in const_files:
     vault_name = os.path.basename(vault_dir)
 
     try:
-        const_content = open(const_path).read()
+        const_content = open(const_path, encoding="utf-8").read()
     except Exception as e:
         issues.append({"halt_type": "constitution_unreadable", "vault": vault_name, "detail": str(e)})
         checks.append({"check": f"{vault_name}/constitution_readable", "status": "FAIL"})
@@ -189,7 +190,7 @@ for const_path in const_files:
         clauses_cited_in_units = set()
         for uf in unit_files:
             try:
-                uc = open(uf).read()
+                uc = open(uf, encoding="utf-8").read()
             except Exception:
                 continue
             for cid in clause_ids:
@@ -229,7 +230,7 @@ for const_path in const_files:
     for bp in binding_paths:
         if os.path.isfile(bp):
             try:
-                bc = open(bp).read()
+                bc = open(bp, encoding="utf-8").read()
                 const_refs_in_binding = sum(1 for cid in clause_ids if cid in bc)
                 checks.append({"check": f"{vault_name}/constitution_in_binding", "status": "PASS",
                                "detail": f"{const_refs_in_binding} clause refs in binding.md"})
@@ -257,7 +258,7 @@ PYEOF
 echo "$RESULT" | python3 -c "
 import json, sys
 data = json.loads(sys.stdin.read())
-with open('$STATE_FILE', 'w') as f:
+with open('$STATE_FILE', 'w', encoding='utf-8') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
 " 2>/dev/null

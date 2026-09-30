@@ -33,6 +33,7 @@
 # Exit: 0 = no blocking failure (incl. SKIP) · 1 = ≥1 blocking failure
 #       2 = usage / not a git repo / HEAD unreadable
 set -u
+export PYTHONUTF8=1
 CWD="$PWD"; JSON=""; NO_BUILD=0; NO_TESTS=0; KEEP=0
 for arg in "$@"; do case "$arg" in
   --cwd=*) CWD="${arg#*=}";;
@@ -63,8 +64,8 @@ else
       || cp -R --reflink=auto "$ROOT/node_modules" "$COPY/node_modules" 2>/dev/null \
       || cp -R "$ROOT/node_modules" "$COPY/node_modules"
   fi
-  TEST_CMD="$(python3 -c 'import json,sys; print((json.load(open(sys.argv[1])).get("scripts") or {}).get("test",""))' "$COPY/package.json" 2>/dev/null)"
-  BUILD_CMD="$(python3 -c 'import json,sys; print((json.load(open(sys.argv[1])).get("scripts") or {}).get("build",""))' "$COPY/package.json" 2>/dev/null)"
+  TEST_CMD="$(python3 -c 'import json,sys; print((json.load(open(sys.argv[1], encoding="utf-8")).get("scripts") or {}).get("test",""))' "$COPY/package.json" 2>/dev/null)"
+  BUILD_CMD="$(python3 -c 'import json,sys; print((json.load(open(sys.argv[1], encoding="utf-8")).get("scripts") or {}).get("build",""))' "$COPY/package.json" 2>/dev/null)"
 
   if [ -z "$TEST_CMD" ] || printf '%s' "$TEST_CMD" | grep -q 'no test specified'; then
     row D1 FAIL yes "package.json has no real scripts.test — a reviewer's \`npm test\` fails; add the command the tests actually run with"
@@ -141,10 +142,10 @@ if [ "$FAILS" -gt 0 ]; then echo "VERDICT: FAIL ($FAILS blocking)"; else echo "V
 if [ -n "$JSON" ]; then
   python3 - "$RES/rows" "$JSON" "$HEAD_SHA" "$FAILS" <<'EOF'
 import json, sys
-rows = [l.rstrip('\n').split('\t', 3) for l in open(sys.argv[1]) if l.strip()]
+rows = [l.rstrip('\n').split('\t', 3) for l in open(sys.argv[1], encoding="utf-8") if l.strip()]
 json.dump({'head': sys.argv[3], 'verdict': 'FAIL' if int(sys.argv[4]) else 'PASS',
            'checks': [{'id': a, 'status': b, 'blocking': c == 'yes', 'detail': d} for a, b, c, d in rows]},
-          open(sys.argv[2], 'w'), indent=1)
+          open(sys.argv[2], 'w', encoding="utf-8"), indent=1)
 EOF
 fi
 [ "$KEEP" = 1 ] && echo "kept: $RES" || rm -rf "$RES"

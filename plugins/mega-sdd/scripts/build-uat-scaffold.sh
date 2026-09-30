@@ -55,6 +55,7 @@
 #           in default mode the fragment is still written (audit-trail precedent)
 #       2 = usage error / vault missing
 set -uo pipefail
+export PYTHONUTF8=1
 
 VAULTS=()
 CWD=""
@@ -409,7 +410,7 @@ def parse_vault(vroot):
     vjson_path = os.path.join(vroot, "vault.json")
     if os.path.isfile(vjson_path):
         try:
-            vj = json.load(open(vjson_path))
+            vj = json.load(open(vjson_path, encoding="utf-8"))
             sm = vj.get("scope_metadata") or {}
             sid = str(sm.get("id") or "").strip()
             if sid:

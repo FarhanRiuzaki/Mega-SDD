@@ -17,6 +17,7 @@
 # Usage: derive-transitive-impact.sh --vault=<dir> --project=<root> --units=<csv>
 # Exit: 0 always (data) · 2 usage.
 set -u
+export PYTHONUTF8=1
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="$(cd "$HERE/.." && pwd)"
@@ -46,7 +47,7 @@ NEED_BUILD=1
 if [ -f "$G" ]; then
   ROOT="$PROJECT" G="$G" python3 <<'PYEOF'
 import json,os,glob,hashlib,sys
-root=os.environ["ROOT"]; g=json.load(open(os.environ["G"]))
+root=os.environ["ROOT"]; g=json.load(open(os.environ["G"], encoding="utf-8"))
 meta=g.get("_meta",{}); old=meta.get("source_hashes",{})
 def sh(p):
     h=hashlib.sha256()
@@ -71,7 +72,7 @@ G="$G" UNITS="$UNITS" VAULT_BASE="$(basename "${VAULT:-}")" python3 <<'PYEOF' ||
 import json, os
 from collections import defaultdict, deque
 
-g = json.load(open(os.environ["G"]))
+g = json.load(open(os.environ["G"], encoding="utf-8"))
 inputs = [u.strip() for u in os.environ["UNITS"].split(",") if u.strip()]
 
 # graph unit ids are VAULT-PREFIXED ("app:U-001"); the reconcile pass speaks

@@ -51,6 +51,7 @@
 #   exit 0 = PASS (no drops); exit 1 = FAIL (drops detected); exit 2 = error
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 QUIET=0
@@ -114,7 +115,7 @@ if not os.path.isdir(vault_dir):
         "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     }
     _tmp = blocker_file + ".tmp.%d" % os.getpid()  # AUDIT L4: atomic write (tmp + os.replace) — no torn read under concurrent bolts
-    with open(_tmp, "w") as f:
+    with open(_tmp, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
     os.replace(_tmp, blocker_file)
     if not quiet:
@@ -189,7 +190,7 @@ _BUCKET = {"live": binding_oqs, "pending": binding_oqs_pending, "resolved": bind
 binding_conflicts = {}     # conflict_id → binding_file_path
 for bp in binding_paths:
     try:
-        with open(bp) as f:
+        with open(bp, encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
         if not quiet:
@@ -224,7 +225,7 @@ for vj in sorted(
     glob.glob(os.path.join(vault_dir, "*", "vault.json"))
 ):
     try:
-        with open(vj) as f:
+        with open(vj, encoding="utf-8") as f:
             vdata = json.load(f)
         for entry in (vdata.get("open_questions") or []):
             if isinstance(entry, dict):
@@ -241,7 +242,7 @@ unit_conflict_citations = {}  # conflict_id → [unit_file_paths]
 FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---", re.DOTALL)
 for up in units_paths:
     try:
-        with open(up) as f:
+        with open(up, encoding="utf-8") as f:
             body = f.read()
     except Exception as e:
         if not quiet:
@@ -390,7 +391,7 @@ def _conflict_blocks(blines):
 conflict_resolution_action = {}
 for bp in binding_paths:
     try:
-        with open(bp) as f:
+        with open(bp, encoding="utf-8") as f:
             blines = f.read().splitlines()
     except Exception:
         continue
@@ -698,7 +699,7 @@ if _inside_git is not None and _inside_git.strip() == "true":
         if _cur_head is None or parse_frontmatter_metadata is None:
             break
         try:
-            _bmd = open(bp).read()
+            _bmd = open(bp, encoding="utf-8").read()
         except Exception:
             continue
         _bhead = parse_frontmatter_metadata(_bmd).get("head")
@@ -728,7 +729,7 @@ if _inside_git is not None and _inside_git.strip() == "true":
             })
             continue
         try:
-            _bj = json.load(open(_bj_path))
+            _bj = json.load(open(_bj_path, encoding="utf-8"))
         except Exception:
             continue  # unparseable sidecar — parity validator owns that failure
         # ONE git call: every commit in <head>..HEAD with subject + Unit
@@ -895,7 +896,7 @@ report = {
 # AUDIT L4: atomic write (tmp + os.replace) — a concurrent gate read (the PreToolUse
 # aggregator) must never see a torn .validation-blockers.json (the moat state file).
 _tmp = blocker_file + ".tmp.%d" % os.getpid()
-with open(_tmp, "w") as f:
+with open(_tmp, "w", encoding="utf-8") as f:
     json.dump(report, f, indent=2)
 os.replace(_tmp, blocker_file)
 

@@ -27,6 +27,7 @@
 # never this file.
 
 set -u
+export PYTHONUTF8=1
 LEGACY=""; KB_DIR=""; QUIET=0
 for arg in "$@"; do
   case "$arg" in

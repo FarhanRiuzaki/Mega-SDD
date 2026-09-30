@@ -22,6 +22,7 @@
 # (never blocks — md is ground truth), natural mixed ID-EN template strings.
 # Exit 0 = rendered; 2 = usage/missing input.
 set -u
+export PYTHONUTF8=1
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ASSETS="$SCRIPT_DIR/../assets/render-html"
 IN=""; OUT=""; INDEX=0; ASSETS_DIR=0; CWD="$PWD"

@@ -22,6 +22,7 @@
 # Exit codes: 0=PASS, 1=FAIL (at least one halt detected), 2=error.
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 RESPONSE_FILE=""
@@ -220,7 +221,7 @@ def parse_handoff_yaml(text):
 # Load prior state if exists (for retry_count tracking)
 prior_state = {}
 try:
-    with open(state_file) as f:
+    with open(state_file, encoding="utf-8") as f:
         prior_state = json.load(f)
 except Exception:
     prior_state = {}
@@ -731,7 +732,7 @@ if _unregistered:
 
 # Write state file (overwrite — current truth)
 try:
-    with open(state_file, "w") as f:
+    with open(state_file, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
 except Exception as e:
     print(f"ERROR: cannot write state file: {e}", file=sys.stderr)

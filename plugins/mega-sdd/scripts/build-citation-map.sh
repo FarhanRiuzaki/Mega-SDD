@@ -53,6 +53,7 @@
 # `pending` token inside existing '(sha256: …)' stamps is ever replaced).
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 VAULT=""
 CWD=""

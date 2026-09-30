@@ -12,6 +12,7 @@
 # 3 index missing.
 
 set -u
+export PYTHONUTF8=1
 CWD="."; INDEX=""; FFILE=""; FDIR=""; FNAME=""; FKIND=""; LIMIT=0
 for arg in "$@"; do
   case "$arg" in

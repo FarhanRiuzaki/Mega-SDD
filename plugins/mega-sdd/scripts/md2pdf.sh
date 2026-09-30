@@ -25,6 +25,7 @@
 # Exit: 0 = PDF written · 3 = Chrome absent, HTML fallback written · 2 = pandoc
 #       absent (nothing written) / usage · 1 = render error.
 set -uo pipefail
+export PYTHONUTF8=1
 
 IN="${1:-}"
 [ -n "$IN" ] || { echo "usage: md2pdf.sh <input.md> [output.pdf] [--toc]" >&2; exit 2; }
