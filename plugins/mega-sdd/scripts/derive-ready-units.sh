@@ -6,6 +6,7 @@
 # done = implemented (compute-unit-staleness.sh) with acceptance.json + postflight.json status pass;
 # quarantined = as recorded (write-unit-quarantine.sh). Output: ONE JSON line. Exit 0 · 2 usage.
 set -u
+export PYTHONUTF8=1
 CWD="."; VAULT=""; QUIET=0
 for arg in "$@"; do case "$arg" in
   --cwd=*) CWD="${arg#*=}" ;; --vault=*) VAULT="${arg#*=}" ;; --quiet) QUIET=1 ;;
@@ -28,7 +29,7 @@ units = sorted({os.path.basename(p)[:-3] if p.endswith(".md") and os.path.basena
 def evidence(uid):
     b = os.path.join(vault, "bolts", uid)
     def ok(name):
-        try: return str(json.load(open(os.path.join(b, name))).get("status") or "").lower() == "pass"
+        try: return str(json.load(open(os.path.join(b, name), encoding="utf-8")).get("status") or "").lower() == "pass"
         except Exception: return False
     return ok("acceptance.json") and ok("postflight.json")
 

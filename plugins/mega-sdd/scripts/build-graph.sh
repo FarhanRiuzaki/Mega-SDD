@@ -2,6 +2,7 @@
 # Derive .mega-sdd/graph.json from existing artifacts. Deterministic, no code re-scan.
 # Usage: build-graph.sh --root <project-root> [--out <output-path>]
 set -u
+export PYTHONUTF8=1
 ROOT="."; OUT=""
 while [ $# -gt 0 ]; do case "$1" in
   --root) ROOT="$2"; shift 2;; --root=*) ROOT="${1#*=}"; shift;;

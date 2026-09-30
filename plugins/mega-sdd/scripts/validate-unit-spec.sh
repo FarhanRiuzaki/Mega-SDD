@@ -32,6 +32,7 @@
 # Exit: 0=PASS, 1=FAIL (focal file when --file-path given, else merged), 2=error.
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 FILE_PATH=""
@@ -271,7 +272,7 @@ def validate_unit(file_path):
     issues = []
     rel_path = os.path.relpath(file_path, cwd)
     try:
-        body = open(file_path, errors="replace").read()
+        body = open(file_path, errors="replace", encoding="utf-8").read()
     except Exception as e:
         return [{"halt_type": "unit_underspecified", "file": rel_path,
                  "detail": f"cannot read unit file: {e}"}]
@@ -626,7 +627,7 @@ def validate_unit(file_path):
             if not os.path.isfile(full):
                 return False
             try:
-                with open(full, errors="replace") as fh:
+                with open(full, errors="replace", encoding="utf-8") as fh:
                     n = sum(1 for _ in fh)
             except Exception:
                 return False
@@ -1256,7 +1257,7 @@ state = {
 
 try:
     _tmp = state_file + ".tmp.%d" % os.getpid()  # AUDIT L4: atomic write (tmp + os.replace) — no torn read under concurrent bolts
-    with open(_tmp, "w") as f:
+    with open(_tmp, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
     os.replace(_tmp, state_file)
 except Exception as e:

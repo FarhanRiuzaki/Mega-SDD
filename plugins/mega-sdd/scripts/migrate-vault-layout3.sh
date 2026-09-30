@@ -32,6 +32,7 @@
 # Idempotent: context.md present → no-op exit 0. Legacy 7-file vault → exit 2 (run the
 # layout-2 rung first). Dirty git tree under --apply → exit 2 (preview stays available).
 set -u
+export PYTHONUTF8=1
 VAULT=""; APPLY=0; CWD="."
 for arg in "$@"; do case "$arg" in
   --vault=*) VAULT="${arg#*=}" ;; --apply) APPLY=1 ;; --cwd=*) CWD="${arg#*=}" ;;

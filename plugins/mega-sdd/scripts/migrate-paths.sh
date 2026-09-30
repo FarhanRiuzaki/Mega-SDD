@@ -30,6 +30,7 @@
 #       1 = error (target-exists conflict; reference-update failure via set -e)
 #       2 = refused (dirty git tree without --dry-run) | usage error
 set -euo pipefail
+export PYTHONUTF8=1
 
 DRY_RUN=0
 FROM=auto

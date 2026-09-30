@@ -20,6 +20,7 @@
 # State: <kb-dir>/.extract-census-state.json (re-derived every run).
 
 set -u
+export PYTHONUTF8=1
 KB_DIR=""; QUIET=0
 for arg in "$@"; do
   case "$arg" in

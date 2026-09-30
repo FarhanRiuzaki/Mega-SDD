@@ -59,6 +59,7 @@
 # Read-only: writes nothing but the stdout line.
 
 set -u
+export PYTHONUTF8=1
 
 VERIFY_CMD=""
 TOOL=""

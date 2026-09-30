@@ -11,6 +11,7 @@
 # Exit: 0 clean or skipped · 1 WARNING/INFO findings only · 2 ERROR findings (blocking)
 
 set -u
+export PYTHONUTF8=1
 BASE=""; HEAD=""; CWD="."; CONFIG="auto"
 for arg in "$@"; do
   case "$arg" in
@@ -45,7 +46,7 @@ fi
 
 python3 - "$TMP" <<'PYEOF'
 import json, sys
-data = json.load(open(sys.argv[1]))
+data = json.load(open(sys.argv[1], encoding="utf-8"))
 out, worst = [], 0
 for r in data.get("results", []):
     sev = (r.get("extra", {}).get("severity") or "INFO").upper()

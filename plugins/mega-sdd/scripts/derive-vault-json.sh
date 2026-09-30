@@ -38,6 +38,7 @@
 # vault.json.lock held after backoff (skill maps to the memory_in_use halt —
 # keterangan envelope stays at the skill layer, verbatim).
 set -u
+export PYTHONUTF8=1
 VAULT=""; PATCH=""; EVENT=""
 while [ $# -gt 0 ]; do case "$1" in
   --vault) VAULT="$2"; shift 2;; --vault=*) VAULT="${1#*=}"; shift;;

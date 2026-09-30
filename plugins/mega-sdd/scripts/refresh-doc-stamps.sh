@@ -39,6 +39,7 @@
 #
 # Exit: 0 = stamped/refreshed (or idempotent no-op); 2 = usage error / doc missing.
 set -uo pipefail
+export PYTHONUTF8=1
 
 VAULT=""
 DOC=""
@@ -120,7 +121,7 @@ def git_short_hash(near):
 hist = None
 if os.path.isfile(hist_path):
     try:
-        hist = json.load(open(hist_path))
+        hist = json.load(open(hist_path, encoding="utf-8"))
     except (OSError, ValueError):
         print(f"ERROR: {hist_path} unreadable — refusing to guess version state", file=sys.stderr)
         sys.exit(2)

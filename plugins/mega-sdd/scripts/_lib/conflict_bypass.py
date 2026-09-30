@@ -212,7 +212,7 @@ def run(cwd, state_file, quiet, ts, git, prefix, has_trailer_atom, lib_dir):
                             "No unit committed past an open CONFLICT or a quarantine." + (
                                 " (%d binding(s) without a CONFLICT time — advisory; re-bind to evaluate them.)" % len(legacy) if legacy else "")}
     state.update(plugin_meta.stamp(lib_dir))
-    with open(state_file + ".tmp", "w") as f:
+    with open(state_file + ".tmp", "w", encoding="utf-8") as f:
         json.dump(state, f, indent=1)
     os.replace(state_file + ".tmp", state_file)
     if not quiet:

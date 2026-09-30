@@ -37,6 +37,7 @@
 # Exit: 0 = PASS or SKIP; 1 = FAIL; 2 = error
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 # ─── v7 Fase 2 merge group 9: this file also hosts its two pack-driven ────────
 # siblings as modes (each folded VERBATIM; own state file, own exit semantics):
@@ -106,7 +107,7 @@ ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 def write_and_exit(report, code):
     _tmp = state_file + ".tmp.%d" % os.getpid()  # AUDIT L4: atomic write (tmp + os.replace) — no torn read under concurrent bolts
-    with open(_tmp, "w") as f:
+    with open(_tmp, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
     os.replace(_tmp, state_file)
     if not quiet:
@@ -231,7 +232,7 @@ CLASS_RE = re.compile(r"\bclass\s+([A-Za-z_][A-Za-z0-9_]*)")
 
 def read(path):
     try:
-        with open(path, errors="replace") as f:
+        with open(path, errors="replace", encoding="utf-8") as f:
             return f.read()
     except Exception:
         return ""
@@ -446,7 +447,7 @@ ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 def write_and_exit(report, code):
     _tmp = state_file + ".tmp.%d" % os.getpid()  # AUDIT L4: atomic write (tmp + os.replace) — no torn read under concurrent bolts
-    with open(_tmp, "w") as f:
+    with open(_tmp, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
     os.replace(_tmp, state_file)
     if not quiet:
@@ -523,7 +524,7 @@ FM_RE = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
 
 
 def parse_unit(path):
-    with open(path, errors="replace") as f:
+    with open(path, errors="replace", encoding="utf-8") as f:
         text = f.read()
     fm = {}
     fmm = FM_RE.match(text)
@@ -680,7 +681,7 @@ ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 def write_and_exit(report, code):
     _tmp = state_file + ".tmp.%d" % os.getpid()  # AUDIT L4: atomic write (tmp + os.replace) — no torn read under concurrent bolts
-    with open(_tmp, "w") as f:
+    with open(_tmp, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
     os.replace(_tmp, state_file)
     if not quiet:
@@ -807,7 +808,7 @@ FM_RE = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
 
 
 def parse_unit(path):
-    with open(path, errors="replace") as f:
+    with open(path, errors="replace", encoding="utf-8") as f:
         text = f.read()
     fm = {}
     m = FM_RE.match(text)

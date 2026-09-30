@@ -38,6 +38,7 @@
 # non-CONFLICT claim with no unresolved closed episode, claim set drifted since the capture, a git
 # error while a .git exists).
 set -u
+export PYTHONUTF8=1
 CWD="."; VAULT=""; UNIT=""; CLAIMS=""; VERDICTS=""; RESOLVE=""; BY=""; REBIND=0
 for arg in "$@"; do case "$arg" in
   --cwd=*) CWD="${arg#*=}" ;; --vault=*) VAULT="${arg#*=}" ;; --unit=*) UNIT="${arg#*=}" ;;

@@ -28,6 +28,7 @@
 # Exit: 0=clean/advisory, 1=hits-found-and-strict, 2=error
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 KB_DIR=""
 STACK="auto"
@@ -106,7 +107,7 @@ def detect_stacks():
     census = os.path.join(kb_dir, "census.json")
     if os.path.isfile(census):
         try:
-            with open(census, "r", errors="replace") as f:
+            with open(census, "r", errors="replace", encoding="utf-8") as f:
                 c = json.load(f)
             found = set()
             for lang in c.get("stacks", []):
@@ -120,7 +121,7 @@ def detect_stacks():
     meta = os.path.join(kb_dir, ".scan-meta.json")
     if os.path.isfile(meta):
         try:
-            with open(meta, "r", errors="replace") as f:
+            with open(meta, "r", errors="replace", encoding="utf-8") as f:
                 m = json.load(f)
             found = set()
             blob = json.dumps(m).lower()
@@ -214,7 +215,7 @@ if os.path.isdir(kb_dir):
                 fp = os.path.join(root, fn)
                 files_scanned += 1
                 try:
-                    with open(fp, "r", errors="replace") as fh:
+                    with open(fp, "r", errors="replace", encoding="utf-8") as fh:
                         text = fh.read()
                 except Exception:
                     continue

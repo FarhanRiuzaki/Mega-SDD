@@ -35,6 +35,7 @@
 # Exit 0 = plan written, resumed, re-bound or retired · 1 = nothing executable (no plan), or a CONFLICT left at the
 # close · 2 = usage / cycle / unreadable input / a failed re-bind.
 set -u
+export PYTHONUTF8=1
 CWD="."; VAULT=""; UNITS="all"; MODE=""; QUIET=0; DRY=0; MODULE=""
 for arg in "$@"; do case "$arg" in
   --cwd=*) CWD="${arg#*=}" ;; --vault=*) VAULT="${arg#*=}" ;; --units=*) UNITS="${arg#*=}" ;; --module=*) MODULE="${arg#*=}" ;;
@@ -288,7 +289,7 @@ def sh(script, *args):
 rel_vault, base = os.path.relpath(vault, root), head or "<the HEAD at run start>"
 spec = ["context `%s`" % os.path.join(vault, "context.md"), "units `%s/`" % os.path.join(vault, "units")]
 try:
-    spec += ["PRD `%s`" % json.load(open(os.path.join(vault, "vault.json")))["prd_path"]]
+    spec += ["PRD `%s`" % json.load(open(os.path.join(vault, "vault.json"), encoding="utf-8"))["prd_path"]]
 except (OSError, ValueError, KeyError, TypeError):
     pass
 suite = sh("run-full-suite.sh", "--cwd=" + q(root), "--base=" + base)

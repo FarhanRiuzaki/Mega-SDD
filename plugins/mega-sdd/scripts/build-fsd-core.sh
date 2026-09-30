@@ -33,6 +33,7 @@
 #         plus the drift lines (DRIFT/GONE/NO_PRIOR/...) verbatim after it
 #       2 = cannot run (usage / vault or template missing)
 set -uo pipefail
+export PYTHONUTF8=1
 
 VAULT=""; CWD=""; MODE="auto"; SECTIONS="all"; QUIET=0
 for arg in "$@"; do
@@ -168,7 +169,7 @@ if re.search(r"(?m)^include_citation_footnotes:\s*false", sty_raw):
 
 vj = {}
 try:
-    vj = json.load(open(os.path.join(vault, "vault.json")))
+    vj = json.load(open(os.path.join(vault, "vault.json"), encoding="utf-8"))
 except Exception:
     pass
 # ── v8 P2 DOCS re-source (spec 2026-09-10 App. D): a layout-3 vault carries no

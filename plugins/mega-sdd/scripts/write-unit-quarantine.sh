@@ -14,6 +14,7 @@
 # file (the human answered: retry / fixed by hand / dropped) and stamps who.
 # Exit 0 written/released · 2 usage.
 set -u
+export PYTHONUTF8=1
 CWD="."; VAULT=""; UNIT=""; HALT=""; REASON=""; ENV_FILE=""; DEPS=""; RELEASE=0; BY=""
 for arg in "$@"; do case "$arg" in
   --cwd=*) CWD="${arg#*=}" ;; --vault=*) VAULT="${arg#*=}" ;; --unit=*) UNIT="${arg#*=}" ;; --halt=*) HALT="${arg#*=}" ;;

@@ -9,6 +9,7 @@
 # Writes <cwd>/.mega-sdd/.factory-ledger-state.json
 # Exit: 0=PASS or SKIP(no ledger), 1=FAIL, 2=error.
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""; QUIET=0; CAP=3
 for arg in "$@"; do
@@ -48,7 +49,7 @@ STATUSES = {"completed", "unresolved", "halted"}
 def write_and_exit(report, code):
     try:
         _tmp = state_file + ".tmp.%d" % os.getpid()  # S6 EB-VAL-3: atomic — no torn read
-        with open(_tmp, "w") as f:
+        with open(_tmp, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2)
         os.replace(_tmp, state_file)
     except Exception as e:
@@ -66,7 +67,7 @@ try:
                         "convergence_status": None, "cap": None}, 0)
 
     try:
-        records = json.load(open(ledger_path))
+        records = json.load(open(ledger_path, encoding="utf-8"))
     except Exception as e:
         write_and_exit({"status": "FAIL", "halt_type": "ledger_unparseable",
                         "convergence_status": "in_progress",

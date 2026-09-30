@@ -4,6 +4,7 @@
 # _lib/exec_units.done, then bolt-outcomes.json; read-only, no graph; exit 0 rollup / 1 vault not found / 2 usage.
 #   query-graph.sh --modules [vault-path] [--cwd=<p>] [--module=<id>] [--format=table|json]
 set -u
+export PYTHONUTF8=1
 
 # ─── --modules mode (merged list-modules.sh) — handled before the impact args ─
 if [ "${1:-}" = "--modules" ]; then
@@ -182,7 +183,7 @@ vault_name = os.path.basename(vault_dir.rstrip("/"))
 vj_path = os.path.join(vault_dir, "vault.json")
 if os.path.isfile(vj_path):
     try:
-        with open(vj_path) as f:
+        with open(vj_path, encoding="utf-8") as f:
             vj = json.load(f)
         vault_name = vj.get("title") or vj.get("name") or vj.get("slug") or vault_name
     except Exception as e:
@@ -273,7 +274,7 @@ status_of = {}          # unit_id -> "completed" | "halted_*" | None
 bo_path = os.path.join(vault_dir, ".memory", "bolt-outcomes.json")
 if os.path.isfile(bo_path):
     try:
-        bo = json.load(open(bo_path))
+        bo = json.load(open(bo_path, encoding="utf-8"))
         for b in bo.get("bolts", []) or []:
             uid = str(b.get("unit_id") or "").strip()
             st = b.get("status")
@@ -429,7 +430,7 @@ BUILDER_VER="$(grep -m1 -oE 'build-graph@[0-9]+\.[0-9]+\.[0-9]+' "${PLUGIN_ROOT}
 if [ -f "$G" ]; then
   ROOT="$ROOT" G="$G" BUILDER_VER="$BUILDER_VER" python3 <<'PYEOF'
 import json,os,glob,hashlib,sys
-root=os.environ["ROOT"]; g=json.load(open(os.environ["G"]))
+root=os.environ["ROOT"]; g=json.load(open(os.environ["G"], encoding="utf-8"))
 meta=g.get("_meta",{}); old=meta.get("source_hashes",{})
 _bv=os.environ.get("BUILDER_VER","")
 if _bv and meta.get("generated_by") != _bv:
@@ -452,7 +453,7 @@ fi
 ROOT="$ROOT" G="$G" TARGET="$TARGET" DIR="$DIR" python3 <<'PYEOF'
 import json,os,re
 from collections import defaultdict, deque
-g=json.load(open(os.environ["G"]))
+g=json.load(open(os.environ["G"], encoding="utf-8"))
 target=os.environ["TARGET"]; direction=os.environ["DIR"]
 nodes={n["id"]:n for n in g["nodes"]}
 

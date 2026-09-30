@@ -49,6 +49,7 @@
 #       1 = ≥1 executed entry failed (incl. the L0 syntax rung) — artifact written
 #       2 = cannot run (usage / unit not found / not a git repo)
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 UNIT=""
@@ -119,7 +120,7 @@ d = os.path.dirname(uf)
 vault_root = os.path.dirname(d) if os.path.basename(d) == "units" else os.path.dirname(os.path.dirname(d))
 bolt_dir = os.path.join(vault_root, "bolts", unit_id)
 
-text = open(uf).read()
+text = open(uf, encoding="utf-8").read()
 
 # ── Parse acceptance_test[] — the SAME region extraction validate-unit-spec.sh
 # uses (^acceptance_test\s*: up to the next top-level key), then line-based
@@ -278,7 +279,7 @@ if syntax_skipped:
 os.makedirs(bolt_dir, exist_ok=True)
 target = os.path.join(bolt_dir, "acceptance.json")
 tmp = target + ".tmp.%d" % os.getpid()
-with open(tmp, "w") as f:
+with open(tmp, "w", encoding="utf-8") as f:
     json.dump(artifact, f, indent=1)
 os.replace(tmp, target)
 if not quiet:

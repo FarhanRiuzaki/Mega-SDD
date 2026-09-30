@@ -6,8 +6,8 @@
   "t01_lite_commanded_bytes": 400160,
   "t01_default_commanded_bytes": 39848,
   "skill_md_total_bytes": 256402,
-  "scripts_total_lines": 39964,
-  "hooks_total_lines": 2827
+  "scripts_total_lines": 40046,
+  "hooks_total_lines": 2832
  },
  "raises": [
   {
@@ -182,6 +182,21 @@
     ]
    },
    "measured_benefit": "Defect fix. Field report 2026-09-30 (office FE team, Windows 11 + Git Bash, Next.js repo, 642 files): the one chunk of paths exceeded the CreateProcessW 32,767-char limit -> [WinError 206], build-symbol-index exit 4, symbol_index absent, every JIT symbol claim bound as OQ. Regression test: tests/scan/test-symbol-index-cmdline.sh fails against the old script (A2 command line 97,815 > 32,000, A3 one chunk, C1) and passes after (7 chunks, longest 31,984, all 642 files scanned; POSIX still one call). The repair-install-pointer.py lines are the Windows update defect fix whose evidence is the entry above (tests/update/test-version-drift.sh G/H)."
+  },
+  {
+   "date": "2026-09-30",
+   "change": "UTF-8 file I/O on every host: `export PYTHONUTF8=1` in each bash script/hook that runs python (87 files, one line each; a builtin, no fork), plus encoding=\"utf-8\" on every text-mode open()/fdopen()/NamedTemporaryFile() (169 sites, no line change); ground.sh mode guard writes vault.json with ensure_ascii=False; derive-state.sh reads the managed .gitignore with errors=replace so a cp1252 copy an older run left is rewritten",
+   "metric": {
+    "scripts_total_lines": [
+     39964,
+     40046
+    ],
+    "hooks_total_lines": [
+     2827,
+     2832
+    ]
+   },
+   "measured_benefit": "Defect fix (data corruption). Field report 2026-09-30 (Windows 11, Python 3.14, locale cp1252, PYTHONUTF8 unset): one ground.sh run rewrote a tracked vault.json title's em-dash as \\u00e2\\u20ac\\u201d (exit 0), and derive-state.sh wrote .mega-sdd/.gitignore in cp1252 and rewrote it every run (a dirty tree that blocks migrate-paths). Regression test: tests/encoding/test-utf8-io.sh fails against main e7eddc6d (A1 169 encoding-less opens, B1 87 scripts without PYTHONUTF8, C2 vault.json -> \\u00e2\\u0080\\u0094 under an ISO-8859-1 locale, C3 .gitignore not UTF-8) and passes after; 190 related tests pass, tier-S hook fork ceilings unchanged."
   }
  ]
 }

@@ -38,6 +38,7 @@
 #      2 = usage / unreadable input · 3 = a writer or the validator failed (fail-closed:
 #          treat as "full JIT re-bind required", never as in-sync).
 set -u
+export PYTHONUTF8=1
 CWD="."; VAULT=""; PATHS=""; UNITS=""; QUIET=0
 for arg in "$@"; do case "$arg" in
   --cwd=*) CWD="${arg#*=}" ;; --vault=*) VAULT="${arg#*=}" ;; --paths=*) PATHS="${arg#*=}" ;;

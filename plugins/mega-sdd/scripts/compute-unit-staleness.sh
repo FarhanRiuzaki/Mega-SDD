@@ -16,6 +16,7 @@
 # Output: JSON on stdout. Exit 0 always (staleness is data); exit 2 on bad invocation.
 
 set -u
+export PYTHONUTF8=1
 
 VAULT=""; PROJECT=""
 for arg in "$@"; do

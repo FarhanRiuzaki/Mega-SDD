@@ -13,6 +13,7 @@
 # Output contract (current docs): top-level {"decision": "block", "reason": ...}.
 # Fail-open on anything undeterminable — the PreToolUse gate remains the backstop.
 set -uo pipefail
+export PYTHONUTF8=1
 
 # Direct dispatch (v7.5.0 Fase 7 №A): hooks.json runs this body straight — the
 # run-hook.sh dispatcher (bash→dirname→uname→bash, 3 extra procs/event) is gone.

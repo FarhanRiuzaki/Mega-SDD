@@ -29,6 +29,7 @@
 # prefixed, both directions); rows are class-sorted and capped at 40.
 
 set -u
+export PYTHONUTF8=1
 CWD=""; RANGE="HEAD~1..HEAD"; JSON=0; BAD=""
 for arg in "$@"; do
   case "$arg" in

@@ -31,6 +31,7 @@
 #         plus drift lines verbatim
 #       2 = cannot run (usage / sources or template missing)
 set -uo pipefail
+export PYTHONUTF8=1
 
 OUTROOT=""; CWD=""; MODE=""; VAULT=""; KB=""; QUIET=0
 for arg in "$@"; do
@@ -109,7 +110,7 @@ prd_rel, prd_sn = None, None
 if LAYOUT3:
     _vj0 = {}
     try:
-        _vj0 = json.load(open(os.path.join(vault, "vault.json")))
+        _vj0 = json.load(open(os.path.join(vault, "vault.json"), encoding="utf-8"))
     except Exception:
         pass
     _pp = str(_vj0.get("prd_path_at_generation") or "")
@@ -404,7 +405,7 @@ if mode == "forward":
         # real vault has no 03-open-questions.md; "(tidak ada)" would be false)
         vj6 = {}
         try:
-            vj6 = json.load(open(os.path.join(vault, "vault.json")))
+            vj6 = json.load(open(os.path.join(vault, "vault.json"), encoding="utf-8"))
         except Exception:
             pass
         for q in (vj6.get("open_questions") or []):
@@ -446,7 +447,7 @@ for n in range(1, 7):
 vj = {}
 if vault:
     try:
-        vj = json.load(open(os.path.join(vault, "vault.json")))
+        vj = json.load(open(os.path.join(vault, "vault.json"), encoding="utf-8"))
     except Exception:
         pass
 project = vj.get("project_name") or os.path.basename(cwd)

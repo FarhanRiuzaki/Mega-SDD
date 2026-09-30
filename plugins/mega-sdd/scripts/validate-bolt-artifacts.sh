@@ -44,6 +44,7 @@
 # silently dormant (bolt_commits_seen: 0 → PASS).
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 FILE_PATH=""
@@ -311,7 +312,7 @@ def _targets_of(uid):
     if not uf:
         return None
     try:
-        body = open(uf).read()
+        body = open(uf, encoding="utf-8").read()
     except OSError:
         return None
     m = re.match(r"^---\n(.*?)\n---", body, re.DOTALL)
@@ -404,7 +405,7 @@ state = {
                        % len(generation_mismatches) if generation_mismatches else ".")),
 }
 tmp = state_file + ".tmp"
-with open(tmp, "w") as f:
+with open(tmp, "w", encoding="utf-8") as f:
     json.dump(state, f, indent=1)
 os.replace(tmp, state_file)
 if not quiet:
@@ -466,7 +467,7 @@ def emit(status, halt_type=None, detail=None, extra=None):
         state.update(extra)
     try:
         tmp = state_file + ".tmp"
-        with open(tmp, "w") as f:
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=1)
         os.replace(tmp, state_file)
     except OSError:
@@ -483,7 +484,7 @@ if not newest_bolt:
 gates = []
 for p in vault_layouts.batch_suite_files(cwd):
     try:
-        with open(p) as f:
+        with open(p, encoding="utf-8") as f:
             g = json.load(f)
         g["_path"] = os.path.relpath(p, cwd)
         gates.append(g)
@@ -637,7 +638,7 @@ def unit_text(uid, sha):
             if r.returncode == 0 and r.stdout.strip():
                 return r.stdout
     try:
-        return open(uf).read()
+        return open(uf, encoding="utf-8").read()
     except OSError:
         return None
 
@@ -683,7 +684,7 @@ def postflight_ok(uid):
     if not p:
         return (False, False)
     try:
-        d = json.load(open(p))
+        d = json.load(open(p, encoding="utf-8"))
     except (OSError, ValueError):
         return (True, False)  # present but unreadable = not valid evidence
     # Require POSITIVE evidence, never permissive defaults — an empty {} or an empty
@@ -733,14 +734,14 @@ def recompute_unit(uid, text):
     pf = os.path.join(bd, "preflight.json")
     if os.path.isfile(pf):
         try:
-            preflight = json.load(open(pf))
+            preflight = json.load(open(pf, encoding="utf-8"))
         except (OSError, ValueError):
             preflight = {}
     target = os.path.join(bd, "postflight.json")
     prior = None
     if os.path.isfile(target):
         try:
-            prior = json.load(open(target))
+            prior = json.load(open(target, encoding="utf-8"))
         except (OSError, ValueError):
             prior = None
     results, ok_all = postflight_rules.scan_unit(
@@ -758,7 +759,7 @@ def recompute_unit(uid, text):
         pass
     os.makedirs(bd, exist_ok=True)
     tmp = target + ".tmp.%d" % os.getpid()
-    with open(tmp, "w") as f:
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(artifact, f, indent=1)
     os.replace(tmp, target)
 
@@ -856,7 +857,7 @@ state = {
 }
 try:
     tmp = state_file + ".tmp"
-    with open(tmp, "w") as f:
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=1)
     os.replace(tmp, state_file)
 except OSError:
@@ -931,7 +932,7 @@ for uid in sorted(per_unit):
     art = None
     if art_path:
         try:
-            art = json.load(open(art_path))
+            art = json.load(open(art_path, encoding="utf-8"))
         except (OSError, ValueError):
             art = None  # present but unreadable = not valid evidence
     if art is None:
@@ -993,7 +994,7 @@ state = {
                        "never blocked.)" % len(legacy_advisory) if legacy_advisory else "")),
 }
 tmp = state_file + ".tmp"
-with open(tmp, "w") as f:
+with open(tmp, "w", encoding="utf-8") as f:
     json.dump(state, f, indent=1)
 os.replace(tmp, state_file)
 if not quiet:
@@ -1060,7 +1061,7 @@ def targets_of(uid):
     if not uf:
         return None
     try:
-        body = open(uf).read()
+        body = open(uf, encoding="utf-8").read()
     except OSError:
         return None
     m = re.match(r"^---\n(.*?)\n---", body, re.DOTALL)
@@ -1132,7 +1133,7 @@ state = {
                    if issues else "Every bolt commit stayed inside its unit's target_files whitelist.",
 }
 tmp = state_file + ".tmp"
-with open(tmp, "w") as f:
+with open(tmp, "w", encoding="utf-8") as f:
     json.dump(state, f, indent=1)
 os.replace(tmp, state_file)
 if not quiet:
@@ -1237,7 +1238,7 @@ def find_unit_for_target(target_path):
     unit_paths = vault_layouts.unit_files(cwd)
     for up in unit_paths:
         try:
-            body = open(up).read()
+            body = open(up, encoding="utf-8").read()
         except Exception:
             continue
         m = re.match(r"^---\n(.*?)\n---", body, re.DOTALL)
@@ -1283,7 +1284,7 @@ def find_unit_for_target(target_path):
 unit_file, unit_id = find_unit_for_target(file_path)
 if unit_file is not None:
     try:
-        with open(file_path) as f:
+        with open(file_path, encoding="utf-8") as f:
             head = "".join(f.readline() for _ in range(30))
     except Exception:
         head = ""
@@ -1300,7 +1301,7 @@ if unit_file is not None:
 # Triggers when written file is bolt-report.md. Looks for `bolt_self_report:` YAML key.
 if is_bolt_report(file_path):
     try:
-        content = open(file_path).read()
+        content = open(file_path, encoding="utf-8").read()
     except Exception:
         content = ""
     if "bolt_self_report:" not in content:
@@ -1321,7 +1322,7 @@ if is_bolt_report(file_path):
 # Validates each cited D-NNN exists in some vault's decisions/ dir (all layouts).
 if is_unit_path(file_path):
     try:
-        body = open(file_path).read()
+        body = open(file_path, encoding="utf-8").read()
     except Exception:
         body = ""
     # Find Cites references — match Cites: §Decision-D-NNN, Cites: §D-NNN, Cites: D-NNN
@@ -1386,7 +1387,7 @@ state = {
 # analyze surfaces it); current-truth overwrite per written file.
 try:
     _tmp = state_file + ".tmp.%d" % os.getpid()
-    with open(_tmp, "w") as f:
+    with open(_tmp, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
     os.replace(_tmp, state_file)
 except Exception as e:

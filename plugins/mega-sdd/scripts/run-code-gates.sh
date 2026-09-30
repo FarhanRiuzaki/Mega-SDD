@@ -96,6 +96,7 @@
 # resolver pipeline and minus one shell init per replaced Bash turn.
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""; BASE=""; HEAD=""; UNIT=""; PACK=""; NO_CODE_GATES=0; WRITE=0
 for arg in "$@"; do
@@ -453,7 +454,7 @@ def main():
             os.makedirs(ldir, exist_ok=True)
             tgt = os.path.join(ldir, "l0-results.json")
             tmp = tgt + ".tmp.%d" % os.getpid()
-            with open(tmp, "w") as fh:
+            with open(tmp, "w", encoding="utf-8") as fh:
                 json.dump(rec, fh, indent=2)
             os.replace(tmp, tgt)
             result["l0_results_path"] = tgt

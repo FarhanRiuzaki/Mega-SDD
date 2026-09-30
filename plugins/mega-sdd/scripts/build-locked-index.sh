@@ -14,6 +14,7 @@
 # Usage: build-locked-index.sh --cwd=<project-root>
 
 set -uo pipefail
+export PYTHONUTF8=1
 CWD=""
 for arg in "$@"; do
   case "$arg" in
@@ -79,7 +80,7 @@ out = {
 }
 idx = os.path.join(cwd, ".mega-sdd", ".locked-files-index.json")
 tmp = idx + ".tmp"
-with open(tmp, "w") as f:
+with open(tmp, "w", encoding="utf-8") as f:
     json.dump(out, f, indent=1)
 os.replace(tmp, idx)
 PYEOF

@@ -17,6 +17,7 @@
 # Exit: 0=PASS, 1=FAIL.
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 FILE_PATH=""
@@ -66,7 +67,7 @@ ts = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 rel = os.path.relpath(file_path, cwd)
 
 try:
-    content = open(file_path).read()
+    content = open(file_path, encoding="utf-8").read()
 except Exception:
     sys.exit(0)
 
@@ -105,7 +106,7 @@ state = {
     ),
 }
 try:
-    with open(state_file, "w") as f:
+    with open(state_file, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
 except Exception:
     sys.exit(2)

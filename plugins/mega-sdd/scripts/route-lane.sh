@@ -46,6 +46,7 @@
 # Prints ONE JSON line: {"lane","signals_fired","evidence","override"}.
 # Exit 0 always on a readable request; 2 = usage.
 set -u
+export PYTHONUTF8=1
 CWD="$PWD"; PRD=""; TEXT=""; LANE=""; CODE_MIN=10
 for arg in "$@"; do case "$arg" in
   --cwd=*) CWD="${arg#*=}";;

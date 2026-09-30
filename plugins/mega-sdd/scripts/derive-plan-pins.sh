@@ -22,6 +22,7 @@
 # census legacy_root, else the README H1 title (first segment), else "kb".
 # Exit 0 · 2 usage · 3 PRD/KB README unreadable.
 set -u
+export PYTHONUTF8=1
 CWD="."; PRD=""; KB=""; VAULT=""; MODE=""
 USAGE="usage: derive-plan-pins.sh --cwd=<root> (--prd=<file> | --kb=<kb-dir>) [--vault=<dir>] [--mode=new|existing]"
 for arg in "$@"; do case "$arg" in

@@ -13,6 +13,7 @@
 # Exit: 0=PASS/SKIP, 1=FAIL, 2=error
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 QUIET=0
@@ -61,7 +62,7 @@ checks = []
 
 # Parse starterkit-context.yaml (simple key:value extraction — no yaml lib dependency)
 try:
-    sk_content = open(sk_file).read()
+    sk_content = open(sk_file, encoding="utf-8").read()
 except Exception as e:
     print(json.dumps({"status": "ERROR", "detail": f"cannot read {sk_file}: {e}"}))
     raise SystemExit(0)
@@ -152,7 +153,7 @@ for uf in unit_files:
     if "/.archived/" in uf:
         continue
     try:
-        content = open(uf).read()
+        content = open(uf, encoding="utf-8").read()
     except Exception:
         continue
 
@@ -307,7 +308,7 @@ echo "$RESULT" | python3 -c "
 import json, os, sys
 data = json.loads(sys.stdin.read())
 _tmp = '$STATE_FILE' + '.tmp.%d' % os.getpid()  # AUDIT L4: atomic write (tmp + os.replace)
-with open(_tmp, 'w') as f:
+with open(_tmp, 'w', encoding='utf-8') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
 os.replace(_tmp, '$STATE_FILE')

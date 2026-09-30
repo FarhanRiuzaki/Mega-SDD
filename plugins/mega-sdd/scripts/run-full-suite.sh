@@ -24,6 +24,7 @@
 #       1 = suite red   (artifact written RED — B2 blocks until fixed + re-run)
 #       2 = cannot run  (no runner detected / no vault / not a git repo) — nothing written
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 RUNNER=""
@@ -99,7 +100,7 @@ if [ -f "${CWD}/composer.json" ]; then
   fi
 fi
 if [ -z "$DETECTED" ] && [ -f "${CWD}/package.json" ]; then
-  if HAS_TEST=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(1 if (d.get("scripts") or {}).get("test") else 0)' "${CWD}/package.json" 2>/dev/null) && [ "$HAS_TEST" = "1" ]; then
+  if HAS_TEST=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); print(1 if (d.get("scripts") or {}).get("test") else 0)' "${CWD}/package.json" 2>/dev/null) && [ "$HAS_TEST" = "1" ]; then
     if [ -f "${CWD}/yarn.lock" ]; then DETECTED="yarn test"
     elif [ -f "${CWD}/pnpm-lock.yaml" ]; then DETECTED="pnpm test"
     else DETECTED="npm test -s"
@@ -340,7 +341,7 @@ if os.environ.get("RUNNER_OVERRIDDEN") == "1":
     state["runner_overridden"] = True
     state["detected_runner"] = os.environ.get("DETECTED", "")
 tmp = target + ".tmp.%d" % os.getpid()
-with open(tmp, "w") as f:
+with open(tmp, "w", encoding="utf-8") as f:
     json.dump(state, f, indent=1)
 os.replace(tmp, target)
 if os.environ.get("QUIET") != "1":

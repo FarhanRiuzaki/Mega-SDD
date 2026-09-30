@@ -11,6 +11,7 @@
 # Exit: 0=PASS/SKIP/WARN, 1=FAIL, 2=error
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 FILE_PATH=""
@@ -76,7 +77,7 @@ checks = []
 issues = []
 
 try:
-    content = open(map_path).read()
+    content = open(map_path, encoding="utf-8").read()
 except Exception as e:
     print(json.dumps({"status": "FAIL", "checks": [], "issues": [{"halt_type": "codebase_map_unreadable", "detail": str(e)}]}))
     raise SystemExit(0)
@@ -281,7 +282,7 @@ PYEOF
 echo "$RESULT" | python3 -c "
 import json, sys
 data = json.loads(sys.stdin.read())
-with open('$STATE_FILE', 'w') as f:
+with open('$STATE_FILE', 'w', encoding='utf-8') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
 " 2>/dev/null

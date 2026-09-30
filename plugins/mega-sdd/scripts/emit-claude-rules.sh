@@ -10,6 +10,7 @@
 # match, slug-exact stale pattern, single-quoted YAML path escaping.
 # Exit: 0 ok · 2 usage/missing inputs.
 set -u
+export PYTHONUTF8=1
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 VAULT=""; CWD=""; WRITE=0

@@ -31,6 +31,7 @@
 #        read-only inspection surface, not a gate).
 
 set -uo pipefail
+export PYTHONUTF8=1
 
 CWD=""
 JSON_ONLY=0
@@ -84,7 +85,7 @@ if os.path.isdir(state_dir):
     state_file = os.path.join(state_dir, "state.json")
     try:
         fd, tmp = tempfile.mkstemp(prefix=".state-", suffix=".json", dir=state_dir)
-        with os.fdopen(fd, "w") as f:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2)
             f.write("\n")
         os.replace(tmp, state_file)
@@ -114,9 +115,9 @@ html/
 **/bolts/_inline-ledger-*.md
 """
     try:
-        cur = open(gi).read() if os.path.isfile(gi) else None
+        cur = open(gi, encoding="utf-8", errors="replace").read() if os.path.isfile(gi) else None
         if cur is None or (cur.startswith("# mega-sdd-managed") and cur != body):
-            with open(gi, "w") as f:
+            with open(gi, "w", encoding="utf-8") as f:
                 f.write(body)
     except Exception:
         pass  # advisory hygiene, never a failure of the digest

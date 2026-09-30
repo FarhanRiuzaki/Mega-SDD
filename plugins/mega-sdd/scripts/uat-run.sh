@@ -17,6 +17,7 @@
 # Flags: --vault=<dir> --cwd=<root> [--url=<preview>] [--timeout=<sec>] [--spec=<UAT-id>]
 # Exit: 0 ran-or-skipped · 2 usage.
 set -uo pipefail
+export PYTHONUTF8=1
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 export MEGA_SDD_LIB_DIR="$HERE/_lib"

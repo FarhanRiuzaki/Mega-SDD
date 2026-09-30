@@ -21,6 +21,7 @@
 # Exit: 0 written · 2 usage/IO.
 
 set -u
+export PYTHONUTF8=1
 LEGACY=""; KB_DIR=""; QUIET=0
 for arg in "$@"; do
   case "$arg" in

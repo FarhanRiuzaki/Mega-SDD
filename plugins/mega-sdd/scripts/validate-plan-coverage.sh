@@ -34,6 +34,7 @@
 #   oq_only[], notes[], next_action, paste[], summary, …} + vaults{<vault>: {status, digest, sources, …}}; `status` =
 #   PASS only when every entry is a PASS. Exit 0 PASS · 1 FAIL · 2 usage. Replaced a heuristic classifier (9.0).
 set -u
+export PYTHONUTF8=1
 CWD="."; PRD=""; KB=""; VAULT=""; QUIET=0
 for arg in "$@"; do case "$arg" in
   --cwd=*) CWD="${arg#*=}" ;; --prd=*) PRD="$PRD${arg#*=}"$'\n' ;; --kb=*) KB="${arg#*=}" ;; --vault=*) VAULT="${arg#*=}" ;; --quiet) QUIET=1 ;;
