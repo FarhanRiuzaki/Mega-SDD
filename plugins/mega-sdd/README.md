@@ -260,6 +260,8 @@ Mega-sdd adopts stable native binaries instead of reinventing them — all optio
 
 ## What's new
 
+**v9.1.0** — *Windows fixes and a forced update*: UTF-8 file I/O on every host (Windows cp1252 no longer corrupts `vault.json` or `.mega-sdd/.gitignore`); the symbol index builds under the Windows 32,767-char command-line limit; `/mega-sdd:update-plugin` forces the newest version, verifies it, and repairs a stale install pointer (confirm-first); a Windows CI job. Also P3/P3b below (the per-unit `--agents` path removed; retired flags print a one-line notice).
+
 **v9.0.0** — *one front door, one pipeline*:
 - **Lane router.** `/mega-sdd` runs `route-lane.sh` first. direct/assisted build like plain Claude Code (+ one ask and one blind review on assisted). guarded (an existing vault, or `--guarded`) runs the one spec pipeline.
 - **One result contract** on every lane: AC → test table, `delivery-check.sh` `VERDICT: PASS`, assumptions.

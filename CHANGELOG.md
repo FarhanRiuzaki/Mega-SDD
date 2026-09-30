@@ -7,7 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history lives in git history.** `CHANGELOG-ARCHIVE.md` (v3.0.0…v5.2.2, rotated 2026-05-26, 2026-06-24 and 2026-09-06) left the tree on 2026-09-29: read it at commit be944b07 (`git show be944b07:CHANGELOG-ARCHIVE.md`). Rotation no longer writes an archive file; git history keeps every entry.
 
-## [Unreleased] — P3: jalur per-unit `--agents` dihapus (spec v9 §8.6; tanpa klaim gain)
+## [9.1.0] - 2026-09-30 — fix Windows (update, symbol index, encoding UTF-8), update yang dipaksa ke versi terbaru, P3/P3b
+
+Minor karena bagian 3–4 di bawah (P2/P3) ngubah perilaku default `execute-bolts`; flag yang dipensiunkan tetap diterima dengan notice satu baris. Nggak ada klaim lebih cepat, lebih murah, atau lebih bagus dari vanilla Claude Code.
+
+### Fixed — Windows (laporan lapangan tim kantor, 2026-09-30)
+- **Korupsi encoding (kritis, diam-diam).** Di Windows (locale cp1252, `PYTHONUTF8` nggak diset), `ground.sh` nulis ulang `vault.json` jadi `\u00e2\u20ac\u201d` di tiap em-dash, dan `derive-state.sh` nulis `.mega-sdd/.gitignore` dalam cp1252 lalu nulis ulang tiap run (tree kotor, `migrate-paths` nolak jalan). Sekarang semua 169 `open()`/`fdopen()`/`NamedTemporaryFile()` teks pakai `encoding="utf-8"`, 87 script/hook yang jalanin python `export PYTHONUTF8=1`, mode guard nulis `ensure_ascii=False`, dan `.gitignore` cp1252 sisa run lama ditulis ulang jadi UTF-8. `vault.json` yang udah rusak dan ke-commit nggak bisa dipulihin otomatis: ambil dari riwayat git. Test: `tests/encoding/test-utf8-io.sh`.
+- **Symbol index gagal (`[WinError 206]`).** `build-symbol-index.sh` nyusun path ast-grep dengan anggaran POSIX 256 KB; Windows ngebatasin seluruh command line di 32.767 karakter, jadi index nggak pernah kebentuk dan semua klaim simbol JIT jadi OQ. Sekarang di Windows tiap chunk diukur sebagai command line lengkap (maks 32.000); POSIX nggak berubah. Test: `tests/scan/test-symbol-index-cmdline.sh`.
+- **Update nyangkut di versi lama.** `installed_plugins.json` bisa tetap nunjuk 8.7.0 walau cache 9.0.0 lengkap (perilaku Claude Code, dimitigasi): `/mega-sdd:update-plugin` Step 5.2 nawarin `scripts/repair-install-pointer.py` (confirm-first, backup dulu), dan awal sesi ngasih tau kalau cache lebih baru dari yang aktif. Sweep cache dormant (Step 5.5) sebelumnya dapet daftar versi aktif KOSONG di path Windows dan bakal nawarin hapus semua versi; sekarang baca JSON yang di-parse dan berhenti kalau daftarnya kosong. Test: `tests/update/test-version-drift.sh` G–J.
+- CI punya job `windows-latest` (Git Bash, locale bawaan runner) untuk dua test di atas.
+
+### Changed
+- **`/mega-sdd:update-plugin` dipaksa ke versi terbaru**: `claude plugin marketplace update` → `claude plugin update -s user` → VERIFY (installed == versi clone, installPath ada, clone == remote-nya). Gagal = FAIL keras + perintah manualnya. Awal sesi ngasih satu baris kalau versi yang jalan, yang terpasang, dan yang tersedia beda.
+- **P3b**: sisa cluster setelah P3 — lima flag fan-out yang udah mati dipensiunkan satu baris, enam nama halt tanpa emitter dipensiunkan, `_claims.json` per unit jadi satu-satunya mode JIT capture, done rule baca sisa legacy unit itu sendiri (sebelumnya 27 dari 29 jadi CONFLICT palsu), `run-code-gates.sh` baca `## Toolchain` dari pack project. Ceiling complexity cuma diturunin.
+- Repo dibersihin dari file yang udah nggak kepake (1.177 file).
+
+## 9.1.0 (bagian 3) — P3: jalur per-unit `--agents` dihapus (spec v9 §8.6; tanpa klaim gain)
 
 Dasarnya cuma hasil P2 di bawah (inline non-inferior, satu fixture brownfield, n=3). P3 nggak mengklaim lebih cepat, lebih murah, atau lebih bagus dari sebelumnya maupun dari vanilla.
 
@@ -18,7 +33,7 @@ Dasarnya cuma hasil P2 di bawah (inline non-inferior, satu fixture brownfield, n
 - Smoke inline C2 digabung dengan smoke C6b: satu run xs, n=1, delivery-check `VERDICT: PASS`. Itu smoke, bukan benchmark.
 - Ceiling complexity budget diturunkan ke nilai terukur. Fan-out, halt vocabulary, JIT capture dan done-rule ditunda ke P3b.
 
-## [Unreleased] — `execute-bolts` default jadi inline (P2, TERUKUR: non-inferior terhadap jalur per-unit agent, biaya ±60%)
+## 9.1.0 (bagian 4) — `execute-bolts` default jadi inline (P2, TERUKUR: non-inferior terhadap jalur per-unit agent, biaya ±60%)
 
 Pilihan owner "P2 ramping" (spec §8), diukur dengan aturan terkunci spec §8.4 di fixture brownfield: n=3 per arm, semua run bersih, vanilla sebagai kontrol (n=4). Tabel: `benchmarks/results/vanilla-ab/REPORT-p2.md`; analisis: commit `dbd3d7d4`.
 
