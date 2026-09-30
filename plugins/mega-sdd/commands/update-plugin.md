@@ -50,19 +50,22 @@ mega-sdd update (via mega-sdd marketplace)
 - VERIFY:    PASS | FAIL
 ```
 
-On `VERIFY: FAIL`, say the update did NOT land, show the line above, and give the exact manual command: `claude plugin marketplace update mega-sdd && claude plugin update mega-sdd@mega-sdd -s user` (in a terminal), then re-run `/mega-sdd:update-plugin`. If `BEFORE_INSTALLED` already equalled the available version and VERIFY passes, say "already up to date" (the sweep below still runs — dormant dirs accumulate regardless).
+**Step 5.2 — Repair the active pointer (confirm-first).** Field-observed on Windows: `/plugin` updates can leave `installed_plugins.json` on an old version while a complete newer cache dir sits on disk. On `VERIFY: FAIL` with `remote=current` and installed < available, run `python3 ~/.claude/plugins/marketplaces/mega-sdd/plugins/mega-sdd/scripts/repair-install-pointer.py --check` (the clone's copy: always the newest script). When it says `"action": "repoint"` and `newest_complete` == available, ask ONCE via `AskUserQuestion` (keterangan in Indonesian: the file is backed up first; close other Claude Code sessions first — a running session may still hold the old path) → on yes run the same script with `--apply`, then re-run the Step 5 VERIFY. Never edit `installed_plugins.json` by hand, and never repoint to a cache dir the script does not call complete.
+
+On a `VERIFY: FAIL` that Step 5.2 did not fix, say the update did NOT land, show the line above, and give the exact manual command: `claude plugin marketplace update mega-sdd && claude plugin update mega-sdd@mega-sdd -s user` (in a terminal, with every Claude Code session closed), then re-run `/mega-sdd:update-plugin`. If `BEFORE_INSTALLED` already equalled the available version and VERIFY passes, say "already up to date" (the sweep below still runs — dormant dirs accumulate regardless).
 
 **Step 5.5 — Dormant-cache sweep (confirm-first, NEVER silent — spec 2026-08-31-update-plugin-cache-sweep.md).**
 
 Dormant version dirs pile up under the cache and are the root of the version-drift bug class. Sweep them, with ONE batched confirmation:
 
-1. Derive the referenced set — every mega-sdd version `installed_plugins.json` points at, ANY scope (never just entry `[0]` — that was the wrapper bug) — PLUS `BEFORE_INSTALLED`, which this session still runs until it reloads:
+1. Derive the referenced set — every mega-sdd version `installed_plugins.json` points at, ANY scope, never just entry `[0]` — that was the wrapper bug (parsed JSON: each entry's `version` + the basename of its `installPath`, split on `/` AND `\` — a regex over the JSON text returned an EMPTY set on Windows) — PLUS `BEFORE_INSTALLED`, which this session still runs until it reloads:
 
 ```
-python3 -c "import json,re,os; s=json.dumps(json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))); print(' '.join(sorted(set(re.findall(r'mega-sdd/mega-sdd/([0-9][0-9.]*)', s)))))"
+python3 ~/.claude/plugins/marketplaces/mega-sdd/plugins/mega-sdd/scripts/repair-install-pointer.py --referenced
 ```
 
-2. `DORMANT` = dirs in `~/.claude/plugins/cache/mega-sdd/mega-sdd/` NOT in that set. Empty → report "cache bersih — hanya versi aktif" and skip to the closing note.
+   Exit 3 (EMPTY set) → STOP the sweep: report "referenced set kosong — sweep dibatalkan (fail-safe)". An empty set would make every version dormant.
+2. `DORMANT` = dirs in `~/.claude/plugins/cache/mega-sdd/mega-sdd/` NOT in that set, and NEVER the available version or the newest cached version. Empty → report "cache bersih — hanya versi aktif" and skip to the closing note.
 3. Ask ONCE via `AskUserQuestion` (keterangan in Indonesian): list the dormant versions (+ total size via `du -sh`), name the referenced version(s) being KEPT, and warn explicitly: **jangan hapus kalau ada sesi Claude Code lain yang masih jalan — sesi berumur panjang bisa masih memegang path versi lama; tutup dulu sesi lain kalau ragu.** Options: **Hapus versi dormant** (recommended — keterangan: yang aktif dipertahankan, aman untuk sesi ini) / **Biarkan** (keterangan: tidak ada yang dihapus; bisa disapu di update berikutnya).
 4. On "Hapus": remove each dormant dir individually — the path MUST match the exact prefix `~/.claude/plugins/cache/mega-sdd/mega-sdd/<version>` (no globs outside that prefix, no other plugins' caches, and a referenced version is NEVER in the list). On "Biarkan": do nothing, say so.
 5. Convergence note to relay: the OLD version stays referenced until this session reloads — so the NEXT `/mega-sdd:update-plugin` sweeps it. Two consecutive updates converge the cache to a single version.

@@ -1,13 +1,13 @@
 {
- "_doc": "Complexity budget \u2014 a RATCHET, not a target (plugins/mega-sdd/CLAUDE.md \u00a7Release evidence & complexity budget). tests/benchmarks/test-complexity-budget.sh fails when a measured value exceeds its ceiling. Shrinking is always allowed; lower the ceiling in the same change to lock the gain. Raising a ceiling requires a `raises` entry {change, metric, measured_benefit}: a feature / new stage / new lens / new gate / performance claim cites benchmarks/runbooks/vanilla-vs-megasdd.md results (n >= 3 per arm, vs vanilla); a defect fix cites the regression test that fails without it. No evidence, no raise. Units: bytes / chars / lines exactly as the test measures them.",
- "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only); raised 2026-09-27 (see raises[]); LOWERED 2026-09-27 at 9.0 P1: generate-intent / bind-codebase / generate-units / scan-codebase deleted, their surviving contracts relocated into skills/plan/references/ + references/. T01 lite = the guarded pipeline trace re-pointed to the relocated successors (benchmarks/tasks/T01-greenfield-chain/files.lite.txt header). T01 default = what a default run on a clear greenfield PRD commands since the lane router: the DIRECT lane (using-mega-sdd + the front door + references/direct-lane.md; files.optimized.txt) \u2014 a redefinition, not a like-for-like shrink: the pre-9.0 default traced the classic chain (484,930 B). LOWERED again 2026-09-27 at 9.0 P1b: 6 executor-less scripts (-1,531 lines) and the dead hook legs keyed on removed skill ids (-102 lines) deleted. LOWERED again 2026-09-28 at P3 C9 to the measured values: the per-unit --agents path deleted (spec v9 \u00a78.6). LOWERED again 2026-09-29 at P3b (fan-out flags, emitterless halt names, JIT wave mode, dead in-run hook leg, pack consumer text); T01 again 2026-09-29 (process .md citations repointed to commits); T01 lite + SKILL.md bytes again 2026-09-29 (unread shared-snapshot-schema + checkpoint-protocol refs deleted); T01 lite again 2026-09-29 (deleted research-record citations repointed to commits); T01 lite + T01 default + SKILL.md bytes + scripts lines again 2026-09-29 (owner-decision cleanup: the retired --agents text trimmed from superpowers-bridge.md, history-spec pointers shortened to commits, scripts/_lib/distill-ui-ux.py deleted). always_loaded_description_chars LOWERED 2026-09-29 (update-plugin description, -1 char).",
+ "_doc": "Complexity budget — a RATCHET, not a target (plugins/mega-sdd/CLAUDE.md §Release evidence & complexity budget). tests/benchmarks/test-complexity-budget.sh fails when a measured value exceeds its ceiling. Shrinking is always allowed; lower the ceiling in the same change to lock the gain. Raising a ceiling requires a `raises` entry {change, metric, measured_benefit}: a feature / new stage / new lens / new gate / performance claim cites benchmarks/runbooks/vanilla-vs-megasdd.md results (n >= 3 per arm, vs vanilla); a defect fix cites the regression test that fails without it. No evidence, no raise. Units: bytes / chars / lines exactly as the test measures them.",
+ "baseline_measured": "2026-09-26 at 8.8.1 (tree 2f3e947c; lines = git-tracked files only); raised 2026-09-27 (see raises[]); LOWERED 2026-09-27 at 9.0 P1: generate-intent / bind-codebase / generate-units / scan-codebase deleted, their surviving contracts relocated into skills/plan/references/ + references/. T01 lite = the guarded pipeline trace re-pointed to the relocated successors (benchmarks/tasks/T01-greenfield-chain/files.lite.txt header). T01 default = what a default run on a clear greenfield PRD commands since the lane router: the DIRECT lane (using-mega-sdd + the front door + references/direct-lane.md; files.optimized.txt) — a redefinition, not a like-for-like shrink: the pre-9.0 default traced the classic chain (484,930 B). LOWERED again 2026-09-27 at 9.0 P1b: 6 executor-less scripts (-1,531 lines) and the dead hook legs keyed on removed skill ids (-102 lines) deleted. LOWERED again 2026-09-28 at P3 C9 to the measured values: the per-unit --agents path deleted (spec v9 §8.6). LOWERED again 2026-09-29 at P3b (fan-out flags, emitterless halt names, JIT wave mode, dead in-run hook leg, pack consumer text); T01 again 2026-09-29 (process .md citations repointed to commits); T01 lite + SKILL.md bytes again 2026-09-29 (unread shared-snapshot-schema + checkpoint-protocol refs deleted); T01 lite again 2026-09-29 (deleted research-record citations repointed to commits); T01 lite + T01 default + SKILL.md bytes + scripts lines again 2026-09-29 (owner-decision cleanup: the retired --agents text trimmed from superpowers-bridge.md, history-spec pointers shortened to commits, scripts/_lib/distill-ui-ux.py deleted). always_loaded_description_chars LOWERED 2026-09-29 (update-plugin description, -1 char).",
  "ceilings": {
   "always_loaded_description_chars": 9803,
   "t01_lite_commanded_bytes": 400160,
   "t01_default_commanded_bytes": 39848,
   "skill_md_total_bytes": 256402,
   "scripts_total_lines": 39850,
-  "hooks_total_lines": 2822
+  "hooks_total_lines": 2827
  },
  "raises": [
   {
@@ -31,7 +31,7 @@
      45356
     ]
    },
-   "measured_benefit": "Feature (router): benchmarks/results/vanilla-ab REPORT.md, arm routed vs vanilla, n=3 clean each \u2014 xs review-ready 2.65 [2.41-2.69] vs 3.17 [3.13-5.72] min, cost 1.16 vs 1.03 USD (OVERLAP), AC 12/12 both; clinic 26.6 vs 30.0 min, 9.30 vs 7.68 USD (OVERLAP), AC 10/10 both, Critical 0 both \u2014 versus the lite pipeline it replaces on greenfield (clinic 70.6 min / 67.33 USD / 126 subagents / 123,824 committed .mega-sdd lines -> 26.6 / 9.30 / 1 / 0). The T01 growth (+2.3 KB, +0.5%) is paid only on the guarded lane. Defect fix (delivery-check): tests/lanes/test-lanes.sh D0-D9 fail without it; on the 16 pre-router benchmark repos (6 vanilla + 10 pipeline) it FAILs all 9 clean pipeline runs (missing npm test script, empty-env build, TZ-dependent test, unlinked page) and passes 6/6 vanilla; the 10th pipeline run, clinic lite-1 (excluded from the medians for a system sleep), passes D1-D5; routed runs 9/9 PASS. scripts_total_lines includes route-lane.sh + delivery-check.sh (303 lines together) once tracked. +2 lines: resolve-review-tier.sh H1 (standards rides with quality), pinned by tests/size-weighted/test-standards-lens-h1.sh."
+   "measured_benefit": "Feature (router): benchmarks/results/vanilla-ab REPORT.md, arm routed vs vanilla, n=3 clean each — xs review-ready 2.65 [2.41-2.69] vs 3.17 [3.13-5.72] min, cost 1.16 vs 1.03 USD (OVERLAP), AC 12/12 both; clinic 26.6 vs 30.0 min, 9.30 vs 7.68 USD (OVERLAP), AC 10/10 both, Critical 0 both — versus the lite pipeline it replaces on greenfield (clinic 70.6 min / 67.33 USD / 126 subagents / 123,824 committed .mega-sdd lines -> 26.6 / 9.30 / 1 / 0). The T01 growth (+2.3 KB, +0.5%) is paid only on the guarded lane. Defect fix (delivery-check): tests/lanes/test-lanes.sh D0-D9 fail without it; on the 16 pre-router benchmark repos (6 vanilla + 10 pipeline) it FAILs all 9 clean pipeline runs (missing npm test script, empty-env build, TZ-dependent test, unlinked page) and passes 6/6 vanilla; the 10th pipeline run, clinic lite-1 (excluded from the medians for a system sleep), passes D1-D5; routed runs 9/9 PASS. scripts_total_lines includes route-lane.sh + delivery-check.sh (303 lines together) once tracked. +2 lines: resolve-review-tier.sh H1 (standards rides with quality), pinned by tests/size-weighted/test-standards-lens-h1.sh."
   },
   {
    "date": "2026-09-27",
@@ -46,7 +46,7 @@
      484933
     ]
    },
-   "measured_benefit": "benchmarks/results/vanilla-ab REPORT.md xs, n=3 clean each: lite vs classic review-ready 20.2 [15.1-23.1] vs 38.5 [36.7-41.8] min, cost 11.29 [9.83-11.90] vs 22.47 [21.87-22.52] USD (non-overlapping), AC 11/12 both, Critical 0 both, rubric 84 vs 82 (OVERLAP). Clinic classic not measured on this fixture (historical n=1: 259.66 USD / 301.4 min wall, plugin 7.35.0, another fixture, vs clinic lite 53-73 USD / 65-94 min) \u2014 deviation from the locked two-scenario rule logged in benchmarks/runbooks/vanilla-vs-megasdd.md section 9."
+   "measured_benefit": "benchmarks/results/vanilla-ab REPORT.md xs, n=3 clean each: lite vs classic review-ready 20.2 [15.1-23.1] vs 38.5 [36.7-41.8] min, cost 11.29 [9.83-11.90] vs 22.47 [21.87-22.52] USD (non-overlapping), AC 11/12 both, Critical 0 both, rubric 84 vs 82 (OVERLAP). Clinic classic not measured on this fixture (historical n=1: 259.66 USD / 301.4 min wall, plugin 7.35.0, another fixture, vs clinic lite 53-73 USD / 65-94 min) — deviation from the locked two-scenario rule logged in benchmarks/runbooks/vanilla-vs-megasdd.md section 9."
   },
   {
    "date": "2026-09-27",
@@ -57,7 +57,7 @@
      39307
     ]
    },
-   "measured_benefit": "Defect fix, owner-mandated contract (docs/gateway-contract.md): the lanes write no .mega-sdd/ (so mega-sdd-trace:turn is silent) and call no skill (so no announce tag) \u2014 a session run through them was invisible to the gateway filter contains \"mega-sdd-trace\". Regression test: tests/v9/test-gateway-trace.sh fails without it."
+   "measured_benefit": "Defect fix, owner-mandated contract (docs/gateway-contract.md): the lanes write no .mega-sdd/ (so mega-sdd-trace:turn is silent) and call no skill (so no announce tag) — a session run through them was invisible to the gateway filter contains \"mega-sdd-trace\". Regression test: tests/v9/test-gateway-trace.sh fails without it."
   },
   {
    "date": "2026-09-27",
@@ -83,7 +83,7 @@
   },
   {
    "date": "2026-09-28",
-   "change": "plan-coverage gate -> declared coverage (spec \u00a77 #13): scripts/_lib/prd_headings.py (CommonMark-faithful census, shared with validate-unit-spec) + validate-plan-coverage.sh rewrite; plan skill writes \"## Coverage exclusions\"; resolve-oq Step 4.5 / diff-vault Step 6.5 re-run the gate",
+   "change": "plan-coverage gate -> declared coverage (spec §7 #13): scripts/_lib/prd_headings.py (CommonMark-faithful census, shared with validate-unit-spec) + validate-plan-coverage.sh rewrite; plan skill writes \"## Coverage exclusions\"; resolve-oq Step 4.5 / diff-vault Step 6.5 re-run the gate",
    "metric": {
     "t01_lite_commanded_bytes": [
      451814,
@@ -102,7 +102,7 @@
   },
   {
    "date": "2026-09-28",
-   "change": "execute-bolts --inline (P2, spec \u00a78): derive-exec-plan.sh, _lib/conflict_bypass.py, _lib/exec_units.py, inline-run.md, conflict_bypassed hook leg \u2014 measured, then made the guarded default (--agents keeps the per-unit path until P3)",
+   "change": "execute-bolts --inline (P2, spec §8): derive-exec-plan.sh, _lib/conflict_bypass.py, _lib/exec_units.py, inline-run.md, conflict_bypassed hook leg — measured, then made the guarded default (--agents keeps the per-unit path until P3)",
    "metric": {
     "t01_lite_commanded_bytes": [
      460241,
@@ -125,7 +125,7 @@
      3232
     ]
    },
-   "measured_benefit": "benchmarks/results/vanilla-ab/REPORT-p2.md + commit dbd3d7d4 (locked rule spec v9 \u00a78.4), brownfield fixture n=3 per arm, all runs clean, vanilla control n=4: vs the per-unit agent path \u2014 AC 13 [13-13] vs 13 [12-13], Critical 0 vs 0, Important 0 vs 0 [0-1], traps 5/5 x3 both, v1 suite 73/73 x3 both (all OVERLAP = not WORSE, the locked rule), cost $25.08 [20.88-25.38] vs $42.45 [33.96-43.60] (BETTER, disjoint), subagents 3 vs 70, tool calls 252 vs 1,040, .mega-sdd lines 8.3k vs 13.6k (BETTER). Against vanilla the guarded lane stays WORSE on time/cost/tokens with quality OVERLAP, so guarded remains opt-in (router unchanged). The growth is temporary: P3 deletes the per-dispatch machinery this replaces."
+   "measured_benefit": "benchmarks/results/vanilla-ab/REPORT-p2.md + commit dbd3d7d4 (locked rule spec v9 §8.4), brownfield fixture n=3 per arm, all runs clean, vanilla control n=4: vs the per-unit agent path — AC 13 [13-13] vs 13 [12-13], Critical 0 vs 0, Important 0 vs 0 [0-1], traps 5/5 x3 both, v1 suite 73/73 x3 both (all OVERLAP = not WORSE, the locked rule), cost $25.08 [20.88-25.38] vs $42.45 [33.96-43.60] (BETTER, disjoint), subagents 3 vs 70, tool calls 252 vs 1,040, .mega-sdd lines 8.3k vs 13.6k (BETTER). Against vanilla the guarded lane stays WORSE on time/cost/tokens with quality OVERLAP, so guarded remains opt-in (router unchanged). The growth is temporary: P3 deletes the per-dispatch machinery this replaces."
   },
   {
    "date": "2026-09-28",
@@ -160,6 +160,17 @@
     ]
    },
    "measured_benefit": "Defect fix. Observed 2026-09-29 on the owner's machine: installed_plugins.json pointed at cache/mega-sdd/mega-sdd/8.7.2 and the marketplace clone sat at 8.7.2 while GitHub main was 9.0.0 - the manual `/plugin marketplace update` step was skipped and no session noticed the drift. Regression test: tests/update/test-version-drift.sh fails without it (8 FAIL: A1 A2 A4 B1 B3 on the hook, E1 E2 E4 on update-plugin.md); after it 18/18 PASS. No new spawn: session-start in an SDD cwd with a shimmed PATH runs 0 execs before and after; the S17/S18 fork ceilings in tests/weighted-routing/test-tier-s-hooks.sh stay green. Limit: the notice does not detect a clone never refreshed (no network; clone == installed == 8.7.2 is silent); that case is caught by update-plugin VERIFY, which checks the clone against its remote (tests/update/test-version-drift.sh F1: FAIL remote=NOT-CURRENT)."
+  },
+  {
+   "date": "2026-09-30",
+   "change": "hooks/session-start version-drift: CLAUDE_CONFIG_DIR base, installed = the user-scope entry only, and a new notice when a COMPLETE cached version is newer than the active one; scripts/repair-install-pointer.py (confirm-first repoint of the user-scope entry to the newest complete cache dir; --referenced gives update-plugin Step 5.5 a parsed-JSON referenced set that stops the sweep when empty)",
+   "metric": {
+    "hooks_total_lines": [
+     2822,
+     2827
+    ]
+   },
+   "measured_benefit": "Defect fix. Field report 2026-09-30 (office team, Windows 11): after the marketplace update + uninstall/install, installed_plugins.json stayed on 8.7.0 while a complete cache/mega-sdd/mega-sdd/9.0.0 existed, and the Step 5.5 regex (POSIX separators over JSON-escaped backslash paths) returned an EMPTY referenced set, so the dormant sweep would have offered every version, the active one included. Regression test: tests/update/test-version-drift.sh fails without it (I1 J1 J2 J3 against HEAD 90a79a86; G/H exercise the new script: Windows backslash paths, empty set exit 3, repoint skips an incomplete cache dir, backup written, second apply is a no-op); after it ALL PASS, also under bash 3.2. The hook stays builtins-only (no new fork)."
   }
  ]
 }
