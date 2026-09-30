@@ -103,4 +103,38 @@ verify | grep -q '^VERIFY: PASS remote=current installed=9.0.0 available=9.0.0' 
 inst 8.7.2
 verify | grep -q '^VERIFY: FAIL remote=current installed=8.7.2 available=9.0.0' && ok "F3 clone refreshed, plugin not updated -> FAIL" || bad "F3 got [$(verify)]"
 
+echo "── G/H/I/J: Windows field report 2026-09-30 (8.7.0 active, complete 9.0.0 cached) ──"
+RP="$ROOT/plugins/mega-sdd/scripts/repair-install-pointer.py"
+W="$T/win"; C="$W/plugins/cache/mega-sdd/mega-sdd"
+mk() { mkdir -p "$C/$1/.claude-plugin" && printf '{"name":"mega-sdd","version":"%s"}\n' "$1" > "$C/$1/.claude-plugin/plugin.json"; [ "${2:-}" = incomplete ] || mkdir -p "$C/$1/commands"; }
+mk 8.7.0; mk 8.7.2 incomplete; mk 9.0.0
+mkdir -p "$W/plugins/marketplaces/mega-sdd/plugins/mega-sdd/.claude-plugin"
+printf '{"version":"9.0.0"}\n' > "$W/plugins/marketplaces/mega-sdd/plugins/mega-sdd/.claude-plugin/plugin.json"
+winj() { printf '%s\n' '{"version":2,"plugins":{"mega-sdd@mega-sdd":[{"scope":"user","installPath":"C:\\Users\\igt\\.claude\\plugins\\cache\\mega-sdd\\mega-sdd\\8.7.0","version":"8.7.0"},{"scope":"project","installPath":"C:\\p\\cache\\mega-sdd\\mega-sdd\\8.8.1","version":"8.8.1"}],"mega-sdd-extras@mega-sdd":[{"scope":"user","version":"0.1.1"}]}}' > "$W/plugins/installed_plugins.json"; }
+winj
+r="$(CLAUDE_CONFIG_DIR="$W" python3 "$RP" --referenced)"; [ "$r" = "8.7.0 8.8.1" ] && ok "G1 Windows backslash installPaths -> referenced '8.7.0 8.8.1' (the old regex gave '')" || bad "G1 got [$r]"
+printf '{"plugins":{"mega-sdd@mega-sdd":[]}}\n' > "$W/plugins/installed_plugins.json"
+CLAUDE_CONFIG_DIR="$W" python3 "$RP" --referenced >/dev/null; [ $? -eq 3 ] && ok "G2 empty referenced set -> exit 3 (sweep must stop)" || bad "G2 empty set not fail-safe"
+winj
+c="$(CLAUDE_CONFIG_DIR="$W" python3 "$RP" --check)"
+echo "$c" | grep -q '"action": "repoint"' && echo "$c" | grep -q '"newest_complete": "9.0.0"' && ok "H1 --check: 8.7.0 active, complete 9.0.0 cached -> repoint (8.7.2 incomplete ignored)" || bad "H1 got [$c]"
+a="$(CLAUDE_CONFIG_DIR="$W" python3 "$RP" --apply)"
+python3 - "$W/plugins/installed_plugins.json" <<'EOF' && ok "H2 --apply: user entry -> 9.0.0 with a backslash installPath; project + extras entries untouched" || bad "H2 apply result wrong"
+import json,sys
+d=json.load(open(sys.argv[1]))['plugins']; u=[e for e in d['mega-sdd@mega-sdd'] if e['scope']=='user'][0]; p=[e for e in d['mega-sdd@mega-sdd'] if e['scope']=='project'][0]
+assert u['version']=='9.0.0' and u['installPath'].endswith('9.0.0') and '\\' in u['installPath'] and '/' not in u['installPath'], u
+assert p['version']=='8.8.1' and d['mega-sdd-extras@mega-sdd'][0]['version']=='0.1.1'
+EOF
+ls "$W/plugins/"installed_plugins.json.bak-* >/dev/null 2>&1 && ok "H3 a backup is written before the repoint" || bad "H3 no backup"
+CLAUDE_CONFIG_DIR="$W" python3 "$RP" --apply | grep -q '"action": "none"' && ok "H4 second --apply is a no-op" || bad "H4 not idempotent"
+winj
+OUT="$(cd "$T/proj" && printf '{"source":"startup"}' | HOME="$T/nohome" CLAUDE_CONFIG_DIR="$W" CLAUDE_PLUGIN_ROOT="$C/8.7.0" bash "$HOOK" 2>/dev/null)"
+printf '%s\n' "$OUT" | grep -q '^mega-sdd: versi 9.0.0 sudah ada di cache tapi yang aktif masih 8.7.0' && ok "I1 session start flags the complete 9.0.0 cache vs active 8.7.0 (CLAUDE_CONFIG_DIR honoured)" || bad "I1 no cache-drift line"
+rm -rf "$C/9.0.0/commands"; printf '{"version":"8.7.0"}\n' > "$W/plugins/marketplaces/mega-sdd/plugins/mega-sdd/.claude-plugin/plugin.json"
+OUT="$(cd "$T/proj" && printf '{"source":"startup"}' | HOME="$T/nohome" CLAUDE_CONFIG_DIR="$W" CLAUDE_PLUGIN_ROOT="$C/8.7.0" bash "$HOOK" 2>/dev/null)"
+printf '%s\n' "$OUT" | grep -q '^mega-sdd: versi' && bad "I2 an incomplete cache dir raised a drift line" || ok "I2 an incomplete cache dir never counts"
+grep -qF "re.findall(r'mega-sdd/mega-sdd/" "$CMD" && bad "J1 the separator-blind regex is still in update-plugin.md" || ok "J1 old regex gone"
+grep -qF 'repair-install-pointer.py --referenced' "$CMD" && grep -qF 'sweep dibatalkan (fail-safe)' "$CMD" && ok "J2 Step 5.5 uses --referenced and stops on an empty set" || bad "J2 Step 5.5 not fixed"
+grep -qF 'Step 5.2' "$CMD" && grep -qF -- '--apply' "$CMD" && grep -qF 'AskUserQuestion' "$CMD" && ok "J3 Step 5.2 repair is confirm-first" || bad "J3 repair step missing"
+
 echo; [ $err -eq 0 ] && { echo "test-version-drift: ALL PASS"; exit 0; } || { echo "test-version-drift: FAILED"; exit 1; }

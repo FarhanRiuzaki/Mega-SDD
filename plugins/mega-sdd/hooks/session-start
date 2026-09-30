@@ -190,21 +190,26 @@ if [ "$sp_present" -eq 0 ]; then
 fi
 
 # ─── Version drift (tests/update/test-version-drift.sh) ──────────────────────
-# running (this session's plugin.json) vs installed (highest mega-sdd@mega-sdd in
-# installed_plugins.json) vs available (the marketplace clone). Builtins only; a read error → silent.
+# running (this session's plugin.json) vs installed (the user-scope mega-sdd@mega-sdd entry) vs the
+# newest COMPLETE cache dir vs available (the marketplace clone). Builtins only; a read error → silent.
 _vx='"version"[[:space:]]*:[[:space:]]*"([0-9]+(\.[0-9]+)*)"'
 _vd() { local s=""; { IFS= read -r -d '' s <"$1"; } 2>/dev/null || true; _VD=""; [[ "$s" =~ $_vx ]] && _VD="${BASH_REMATCH[1]}"; return 0; }
 _vgt() { local IFS=. i; local -a a=($1) b=($2)  # numeric dotted compare: $1 > $2
   for ((i=0; i<${#a[@]} || i<${#b[@]}; i++)); do
     ((10#${a[i]:-0} != 10#${b[i]:-0})) && { ((10#${a[i]:-0} > 10#${b[i]:-0})); return; }; done; return 1; }
-DRIFT=""; _vr=""; _vi=""; _vs=""; _vk='"mega-sdd@mega-sdd"'; _PL="${HOME}/.claude/plugins"
+DRIFT=""; _vr=""; _vi=""; _vs=""; _vc=""; _vk='"mega-sdd@mega-sdd"'; _PL="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}/plugins"
 [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && { _vd "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json"; _vr="$_VD"; }
 { IFS= read -r -d '' _vs <"${_PL}/installed_plugins.json"; } 2>/dev/null || true
 [[ "$_vs" == *"$_vk"* ]] && _vs="${_vs#*"$_vk"}" && _vs="${_vs%%]*}" || _vs=""  # that key's entry array
-while [[ "$_vs" =~ $_vx ]]; do { [ -z "$_vi" ] || _vgt "${BASH_REMATCH[1]}" "$_vi"; } && _vi="${BASH_REMATCH[1]}"; _vs="${_vs#*"${BASH_REMATCH[0]}"}"; done
+while [[ "$_vs" =~ \{[^}]*\} ]]; do _o="${BASH_REMATCH[0]}"; _vs="${_vs#*"$_o"}"  # user-scope entries only
+  [[ "$_o" =~ \"scope\"[[:space:]]*:[[:space:]]*\"user\" ]] && [[ "$_o" =~ $_vx ]] && { [ -z "$_vi" ] || _vgt "${BASH_REMATCH[1]}" "$_vi"; } && _vi="${BASH_REMATCH[1]}"; done
+for _d in "${_PL}"/cache/mega-sdd/mega-sdd/*/; do _d="${_d%/}"; _d="${_d##*/}"  # newest COMPLETE cached version (plugin.json agrees)
+  [[ "$_d" =~ ^[0-9]+(\.[0-9]+)*$ ]] && [ -d "${_PL}/cache/mega-sdd/mega-sdd/$_d/commands" ] && _vd "${_PL}/cache/mega-sdd/mega-sdd/$_d/.claude-plugin/plugin.json" && [ "$_VD" = "$_d" ] && { [ -z "$_vc" ] || _vgt "$_d" "$_vc"; } && _vc="$_d"; done
 _vd "${_PL}/marketplaces/mega-sdd/plugins/mega-sdd/.claude-plugin/plugin.json"
 if [ -n "$_vr" ] && [ -n "$_vi" ] && _vgt "$_vi" "$_vr"; then
   DRIFT=$'\n\n'"mega-sdd: sesi ini masih ${_vr}, versi ${_vi} sudah ter-install — jalankan /reload-plugins (atau restart Claude Code)."
+elif [ -n "$_vi" ] && [ -n "$_vc" ] && _vgt "$_vc" "$_vi"; then
+  DRIFT=$'\n\n'"mega-sdd: versi ${_vc} sudah ada di cache tapi yang aktif masih ${_vi} — jalankan /mega-sdd:update-plugin (memperbaiki pointer)."
 elif [ -n "$_vi" ] && [ -n "$_VD" ] && _vgt "$_VD" "$_vi"; then
   DRIFT=$'\n\n'"mega-sdd: versi ${_VD} tersedia (ter-install ${_vi}) — jalankan /mega-sdd:update-plugin."
 fi
