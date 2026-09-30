@@ -87,10 +87,25 @@ rules = "\n---\n".join(rules_parts)
 matches = []
 # Chunk by BYTES, not path count: deep paths overflow ARG_MAX (macOS 1MB shared
 # with env + the ~5.5KB inline rules) long before any fixed count is "safe".
-CHUNK_BYTES = 262144
+# Windows caps the WHOLE command line at 32,767 UTF-16 units, rules included
+# (field report 2026-09-30: 642 paths -> WinError 206, index absent), so there
+# the budget is the quoted command line itself. MEGA_SDD_CMDLINE_MAX forces
+# that accounting (tests; a host with a smaller limit).
+base_cmd = ["ast-grep", "scan", "--inline-rules", rules, "--json=compact", "--"]
+_cl_max = os.environ.get("MEGA_SDD_CMDLINE_MAX", "")
+if sys.platform in ("win32", "cygwin", "msys") or _cl_max.isdigit():
+    _w = lambda a: len(subprocess.list2cmdline(a).encode("utf-16-le")) // 2
+    CHUNK_BYTES = int(_cl_max or 32000) - _w(base_cmd)
+    cost = lambda f: _w([f]) + 1
+else:
+    CHUNK_BYTES = 262144
+    cost = lambda f: len(f.encode("utf-8", "replace")) + 1
+if CHUNK_BYTES < 1024:
+    print("build-symbol-index.sh: the inline rules alone fill the command line", file=sys.stderr)
+    sys.exit(4)
 chunks, cur, cur_b = [], [], 0
 for f in files:
-    fb = len(f.encode("utf-8", "replace")) + 1
+    fb = cost(f)
     if cur and cur_b + fb > CHUNK_BYTES:
         chunks.append(cur); cur, cur_b = [], 0
     cur.append(f); cur_b += fb
@@ -100,7 +115,7 @@ for chunk in chunks:
     try:
         # "--" ends option parsing: a tracked file named "-r.py" must be a PATH,
         # never an ast-grep flag (round-2 ship-blocker B1)
-        p = run(["ast-grep", "scan", "--inline-rules", rules, "--json=compact", "--"] + chunk,
+        p = run(base_cmd + chunk,
                 timeout_s)
     except subprocess.TimeoutExpired:
         print("build-symbol-index.sh: ast-grep pass timed out (%ss)" % timeout_s, file=sys.stderr)
