@@ -29,6 +29,19 @@ D="$T/repo/apps/web/src/components/features/very-long-feature-directory-name/sub
 mkdir -p "$D"
 for i in $(seq 1 642); do echo "export const c$i = 1" > "$D/component-with-a-long-descriptive-name-$i.tsx"; done
 git -C "$T/repo" init -q && git -C "$T/repo" add -A && git -C "$T/repo" -c user.email=t@t -c user.name=t commit -qm init
+if [ "$(python3 -c 'import sys; print(sys.platform)')" = win32 ]; then
+  # CreateProcessW cannot exec a bash shim, so Windows runs the real thing: the
+  # exact field shape (642 long paths, native limit, no override) must build.
+  echo "── D: Windows, real ast-grep, native limit ──"
+  if command -v ast-grep >/dev/null 2>&1; then
+    bash "$S" --cwd="$T/repo" --out="$T/idx.json" >/dev/null 2>"$T/err"; rc=$?
+    [ "$rc" = 0 ] && ok "D1 index built (exit 0)" || bad "D1 exit $rc: $(head -1 "$T/err")"
+  else
+    bad "D1 ast-grep not installed on this Windows host"
+  fi
+  [ "$FAIL" = 0 ] && echo "test-symbol-index-cmdline: ALL PASS" || { echo "test-symbol-index-cmdline: FAILED"; exit 1; }
+  exit 0
+fi
 export PATH="$T/bin:$PATH" AG_LOG="$T/calls"
 
 echo "── A: Windows accounting (32,000) ──"

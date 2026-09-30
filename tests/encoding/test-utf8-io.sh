@@ -6,7 +6,7 @@
 # then ensure_ascii), exit 0, and derive-state.sh wrote .mega-sdd/.gitignore in
 # cp1252, rewriting it on every run (a dirty tree that blocks migrate-paths).
 # macOS/Linux default to UTF-8, so the live arm uses an ISO-8859-1 locale to
-# get the same failure there.
+# get the same failure there; on Windows (the CI windows job) it runs as is.
 #   A  no text-mode open()/fdopen()/NamedTemporaryFile() without encoding=
 #   B  every bash entry script that runs python exports PYTHONUTF8=1
 #   C  live: ground.sh under ISO-8859-1 keeps vault.json and .gitignore UTF-8
@@ -51,8 +51,10 @@ done
 [ -z "$B" ] && ok "B1 all export PYTHONUTF8=1" || bad "B1 missing:$B"
 
 echo "── C: live under a non-UTF-8 locale ──"
-if ! LC_ALL=en_US.ISO8859-1 python3 -c 'import locale,sys; sys.exit(0 if locale.getpreferredencoding(False).upper().replace("-","").startswith("ISO88591") else 1)' 2>/dev/null; then
-  echo "  skip: no ISO-8859-1 locale on this host"
+# Windows: python ignores LC_ALL and its default is already the ANSI codepage
+# (cp1252 on the CI runner) — the field condition itself.
+if ! env -u PYTHONUTF8 LC_ALL=en_US.ISO8859-1 python3 -c 'import locale,sys; sys.exit(1 if locale.getpreferredencoding(False).lower().replace("-","") == "utf8" else 0)' 2>/dev/null; then
+  echo "  skip: python's default encoding is UTF-8 on this host (no ISO-8859-1 locale)"
 else
   V="$T/.mega-sdd/vaults/fe-06"; mkdir -p "$V"
   printf '{\n  "title": "Keputusan checker (E7) — perubahan transport"\n}\n' > "$V/vault.json"

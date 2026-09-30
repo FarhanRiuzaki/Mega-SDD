@@ -7,6 +7,35 @@ on:
     branches: [main]
 
 jobs:
+  # Windows (field reports 2026-09-30: WinError 206 in build-symbol-index, cp1252
+  # corruption of vault.json/.gitignore): every one was a POSIX assumption that
+  # macOS/Linux CI cannot see. Git Bash + the runner's default python locale
+  # (cp1252, PYTHONUTF8 unset) = the office machines. Only suites written to run
+  # there; the full suite stays on ubuntu.
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ast-grep (pip, as on the office machines)
+        run: pip install ast-grep-cli
+      - name: python3 on PATH (Git Bash has only python.exe)
+        run: |
+          command -v python3 >/dev/null 2>&1 || cp "$(command -v python)" "$(dirname "$(command -v python)")/python3.exe"
+          python3 -c 'import locale, sys; print(sys.platform, locale.getpreferredencoding(False))'
+      - name: Windows suites
+        run: |
+          rc=0
+          for t in tests/encoding/test-utf8-io.sh tests/scan/test-symbol-index-cmdline.sh; do
+            echo "== $t =="; bash "$t" </dev/null || { echo "FAILED: $t"; rc=1; }
+          done
+          exit $rc
+
   test:
     runs-on: ubuntu-latest
     steps:

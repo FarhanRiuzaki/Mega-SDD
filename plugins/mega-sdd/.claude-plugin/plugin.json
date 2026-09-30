@@ -1,6 +1,6 @@
 {
   "name": "mega-sdd",
-  "version": "9.0.0",
+  "version": "9.1.0",
   "description": "A lane router for Claude Code: clear tasks run like plain Claude Code (direct), ambiguous or risky ones get one batched business ask and one blind review (assisted), and an existing vault or --guarded runs the one spec pipeline (plan -> execute-bolts, JIT spec-to-code binding with a CONFLICT gate) for traceability. Every lane ends with the same result contract: acceptance-criterion to test table, delivery-check PASS on a fresh checkout, and the assumptions made. Legacy extraction to a knowledge base and team documents (PRD/FSD/SIT/UAT) included.",
   "author": {
     "name": "Farhan Riuzaki"
