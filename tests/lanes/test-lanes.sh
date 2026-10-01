@@ -50,6 +50,17 @@ Staff log in with a password; only the admin role can approve refunds.
 EOF
 out="$(bash "$R" --cwd="$G" --prd="$T/sec.md")"
 echo "$out" | fired | grep -q security_surface && [ "$(echo "$out" | lane)" = assisted ] && ok "L5 security surface → assisted (one blind review)" || bad "L5 $out"
+# L12 a negation drops its own clause, not the whole one-line brief (one "tanpa" hid
+# autentikasi + session token and routed a token-leak brief to direct)
+out="$(bash "$R" --cwd="$G" --text="Buat helper logging di modul autentikasi yang mencatat sebagian session token, tanpa library tambahan.")"
+echo "$out" | fired | grep -q security_surface && ok "L12 'tanpa …' clause does not hide the brief's security words" || bad "L12 $out"
+out="$(bash "$R" --cwd="$G" --text="Halaman profil. Di luar lingkup: autentikasi, panel admin. Tanpa password dan role.")"
+[ "$(echo "$out" | lane)" = direct ] && ok "L13 out-of-scope sentence + negated clause still do not fire" || bad "L13 $out"
+# L14 money: a wallet transfer / a VIP discount at checkout is integrity-sensitive
+for b in "Implementasikan transfer saldo antar wallet." "Diskon 20% untuk user VIP langsung di checkout."; do
+  out="$(bash "$R" --cwd="$G" --text="$b")"
+  echo "$out" | fired | grep -q security_surface && ok "L14 money brief → security_surface: $b" || bad "L14 $b: $out"
+done
 B="$T/brown"; mkrepo "$B"; mkdir -p "$B/src"; for i in $(seq 1 12); do echo "export const a$i=1" > "$B/src/m$i.ts"; done; commit "$B"
 out="$(bash "$R" --cwd="$B" --prd="$T/clear.md")"
 [ "$(echo "$out" | lane)" = assisted ] && ok "L6 PRD on an existing app (≥10 source files) → assisted (brownfield block: the pipeline added cost, not catches)" || bad "L6 $out"

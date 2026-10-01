@@ -6,7 +6,7 @@
   "t01_lite_commanded_bytes": 400160,
   "t01_default_commanded_bytes": 39848,
   "skill_md_total_bytes": 256402,
-  "scripts_total_lines": 40046,
+  "scripts_total_lines": 40048,
   "hooks_total_lines": 2832
  },
  "raises": [
@@ -197,6 +197,17 @@
     ]
    },
    "measured_benefit": "Defect fix (data corruption). Field report 2026-09-30 (Windows 11, Python 3.14, locale cp1252, PYTHONUTF8 unset): one ground.sh run rewrote a tracked vault.json title's em-dash as \\u00e2\\u20ac\\u201d (exit 0), and derive-state.sh wrote .mega-sdd/.gitignore in cp1252 and rewrote it every run (a dirty tree that blocks migrate-paths). Regression test: tests/encoding/test-utf8-io.sh fails against main e7eddc6d (A1 169 encoding-less opens, B1 87 scripts without PYTHONUTF8, C2 vault.json -> \\u00e2\\u0080\\u0094 under an ISO-8859-1 locale, C3 .gitignore not UTF-8) and passes after; 190 related tests pass, tier-S hook fork ceilings unchanged."
+  },
+  {
+   "date": "2026-10-02",
+   "change": "scripts/route-lane.sh security_surface: a negation word (tanpa / no / tidak ada) drops only its own clause and an out-of-scope phrase only its own sentence, instead of the whole line; the vocabulary gains money words (refund, saldo, balance, wallet, dompet, transfer, discount, diskon, checkout, invoice, tagihan, billing)",
+   "metric": {
+    "scripts_total_lines": [
+     40046,
+     40048
+    ]
+   },
+   "measured_benefit": "Defect fix (mis-routing to the direct lane, which has no review). A free-text brief reaches the router as ONE line, so one 'tanpa' anywhere dropped every security word: 'logging di modul autentikasi ... sebagian session token ..., tanpa library tambahan' routed direct with security_words []; and a wallet transfer or a VIP discount at checkout matched no word at all. Regression test: tests/lanes/test-lanes.sh L12 + L14 fail against main 2c1cee1d and pass after; L13 (out-of-scope sentence + negated clause still do not fire) and L1 pass on both."
   }
  ]
 }
