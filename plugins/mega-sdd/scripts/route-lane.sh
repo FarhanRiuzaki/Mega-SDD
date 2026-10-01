@@ -31,9 +31,9 @@
 #                               "none / tidak ada / resolved", or inline TBD,
 #                               TBC, TODO, ??, [OPEN], "to be decided/confirmed",
 #                               "belum diputuskan/ditentukan/final"
-#             security_surface  >= 2 distinct security words outside out-of-scope /
-#                               negated lines (the review-panel
-#                               signal-4 list: auth, password, payment, role …)
+#             security_surface  >= 2 distinct security or money words outside
+#                               out-of-scope sentences / negated clauses
+#                               (auth, password, role … saldo, transfer, diskon …)
 #             multi_flow        derive-project-scale.sh says "standard" (not xs)
 # Open items do NOT buy the pipeline: on the clinic PRD (2 P1 + 4 P2 open
 # questions) the lite pipeline matched vanilla's quality at 8.8x the cost. What
@@ -114,18 +114,20 @@ if open_items:
 
 VOCAB = ("auth", "session", "token", "crypto", "password", "payment", "upload", "role", "permission",
          "access", "admin", "acl", "kata sandi", "sandi", "pembayaran", "unggah", "hak akses", "peran",
-         "izin", "otorisasi", "autentikasi", "otentikasi", "persetujuan")
+         "izin", "otorisasi", "autentikasi", "otentikasi", "persetujuan", "refund", "saldo", "balance",
+         "wallet", "dompet", "transfer", "discount", "diskon", "checkout", "invoice", "tagihan", "billing")
 STEMS = ("authenticat", "authoriz", "oauth")
-# an out-of-scope / negated line is not a security surface ("Di luar lingkup:
-# autentikasi, panel admin" fired on the xs PRD); nor is a Non-goals section
-NEG = re.compile(r'\b(di luar lingkup|out of scope|out-of-scope|non-goals?|tidak ada|tanpa|not in scope|no)\b', re.I)
+# an out-of-scope sentence is not a security surface ("Di luar lingkup: autentikasi" fired on the xs
+# PRD), nor a Non-goals section; a negation drops only its clause (a brief is ONE line: one "tanpa" hid it all)
+SCOPE_NEG = re.compile(r'\b(di luar lingkup|out of scope|out-of-scope|non-goals?|not in scope)\b', re.I)
+CLAUSE_NEG = re.compile(r'\b(tidak ada|tanpa|no)\b[^,;.!?]*', re.I)
 NEG_HEAD = re.compile(r'^#{1,6}\s.*\b(out of scope|di luar lingkup|non-goals?)\b', re.I)
 kept, skip = [], False
 for l in body.splitlines():
     if l.startswith('#'):
         skip = bool(NEG_HEAD.match(l))
-    if not skip and not NEG.search(l):
-        kept.append(l)
+    if not skip:
+        kept += [CLAUSE_NEG.sub(' ', s) for s in re.split(r'(?<=[.!?;])\s+', l) if not SCOPE_NEG.search(s)]
 low = '\n'.join(kept).lower()
 words = sorted({w for w in VOCAB if re.search(r'(?<![a-z])' + re.escape(w).replace(r'\ ', r'\s+') + r's?(?![a-z])', low)}
                | {s for s in STEMS if s in low})
