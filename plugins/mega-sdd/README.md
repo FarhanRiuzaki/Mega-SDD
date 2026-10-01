@@ -260,6 +260,8 @@ Mega-sdd adopts stable native binaries instead of reinventing them — all optio
 
 ## What's new
 
+**v9.2.0** — *Router fix*: a negation word (`tanpa`, `no`, `tidak ada`) in a one-line brief now drops only its own clause instead of every security word in the brief, and money words (`saldo`, `transfer`, `wallet`, `diskon`, `checkout` …) count toward the security surface, so a token-logging, wallet-transfer or discount brief takes the assisted lane instead of direct.
+
 **v9.1.0** — *Windows fixes and a forced update*: UTF-8 file I/O on every host (Windows cp1252 no longer corrupts `vault.json` or `.mega-sdd/.gitignore`); the symbol index builds under the Windows 32,767-char command-line limit; `/mega-sdd:update-plugin` forces the newest version, verifies it, and repairs a stale install pointer (confirm-first); a Windows CI job. Also P3/P3b below (the per-unit `--agents` path removed; retired flags print a one-line notice).
 
 **v9.0.0** — *one front door, one pipeline*:
