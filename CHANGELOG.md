@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Pre-v5.2.3 history lives in git history.** `CHANGELOG-ARCHIVE.md` (v3.0.0…v5.2.2, rotated 2026-05-26, 2026-06-24 and 2026-09-06) left the tree on 2026-09-29: read it at commit be944b07 (`git show be944b07:CHANGELOG-ARCHIVE.md`). Rotation no longer writes an archive file; git history keeps every entry.
 
+## [9.2.0] - 2026-10-02 — router: negasi nggak lagi nyembunyiin seluruh brief, kata uang dihitung sebagai security surface
+
+Minor karena routing berubah: brief yang dulu masuk lane `direct` sekarang bisa masuk `assisted`. Nggak ada klaim lebih cepat, lebih murah, atau lebih bagus dari vanilla Claude Code.
+
+### Fixed
+- **`route-lane.sh` salah ngirim brief sensitif ke lane `direct`.** Brief free-text masuk router sebagai SATU baris, dan filter `security_surface` ngebuang seluruh baris yang ada kata negasi (`tanpa` / `no` / `tidak ada`) atau frasa out-of-scope. Satu `tanpa` di mana pun bikin semua kata security hilang: brief logging di modul autentikasi yang nyatet sebagian session token, "tanpa library tambahan", masuk `direct` (tanpa blind review). Sekarang kata negasi cuma ngebuang klausanya sendiri dan frasa out-of-scope cuma kalimatnya sendiri; heading out-of-scope / Non-goals tetap ngebuang satu section. Test: `tests/lanes/test-lanes.sh` L12, L13.
+
+### Changed
+- **Kata uang masuk vocabulary `security_surface`:** `refund`, `saldo`, `balance`, `wallet`, `dompet`, `transfer`, `discount`, `diskon`, `checkout`, `invoice`, `tagihan`, `billing`. Tetap butuh ≥2 kata berbeda, dan lane-nya tetap `assisted` (satu batched ask + satu blind review), bukan pipeline. "Transfer saldo antar wallet" dan "diskon VIP di checkout" sebelumnya masuk `direct`. Test: L14.
+
 ## [9.1.0] - 2026-09-30 — fix Windows (update, symbol index, encoding UTF-8), update yang dipaksa ke versi terbaru, P3/P3b
 
 Minor karena bagian 3–4 di bawah (P2/P3) ngubah perilaku default `execute-bolts`; flag yang dipensiunkan tetap diterima dengan notice satu baris. Nggak ada klaim lebih cepat, lebih murah, atau lebih bagus dari vanilla Claude Code.
